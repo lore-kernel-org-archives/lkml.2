@@ -1,142 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab0HRQHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 12:07:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17545 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783Ab0HRQHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 12:07:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,228,1280732400"; 
-   d="scan'208";a="829390281"
-Date: Thu, 19 Aug 2010 00:07:31 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Matthew Wilcox <willy@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>
-Subject: Re: [TESTCASE] Clean pages clogging the VM
-Message-ID: <20100818160731.GA15002@localhost>
-References: <20100809133000.GB6981@wil.cx>
- <20100817195001.GA18817@linux.intel.com>
- <20100818141308.GD1779@cmpxchg.org>
- <20100818160613.GE9431@localhost>
+	id S1754078Ab0HRQKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 12:10:43 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55552 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab0HRQKk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 12:10:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=LgqKHP+8Z7712koc50u/gEy/5oQyaZoVcjemfHG7UtSstK6BLAQbcNjQrV2D6ecXBC
+         6ksxM0rzSU4V2kr6mYZTNXPqpJVY+QXzOWxCmXIJImUFtKf7GWAX16VfeMoPZpmluihT
+         BHOkZQKsbUQw2wBZbMEvo1oBSZbHaR+EnRq08=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818160613.GE9431@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 18 Aug 2010 12:10:39 -0400
+Message-ID: <AANLkTimKR7knyqC9JxqvUkp1v7LtUqOjWnrAExPx49-P@mail.gmail.com>
+Subject: [PATCH] powerpc: 2.6.35.2 won't build "uImage" target
+From: "Matthew L. Creech" <mlcreech@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: sam@ravnborg.org, gregkh@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 12:06:13AM +0800, Wu Fengguang wrote:
-> On Wed, Aug 18, 2010 at 04:13:08PM +0200, Johannes Weiner wrote:
-> > Hi Matthew,
-> > 
-> > On Tue, Aug 17, 2010 at 03:50:01PM -0400, Matthew Wilcox wrote:
-> > > 
-> > > No comment on this?  Was it just that I posted it during the VM summit?
-> > 
-> > I have not forgotten about it.  I just have a hard time reproducing
-> > those extreme stalls you observed.
-> > 
-> > Running that test on a 2.5GHz machine with 2G of memory gives me
-> > stalls of up to half a second.  The patchset I am experimenting with
-> > gets me down to peaks of 70ms, but it needs further work.
-> > 
-> > Mapped file pages get two rounds on the LRU list, so once the VM
-> > starts scanning, it has to go through all of them twice and can only
-> > reclaim them on the second encounter.
-> > 
-> > At that point, since we scan without making progress, we start waiting
-> > for IO, which is not happening in this case, so we sit there until a
-> > timeout expires.
-> 
-> Right, this could lead to some 1s stall. Shaohua and me also noticed
-> this when investigating the responsiveness issues. And we are wondering
-> if it makes sense to do congestion_wait() only when the bdi is really
-> congested? There are no IO underway anyway in this case.
-> 
-> > This stupid-waiting can be improved, and I am working on that.  But
-> 
-> Yeah, stupid waiting :)
-> 
-> > since I can not reproduce your observations, I don't know if this is
-> > the (sole) source of the problem.  Can I send you patches?
-> 
-> Sure.
-> 
-> > > On Mon, Aug 09, 2010 at 09:30:00AM -0400, Matthew Wilcox wrote:
-> > > > 
-> > > > This testcase shows some odd behaviour from the Linux VM.
-> > > > 
-> > > > It creates a 1TB sparse file, mmaps it, and randomly reads locations 
-> > > > in it.  Due to the file being entirely sparse, the VM allocates new pages
-> > > > and zeroes them.  Initially, it runs very fast, taking on the order of
-> > > > 2.7 to 4us per page fault.  Eventually, the VM runs out of free pages,
-> > > > and starts doing huge amounts of work trying to figure out which of
-> > > > these clean pages to throw away.
-> > 
-> > This is similar to one of my test cases for:
-> > 
-> > 	6457474 vmscan: detect mapped file pages used only once
-> > 	31c0569 vmscan: drop page_mapping_inuse()
-> > 	dfc8d63 vmscan: factor out page reference checks
-> > 
-> > because the situation was even worse before (see the series
-> > description in dfc8d63).  Maybe asking the obvious, but the kernel you
-> > tested on did include those commits, right?
-> > 
-> > And just to be sure, I sent you a test-patch to disable the used-once
-> > detection on IRC the other day.  Did you have time to run it yet?
-> > Here it is again:
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 9c7e57c..c757bba 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -584,6 +584,7 @@ static enum page_references page_check_references(struct page *page,
-> >  		return PAGEREF_RECLAIM;
-> >  
-> >  	if (referenced_ptes) {
-> > +		return PAGEREF_ACTIVATE;
-> 
-> How come page activation helps?
-> 
-> >  		if (PageAnon(page))
-> >  			return PAGEREF_ACTIVATE;
-> >  		/*
-> > 
-> > 
-> > > > In my testing with a 6GB machine and 2.9GHz CPU, one in every
-> > > > 15,000 page faults takes over a second, and one in every 40,000
-> > > > page faults take over seven seconds!
-> > > > 
-> > > > This test-case demonstrates a problem that occurs with a read-mostly 
-> > > > mmap of a file on very fast media.  I wouldn't like to see a solution
-> > > > that special-cases zeroed pages.  I think userspace has done its part
-> > > > to tell the kernel what's it's doing by calling madvise(MADV_RANDOM).
-> > > > This ought to be enough to hint to the kernel that it should be eagerly
-> > > > throwing away pages in this VMA.
-> > 
-> > We can probably do something like the following, but I am not sure
-> > this is a good fix, either.  How many applications are using
-> > madvise()?
-> 
-> Heh, it sounds crazy to rip random read pages, though it does help to
-> produce a FAST test case.
-> 
-> > --- a/mm/rmap.c
-> > +++ b/mm/rmap.c
-> > @@ -495,7 +495,7 @@ int page_referenced_one(struct page *pag
-> >  		 * mapping is already gone, the unmap path will have
-> >  		 * set PG_referenced or activated the page.
-> >  		 */
-> > -		if (likely(!VM_SequentialReadHint(vma)))
-> > +		if (likely(!(vma->vm_flags & (VM_SEQ_READ|VM_RAND_READ))))
-> >  			referenced++;
-> >  	}
-> 
-> Thanks,
-> Fengguang
-> 
+I'm assuming it's just a typo, but commit
+afaac2588bac3673e5e1c6b73fc054c931535175 renames the "uImage" target
+to "uImaged", which breaks my ppc build.  Trivial fix included.
+
+Signed-off-by: Matt Creech <mlcreech@gmail.com>
+---
+arch/powerpc/Makefile |    2 +-
+1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff -purN orig/arch/powerpc/Makefile linux-2.6.35.2/arch/powerpc/Makefile
+--- orig/arch/powerpc/Makefile  2010-08-18 12:02:15.766054443 -0400
++++ linux-2.6.35.2/arch/powerpc/Makefile        2010-08-18
+12:02:32.025501666 -0400
+@@ -164,7 +164,7 @@ drivers-$(CONFIG_OPROFILE)  += arch/power
+ all: zImage
+
+ # With make 3.82 we cannot mix normal and wildcard targets
+-BOOT_TARGETS1 := zImage zImage.initrd uImaged
++BOOT_TARGETS1 := zImage zImage.initrd uImage
+ BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
+
+ PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
+
+-- 
+Matthew L. Creech
