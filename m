@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab0HRSHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 14:07:35 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1596 "EHLO MMS3.broadcom.com"
+	id S1752906Ab0HRSHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 14:07:44 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:3448 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab0HRSHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 14:07:32 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+	id S1752815Ab0HRSHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 14:07:37 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
 From: "Brian Norris" <norris@broadcom.com>
 To: linux-mtd@lists.infradead.org
 cc: "Linux Kernel" <linux-kernel@vger.kernel.org>,
@@ -14,15 +14,15 @@ cc: "Linux Kernel" <linux-kernel@vger.kernel.org>,
         "David Woodhouse" <dwmw2@infradead.org>,
         "Brian Norris" <norris@broadcom.com>,
         "Sneha Narnakaje" <nsnehaprabha@ti.com>
-Subject: [PATCH v2 1/2] mtd: nand: Expand nand_ecc_layout, deprecate
+Subject: [PATCH v2 2/2] mtd: nand: Expand nand_ecc_layout, deprecate
  ioctl ECCGETLAYOUT
-Date: Wed, 18 Aug 2010 11:06:45 -0700
-Message-ID: <1282154806-9420-2-git-send-email-norris@broadcom.com>
+Date: Wed, 18 Aug 2010 11:06:46 -0700
+Message-ID: <1282154806-9420-3-git-send-email-norris@broadcom.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <4C5CA4A1.1040000@broadcom.com>
 References: <4C5CA4A1.1040000@broadcom.com>
 MIME-Version: 1.0
-X-WSS-ID: 6072FEEB3KC81782382-01-01
+X-WSS-ID: 6072FEEB37O66176953-01-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
