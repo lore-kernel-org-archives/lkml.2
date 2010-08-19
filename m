@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab0HSVw0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 17:52:26 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39719 "EHLO gate.crashing.org"
+	id S1753685Ab0HSVwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 17:52:35 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:56331 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab0HSVwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 17:52:23 -0400
-Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux@arm.linux.org.uk, khc@pm.waw.pl, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20100819234835Y.fujita.tomonori@lab.ntt.co.jp>
-References: <20100813215413.GA21607@n2100.arm.linux.org.uk>
-	 <20100814181306U.fujita.tomonori@lab.ntt.co.jp>
-	 <1282213882.22370.360.camel@pasglop>
-	 <20100819234835Y.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Aug 2010 07:51:52 +1000
-Message-ID: <1282254713.22370.368.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751191Ab0HSVwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 17:52:24 -0400
+Date: Thu, 19 Aug 2010 14:51:24 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>,
+        Huaxu Wan <huaxu.wan@intel.com>
+Subject: Re: [lm-sensors] [PATCH] drivers/hwmon/coretemp: Remove warnings
+ of unused variables
+Message-ID: <20100819215124.GA8097@ericsson.com>
+References: <1282172027-640-1-git-send-email-fenghua.yu@intel.com>
+ <1282172027-640-2-git-send-email-fenghua.yu@intel.com>
+ <20100819092423.00f76256@hyperion.delvare>
+ <4C6D8026.2060800@zytor.com>
+ <20100819232655.4223e61f@hyperion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100819232655.4223e61f@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 23:50 +0900, FUJITA Tomonori wrote:
+On Thu, Aug 19, 2010 at 05:26:55PM -0400, Jean Delvare wrote:
+> On Thu, 19 Aug 2010 12:04:06 -0700, H. Peter Anvin wrote:
+> > On 08/19/2010 12:24 AM, Jean Delvare wrote:
+> > > 
+> > > Thanks for the fix, but it is already in my tree:
+> > > ftp://ftp.kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-hwmon/hwmon-coretemp-fix-warning.patch
+> > > 
+> > > I'll send it to Linus as part as my next batch of hwmon fixes for
+> > > 2.6.36.
+> > 
+> > Hi Jean,
+> > 
+> > Are you overall hwmon maintainer now?  That job is currently listed as
+> > Orphan in the MAINTAINERS file.
 > 
-> You mean that you like to permit architectures to modify
-> dev->coherent_dma_mask behind a device? If so, I'm against it because
-> it means dev->coherent_dma_mask has two meanings. That's confusing.
-
-No it's not. It has one and only one meaning which is the mask defining
-where the coherent memory can come from for that device. Nobody cares if
-the device can do more and has been "clipped" at set_coherent_dma_mask()
-time by the bus. This is not useful information.
-
-So I beleive the arch should hook the later and modify the mask as it
-gets applied -once-.
-
-> I don't plan to have the generic code to deal with multiple masks. I
-> thought about simply moving max_direct_dma_addr in POWERPC's
-> dev_archdata to a generic place (possibly, struct
-> device_dma_parameters). I think that having the generic place for bus'
-> dma mask would be better rather than architecture specific
-> places. Adding a new API to set bus' dma mask would make sense too.
-
-Well, max_direct_dma_addr used on powerpc is a bit nasty because it
-doesn't necessarily represent a power of 2, so a mask is no good here
-indeed.
-
-> > Besides, in embedded-land, you never know how many busses are
-> stacked
-> > before you reach the device, ie, you'd end up having to AND quite a
-> > few masks before getting there in some cases.
-> >
-> > Sounds better to establish that once, at set_coherent_dma_mask()
-> time.
+> MAINTAINERS is correct. I do not have the time, nor the will, to be the
+> single official maintainer of the hwmon subsystem. I would be happy to
+> be a co-maintainer, but nobody stepped in to co-maintain with me.
 > 
-> As long as dev->coherent_dma_mask represents the same thing on every
-> architecture, permitting architectures to have the own
-> dma_set_coherent_mask() is fine by me. I like to avoid it if possible
-> though.
+I can step in if needed. I don't want to step on anyone's feet, though,
+and I would not want to be the sole maintainer, at least not yet - I just
+don't know the code well enough.
 
-Ben.
-
-
+Guenter
