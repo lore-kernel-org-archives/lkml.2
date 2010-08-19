@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191Ab0HSCvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 22:51:47 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49355 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab0HSCvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 22:51:44 -0400
-Message-ID: <4C6C9C36.7080904@canonical.com>
-Date: Thu, 19 Aug 2010 10:51:34 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1751335Ab0HSC7g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 22:59:36 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:35396 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751081Ab0HSC7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 22:59:32 -0400
+Message-ID: <4C6C9E10.9030202@fusionio.com>
+Date: Wed, 18 Aug 2010 22:59:28 -0400
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
-        Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 3/8] ideapad: make sure we bind on the correct device
-References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com> <1282120653-11434-1-git-send-email-ike.pan@canonical.com> <20100818132722.GA12709@srcf.ucam.org>
-In-Reply-To: <20100818132722.GA12709@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "hch@lst.de" <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
+References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>	 <20100817223145.GC4641@Krystal>  <4C6BC72E.6040607@gmail.com>	 <1282141930.3035.9.camel@mulgrave.site>  <4C6BEFD1.8010200@gmail.com>	 <1282142498.3035.17.camel@mulgrave.site>  <4C6C5561.5040302@fusionio.com> <1282171834.13811.51.camel@mulgrave.site>
+In-Reply-To: <1282171834.13811.51.camel@mulgrave.site>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2010 09:27 PM, Matthew Garrett wrote:
-> On Wed, Aug 18, 2010 at 04:37:33PM +0800, Ike Panhc wrote:
->> By reading from method _STA and _CFG to make sure we bind on the correct
->> VPC2004 device.
+On 08/18/2010 06:50 PM, James Bottomley wrote:
+> On Wed, 2010-08-18 at 17:49 -0400, Jens Axboe wrote:
+>> On 08/18/2010 10:41 AM, James Bottomley wrote:
+>>> On Wed, 2010-08-18 at 16:36 +0200, Jiri Slaby wrote:
+>>>> On 08/18/2010 04:32 PM, James Bottomley wrote:
+>>>>>> James and Jens, could you take the two remaining (SCSI and BLOCK)?
+>>>>>
+>>>>> Sure ... could you identify the email by subject, please? lkml.org seems
+>>>>> to be down this morning.
+>>>>
+>>>> Sure:
+>>>> [PATCH v2] BLOCK: fix bio.bi_rw handling
+>>>> and
+>>>> [PATCH v2] SCSI: fix bio.bi_rw handling
+>>>>
+>>>> You should have received one copy to your suse.de inbox, if everything
+>>>> worked.
+>>>
+>>> Got it.  One of life's little ironies is that I couldn't immediately
+>>> locate it in the SCSI list because it was already queued for inclusion.
+>>
+>> Please add my acked-by to both of them.
 > 
-> I know some other drivers check _STA themselves, but it's unnecessary - 
-> if _STA didn't evaluate appropriately, the bus driver won't create the 
-> pnp object and there won't be anything for you to bind to in the first 
-> place.
+> OK.
 > 
-yes, you are right. when add, acpi_bus will check for it and tell if the
-device exist or not from its bits.
+>>  I'm away on vacation, so if
+>> you James could queue them up, I would appreciate it. Thanks!
+> 
+> Certainly sir ... and would you like your patches served to your table
+> or by the pool?
+
+Pool, please. With that first name and the British accent, it's hard
+not to boss you around.
+
+-- 
+Jens Axboe
+
