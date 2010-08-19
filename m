@@ -1,65 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416Ab0HSBlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 21:41:06 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43581 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab0HSBlE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 21:41:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Cz6R7U8peS7r1OQb3QIotEjht/oqpnJh+iLm5undqrBXQ0sluQE5RMYAvb0dDjldRN
-         U1WyEW9BsqLnxqNpwTWajE2L2TNmDemEatfKY9m6tT7xliIrDBelXarzDFu7pUAjWj8i
-         /9ZvVOLNsCtliPIl4Fi0YC2B4k9uDw5yVT81o=
+	id S1751465Ab0HSBmy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 21:42:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64740 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751086Ab0HSBmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 21:42:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,230,1280732400"; 
+   d="scan'208";a="314300183"
+Date: Thu, 19 Aug 2010 09:42:49 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: "Wu, Fengguang" <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [TESTCASE] Clean pages clogging the VM
+Message-ID: <20100819014249.GA22092@sli10-desk.sh.intel.com>
+References: <20100809133000.GB6981@wil.cx>
+ <20100817195001.GA18817@linux.intel.com>
+ <20100818141308.GD1779@cmpxchg.org>
+ <20100818160613.GE9431@localhost>
+ <20100818160731.GA15002@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20100818181240.GA13050@fieldses.org>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	<87aaolwar8.fsf@basil.nowhere.org>
-	<20100817174134.GA23176@fieldses.org>
-	<20100817182920.GD18161@basil.fritz.box>
-	<20100817190447.GA28049@fieldses.org>
-	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
-	<20100817203941.729830b7@lxorguk.ukuu.org.uk>
-	<AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
-	<20100818181240.GA13050@fieldses.org>
-Date: Wed, 18 Aug 2010 18:41:02 -0700
-X-Google-Sender-Auth: _hVrYHw6YyYM-fy8Md7YLVNfMZs
-Message-ID: <AANLkTi=cx31Mgfe7FxJz6LUmTKFR4=9KEBgbFsNLjiSE@mail.gmail.com>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-From: john stultz <johnstul@us.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "Patrick J. LoPresti" <lopresti@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100818160731.GA15002@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 11:12 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> I'm completely ignorant about higher-resolution time sources.  Any
-> recommended reading?  What resolution do they actually provide, what's
-> the expense of reading them, how reliable are they, and how do the
-> answers to those questions vary across different hardware and kernel
-> versions?  A quick look at drivers/clocksource/ doesn't suggest
-> simple answers.
+On Thu, Aug 19, 2010 at 12:07:31AM +0800, Wu, Fengguang wrote:
+> On Thu, Aug 19, 2010 at 12:06:13AM +0800, Wu Fengguang wrote:
+> > On Wed, Aug 18, 2010 at 04:13:08PM +0200, Johannes Weiner wrote:
+> > > Hi Matthew,
+> > > 
+> > > On Tue, Aug 17, 2010 at 03:50:01PM -0400, Matthew Wilcox wrote:
+> > > > 
+> > > > No comment on this?  Was it just that I posted it during the VM summit?
+> > > 
+> > > I have not forgotten about it.  I just have a hard time reproducing
+> > > those extreme stalls you observed.
+> > > 
+> > > Running that test on a 2.5GHz machine with 2G of memory gives me
+> > > stalls of up to half a second.  The patchset I am experimenting with
+> > > gets me down to peaks of 70ms, but it needs further work.
+> > > 
+> > > Mapped file pages get two rounds on the LRU list, so once the VM
+> > > starts scanning, it has to go through all of them twice and can only
+> > > reclaim them on the second encounter.
+> > > 
+> > > At that point, since we scan without making progress, we start waiting
+> > > for IO, which is not happening in this case, so we sit there until a
+> > > timeout expires.
+> > 
+> > Right, this could lead to some 1s stall. Shaohua and me also noticed
+> > this when investigating the responsiveness issues. And we are wondering
+> > if it makes sense to do congestion_wait() only when the bdi is really
+> > congested? There are no IO underway anyway in this case.
+> > 
+> > > This stupid-waiting can be improved, and I am working on that.  But
+> > 
+> > Yeah, stupid waiting :)
+How about this one?
 
-Yea, there aren't simple answers. Clocksource hardware varies
-drastically in resolution and access time across systems and
-architectures. Further, clocksources may change while the system is
-up, so we don't really expose the hardware resolution.
 
-On x86, access latency varies from ~50ns (TSC) to ~1.3us (ACPI PM).
-(And that is ignoring the PIT, which can be 18us per call - luckily
-almost no hardware uses that). The resolution similarly scales from
-sub-ns (TSC @ > 1ghz cpus) to ~279ns (ACPI PM). Of course, across
-architectures you will see even more variance.
+Subject: mm: check device is really congested before sleep in direct page reclaim
 
-thanks
--john
+congestion_wait() blindly sleep without checking if device is really congested.
+In a workload without any write, it can cause direct page reclaim sleep 100ms
+and hasn't any help for page reclaim.
+There might be other places calling congestion_wait() and need check if
+device is really congested, but I can't audit all, so this just changes the
+direct page reclaim code path. The new congestion_wait_check() will make sure
+at least one device is congested before going into sleep.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
+---
+ include/linux/backing-dev.h |    1 +
+ mm/backing-dev.c            |   14 ++++++++++++--
+ mm/vmscan.c                 |    2 +-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
+
+Index: linux/mm/backing-dev.c
+===================================================================
+--- linux.orig/mm/backing-dev.c	2010-08-18 16:41:04.000000000 +0800
++++ linux/mm/backing-dev.c	2010-08-19 08:59:14.000000000 +0800
+@@ -725,13 +725,16 @@ static wait_queue_head_t congestion_wqh[
+ 		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[1])
+ 	};
+ 
++static atomic_t nr_congested_bdi[2];
++
+ void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+ {
+ 	enum bdi_state bit;
+ 	wait_queue_head_t *wqh = &congestion_wqh[sync];
+ 
+ 	bit = sync ? BDI_sync_congested : BDI_async_congested;
+-	clear_bit(bit, &bdi->state);
++	if (test_and_clear_bit(bit, &bdi->state))
++		atomic_dec(&nr_congested_bdi[sync]);
+ 	smp_mb__after_clear_bit();
+ 	if (waitqueue_active(wqh))
+ 		wake_up(wqh);
+@@ -743,7 +746,8 @@ void set_bdi_congested(struct backing_de
+ 	enum bdi_state bit;
+ 
+ 	bit = sync ? BDI_sync_congested : BDI_async_congested;
+-	set_bit(bit, &bdi->state);
++	if (!test_and_set_bit(bit, &bdi->state))
++		atomic_inc(&nr_congested_bdi[sync]);
+ }
+ EXPORT_SYMBOL(set_bdi_congested);
+ 
+@@ -769,3 +773,9 @@ long congestion_wait(int sync, long time
+ }
+ EXPORT_SYMBOL(congestion_wait);
+ 
++long congestion_wait_check(int sync, long timeout)
++{
++	if (atomic_read(&nr_congested_bdi[sync]) == 0)
++		return 0;
++	return congestion_wait(sync, timeout);
++}
+Index: linux/include/linux/backing-dev.h
+===================================================================
+--- linux.orig/include/linux/backing-dev.h	2010-08-18 16:41:04.000000000 +0800
++++ linux/include/linux/backing-dev.h	2010-08-18 16:41:23.000000000 +0800
+@@ -285,6 +285,7 @@ enum {
+ void clear_bdi_congested(struct backing_dev_info *bdi, int sync);
+ void set_bdi_congested(struct backing_dev_info *bdi, int sync);
+ long congestion_wait(int sync, long timeout);
++long congestion_wait_check(int sync, long timeout);
+ 
+ 
+ static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
+Index: linux/mm/vmscan.c
+===================================================================
+--- linux.orig/mm/vmscan.c	2010-08-18 16:41:04.000000000 +0800
++++ linux/mm/vmscan.c	2010-08-18 16:41:23.000000000 +0800
+@@ -1910,7 +1910,7 @@ static unsigned long do_try_to_free_page
+ 		/* Take a nap, wait for some writeback to complete */
+ 		if (!sc->hibernation_mode && sc->nr_scanned &&
+ 		    priority < DEF_PRIORITY - 2)
+-			congestion_wait(BLK_RW_ASYNC, HZ/10);
++			congestion_wait_check(BLK_RW_ASYNC, HZ/10);
+ 	}
+ 
+ out:
