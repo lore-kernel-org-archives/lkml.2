@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab0HSIj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 04:39:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44510 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927Ab0HSIj4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 04:39:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100819083612.GA13293@shutemov.name>
-References: <1282139739-23832-1-git-send-email-virtuoso@slind.org>
- <20100818155702.bc62b2a6.akpm@linux-foundation.org> <4C6C7034.4050501@zytor.com>
- <20100818165303.dd52695a.akpm@linux-foundation.org> <20100819040937.GA8646@suse.de>
- <20100819083612.GA13293@shutemov.name>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 19 Aug 2010 10:39:40 +0200
-Message-ID: <AANLkTi=svKLEJ546kmP4WEaut=hGeFnHyw8a-uxjBAOt@mail.gmail.com>
-Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander Shishkin <virtuoso@slind.org>, lkml@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        John Kacur <jkacur@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751954Ab0HSIw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 04:52:29 -0400
+Received: from sh.osrg.net ([192.16.179.4]:39401 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751530Ab0HSIwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 04:52:23 -0400
+Date: Thu, 19 Aug 2010 17:51:48 +0900
+To: khc@pm.waw.pl
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk
+Subject: [PATCH] arm: fix pci_set_consistent_dma_mask for dmabounce devices
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100819174426O.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 19 Aug 2010 17:51:51 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 10:36, Kirill A. Shutemov <kirill@shutemov.name> wrote:
-> On Wed, Aug 18, 2010 at 09:09:37PM -0700, Greg KH wrote:
->> On Wed, Aug 18, 2010 at 04:53:03PM -0700, Andrew Morton wrote:
->> > Is sysfs the right interface for this thing?  Bear in mind that
->> > CONFIG_SYSFS does exist.
->> >
->> > > +              fd = open("/sys/kernel/time_notify", O_WRONLY);
->> > > +              fdprintf(fd, "%d 1 0 1 1", efd);
->> >
->> > why not
->> >
->> >             sys_time_notify(efd, 1, 0, 1, 1);
->>
->> Yeah, that would be much better than a sysfs file, this is abusing the
->> sysfs interface quite a lot.
->
-> Do you really think, that increasing number of syscalls is better then
-> fs-based interfaces?
+This fixes the regression of the
+6fee48cd330c68332f9712bc968d934a1a84a32a commit.
 
-Not necessarily, but adding such, and from the outside scope 'random
-stuff', to /sys/kernel/ is really not the way to do such things.
+After the above commit, pci_set_consistent_dma_mask doesn't work for
+dmabounce devices. It converts ARM to use the generic implementation
+of pci_set_consistent_dma_mask.
 
-It seems to be new dumping ground for things that don't have an
-obvious home, and since proc is out of fashion. :)
+The root cause that ARM's CONFIG_DMABOUNCE uses dev->coherent_dma_mask
+for the dma mask of a device _AND_ a bus. dev->coherent_dma_mask is
+supposed to represent the dma mask of a device.
 
-Can't timerfd be used, or extended in some way? It really sounds like
-the place this should happen.
+The proper solution is that device and bus has the own dma mask
+respectively (POWERPC does the similar). But the fix must go to stable
+trees so this simple (and hacky a bit) patch works better for now.
 
-Kay
+For further information: http://lkml.org/lkml/2010/8/10/272
+
+Reported-by: Krzysztof Halasa <khc@pm.waw.pl>
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Tested-by: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: stable@kernel.org
+---
+ arch/arm/mm/dma-mapping.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index c704eed..2a3fc2e 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -77,6 +77,11 @@ static struct page *__dma_alloc_buffer(struct device *dev, size_t size, gfp_t gf
+ 	if (mask < 0xffffffffULL)
+ 		gfp |= GFP_DMA;
+ 
++#ifdef CONFIG_DMABOUNCE
++	if (dev->archdata.dmabounce)
++		gfp |= GFP_DMA;
++#endif
++
+ 	page = alloc_pages(gfp, order);
+ 	if (!page)
+ 		return NULL;
+-- 
+1.6.5
+
