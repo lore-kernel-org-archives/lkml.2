@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab0HSAUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 20:20:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1373 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab0HSAUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 20:20:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,230,1280732400"; 
-   d="scan'208";a="314277460"
-Subject: Re: [patch 1/3] sched: init rt_avg stat whenever rq comes online
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chris@frostnet.net" <chris@frostnet.net>,
-        "debian00@aliceadsl.fr" <debian00@aliceadsl.fr>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jonathan.protzenko@gmail.com" <jonathan.protzenko@gmail.com>,
-        "mans@mansr.com" <mans@mansr.com>,
-        "psastudio@mail.ru" <psastudio@mail.ru>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "stephan.eicher@web.de" <stephan.eicher@web.de>,
-        "sxxe@gmx.de" <sxxe@gmx.de>,
-        "thomas@archlinux.org" <thomas@archlinux.org>,
-        "venki@google.com" <venki@google.com>,
-        "wonghow@gmail.com" <wonghow@gmail.com>,
-        "stable@kernel.org" <stable@kernel.org>, tglx <tglx@linutronix.de>
-In-Reply-To: <1282035085.1926.2164.camel@laptop>
-References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
-	 <20100813193911.827207098@sbsiddha-MOBL3.sc.intel.com>
-	 <1281944854.1926.948.camel@laptop>
-	 <1281980179.2676.22.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <1281986708.1926.1877.camel@laptop>  <1282035085.1926.2164.camel@laptop>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Wed, 18 Aug 2010 17:20:13 -0700
-Message-Id: <1282177213.7801.17.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1751059Ab0HSA2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 20:28:41 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39023 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab0HSA2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 20:28:38 -0400
+Date: Wed, 18 Aug 2010 19:28:37 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Dustin Kirkland <kirkland@canonical.com>,
+        ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ecryptfs: properly mark init functions
+Message-ID: <20100819002836.GA8552@boomer>
+References: <4C6AA995.6040008@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6AA995.6040008@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 01:51 -0700, Peter Zijlstra wrote:
-> On Mon, 2010-08-16 at 21:25 +0200, Peter Zijlstra wrote:
-> > You can use something like:
-> > 
-> > suspend:
-> >  __get_cpu_var(cyc2ns_suspend) = sched_clock();
-> > 
-> > resume:
-> >  for_each_possible_cpu(i)
-> >    per_cpu(cyc2ns_offset, i) += per_cpu(cyc2ns_suspend);
-> > 
-> > or something like that to keep sched_clock() stable, which is exactly
-> > what most (all?) its users expect when we report the TSC is usable. 
+On Tue Aug 17, 2010 at 05:24:05PM +0200, Jerome Marchand <jmarchan@redhat.com> wrote:
 > 
-> That's actually broken, you only want a single offset, otherwise we
-> de-sync the TSC, which is bad.
+> Some ecryptfs init functions are not prefixed by __init and thus not
+> freed after initialization. This patch saved about 1kB in ecryptfs
+> module.
 > 
-> So simply store the sched_clock() value at suspend time on the single
-> CPU that is still running, then on resume make sure sched_clock()
-> continues there by adding that stamp to all CPU offsets.
+> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+> ---
 
+Thanks Jerome - We could also get away with marking
+ecryptfs_init_kmem_caches() and do_sysfs_registration() with __init,
+right?
 
-Peter, That might not be enough. I should add that in my Lenovo T410
-(having 2 core wsm cpu), TSC's are somehow set to a strange big value
-(for example 0xfffffffebc22f02e) after resume from S3. It looks like
-bios might be writing TSC during resume. I am not sure if this is the
-case for other OEM laptops aswell. I am checking.
+Tyler
 
-So such large values of TSC (leading to a very big difference between
-rq->clock and rq->age_stamp) wont be correctly handled by
-scale_rt_power() either.
-
-thanks,
-suresh
-
+>  crypto.c    |    2 +-
+>  kthread.c   |    2 +-
+>  messaging.c |    2 +-
+>  miscdev.c   |    2 +-
+>  4 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
+> index a2e3b56..13ff48b 100644
+> --- a/fs/ecryptfs/crypto.c
+> +++ b/fs/ecryptfs/crypto.c
+> @@ -1793,7 +1793,7 @@ struct kmem_cache *ecryptfs_key_tfm_cache;
+>  static struct list_head key_tfm_list;
+>  struct mutex key_tfm_list_mutex;
+> 
+> -int ecryptfs_init_crypto(void)
+> +int __init ecryptfs_init_crypto(void)
+>  {
+>  	mutex_init(&key_tfm_list_mutex);
+>  	INIT_LIST_HEAD(&key_tfm_list);
+> diff --git a/fs/ecryptfs/kthread.c b/fs/ecryptfs/kthread.c
+> index d8c3a37..0851ab6 100644
+> --- a/fs/ecryptfs/kthread.c
+> +++ b/fs/ecryptfs/kthread.c
+> @@ -86,7 +86,7 @@ out:
+>  	return 0;
+>  }
+> 
+> -int ecryptfs_init_kthread(void)
+> +int __init ecryptfs_init_kthread(void)
+>  {
+>  	int rc = 0;
+> 
+> diff --git a/fs/ecryptfs/messaging.c b/fs/ecryptfs/messaging.c
+> index bcb68c0..ab22480 100644
+> --- a/fs/ecryptfs/messaging.c
+> +++ b/fs/ecryptfs/messaging.c
+> @@ -473,7 +473,7 @@ sleep:
+>  	return rc;
+>  }
+> 
+> -int ecryptfs_init_messaging(void)
+> +int __init ecryptfs_init_messaging(void)
+>  {
+>  	int i;
+>  	int rc = 0;
+> diff --git a/fs/ecryptfs/miscdev.c b/fs/ecryptfs/miscdev.c
+> index 3745f61..00208c3 100644
+> --- a/fs/ecryptfs/miscdev.c
+> +++ b/fs/ecryptfs/miscdev.c
+> @@ -500,7 +500,7 @@ static struct miscdevice ecryptfs_miscdev = {
+>   *
+>   * Returns zero on success; non-zero otherwise
+>   */
+> -int ecryptfs_init_ecryptfs_miscdev(void)
+> +int __init ecryptfs_init_ecryptfs_miscdev(void)
+>  {
+>  	int rc;
+> 
