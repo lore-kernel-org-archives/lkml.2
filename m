@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab0HSQKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 12:10:49 -0400
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:57631 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab0HSQKq (ORCPT
+	id S1753050Ab0HSQMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 12:12:34 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54662 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab0HSQM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 12:10:46 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Aug 2010 12:10:45 EDT
-Date: Thu, 19 Aug 2010 18:05:43 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux/m68k <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>
-cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        uClinux list <uclinux-dev@uclinux.org>
-Subject: [PATCH] m68k,m68knommu: Wire up fanotify_init, fanotify_mark, and
- prlimit64
-Message-ID: <alpine.DEB.2.00.1008191804480.16652@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 19 Aug 2010 12:12:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=YdjpTJbTelXDCCEujWZZcffxXSz7ocZzwb2xyROq9JteDTFIazylglUVjWbTOy8HuY
+         KiR/5DpbqNIbX3wxDq7Wu7/I78LW80UY8hImdqLnARATxqqdWWCjUykMyBBcCv4B6ruf
+         TiYSZIqLYT+l7ZmwuNAF4TIcgYPyZ1fuBZ6jU=
+Subject: Re: [RFC][PATCH] introduce ptr_diff()
+From: Namhyung Kim <namhyung@gmail.com>
+To: Bernd Petrovitsch <bernd@sysprog.at>
+Cc: Andi Kleen <andi@firstfloor.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1282233889.10440.220.camel@thorin>
+References: <1282217856-8625-1-git-send-email-namhyung@gmail.com>
+	 <87aaoiu6z6.fsf@basil.nowhere.org>  <1282233186.1713.10.camel@leonhard>
+	 <1282233889.10440.220.camel@thorin>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Aug 2010 01:12:22 +0900
+Message-ID: <1282234342.1713.11.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/include/asm/unistd.h       |    5 ++++-
- arch/m68k/kernel/entry.S             |    3 +++
- arch/m68knommu/kernel/syscalltable.S |    3 +++
- 3 files changed, 10 insertions(+), 1 deletions(-)
+2010-08-19 (목), 18:04 +0200, Bernd Petrovitsch:
+> sparse also gets gcc's parameters which include (usually) "-Wall". And
+> this activates it.
+> Adding -Wno-ptr-subtraction-blows to CHECKFLAGS should do the trick.
+> 
+> 	Bernd
 
-diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
-index 60b15d0..b43b36b 100644
---- a/arch/m68k/include/asm/unistd.h
-+++ b/arch/m68k/include/asm/unistd.h
-@@ -340,10 +340,13 @@
- #define __NR_set_thread_area	334
- #define __NR_atomic_cmpxchg_32	335
- #define __NR_atomic_barrier	336
-+#define __NR_fanotify_init	337
-+#define __NR_fanotify_mark	338
-+#define __NR_prlimit64		339
- 
- #ifdef __KERNEL__
- 
--#define NR_syscalls		337
-+#define NR_syscalls		340
- 
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/m68k/kernel/entry.S b/arch/m68k/kernel/entry.S
-index 2391bdf..6360c43 100644
---- a/arch/m68k/kernel/entry.S
-+++ b/arch/m68k/kernel/entry.S
-@@ -765,4 +765,7 @@ sys_call_table:
- 	.long sys_set_thread_area
- 	.long sys_atomic_cmpxchg_32	/* 335 */
- 	.long sys_atomic_barrier
-+	.long sys_fanotify_init
-+	.long sys_fanotify_mark
-+	.long sys_prlimit64
- 
-diff --git a/arch/m68knommu/kernel/syscalltable.S b/arch/m68knommu/kernel/syscalltable.S
-index b30b3eb..79b1ed1 100644
---- a/arch/m68knommu/kernel/syscalltable.S
-+++ b/arch/m68knommu/kernel/syscalltable.S
-@@ -355,6 +355,9 @@ ENTRY(sys_call_table)
- 	.long sys_set_thread_area
- 	.long sys_atomic_cmpxchg_32	/* 335 */
- 	.long sys_atomic_barrier
-+	.long sys_fanotify_init
-+	.long sys_fanotify_mark
-+	.long sys_prlimit64
- 
- 	.rept NR_syscalls-(.-sys_call_table)/4
- 		.long sys_ni_syscall
+I see. thanks for the info. :-)
+
 -- 
-1.7.0.4
+Regards,
+Namhyung Kim
 
-Gr{oetje,eeting}s,
 
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
