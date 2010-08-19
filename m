@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab0HSUgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 16:36:24 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44023 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab0HSUgW convert rfc822-to-8bit (ORCPT
+	id S1752877Ab0HSUh0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 16:37:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52320 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab0HSUhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 16:36:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=N2UUG/ALt6+fOoxyGAx13NCwAyHJ7LRQW+SS0TGWgPmW6Z98zAgJZFqVxYDPmNjE+E
-         FI7TxfOkh1ajgcOMbnkR+gk51yFq1/yMPMvp7MjKgb5wPyPb2NDO351iCzm0xWsL0Iqn
-         nwEz8ddrAS5VQALjnelBMN/1uxWHipJOzw/bQ=
+	Thu, 19 Aug 2010 16:37:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Nesn47Ykqt9oPg1nMrryoKVOSPwXIqRzCTDEyrqgc59UJ5oMV/bje8taVMyDcgR41
+	BhTZdjZkoqbhMPHcngw+A==
+Date: Thu, 19 Aug 2010 13:37:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] oom: fix tasklist_lock leak
+In-Reply-To: <20100819195346.5FCA.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1008191336060.18994@chino.kir.corp.google.com>
+References: <20100819194707.5FC4.A69D9226@jp.fujitsu.com> <20100819195346.5FCA.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100801074831.1099.3318.stgit@angua>
-References: <20100801074831.1099.3318.stgit@angua>
-Date: Thu, 19 Aug 2010 15:36:21 -0500
-X-Google-Sender-Auth: xc4rfO6ir3HOugm7gjuAXLBck_Y
-Message-ID: <AANLkTiny_N-UqzuVaftLj75e_b0PjsdHstH8ZKx5mw7O@mail.gmail.com>
-Subject: Re: [PATCH] of/device: Replace struct of_device with struct of_platform
-From: Timur Tabi <timur@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: sfr@canb.auug.org.au, monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
-        sparclinux@vger.kernel.org, davem@davemloft.net,
-        alsa-devel mailing list <alsa-devel@alsa-project.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 1, 2010 at 2:57 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+On Thu, 19 Aug 2010, KOSAKI Motohiro wrote:
 
->  sound/soc/fsl/mpc8610_hpcd.c                  |    4 +-
+> commit 0aad4b3124 (oom: fold __out_of_memory into out_of_memory)
+> introduced tasklist_lock leak. Then it caused following obvious
+> danger warings and panic.
+> 
+>     ================================================
+>     [ BUG: lock held when returning to user space! ]
+>     ------------------------------------------------
+>     rsyslogd/1422 is leaving the kernel with locks still held!
+>     1 lock held by rsyslogd/1422:
+>      #0:  (tasklist_lock){.+.+.+}, at: [<ffffffff810faf64>] out_of_memory+0x164/0x3f0
+>     BUG: scheduling while atomic: rsyslogd/1422/0x00000002
+>     INFO: lockdep is turned off.
+> 
+> This patch fixes it.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-This file is/was significantly rewritten for 2.6.37.  I posted a fix
-to the alsa mailing list, but it will conflict with your patch.  You
-might want to remove all changes to sound/soc/fsl from this commit.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Acked-by: David Rientjes <rientjes@google.com>
