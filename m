@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab0HSPsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:48:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61140 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab0HSPsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:48:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Date: Thu, 19 Aug 2010 17:48:51 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        john stultz <johnstul@us.ibm.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        Krzysztof Halasa <khc@pm.waw.pl>
-References: <cover.1281956490.git.richard.cochran@omicron.at> <201008191429.50008.arnd@arndb.de> <20100819152301.GB25193@ovro.caltech.edu>
-In-Reply-To: <20100819152301.GB25193@ovro.caltech.edu>
+	id S1751476Ab0HSPuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:50:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50511 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab0HSPuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:50:04 -0400
+Message-ID: <4C6D51AF.3050008@kernel.org>
+Date: Thu, 19 Aug 2010 17:45:51 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
+        tytso@mit.edu, chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
+References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com> <4C6A5780.2090100@kernel.org> <20100817140734.GA30768@redhat.com> <4C6ABE12.40705@kernel.org> <4C6D0824.3070908@ct.jp.nec.com>
+In-Reply-To: <4C6D0824.3070908@ct.jp.nec.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008191748.51819.arnd@arndb.de>
-X-Provags-ID: V02:K0:Kv+9S71V51OLauV2FvmLrd75Lp8qPym24BPqGjX4qql
- /9GIGKAehgBUD0IH5HrABBWSfblpJigRQZ5Q5r1kCOg2gaKBh0
- jnCcw3qnYjsrnvE8M2xrz2bEufAEeIqAJfP99Qqc7hsZ7zLn7g
- /ti8gIj1DISzSmwAFKBPp3DA4i3luKfF4pEUP3ZWEuEw92UmEP
- tAALl3lcVrggGqDzlvieA==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 15:49:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 August 2010, Ira W. Snyder wrote:
-> Perhaps you were thinking of the vhost example (taken from
-> drivers/vhost/Kconfig):
+Hello,
+
+On 08/19/2010 12:32 PM, Kiyoshi Ueda wrote:
+>> I see but single pending flush and steady write streams w/o saturating
+>> the mempool would be able to stall dm_wait_for_completeion(), no?  Eh
+>> well, it's a separate issue, I guess.
 > 
-> config VHOST_NET
->         tristate "Host kernel accelerator for virtio net (EXPERIMENTAL)"
->         depends on NET && EVENTFD && (TUN || !TUN) && (MACVTAP || !MACVTAP) && EXPERIMENTAL
+> Your understanding is correct, dm_wait_for_completion() for flush
+> will stall in such cases for request-based dm.
+> That's why I mentioned below in
+> https://www.redhat.com/archives/dm-devel/2010-August/msg00026.html.
 > 
-> They have a similar construct with both TUN and MACVTAP there. Perhaps
-> the parens are a necessary part of the "X || !X" syntax? Just a random
-> guess.
+>     In other words, current request-based device-mapper can't handle
+>     other requests while a flush request is in progress.
+>
+> In flush request handling, request-based dm uses dm_wait_for_completion()
+> to wait for the completion of cloned flush requests, depending on
+> the fact that there should be only flush requests in flight owning
+> to the block layer sequencing.
 
-Yes, that's the one I was thinking of.
+I see.  bio based implementation also uses dm_wait_for_completion()
+but it also has DMF_QUEUE_IO_TO_THREAD to plug all the follow up bio's
+while flush is in progress, which sucks for throughput but
+successfully avoids starvation.
 
-My mistake was that the effect is slightly different here. VHOST and TUN are
-both tristate. What we guarantee here is that if TUN is "m", VHOST cannot be "y",
-because its dependency cannot be fulfilled for y.
+> It's not a separate issue and we need to resolve it at least.
+> I'm still considering how I can fix the request-based dm.
 
-	Arnd
+Right, I thought you were talking about REQ_FLUSHes not sycnhronized
+against barrier write.  Anyways, yeah, it's a problem.  I don't think
+not being able to handle multiple flushes concurrently would be a
+major issue.  The problem is not being able to process other
+bios/requests while a flush is in progress.  All that's necessary is
+making the completion detection a bit more fine grained so that it
+counts the number of in flight flush bios/requests and completes when
+it reaches zero instead of waiting for all outstanding commands.
+Shouldn't be too hard.
+
+Thanks.
+
+-- 
+tejun
