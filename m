@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab0HSOXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 10:23:39 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49579 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753309Ab0HSOXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 10:23:38 -0400
-Message-ID: <4C6D3D5C.7010504@kernel.org>
-Date: Thu, 19 Aug 2010 16:19:08 +0200
-From: Tejun Heo <tj@kernel.org>
+	id S1753532Ab0HSOZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 10:25:24 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:17932 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab0HSOZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 10:25:20 -0400
+Message-ID: <4C6D3EED.7040703@nokia.com>
+Date: Thu, 19 Aug 2010 17:25:49 +0300
+From: Roger Quadros <roger.quadros@nokia.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Luis Rodriguez <lrodriguez@atheros.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Regression, 2.6.36-rc1] ath9k resume problem on Acer Ferrari
- One
-References: <201008190001.11342.rjw@sisk.pl> <4C6CE715.4010203@kernel.org> <201008191605.08053.rjw@sisk.pl>
-In-Reply-To: <201008191605.08053.rjw@sisk.pl>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+To: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
+	<ext-heikki.krogerus@nokia.com>
+CC: ext Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
+        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
+        "Lehtonen Markus (Nokia-MS/Helsinki)" <markus.lehtonen@nokia.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
+References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com> <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com> <20100819124042.GA15837@oksana.dev.rtsoft.ru> <20100819130937.GC4363@esdhcp041123.research.nokia.com>
+In-Reply-To: <20100819130937.GC4363@esdhcp041123.research.nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 14:22:50 +0000 (UTC)
+X-OriginalArrivalTime: 19 Aug 2010 14:25:08.0133 (UTC) FILETIME=[53190550:01CB3FAA]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 08/19/2010 04:05 PM, Rafael J. Wysocki wrote:
-> On Thursday, August 19, 2010, Tejun Heo wrote:
->> Hello, Rafael.
+On 08/19/2010 04:09 PM, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
+> On Thu, Aug 19, 2010 at 02:40:42PM +0200, ext Anton Vorontsov wrote:
+>> On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
+>>> @@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
+>>>   	spi_register_board_info(rx51_peripherals_spi_board_info,
+>>>   				ARRAY_SIZE(rx51_peripherals_spi_board_info));
+>>>   	omap2_hsmmc_init(mmc);
+>>> +	platform_device_register(&rx51_charger_device);
 >>
->> On 08/19/2010 12:01 AM, Rafael J. Wysocki wrote:
->>> While testing 2.6.36-rc1 (with a couple of fixes on top) I noticed
->>> that the ath9k driver didn't work after resume from suspend to RAM.
->>> An attempt to unload the driver using rmmod caused the BUG_ON() in
->>> kernel/workqueue.c:2844 to trigger.
+>> Maybe
 >>
->> That BUG_ON() triggers if destroy_workqueue() is called while work
->> items are still pending on the workqueue.  Can you please trigger
->> stack traces after resume and post it?
-> 
-> Do you mean sysrq-t?
-
-Yeah, I'm a bit confused regarding what's going on.  I thought the
-most likely cause is thawing failing to kick a frozen workqueue into
-working state but then flush_workqueue() which is called from
-destroy_workqueue() should have hung too, that is, unless
-flush_workqueue() is broken too.  If flush_workqueue() is not broken,
-then it could be that workqueue itself isn't at fault and works are
-being scheduled and executed fine for the workqueue ath9k is using but
-the driver doesn't work for another reason.
-
-Also, the BUG_ON() being triggered means either flush_workqueue() is
-broken or the driver is failing to stop works on the workqueue from
-being requeued before calling destroy_workqueue().  So, finding out
-the followings would be great,
-
-* While the driver isn't working, do a sysrq-t and see whether any
-  worker is executing a work for ath9k.
-
-* Repeat it several times and see whether the work is stuck or making
-  progress and/or executing on different workers.
-
-Thanks.
+>>    platform_device_register_simple("isp1704_charger", -1, NULL, 0);
+>
+> I guess it's enough in this case. Ameya, Roger, any objections?
+>
+I'm fine with the current approach. No need to re-spin.
 
 -- 
-tejun
+regards,
+-roger
