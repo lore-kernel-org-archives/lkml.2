@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab0HSWM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 18:12:58 -0400
-Received: from smtp107.sbc.mail.gq1.yahoo.com ([67.195.14.110]:43662 "HELO
-	smtp107.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752992Ab0HSWM4 (ORCPT
+	id S1753870Ab0HSWNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 18:13:07 -0400
+Received: from smtp110.sbc.mail.gq1.yahoo.com ([67.195.14.95]:45312 "HELO
+	smtp110.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753827Ab0HSWNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 18:12:56 -0400
+	Thu, 19 Aug 2010 18:13:04 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: INjN8KsVM1lqNbi3zTI.kjaRX.RlbLapTyxzSuvKukGe9Z7
- x7T5bRKWUl2D1a0imi_tl0p1fxUQP5GsCusQcrHephOX_GiycOnviue17l_P
- fmwYiN_qTWKmz5tsKC.MnthKPs6yvHN9Wnw7MJF0ngDHZYID9ZYDbu4BWV9a
- YkR2b_sROmlTUNalWxDWndYDwPut0HRaqv0X5TkNyNNogoKouP_lbh48yG89
- s_ju9R.4BL8l1tXB3515l3BQDqWYe2H2KNB1d15DWPJt3TGQ..RUseJqd0Ha
- FNr1W9LoJ7Jp_dSud78hC2uaxdKAYN2JwJCARXudMQbkTlwiuXqNoRGdlxN6
- 1Rj5DohMv8A--
+X-YMail-OSG: 8gnkHLwVM1lw1df64.9o1qbwIKngUzxWirvzVrJIHs5PrY8
+ HIPJ5KoDPjEvRozcCklJXtAMoKp.zDKG0t96P8ms8jaedxqfd1HWKQnAWLOK
+ PERlDOjFPSjwf7pAA9vkJK2is3I5oBF9TQUeDdxtnbaJ82BE0ZaI3MGNNbtp
+ 4iQUvmhACQKHmoE4vIZZEmpk508RMpMs2fcYl6vzqjPgctfEqMCEp0jq96Di
+ ghvs.BJnvVxbwsBqtvY0rAVRf6Kz8MqzQCT3.2.5XgXgykmJ5CxiuxCHp7FF
+ pgW8WarLbid7ZTcelGn3tyvvlmf3OjGJpjGA8uyQGk6xRjZDTk65y1k5D8eb
+ PA4iBjOIRPJmWMKbxkw--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -23,9 +23,9 @@ Cc: Christoph Hellwig <hch@lst.de>,
         FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/3] tcm: More cleanups for v4.0.0-rc3
-Date: Thu, 19 Aug 2010 15:12:52 -0700
-Message-Id: <1282255972-12850-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 1/3] tcm: Remove legacy transport_map_mem_to_mem()
+Date: Thu, 19 Aug 2010 15:13:01 -0700
+Message-Id: <1282255981-12876-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,40 +33,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Greetings all,
-
-Here are few more TCM cleanups that are being pushed to lio-core-2.6.git/lio-4.0.
-
-Patch #1 removes an unused struct se_mem -> struct se_mem w/ task_offset
-mapping function, patch #2 was recommended by hch now that se_obj_lun_type_t
-no longer exists, and patch #3 removes legacy usage of type 'void *' for
-struct se_lun->lun_type_ptr, and instead uses a easily grokable struct se_lun->lun_se_dev
-member for existing all struct se_lun -> struct se_device references.
-
-Thanks!
+This patch removes the legacy and unused transport_map_mem_to_mem() logic.
+This code was originally for allowing struct se_mem -> struct se_mem mapping
+with a passed task_offset, and is no longer used by anybody.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_transport.c |   97 --------------------------------
+ include/target/target_core_transport.h |    3 -
+ 2 files changed, 0 insertions(+), 100 deletions(-)
 
-Nicholas Bellinger (3):
-  tcm: Remove legacy transport_map_mem_to_mem()
-  tcm: Remove remaining code out of target_core_seobj.c
-  tcm: Remove legacy struct se_lun->lun_type_ptr
-
- drivers/target/Kbuild                        |    1 -
- drivers/target/lio-target/iscsi_target_mib.c |    8 +-
- drivers/target/target_core_alua.c            |    6 +-
- drivers/target/target_core_configfs.c        |    1 -
- drivers/target/target_core_device.c          |   86 +++++-
- drivers/target/target_core_fabric_configfs.c |    3 +-
- drivers/target/target_core_mib.c             |    8 +-
- drivers/target/target_core_seobj.c           |  214 ---------------
- drivers/target/target_core_seobj.h           |   47 ----
- drivers/target/target_core_tpg.c             |   15 +-
- drivers/target/target_core_transport.c       |  379 +++++++++++++-------------
- include/target/target_core_base.h            |    5 +-
- include/target/target_core_device.h          |    6 +
- include/target/target_core_transport.h       |   11 +-
- 14 files changed, 286 insertions(+), 504 deletions(-)
- delete mode 100644 drivers/target/target_core_seobj.c
- delete mode 100644 drivers/target/target_core_seobj.h
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 8aa4785..8e9a2b9 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -6737,103 +6737,6 @@ int transport_map_sg_to_mem(
+ 	return 0;
+ }
+ 
+-int transport_map_mem_to_mem(
+-	struct se_task *task,
+-	struct list_head *se_mem_list,
+-	void *in_mem,
+-	struct se_mem *in_se_mem,
+-	struct se_mem **out_se_mem,
+-	u32 *se_mem_cnt,
+-	u32 *task_offset)
+-{
+-	struct se_mem *se_mem = in_se_mem, *se_mem_new;
+-	u32 saved_task_offset = 0, task_size = task->task_size;
+-
+-	if (!se_mem) {
+-		printk(KERN_ERR "Invalid struct se_mem pointer\n");
+-		return -1;
+-	}
+-
+-	while (task_size) {
+-		se_mem_new = kmem_cache_zalloc(se_mem_cache, GFP_KERNEL);
+-		if (!(se_mem_new)) {
+-			printk(KERN_ERR "Unable to allocate struct se_mem\n");
+-			return -1;
+-		}
+-		INIT_LIST_HEAD(&se_mem_new->se_list);
+-
+-		if (*task_offset == 0) {
+-			se_mem_new->se_page = se_mem->se_page;
+-			se_mem_new->se_off = se_mem->se_off;
+-
+-			if (task_size >= se_mem->se_len) {
+-				se_mem_new->se_len = se_mem->se_len;
+-
+-				se_mem = list_entry(se_mem->se_list.next,
+-							struct se_mem, se_list);
+-				if (!(se_mem)) {
+-					printk(KERN_ERR "Unable to locate next"
+-							" struct se_mem\n");
+-					return -1;
+-				}
+-			} else {
+-				se_mem_new->se_len = task_size;
+-
+-				task_size -= se_mem_new->se_len;
+-				if (!(task_size)) {
+-					*task_offset = (se_mem_new->se_len +
+-							saved_task_offset);
+-					goto next;
+-				}
+-			}
+-
+-			if (saved_task_offset)
+-				*task_offset = saved_task_offset;
+-		} else {
+-			se_mem_new->se_page = se_mem->se_page;
+-			se_mem_new->se_off = (*task_offset + se_mem->se_off);
+-
+-			if ((se_mem->se_len - *task_offset) > task_size) {
+-				se_mem_new->se_len = task_size;
+-
+-				task_size -= se_mem_new->se_len;
+-				if (!(task_size)) {
+-					*task_offset += se_mem_new->se_len;
+-					goto next;
+-				}
+-			} else {
+-				se_mem_new->se_len = (se_mem->se_len -
+-							*task_offset);
+-
+-				se_mem = list_entry(se_mem->se_list.next,
+-							struct se_mem, se_list);
+-				if (!(se_mem)) {
+-					printk(KERN_ERR "Unable to locate next"
+-							" struct se_mem\n");
+-					return -1;
+-				}
+-			}
+-
+-			saved_task_offset = *task_offset;
+-			*task_offset = 0;
+-		}
+-		task_size -= se_mem_new->se_len;
+-next:
+-		list_add_tail(&se_mem_new->se_list, se_mem_list);
+-		(*se_mem_cnt)++;
+-
+-		DEBUG_MEM2("task[%u] - se_mem_cnt(%u) se_page(%p) se_off(%u)"
+-			" se_len(%u)\n", task->task_no, *se_mem_cnt,
+-			se_mem_new->se_page, se_mem_new->se_off,
+-			se_mem->se_len);
+-		DEBUG_MEM2("task[%u] - Reducing task_size to(%u)\n",
+-			task->task_no, task_size);
+-	}
+-	*out_se_mem = se_mem;
+-
+-	return 0;
+-}
+-
+ /*	transport_map_mem_to_sg():
+  *
+  *
+diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
+index 9a04033..fefe20b 100644
+--- a/include/target/target_core_transport.h
++++ b/include/target/target_core_transport.h
+@@ -280,9 +280,6 @@ extern int transport_generic_get_mem(struct se_cmd *, u32, u32);
+ extern u32 transport_calc_sg_num(struct se_task *, struct se_mem *, u32);
+ extern int transport_map_sg_to_mem(struct se_cmd *, struct list_head *,
+ 					void *, u32 *);
+-extern int transport_map_mem_to_mem(struct se_task *, struct list_head *,
+-					void *, struct se_mem *,
+-					struct se_mem **, u32 *, u32 *);
+ extern int transport_map_mem_to_sg(struct se_task *, struct list_head *,
+ 					void *, struct se_mem *,
+ 					struct se_mem **, u32 *, u32 *);
+-- 
+1.5.6.5
 
