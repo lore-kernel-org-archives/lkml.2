@@ -1,75 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525Ab0HSC2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 22:28:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60864 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab0HSC2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 22:28:11 -0400
-Date: Wed, 18 Aug 2010 22:27:42 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Len Brown <len.brown@intel.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Andy Grover <andy.grover@oracle.com>
-Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
- and touch_softlockup_watchdog
-Message-ID: <20100819022742.GI4879@redhat.com>
-References: <20100817025954.GA12366@nowhere>
- <AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
- <20100817083945.GA12022@swordfish.minsk.epam.com>
- <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
- <20100817092407.GB12022@swordfish.minsk.epam.com>
- <AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
- <20100817103948.GA5352@swordfish.minsk.epam.com>
- <20100817131320.GX4879@redhat.com>
- <20100818024802.GA24748@nowhere>
- <20100818130156.43a183d9.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818130156.43a183d9.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751699Ab0HSC2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 22:28:24 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8451 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600Ab0HSC2V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 22:28:21 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6078"; a="51500925"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arch@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-s390@vger.kernel.org, linux-parisc@vger.kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Helge Deller <deller@gmx.de>
+Subject: [PATCHv2 2/1] Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+Date: Wed, 18 Aug 2010 19:28:18 -0700
+Message-Id: <1282184898-30599-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.2.1.66.g0d0ba
+In-Reply-To: <201008181428.45029.arnd@arndb.de>
+References: <201008181428.45029.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 01:01:56PM -0700, Andrew Morton wrote:
-> The surprise new requirement that touch_nmi_watchdog() be called from
-> non-preemptible code does seem to make sense IMO.  It's hard to see why
-> anyone would be touching the watchdog unless he's spinning in irqs-off
-> code.  Except, of course, when we have a utility function which can be
-> called from wither irqs-on or irqs-off: acpi_os_stall().
-> 
-> That being said, it's not good to introduce new API requirements by
-> accident!  An audit of all callers should first be performed, at least.
-> 
-> 
-> The surprise new requirement that touch_softlockup_watchdog() be called
-> from non-preemptible code doesn't make sense IMO.  If I have a piece of
-> code in the kernel which I expect to sit in TASK_UNINTERRUPTIBLE state
-> for three minutes waiting for my egg to boil, I should be able to do
-> that and I should be able to touch the softlockup detector without
-> needing to go non-preemptible.
+The help text for this config is duplicated across the x86,
+parisc, s390, and arm Kconfig.debug files. Arnd Bergman noted
+that the help text was slightly misleading and should be fixed to
+state that enabling this option isn't a problem when using pre 4.4
+gcc.
 
-Wow.  So after re-reading what the original touch_*_watchdog code did and what I
-copied to kernel/watchdog.c, I'm a little embarrassed on how I managed to
-mangle the internals of both those functions.
+To simplify the rewording, consolidate the text into
+lib/Kconfig.debug and modify it there to be more explicit about
+when you should say N to this config.
 
-While the idea is the same, the semantics are clearly different.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: x86@kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-s390@vger.kernel.org
+Cc: linux-parisc@vger.kernel.org
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Helge Deller <deller@gmx.de>
+---
 
-touch_nmi_watchdog had a for_each_cpu_present loop, which means it didn't
-have to deal with the preempt issue.
+This depends on a patch sent to the arm mailing list adding
+CONFIG_DEBUG_STRICT_USER_COPY_CHECKS to ARM.
 
-touch_softlockup_watchdog used __raw_get_cpu_var to excuse itself from
-dealing with the preempt issue.
+LKML: http://lkml.org/lkml/2010/8/17/535
 
-I'll put together a patch that brings those functions back in line with
-what they used to be.  Sorry for the trouble.
+ arch/arm/Kconfig.debug    |   15 ++-------------
+ arch/parisc/Kconfig.debug |   15 ++-------------
+ arch/s390/Kconfig.debug   |   14 ++------------
+ arch/x86/Kconfig.debug    |   15 ++-------------
+ lib/Kconfig.debug         |   16 ++++++++++++++++
+ 5 files changed, 24 insertions(+), 51 deletions(-)
 
-Cheers,
-Don
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 64e33b8..326c7f1 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -128,18 +128,7 @@ config DEBUG_S3C_UART
+ 	  The uncompressor code port configuration is now handled
+ 	  by CONFIG_S3C_LOWLEVEL_UART_PORT.
+ 
+-config DEBUG_STRICT_USER_COPY_CHECKS
+-	bool "Strict user copy size checks"
+-	depends on DEBUG_KERNEL && !TRACE_BRANCH_PROFILING
+-	help
+-	  Enabling this option turns a certain set of sanity checks for user
+-	  copy operations into compile time errors.
+-
+-	  The copy_from_user() etc checks are there to help test if there
+-	  are sufficient security checks on the length argument of
+-	  the copy operation, by having gcc prove that the argument is
+-	  within bounds.
+-
+-	  If unsure, or if you run an older (pre 4.4) gcc, say N.
++config ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
++	def_bool y
+ 
+ endmenu
+diff --git a/arch/parisc/Kconfig.debug b/arch/parisc/Kconfig.debug
+index 7305ac8..b13e8d0 100644
+--- a/arch/parisc/Kconfig.debug
++++ b/arch/parisc/Kconfig.debug
+@@ -12,18 +12,7 @@ config DEBUG_RODATA
+          portion of the kernel code won't be covered by a TLB anymore.
+          If in doubt, say "N".
+ 
+-config DEBUG_STRICT_USER_COPY_CHECKS
+-	bool "Strict copy size checks"
+-	depends on DEBUG_KERNEL && !TRACE_BRANCH_PROFILING
+-	---help---
+-	  Enabling this option turns a certain set of sanity checks for user
+-	  copy operations into compile time failures.
+-
+-	  The copy_from_user() etc checks are there to help test if there
+-	  are sufficient security checks on the length argument of
+-	  the copy operation, by having gcc prove that the argument is
+-	  within bounds.
+-
+-	  If unsure, or if you run an older (pre 4.4) gcc, say N.
++config ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
++	def_bool y
+ 
+ endmenu
+diff --git a/arch/s390/Kconfig.debug b/arch/s390/Kconfig.debug
+index 45e0c61..6df8e30 100644
+--- a/arch/s390/Kconfig.debug
++++ b/arch/s390/Kconfig.debug
+@@ -6,17 +6,7 @@ config TRACE_IRQFLAGS_SUPPORT
+ 
+ source "lib/Kconfig.debug"
+ 
+-config DEBUG_STRICT_USER_COPY_CHECKS
+-	bool "Strict user copy size checks"
+-	---help---
+-	  Enabling this option turns a certain set of sanity checks for user
+-	  copy operations into compile time warnings.
+-
+-	  The copy_from_user() etc checks are there to help test if there
+-	  are sufficient security checks on the length argument of
+-	  the copy operation, by having gcc prove that the argument is
+-	  within bounds.
+-
+-	  If unsure, or if you run an older (pre 4.4) gcc, say N.
++config ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
++	def_bool y
+ 
+ endmenu
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 7508508..d24afa3 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -285,18 +285,7 @@ config OPTIMIZE_INLINING
+ 
+ 	  If unsure, say N.
+ 
+-config DEBUG_STRICT_USER_COPY_CHECKS
+-	bool "Strict copy size checks"
+-	depends on DEBUG_KERNEL && !TRACE_BRANCH_PROFILING
+-	---help---
+-	  Enabling this option turns a certain set of sanity checks for user
+-	  copy operations into compile time failures.
+-
+-	  The copy_from_user() etc checks are there to help test if there
+-	  are sufficient security checks on the length argument of
+-	  the copy operation, by having gcc prove that the argument is
+-	  within bounds.
+-
+-	  If unsure, or if you run an older (pre 4.4) gcc, say N.
++config ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
++	def_bool y
+ 
+ endmenu
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 9e06b7f..bbb1ac5 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1013,6 +1013,22 @@ config SYSCTL_SYSCALL_CHECK
+ 	  to properly maintain and use. This enables checks that help
+ 	  you to keep things correct.
+ 
++config DEBUG_STRICT_USER_COPY_CHECKS
++	bool "Strict user copy size checks"
++	depends on ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
++	depends on DEBUG_KERNEL && !TRACE_BRANCH_PROFILING
++	help
++	  Enabling this option turns a certain set of sanity checks for user
++	  copy operations into compile time warnings/errors.
++
++	  The copy_from_user() etc checks are there to help test if there
++	  are sufficient security checks on the length argument of
++	  the copy operation, by having gcc prove that the argument is
++	  within bounds.
++
++	  If unsure, or if you run an older (pre 4.4) gcc where this option
++	  is a no-op, say N.
++
+ source mm/Kconfig.debug
+ source kernel/trace/Kconfig
+ 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
