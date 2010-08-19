@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab0HSW6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 18:58:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43359 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283Ab0HSW6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 18:58:44 -0400
-Date: Thu, 19 Aug 2010 22:58:03 GMT
-From: tip-bot for Borislav Petkov <bp@amd64.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        bp@amd64.org, stable@kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        bp@amd64.org, borislav.petkov@amd.com
-In-Reply-To: <20100819181029.GC17171@aftab>
-References: <20100819181029.GC17171@aftab>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, hotplug: Serialize CPU hotplug to avoid bringup concurrency issues
-Message-ID: <tip-d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11@git.kernel.org>
-Git-Commit-ID: d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11
-X-Mailer: tip-git-log-daemon
+	id S1752317Ab0HSXCH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 19:02:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45824 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab0HSXCF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 19:02:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=OGZEqsNPajCvo7HoMa5PzabHfzkHAPGlTRn54ABvZPY2ScHJsP5E4A/NmvYdH4B106
+         Kib5aHN72eFp1Kdchk4JFzeCQcWEV7JSg5hXFAHhODgT7FbZsKpHqHqyofUboWKifzrA
+         kbJqKnyq6HXvEmD4QK2aelHdnUQgtSBOlU1PM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 22:58:04 +0000 (UTC)
+In-Reply-To: <20100819144620.e078fbbe.akpm@linux-foundation.org>
+References: <281434.37339.qm@web65616.mail.ac4.yahoo.com> <20100819144620.e078fbbe.akpm@linux-foundation.org>
+From: Stephen Pape <srpape@gmail.com>
+Date: Thu, 19 Aug 2010 19:01:44 -0400
+Message-ID: <AANLkTi=qVaz68ozjV-BtFCZBi6JvfM-wmqugYzoVfh1e@mail.gmail.com>
+Subject: Re: [PATCH 001/001] USB: ftdi_sio: fix endianess of max packet size
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11
-Gitweb:     http://git.kernel.org/tip/d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11
-Author:     Borislav Petkov <bp@amd64.org>
-AuthorDate: Thu, 19 Aug 2010 20:10:29 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 19 Aug 2010 14:47:43 -0700
+I guess you're right about it not being used very often on big endian machines.
 
-x86, hotplug: Serialize CPU hotplug to avoid bringup concurrency issues
+The original bug report is here: https://dev.openwrt.org/ticket/7365
 
-When testing cpu hotplug code on 32-bit we kept hitting the "CPU%d:
-Stuck ??" message due to multiple cores concurrently accessing the
-cpu_callin_mask, among others.
+>From the user's point of view, priv->max_packet_size would get set to
+0x0020 instead of 0x0200, so a message would print saying "Setting
+MaxPacketSize 2" when it should be 512. After that you couldn't get
+any data from the serial port, because priv->max_packet_size is used
+in other sections of the code.
 
-Since these codepaths are not protected from concurrent access due to
-the fact that there's no sane reason for making an already complex
-code unnecessarily more complex - we hit the issue only when insanely
-switching cores off- and online - serialize hotplugging cores on the
-sysfs level and be done with it.
+-Stephen
 
-[ v2.1: fix !HOTPLUG_CPU build ]
-
-Cc: <stable@kernel.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20100819181029.GC17171@aftab>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig          |    5 +++++
- arch/x86/kernel/smpboot.c |   19 +++++++++++++++++++
- 2 files changed, 24 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a84fc34..ac7827f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -245,6 +245,11 @@ config ARCH_HWEIGHT_CFLAGS
- 
- config KTIME_SCALAR
- 	def_bool X86_32
-+
-+config ARCH_CPU_PROBE_RELEASE
-+	def_bool y
-+	depends on HOTPLUG_CPU
-+
- source "init/Kconfig"
- source "kernel/Kconfig.freezer"
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index abf4a86..8b3bfc4 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -90,6 +90,25 @@ DEFINE_PER_CPU(int, cpu_state) = { 0 };
- static DEFINE_PER_CPU(struct task_struct *, idle_thread_array);
- #define get_idle_for_cpu(x)      (per_cpu(idle_thread_array, x))
- #define set_idle_for_cpu(x, p)   (per_cpu(idle_thread_array, x) = (p))
-+
-+/*
-+ * We need this for trampoline_base protection from concurrent accesses when
-+ * off- and onlining cores wildly.
-+ */
-+static DEFINE_MUTEX(x86_cpu_hotplug_driver_mutex);
-+
-+void cpu_hotplug_driver_lock()
-+{
-+        mutex_lock(&x86_cpu_hotplug_driver_mutex);
-+}
-+
-+void cpu_hotplug_driver_unlock()
-+{
-+        mutex_unlock(&x86_cpu_hotplug_driver_mutex);
-+}
-+
-+ssize_t arch_cpu_probe(const char *buf, size_t count) { return -1; }
-+ssize_t arch_cpu_release(const char *buf, size_t count) { return -1; }
- #else
- static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- #define get_idle_for_cpu(x)      (idle_thread_array[(x)])
+On Thu, Aug 19, 2010 at 5:46 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+> On Wed, 18 Aug 2010 07:14:37 -0700 (PDT)
+> Michael Wileczka <mikewileczka@yahoo.com> wrote:
+>
+> > From: Michael Wileczka <mikewileczka@yahoo.com>
+> >
+> > The USB max packet size (always little-endian) was not being byte swapped on big-endian systems.
+> > Created with 2.6.32.16
+> > Applicable since [USB: ftdi_sio: fix hi-speed device packet size calculation] approx 2.6.31
+> >
+> > Signed-off-by: Michael Wileczka <mikewileczka@yahoo.com>
+> > ---
+> > --- a/drivers/usb/serial/ftdi_sio.c
+> > +++ b/drivers/usb/serial/ftdi_sio.c
+> > @@ -1397,7 +1397,7 @@ static void ftdi_set_max_packet_size(str
+> >       }
+> >
+> >       /* set max packet size based on descriptor */
+> > -     priv->max_packet_size = ep_desc->wMaxPacketSize;
+> > +     priv->max_packet_size = le16_to_cpu(ep_desc->wMaxPacketSize);
+> >
+> >       dev_info(&udev->dev, "Setting MaxPacketSize %d\n", priv->max_packet_size);
+> >  }
+>
+> So I guess nobody noticed this because the driver deosn't get used on
+> big-endian machines a lot?
+>
+> What are the user-visible effects of this bug?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
