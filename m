@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab0HSOfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 10:35:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36320 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab0HSOfi convert rfc822-to-8bit (ORCPT
+	id S1753537Ab0HSOii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 10:38:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58816 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab0HSOif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 10:35:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=Ras5H/12BodE9+GI7mItt7qrK7BBhfRer8FxhON2bURdrSnpN/3dtlwcaJptQ2Vw1S
-         ey1W4apOIjeJPGqMyjsHLTeORjfYAROY+wbitXZmHcHXywAmbf8gaeLqG1zxbnDPQx+Z
-         uGaK6AJ/g15JA31JYzRFzhDYFilGhE6LypeSw=
+	Thu, 19 Aug 2010 10:38:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH 0/4] initramfs: remove sparse warnings
+Date: Thu, 19 Aug 2010 16:38:23 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+References: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201008190001.11342.rjw@sisk.pl>
-References: <201008190001.11342.rjw@sisk.pl>
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Date: Wed, 18 Aug 2010 18:00:47 -0700
-X-Google-Sender-Auth: Ds4KCNnrA-hxGTeb0m3mUXeBB9E
-Message-ID: <AANLkTi=S3JE=1J9xQtBAN5hHTqGSfohi4vL82iZHMWp+@mail.gmail.com>
-Subject: Re: [Regression, 2.6.36-rc1] ath9k resume problem on Acer Ferrari One
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008191638.23248.arnd@arndb.de>
+X-Provags-ID: V02:K0:r+2shXYBGzhw1B5qug/Cx7JTQqAkwPQ0H2GqeK5nvRO
+ nvRZDqYxJXqq2wxJ6RkbiVDjlm4YauC4kGdCkM4u8CTTl1RCAk
+ SoP/Gn8OjEoY7t9xGgs8MFsad3f4N5gMj6fHocCzEIWJhjhZqK
+ Bn5F4jfnwkAzVfX33iVCFSgcwJY4AmqnZIQb3TUpMo/apVnXQu
+ tIM4/tMSG553nrbsan1oA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 3:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Hi,
->
-> While testing 2.6.36-rc1 (with a couple of fixes on top)
+On Thursday 19 August 2010, Namhyung Kim wrote:
+> This patchset removes most of sparse warnings in init/initramfs.c.
+> Current implementation of initramfs relies on syscall service rountins heavily
+> so it requires many of arguments to be __user address space pointers but, in
+> most cases, were missing proper markups. This patchset tries to fix those at
+> a minimum change.
 
-Which couple of fixes?
+I'm skeptical about this, you are adding obviously incorrect annotations
+to the code to make something work that was written without the awareness
+for address spaces.
 
-> I noticed that the ath9k
-> driver didn't work after resume from suspend to RAM.
+A better way would be to call path_lookup or kern_path to look up the
+path and pass that to a lower-level file I/O function.
 
-To rule out if its an ath9k issue you can try
-compat-wireless-2.6.36-rc1 from here:
-
-http://wireless.kernel.org/en/users/Download/stable/
-
-and install it on an older kernel, you can use ./scripts/driver-select
-to only enable ath9k to compile.
-
-I've been using pm-suspend on this release for a few days now without
-any issue but I am using an AR9003 chipset. What chipset are you
-using? Can you provide the dmesg output upon module load?
-
->  An attempt to unload the
-> driver using rmmod caused the BUG_ON() in kernel/workqueue.c:2844 to trigger.
-
-That's a bug, a regression likely.
-
-> I wonder if that regression is a result of the recent workqueue changes?
-
-Yeah very likely.
-
-  Luis
+	Arnd
