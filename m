@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab0HSIPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 04:15:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36711 "EHLO hera.kernel.org"
+	id S1750999Ab0HSIYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 04:24:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449Ab0HSIPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 04:15:48 -0400
-Message-ID: <4C6CE715.4010203@kernel.org>
-Date: Thu, 19 Aug 2010 10:11:01 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1750715Ab0HSIYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 04:24:18 -0400
+Message-ID: <4C6CEA20.5010802@redhat.com>
+Date: Thu, 19 Aug 2010 10:24:00 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Luis Rodriguez <lrodriguez@atheros.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Regression, 2.6.36-rc1] ath9k resume problem on Acer Ferrari
- One
-References: <201008190001.11342.rjw@sisk.pl>
-In-Reply-To: <201008190001.11342.rjw@sisk.pl>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 08:14:40 +0000 (UTC)
+To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+CC: Dustin Kirkland <kirkland@canonical.com>,
+        ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ecryptfs: properly mark init functions
+References: <4C6AA995.6040008@redhat.com> <20100819002836.GA8552@boomer>
+In-Reply-To: <20100819002836.GA8552@boomer>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
+On 08/19/2010 02:28 AM, Tyler Hicks wrote:
+> On Tue Aug 17, 2010 at 05:24:05PM +0200, Jerome Marchand <jmarchan@redhat.com> wrote:
+>>
+>> Some ecryptfs init functions are not prefixed by __init and thus not
+>> freed after initialization. This patch saved about 1kB in ecryptfs
+>> module.
+>>
+>> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+>> ---
+> 
+> Thanks Jerome - We could also get away with marking
+> ecryptfs_init_kmem_caches() and do_sysfs_registration() with __init,
+> right?
+> 
+> Tyler
+> 
 
-On 08/19/2010 12:01 AM, Rafael J. Wysocki wrote:
-> While testing 2.6.36-rc1 (with a couple of fixes on top) I noticed
-> that the ath9k driver didn't work after resume from suspend to RAM.
-> An attempt to unload the driver using rmmod caused the BUG_ON() in
-> kernel/workqueue.c:2844 to trigger.
+I guess we could. But it doesn't really matter, these are static functions which
+are called from only one place, so they're inlined anyway. I don't know what the
+convention is in such case.
 
-That BUG_ON() triggers if destroy_workqueue() is called while work
-items are still pending on the workqueue.  Can you please trigger
-stack traces after resume and post it?
-
-Thanks.
-
--- 
-tejun
+Jérôme
