@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab0HSPHY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:07:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752304Ab0HSPHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:07:22 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100819220338.5FD5.A69D9226@jp.fujitsu.com>
-References: <20100819220338.5FD5.A69D9226@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: dhowells@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: oom: __task_cred() need rcu_read_lock()
-Date: Thu, 19 Aug 2010 16:06:34 +0100
-Message-ID: <7682.1282230394@redhat.com>
+	id S1753911Ab0HSPIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:08:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45995 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab0HSPID convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:08:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=EJW9hScAsldkN34h5yT7tIDS0DYPE/MTj2nhP3dGHksbGK/kb0EEISdatQMe8daZYy
+         oPkV7UYZg7Qcopvs7t9qX+zqv2KIaQeIE4BGCxPbZAHK2XBUsmM/KghdOn7VP3u7wQJt
+         NrLRx5bY7rqN7CkW+8x3XsEwyjzD4caLaFbv8=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: trapdoor6@gmail.com
+Subject: Re: [REGRESSION] [SUSPEND] Opps during suspend to disk (probably also during to ram)
+Date: Thu, 19 Aug 2010 17:07:51 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1; KDE/4.4.5; i686; ; )
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201008182102.03201.maciej.rutecki@gmail.com> <AANLkTik3S91w+92rz-KdHd_U=yfuSPbDWWhD_Vu_rDR9@mail.gmail.com> <AANLkTik4=_3wSNpkfqssWsmG_yCYOPFsA-cMDBaVU4BB@mail.gmail.com>
+In-Reply-To: <AANLkTik4=_3wSNpkfqssWsmG_yCYOPFsA-cMDBaVU4BB@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008191707.52057.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On środa, 18 sierpnia 2010 o 23:27:14 trapDoor wrote:
 
-> dump_tasks() can call __task_cred() safely because we are holding
-> tasklist_lock. but rcu lock validator don't have enough knowledge and
-> it makes following annoying warning.
+> 
+> Maciej,
+> Just FYI I have updated the bugzilla entry
+> (https://bugzilla.kernel.org/show_bug.cgi?id=16615) with relevant
+> details.
 
-No, it can't.  The tasklist_lock is not protection against the creds changing
-on another CPU.
+Patch works also on my machine, but I found another problem [1].
 
-David
+Thanks!
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
+
+[1] https://bugzilla.kernel.org/show_bug.cgi?id=16629
