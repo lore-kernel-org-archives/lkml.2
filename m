@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab0HSN7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 09:59:35 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54030 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab0HSN7c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 09:59:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QTOk9PtIqRz4w/iv9IdHksihTZOEy4nm+QujCwmptn2uylLAHp23NL9sCcXqmcNC6M
-         E8r/LAA7cV0WVClYtXAKedxMRHKUZcKihz+lcze1BV8dt0l/FMK1mRlX69fHwKUBeDhS
-         q85Mpngzf/pSwCOYvfJ/GZW+v3oxz2gy2+sTY=
+	id S1753380Ab0HSOGJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 10:06:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54677 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503Ab0HSOGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 10:06:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [Regression, 2.6.36-rc1] ath9k resume problem on Acer Ferrari One
+Date: Thu, 19 Aug 2010 16:05:07 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Luis Rodriguez <lrodriguez@atheros.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <201008190001.11342.rjw@sisk.pl> <4C6CE715.4010203@kernel.org>
+In-Reply-To: <4C6CE715.4010203@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100818172627.7e38969f@varda>
-References: <20100818151857.GA6188@barrios-desktop>
-	<20100818172627.7e38969f@varda>
-Date: Thu, 19 Aug 2010 09:54:49 +0900
-Message-ID: <AANLkTimxbJQ7+cJ20x1Bcm=1xk_JgMANUQDFn-pJ9jZa@mail.gmail.com>
-Subject: Re: android-kernel memory reclaim x20 boost?
-From: Minchan Kim <minchan.kim@gmail.com>
-To: =?ISO-8859-1?Q?Alejandro_Riveira_Fern=E1ndez?= <ariveira@gmail.com>
-Cc: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        swetland@google.com, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008191605.08053.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 12:26 AM, Alejandro Riveira Fernández
-<ariveira@gmail.com> wrote:
-> El Thu, 19 Aug 2010 00:18:57 +0900
-> Minchan Kim <minchan.kim@gmail.com> escribió:
->
->> Hello Android forks,
-> [ ... ]
->>
->> I saw the advertisement phrase in this[1].
->>
->> "Kernel Memory Management Boost: Improved memory reclaim by up to 20x,
->> which results in faster app switching and smoother performance
->> on memory-constrained devices."
->>
->> But I can't find any code for it in android kernel git tree.
->
->  Maybe the enhancements are on the Dalvik VM (shooting in the dark here)
+On Thursday, August 19, 2010, Tejun Heo wrote:
+> Hello, Rafael.
+> 
+> On 08/19/2010 12:01 AM, Rafael J. Wysocki wrote:
+> > While testing 2.6.36-rc1 (with a couple of fixes on top) I noticed
+> > that the ath9k driver didn't work after resume from suspend to RAM.
+> > An attempt to unload the driver using rmmod caused the BUG_ON() in
+> > kernel/workqueue.c:2844 to trigger.
+> 
+> That BUG_ON() triggers if destroy_workqueue() is called while work
+> items are still pending on the workqueue.  Can you please trigger
+> stack traces after resume and post it?
 
-Thanks.
-Android guys! Could you confirm this?
+Do you mean sysrq-t?
 
-
--- 
-Kind regards,
-Minchan Kim
+Rafael
