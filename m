@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab0HSP5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:57:22 -0400
-Received: from xenotime.net ([72.52.115.56]:41616 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751445Ab0HSP5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:57:20 -0400
-Date: Thu, 19 Aug 2010 08:57:10 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel-doc: be case insensitive when removing
- attributes
-Message-Id: <20100819085710.fe790810.rdunlap@xenotime.net>
-In-Reply-To: <1282227222.4507.8.camel@jlt3.sipsolutions.net>
-References: <1282227222.4507.8.camel@jlt3.sipsolutions.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1751986Ab0HSP7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:59:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49280 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751101Ab0HSP7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:59:20 -0400
+Subject: Re: [PATCH] percpu: Fix memory leak from percpu_init_late()
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4C6D4439.3080007@kernel.org>
+References: <4C6D4439.3080007@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Thu, 19 Aug 2010 16:59:14 +0100
+Message-ID: <1282233554.20948.8.camel@e102109-lin.cambridge.arm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Aug 2010 15:59:15.0462 (UTC) FILETIME=[792B0A60:01CB3FB7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Aug 2010 16:13:42 +0200 Johannes Berg wrote:
-
-> From: Johannes Berg <johannes.berg@intel.com>
+On Thu, 2010-08-19 at 15:48 +0100, Tejun Heo wrote:
+> On 08/19/2010 04:49 PM, Catalin Marinas wrote:
+> > The chunk->map memory block allocated in percpu_init_late() (as of
+> > commit 099a19d9) is later overridden in pcpu_extend_area_map(). The
+> > patch frees this existing block in the latter function. Found by
+> > kmemleak.
+> >
+> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> > Cc: Tejun Heo <tj@kernel.org>
 > 
-> There are valid attributes that could have upper
-> case letters, but we still want to remove, like
-> for example
-> 	__attribute__((aligned(NETDEV_ALIGN)))
-> as encountered in the wireless code.
-> 
-> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-> ---
-> I thought we did this before? Bit confused now :)
-
-I have a similar patch, without patch description & signoff,
-so maybe it was from irc.  Oh, and it's in a different script location.
-
-@@ -1426,6 +1426,7 @@ sub dump_struct($$) {
- 	$members =~ s/kmemcheck_bitfield_.*?;//gos;
- 	# strip attributes
- 	$members =~ s/__aligned\s*\(\d+\)//gos;
-+	$members =~ s/__attribute__\s*\(\([a-zA-Z,_()\s\*]*\)\)//gos;
-
-
-If yours (below) does what is needed, that's fine with me.
-
->  scripts/kernel-doc |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- wireless-testing.orig/scripts/kernel-doc	2010-08-19 16:11:40.000000000 +0200
-> +++ wireless-testing/scripts/kernel-doc	2010-08-19 16:11:45.000000000 +0200
-> @@ -1679,7 +1679,7 @@ sub check_sections($$$$$$) {
->  		foreach $px (0 .. $#prms) {
->  			$prm_clean = $prms[$px];
->  			$prm_clean =~ s/\[.*\]//;
-> -			$prm_clean =~ s/__attribute__\s*\(\([a-z,_\*\s\(\)]*\)\)//;
-> +			$prm_clean =~ s/__attribute__\s*\(\([a-z,_\*\s\(\)]*\)\)//i;
->  			# ignore array size in a parameter string;
->  			# however, the original param string may contain
->  			# spaces, e.g.:  addr[6 + 2]
+> Patch already pending
 > 
 > 
-> --
+> http://git.kernel.org/?p=linux/kernel/git/tj/percpu.git;a=commit;h=206c53730b8b1707becca7a868ea8d14ebee24d2
 
+Great, thanks, I'm dropping mine.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Catalin
+
