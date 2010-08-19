@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab0HSIwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 04:52:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10737 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964Ab0HSIwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 04:52:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,232,1280732400"; 
-   d="scan'208";a="829658621"
-Subject: Re: hackbench regression with 2.6.36-rc1
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, alex.shi@intel.com,
-        Pavel Emelyanov <xemul@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <m1lj842nph.fsf@fess.ebiederm.org>
-References: <1282112318.21202.8.camel@ymzhang.sh.intel.com>
-	 <m1lj842nph.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 19 Aug 2010 16:54:20 +0800
-Message-Id: <1282208060.2182.34.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1751939Ab0HSIxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 04:53:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51962 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab0HSIxw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 04:53:52 -0400
+Date: Thu, 19 Aug 2010 04:53:49 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Mingming Cao <cmm@us.ibm.com>, Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
+Message-ID: <20100819085349.GA8782@infradead.org>
+References: <4BE02C45.6010608@redhat.com>
+ <1273002566.3755.10.camel@mingming-laptop>
+ <20100629205102.GM15515@tux1.beaverton.ibm.com>
+ <20100805164008.GH2901@thunk.org>
+ <20100805164504.GI2901@thunk.org>
+ <20100806070424.GD2109@tux1.beaverton.ibm.com>
+ <20100809195324.GG2109@tux1.beaverton.ibm.com>
+ <20100809210723.GA28171@infradead.org>
+ <20100816161433.GK2109@tux1.beaverton.ibm.com>
+ <20100819020734.GL2109@tux1.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100819020734.GL2109@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 03:56 -0700, Eric W. Biederman wrote:
-> "Zhang, Yanmin" <yanmin_zhang@linux.intel.com> writes:
-> 
-> > Comparing with 2.6.35's result, hackbench (thread mode) has about
-> > 80% regression on dual-socket Nehalem machine and about 90% regression
-> > on 4-socket Tigerton machines.
-> 
-> That seems unfortunate.  
+On Wed, Aug 18, 2010 at 07:07:34PM -0700, Darrick J. Wong wrote:
+> Oddly, I ran the entire suite of tests against a larger set of machines, and
+> with Tejun's RFC patchset I didn't see nearly as much of an improvement.  I
+> have been trying to put together a new tree based on "replace barrier with
+> sequenced flush" and Christoph's "explicitly flush/FUA" patch sets, though I've
+> gotten lost in the weeds. :(
 
-> Do you only show a regression in the pthread
-> hackbench test?
-Yes.
+Tejun's patches don't allow concurrent cache flushes to happen, while
+my patch did.  Tejun said there are drivers that can't handly empty
+flushes with a bio attached, making this nessecary.   
 
->   Do you show a regression when you use pipes?
-No.
+Tejun, any idea what drivers that would be?
 
-> 
-> Does the size of the regression very based on the number of loop
-> iterations?
-No. I tried 1000 and get the similar regression ratio.
-I choose a large 2000 loop number because I want to get a stable result.
+> I also experienced some sort of crash with Tejun's relaxed barrier patch on one
+> of my systems.  I was hitting the BUG_ON in drivers/scsi/scsi_lib.c, line 1115.
 
-It's easy to reproduce it. We found it almost on all our machines.
-
->   I ask because it appears that on the last message the
-> sender will exit necessitating that the receiver put the senders pid.
-> Which should be atypical.
-I don't agree on that. With hackbench, sender would send loops*receiver_num_per_group
-messages before exiting.
-In addition, 'perf top' shows put_pid is the hottest function in the beginning
-after I start hackbench. 
-
-> 
-> > Command to start hackbench:
-> > #./hackbench 100 thread 2000
-> >
-> > process mode has no such regression.
-> >
-> > Profiling shows:
-> > #perf top
-> >              samples  pcnt function                 DSO
-> >              _______ _____ ________________________ ________________________
-> >
-> >             74415.00 29.9% put_pid                  [kernel.kallsyms]       
-> >             38395.00 15.4% unix_stream_recvmsg      [kernel.kallsyms]       
-> >             34877.00 14.0% unix_stream_sendmsg      [kernel.kallsyms]       
-> >             25204.00 10.1% pid_vnr                  [kernel.kallsyms]       
-> >             21864.00  8.8% unix_scm_to_skb          [kernel.kallsyms]       
-> >             13637.00  5.5% cred_to_ucred            [kernel.kallsyms]       
-> >              6520.00  2.6% unix_destruct_scm        [kernel.kallsyms]       
-> >              4731.00  1.9% sock_alloc_send_pskb     [kernel.kallsyms]       
-> >
-> >
-> > With 2.6.35, perf doesn't show put_pid/pid_NR.
-> 
-> Yes.  2.6.35 is imperfect and can report the wrong pid in some
-> circumstances.  I am surprised nothing related to the reference count on
-> struct cred does not show up in your profiling traces.
-> 
-
-> You are performing statistical sampling so I don't believe the
-> percentage of hits per function is the same as the percentage of
-> time per function.
-Agree. But from performance tuning point of view, percentage of hit is enough
-for helping developers to investigate.
-
-I provide 'perf top' data is to help you debug, not to prove your patches
-cause the regression. We used bisect to locate them.
-
-> 
-> Given that we are talking about a scheduler benchmark that is
-> doing something rather artificial (inter thread communication via
-> sockets), I don't know that this case is worth worrying about.
-Good question. I don't know how about below scenario:
-Start 2 processes and every process creates many threads. threads of process 1
-communicates with threads of process 2.
-
-> 
-> > Alex Shi and I did a quick bisect and located below 2 patches.
-> 
-> That is a plausible result.  
-
-> The atomic reference counts may
-> be causing you to ping pong cache lines between cpus.
-Agree.
-
+My kernel source doesn't have a BUG_ON line there, but only one two
+lines above.  A req->nr_phys_segments that's zero sounds a bit like
+empty flush requests, I'll need to look into it again.
 
