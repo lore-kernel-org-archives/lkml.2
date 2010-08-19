@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab0HSLFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 07:05:39 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55380 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab0HSLFa convert rfc822-to-8bit (ORCPT
+	id S1752755Ab0HSLJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 07:09:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56178 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab0HSLJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 07:05:30 -0400
-Subject: Re: [BUG] perf_events: NMI watchdog event cannot be throttled
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mackerras <paulus@samba.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        eranian@gmail.com, perfmon2-devel@lists.sf.net
-In-Reply-To: <AANLkTimdnYjDsr4GYgw=M74hH0hzyRDeb7WqfiE8-BT1@mail.gmail.com>
-References: <AANLkTimdnYjDsr4GYgw=M74hH0hzyRDeb7WqfiE8-BT1@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 19 Aug 2010 13:05:16 +0200
-Message-ID: <1282215916.1926.4696.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 19 Aug 2010 07:09:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH v2] ARM: uaccess: Implement strict user copy checks
+Date: Thu, 19 Aug 2010 13:09:15 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+References: <4C61EE55.5030506@codeaurora.org> <201008181428.45029.arnd@arndb.de> <4C6C3910.80800@codeaurora.org>
+In-Reply-To: <4C6C3910.80800@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008191309.15425.arnd@arndb.de>
+X-Provags-ID: V02:K0:Tdc3y89/Hd7xSDGuivrR86wWzbOX+fb1ZG+gNrdmhh+
+ dk0QtX4a/KNgM+a3v6SRSJdBr1dyT7o7Lu2uBAyt6bB8D2Qf43
+ Vi8QIt0rYcocaSd6CvG0k5H1/7ATLbOdt4FKwQy9WY9NOpbqeA
+ 2DB4q75n0DcQ6sGl6ZYtrSNRHuBzUIbvvlhYNtNwn/TlnCZJeT
+ HmZGL+lZjzGC1i7LdXMEQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 22:26 +0200, Stephane Eranian wrote:
-> Hi,
+On Wednesday 18 August 2010, Stephen Boyd wrote:
+> So the only sticking point now is that x86, parisc, and arm use warnings 
+> and errors but s390 only uses warnings. I guess I'll reword it to be:
 > 
-> I ran into some issue  with the NMI watchdog not firing in a deadlock
-> situation. After some debugging I found the source of the problem.
+>         Enabling this option turns a certain set of sanity checks for
+>         user copy operations into compile time warnings/errors.
 > 
-> The NMI watchdog is currently subject, like any other events, to interrupt
-> throttling. The heart of the problem is that if you are deadlocked on a CPU
-> with interrupts masked, the timer interrupt won't fire, therefore the
-> hwc->interrupts
-> field won't be reset. Then, depending on the max sampling rate, you
-> could eventually
-> fail the max interrupt rate test in __pfm_overflow_handler() and
-> perf_events would
-> throttle, i.e., stop, the NMI watchdog event before the 5s delay to panic.
-> Thus, you would never get the panic. I ran into this problem myself.
+>         The copy_from_user() etc checks are there to help test if there
+>         are sufficient security checks on the length argument of the
+>         copy operation, by having gcc prove that the argument is
+>         within bounds.
 > 
-> This is a serious issue because perf_events must ensure the watchdog can
-> always fire, regardless of the interrupt masking situation.
+>         If unsure, or if you run an older (pre 4.4) gcc where this
+>         option is a no-op, say N.
 > 
-> Look like one way of solving the problem would be to mark the NMI watchdog
-> event as immune to throttling. The event being internal to the kernel we could
-> trust the event setup from perf_event_create_kernel_counter().
+> or I'll add a patch to make s390 trigger an error when this is enabled?
 
-Something like so?
+(Taking Martin and Heiko on Cc for s390)
 
----
- kernel/watchdog.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+I'd strongly suggest making the behavior the same for everyone. It should
+be fairly easy to make sure none of these warnings ever triggers
+on s390, because most of the Linux device driver code does not get build
+there anyway.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 613bc1f..e0fe6e4 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -206,6 +206,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
- 		 struct perf_sample_data *data,
- 		 struct pt_regs *regs)
- {
-+	/* Ensure the watchdog never gets throttled. */
-+	event->hw.interrupts = 0;
-+
- 	if (__get_cpu_var(watchdog_nmi_touch) == true) {
- 		__get_cpu_var(watchdog_nmi_touch) = false;
- 		return;
+I'd also drop the part about old compilers and just say
+"If unsure, say N".
 
+	Arnd
