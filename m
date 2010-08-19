@@ -1,148 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab0HSCnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 22:43:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2655 "EHLO mga11.intel.com"
+	id S1751299Ab0HSCoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 22:44:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50749 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab0HSCnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 22:43:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,230,1280732400"; 
-   d="scan'208";a="598037887"
-Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Zhang, Rui" <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "acme@redhat.com" <acme@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Matt Fleming <matt@console-pimps.org>
-In-Reply-To: <1282134329.1926.3918.camel@laptop>
-References: <1282118350.5181.115.camel@rui>
-	 <1282134329.1926.3918.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 10:43:31 +0800
-Message-ID: <1282185811.11858.92.camel@minggr.sh.intel.com>
+	id S1750970Ab0HSCo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 22:44:28 -0400
+Date: Thu, 19 Aug 2010 12:44:13 +1000
+From: Neil Brown <neilb@suse.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Chuck Lever <chuck.lever@oracle.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100819124413.77ca8baf@notabene>
+In-Reply-To: <20100819020803.GA30151@fieldses.org>
+References: <20100817182920.GD18161@basil.fritz.box>
+	<20100817190447.GA28049@fieldses.org>
+	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+	<20100817203941.729830b7@lxorguk.ukuu.org.uk>
+	<20100817192937.GD26609@fieldses.org>
+	<20100818155359.66b9ddb6@notabene>
+	<20100818173203.GC32430@fieldses.org>
+	<0F91AB9D-0E14-4384-ADD6-0A467C3ABFAC@oracle.com>
+	<20100819094136.24fef59b@notabene>
+	<20100819105218.7620ec29@notabene>
+	<20100819020803.GA30151@fieldses.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 20:25 +0800, Peter Zijlstra wrote:
-> On Wed, 2010-08-18 at 15:59 +0800, Zhang Rui wrote:
-> > Hi, all,
-> > 
-> > RAPL(running average power limit) is a new feature which provides
-> > mechanisms to enforce power consumption limit, on some new processors.
-> > 
-> > Generally speaking, by using RAPL, OS can set a power budget in a
-> > certain time window, and let Hardware to throttle the processor
-> > P/T-state to meet this energy limitation.
-> > 
-> > RAPL also provides a new MSR, i.e. MSR_PKG_ENERGY_STATUS, which reports
-> > the total amount of energy consumed by the package.
-> > 
-> > I'm not sure if to support RAPL or not, but anyway, it sounds like a
-> > good idea to export the energy status in perf.
-> > 
-> > So a new perf pmu and event to show the package energy consumed is
-> > introduced in this patch.
-> > 
-> > Here is what I get after applying the three patches,
-> > 
-> > #./perf stat -e energy test
-> > Performance counter stats for 'test':
-> > 
-> > 	202	Joules cost by package
-> > 7.926001238	seconds time elapsed
-> > 
-> > 
-> > Note that this patch set is made based on Peter's perf-pmu branch,
-> > git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-perf.git
-> >  which provides better interfaces to register/unregister a new pmu.
-> > 
-> > any comment are welcome. :)
-> 
-> 
-> Nice,.. however:
-> 
->  - if it is a pure read-only counter without sampling support,
->    expose it as such, don't fudge in the hrtimer stuff. Simply
->    fail to create a sampling event.
-> 
->    SH has the same problem for its 'normal' PMU, the solution is
->    to use event groups, Matt was looking at adding support to
->    perf-record for that, if creating a sampling event fails, fall
->    back to {hrtimer, $event} groups.
-> 
->  - since its a free-running, non-configurable counter, you can indeed
->    act like its a 'software' event in that you can schedule consumers
->    without constraints, however I don't think the PERF_COUNT_SW_* space
->    is the right way to expose this counter.
-> 
->    Better would be to use the sysfs stuff Lin has been working on (for
+On Wed, 18 Aug 2010 22:08:03 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-Sorry that I have no good idea how to export the various tracepoints
-events automatically, so this work will take time.
+> On Thu, Aug 19, 2010 at 10:52:18AM +1000, Neil Brown wrote:
+> > On Thu, 19 Aug 2010 09:41:36 +1000
+> > Neil Brown <neilb@suse.de> wrote:
+> > 
+> > > So I agree that this is probably more of an issue for directories than for
+> > > files, and that implementing it just for directories would be a sensible
+> > > first step with lower expected overhead - just my reasoning seems to be a bit
+> > > different.
+> > 
+> > Just to be sure we are on the same page:
+> >   file_update_time would always refer to current_nfsd_time, but nfsd would
+> >   only update current_nfsd_time when a directory was examined (and the other
+> >   conditions were met).
+> > 
+> > 
+> > So my current thinking on how this would look - names have been changed:
+> > 
+> >  - global timespec 'current_fs_precise_time' is zeroed when
+> >    current_kernel_time moves backwards and is protected by a seqlock
+> > 
+> >  - current_fs_time would be
+> >          now = max(current_kernel_time(), current_fs_precise_time)
+> >          return timespec_trunc(now, sb->s_time_gran)
+> >    (with appropriate seqlock protection)
+> > 
+> >  - new function in fs/inode.c
+> >          get_precise_time(timestamp)
+> 
+> Odd name for something that returns nothing of interest;
+> bump_precise_time() might be closer?
+> 
+> And unique_time might be better than precise_time, since the property
+> we're asking for is that mtime on a changed file by new?  (Or
+> versioned_time?)
 
-Lin Ming
+Agreed on both counts, tough I'm not keen on 'bump' myself.
+  got_unique_time()
+because that it what we just did...  I prefer the name to reflect why the
+function is called, rather than what the function is expected to do about it.
+  never_use_this_timestamp_again(timestamp)
+:-?
 
->    which I still need to catch up on the latest discussions), it would
->    then be tied to the pmu instance and appear/disappear when you load/
->    unload the module.
-> 
->    However for testing purposes I see why you'd want to have _a_
->    interface :-)
-> 
-> - it would be nice if you'd write the cpu detection a bit more readable,
->   also, it looks like you forgot to check x86_vendor == X86_VENDOR_INTEL.
-> 
-> > +static int __init intel_rapl_init(void)
-> > +{
-> > +	/*
-> > +	 * RAPL features are only supported on processors have a CPUID
-> > +	 * signature with DisplayFamily_DisplayModel of 06_2AH, 06_2DH
-> > +	 */
-> > +	if (boot_cpu_data.x86 != 0x06 ||
-> > +	    (boot_cpu_data.x86_model != 0x2A &&
-> > +	    boot_cpu_data.x86_model != 0x2D))
-> > +		return -ENODEV;
-> > +
-> > +	if (rapl_check_unit())
-> > +		return -ENODEV;
-> > +
-> > +	perf_pmu_register(&rapl_pmu);
-> > +	return 0;
-> > +}
-> 
-> Maybe something like (see intel_pmu_init() for example):
-> 
->   if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
->     return -ENODEV;
-> 
->   if (boot_cpu_data.x86 != 0x06)
->     return -ENODEV;
-> 
->   switch (boot_cpu_data.x86_model) {
->   case 0x2A: /* sandybridge ?! 32nm */
->   case 0x2D: /* othermodel 32nm */
->     break;
-> 
->   default:
->     return -ENODEV;
->   }
-> 
-> Which again reminds me to ask of Intel, a comprehensive x86_model list,
-> please?
-> 
-> Alternatively, you can create a X86_FEATURE_RAPL and simply use
-> boot_cpu_has(X86_FEATURE_RAPL) (much like intel_ds_init() has).
 
+> 
+> >                 cft = current_fs_time()
+> >                 if (timestamp == cft)
+> 		     /*
+> 		      * Make sure the next mtime stored will be
+> 		      * something different from timestamp:
+> 		      */
+> >                    write_seqlock()
+> >                    if cft == current_fs_precise_time
+> >                         current_fs_precise_time.tv_nsec++
+> >                    else if cft > current_fs_precise_time
+> 
+> What's the cft < current_fs_precise_time case?
+
+The current_fs_precise_time has been incremented with a resolution higher
+than s_time_gran.  i.e. s_time_gran > 1.
+I'm not really sure what we want to do about that.
+Maybe we should be incrementing tv_nsec by s_time_gran as long as that is
+significantly less than jiffies_to_usec(1)*1000, but I don't know what I mean
+by 'significantly'.
+
+The only values I can find for s_time_gran in current code are 1, 100, 1000
+and 1000000000.
+All those are either way bigger than a jiffie or significantly smaller, but
+suppose a filesystem came along that chose 1000000 (i.e. millisecond
+timestamps) - should we increment tv_nsec by 1000000, or not, or cross that
+bridge when we come to it?
+
+For reference:
+  default is 1000000000  (this would cover ext2, ext3, reiserfs, fat, sysv, ...)
+  cifs, smbfs, ntfs are 100
+  udf, ceph are 1000
+  rest (btrfs, ext4, gfs2, jfs, nilfs, ocfs2, xfs and virtual filesystems) are 1
+
+NeilBrown
 
