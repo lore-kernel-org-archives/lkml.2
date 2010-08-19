@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab0HSVWh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 17:22:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57423 "EHLO mx1.suse.de"
+	id S1753510Ab0HSVXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 17:23:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45534 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab0HSVWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 17:22:35 -0400
-From: Andreas Gruenbacher <agruen@suse.de>
-Organization: SUSE Labs, Novell Inc.
-To: Eric Paris <eparis@redhat.com>
-Subject: Re: [GIT PULL] notification tree - try 37!
-Date: Thu, 19 Aug 2010 23:22:15 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        Michael Kerrisk <michael.kerrisk@gmail.com>
-References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <1282250565.21419.1821.camel@acb20005.ipt.aol.com> <201008192307.32526.agruen@suse.de>
-In-Reply-To: <201008192307.32526.agruen@suse.de>
+	id S1751101Ab0HSVXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 17:23:30 -0400
+Message-ID: <4C6DA0C0.6020808@zytor.com>
+Date: Thu, 19 Aug 2010 14:23:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: "D. Stussy" <kd6lvw@verizon.net>
+CC: linux-tip-commits@vger.kernel.org, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, luca@luca-barbieri.com,
+        tglx@linutronix.de
+Subject: Re: [tip:x86/urgent] x86, asm: Refactor atomic64_386_32.S to support
+ old binutils and be cleaner
+References: <85878.24188.qm@web84204.mail.re3.yahoo.com>
+In-Reply-To: <85878.24188.qm@web84204.mail.re3.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008192322.17268.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 August 2010 23:07:31 Andreas Gruenbacher wrote:
-> inotify_init()                          = 3
-> inotify_add_watch(3, "d",
-> IN_ACCESS|IN_MODIFY|IN_ATTRIB|IN_CLOSE_WRITE|IN_CLOSE_NOWRITE|IN_OPEN|IN_M
-> OVED_FROM|IN_MOVED_TO|IN_CREATE| IN_DELETE|IN_DELETE_SELF|IN_MOVE_SELF) = 1
-> read(3, "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\0\0\0 \0\0@\0\0\0\0\0\0\0\0",
-> 4210688) = 32
+On 08/19/2010 12:06 PM, D. Stussy wrote:
+> Has this patch been posted to the 2.6.35 kernel also, or just to 2.6.36?  I don't think it's been posted to 2.6.35 where the problem it corrects was introduced.
 > 
-> 	=> {wd = 1, mask = 0, cookie = 0, len = 0, name = ...}
-> 	=> {wd = 1, mask = 1073741856, cookie = 0, len = 0, name = ...}
-> 
-> read(3, "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\0\0\0\20\0\0@\0\0\0\0\0\0\0\0",
-> 4210688) = 32
-> 
-> 	=> {wd = 1, mask = 0, cookie = 0, len = 0, name = ...}
+> "Greg KH" <gregkh@suse.de> has made a last call (tomorrow - Aug 20) for chnges for 2.6.35.3 and doesn't seem to have this.  It's not in the prior two updates either.....
 
-When disabling ignore masks (-n), I get another of these here:
+It was Cc: <stable@kernel.org>; it's up to Greg to include it or not.
 
-	=> {wd = 1, mask = 0, cookie = 0, len = 0, name = ...}
+[Greg: 30246557a06bb20618bed906a06d1e1e0faa8bb4]
 
-> 	=> {wd = 1, mask = 1073741840, cookie = 0, len = 0, name = ...}
-> 
-> read(3, 0x7fff56db15e0, 4210688)        = -1 EINTR (Interrupted system
-> call)
-
-Andreas
+	-hpa
