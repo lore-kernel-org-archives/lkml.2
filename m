@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab0HSQGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 12:06:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38114 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab0HSQGQ (ORCPT
+	id S1752751Ab0HSQKt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 12:10:49 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:57631 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab0HSQKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 12:06:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VBZpa53aSTYqHTBw+dXk03pBBtA6GlIW0O0FoUSuq+/HU+59pcnN/15OY7kX48kL0t
-         tr43y7pkeZz94gSaUh3pS9wLscpfxJR/oJ/B6HGjaGc5egN3HReLBkdHbpItPMBIWG9F
-         LsXqpdoEMFNpV6pWbhXBPTjTzF002/zCuUjVk=
-Date: Fri, 20 Aug 2010 01:05:42 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] oom: fix tasklist_lock leak
-Message-ID: <20100819160542.GH6805@barrios-desktop>
-References: <20100819194707.5FC4.A69D9226@jp.fujitsu.com>
- <20100819195346.5FCA.A69D9226@jp.fujitsu.com>
+	Thu, 19 Aug 2010 12:10:46 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Aug 2010 12:10:45 EDT
+Date: Thu, 19 Aug 2010 18:05:43 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux/m68k <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>
+cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        uClinux list <uclinux-dev@uclinux.org>
+Subject: [PATCH] m68k,m68knommu: Wire up fanotify_init, fanotify_mark, and
+ prlimit64
+Message-ID: <alpine.DEB.2.00.1008191804480.16652@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819195346.5FCA.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 07:54:06PM +0900, KOSAKI Motohiro wrote:
-> commit 0aad4b3124 (oom: fold __out_of_memory into out_of_memory)
-> introduced tasklist_lock leak. Then it caused following obvious
-> danger warings and panic.
-> 
->     ================================================
->     [ BUG: lock held when returning to user space! ]
->     ------------------------------------------------
->     rsyslogd/1422 is leaving the kernel with locks still held!
->     1 lock held by rsyslogd/1422:
->      #0:  (tasklist_lock){.+.+.+}, at: [<ffffffff810faf64>] out_of_memory+0x164/0x3f0
->     BUG: scheduling while atomic: rsyslogd/1422/0x00000002
->     INFO: lockdep is turned off.
-> 
-> This patch fixes it.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/unistd.h       |    5 ++++-
+ arch/m68k/kernel/entry.S             |    3 +++
+ arch/m68knommu/kernel/syscalltable.S |    3 +++
+ 3 files changed, 10 insertions(+), 1 deletions(-)
 
+diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
+index 60b15d0..b43b36b 100644
+--- a/arch/m68k/include/asm/unistd.h
++++ b/arch/m68k/include/asm/unistd.h
+@@ -340,10 +340,13 @@
+ #define __NR_set_thread_area	334
+ #define __NR_atomic_cmpxchg_32	335
+ #define __NR_atomic_barrier	336
++#define __NR_fanotify_init	337
++#define __NR_fanotify_mark	338
++#define __NR_prlimit64		339
+ 
+ #ifdef __KERNEL__
+ 
+-#define NR_syscalls		337
++#define NR_syscalls		340
+ 
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/m68k/kernel/entry.S b/arch/m68k/kernel/entry.S
+index 2391bdf..6360c43 100644
+--- a/arch/m68k/kernel/entry.S
++++ b/arch/m68k/kernel/entry.S
+@@ -765,4 +765,7 @@ sys_call_table:
+ 	.long sys_set_thread_area
+ 	.long sys_atomic_cmpxchg_32	/* 335 */
+ 	.long sys_atomic_barrier
++	.long sys_fanotify_init
++	.long sys_fanotify_mark
++	.long sys_prlimit64
+ 
+diff --git a/arch/m68knommu/kernel/syscalltable.S b/arch/m68knommu/kernel/syscalltable.S
+index b30b3eb..79b1ed1 100644
+--- a/arch/m68knommu/kernel/syscalltable.S
++++ b/arch/m68knommu/kernel/syscalltable.S
+@@ -355,6 +355,9 @@ ENTRY(sys_call_table)
+ 	.long sys_set_thread_area
+ 	.long sys_atomic_cmpxchg_32	/* 335 */
+ 	.long sys_atomic_barrier
++	.long sys_fanotify_init
++	.long sys_fanotify_mark
++	.long sys_prlimit64
+ 
+ 	.rept NR_syscalls-(.-sys_call_table)/4
+ 		.long sys_ni_syscall
 -- 
-Kind regards,
-Minchan Kim
+1.7.0.4
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
