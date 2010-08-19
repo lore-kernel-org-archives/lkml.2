@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465Ab0HSBUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 21:20:04 -0400
-Received: from sr-smtp.usish.com ([210.5.144.203]:42493 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab0HSBUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 21:20:03 -0400
-From: "jack wang" <jack_wang@usish.com>
-To: "'Vladislav Bolkhovitin'" <vst@vlnb.net>,
-        "'James Bottomley'" <James.Bottomley@suse.de>
-Cc: "'Chetan Loke'" <chetanloke@gmail.com>,
-        "'Chetan Loke'" <generationgnu@yahoo.com>,
-        "'scst-devel'" <scst-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com> <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>
-Subject: RE: [Scst-devel] Fwd: Re: linuxcon 2010...
-Date: Thu, 19 Aug 2010 09:18:21 +0800
-Message-ID: <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+	id S1751446Ab0HSBYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 21:24:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14163 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab0HSBYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 21:24:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,230,1280732400"; 
+   d="scan'208";a="598016625"
+Date: Thu, 19 Aug 2010 09:24:15 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] page-types.c: fix name of unpoison interface
+Message-ID: <20100819012415.GA5762@localhost>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1281432464-14833-9-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <4C6C1D70.7020502@vlnb.net>
-Thread-Index: Acs+/eWbDAeoG9oMSSmAiWUs5uHQlwAPj8Yg
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281432464-14833-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 10, 2010 at 06:27:43PM +0900, Naoya Horiguchi wrote:
+> debugfs:hwpoison/renew-pfn is the old interface.
+> This patch renames and fixes it.
 
-James Bottomley, on 08/18/2010 08:18 PM wrote:
->> James you are an expert but not everyone is. This is not a venting
->> session but even folks who are new to target architecture find it easy
->> to hack SCST.
->
-> But that's not really relevant, is it?  I would expect that whatever I
-> do, even keeping both out of tree, the communities around the solutions
-> would still exist and be vibrant, since they're out of tree now, nothing
-> will have changed.
+Thanks for the fix!
 
-The problem that people do believe that the merged code is the best 
-code, so the being merged is an immediate HUGE advertisement. So, you 
-can't say if a code is inside the mainline tree or not isn't relevant.
-
-This is the source of the questions from the SCST community. SCST is at 
-the moment the best code. It's several years ahead any competitor. SCST 
-has more functionality, SCST has more users, SCST has bigger community, 
-SCST has more testing and, hence, stability, SCST has more support from 
-storage vendors, etc. But for some reasons all those suddenly ignored 
-and a raw, pursuing SCST code preferred instead.
-
-So, we want to know those reasons. SCST wasn't even really considered. 
-Isn't Linux anymore a place where the best code wins? Frankly, it looks 
-like the decision was done under closed doors based on rather political 
-reasons, like personal connections...
-
-Vlad
-
-[Jack]Vote for SCST as a user and target driver developer based on SCST.
-SCST really do good job. 
---
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
