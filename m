@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab0HSIjD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 04:39:03 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36322 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab0HSIjA (ORCPT
+	id S1751911Ab0HSIj7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 04:39:59 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44510 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab0HSIj4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 04:39:00 -0400
-Date: Thu, 19 Aug 2010 04:38:39 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Vladislav Bolkhovitin <vst@vlnb.net>,
-        linux-kernel@vger.kernel.org, Bryan Mesich <bryan.mesich@ndsu.edu>,
-        Jens Axboe <jens.axboe@kernel.dk>, linux-raid@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, scst-devel@lists.sourceforge.net,
-        stable@kernel.org
-Subject: Re: [dm-devel] [PATCH RESEND 1/2 block#for-linus] bio, fs: update
- READA and SWRITE to match the corresponding BIO_RW_* bits
-Message-ID: <20100819083839.GA32336@infradead.org>
-References: <4C3EF3AD.5070509@vlnb.net>
- <20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>
- <4C4D7DF5.9060909@vlnb.net>
- <20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>
- <4C5073F3.1060406@vlnb.net>
- <4C52A98A.7060507@kernel.org>
- <20100802104227.79340b49@notabene>
- <4C56D30A.3000403@kernel.org>
- <x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
- <4C5B89DB.5050106@oracle.com>
+	Thu, 19 Aug 2010 04:39:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C5B89DB.5050106@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100819083612.GA13293@shutemov.name>
+References: <1282139739-23832-1-git-send-email-virtuoso@slind.org>
+ <20100818155702.bc62b2a6.akpm@linux-foundation.org> <4C6C7034.4050501@zytor.com>
+ <20100818165303.dd52695a.akpm@linux-foundation.org> <20100819040937.GA8646@suse.de>
+ <20100819083612.GA13293@shutemov.name>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 19 Aug 2010 10:39:40 +0200
+Message-ID: <AANLkTi=svKLEJ546kmP4WEaut=hGeFnHyw8a-uxjBAOt@mail.gmail.com>
+Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander Shishkin <virtuoso@slind.org>, lkml@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        John Kacur <jkacur@redhat.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 12:04:43PM +0800, Tao Ma wrote:
-> >>Stable: The offending commit a82afdf was released with v2.6.32, so
-> >>this patch should be applied to all kernels since then but it must
-> >>_NOT_ be applied to kernels earlier than that.
-> If only this patch goes into stable, do we need to change RWA_MASK
-> in this patch also(I have seen you change it the 2/2)?
-> 
-> -#define RWA_MASK        2
-> +#define RWA_MASK        16
+On Thu, Aug 19, 2010 at 10:36, Kirill A. Shutemov <kirill@shutemov.name> wrote:
+> On Wed, Aug 18, 2010 at 09:09:37PM -0700, Greg KH wrote:
+>> On Wed, Aug 18, 2010 at 04:53:03PM -0700, Andrew Morton wrote:
+>> > Is sysfs the right interface for this thing?  Bear in mind that
+>> > CONFIG_SYSFS does exist.
+>> >
+>> > > +              fd = open("/sys/kernel/time_notify", O_WRONLY);
+>> > > +              fdprintf(fd, "%d 1 0 1 1", efd);
+>> >
+>> > why not
+>> >
+>> >             sys_time_notify(efd, 1, 0, 1, 1);
+>>
+>> Yeah, that would be much better than a sysfs file, this is abusing the
+>> sysfs interface quite a lot.
+>
+> Do you really think, that increasing number of syscalls is better then
+> fs-based interfaces?
 
-I think RW_MASK and RWA_MASK should simply go away, they don't server
-any use over just masking the correct REQ_* flags.
+Not necessarily, but adding such, and from the outside scope 'random
+stuff', to /sys/kernel/ is really not the way to do such things.
 
+It seems to be new dumping ground for things that don't have an
+obvious home, and since proc is out of fashion. :)
+
+Can't timerfd be used, or extended in some way? It really sounds like
+the place this should happen.
+
+Kay
