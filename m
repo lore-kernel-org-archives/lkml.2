@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab0HSUId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 16:08:33 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:39650 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab0HSUIc (ORCPT
+	id S1752623Ab0HSUPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 16:15:31 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49470 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab0HSUP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 16:08:32 -0400
+	Thu, 19 Aug 2010 16:15:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=rFS10B+ANwCqkPE63sz5tUsB0y5gQrJChjce2DP1ZcXnjKXyoduc6CEB5SOVwcMFSA
-         A1nUhblb9sEq2OK7Erl1H5OaBe+1OFbGVbyE4Z+DQLRuLsrGaT+Vi+VKNHuSWLSzwwHi
-         Du+Ukchln/ywj8TXzRm1bN7Yx12T7eBnlcgaY=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=lMFHz6fR7Z+g0AXBwW/svz9dkD+IxrlJA8fKJIlZmrWN5JOwrTrzhpmzWsCPuSE4UU
+         BOMUpBD9pg0NZbCQ+HO+N6Ixhq1Wsn3ounwKnneNHkWhg9knuHKiOCmw4+pzYwO9cO9F
+         8Vsv/2eaN5ecjX8V3n0EEQlruZyuUO9UliNro=
+Message-ID: <4C6D90DC.4050202@garzik.org>
+Date: Thu, 19 Aug 2010 16:15:24 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <1282243187.6724.250.camel@Joe-Laptop>
-References: <20100819174638.GC2672@tuxdriver.com>
-	<AANLkTi=QmVT_qJb6O7eDE9-VM5CZBa3ueR9njFps5oMs@mail.gmail.com>
-	<1282243187.6724.250.camel@Joe-Laptop>
-Date: Thu, 19 Aug 2010 22:08:31 +0200
-Message-ID: <AANLkTikDB2t+ZfcvsSJsw=OMnaR-_3ieG7zcmJjt=mH6@mail.gmail.com>
-Subject: Re: pull request: wireless-2.6 2010-08-19
-From: Jan III Sobieski <jan3sobi3ski@gmail.com>
-To: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gwendal Grignou <gwendal@google.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Grundler <grundler@google.com>
+Subject: Re: linux-next: build failure after merge of the libata tree
+References: <20100818104057.5fdaf20d.sfr@canb.auug.org.au> <AANLkTinJ8ks85Ym11wd4csdqFVgQpS7nw=RrfhMrLPUH@mail.gmail.com>
+In-Reply-To: <AANLkTinJ8ks85Ym11wd4csdqFVgQpS7nw=RrfhMrLPUH@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-2010/8/19 Joe Perches <joe@perches.com>:
-> On Thu, 2010-08-19 at 20:16 +0200, Jan III Sobieski wrote:
->> I wonder when the madness linked to the trivial patches will end up.
+On 08/17/2010 08:46 PM, Gwendal Grignou wrote:
+> Let me fix it and send a patch to Jeff.
 >
-> Think of the children!
-
-No, I don't want to think about children ;)
-
+> Gwendal.
 >
-> May I suggest linux 2.2?
->
-> Seriously though, standardization is a good thing.
-> Minimization of errors, new and existing, is too.
+> On Tue, Aug 17, 2010 at 5:40 PM, Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
+>> Hi Jeff,
+>>
+>> After merging the libata tree, today's linux-next build (powerpc
+>> ppc64_defconfig) failed like this:
+>>
+>> drivers/ata/libata-transport.c: In function 'ata_attach_transport':
+>> drivers/ata/libata-transport.c:678: error: implicit declaration of function 'kzalloc'
+>> drivers/ata/libata-transport.c:678: warning: assignment makes pointer from integer without a cast
+>> drivers/ata/libata-transport.c: In function 'ata_release_transport':
+>> drivers/ata/libata-transport.c:741: error: implicit declaration of function 'kfree'
+>>
+>> Caused by commit 97395d39931160a171959ac2e1fbff1caba3374b ("[libata] Add
+>> ATA transport class") neglecting to include linux/slab.h.   See Rule 1 in
+>> Documentation/SubmitChecklist.
+>>
+>> I have used the libata tree form next-20100817 for today.
 
-IMHO such changes may cause errors. Trivial patches are simply noise.
 
-I really like the new Linus policy - merge window is closed - only bug
-fixes are admitted. IMHO this policy will result in a significant
-increase in stability.
+Never received a patch; pushed out the obvious fix myself.
 
-The next step should be to reject trivial patches. If you want to
-align text to the right in the comments - you can put these changes to
--KernelHackerWannaBeTree.
-
-Please do not take this as personal attack. No offence here.
-
->
-> cheers, Joe
->
->
-
-Regards,
-Jan
-
--- 
-Jan III Sobieski
