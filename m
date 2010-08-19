@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab0HSNMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 09:12:14 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:41944 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751686Ab0HSNML (ORCPT
+	id S1753243Ab0HSNRi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 09:17:38 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:46435 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab0HSNRf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 09:12:11 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBABHKbExLd/sX/2dsb2JhbAAHgxHId5IcgSKDInME
-X-IronPort-AV: E=Sophos;i="4.56,233,1280721600"; 
-   d="scan'208";a="72985792"
-Message-ID: <4C6D2DA7.9030803@teksavvy.com>
-Date: Thu, 19 Aug 2010 09:12:07 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	Thu, 19 Aug 2010 09:17:35 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zz936eK1432N98dNzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7EI91-01-HB6-02
+X-M-MSG: 
+Date: Thu, 19 Aug 2010 14:32:38 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH/RFC 2/5] [PATCH] sched: pass sched_domain_level to
+ sched_power_savings_store
+Message-ID: <20100819123238.GG4659@loge.amd.com>
+References: <20100812172544.655648128@de.ibm.com>
+ <20100812172622.349333778@de.ibm.com>
+ <1281947397.1926.1012.camel@laptop>
+ <20100819114102.GE4659@loge.amd.com>
+ <1282221311.2605.81.camel@laptop>
 MIME-Version: 1.0
-To: Yuhong Bao <yuhongbao_386@hotmail.com>
-CC: tj@kernel.org, jeff@garzik.org, ben.collins@ubuntu.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hmh@debian.org
-Subject: Re: support for drives larger than 2TiB
-References: <4C4AB952.9030705@kernel.org> <SNT125-W449B3ACDB36B8BF9EBE145C3A40@phx.gbl>
-In-Reply-To: <SNT125-W449B3ACDB36B8BF9EBE145C3A40@phx.gbl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <1282221311.2605.81.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-07-24 02:48 PM, Yuhong Bao wrote:
->
-> In fact, Seagate is already selling 3TB external drives and CrunchGear
-> was already able to get the internal 3TB drive inside out:
-> http://techcrunch.com/2010/07/01/hands-on-the-seagate-freeagent-goflex-desk-3tb-external-hard-drive/
+On Thu, Aug 19, 2010 at 08:35:11AM -0400, Peter Zijlstra wrote:
+> On Thu, 2010-08-19 at 13:41 +0200, Andreas Herrmann wrote:
+> > It just allows to use the same store functions for three instead of
+> > two different knobs. 
+> 
+> Creating more knobs for powersave scheduling is a fail.
+> 
+> We already have 2^3 powersave scheduling states, it should be decreased
+> to 2 (namely on/off), not increased to 3^3.
+
+I think it should be possible to select a domain level at which power
+saving scheduling should happen (this would result in 3 states in the
+z196 case).
 
 
-The key word there is _external_ --> by using USB3/2/FW interfaces,
-they neatly sidestep most BIOS issues.  For the time being anyway.
+Andreas
+
+-- 
+Operating | Advanced Micro Devices GmbH
+  System  | Einsteinring 24, 85609 Dornach b. München, Germany
+ Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
+  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
+  (OSRC)  | Registergericht München, HRB Nr. 43632
+
 
