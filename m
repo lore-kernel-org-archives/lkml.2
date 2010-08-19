@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337Ab0HSCES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 22:04:18 -0400
-Received: from mtoichi14.ns.itscom.net ([219.110.2.184]:40743 "EHLO
-	mtoichi14.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab0HSCEQ (ORCPT
+	id S1751500Ab0HSCHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 22:07:39 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:38899 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab0HSCHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 22:04:16 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-To: 7eggert@gmx.de
-Cc: Miklos Szeredi <miklos@szeredi.hu>, jack@suse.cz, agruen@suse.de,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        Valerie Aurora <vaurora@redhat.com>
-In-Reply-To: <E1OlrzM-0001lZ-0z@be1.7eggert.dyndns.org>
-References: <eVJmW-3Lf-15@gated-at.bofh.it> <eVJmW-3Lf-19@gated-at.bofh.it> <fdNs6-5F1-7@gated-at.bofh.it> <fdVfY-pv-23@gated-at.bofh.it> <fe6Ep-cD-13@gated-at.bofh.it> <fiCPo-73x-17@gated-at.bofh.it> <fiMc1-6ip-7@gated-at.bofh.it> <E1OlrzM-0001lZ-0z@be1.7eggert.dyndns.org>
-Date: Thu, 19 Aug 2010 11:03:20 +0900
-Message-ID: <17214.1282183400@jrobl>
+	Wed, 18 Aug 2010 22:07:37 -0400
+Date: Wed, 18 Aug 2010 19:07:34 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
+Message-ID: <20100819020734.GL2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <20100809210723.GA28171@infradead.org> <20100816161433.GK2109@tux1.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816161433.GK2109@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 16, 2010 at 09:14:33AM -0700, Darrick J. Wong wrote:
+> On Mon, Aug 09, 2010 at 05:07:23PM -0400, Christoph Hellwig wrote:
+> > Can you try with the new barrier implementation in the
+> > 
+> > 	[PATCH, RFC] relaxed barriers
+> > 
+> > by making cache flushes just that and not complicated drain barrier
+> > it should speed this case up a lot.
+> 
+> Indeed it does!  The barrier count increases to about 21000, but I also see
+> much higher throughput, about 830 transactions per second (versus 12000 and 760
+> respectively before Tejun's patch).
 
-Bodo Eggert:
-> Do a hardlink if you can create a hard link, otherwise use a fresh inode
-> and use that for the next hardlink(s).
+Oddly, I ran the entire suite of tests against a larger set of machines, and
+with Tejun's RFC patchset I didn't see nearly as much of an improvement.  I
+have been trying to put together a new tree based on "replace barrier with
+sequenced flush" and Christoph's "explicitly flush/FUA" patch sets, though I've
+gotten lost in the weeds. :(
 
-Exactly.
-That's the approach aufs takes for whiteout and its brothers.
+I also experienced some sort of crash with Tejun's relaxed barrier patch on one
+of my systems.  I was hitting the BUG_ON in drivers/scsi/scsi_lib.c, line 1115.
 
+Rather than hold on to (aging) test results any further, I'll be posting a new
+fsync coordination patch shortly that includes Andreas' suggestion to use the
+average barrier time instead of a static 500us, and a spreadsheet that shows
+what happens with various patches, and on a wider range of hardware.
 
-J. R. Okajima
+--D
