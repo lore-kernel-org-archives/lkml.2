@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab0HSHot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 03:44:49 -0400
-Received: from mtagate7.de.ibm.com ([195.212.17.167]:40478 "EHLO
-	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab0HSHoq (ORCPT
+	id S1751819Ab0HSHqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 03:46:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45550 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab0HSHqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 03:44:46 -0400
-Date: Thu, 19 Aug 2010 09:44:44 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Sachin Sant <sachinp@in.ibm.com>
-Cc: linux-s390@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, dhowells@redhat.com
-Subject: Re: [s390] Build failure with latest 2.6.36-rc1 git (sys_execve)
-Message-ID: <20100819094444.28e7b2e4@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <4C6CBA56.9020909@in.ibm.com>
-References: <4C6CBA56.9020909@in.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Aug 2010 03:46:30 -0400
+From: David Gow <david@ingeniumdigital.com>
+To: jkosina@suse.cz, chatty@enac.fr, dhprince-devel@yahoo.co.uk, dtor@mail.ru,
+        kees.bakker@xs4all.nl, cascardo@holoscopio.com, don@syst.com.br,
+        peter.hutterer@who-t.net, daniel@caiaq.de
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, David Gow <david@ingeniumdigital.com>
+Subject: [PATCH] hid: Add support for chicony multitouch screens.
+Date: Thu, 19 Aug 2010 15:43:56 +0800
+Message-Id: <1282203836-5895-1-git-send-email-david@ingeniumdigital.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Aug 2010 10:30:06 +0530
-Sachin Sant <sachinp@in.ibm.com> wrote:
+Adds a hid quirk for the chicony multitouch screen found in the Acer
+Aspire 1820pt notebook.
 
-> Latest 2.6.36-rc1 git fails to build on a s390 with
-> 
-> arch/s390/kernel/process.c:272: error: conflicting types for 'sys_execve'
-> arch/s390/kernel/entry.h:45: error: previous declaration of 'sys_execve' was here
-> make[1]: *** [arch/s390/kernel/process.o] Error 1
-> 
-> This error was introduced via commit :
-> 
-> commit d7627467b7a8dd6944885290a03a07ceb28c10eb
-> Make do_execve() take a const filename pointer
-> 
-> I guess the corresponding definition of sys_execve()
-> in arch/s390/kernel/entry.h also needs an update.
+Signed-off-by: David Gow <david@ingeniumdigital.com>
+---
+ drivers/hid/hid-ids.h           |    1 +
+ drivers/hid/usbhid/hid-quirks.c |    2 ++
+ 2 files changed, 3 insertions(+), 0 deletions(-)
 
-Fix is uploaded to git390. Tomorrows -next tree should work again.
-
-
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 85c6d13..2905142 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -149,6 +149,7 @@
+ 
+ #define USB_VENDOR_ID_CHICONY		0x04f2
+ #define USB_DEVICE_ID_CHICONY_TACTICAL_PAD	0x0418
++#define USB_DEVICE_ID_CHICONY_MULTI_TOUCH	0xb19d
+ 
+ #define USB_VENDOR_ID_CIDC		0x1677
+ 
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 2643d31..51ec481 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -77,6 +77,8 @@ static const struct hid_blacklist {
+ 
+ 	{ USB_VENDOR_ID_PI_ENGINEERING, USB_DEVICE_ID_PI_ENGINEERING_VEC_USB_FOOTPEDAL, HID_QUIRK_HIDINPUT_FORCE },
+ 
++	{ USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_MULTI_TOUCH, HID_QUIRK_MULTI_INPUT },
++	
+ 	{ 0, 0 }
+ };
+ 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+1.7.0.4
 
