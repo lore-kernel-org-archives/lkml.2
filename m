@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab0HSMsl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 08:48:41 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:6280 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750890Ab0HSMsj (ORCPT
+	id S1753127Ab0HSM55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 08:57:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37575 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab0HSM5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 08:48:39 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7JCmUIl013928
-Subject: Re: [RFC][PATCH] introduce ptr_diff()
-From: Bernd Petrovitsch <bernd@sysprog.at>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Namhyung Kim <namhyung@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <87aaoiu6z6.fsf@basil.nowhere.org>
-References: <1282217856-8625-1-git-send-email-namhyung@gmail.com>
-	 <87aaoiu6z6.fsf@basil.nowhere.org>
+	Thu, 19 Aug 2010 08:57:55 -0400
+Subject: [PATCH] uinput: add devname alias to allow module on-demand load
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 14:48:29 +0200
-Message-ID: <1282222109.10440.50.camel@thorin>
+Date: Thu, 19 Aug 2010 14:58:19 +0200
+Message-ID: <1282222699.1236.21.camel@yio.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.31.6 
 Content-Transfer-Encoding: 7bit
-X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Don, 2010-08-19 at 14:23 +0200, Andi Kleen wrote:
-> Namhyung Kim <namhyung@gmail.com> writes:
-> 
-> > When I compiled allyesconfig'ed kernel with C=1, I got 1519 lines of
-> > following message:
-> >
-> >  include/linux/mm.h:599:16: warning: potentially expensive pointer subtraction
-> >
-> > which is around 10% of total warnings. this was caused by page_to_pfn() macro
-> > so I think it's worth to remove it by calculating pointer subtraction
-> > manually.
-> 
-> IMHO it would be better to simply disable the warning in sparse instead
-> of uglying the code just to work around sparse bogosity. It doesnt' seem
-> to make much sense. A subtraction followed by a shift is not expensive.
+From: Kay Sievers <kay.sievers@vrfy.org>
+Subject: uinput: add devname alias to allow module on-demand load
 
-The code above is IMHO actually (the line with "return" in)
-----  snip  ----
-static __always_inline void *lowmem_page_address(struct page *page)
-{
-	return __va(PFN_PHYS(page_to_pfn(page)));
-}
-----  snip  ----
-If so, the warning seems valid as sizeof(struct page) is probably not
-(always) a power of 2. On a native build on x86_64 it is 56 bytes
-hereover.
-Hmm ....
+Recent modprobe and udev versions allow to create device nodes
+for modules which are not loaded. Only the first access will cause
+the in-kernel module loader to pull-in the module. Systems which
+never access the device node will not needlessly load the module,
+and no longer need init scripts or other facilities to unconditionally
+load it.
 
-	Bernd
--- 
-mobile: +43 664 4416156              http://www.sysprog.at/
-    Linux Software Development, Consulting and Services
+Signed-Off-By: Kay Sievers <kay.sievers@vrfy.org>
+---
+ drivers/input/misc/uinput.c |    2 ++
+ include/linux/miscdevice.h  |    1 +
+ include/linux/uinput.h      |    1 -
+ 3 files changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/input/misc/uinput.c
++++ b/drivers/input/misc/uinput.c
+@@ -806,6 +806,8 @@ static struct miscdevice uinput_misc = {
+ 	.minor		= UINPUT_MINOR,
+ 	.name		= UINPUT_NAME,
+ };
++MODULE_ALIAS_MISCDEV(UINPUT_MINOR);
++MODULE_ALIAS("devname:" UINPUT_NAME);
+ 
+ static int __init uinput_init(void)
+ {
+--- a/include/linux/miscdevice.h
++++ b/include/linux/miscdevice.h
+@@ -33,6 +33,7 @@
+ #define MWAVE_MINOR		219	/* ACP/Mwave Modem */
+ #define MPT_MINOR		220
+ #define MPT2SAS_MINOR		221
++#define UINPUT_MINOR		223
+ #define HPET_MINOR		228
+ #define FUSE_MINOR		229
+ #define KVM_MINOR		232
+--- a/include/linux/uinput.h
++++ b/include/linux/uinput.h
+@@ -37,7 +37,6 @@
+ #define UINPUT_VERSION		3
+ 
+ #ifdef __KERNEL__
+-#define UINPUT_MINOR		223
+ #define UINPUT_NAME		"uinput"
+ #define UINPUT_BUFFER_SIZE	16
+ #define UINPUT_NUM_REQUESTS	16
+
 
