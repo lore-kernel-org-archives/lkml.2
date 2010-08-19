@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab0HSWtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 18:49:31 -0400
-Received: from smtp101.sbc.mail.gq1.yahoo.com ([67.195.15.60]:36797 "HELO
-	smtp101.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752861Ab0HSWta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 18:49:30 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 6PgvB1gVM1lTSq9opY.6KL.2HreMy9o240M8AZnM09JZkIg
- UZIf5YJyHoSXnRTekTrZ42Ya6JO2pjktV6swYqcuqTw_dPR6nmqjOyXd3vTW
- OFRcKZzK83l3dNIJkOpF7NZAk74pVCUKNG.RlzcLB97r26_5XEP0VUdsHvV0
- zzoQQfKQlZ16axsn9rZuJnmh3ajbCe1cHRgeLMy.r619O2N6GGLbGtlfMI17
- C9hFEwYBFM2JanuUxJq3hdNql_x8U_zHzeWL4yQk1LJRcPagKwJotcIrcCH2
- tOiyBuvBso7t_rqgrE7B66D3Tl3.bWLfsMsiINdltWdVMKaRh3A9om_Zk
-X-Yahoo-Newman-Property: ymail-3
-Subject: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Hannes Reinecke <hare@suse.de>
-Content-Type: text/plain
-Date: Thu, 19 Aug 2010 15:45:47 -0700
-Message-Id: <1282257947.30453.296.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1752826Ab0HSWzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 18:55:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41757 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751277Ab0HSWzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 18:55:03 -0400
+Message-ID: <4C6DB62C.9040105@zytor.com>
+Date: Thu, 19 Aug 2010 15:54:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Robin Holt <holt@sgi.com>
+CC: Jack Steiner <steiner@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Stable Maintainers <stable@kernel.org>
+Subject: Re: [Patch] numa:x86_64: Cacheline aliasing makes for_each_populated_zone
+ extremely expensive -V2.
+References: <20100818183024.GZ3043@sgi.com>
+In-Reply-To: <20100818183024.GZ3043@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings mnc and tomo,
+On 08/18/2010 11:30 AM, Robin Holt wrote:
+>  
+> -	node_data[nodeid] = early_node_mem(nodeid, start, end, pgdat_size,
+> +	/*
+> +	 * Allocate an extra cacheline per node to reduce cacheline
+> +	 * aliasing when scanning all node's node_data.
+> +	 */
+> +	cache_alias_offset = nodeid * SMP_CACHE_BYTES;
+> +	node_data[nodeid] = cache_alias_offset +
+> +			    early_node_mem(nodeid, start, end,
+> +					   pgdat_size + cache_alias_offset,
+>  					   SMP_CACHE_BYTES);
+> -	if (node_data[nodeid] == NULL)
+> +	if (node_data[nodeid] == (void *)cache_alias_offset)
+>  		return;
+>  	nodedata_phys = __pa(node_data[nodeid]);
+>  	reserve_early(nodedata_phys, nodedata_phys + pgdat_size, "NODE_DATA");
 
-So as per our discussions last week, I will be moving forward with the
-conversion of the LIO-Target iSCSI fabric module v4 to use protocol and
-PDU include/scsi/iscsi_proto.h.  As mnc and I agreed privately, this is
-going to the right level of integration for v2.6.37, as making libiscsi
-target mode aware does not really make for a target mode iSCSI stack
-sense due to the amount of logic in place for kernel <-> user with the
-Open-iSCSI initiator.
+I'm concerned about this, because it really seems to rely on subtleties
+in the behavior of early_node_mem, as well as the direction of
+find_e820_area -- which is pretty much intended to change anyway.  It's
+the "action at a distance" effect.
 
-So aside from the main tedious work that will be involved in actually
-producing a patch for this on my end, I did notice one immediate item
-that will cause an extra headache..  This involves the struct
-iscsi_init_* and struct iscsi_target* structure definitions in:
+What we really want, I think, is to push the offsetting into
+find_early_area().  Right now we have an alignment parameter, but what
+we need is an alignment and a color parameter (this is just a classic
+case of cache coloring, after all) which indicates the desirable offset
+from the alignment base.
 
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/lio-target/iscsi_protocol.h;hb=refs/heads/lio-4.0
-
-namely that they all have trailing 'u32 header_digest' member that a
-decent amount of utility code in iscsi_target.c and iscsi_target_util.c
-currently depends upon.
-
-So, assuming that the conversion of all struct iscsi_init_* and struct
-iscsi_target* to use include/scsi/iscsi_proto.h defs just involves
-checking structure size and renaming the member use in
-drivers/target/lio-target, would it be acceptable to do something like:
-
-/* iSCSI PDU Header */
-struct iscsi_cmd {
-        uint8_t opcode;
-        uint8_t flags;
-        __be16 rsvd2;
-        uint8_t hlength;
-        uint8_t dlength[3];
-        uint8_t lun[8];
-        itt_t    itt;   /* Initiator Task Tag */
-        __be32 data_length;
-        __be32 cmdsn;
-        __be32 exp_statsn;
-        uint8_t cdb[ISCSI_CDB_SIZE];    /* SCSI Command Block */
-        /* Additional Data (Command Dependent) */
-#ifdef ISCSI_TARGET_MODE
-        __be32 header_digest;
-#endif
-};
-
-for the existing PDU defs in iscsi_proto.h in order to the pain
-of having to convert this over in existing LIO-Target fabric module
-code..?  This really help me alot.
-
-Thanks!
-
---nab
-
-
+	-hpa
