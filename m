@@ -1,211 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256Ab0HSGFW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 02:05:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16240 "EHLO mga01.intel.com"
+	id S1751406Ab0HSGGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 02:06:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26634 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab0HSGFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 02:05:20 -0400
+	id S1751285Ab0HSGGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 02:06:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,231,1280732400"; 
-   d="scan'208";a="598093419"
-Date: Thu, 19 Aug 2010 14:05:16 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: "stable@kernel.org" <stable@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Pedro Ribeiro <pedrib@gmail.com>,
-        Mel Gorman <mel@linux.vnet.ibm.com>
-Subject: Re: "vmscan: raise the bar to PAGEOUT_IO_SYNC stalls" to stable?
-Message-ID: <20100819060516.GA14221@localhost>
-References: <4C639E87.3050805@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C639E87.3050805@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="829623619"
+Subject: Re: [PATCH -tip] perf, x86: P4 PMU - check for INSTR_COMPLETED
+ being supported by cpu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100818185445.GA11949@lenovo>
+References: <20100818185445.GA11949@lenovo>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Aug 2010 14:07:09 +0800
+Message-ID: <1282198029.11858.107.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Thu, Aug 12, 2010 at 03:11:03PM +0800, Jiri Slaby wrote:
-> Hi Wu,
+On Thu, 2010-08-19 at 02:54 +0800, Cyrill Gorcunov wrote:
+> INSTR_COMPLETED is supported on particular cpu models of Netburst family,
+> add a check for that.
 > 
-> maybe you've already sent a backported version of e31f3698cd34 for
-> 2.6.34 stable. If you haven't yet, I'm attaching my version in case you
-> don't want to duplicate work. There is a change where lumpy_reclaim is
-> passed as a parameter, since struct scan_control doesn't contain that
-> yet in 2.6.34.
-
-This patch for -stable looks good, thank you!
-
-Greg, this patch has received pretty positive feedbacks from some users.
-(others feel no changes: there are more sources of responsiveness stalls)
-KOSAKI and me think it's important and safe enough for -stable kernels.
-The patch looks large, however it's mainly cleanups. The real change
-is merely about raising (DEF_PRIORITY-2) to (DEF_PRIORITY/3) in the
-test condition.
-
-Thanks,
-Fengguang
-
-> From e31f3698cd3499e676f6b0ea12e3528f569c4fa3 Mon Sep 17 00:00:00 2001
-> From: Wu Fengguang <fengguang.wu@intel.com>
-> Date: Mon, 9 Aug 2010 17:20:01 -0700
-> Subject: vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
-> 
-> Fix "system goes unresponsive under memory pressure and lots of
-> dirty/writeback pages" bug.
-> 
-> 	http://lkml.org/lkml/2010/4/4/86
-> 
-> In the above thread, Andreas Mohr described that
-> 
-> 	Invoking any command locked up for minutes (note that I'm
-> 	talking about attempted additional I/O to the _other_,
-> 	_unaffected_ main system HDD - such as loading some shell
-> 	binaries -, NOT the external SSD18M!!).
-> 
-> This happens when the two conditions are both meet:
-> - under memory pressure
-> - writing heavily to a slow device
-> 
-> OOM also happens in Andreas' system.  The OOM trace shows that 3 processes
-> are stuck in wait_on_page_writeback() in the direct reclaim path.  One in
-> do_fork() and the other two in unix_stream_sendmsg().  They are blocked on
-> this condition:
-> 
-> 	(sc->order && priority < DEF_PRIORITY - 2)
-> 
-> which was introduced in commit 78dc583d (vmscan: low order lumpy reclaim
-> also should use PAGEOUT_IO_SYNC) one year ago.  That condition may be too
-> permissive.  In Andreas' case, 512MB/1024 = 512KB.  If the direct reclaim
-> for the order-1 fork() allocation runs into a range of 512KB
-> hard-to-reclaim LRU pages, it will be stalled.
-> 
-> It's a severe problem in three ways.
-> 
-> Firstly, it can easily happen in daily desktop usage.  vmscan priority can
-> easily go below (DEF_PRIORITY - 2) on _local_ memory pressure.  Even if
-> the system has 50% globally reclaimable pages, it still has good
-> opportunity to have 0.1% sized hard-to-reclaim ranges.  For example, a
-> simple dd can easily create a big range (up to 20%) of dirty pages in the
-> LRU lists.  And order-1 to order-3 allocations are more than common with
-> SLUB.  Try "grep -v '1 :' /proc/slabinfo" to get the list of high order
-> slab caches.  For example, the order-1 radix_tree_node slab cache may
-> stall applications at swap-in time; the order-3 inode cache on most
-> filesystems may stall applications when trying to read some file; the
-> order-2 proc_inode_cache may stall applications when trying to open a
-> /proc file.
-> 
-> Secondly, once triggered, it will stall unrelated processes (not doing IO
-> at all) in the system.  This "one slow USB device stalls the whole system"
-> avalanching effect is very bad.
-> 
-> Thirdly, once stalled, the stall time could be intolerable long for the
-> users.  When there are 20MB queued writeback pages and USB 1.1 is writing
-> them in 1MB/s, wait_on_page_writeback() will stuck for up to 20 seconds.
-> Not to mention it may be called multiple times.
-> 
-> So raise the bar to only enable PAGEOUT_IO_SYNC when priority goes below
-> DEF_PRIORITY/3, or 6.25% LRU size.  As the default dirty throttle ratio is
-> 20%, it will hardly be triggered by pure dirty pages.  We'd better treat
-> PAGEOUT_IO_SYNC as some last resort workaround -- its stall time is so
-> uncomfortably long (easily goes beyond 1s).
-> 
-> The bar is only raised for (order < PAGE_ALLOC_COSTLY_ORDER) allocations,
-> which are easy to satisfy in 1TB memory boxes.  So, although 6.25% of
-> memory could be an awful lot of pages to scan on a system with 1TB of
-> memory, it won't really have to busy scan that much.
-> 
-> Andreas tested an older version of this patch and reported that it mostly
-> fixed his problem.  Mel Gorman helped improve it and KOSAKI Motohiro will
-> fix it further in the next patch.
-> 
-> Reported-by: Andreas Mohr <andi@lisas.de>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Lin Ming <ming.m.lin@intel.com>
+> CC: Stephane Eranian <eranian@google.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Frédéric Weisbecker <fweisbec@gmail.com>
+> CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
 > ---
->  mm/vmscan.c |   53 +++++++++++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 45 insertions(+), 8 deletions(-)
 > 
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1118,6 +1118,48 @@ static int too_many_isolated(struct zone
+> Hi Ming, please review this patch, and if you happened to have this
+> cpu models give it a try please (if you manage to find some spare time
+> of course). To test it we need RAW event P4_EVENT_INSTR_COMPLETED passed
+> on any model not mentioned in p4_event_match_cpu_model, and reverse ;)
+
+I have model 2 and 6.
+
+int main(int argc, char *argv[])
+{
+        u64 config = ((((P4_EVENT_INSTR_COMPLETED) << 25)   |
+                        ((1ULL) << 9)) << 32)                      |
+                        (0); /* no CCCR needed */
+
+	printf("%llx\n", config);
+}
+
+Use above code to get the raw config value 5a00020000000000.
+
+1. Test on model 2 p4, it falls into the check correctly.
+
+# perf top -e r5a00020000000000
+
+  Error: perfcounter syscall returned with -1 (Invalid argument)
+
+  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+
+#dmesg
+P4 PMU: Unsupported event: INSTR_COMPLETED
+
+2. Test on model 6 p4,
+
+PerfTop:       0 irqs/sec  kernel: nan%  exact:  nan% [1000Hz raw
+0x5a00020000000000],  (all, 16 CPUs)
+
+It has problem, no data is collected.
+
+I will check this.
+
+Lin Ming
+
+> 
+>  arch/x86/kernel/cpu/perf_event_p4.c |   30 ++++++++++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
+> 
+> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> =====================================================================
+> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
+> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> @@ -350,6 +350,11 @@ static __initconst const u64 p4_hw_cache
+>   },
+>  };
+>  
+> +/*
+> + * If general events will ever have a reference to the
+> + * P4_EVENT_INSTR_COMPLETED we would ought to check for
+> + * cpu model match (see how it's done for RAW events)
+> + */
+>  static u64 p4_general_events[PERF_COUNT_HW_MAX] = {
+>    /* non-halted CPU clocks */
+>    [PERF_COUNT_HW_CPU_CYCLES] =
+> @@ -428,6 +433,27 @@ static u64 p4_pmu_event_map(int hw_event
+>  	return config;
 >  }
 >  
->  /*
-> + * Returns true if the caller should wait to clean dirty/writeback pages.
-> + *
-> + * If we are direct reclaiming for contiguous pages and we do not reclaim
-> + * everything in the list, try again and wait for writeback IO to complete.
-> + * This will stall high-order allocations noticeably. Only do that when really
-> + * need to free the pages under high memory pressure.
-> + */
-> +static inline bool should_reclaim_stall(unsigned long nr_taken,
-> +					unsigned long nr_freed,
-> +					int priority,
-> +					int lumpy_reclaim,
-> +					struct scan_control *sc)
+> +/* check cpu model specifics */
+> +static bool p4_event_match_cpu_model(unsigned int event_idx)
 > +{
-> +	int lumpy_stall_priority;
-> +
-> +	/* kswapd should not stall on sync IO */
-> +	if (current_is_kswapd())
-> +		return false;
-> +
-> +	/* Only stall on lumpy reclaim */
-> +	if (!lumpy_reclaim)
-> +		return false;
-> +
-> +	/* If we have relaimed everything on the isolated list, no stall */
-> +	if (nr_freed == nr_taken)
-> +		return false;
+> +	/* INSTR_COMPLETED event only exist for model 3, 4, 6 (Prescott) */
+> +	if (event_idx == P4_EVENT_INSTR_COMPLETED) {
+> +		if (boot_cpu_data.x86_model	!= 3 &&
+> +			boot_cpu_data.x86_model	!= 4 &&
+> +			boot_cpu_data.x86_model	!= 6) {
+> +			pr_warning("P4 PMU: Unsupported event: INSTR_COMPLETED\n");
+> +			return false;
+> +		}
+> +	}
 > +
 > +	/*
-> +	 * For high-order allocations, there are two stall thresholds.
-> +	 * High-cost allocations stall immediately where as lower
-> +	 * order allocations such as stacks require the scanning
-> +	 * priority to be much higher before stalling.
+> +	 * note the IQ_ESCR0, IQ_ESCR1 are available on models 1 and 2
+> +	 * only but since we don't use them at moment -- no check
 > +	 */
-> +	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> +		lumpy_stall_priority = DEF_PRIORITY;
-> +	else
-> +		lumpy_stall_priority = DEF_PRIORITY / 3;
 > +
-> +	return priority <= lumpy_stall_priority;
+> +	return true;
 > +}
 > +
-> +/*
->   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
->   * of reclaimed pages
->   */
-> @@ -1209,14 +1251,9 @@ static unsigned long shrink_inactive_lis
->  		nr_scanned += nr_scan;
->  		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+>  static int p4_validate_raw_event(struct perf_event *event)
+>  {
+>  	unsigned int v;
+> @@ -439,6 +465,10 @@ static int p4_validate_raw_event(struct 
+>  		return -EINVAL;
+>  	}
 >  
-> -		/*
-> -		 * If we are direct reclaiming for contiguous pages and we do
-> -		 * not reclaim everything in the list, try again and wait
-> -		 * for IO to complete. This will stall high-order allocations
-> -		 * but that should be acceptable to the caller
-> -		 */
-> -		if (nr_freed < nr_taken && !current_is_kswapd() &&
-> -		    lumpy_reclaim) {
-> +		/* Check if we should syncronously wait for writeback */
-> +		if (should_reclaim_stall(nr_taken, nr_freed, priority,
-> +					lumpy_reclaim, sc)) {
->  			congestion_wait(BLK_RW_ASYNC, HZ/10);
->  
->  			/*
+> +	/* it may be unsupported */
+> +	if (!p4_event_match_cpu_model(v))
+> +		return -EINVAL;
+> +
+>  	/*
+>  	 * it may have some screwed PEBS bits
+>  	 */
+
 
