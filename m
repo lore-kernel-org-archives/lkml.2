@@ -1,120 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab0HSPT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:19:57 -0400
-Received: from mail.bspu.unibel.by ([195.50.2.21]:43198 "EHLO
-	mail.bspu.unibel.by" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab0HSPTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:19:53 -0400
-X-Greylist: delayed 1270 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Aug 2010 11:19:52 EDT
-Message-ID: <4C6D469F.2080900@bspu.unibel.by>
-Date: Thu, 19 Aug 2010 17:58:39 +0300
-From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
-Reply-To: mahatma@eu.by
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; ru; rv:1.9.3a6pre) Gecko/20100804 SeaMonkey/2.1a2
+	id S1754160Ab0HSPUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:20:08 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:56572 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754008Ab0HSPUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:20:05 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: linux-kernel@vger.kernel.org
+Subject: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+Date: Thu, 19 Aug 2010 18:18:35 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.36-rc1; KDE/4.4.3; x86_64; ; )
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org
-Subject: #3 (Re: More modaliases + patchtool)
-References: <4C6BE292.3060307@bspu.unibel.by> <201008191020.52861.rusty@rustcorp.com.au>
-In-Reply-To: <201008191020.52861.rusty@rustcorp.com.au>
-Content-Type: multipart/mixed;
- boundary="------------030408020005070804070604"
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008191818.36068.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030408020005070804070604
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Hi all,
 
-Rusty Russell пишет:
+struct device contains a member: struct dma_coherent_mem *dma_mem;
+to hold information for a piece of memory declared dma-coherent.
+Alternatively the same member could also be used to hold preallocated
+dma-coherent memory for latter per-device use.
 
-> Finally, I suggest that your script should only fix files when passed --fix,
-> and create a config option to run it (without --fix) under in
-> lib/Kconfig.debug.
+This tric is already used in drivers/staging/dt3155v4l.c
+dt3155_alloc_coherent()/dt3155_free_coherent()
 
-This is fixed script and patch for lib/Kconfig.debug & Makefile.
-I am unsure in patch (mostly Makefile inclusions) - FIXME.
-For example, I unsure in "PHONY += check_modaliases" requirement (and sense).
+Here proposed for general use by popular demand from video4linux folks.
+Helps for videobuf-dma-contig framework.
 
-Also may be suggested negative exitcode to strict check. (?)
+Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
 
--- 
-WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
-
-
---------------030408020005070804070604
-Content-Type: text/plain;
- name="modulesfix"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="modulesfix"
-
-IyEvYmluL2Jhc2gKIyMgKGMpIERlbmlzIEthZ2Fub3ZpY2gKIyMgdjUKIyMgZ3JlcC1wY3Jl
-IHJlcXVpcmVkCgojQlVTPSJwY2kiCkJVUz0iXHcrIgoKU1RSPSJeKD86c3RhdGljXHMrKT8o
-Pzpjb25zdFxzKyk/c3RydWN0XHMrIgoKZm5kKCl7CmxvY2FsIG1zZz0iRml4aW5nOiIKJGZp
-eCB8fCBtc2c9Ik5lZWQgdG8gZml4OiIKZ3JlcCAtUHJobCAiJHtTVFJ9JHtCVVN9X2Rldmlj
-ZV9pZFxzKyIgJDEgLS1pbmNsdWRlPSIqLmMiIHwgd2hpbGUgcmVhZCBpIDsgZG8KCWxvY2Fs
-IGJ1cz1gZ3JlcCAtUHJobyAiJHtTVFJ9JHtCVVN9X2RldmljZV9pZC4qXHMrIiAkaWAKCWJ1
-cz0iJHtidXMjKnN0cnVjdCB9IgoJbG9jYWwgbj0iJHtidXMlJVsqfSIKCW49IiR7biUlPSp9
-IgoJbj0iJHtuIyMqZGV2aWNlX2lkIH0iCgluPSIke24vLyB9IgoJYnVzPSIke2J1cyUlX2Rl
-dmljZV9pZCp9IgoJZ3JlcCAtUHEgIl5tb2R1bGVfaW5pdFxzKlwoIiAkaSB8fCBjb250aW51
-ZQoJZ3JlcCAtcSAiTU9EVUxFX0RFVklDRV9UQUJMRSIgJGkgJiYgY29udGludWUKCWxvY2Fs
-IGlpPSIke2kjJDF9IgoJaWk9IiR7aWkjL30iCgojCWNhc2UgJGlpIGluCiMJKi9tZGlvLWdw
-aW8uYykKIwkJZWNobyAiQlJPS0VOOiAkYnVzOiAkaWkiCiMJCWNvbnRpbnVlCiMJOzsKIwll
-c2FjCgoJYnVzPSIke2J1cyUlXyp9IgoJbG9jYWwgQlUKCWNhc2UgIiRidXMiIGluCglzZGlv
-KUJVPU1NQzs7CgkqKUJVPSIke2J1c15efSI7OwoJZXNhYwoJaWYgZ3JlcCAtUHJxICJeXHMq
-KD86bWVudSk/Y29uZmlnXHMrJEJVKD86XHMuKik/JCIgJDEgLS1pbmNsdWRlPSJLY29uZmln
-KiI7IHRoZW4KCQllY2hvICIkbXNnICRCVTogKCRuKSAkaWkiCgkJJGZpeCAmJiBzZWQgLWkg
-LWUgJ3MvXlwobW9kdWxlX2luaXQuKlwpJC9cbiNpZmRlZiBDT05GSUdfJyIkQlUiJ1xuTU9E
-VUxFX0RFVklDRV9UQUJMRSgnIiRidXMsICRuIicpO1xuI2VuZGlmXG5cblwxLycgJGkKCWVs
-c2UKCQllY2hvICIkbXNnICRidXM6ICgkbikgJGlpIgoJCSRmaXggJiYgc2VkIC1pIC1lICdz
-L15cKG1vZHVsZV9pbml0LipcKSQvXG5NT0RVTEVfREVWSUNFX1RBQkxFKCciJGJ1cywgJG4i
-Jyk7XG5cblwxLycgJGkKCWZpCmRvbmUKfQoKcD0iIgpmaXg9ZmFsc2UKd2hpbGUgW1sgLW4g
-IiQqIiBdXTsgZG8KCWNhc2UgIiQxIiBpbgoJLS1maXgpZml4PXRydWU7OwoJKilwPSIkcCAk
-MSI7OwoJZXNhYwoJc2hpZnQKZG9uZQpbWyAteiAiJHAiIF1dICYmIGVjaG8gIiQwIFstLWZp
-eF0gPHBhdGhfdG9fa2VybmVsPgooZ3JlcCtwY3JlIHJlcXVpcmVkKSIgJiYgZXhpdCAxCgpm
-bmQgJHAK
---------------030408020005070804070604
-Content-Type: text/plain;
- name="modulesfix_config.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="modulesfix_config.patch"
-
-UnVuICJzY3JpcHRzL21vZHVsZXNmaXgiIGlmIENPTkZJR19DSEVDS19NT0RVTEVfREVWSUNF
-X1RBQkxFLgoKU2lnbmVkLW9mZi1ieTogRHppYW5pcyBLYWhhbm92aWNoIDxtYWhhdG1hQGV1
-LmJ5PgoKZGlmZiAtcHJ1TiBiL2xpYi9LY29uZmlnLmRlYnVnIGMvbGliL0tjb25maWcuZGVi
-dWcKLS0tIGIvbGliL0tjb25maWcuZGVidWcJMjAxMC0wOC0xOSAxNToyMDo1OC4wMDAwMDAw
-MDAgKzAzMDAKKysrIGMvbGliL0tjb25maWcuZGVidWcJMjAxMC0wOC0xOSAxNzozMzoxMi41
-OTQ3NjQ5NTQgKzAzMDAKQEAgLTExNDcsNiArMTE0NywxMyBAQCBjb25maWcgQVRPTUlDNjRf
-U0VMRlRFU1QKIAogCSAgSWYgdW5zdXJlLCBzYXkgTi4KIAorY29uZmlnIENIRUNLX01PRFVM
-RV9ERVZJQ0VfVEFCTEUKKwlib29sICJQZXJmb3JtIGNoZWNrIE1PRFVMRV9ERVZJQ0VfVEFC
-TEUgaW4gbW9kdWxlcyIKKwloZWxwCisJICBFbmFibGUgdGhpcyBvcHRpb24gdG8gY2hlY2sg
-TU9EVUxFX0RFVklDRV9UQUJMRSBpbiBtb2R1bGVzLgorCSAgU29tZSBvZiBuZXcgbW9kdWxl
-cyBzb21ldGltZXMgaGF2ZSBubyBNT0RVTEVfREVWSUNFX1RBQkxFIGRlY2xhcmF0aW9uCisJ
-ICBhbmQgZG8gbm90IGV4cG9ydCBoYXJkd2FyZSBtb2R1bGUgYWxpYXMuIFNheSBZIHRvIGZp
-bmQgdGhpcyBtb2R1bGVzLgorCiBzb3VyY2UgInNhbXBsZXMvS2NvbmZpZyIKIAogc291cmNl
-ICJsaWIvS2NvbmZpZy5rZ2RiIgpkaWZmIC1wcnVOIGIvTWFrZWZpbGUgYy9NYWtlZmlsZQot
-LS0gYi9NYWtlZmlsZQkyMDEwLTA4LTE5IDE1OjIwOjU4LjAwMDAwMDAwMCArMDMwMAorKysg
-Yy9NYWtlZmlsZQkyMDEwLTA4LTE5IDE3OjQzOjA1LjA0NDc2NDk4NyArMDMwMApAQCAtODc0
-LDYgKzg3NCwxMyBAQCBpZmRlZiBDT05GSUdfS0FMTFNZTVMKIC50bXBfdm1saW51eDE6IHZt
-bGludXgubwogZW5kaWYKIAoraWZkZWYgQ09ORklHX0NIRUNLX01PRFVMRV9ERVZJQ0VfVEFC
-TEUKK2NoZWNrX21vZGFsaWFzZXM6CisJJChzcmN0cmVlKS9zY3JpcHRzL21vZHVsZXNmaXgg
-JChzcmN0cmVlKQorZWxzZQorY2hlY2tfbW9kYWxpYXNlczoKK2VuZGlmCisKIG1vZHBvc3Qt
-aW5pdCA6PSAkKGZpbHRlci1vdXQgaW5pdC9idWlsdC1pbi5vLCAkKHZtbGludXgtaW5pdCkp
-CiB2bWxpbnV4Lm86ICQobW9kcG9zdC1pbml0KSAkKHZtbGludXgtbWFpbikgRk9SQ0UKIAkk
-KGNhbGwgaWZfY2hhbmdlZF9ydWxlLHZtbGludXgtbW9kcG9zdCkKQEAgLTEwMzQsNyArMTA0
-MSw3IEBAIGFsbDogbW9kdWxlcwogIwl1c2luZyBhd2sgd2hpbGUgY29uY2F0ZW5hdGluZyB0
-byB0aGUgZmluYWwgZmlsZS4KIAogUEhPTlkgKz0gbW9kdWxlcwotbW9kdWxlczogJCh2bWxp
-bnV4LWRpcnMpICQoaWYgJChLQlVJTERfQlVJTFRJTiksdm1saW51eCkgbW9kdWxlcy5idWls
-dGluCittb2R1bGVzOiAkKHZtbGludXgtZGlycykgJChpZiAkKEtCVUlMRF9CVUlMVElOKSx2
-bWxpbnV4KSBtb2R1bGVzLmJ1aWx0aW4gY2hlY2tfbW9kYWxpYXNlcwogCSQoUSkkKEFXSykg
-JyF4WyQkMF0rKycgJCh2bWxpbnV4LWRpcnM6JT0kKG9ianRyZWUpLyUvbW9kdWxlcy5vcmRl
-cikgPiAkKG9ianRyZWUpL21vZHVsZXMub3JkZXIKIAlAJChrZWNobykgJyAgQnVpbGRpbmcg
-bW9kdWxlcywgc3RhZ2UgMi4nOwogCSQoUSkkKE1BS0UpIC1mICQoc3JjdHJlZSkvc2NyaXB0
-cy9NYWtlZmlsZS5tb2Rwb3N0Cg==
---------------030408020005070804070604--
+======================================================================
+--- a/drivers/base/dma-coherent.c	2010-08-19 15:50:42.000000000 +0300
++++ b/drivers/base/dma-coherent.c	2010-08-19 17:27:56.000000000 +0300
+@@ -93,6 +93,83 @@ void *dma_mark_declared_memory_occupied(
+ EXPORT_SYMBOL(dma_mark_declared_memory_occupied);
+ 
+ /**
++ * dma_reserve_coherent_memory() - reserve coherent memory for per-device use
++ *
++ * @dev:	device from which we allocate memory
++ * @size:	size of requested memory area in bytes
++ * @flags:	same as in dma_declare_coherent_memory()
++ *
++ * This function reserves coherent memory allocating it early (during probe())
++ * to support latter allocations from per-device coherent memory pools.
++ * For a given device one could use either dma_declare_coherent_memory() or
++ * dma_reserve_coherent_memory(), but not both, becase the result of these
++ * functions is stored in a single struct device member - dma_mem
++ *
++ * Returns DMA_MEMORY_MAP on success, or 0 if failed.
++ * (same as dma_declare_coherent_memory()
++ */
++int dma_reserve_coherent_memory(struct device *dev, size_t size, int flags)
++{
++	struct dma_coherent_mem *mem;
++	dma_addr_t dev_base;
++	int pages = size >> PAGE_SHIFT;
++	int bitmap_size = BITS_TO_LONGS(pages) * sizeof(long);
++
++	if ((flags & DMA_MEMORY_MAP) == 0)
++		goto out;
++	if (!size)
++		goto out;
++	if (dev->dma_mem)
++		goto out;
++
++	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
++	if (!mem)
++		goto out;
++	mem->virt_base = dma_alloc_coherent(dev, size, &dev_base,
++							DT3155_COH_FLAGS);
++	if (!mem->virt_base)
++		goto err_alloc_coherent;
++	mem->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
++	if (!mem->bitmap)
++		goto err_bitmap;
++
++	mem->device_base = dev_base;
++	mem->size = pages;
++	mem->flags = flags;
++	dev->dma_mem = mem;
++	return DMA_MEMORY_MAP;
++
++err_bitmap:
++	dma_free_coherent(dev, size, mem->virt_base, dev_base);
++err_alloc_coherent:
++	kfree(mem);
++out:
++	return 0;
++}
++EXPORT_SYMBOL(dma_reserve_coherent_memory);
++
++/**
++ * dma_free_reserved_memory() - free the reserved dma-coherent memoty
++ *
++ * @dev:	device for which we free the dma-coherent memory
++ *
++ * same as dma_release_declared_memory()
++ */
++void dma_free_reserved_memory(struct device *dev)
++{
++	struct dma_coherent_mem *mem = dev->dma_mem;
++
++	if (!mem)
++		return;
++	dev->dma_mem = NULL;
++	dma_free_coherent(dev, mem->size << PAGE_SHIFT,
++					mem->virt_base, mem->device_base);
++	kfree(mem->bitmap);
++	kfree(mem);
++}
++EXPORT_SYMBOL(dma_free_reserved_memory);
++
++/**
+  * dma_alloc_from_coherent() - try to allocate memory from the per-device coherent area
+  *
+  * @dev:	device from which we allocate memory
