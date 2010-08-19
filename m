@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab0HSPwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:52:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50613 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445Ab0HSPwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:52:39 -0400
-Message-ID: <4C6D5257.9040305@kernel.org>
-Date: Thu, 19 Aug 2010 17:48:39 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: "Darrick J. Wong" <djwong@us.ibm.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Mingming Cao <cmm@us.ibm.com>, Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
-References: <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <20100809210723.GA28171@infradead.org> <20100816161433.GK2109@tux1.beaverton.ibm.com> <20100819020734.GL2109@tux1.beaverton.ibm.com> <20100819085349.GA8782@infradead.org> <4C6CF6BC.3030804@kernel.org>
-In-Reply-To: <4C6CF6BC.3030804@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 15:52:22 +0000 (UTC)
+	id S1752083Ab0HSPxM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:53:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50946 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab0HSPxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:53:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PyEIwMBOyzu47Cx+wdNWUByTjN6FpLGUs+lUY5FhBxfakJ+osDWD/aLW/4K2EbQykc
+         CXszebSaGakjOlgUmCF3qzztISfl2LcGAKGLRfVTxQ4bpHoLRr6ePwLrypkDTgOvE3sv
+         fda+XDFz1jt3C26wRBSVS9zTnZ33XLOThoUi4=
+Subject: Re: [RFC][PATCH] introduce ptr_diff()
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <87aaoiu6z6.fsf@basil.nowhere.org>
+References: <1282217856-8625-1-git-send-email-namhyung@gmail.com>
+	 <87aaoiu6z6.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Aug 2010 00:53:06 +0900
+Message-ID: <1282233186.1713.10.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+2010-08-19 (목), 14:23 +0200, Andi Kleen:
+> IMHO it would be better to simply disable the warning in sparse instead
+> of uglying the code just to work around sparse bogosity. It doesnt' seem
+> to make much sense. A subtraction followed by a shift is not expensive.
+> 
+> -Andi
+> 
 
-On 08/19/2010 11:17 AM, Tejun Heo wrote:
-> What was the configuration?  If dm was involved, both md and dm can
-> only process single flush request at a time.  Supporing multiple
-> flushes in flight wouldn't be too difficult.  It's just the way things
-> are implemented with the previous barrier implementation.  It can
-> definitely be improved.
-
-Oh, I just realized that the current bio-based dm implementation
-doesn't allow other bio's to be processed if a flush is in progress.
-So, it's not about not being able to handle multiple flushes.  The
-queue just stalls while flush is in progress and because it also waits
-for flush completion by waiting for all commands in progress to
-finish.  It basically ends up draining and stalling everything.
-Shouldn't be too hard to make it better.
-
-Thanks.
+I'm curious who turns on that switch. -Wptr-subtraction-blows is turned
+off by default, I didn't use CF variable at build time and I could not
+find any reference of it in the source tree. Hmm..
 
 -- 
-tejun
+Regards,
+Namhyung Kim
+
+
