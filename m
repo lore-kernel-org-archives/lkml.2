@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab0HSM0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 08:26:40 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:32618 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab0HSM0i (ORCPT
+	id S1752911Ab0HSM17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 08:27:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50624 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab0HSM16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 08:26:38 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz936eK1432N98dNzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7EFUT-02-EG8-02
-X-M-MSG: 
-Date: Thu, 19 Aug 2010 13:41:02 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH/RFC 2/5] [PATCH] sched: pass sched_domain_level to
- sched_power_savings_store
-Message-ID: <20100819114102.GE4659@loge.amd.com>
-References: <20100812172544.655648128@de.ibm.com>
- <20100812172622.349333778@de.ibm.com>
- <1281947397.1926.1012.camel@laptop>
+	Thu, 19 Aug 2010 08:27:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Date: Thu, 19 Aug 2010 14:28:04 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: john stultz <johnstul@us.ibm.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>
+References: <cover.1281956490.git.richard.cochran@omicron.at> <1282176776.2865.100.camel@localhost.localdomain> <20100819055518.GA4084@riccoc20.at.omicron.at>
+In-Reply-To: <20100819055518.GA4084@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1281947397.1926.1012.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008191428.04546.arnd@arndb.de>
+X-Provags-ID: V02:K0:xzOZUtvf0m3GCbwlNTigaKS+K6xE28p9Gp72CDvpGgt
+ MYWRUywX+YVplwA/JTITatXs8RdATTq6ncG/PkriZ76J9pECfe
+ ui0y0CZH80IWWXGK6bheV3Bvdl3aET44LOTGzF7l3jHJzNrdcO
+ hmVZcHtzMv6dIk+cLvvkQJsGpEv+vD0L8i+Nm6eDZt8uQyw6pc
+ hmGz5e5187ZqS8VBt1OKw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 04:29:57AM -0400, Peter Zijlstra wrote:
-> On Thu, 2010-08-12 at 19:25 +0200, Heiko Carstens wrote:
-> > Pass the corresponding sched domain level to sched_power_savings_store instead
-> > of a yes/no flag which indicates if the level is SMT or MC.
-> > This is needed to easily extend the function so it can be used for a third
-> > level. 
+On Thursday 19 August 2010, Richard Cochran wrote:
+> On Wed, Aug 18, 2010 at 05:12:56PM -0700, john stultz wrote:
+> > On Wed, 2010-08-18 at 09:19 +0200, Richard Cochran wrote:
+> > > The timer/alarm stuff is "ancillary" and is not at all necessary. It
+> > > is just a "nice to have." I will happily remove it, if it is too
+> > > troubling for people.
+> > 
+> > If there's a compelling argument for it, I'm interested to hear. But
+> > again, it seems like just
+> > yet-another-way-to-get-alarm/timer-functionality, so before we add an
+> > extra API (or widen an existing API) I'd like to understand the need.
 > 
-> Ah, so the plan is to reduce the number of knobs, not create more.
+> We don't really need it, IMHO.
+> 
+> But if we offer clockid_t CLOCK_PTP, then we get timer_settime()
+> without any extra effort.
 
-Don't think so.
+Makes sense.
 
-> Sysadmins really aren't interested in having a powersavings knob per
-> topology level.
+> > So in thinking about this, try to focus on what the new clock_id
+> > provides that the other existing clockids do not? Are they at comparable
+> > levels of abstraction? 15 years from now, are folks likely to still be
+> > using it? Will it be maintainable? etc...
+> 
+> Arnd convinced me that clockid_t=CLOCK_PTP is a good fit.
 
-It just allows to use the same store functions for three instead of
-two different knobs.
+My point was that a syscall is better than an ioctl based interface here,
+which I definitely still think. Given that John knows much more about
+clocks than I do, we still need to get agreement on the question that
+he raised, which is whether we actually need to expose this clock to the
+user or not.
 
+If we can find a way to sync system time accurate enough with PTP and
+PPS, user applications may not need to see two separate clocks at all.
 
-Andreas
+> My plan would be to introduce just one additional syscall:
+> 
+> SYSCALL_DEFINE3(clock_adjtime, const clockid_t, clkid,
+> 		int, ppb, struct timespec __user *, ts)
+> 
+> ppb - desired frequency adjustment in parts per billion
+> ts  - desired time step (or jump) in <sec,nsec> to correct
+>       a measured offset
+> 
+> Arguably, this syscall might be useful for other clocks, too.
 
+This is a mix of adjtime and adjtimex with the addition of
+the clkid parameter, right?
 
+Have you considered passing a struct timex instead of ppb and ts?
 
+Is using ppb instead of the timex ppm required to get the accuracy
+you want?
+
+	Arnd
