@@ -1,122 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab0HSVHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 17:07:47 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:33326 "EHLO imr4.ericy.com"
+	id S1753416Ab0HSVHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 17:07:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49094 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752867Ab0HSVHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 17:07:45 -0400
-Date: Thu, 19 Aug 2010 14:06:38 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: Jean Delvare <khali@linux-fr.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Wan, Huaxu" <huaxu.wan@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit
- Notification: pkgtemp doc
-Message-ID: <20100819210638.GA7940@ericsson.com>
-References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com>
- <4C485DF1.5050407@linux.intel.com>
- <20100722162222.GA22450@linux-os.sc.intel.com>
- <20100722172726.GA4914@ericsson.com>
- <20100722175225.GB22450@linux-os.sc.intel.com>
- <20100722185814.GA5235@ericsson.com>
- <20100722212111.GC22450@linux-os.sc.intel.com>
- <20100819174632.239aed93@hyperion.delvare>
- <20100819162719.GB4160@ericsson.com>
- <20100819205120.GA22602@linux-os.sc.intel.com>
+	id S1753354Ab0HSVHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 17:07:50 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [GIT PULL] notification tree - try 37!
+Date: Thu, 19 Aug 2010 23:07:31 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <201008192224.12309.agruen@suse.de> <1282250565.21419.1821.camel@acb20005.ipt.aol.com>
+In-Reply-To: <1282250565.21419.1821.camel@acb20005.ipt.aol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100819205120.GA22602@linux-os.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008192307.32526.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 04:51:20PM -0400, Fenghua Yu wrote:
-> On Thu, Aug 19, 2010 at 09:27:19AM -0700, Guenter Roeck wrote:
-> > On Thu, Aug 19, 2010 at 11:46:32AM -0400, Jean Delvare wrote:
-> > > Hi Fenghua, Guenter,
-> > > 
-> > > Sorry for joining the discussion a little late, I was on vacation when
-> > > it happened. I'll comment now, it's probably "too late" as the patch
-> > > set was merged meanwhile, but still...
-> > > 
-> > There was no discussion at all, unfortunately.
-> > 
-> > > On Thu, 22 Jul 2010 14:21:11 -0700, Fenghua Yu wrote:
-> > > > On Thu, Jul 22, 2010 at 11:58:14AM -0700, Guenter Roeck wrote:
-> > > > > You use the argument that there may be other package level sensors in the future.
-> > > > > Are there any plans for this, or is this just a theory ?
-> > > > 
-> > > > Not just a theory. Sandy Bridge already implements other package level sensors.
-> > > > If really need to know exactly which sensors are implemented, we might go
-> > > > through a channel before releasing the info.
-> > > > 
-> > > > > Next question is how to handle future sensor types. One hwmon instance per sensor,
-> > > > > additional sensors in this driver, or even a new driver ?
-> > > > 
-> > > > Currently package level thermal just reports the maximum temperature across
-> > > > the package. Which sensor is reporting the highest temperature is not exposed.
-> > > 
-> > > So this isn't a real physical sensor, but more of a meta-sensor? If
-> > > this is a case, then we don't need support for this at all. User-space
-> > > can compute a maximum by itself, we don't need a dedicated kernel
-> > > driver for that.
-> > > 
-> The pkgtemp reports thermal status for a set of sensors in a package. Please
-> note the sensors in a package are not limited to processor sensors which are
-> handled by coretemp. The sensors in a package also include gfx sensors, cache
-> sensors, memory controllor sensors which are not handled by any hwmon drivers.
-> 
-> OS gets maximum package thermal status only from MSR PACKAGE_THERM_STATUS.
-> There is no detailed thermal info for each sensor in a package. User-space
-> can't compute a maximum by itself. So a piece of kernel driver code, whether
-> a seperate driver or a integrated driver, is necessary if user-space wants to
-> know thermal status of a package.
-> 
-> > > > > We had was a separate discussion if the coretemp driver should be redesigned
-> > > > > to one instance per CPU. The package sensor would fit into that model,
-> > > > > since you would have
-> > > > > 
-> > > > > coretemp-isa-0000
-> > > > > Core0
-> > > > > Core1
-> > > > > ...
-> > > > > CoreN
-> > > > > Package
-> > > > > 
-> > > > > coretemp-isa-0001
-> > > > > Core0
-> > > > > Core1
-> > > > > ...
-> > > > > CoreM
-> > > > > Package
-> > > > > 
-> > > > > I personally would prefer that approach. It would avoid ambiguity associating Package X
-> > > > > with specific cores, and it would also easily expand to additional non-core future sensors.
-> > > 
-> > > For the records, I totally support this approach. I want the coretemp
-> > > driver to be updated to present a single hwmon device per CPU, no
-> > > matter what happens to the "package temperature".
-> > > 
-> > I might spend some time rewriting the coretemp driver as described above,
-> > unless someone else picks it up, and unless there is opposition. 
-> > Obviously, that won't include the package sensor since there is now
-> > a separate driver for it.
-> I agree with this method too. On a multiple socket system, the current coretemp
-> output will cause confusion since it only outputs core# without package#.
-> 
-> If it's ok for you, I can rewrite this part to have hwmon device per CPU with
-> both core and package thermal info and send out RFC patch soon.
-> 
-Sounds good to me.
+On Thursday 19 August 2010 22:42:45 Eric Paris wrote:
+> The extra events are plainly the new events that inotify doesn't
+> support: namely permissions events.  You ask for and received extra
+> events....
 
-Guenter
+How can it make sense that inotify suddenly starts seeing events it does not
+support?
 
+> I can't reproduce it. You must have some other testing methodology.....
+
+Apparently.  Here is a trace if what I'm getting through inotify (the inotify
+events were dumped with gdb, the rest is from strace):
+
+inotify_init()                          = 3
+inotify_add_watch(3, "d", IN_ACCESS|IN_MODIFY|IN_ATTRIB|IN_CLOSE_WRITE|IN_CLOSE_NOWRITE|IN_OPEN|IN_MOVED_FROM|IN_MOVED_TO|IN_CREATE|
+IN_DELETE|IN_DELETE_SELF|IN_MOVE_SELF) = 1
+read(3, "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\0\0\0 \0\0@\0\0\0\0\0\0\0\0", 4210688) = 32
+
+	=> {wd = 1, mask = 0, cookie = 0, len = 0, name = ...}
+	=> {wd = 1, mask = 1073741856, cookie = 0, len = 0, name = ...}
+
+read(3, "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\0\0\0\20\0\0@\0\0\0\0\0\0\0\0", 4210688) = 32
+
+	=> {wd = 1, mask = 0, cookie = 0, len = 0, name = ...}
+	=> {wd = 1, mask = 1073741840, cookie = 0, len = 0, name = ...}
+
+read(3, 0x7fff56db15e0, 4210688)        = -1 EINTR (Interrupted system call)
+
+
+Andreas
