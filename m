@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab0HSXCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 19:02:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45824 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab0HSXCF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 19:02:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=OGZEqsNPajCvo7HoMa5PzabHfzkHAPGlTRn54ABvZPY2ScHJsP5E4A/NmvYdH4B106
-         Kib5aHN72eFp1Kdchk4JFzeCQcWEV7JSg5hXFAHhODgT7FbZsKpHqHqyofUboWKifzrA
-         kbJqKnyq6HXvEmD4QK2aelHdnUQgtSBOlU1PM=
+	id S1752072Ab0HSXOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 19:14:25 -0400
+Received: from mail.lang.hm ([64.81.33.126]:40729 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751267Ab0HSXOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 19:14:22 -0400
+Date: Thu, 19 Aug 2010 16:10:10 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, arve@android.com,
+        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, peterz@infradead.org, tglx@linutronix.de,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+In-Reply-To: <20100813151451.GC2511@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008191600310.8334@asgard.lang.hm>
+References: <20100809181638.GI3026@linux.vnet.ibm.com> <20100809201822.441905f7@lxorguk.ukuu.org.uk> <20100810044541.GA2817@linux.vnet.ibm.com> <20100810093849.138e2318@lxorguk.ukuu.org.uk> <20100811004223.GH2379@linux.vnet.ibm.com>
+ <AANLkTik7Po9OuKC-QBZ=E83J70sU_ewNi+nNWgcjjLXd@mail.gmail.com> <20100811221258.GI2516@linux.vnet.ibm.com> <AANLkTi=fJjM=uWeV+L66ajM9rhrL0t1OO-C7ThNRdbae@mail.gmail.com> <20100812161935.GC2524@linux.vnet.ibm.com> <AANLkTi=51cFa0t5ZYj2CMiauuW80ZWTrm1tQkn63Et0F@mail.gmail.com>
+ <20100813151451.GC2511@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100819144620.e078fbbe.akpm@linux-foundation.org>
-References: <281434.37339.qm@web65616.mail.ac4.yahoo.com> <20100819144620.e078fbbe.akpm@linux-foundation.org>
-From: Stephen Pape <srpape@gmail.com>
-Date: Thu, 19 Aug 2010 19:01:44 -0400
-Message-ID: <AANLkTi=qVaz68ozjV-BtFCZBi6JvfM-wmqugYzoVfh1e@mail.gmail.com>
-Subject: Re: [PATCH 001/001] USB: ftdi_sio: fix endianess of max packet size
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="680960-54885766-1282259417=:8334"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I guess you're right about it not being used very often on big endian machines.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-The original bug report is here: https://dev.openwrt.org/ticket/7365
+--680960-54885766-1282259417=:8334
+Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 
->From the user's point of view, priv->max_packet_size would get set to
-0x0020 instead of 0x0200, so a message would print saying "Setting
-MaxPacketSize 2" when it should be 512. After that you couldn't get
-any data from the serial port, because priv->max_packet_size is used
-in other sections of the code.
+On Fri, 13 Aug 2010, Paul E. McKenney wrote:
 
--Stephen
+> On Thu, Aug 12, 2010 at 08:52:22PM +0300, Felipe Contreras wrote:
+>> On Thu, Aug 12, 2010 at 7:19 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>>> On Thu, Aug 12, 2010 at 03:17:29AM +0300, Felipe Contreras wrote:
+>>>>> It seems to me that the same social-engineering approaches work in
+>>>>> both cases.
+>>>>
+>>>> Yes, but if dynamic PM works as advertised, you don't need
+>>>> opportunistic suspend.
+>>>
+>>> For dynamic power management to totally eliminate the need for something
+>>> like suspend blockers, you are having to make some brave assumptions.
+>>> Yes, dynamic power management is quite useful, but there is a big
+>>> difference between something being useful and something doing everything
+>>> for everyone.  You have not yet convinced me that dynamic power management
+>>> will make it to the "doing everything for everyone" stage.
+>>
+>> As it has been explained before, there's a sweet-spot of idleness:
+>> http://article.gmane.org/gmane.linux.kernel/995525
+>> http://article.gmane.org/gmane.linux.ports.arm.omap/37982
+>>
+>> Do you agree that there's such a thing, and if so, do you agree that
+>> the benefits of opportunistic suspend are much less once that point is
+>> reached?
+>
+> I agree that there will be a sweet spot of idleness (though I would call
+> it a "point of diminishing returns"), but only if all the applications
+> are power-optimized.  The advantage of opportunistic suspend is instead
+> its tolerance of power-oblivious applications with minimal degradation
+> of battery life.
 
-On Thu, Aug 19, 2010 at 5:46 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
->
-> On Wed, 18 Aug 2010 07:14:37 -0700 (PDT)
-> Michael Wileczka <mikewileczka@yahoo.com> wrote:
->
-> > From: Michael Wileczka <mikewileczka@yahoo.com>
-> >
-> > The USB max packet size (always little-endian) was not being byte swapped on big-endian systems.
-> > Created with 2.6.32.16
-> > Applicable since [USB: ftdi_sio: fix hi-speed device packet size calculation] approx 2.6.31
-> >
-> > Signed-off-by: Michael Wileczka <mikewileczka@yahoo.com>
-> > ---
-> > --- a/drivers/usb/serial/ftdi_sio.c
-> > +++ b/drivers/usb/serial/ftdi_sio.c
-> > @@ -1397,7 +1397,7 @@ static void ftdi_set_max_packet_size(str
-> >       }
-> >
-> >       /* set max packet size based on descriptor */
-> > -     priv->max_packet_size = ep_desc->wMaxPacketSize;
-> > +     priv->max_packet_size = le16_to_cpu(ep_desc->wMaxPacketSize);
-> >
-> >       dev_info(&udev->dev, "Setting MaxPacketSize %d\n", priv->max_packet_size);
-> >  }
->
-> So I guess nobody noticed this because the driver deosn't get used on
-> big-endian machines a lot?
->
-> What are the user-visible effects of this bug?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+sorry for the late response, the last week has been very hectic.
+
+I just wanted to note that there is already a tool in the kernel to deal 
+with this, the timer jitter/fuzz control. This can be set by an 
+application for itself, or it can be set by some other process for an 
+application (I don't remember the details of all the ways this can be set)
+
+This could be used in a way similar to how userspace wakelocks are set 
+today, if the power management process (that holds the wakelock and keep 
+sthe screen lit today) thinks the system should be awake, let the 
+jitter/fuzz be small, if that process thinks the system should probably be 
+asleep, set the jitter/fuzz to a larger value. If other things are running 
+anyway, the timers can fire and be serviced normally, otherwise the kernel 
+is free to delay the timer going off even for badly written processes.
+
+David Lang
+--680960-54885766-1282259417=:8334--
