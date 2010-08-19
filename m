@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab0HSKUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 06:20:55 -0400
-Received: from verein.lst.de ([213.95.11.210]:58783 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072Ab0HSKUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 06:20:53 -0400
-Date: Thu, 19 Aug 2010 12:20:23 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
-Message-ID: <20100819102023.GA6736@lst.de>
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100818094620.GA14707@lst.de> <4C6D0021.4040601@kernel.org>
-Mime-Version: 1.0
+	id S1752480Ab0HSKXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 06:23:20 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:59642 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab0HSKXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 06:23:18 -0400
+Date: Thu, 19 Aug 2010 11:20:55 +0100
+From: Chris Webb <chris@arachsys.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: Over-eager swapping
+Message-ID: <20100819102055.GK2370@arachsys.com>
+References: <20100804032400.GA14141@localhost>
+ <20100804095811.GC2326@arachsys.com>
+ <20100804114933.GA13527@localhost>
+ <20100804120430.GB23551@arachsys.com>
+ <20100818143801.GA9086@localhost>
+ <20100818144655.GX2370@arachsys.com>
+ <20100818152103.GA11268@localhost>
+ <1282147034.77481.33.camel@useless.localdomain>
+ <20100818155825.GA2370@arachsys.com>
+ <alpine.DEB.2.00.1008181112510.6294@router.home>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C6D0021.4040601@kernel.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <alpine.DEB.2.00.1008181112510.6294@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 11:57:53AM +0200, Tejun Heo wrote:
-> On 08/18/2010 11:46 AM, Christoph Hellwig wrote:
-> > FYI: One issue with this series is that make_request based drivers
-> > not have to access all REQ_FLUSH and REQ_FUA requests.  We'll either
-> > need to add handling to empty REQ_FLUSH requests to all of them or
-> > figure out a way to prevent them getting sent.  That is assuming they'll
-> > simply ignore REQ_FLUSH/REQ_FUA on normal writes.
+Christoph Lameter <cl@linux-foundation.org> writes:
+
+> On Wed, 18 Aug 2010, Chris Webb wrote:
 > 
-> Can you be a bit more specific?  In most cases, request based drivers
-> should be fine.  They sit behind the front most request_queue which
-> would discompose REQ_FLUSH/FUAs into appropriate command sequence.
+> > > != 0.  And even then, zone reclaim should only reclaim file pages, not
+> > > anon.  In theory...
+> >
+> > Hi. This is zero on all our machines:
+> >
+> > # sysctl vm.zone_reclaim_mode
+> > vm.zone_reclaim_mode = 0
+> 
+> Set it to 1.
 
-I said make_request based drivers, that is drivers taking bios.   These
-get bios directly from __generic_make_request and need to deal with
-REQ_FLUSH/FUA themselves.  We have quite a few more than just dm/md of
-this kind:
+I tried this on a handful of the problem hosts before re-adding their swap.
+One of them now runs without dipping into swap. The other three I tried had
+the same behaviour of sitting at zero swap usage for a while, before
+suddenly spiralling up with %wait going through the roof. I had to swapoff
+on them to bring them back into a sane state. So it looks like it helps a
+bit, but doesn't cure the problem.
 
-arch/powerpc/sysdev/axonram.c:	blk_queue_make_request(bank->disk->queue, axon_ram_make_request);
-drivers/block/aoe/aoeblk.c:     blk_queue_make_request(d->blkq, aoeblk_make_request);
-drivers/block/brd.c:		blk_queue_make_request(brd->brd_queue, brd_make_request);
-drivers/block/drbd/drbd_main.c: blk_queue_make_request(q, drbd_make_request_26);
-drivers/block/loop.c:		blk_queue_make_request(lo->lo_queue, loop_make_request);
-drivers/block/pktcdvd.c:        blk_queue_make_request(q, pkt_make_request);
-drivers/block/ps3vram.c:        blk_queue_make_request(queue, ps3vram_make_request);
-drivers/block/umem.c:		blk_queue_make_request(card->queue, mm_make_request);
-drivers/s390/block/dcssblk.c:	blk_queue_make_request(dev_info->dcssblk_queue, dcssblk_make_request);
-drivers/s390/block/xpram.c:	blk_queue_make_request(xpram_queues[i], xpram_make_request);
-drivers/staging/zram/zram_drv.c:blk_queue_make_request(zram->queue, zram_make_request);
+I could definitely believe an explanation that we're swapping in preference
+to allocating remote zone pages somehow, given the imbalance in free memory
+between the nodes which we saw. However, I read the documentation for
+vm.zone_reclaim_mode, which suggests to me that when it was set to zero,
+pages from remote zones should be allocated automatically in preference to
+swap given that zone_reclaim_mode & 4 == 0?
 
+Cheers,
 
+Chris.
