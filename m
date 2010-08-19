@@ -1,137 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab0HSUxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 16:53:09 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:41682 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab0HSUxH (ORCPT
+	id S1753393Ab0HSU6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 16:58:19 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:11237 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab0HSU6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 16:53:07 -0400
-Subject: Re: [PATCH] x86, tsc: Limit CPU frequency calibration on AMD
-From: john stultz <johnstul@us.ibm.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Alok Kataria <akataria@vmware.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100819202915.GA20551@aftab>
-References: <1281986754.23253.32.camel@ank32.eng.vmware.com>
-	 <4C69D02F.6090601@zytor.com>
-	 <1282024311.20786.2.camel@ank32.eng.vmware.com>
-	 <4C6A2C98.4060605@zytor.com> <20100817070520.GD32714@liondog.tnic>
-	 <1282063532.4388.8.camel@ank32.eng.vmware.com>
-	 <20100817185634.GA10597@liondog.tnic> <20100818161639.GF9880@aftab>
-	 <AANLkTimYjqHJDuBg+koGETdFkJkKS7kQ-kK+fF75L0T4@mail.gmail.com>
-	 <20100819202915.GA20551@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 13:52:58 -0700
-Message-ID: <1282251178.6749.10.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Aug 2010 16:58:14 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=CcXp26ssVa5W+r1rBJU12NYbaMS+1GpclbDqZraB+4qLPnTsIIOKB57/HyBPAxm9l
+	Mc2/rTdZX026ybEQadDgA==
+From: Michael Rubin <mrubin@google.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: jack@suse.cz, riel@redhat.com, akpm@linux-foundation.org,
+        david@fromorbit.com, npiggin@suse.de, hch@lst.de, axboe@kernel.dk,
+        Michael Rubin <mrubin@google.com>
+Subject: [PATCH 1/3] mm: helper functions for dirty and writeback accounting
+Date: Thu, 19 Aug 2010 13:57:25 -0700
+Message-Id: <1282251447-16937-2-git-send-email-mrubin@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282251447-16937-1-git-send-email-mrubin@google.com>
+References: <1282251447-16937-1-git-send-email-mrubin@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 22:29 +0200, Borislav Petkov wrote:
-> From: john stultz <johnstul@us.ibm.com>
-> Date: Thu, Aug 19, 2010 at 02:47:35PM -0400
-> 
-> Hi John,
-> 
-> > On Wed, Aug 18, 2010 at 9:16 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > > 6b37f5a20c0e5c334c010a587058354215433e92 introduced the CPU frequency
-> > > calibration code for AMD CPUs whose TSCs didn't increment with the
-> > > core's P0 frequency. From F10h, revB onward, the TSC increment rate is
-> > > denoted by MSRC001_0015[24] and when this bit is set (which is normally
-> > > done by the BIOS,) the TSC increments with the P0 frequency so the
-> > > calibration is not needed and booting can be a couple of mcecs faster on
-> > > those machines.
-> > 
-> > Very cool. This was brought up on an earlier thread and is really nice
-> > because it also avoids the 50+ppm variability easily seen in the
-> > calibrate results boot to boot. That variance causes difficulty
-> > keeping close NTP sync across reboots, as the persistent drift value
-> > is invalid after a reboot.
-> > 
-> > I recently proposed a timer based solution that doesn't block bootup,
-> > and allows for very accurate calibration.  This might help fill the
-> > gaps on legacy systems that do not provide TSC freq information. I'd
-> > be interested if you had any comments.
-> > 
-> > https://kerneltrap.org/mailarchive/linux-kernel/2010/7/28/4598868
-> > 
-> > Notes on the code below.
-> > 
-> > > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > > ---
-> > >  arch/x86/kernel/tsc.c |   14 ++++++++++++--
-> > >  1 files changed, 12 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> > > index ce8e502..41b2b8b 100644
-> > > --- a/arch/x86/kernel/tsc.c
-> > > +++ b/arch/x86/kernel/tsc.c
-> > > @@ -927,8 +927,18 @@ void __init tsc_init(void)
-> > >        }
-> > >
-> > >        if (cpu_has(&boot_cpu_data, X86_FEATURE_CONSTANT_TSC) &&
-> > > -                       (boot_cpu_data.x86_vendor == X86_VENDOR_AMD))
-> > > -               cpu_khz = calibrate_cpu();
-> > > +                       (boot_cpu_data.x86_vendor == X86_VENDOR_AMD)) {
-> > > +
-> > > +               if (boot_cpu_data.x86 > 0x10 ||
-> > > +                   (boot_cpu_data.x86 == 0x10 &&
-> > > +                    boot_cpu_data.x86_model >= 0x2)) {
-> > > +                       u64 val;
-> > > +
-> > > +                       rdmsrl(MSR_K7_HWCR, val);
-> > > +                       if (!(val & BIT(24)))
-> > > +                               cpu_khz = calibrate_cpu();
-> > > +               }
-> > > +       }
-> > 
-> > Am I just missing the point in the code where you actually use the msr
-> > value to assign cpu_khz? Or is the idea that the default tsc
-> > calibration already is correct, and we don't need to further refine
-> > it?
-> 
-> Yes.
-> 
-> Actually Alok brought the code to my attention originally, and what
-> puzzled me was the fact that we do calibrate_cpu() on all F10h and later
-> AMD machines needlessly (well, almost all, maybe 99%). This is because,
-> on F10h, revB machines and later we support "TSC increments with P0
-> frequency" so what native_calibrate_tsc() comes up with in terms of
-> tsc_khz should be the same as cpu_khz.
-> 
-> So the MSR bit check above is to see whether the TSC increments with P0
-> frequency and call calibrate_cpu only if _not_.
+Exporting account_pages_dirty and adding a symmetric routine
+account_pages_writeback.
 
-Ah. I see, sorry for misreading it.
+This allows code outside of the mm core to safely manipulate page state
+and not worry about the other accounting. Not using these routines means
+that some code will lose track of the accounting and we get bugs. This
+has happened once already.
 
+Signed-off-by: Michael Rubin <mrubin@google.com>
+---
+ fs/ceph/addr.c      |    8 ++------
+ fs/nilfs2/segment.c |    2 +-
+ include/linux/mm.h  |    1 +
+ mm/page-writeback.c |   15 +++++++++++++++
+ 4 files changed, 19 insertions(+), 7 deletions(-)
 
-> As a result, this patch basically drops the additional cpu_khz
-> calibration when it isn't needed. And as such it doesn't have a whole
-> lot to do with the actual TSC calibration - this is up to you guys :).
-> 
-> The original reason for the calibrate_cpu() is that there's the
-> possibility for the TSC to count with the northbridge clockrate and
-> there we need to recalibrate obviously.
-> 
-> Hope that makes it more clear.
-> 
-> > And yea, the calibrate_cpu function needs to be renamed.
-> 
-> Done, the whole code is moved to cpu/amd.c anyway. I'm currently testing
-> the new version and will be sending out maybe tomorrow or so.
-
-Great!
-
-thanks
--john
-
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index d9c60b8..359aa3a 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -106,12 +106,8 @@ static int ceph_set_page_dirty(struct page *page)
+ 	if (page->mapping) {	/* Race with truncate? */
+ 		WARN_ON_ONCE(!PageUptodate(page));
+ 
+-		if (mapping_cap_account_dirty(mapping)) {
+-			__inc_zone_page_state(page, NR_FILE_DIRTY);
+-			__inc_bdi_stat(mapping->backing_dev_info,
+-					BDI_RECLAIMABLE);
+-			task_io_account_write(PAGE_CACHE_SIZE);
+-		}
++		if (mapping_cap_account_dirty(mapping))
++			account_page_dirtied(page, page->mapping);
+ 		radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 
+diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
+index c920164..967ed7d 100644
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -1599,7 +1599,7 @@ nilfs_copy_replace_page_buffers(struct page *page, struct list_head *out)
+ 	kunmap_atomic(kaddr, KM_USER0);
+ 
+ 	if (!TestSetPageWriteback(clone_page))
+-		inc_zone_page_state(clone_page, NR_WRITEBACK);
++		account_page_writeback(clone_page, page_mapping(clone_page));
+ 	unlock_page(clone_page);
+ 
+ 	return 0;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index a2b4804..b138392 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -855,6 +855,7 @@ int __set_page_dirty_no_writeback(struct page *page);
+ int redirty_page_for_writepage(struct writeback_control *wbc,
+ 				struct page *page);
+ void account_page_dirtied(struct page *page, struct address_space *mapping);
++void account_page_writeback(struct page *page, struct address_space *mapping);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 37498ef..b8e7b3b 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1096,6 +1096,21 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ 		task_io_account_write(PAGE_CACHE_SIZE);
+ 	}
+ }
++EXPORT_SYMBOL(account_page_dirtied);
++
++/*
++ * Helper function for set_page_writeback family.
++ * NOTE: Unlike account_page_dirtied this does not rely on being atomic
++ * wrt interrupts.
++ */
++
++void account_page_writeback(struct page *page, struct address_space *mapping)
++{
++	if (mapping_cap_account_dirty(mapping))
++		inc_zone_page_state(page, NR_WRITEBACK);
++}
++EXPORT_SYMBOL(account_page_writeback);
++
+ 
+ /*
+  * For address_spaces which do not use buffers.  Just tag the page as dirty in
+-- 
+1.7.1
 
