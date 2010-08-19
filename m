@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab0HSNRi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 09:17:38 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:46435 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab0HSNRf convert rfc822-to-8bit (ORCPT
+	id S1753287Ab0HSNU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 09:20:28 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:35083 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab0HSNU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 09:17:35 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz936eK1432N98dNzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7EI91-01-HB6-02
-X-M-MSG: 
-Date: Thu, 19 Aug 2010 14:32:38 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH/RFC 2/5] [PATCH] sched: pass sched_domain_level to
- sched_power_savings_store
-Message-ID: <20100819123238.GG4659@loge.amd.com>
-References: <20100812172544.655648128@de.ibm.com>
- <20100812172622.349333778@de.ibm.com>
- <1281947397.1926.1012.camel@laptop>
- <20100819114102.GE4659@loge.amd.com>
- <1282221311.2605.81.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <1282221311.2605.81.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: unknown
+	Thu, 19 Aug 2010 09:20:26 -0400
+Subject: kernel-doc problem
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Aug 2010 15:20:19 +0200
+Message-ID: <1282224019.4507.3.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 08:35:11AM -0400, Peter Zijlstra wrote:
-> On Thu, 2010-08-19 at 13:41 +0200, Andreas Herrmann wrote:
-> > It just allows to use the same store functions for three instead of
-> > two different knobs. 
-> 
-> Creating more knobs for powersave scheduling is a fail.
-> 
-> We already have 2^3 powersave scheduling states, it should be decreased
-> to 2 (namely on/off), not increased to 3^3.
+Randy, all,
 
-I think it should be possible to select a domain level at which power
-saving scheduling should happen (this would result in 3 states in the
-z196 case).
+I'm running into a problem where something that I want to be part of a
+description of a struct member or function parameter gets parsed as a
+new section. You can easily see the problem by running below test file
+through kernel-doc, clearly the intent is not to have a new section in
+the middle of function argument descriptions, but I have no idea how I
+could fix this.
 
+I'd appreciate if you could take a look.
 
-Andreas
+Thanks,
+Johannes
 
--- 
-Operating | Advanced Micro Devices GmbH
-  System  | Einsteinring 24, 85609 Dornach b. München, Germany
- Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
-  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
-  (OSRC)  | Registergericht München, HRB Nr. 43632
+--- here's the file ---
+/**
+ * fn - test
+ *
+ * @a: This is just a non-sense and totally useless dummy function
+ *	argument: it has absolutely no effect.
+ */
+void fn(int a)
+{
+}
 
 
