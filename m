@@ -1,146 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab0HSWsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 18:48:20 -0400
-Received: from fieldses.org ([174.143.236.118]:56273 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752696Ab0HSWsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 18:48:18 -0400
-Date: Thu, 19 Aug 2010 18:46:01 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Neil Brown <neilb@suse.de>
-Cc: Chuck Lever <chuck.lever@oracle.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100819224601.GC9275@fieldses.org>
-References: <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
- <20100817203941.729830b7@lxorguk.ukuu.org.uk>
- <20100817192937.GD26609@fieldses.org>
- <20100818155359.66b9ddb6@notabene>
- <20100818173203.GC32430@fieldses.org>
- <0F91AB9D-0E14-4384-ADD6-0A467C3ABFAC@oracle.com>
- <20100819094136.24fef59b@notabene>
- <20100819105218.7620ec29@notabene>
- <20100819020803.GA30151@fieldses.org>
- <20100819124413.77ca8baf@notabene>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819124413.77ca8baf@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753838Ab0HSWtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 18:49:31 -0400
+Received: from smtp101.sbc.mail.gq1.yahoo.com ([67.195.15.60]:36797 "HELO
+	smtp101.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752861Ab0HSWta (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 18:49:30 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 6PgvB1gVM1lTSq9opY.6KL.2HreMy9o240M8AZnM09JZkIg
+ UZIf5YJyHoSXnRTekTrZ42Ya6JO2pjktV6swYqcuqTw_dPR6nmqjOyXd3vTW
+ OFRcKZzK83l3dNIJkOpF7NZAk74pVCUKNG.RlzcLB97r26_5XEP0VUdsHvV0
+ zzoQQfKQlZ16axsn9rZuJnmh3ajbCe1cHRgeLMy.r619O2N6GGLbGtlfMI17
+ C9hFEwYBFM2JanuUxJq3hdNql_x8U_zHzeWL4yQk1LJRcPagKwJotcIrcCH2
+ tOiyBuvBso7t_rqgrE7B66D3Tl3.bWLfsMsiINdltWdVMKaRh3A9om_Zk
+X-Yahoo-Newman-Property: ymail-3
+Subject: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Hannes Reinecke <hare@suse.de>
+Content-Type: text/plain
+Date: Thu, 19 Aug 2010 15:45:47 -0700
+Message-Id: <1282257947.30453.296.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 12:44:13PM +1000, Neil Brown wrote:
-> On Wed, 18 Aug 2010 22:08:03 -0400
-> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> 
-> > On Thu, Aug 19, 2010 at 10:52:18AM +1000, Neil Brown wrote:
-> > > On Thu, 19 Aug 2010 09:41:36 +1000
-> > > Neil Brown <neilb@suse.de> wrote:
-> > > 
-> > > > So I agree that this is probably more of an issue for directories than for
-> > > > files, and that implementing it just for directories would be a sensible
-> > > > first step with lower expected overhead - just my reasoning seems to be a bit
-> > > > different.
-> > > 
-> > > Just to be sure we are on the same page:
-> > >   file_update_time would always refer to current_nfsd_time, but nfsd would
-> > >   only update current_nfsd_time when a directory was examined (and the other
-> > >   conditions were met).
-> > > 
-> > > 
-> > > So my current thinking on how this would look - names have been changed:
-> > > 
-> > >  - global timespec 'current_fs_precise_time' is zeroed when
-> > >    current_kernel_time moves backwards and is protected by a seqlock
-> > > 
-> > >  - current_fs_time would be
-> > >          now = max(current_kernel_time(), current_fs_precise_time)
-> > >          return timespec_trunc(now, sb->s_time_gran)
-> > >    (with appropriate seqlock protection)
-> > > 
-> > >  - new function in fs/inode.c
-> > >          get_precise_time(timestamp)
-> > 
-> > Odd name for something that returns nothing of interest;
-> > bump_precise_time() might be closer?
-> > 
-> > And unique_time might be better than precise_time, since the property
-> > we're asking for is that mtime on a changed file by new?  (Or
-> > versioned_time?)
-> 
-> Agreed on both counts, tough I'm not keen on 'bump' myself.
->   got_unique_time()
-> because that it what we just did...  I prefer the name to reflect why the
-> function is called, rather than what the function is expected to do about it.
->   never_use_this_timestamp_again(timestamp)
-> :-?
+Greetings mnc and tomo,
 
-Maybe "retire" for a pithier version of never_use_again:
+So as per our discussions last week, I will be moving forward with the
+conversion of the LIO-Target iSCSI fabric module v4 to use protocol and
+PDU include/scsi/iscsi_proto.h.  As mnc and I agreed privately, this is
+going to the right level of integration for v2.6.37, as making libiscsi
+target mode aware does not really make for a target mode iSCSI stack
+sense due to the amount of logic in place for kernel <-> user with the
+Open-iSCSI initiator.
 
-/**
- * retire_timestamp - prevent a timestamp from being reused as an mtime.
- * @timestamp
- *
- * Advance the clock used to generate mtimes to guarantee that the
- * given timestamp will not be reused on any future mtime update.
- * This allows the given timestamp to be passed back to users such as
- * nfs clients which need the guarantee that mtimes will always change
- * on file updates.
- *
- * Depending on the filesystem's s_time_gran this may not be an ironclad
- * guarantee.
- */
+So aside from the main tedious work that will be involved in actually
+producing a patch for this on my end, I did notice one immediate item
+that will cause an extra headache..  This involves the struct
+iscsi_init_* and struct iscsi_target* structure definitions in:
 
-?
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/lio-target/iscsi_protocol.h;hb=refs/heads/lio-4.0
 
-> 
-> 
-> > 
-> > >                 cft = current_fs_time()
-> > >                 if (timestamp == cft)
-> > 		     /*
-> > 		      * Make sure the next mtime stored will be
-> > 		      * something different from timestamp:
-> > 		      */
-> > >                    write_seqlock()
-> > >                    if cft == current_fs_precise_time
-> > >                         current_fs_precise_time.tv_nsec++
-> > >                    else if cft > current_fs_precise_time
-> > 
-> > What's the cft < current_fs_precise_time case?
-> 
-> The current_fs_precise_time has been incremented with a resolution higher
-> than s_time_gran.  i.e. s_time_gran > 1.
-> I'm not really sure what we want to do about that.
-> Maybe we should be incrementing tv_nsec by s_time_gran as long as that is
-> significantly less than jiffies_to_usec(1)*1000, but I don't know what I mean
-> by 'significantly'.
+namely that they all have trailing 'u32 header_digest' member that a
+decent amount of utility code in iscsi_target.c and iscsi_target_util.c
+currently depends upon.
 
-How about just scratching "significantly" and saying "less"?  As long as
-we know jiffies is the default time source for mtimes, that should be
-safe, shouldn't it?
+So, assuming that the conversion of all struct iscsi_init_* and struct
+iscsi_target* to use include/scsi/iscsi_proto.h defs just involves
+checking structure size and renaming the member use in
+drivers/target/lio-target, would it be acceptable to do something like:
 
-> The only values I can find for s_time_gran in current code are 1, 100, 1000
-> and 1000000000.
+/* iSCSI PDU Header */
+struct iscsi_cmd {
+        uint8_t opcode;
+        uint8_t flags;
+        __be16 rsvd2;
+        uint8_t hlength;
+        uint8_t dlength[3];
+        uint8_t lun[8];
+        itt_t    itt;   /* Initiator Task Tag */
+        __be32 data_length;
+        __be32 cmdsn;
+        __be32 exp_statsn;
+        uint8_t cdb[ISCSI_CDB_SIZE];    /* SCSI Command Block */
+        /* Additional Data (Command Dependent) */
+#ifdef ISCSI_TARGET_MODE
+        __be32 header_digest;
+#endif
+};
 
-I didn't even know there were any other than 1 and a billion.  OK!
+for the existing PDU defs in iscsi_proto.h in order to the pain
+of having to convert this over in existing LIO-Target fabric module
+code..?  This really help me alot.
 
-> All those are either way bigger than a jiffie or significantly smaller, but
-> suppose a filesystem came along that chose 1000000 (i.e. millisecond
-> timestamps) - should we increment tv_nsec by 1000000, or not, or cross that
-> bridge when we come to it?
-> 
-> For reference:
->   default is 1000000000  (this would cover ext2, ext3, reiserfs, fat, sysv, ...)
->   cifs, smbfs, ntfs are 100
->   udf, ceph are 1000
->   rest (btrfs, ext4, gfs2, jfs, nilfs, ocfs2, xfs and virtual filesystems) are 1
+Thanks!
 
-Interesting list, thanks!
+--nab
 
---b.
+
