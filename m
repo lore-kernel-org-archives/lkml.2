@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751163Ab0HSFIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 01:08:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57753 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab0HSFIk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 01:08:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=JtC9KWEnkxt4Z6u+tvt66su2o+UrXRmIJF3QpxAUHxqdCqRw3h2lfi0AZqvt4OCDYe
-         vCdWZOePofNed2YqEjPzx73jYRir0Wv2giiO2khmLZ6WDjTJLAs+ErRYxO+NWkZsUsCn
-         Tj5TwYj03ybjVeuK4X/IOjKBc0mculWI/bPZQ=
+	id S1751190Ab0HSFNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 01:13:49 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48257 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967Ab0HSFNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 01:13:47 -0400
+Date: Thu, 19 Aug 2010 10:43:39 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Chris Webb <chris@arachsys.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Over-eager swapping
+Message-ID: <20100819051339.GH28417@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100802124734.GI2486@arachsys.com>
+ <AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
+ <20100803033108.GA23117@arachsys.com>
+ <AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
+ <20100803042835.GA17377@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20100802035422.GA2883@july>
-References: <20100802035422.GA2883@july>
-Date: Thu, 19 Aug 2010 14:08:39 +0900
-X-Google-Sender-Auth: HOsAlAvlEFAHu-UlV5NbtbgKCY4
-Message-ID: <AANLkTimkd5HLs7EyCX3--VO8fyJhXCBG-KMuG9wr0ZZk@mail.gmail.com>
-Subject: Re: [PATCH] MFD: LP3974 PMIC support
-From: Kyungmin Park <kmpark@infradead.org>
-To: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Cc: m.szyprowski@samsung.com, broonie@opensource.wolfsonmicro.com,
-        jy0922.shim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100803042835.GA17377@localhost>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments? I hope it's included the 2.6.36 if possible.
+* Wu Fengguang <fengguang.wu@intel.com> [2010-08-03 12:28:35]:
 
-Thank you,
-Kyungmin Park
+> On Tue, Aug 03, 2010 at 12:09:18PM +0800, Minchan Kim wrote:
+> > On Tue, Aug 3, 2010 at 12:31 PM, Chris Webb <chris@arachsys.com> wrote:
+> > > Minchan Kim <minchan.kim@gmail.com> writes:
+> > >
+> > >> Another possibility is _zone_reclaim_ in NUMA.
+> > >> Your working set has many anonymous page.
+> > >>
+> > >> The zone_reclaim set priority to ZONE_RECLAIM_PRIORITY.
+> > >> It can make reclaim mode to lumpy so it can page out anon pages.
+> > >>
+> > >> Could you show me /proc/sys/vm/[zone_reclaim_mode/min_unmapped_ratio] ?
+> > >
+> > > Sure, no problem. On the machine with the /proc/meminfo I showed earlier,
+> > > these are
+> > >
+> > >  # cat /proc/sys/vm/zone_reclaim_mode
+> > >  0
+> > >  # cat /proc/sys/vm/min_unmapped_ratio
+> > >  1
+> > 
+> > if zone_reclaim_mode is zero, it doesn't swap out anon_pages.
+> 
+> If there are lots of order-1 or higher allocations, anonymous pages
+> will be randomly evicted, regardless of their LRU ages. This is
+> probably another factor why the users claim. Are there easy ways to
+> confirm this other than patching the kernel?
+> 
+> Chris, what's in your /proc/slabinfo?
+>
 
-On Mon, Aug 2, 2010 at 12:54 PM, Kyungmin Park <kmpark@infradead.org> wrote:
-> From: Kyungmin Park <kyungmin.park@samsung.com>
->
-> LP3974 PMIC support. It has same functionality with max8998.
->
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index db63d40..50383b1 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -303,6 +303,18 @@ config MFD_MAX8998
->          accessing the device, additional drivers must be enabled in order
->          to use the functionality of the device.
->
-> +config MFD_LP3974
-> +       bool "National Semiconductor LP3974 PMIC Support"
-> +       depends on I2C=y
-> +       select MFD_CORE
-> +       select MFD_MAX8998
-> +       help
-> +         Say yes here to support for National Semiconductor LP3974. This is
-> +         a Power Management IC. This driver provies common support for
-> +         accessing the device, additional drivers must be enabled in order
-> +         to use the functionality of the device.
-> +         Note that it has same functionality with max8998.
-> +
->  config MFD_WM8400
->        tristate "Support Wolfson Microelectronics WM8400"
->        select MFD_CORE
-> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-> index 0d68de2..cea9f48 100644
-> --- a/drivers/mfd/max8998.c
-> +++ b/drivers/mfd/max8998.c
-> @@ -30,6 +30,11 @@
->  #include <linux/mfd/max8998.h>
->  #include <linux/mfd/max8998-private.h>
->
-> +enum max8998_type {
-> +       TYPE_MAX8998,
-> +       TYPE_LP3974,
-> +};
-> +
->  static struct mfd_cell max8998_devs[] = {
->        {
->                .name = "max8998-pmic",
-> @@ -127,8 +132,8 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
->  }
->
->  static const struct i2c_device_id max8998_i2c_id[] = {
-> -       { "max8998", 0 },
-> -       { }
-> +       { "max8998", TYPE_MAX8998 },
-> +       { "lp3974", TYPE_LP3974 },
->  };
->  MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+I don't know if Chris saw the link I pointed to earlier, but one of
+the reclaim challenges with virtual machines is that cached memory
+in the guest (in fact all memory) shows up as anonymous on the host.
+If the guests are doing a lot of caching and the guest reclaim sees
+no reason to evict the cache, the host will see pressure.
+
+That is one of the reasons I wanted to see meminfo inside the guest if
+possible. Setting swappiness to 0 inside the guest is one way of
+avoiding double caching that might take place, but I've not found it
+to be very effective. 
+
+Do we have reason to believe the problem can be solved entirely in the
+host?
+
+-- 
+	Three Cheers,
+	Balbir
