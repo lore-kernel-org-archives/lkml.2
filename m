@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab0HSHlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 03:41:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49264 "EHLO mx2.suse.de"
+	id S1751756Ab0HSHln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 03:41:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49281 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab0HSHk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 03:40:58 -0400
-Date: Thu, 19 Aug 2010 09:40:56 +0200 (CEST)
+	id S1751111Ab0HSHlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 03:41:42 -0400
+Date: Thu, 19 Aug 2010 09:41:39 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Gabriel Craciunescu <osnix0@googlemail.com>
-Cc: Andrea Gelmini <andrea.gelmini@gelma.net>, trapdoor6@gmail.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        arnd@arndb.de, trapDoor <trapdoor6@googlemail.com>
-Subject: Re: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
-In-Reply-To: <AANLkTikooEGbmLT-UVZ3wb1jAjocT1eO06tZkg+kQefV@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1008190939460.1019@pobox.suse.cz>
-References: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com> <201008180325.17816.rjw@sisk.pl> <AANLkTimdF_eYurw9k0rQRAzSQ-fZMKsFLupnME_ch1Ru@mail.gmail.com> <alpine.LNX.2.00.1008180911180.1019@pobox.suse.cz> <AANLkTiki82ZFntH2M6UTyB7+215=4mNmk3SsxiS=CGDH@mail.gmail.com>
- <alpine.LNX.2.00.1008181045110.1019@pobox.suse.cz> <AANLkTikPC1CGjNcP2ARf8SJw3HTEBOcdgGnDjx87DERX@mail.gmail.com> <AANLkTimSkniqYYWAD29VK6Rt45b_5A84fuK0m0q9EznC@mail.gmail.com> <AANLkTikooEGbmLT-UVZ3wb1jAjocT1eO06tZkg+kQefV@mail.gmail.com>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Alan Ott <alan@signal11.us>, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
+ called
+In-Reply-To: <20100812164035.GB6761@fritha.org>
+Message-ID: <alpine.LNX.2.00.1008190941120.1019@pobox.suse.cz>
+References: <alpine.LNX.2.00.1008121108540.2702@pobox.suse.cz> <20100812091659.GA1591@arch.tripp.de> <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz> <20100812113624.GB1591@arch.tripp.de> <20100812114513.GA1584@arch.tripp.de> <20100812115657.GA1611@arch.tripp.de>
+ <alpine.LNX.2.00.1008121401580.2702@pobox.suse.cz> <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz> <20100812130411.GA1626@arch.tripp.de> <4C63F285.8070801@signal11.us> <20100812164035.GB6761@fritha.org>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,20 +25,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Aug 2010, Gabriel Craciunescu wrote:
+On Thu, 12 Aug 2010, Heinz Diehl wrote:
 
-> > > Andrea, Gabriel
-> > > Would you please check if Jiri's patch solves the problem on your end
-> > > as well? Just to make 100% sure we can close related bugzilla call.
-> >
-> > Well, I made the test, with ~10 cycle hibernation/resume.
-> > Everything seems goes right.
-> >
+> > >>Could please those of you, who are able to reproduce the problem, verify
+> > >>whether the patch below (completely untested) makes everything behave
+> > >>again? Thanks.
 > 
-> Does work fine here also ..
+> > >Yes, everything behaves again. Thanks Jiri.
+>  
+> > Seconded. Works good. Thanks for your support Jiri.
+> 
+> Thirded! This fixes the warning here.
 
-Thanks everyone for confirming. The fix is now in Linus' tree and thus 
-will be in -rc2.
+The fix is now in Linus' tree, and thus will be in -rc2. Thanks everyone 
+for testing.
 
 -- 
 Jiri Kosina
