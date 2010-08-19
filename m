@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526Ab0HSGw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 02:52:57 -0400
-Received: from www84.your-server.de ([213.133.104.84]:44388 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab0HSGw4 (ORCPT
+	id S1751641Ab0HSG6a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 02:58:30 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60736 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab0HSG62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 02:52:56 -0400
-Subject: Re: number of elements or bytes for kfifo_in etc
-From: Stefani Seibold <stefani@seibold.net>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282180503.2744.1594.camel@yhuang-dev>
-References: <1282109365.2744.1549.camel@yhuang-dev>
-	 <1282149358.5103.5.camel@wall-e.seibold.net>
-	 <1282177950.2744.1587.camel@yhuang-dev>
-	 <1282180503.2744.1594.camel@yhuang-dev>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 19 Aug 2010 08:52:58 +0200
-Message-ID: <1282200778.3752.7.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	Thu, 19 Aug 2010 02:58:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=LsWEl1LFSmkVV64/n08/OYBY5Q4XtygmUmRhBGoUTrZdbnGbXyf6Wh92/JENHDicVr
+         Q+uKtgaVcAEhKK+wN0ceqUX96tc3lmUu1GVNZ9nsjKjp/gH0a9VevFi9ofGvD9eEul4u
+         m0HUAlypSdr1G/3ocS1lmMdBu7O5Hj9uYUm+4=
+Message-ID: <4C6CD610.3090902@garzik.org>
+Date: Thu, 19 Aug 2010 02:58:24 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Tao Ma <tao.ma@oracle.com>
+CC: linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>,
+        Linux IDE mailing list <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH] trivial: Use kzalloc in idedisk_prep_fn.
+References: <1282190541-12154-1-git-send-email-tao.ma@oracle.com>
+In-Reply-To: <1282190541-12154-1-git-send-email-tao.ma@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 19.08.2010, 09:15 +0800 schrieb Huang Ying:
-> On Thu, 2010-08-19 at 08:32 +0800, Huang Ying wrote:
-> > Hi, Stefani,
-> > 
-> > On Thu, 2010-08-19 at 00:35 +0800, Stefani Seibold wrote:
-> > > Am Mittwoch, den 18.08.2010, 13:29 +0800 schrieb Huang Ying:
-> > > > Hi, Stefani,
-> > > > 
-> > > > In new kfifo implementation in 2.6.36-rc1, description of the third
-> > > > parameter is:
-> > > > 
-> > > > "@n: number of elements to be added"
-> > > > 
-> > > > But if my understanding is correct, the actual implementation is:
-> > > > 
-> > > > "@n: number of bytes to be added"
-> > > > 
-> > > 
-> > > Number of bytes is wrong, this is only valid for byte stream fifo's
-> > > where an element is a byte.
-> > > 
-> > > Have a look at samples/kfifo/inttype-example.c where an element is a int
-> > > type.
-> > 
-> > Yes. You are right. I misunderstood your code. Sorry for bothering.
-> 
-> And I found __kfifo->esize is used in __kfifo_in/out etc to convert
-> between elements and bytes. Maybe we can pull the conversion code to
-> corresponding macro, because where esize is constant and may be
-> optimized to bit shifting or nothing. What do you think about that?
-> 
+On 08/19/2010 12:02 AM, Tao Ma wrote:
+> Cc: Jiri Kosina<trivial@kernel.org>
+> Signed-off-by: Tao Ma<tao.ma@oracle.com>
 
-esize isn't constant, especially from the point of view inside
-__kfifo_in and so on. The is ony good reason not to pass the size of the
-element using sizeof(*fifo->type) as a parameter, it will generate more
-code. Storing the size of the element in the kfifo structure is the
-better decision.
-
-But if you found a better way and can prove it under any circumstance
-with a list of measurement results u will get an ack!
-
-- Stefani
-
+Acked-by: Jeff Garzik <jgarzik@redhat.com>
 
