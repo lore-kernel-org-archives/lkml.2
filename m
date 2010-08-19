@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab0HSPDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:03:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39860 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab0HSPDo (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 19 Aug 2010 11:03:44 -0400
-Date: Thu, 19 Aug 2010 11:02:45 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, uclinux-dev@uclinux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nommu vm_get_page_prot and framebuffer drivers in 2.6.36-rc1
-Message-ID: <20100819150245.GC9485@phenom.dumpdata.com>
-References: <AANLkTi=VzruV3RYLTwKnC0bYtR7fSKzGehV=LLzoicXE@mail.gmail.com>
+	id S1753847Ab0HSPEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:04:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44150 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab0HSPE2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:04:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=mJSjheUjtY/TYF5EHcPY1goOqHaqNS1oIPpcBW5eL3DNn/fG/j+4jWbZjJdQTdE/gk
+         4wrCT8pq5qKmiq/ZQ/f0keWsUvdgCKCQ1kVQWaeW3wSvgO5bnlALNLYiQgBmX1ODfQGO
+         O9dNfwrn00GuOlIwbEgZAl0Qy57e9JGBOCSLo=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: fix BUG: using smp_processor_id() in preemptible code (resend)
+Date: Thu, 19 Aug 2010 17:04:18 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1; KDE/4.4.5; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org
+References: <20100818091157.GA5238@swordfish.minsk.epam.com>
+In-Reply-To: <20100818091157.GA5238@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=VzruV3RYLTwKnC0bYtR7fSKzGehV=LLzoicXE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008191704.19292.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 03:21:35PM -0400, Mike Frysinger wrote:
-> the recent commit c07fbfd17e614a76b194f371c5331e21e6cffb54 added a
+On środa, 18 sierpnia 2010 o 11:11:58 Sergey Senozhatsky wrote:
+> fix BUG: using smp_processor_id() in preemptible code (resend)
 
-Next time please do write to the folks that are on the Signed-off-by
-list on the patch.
+I got similar bug (during suspend to disk) on 2.6.36-rc1+ patch from:
+https://bugzilla.kernel.org/show_bug.cgi?id=16615
 
-> call to vm_get_page_prot() in drivers/video/fbmem.c.  but this
-> function doesnt exist for nommu.  so obviously we get:
-> ERROR: "vm_get_page_prot" [drivers/video/fb.ko] undefined!
+[   89.141370] Enabling non-boot CPUs ...
+[   89.142033] BUG: using smp_processor_id() in preemptible [00000000] code: 
+pm-hibernate/2584
+[   89.142147] caller is thermal_throttle_add_dev+0x10/0x7c
+[   89.142200] Pid: 2584, comm: pm-hibernate Not tainted 2.6.36-rc1 #1
+[   89.142248] Call Trace:
+[   89.142274]  [<c03706ad>] ? printk+0xf/0x12
+[   89.142312]  [<c02181d1>] debug_smp_processor_id+0xa5/0xbc
+[   89.142357]  [<c036d13d>] thermal_throttle_add_dev+0x10/0x7c
+[   89.142403]  [<c036d1f2>] thermal_throttle_cpu_callback+0x49/0x9c
+[   89.142454]  [<c0141842>] notifier_call_chain+0x26/0x50
+[   89.142496]  [<c01418c3>] __raw_notifier_call_chain+0xe/0x10
+[   89.142544]  [<c012be4a>] __cpu_notify+0x15/0x29
+[   89.142581]  [<c036ead6>] _cpu_up+0x59/0xdc
+[   89.142617]  [<c0364953>] enable_nonboot_cpus+0x3d/0x94
+[   89.142660]  [<c0151f94>] hibernation_snapshot+0x11d/0x1b9
+[   89.142704]  [<c01520d5>] hibernate+0xa5/0x13f
+[   89.142740]  [<c0151035>] ? state_store+0x0/0xa7
+[   89.142778]  [<c0151089>] state_store+0x54/0xa7
+[   89.142815]  [<c0151035>] ? state_store+0x0/0xa7
+[   89.142854]  [<c020ee89>] kobj_attr_store+0x16/0x22
+[   89.142894]  [<c01c9a9a>] sysfs_write_file+0xbc/0xe7
+[   89.142936]  [<c018e5d3>] vfs_write+0x8a/0xfd
+[   89.142972]  [<c01c99de>] ? sysfs_write_file+0x0/0xe7
+[   89.143018]  [<c018e6dd>] sys_write+0x3b/0x60
+[   89.143055]  [<c01026ec>] sysenter_do_call+0x12/0x22
+[   89.143112] SMP alternatives: switching to SMP code
 
-Duh!
-> 
-> looking a bit through mm/, i guess we should stub this out to 0 ?
+PS. Sorry for overlook previosus mail, already I created bug entry (because 
+it's regression):
+https://bugzilla.kernel.org/show_bug.cgi?id=16629
 
-Yes. Could you create a patch for this, please?
-
-> #define vm_page_prot(x) 0
-> -mike
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
