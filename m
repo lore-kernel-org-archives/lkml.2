@@ -1,71 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab0HSCdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 22:33:24 -0400
-Received: from fieldses.org ([174.143.236.118]:57377 "EHLO fieldses.org"
+	id S1751237Ab0HSCnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 22:43:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2655 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973Ab0HSCdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 22:33:21 -0400
-Date: Wed, 18 Aug 2010 22:31:06 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: "Patrick J. LoPresti" <lopresti@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100819023106.GB30151@fieldses.org>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
- <87aaolwar8.fsf@basil.nowhere.org>
- <20100817174134.GA23176@fieldses.org>
- <20100817182920.GD18161@basil.fritz.box>
- <20100817190447.GA28049@fieldses.org>
- <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
- <20100817203941.729830b7@lxorguk.ukuu.org.uk>
- <AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
- <20100818181240.GA13050@fieldses.org>
- <AANLkTi=cx31Mgfe7FxJz6LUmTKFR4=9KEBgbFsNLjiSE@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=cx31Mgfe7FxJz6LUmTKFR4=9KEBgbFsNLjiSE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750970Ab0HSCnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 22:43:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,230,1280732400"; 
+   d="scan'208";a="598037887"
+Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "acme@redhat.com" <acme@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Matt Fleming <matt@console-pimps.org>
+In-Reply-To: <1282134329.1926.3918.camel@laptop>
+References: <1282118350.5181.115.camel@rui>
+	 <1282134329.1926.3918.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Aug 2010 10:43:31 +0800
+Message-ID: <1282185811.11858.92.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 06:41:02PM -0700, john stultz wrote:
-> On Wed, Aug 18, 2010 at 11:12 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > I'm completely ignorant about higher-resolution time sources.  Any
-> > recommended reading?  What resolution do they actually provide, what's
-> > the expense of reading them, how reliable are they, and how do the
-> > answers to those questions vary across different hardware and kernel
-> > versions?  A quick look at drivers/clocksource/ doesn't suggest
-> > simple answers.
+On Wed, 2010-08-18 at 20:25 +0800, Peter Zijlstra wrote:
+> On Wed, 2010-08-18 at 15:59 +0800, Zhang Rui wrote:
+> > Hi, all,
+> > 
+> > RAPL(running average power limit) is a new feature which provides
+> > mechanisms to enforce power consumption limit, on some new processors.
+> > 
+> > Generally speaking, by using RAPL, OS can set a power budget in a
+> > certain time window, and let Hardware to throttle the processor
+> > P/T-state to meet this energy limitation.
+> > 
+> > RAPL also provides a new MSR, i.e. MSR_PKG_ENERGY_STATUS, which reports
+> > the total amount of energy consumed by the package.
+> > 
+> > I'm not sure if to support RAPL or not, but anyway, it sounds like a
+> > good idea to export the energy status in perf.
+> > 
+> > So a new perf pmu and event to show the package energy consumed is
+> > introduced in this patch.
+> > 
+> > Here is what I get after applying the three patches,
+> > 
+> > #./perf stat -e energy test
+> > Performance counter stats for 'test':
+> > 
+> > 	202	Joules cost by package
+> > 7.926001238	seconds time elapsed
+> > 
+> > 
+> > Note that this patch set is made based on Peter's perf-pmu branch,
+> > git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-perf.git
+> >  which provides better interfaces to register/unregister a new pmu.
+> > 
+> > any comment are welcome. :)
 > 
-> Yea, there aren't simple answers. Clocksource hardware varies
-> drastically in resolution and access time across systems and
-> architectures. Further, clocksources may change while the system is
-> up, so we don't really expose the hardware resolution.
 > 
-> On x86, access latency varies from ~50ns (TSC) to ~1.3us (ACPI PM).
-> (And that is ignoring the PIT, which can be 18us per call - luckily
-> almost no hardware uses that). The resolution similarly scales from
-> sub-ns (TSC @ > 1ghz cpus) to ~279ns (ACPI PM). Of course, across
-> architectures you will see even more variance.
+> Nice,.. however:
+> 
+>  - if it is a pure read-only counter without sampling support,
+>    expose it as such, don't fudge in the hrtimer stuff. Simply
+>    fail to create a sampling event.
+> 
+>    SH has the same problem for its 'normal' PMU, the solution is
+>    to use event groups, Matt was looking at adding support to
+>    perf-record for that, if creating a sampling event fails, fall
+>    back to {hrtimer, $event} groups.
+> 
+>  - since its a free-running, non-configurable counter, you can indeed
+>    act like its a 'software' event in that you can schedule consumers
+>    without constraints, however I don't think the PERF_COUNT_SW_* space
+>    is the right way to expose this counter.
+> 
+>    Better would be to use the sysfs stuff Lin has been working on (for
 
-The race in question occurs when you manage to check mtime between two
-file data updates, with all three operations occurring within a clock
-tick.
+Sorry that I have no good idea how to export the various tracepoints
+events automatically, so this work will take time.
 
-No idea if that's feasible in hundreds of nanoseconds.
+Lin Ming
 
-I'm also not sure how to judge the access latency.  Certainly a
-microsecond is a lot compared to just reading a cached mtime value.
+>    which I still need to catch up on the latest discussions), it would
+>    then be tied to the pmu instance and appear/disappear when you load/
+>    unload the module.
+> 
+>    However for testing purposes I see why you'd want to have _a_
+>    interface :-)
+> 
+> - it would be nice if you'd write the cpu detection a bit more readable,
+>   also, it looks like you forgot to check x86_vendor == X86_VENDOR_INTEL.
+> 
+> > +static int __init intel_rapl_init(void)
+> > +{
+> > +	/*
+> > +	 * RAPL features are only supported on processors have a CPUID
+> > +	 * signature with DisplayFamily_DisplayModel of 06_2AH, 06_2DH
+> > +	 */
+> > +	if (boot_cpu_data.x86 != 0x06 ||
+> > +	    (boot_cpu_data.x86_model != 0x2A &&
+> > +	    boot_cpu_data.x86_model != 0x2D))
+> > +		return -ENODEV;
+> > +
+> > +	if (rapl_check_unit())
+> > +		return -ENODEV;
+> > +
+> > +	perf_pmu_register(&rapl_pmu);
+> > +	return 0;
+> > +}
+> 
+> Maybe something like (see intel_pmu_init() for example):
+> 
+>   if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+>     return -ENODEV;
+> 
+>   if (boot_cpu_data.x86 != 0x06)
+>     return -ENODEV;
+> 
+>   switch (boot_cpu_data.x86_model) {
+>   case 0x2A: /* sandybridge ?! 32nm */
+>   case 0x2D: /* othermodel 32nm */
+>     break;
+> 
+>   default:
+>     return -ENODEV;
+>   }
+> 
+> Which again reminds me to ask of Intel, a comprehensive x86_model list,
+> please?
+> 
+> Alternatively, you can create a X86_FEATURE_RAPL and simply use
+> boot_cpu_has(X86_FEATURE_RAPL) (much like intel_ds_init() has).
 
-Will we ever see them go backwards?  (So if I know I wrote to file B
-after writing to file A, is there ever a case where I could end up with
-an earlier mtime on B than A?)
 
---b.
