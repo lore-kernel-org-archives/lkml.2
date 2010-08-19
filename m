@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab0HSVJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 17:09:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3206 "EHLO mga01.intel.com"
+	id S1753540Ab0HSVJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 17:09:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55645 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab0HSVJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 17:09:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,235,1280732400"; 
-   d="scan'208";a="598369618"
-Date: Fri, 20 Aug 2010 05:09:07 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [TESTCASE] Clean pages clogging the VM
-Message-ID: <20100819210907.GA22747@localhost>
-References: <20100809133000.GB6981@wil.cx>
- <20100817195001.GA18817@linux.intel.com>
- <20100818141308.GD1779@cmpxchg.org>
- <20100818160613.GE9431@localhost>
- <20100818160731.GA15002@localhost>
- <20100819115106.GG1779@cmpxchg.org>
+	id S1753426Ab0HSVJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 17:09:36 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: Re: [Regression, 2.6.36-rc1] ath9k resume problem on Acer Ferrari One
+Date: Thu, 19 Aug 2010 23:07:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Tejun Heo <tj@kernel.org>, Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ath9k-devel@venema.h4ckr.net" <ath9k-devel@venema.h4ckr.net>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <201008190001.11342.rjw@sisk.pl> <201008192231.01722.rjw@sisk.pl> <20100819204216.GD14497@tux>
+In-Reply-To: <20100819204216.GD14497@tux>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819115106.GG1779@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008192307.24867.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 07:51:06PM +0800, Johannes Weiner wrote:
-> I am currently trying to get rid of all the congestion_wait() in the VM.
-> They are used for different purposes, so they need different replacement
-> mechanisms.
+On Thursday, August 19, 2010, Luis R. Rodriguez wrote:
+> On Thu, Aug 19, 2010 at 01:31:01PM -0700, Rafael J. Wysocki wrote:
+> > On Thursday, August 19, 2010, Tejun Heo wrote:
+> > > Hello,
+> > > 
+> > > On 08/19/2010 04:05 PM, Rafael J. Wysocki wrote:
+> > > > On Thursday, August 19, 2010, Tejun Heo wrote:
+> > > >> Hello, Rafael.
+> > > >>
+> > > >> On 08/19/2010 12:01 AM, Rafael J. Wysocki wrote:
+> > > >>> While testing 2.6.36-rc1 (with a couple of fixes on top) I noticed
+> > > >>> that the ath9k driver didn't work after resume from suspend to RAM.
+> > > >>> An attempt to unload the driver using rmmod caused the BUG_ON() in
+> > > >>> kernel/workqueue.c:2844 to trigger.
+> > > >>
+> > > >> That BUG_ON() triggers if destroy_workqueue() is called while work
+> > > >> items are still pending on the workqueue.  Can you please trigger
+> > > >> stack traces after resume and post it?
+> > > > 
+> > > > Do you mean sysrq-t?
+> > > 
+> > > Yeah, I'm a bit confused regarding what's going on.  I thought the
+> > > most likely cause is thawing failing to kick a frozen workqueue into
+> > > working state but then flush_workqueue() which is called from
+> > > destroy_workqueue() should have hung too, that is, unless
+> > > flush_workqueue() is broken too.  If flush_workqueue() is not broken,
+> > > then it could be that workqueue itself isn't at fault and works are
+> > > being scheduled and executed fine for the workqueue ath9k is using but
+> > > the driver doesn't work for another reason.
+> > > 
+> > > Also, the BUG_ON() being triggered means either flush_workqueue() is
+> > > broken or the driver is failing to stop works on the workqueue from
+> > > being requeued before calling destroy_workqueue().  So, finding out
+> > > the followings would be great,
+> > > 
+> > > * While the driver isn't working, do a sysrq-t and see whether any
+> > >   worker is executing a work for ath9k.
+> > > 
+> > > * Repeat it several times and see whether the work is stuck or making
+> > >   progress and/or executing on different workers.
+> > 
+> > Actaully, I'm unable to reproduce the resume issue with current mainline
+> > (HEAD = 763008c4357b73c8d18396dfd8d79dc58fa3f99d), so I guess it either is
+> > a race (or another timing issue), or it's been fixed by one of the patches on
+> > top of -rc1.
+> > 
+> > I'll let you know if I see it again.
 > 
-> I saw Shaohua's patch to make congestion_wait() cleverer.  But I really
-> think that congestion is not a good predicate in the first place.  Why
-> would the VM care about IO _congestion_?  It needs a bunch of pages to
-> complete IO, whether the writing device is congested is not really
-> useful information at this point, I think.
+> To be clear, this is a non-issue now until further notice, ACK?
 
-I have the same feeling that the congestion_wait() calls are not
-pertinent ones.  I'm glad to see people working on that exploring
-all possible replacement schemes.
+Yep.
 
-Thanks,
-Fengguang
+Rafael
