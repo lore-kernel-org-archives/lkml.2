@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab0HSIhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 04:37:19 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61961 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751315Ab0HSIhR (ORCPT
+	id S1751659Ab0HSIjD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 04:39:03 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36322 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab0HSIjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 04:37:17 -0400
-X-IronPort-AV: E=Sophos;i="4.56,232,1280700000"; 
-   d="scan'208";a="57545555"
-Message-ID: <4C6CED3B.3050709@inria.fr>
-Date: Thu, 19 Aug 2010 10:37:15 +0200
-From: Tomasz Buchert <tomasz.buchert@inria.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr-FR; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	Thu, 19 Aug 2010 04:39:00 -0400
+Date: Thu, 19 Aug 2010 04:38:39 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Vladislav Bolkhovitin <vst@vlnb.net>,
+        linux-kernel@vger.kernel.org, Bryan Mesich <bryan.mesich@ndsu.edu>,
+        Jens Axboe <jens.axboe@kernel.dk>, linux-raid@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, scst-devel@lists.sourceforge.net,
+        stable@kernel.org
+Subject: Re: [dm-devel] [PATCH RESEND 1/2 block#for-linus] bio, fs: update
+ READA and SWRITE to match the corresponding BIO_RW_* bits
+Message-ID: <20100819083839.GA32336@infradead.org>
+References: <4C3EF3AD.5070509@vlnb.net>
+ <20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>
+ <4C4D7DF5.9060909@vlnb.net>
+ <20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>
+ <4C5073F3.1060406@vlnb.net>
+ <4C52A98A.7060507@kernel.org>
+ <20100802104227.79340b49@notabene>
+ <4C56D30A.3000403@kernel.org>
+ <x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
+ <4C5B89DB.5050106@oracle.com>
 MIME-Version: 1.0
-To: Matt Helsley <matthltc@us.ibm.com>
-CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
-References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr> <20100810215741.GC2927@count0.beaverton.ibm.com> <4C61D044.2060703@inria.fr> <20100811042738.GH2927@count0.beaverton.ibm.com> <4C6252CF.1090100@inria.fr> <20100812002154.GJ2927@count0.beaverton.ibm.com> <4C634605.50301@inria.fr> <20100812201334.GA29096@count0.beaverton.ibm.com> <4C6B339E.6010907@inria.fr> <20100818022210.GH3648@count0.beaverton.ibm.com>
-In-Reply-To: <20100818022210.GH3648@count0.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C5B89DB.5050106@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 18/08/2010 04:22, Matt Helsley a écrit :
-> On Wed, Aug 18, 2010 at 03:13:02AM +0200, Tomasz Buchert wrote:
->> Le 12/08/2010 22:13, Matt Helsley a écrit :
->
-> <snip>
->
->>
->> Matt,
->> Am I supposed to do something right now? The discussion
->> became a bit quiet recently.
->>
->> Cheers,
->> Tomasz
->
-> Hi Tomasz,
->
-> 	I'm sorry. I haven't had much time to review your latest
-> patches and comment. I thought Andrew put them in his -mm tree
-> so I don't think you have anything to do at the moment.
->
-> Cheers,
-> 	-Matt
+On Fri, Aug 06, 2010 at 12:04:43PM +0800, Tao Ma wrote:
+> >>Stable: The offending commit a82afdf was released with v2.6.32, so
+> >>this patch should be applied to all kernels since then but it must
+> >>_NOT_ be applied to kernels earlier than that.
+> If only this patch goes into stable, do we need to change RWA_MASK
+> in this patch also(I have seen you change it the 2/2)?
+> 
+> -#define RWA_MASK        2
+> +#define RWA_MASK        16
 
-Take your time, Matt. I only wish that eventually the problem will be 
-fixed, that or another way.
+I think RW_MASK and RWA_MASK should simply go away, they don't server
+any use over just masking the correct REQ_* flags.
 
-Tomek
