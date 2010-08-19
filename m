@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab0HSPLe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:11:34 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:65533 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab0HSPLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:11:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:references:in-reply-to:mime-version
-         :content-type:content-transfer-encoding:message-id;
-        b=kL+iM6E4LOzjr1IJnkHslTHsqqgtldsuIzFd+1YCBg11VRfxyCJPQzXiYh+LcLhube
-         v8WB7FAm6qGUfO/R+vw7voPkMwUG/glvVFiMJKEJM7OP9ETxPXl/viAwO3P2Okr4MKbC
-         obCpPJ22Eu3VAPtF7PIDVf5nMAJn1xanarI/I=
-From: Gene Heskett <gene.heskett@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
-Date: Thu, 19 Aug 2010 11:11:27 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35.2; KDE/4.5.0; i686; ; )
-References: <20100817220917.GA5268@Krystal> <4C6C9E10.9030202@fusionio.com> <1282229572.8139.16.camel@mulgrave.site>
-In-Reply-To: <1282229572.8139.16.camel@mulgrave.site>
+	id S1753908Ab0HSPOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:14:24 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:42214 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab0HSPOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:14:22 -0400
+Date: Thu, 19 Aug 2010 20:43:51 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Chris Webb <chris@arachsys.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Over-eager swapping
+Message-ID: <20100819151351.GA23611@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100819051339.GH28417@balbir.in.ibm.com>
+ <20100818164539.GG28417@balbir.in.ibm.com>
+ <20100819092536.GH2370@arachsys.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008191111.27323.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100819092536.GH2370@arachsys.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 19, 2010, James Bottomley wrote:
-[...] 
->> > Certainly sir ... and would you like your patches served to your
->> > table or by the pool?
->> 
->> Pool, please. With that first name and the British accent, it's hard
->> not to boss you around.
->
->Well, sir, the wait staff and I thought we'd just write to ask how your
->convalescence was going.  Sorry about spilling the patch down your
->front, sir, but the glass was slippery.  Who could have foreseen that
->you'd step backwards, fall over the pool boy and upset a flaming bananas
->foster on to the front of your shorts.  I did get a commendation for my
->quick action with a high pressure hose to the affected area (thank you,
->sir, for your shocked but grateful expression).  I must say I didn't
->foresee the force of the blast catapulting you against the pool steps,
->but a concussion is a small price to pay for avoiding fried nuts with
->the bananas, eh, sir? It's funny how things turn out, and I bet if you
->could do it over again, you'd have got off your arse to fetch your own
->damn patch now, wouldn't you, sir?
->
->Yours sincerely,
->
->James
+* Chris Webb <chris@arachsys.com> [2010-08-19 10:25:36]:
 
-You guys are priceless, thanks for the belly laugh.  Lightens up my whole 
-days it does.
+> Balbir Singh <balbir@linux.vnet.ibm.com> writes:
+> 
+> > Can you give an idea of what the meminfo inside the guest looks like.
+> 
+> Sorry for the slow reply here. Unfortunately not, as these guests are run on
+> behalf of customers. They install them with operating systems of their
+> choice, and run them on our service.
+>
+
+Thanks for clarifying.
+ 
+> > Have you looked at
+> > http://kerneltrap.org/mailarchive/linux-kernel/2010/6/8/4580772
+> 
+> Yes, I've been watching this discussions with interest. Our application is
+> one where we have little to no control over what goes on inside the guests,
+> but these sorts of things definitely make sense where the two are under the
+> same administrative control.
+>
+
+Not necessarily, in some cases you can use a guest that uses lesser
+page cache, but that might not matter in your case at the moment.
+ 
+> > Do we have reason to believe the problem can be solved entirely in the
+> > host?
+> 
+> It's not clear to me why this should be difficult, given that the total size
+> of vm allocated to guests (and system processes) is always strictly less
+> than the total amount of RAM available in the host. I do understand that it
+> won't allow for as impressive overcommit (except by ksm) or be as efficient,
+> because file-backed guest pages won't get evicted by pressure in the host as
+> they are indistinguishable from anonymous pages.
+>
+> After all, a solution that isn't ideal, but does work, is to turn off swap
+> completely! This is what we've been doing to date. The only problem with
+> this is that we can't dip into swap in an emergency if there's no swap there
+> at all.
+
+If you are not overcommitting it should work, in my experiments I've
+seen a lot of memory used by the host as page cache on behalf of the
+guest. I've done my experiments using cgroups to identify accurate
+usage.
 
 -- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Portability should be the default.
-             -- Larry Wall in <199711072201.OAA01123@wall.org>
+	Three Cheers,
+	Balbir
