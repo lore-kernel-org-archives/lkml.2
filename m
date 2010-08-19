@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab0HSNKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 09:10:21 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:58487 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab0HSNKT (ORCPT
+	id S1753296Ab0HSNMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 09:12:14 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:41944 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751686Ab0HSNML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 09:10:19 -0400
-Date: Thu, 19 Aug 2010 16:09:37 +0300
-From: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
-To: ext Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "Lehtonen Markus (Nokia-MS/Helsinki)" <markus.lehtonen@nokia.com>,
-        "Quadros Roger (Nokia-MS/Helsinki)" <roger.quadros@nokia.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
-Message-ID: <20100819130937.GC4363@esdhcp041123.research.nokia.com>
-References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
- <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
- <20100819124042.GA15837@oksana.dev.rtsoft.ru>
+	Thu, 19 Aug 2010 09:12:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBABHKbExLd/sX/2dsb2JhbAAHgxHId5IcgSKDInME
+X-IronPort-AV: E=Sophos;i="4.56,233,1280721600"; 
+   d="scan'208";a="72985792"
+Message-ID: <4C6D2DA7.9030803@teksavvy.com>
+Date: Thu, 19 Aug 2010 09:12:07 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819124042.GA15837@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 19 Aug 2010 13:09:45.0526 (UTC) FILETIME=[CB69F560:01CB3F9F]
-X-Nokia-AV: Clean
+To: Yuhong Bao <yuhongbao_386@hotmail.com>
+CC: tj@kernel.org, jeff@garzik.org, ben.collins@ubuntu.com,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hmh@debian.org
+Subject: Re: support for drives larger than 2TiB
+References: <4C4AB952.9030705@kernel.org> <SNT125-W449B3ACDB36B8BF9EBE145C3A40@phx.gbl>
+In-Reply-To: <SNT125-W449B3ACDB36B8BF9EBE145C3A40@phx.gbl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 02:40:42PM +0200, ext Anton Vorontsov wrote:
-> On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
->> @@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
->>  	spi_register_board_info(rx51_peripherals_spi_board_info,
->>  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
->>  	omap2_hsmmc_init(mmc);
->> +	platform_device_register(&rx51_charger_device);
-> 
-> Maybe
-> 
->   platform_device_register_simple("isp1704_charger", -1, NULL, 0);
+On 10-07-24 02:48 PM, Yuhong Bao wrote:
+>
+> In fact, Seagate is already selling 3TB external drives and CrunchGear
+> was already able to get the internal 3TB drive inside out:
+> http://techcrunch.com/2010/07/01/hands-on-the-seagate-freeagent-goflex-desk-3tb-external-hard-drive/
 
-I guess it's enough in this case. Ameya, Roger, any objections?
 
--- 
-heikki
+The key word there is _external_ --> by using USB3/2/FW interfaces,
+they neatly sidestep most BIOS issues.  For the time being anyway.
+
