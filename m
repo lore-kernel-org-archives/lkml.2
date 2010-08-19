@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab0HSMfz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 08:35:55 -0400
-Received: from tomts20.bellnexxia.net ([209.226.175.74]:48127 "EHLO
-	tomts20-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752860Ab0HSMfy (ORCPT
+	id S1753091Ab0HSMgn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 08:36:43 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53493 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab0HSMgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 08:35:54 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFzBbExGGN19/2dsb2JhbACgW3K8PYJwgkcEhGaEKA
-Date: Thu, 19 Aug 2010 08:35:45 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: save the hash of the tuple in the original
-	direction for latter use
-Message-ID: <20100819123545.GA4428@Krystal>
-References: <1282029386-2952-1-git-send-email-xiaosuo@gmail.com> <1282033817.2448.18.camel@edumazet-laptop> <AANLkTinuUuZSqEzfQAF422x2gYsVLzFQtXZKNLhgw+9g@mail.gmail.com> <1282035715.2448.24.camel@edumazet-laptop> <AANLkTinqQ9wXK9Ed3VYTWj_trYJiU+=uTV-FnCxqFvNU@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Aug 2010 08:36:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rvYXNcPy+8By7tSuC6DUKgewfXfFe0dvEw9cuu5OsW/ykKiIAK2SRS6+FBP2ldffrQ
+         wb8X3JX2gKZaAWYFhoysyApfuP2UhRF9CATckk1kn3C/QMwl0gtRiyLo3bPQrpwNeXnC
+         OL5p+pF53HaEKIqHC+MBcDb0M4gM9fakQxTiY=
+Date: Thu, 19 Aug 2010 16:36:35 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
+	<ext-heikki.krogerus@nokia.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dwmw2@infradead.org, felipe.balbi@nokia.com, ameya.palande@nokia.com,
+        markus.lehtonen@nokia.com, roger.quadros@nokia.com
+Subject: Re: [PATCHv2 1/2] power_supply: add isp1704 charger detection
+ driver
+Message-ID: <20100819123635.GA12293@oksana.dev.rtsoft.ru>
+References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
+ <1282219777-17657-2-git-send-email-ext-heikki.krogerus@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTinqQ9wXK9Ed3VYTWj_trYJiU+=uTV-FnCxqFvNU@mail.gmail.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 08:24:50 up 133 days, 22:16,  2 users,  load average: 0.57, 0.44,
-	0.30
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1282219777-17657-2-git-send-email-ext-heikki.krogerus@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Changli Gao (xiaosuo@gmail.com) wrote:
-> On Tue, Aug 17, 2010 at 5:01 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >
-> > I am not sure we must use a long (we really need 4 bytes only), and last
-> > time I tried to use cmpxchg(), I was being told it was not available on
-> > all arches.
-> >
-> > But seeing it used in kernel/pid.c, maybe its not true anymore (that is,
-> > __HAVE_ARCH_CMPXCHG is always defined to 1)
-> >
-> > Since its a recent change (in kernel/pid.c), I would wait a bit and see
-> > if an arch maintainer complains ;)
-> >
-> >
+On Thu, Aug 19, 2010 at 03:09:36PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
+> From: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
 > 
-> I searched the code, and found ext4, btrfs, lockdep, perf and trace
-> all use cmpxchg(). And after this patch serial
-> (http://linux.derkeiler.com/Mailing-Lists/Kernel/2007-08/msg05032.html)
-> was merged, maybe cmpxchg() is generic. Is there an SMP processor
-> doesn't support cmpxchg()?
-
-I made sure it was available on all architectures with that patchset,
-with the intended goal to used it (cmpxchg, cmpxchg_local for 32/64-bit
-and cmpxchg64, cmpxchg64_local for 64-bit) in arch-agnostic tracer code.
-
-I added a cmpxchg emulated with irqs off for uniprocessor-only
-architectures that did not have CAS support. sparc32 has moved to a
-hashed locked scheme for its atomic operations long ago, which makes the
-full 32 bits available.
-
-So, all in all, I'd be surprised if an architecture would lack
-cmpxchg() today. It might be possible that a new architecture that just
-came in would not have taken care of deploying cmpxchg, but that should
-be easily fixable.
-
-Please see Documentation/atomic_ops.txt for details.
-
-Thanks,
-
-Mathieu
-
+> NXP ISP1704 is Battery Charging Specification 1.0 compliant USB
+> transceiver. This adds a power supply driver for ISP1704 and
+> ISP1707 USB transceivers.
 > 
-> -- 
-> Regards,
-> Changli Gao(xiaosuo@gmail.com)
+> Signed-off-by: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
+> ---
+
+Applied to battery-2.6.git, thanks!
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
