@@ -1,75 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab0HSKQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 06:16:40 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53622 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab0HSKQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 06:16:38 -0400
-Date: Thu, 19 Aug 2010 12:16:28 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [GIT PULL] perf callchains updates
-Message-ID: <20100819101628.GA29666@elte.hu>
-References: <1282175176-6363-1-git-send-regression-fweisbec@gmail.com>
+	id S1752414Ab0HSKSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 06:18:40 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43707 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab0HSKSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 06:18:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=c9TK1GQcpE6zIwMRHx8kCIldO9ZaMSNypl+3iFW+4TlK42Gdh1TFuZiIszszzlETEO
+         wKZISr03E/S1ztQIV2YkFiXFVZ2PU4zYBRc+QwtVIc4rcVq3+9HKWdbGaLc2vaYp2Fc5
+         qF8wQg74Sj/f1vSpUKeUzmXoXWqwvE1rVtBW8=
+Date: Thu, 19 Aug 2010 13:18:39 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Gleb Natapov <gleb@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
+Message-ID: <20100819101839.GA5099@swordfish.minsk.epam.com>
+References: <20100819095429.GA5201@swordfish.minsk.epam.com>
+ <4C6D003F.1030205@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
 Content-Disposition: inline
-In-Reply-To: <1282175176-6363-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4C6D003F.1030205@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Ingo,
-> 
-> Please pull the perf/core branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/core
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (6):
->       perf: Drop unappropriate tests on arch callchains
->       perf: Generalize callchain_store()
->       perf: Generalize some arch callchain code
->       perf: Factorize callchain context handling
->       perf: Fix race in callchains
->       perf: Humanize the number of contexts
-> 
-> Namhyung Kim (1):
->       perf, tracing: add missing __percpu markups
-> 
-> 
->  arch/arm/kernel/perf_event.c         |   62 +--------
->  arch/powerpc/kernel/perf_callchain.c |   86 ++++--------
->  arch/sh/kernel/perf_callchain.c      |   50 +------
->  arch/sparc/kernel/perf_event.c       |   69 +++------
->  arch/x86/kernel/cpu/perf_event.c     |   82 +++--------
->  include/linux/ftrace_event.h         |    4 +-
->  include/linux/perf_event.h           |   30 +++-
->  kernel/perf_event.c                  |  259 ++++++++++++++++++++++++++++++----
->  kernel/trace/trace_event_perf.c      |   21 ++--
->  kernel/trace/trace_functions_graph.c |    2 +-
->  10 files changed, 342 insertions(+), 323 deletions(-)
+On (08/19/10 12:58), Avi Kivity wrote:
+> >Hello,
+> >
+> >Got this trace (while echo 1>  /sys/devices/system/cpu/cpu3/online):
+> >
+> >[  313.320295] lockdep: fixing up alternatives.
+> >[  313.320303] SMP alternatives: switching to SMP code
+> >[  313.331090] Booting Node 0 Processor 3 APIC 0x5
+> >[  313.487258] kvm: enabling virtualization on CPU3
+> >[  313.487326] NMI watchdog enabled, takes one hw-pmu counter.
+> >[  313.489627] coretemp coretemp.3: TjMax is 105 C.
+> >[  315.344223] lockdep: fixing up alternatives.
+> >[  315.344236] Booting Node 0 Processor 2 APIC 0x4
+> >[  315.487292] ------------[ cut here ]------------
+> >[  315.487322] kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1=
+978!
+> >[  315.487352] invalid opcode: 0000 [#1] PREEMPT SMP
+> >[  315.487388] last sysfs file: /sys/devices/system/cpu/cpu2/online
+> >[  315.487415] CPU 2
+> >[  315.487425] Modules linked in: kvm_intel kvm ipv6 snd_seq_dummy ac ba=
+ttery snd_seq_oss snd_seq_midi_event snd_hwdep snd_seq snd_seq_device wmi u=
+sbhid hid snd_hda_codec_atihdmi radeon button snd_hda_codec_realtek snd_pcm=
+_oss
+> >snd_mixer_oss snd_hda_intel snd_hda_codec snd_pcm snd_timer snd soundcor=
+e snd_page_alloc broadcom tg3 libphy psmouse serio_raw evdev ttm drm_kms_he=
+lper ehci_hcd sr_mod usbcore cdrom sd_mod ahci libahci
+> >[  315.487728]
+> >[  315.487739] Pid: 27687, comm: qemu-kvm Not tainted 2.6.36-rc1-dbg-git=
+2-00264-gd5a1964-dirty #134 Aspire 5741G    /Aspire 5741G
+> >[  315.487787] RIP: 0010:[<ffffffffa02f2446>]  [<ffffffffa02f2446>] kvm_=
+handle_fault_on_reboot+0xf/0x11 [kvm]
+> >[  315.487839] RSP: 0000:ffff88013c333b18  EFLAGS: 00010246
+> >[  315.487863] RAX: ffff88013c333b40 RBX: ffff88012dcb0000 RCX: ffff8801=
+0c7e9000
+> >[  315.487893] RDX: ffff880002280000 RSI: ffff8801563e8728 RDI: ffff8801=
+0c7e9000
+> >[  315.487922] RBP: ffff88013c333b18 R08: ffff880002213cd0 R09: 00000000=
+000003c7
+> >[  315.487952] R10: 0000000000000000 R11: 0000000000000001 R12: 00000000=
+00000002
+> >[  315.487982] R13: ffff88010c7e9000 R14: ffff8801563e8000 R15: 00000000=
+00000000
+> >[  315.488012] FS:  00007f15014be710(0000) GS:ffff880002280000(0000) knl=
+GS:0000000000000000
+> >[  315.488046] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> >[  315.488070] CR2: 0000000000000000 CR3: 0000000154b42000 CR4: 00000000=
+000006e0
+> >[  315.488100] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000=
+00000000
+> >[  315.488130] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000=
+00000400
+> >[  315.488160] Process qemu-kvm (pid: 27687, threadinfo ffff88013c332000=
+, task ffff8801563e8000)
+> >[  315.488194] Stack:
+> >[  315.488205]  ffff88013c333b68 ffffffffa026d0a2 ffff88013c333b58 fffff=
+fff81062e91
+> >[  315.488244]<0>  ffff8801563e8000 000000010c7e9000 ffff880157d78000 ff=
+ff88012dcb0000
+> >[  315.488290]<0>  0000000000000002 0000000000014240 ffff88013c333b98 ff=
+ffffffa02fb4cc
+> >[  315.488337] Call Trace:
+> >[  315.488353]  [<ffffffffa026d0a2>] vmx_vcpu_load+0x90/0x1a0 [kvm_intel]
+> >[  315.488384]  [<ffffffff81062e91>] ? mark_held_locks+0x50/0x72
+> >[  315.488415]  [<ffffffffa02fb4cc>] kvm_arch_vcpu_load+0x73/0xbb [kvm]
+> >[  315.488446]  [<ffffffffa02f2cd8>] kvm_sched_in+0xd/0xf [kvm]
+> >[  315.488474]  [<ffffffff8102de1f>] finish_task_switch+0x90/0xd7
+> >[  315.488500]  [<ffffffff8102dd8f>] ? finish_task_switch+0x0/0xd7
+> >[  315.488529]  [<ffffffff81373381>] schedule+0x81d/0x8f2
+> >[  315.488553]  [<ffffffff81062e91>] ? mark_held_locks+0x50/0x72
+> >[  315.488584]  [<ffffffffa030d82c>] ? kvm_cpu_has_interrupt+0x3a/0x56 [=
+kvm]
+> >[  315.488617]  [<ffffffffa02f5057>] kvm_vcpu_block+0x8e/0xa9 [kvm]
+> >[  315.488645]  [<ffffffff81052dbd>] ? autoremove_wake_function+0x0/0x34
+> >[  315.488678]  [<ffffffffa030024d>] kvm_arch_vcpu_ioctl_run+0x97d/0xca0=
+ [kvm]
+> >[  315.488712]  [<ffffffffa030016a>] ? kvm_arch_vcpu_ioctl_run+0x89a/0xc=
+a0 [kvm]
+> >[  315.488743]  [<ffffffff813747d1>] ? mutex_lock_nested+0x2f3/0x31b
+> >[  315.488771]  [<ffffffff8103441b>] ? sub_preempt_count+0x92/0xa5
+> >[  315.488800]  [<ffffffffa02f4164>] kvm_vcpu_ioctl+0x113/0x4e9 [kvm]
+> >[  315.488829]  [<ffffffff81376247>] ? _raw_spin_unlock_irq+0x3c/0x59
+> >[  315.488859]  [<ffffffff810e8d5b>] do_vfs_ioctl+0x4c1/0x502
+> >[  315.488885]  [<ffffffff810dc496>] ? fget_light+0xe0/0xf8
+> >[  315.488909]  [<ffffffff810dc408>] ? fget_light+0x52/0xf8
+> >[  315.490162]  [<ffffffff810e8ded>] sys_ioctl+0x51/0x74
+> >[  315.491403]  [<ffffffff81002002>] system_call_fastpath+0x16/0x1b
+> >[  315.492649] Code: 2f 02 00 85 c0 75 13 ba 01 00 00 00 31 f6 48 c7 c7 =
+bb 27 2f a0 e8 6a db d4 e0 c9 c3 55 80 3d 59 2f 02 00 00 48 89 e5 74 02 eb =
+fe<0f>  0b 55 48 89 e5 53 48 89 f3 48 83 ec 08 48 8b 87 90 00 00 00
+> >[  315.495975] RIP  [<ffffffffa02f2446>] kvm_handle_fault_on_reboot+0xf/=
+0x11 [kvm]
+> >[  315.498317]  RSP<ffff88013c333b18>
+> >[  315.510526] ---[ end trace ac38cfaaa84a0bdf ]---
+> >[  315.510763] kvm: enabling virtualization on CPU2
+> >[  315.513518] note: qemu-kvm[27687] exited with preempt_count 1
+> >[  315.514858] NMI watchdog enabled, takes one hw-pmu counter.
+> >
+> >
+>=20
+> What kernel is this?
+>=20
 
-Pulled, thanks a lot Frederic!
+git branch -v
+* master d5a1964 [ahead 137] Merge branch 'master' of git://git.kernel.org/=
+pub/scm/linux/kernel/git/torvalds/linux-2.6
 
-	Ingo
+So, it's 2.6.36-rc1-git2.
+
+with the only difference:
+#       modified:   arch/x86/kernel/cpu/mcheck/therm_throt.c
+#       modified:   kernel/watchdog.c
+#       modified:   lib/percpu_counter.c
+
+
+	Sergey
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkxtBP8ACgkQfKHnntdSXjRgiAP/eYA5/W23ChoVbQ9KLT5sdc4y
+0rO6UJ00IViwgJboYeRj+H5P+KglIOLYrNXwDOVMMjdFGFsMQcZjfHvgNqwPAnlU
+jQU8gIJyJGtPVg+xBb3r5OP05ybcSH0hCYRI4IACMwhumaSLXOIPbwMhd0Y43R9m
+1Mwwx3GhkYdfYkykRmE=
+=r4rF
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
