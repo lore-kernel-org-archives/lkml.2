@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0HSJCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 05:02:36 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3707 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750883Ab0HSJCe (ORCPT
+	id S1751958Ab0HSJND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 05:13:03 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:12066 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab0HSJM7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 05:02:34 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7J92BbP012823
-Subject: Re: [PATCH] perf tools: Fix build error on read only source.
-From: Bernd Petrovitsch <bernd@sysprog.at>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Kusanagi Kouichi <slash@ac.auone-net.jp>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100818190959.GI9410@ghostprotocols.net>
-References: <20100817181835.GA21083@ghostprotocols.net>
-	 <20100818123713.1F02414C03B@msa103.auone-net.jp>
-	 <1282135224.1926.3936.camel@laptop>
-	 <20100818141611.GE9410@ghostprotocols.net>
-	 <1282141665.1926.4053.camel@laptop>
-	 <20100818165642.GF9410@ghostprotocols.net>
-	 <20100818170158.GG9410@ghostprotocols.net>
-	 <20100818190959.GI9410@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 11:02:10 +0200
-Message-ID: <1282208530.10440.3.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Thu, 19 Aug 2010 05:12:59 -0400
+From: Amit Salecha <amit.salecha@qlogic.com>
+To: Amerigo Wang <amwang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Dhananjay Phadke <dhananjay.phadke@qlogic.com>,
+        Narender Kumar <narender.kumar@qlogic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Thu, 19 Aug 2010 04:12:51 -0500
+Subject: RE: [RFC Patch] netxen: remove firmware exports
+Thread-Topic: [RFC Patch] netxen: remove firmware exports
+Thread-Index: Acs+u2qv2tBgFdunQMyq5bEbLzzjMgAwi0QQ
+Message-ID: <99737F4847ED0A48AECC9F4A1974A4B80F86E69208@MNEXMB2.qlogic.org>
+References: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
+In-Reply-To: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2010-08-18 at 16:09 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Aug 18, 2010 at 02:01:58PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Wed, Aug 18, 2010 at 01:56:42PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Em Wed, Aug 18, 2010 at 04:27:45PM +0200, Peter Zijlstra escreveu:
-> > > > On Wed, 2010-08-18 at 11:16 -0300, Arnaldo Carvalho de Melo wrote:
-> > > > > rm -rf ~/build
-> > > > > make O=~/build
-> > > > > 
-> > > > > and have everything work? Saving some keystrokes 8)
-> > > > 
-> > > > The turn side is that if you typo the output dir you'll probably not
-> > > > ever find it again.. and you could have typed: rm -rf ~/build/* instead.
+> netxen_nic driver can store firmwares on flash, and get them porperly and
+> dynamically, so the firmwares may not appear in /lib/firmware/. However, netxen_nic
+> still exports these firmwares via modinfo, this makes our script which parses
+> modinfo output fail.
 
-Well, usually interactive shells have a history. But since the other
-Makefiles also expect existing destination top directory ...
+NX_UNIFIED_ROMIMAGE_NAME(phanfw.bin) is already submitted and we won't submit any other fw files.
 
-> > > Not something I'll argue too much :)
-> 
-> Ok, here it is, stolen directly from the toplevel kernel Makefile, will push to
+> -MODULE_FIRMWARE(NX_P2_MN_ROMIMAGE_NAME);
+> -MODULE_FIRMWARE(NX_P3_CT_ROMIMAGE_NAME);
+> -MODULE_FIRMWARE(NX_P3_MN_ROMIMAGE_NAME);
 
-ACK, it's the same problem so the same solution is the best.
+It's not compulsory to submit firmware files which are exported (MODULE_FIRMWARE).
+I am leaving this upto David to decide about this patch.
 
-> Ingo today:
-> 
-> [acme@emilia linux-2.6-tip]$ rm -rf ~/git/build/perf
-> [acme@emilia linux-2.6-tip]$ make -j9 O=~/git/build/perf -C tools/perf
-> /bin/sh: line 0: cd: /home/acme/git/build/perf/: No such file or directory
+-Amit
 
-ACK, that should make the "problem" pretty clear.
+-----Original Message-----
+From: Amerigo Wang [mailto:amwang@redhat.com] 
+Sent: Wednesday, August 18, 2010 3:25 PM
+To: linux-kernel@vger.kernel.org
+Cc: Dhananjay Phadke; Amit Salecha; Narender Kumar; netdev@vger.kernel.org; David S. Miller; Amerigo Wang
+Subject: [RFC Patch] netxen: remove firmware exports
 
-	Bernd
--- 
-mobile: +43 664 4416156              http://www.sysprog.at/
-    Linux Software Development, Consulting and Services
+
+netxen_nic driver can store firmwares on flash, and get them porperly and
+dynamically, so the firmwares may not appear in /lib/firmware/. However, netxen_nic
+still exports these firmwares via modinfo, this makes our script which parses
+modinfo output fail.
+
+Probably netxen_nic has other way to export these firmwares, but not like other
+modules in a stardand way. I think we can just remove these exports, but
+I am not sure.
+
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Dhananjay Phadke <dhananjay.phadke@qlogic.com>
+Cc: Narender Kumar <narender.kumar@qlogic.com>
+
+---
+diff --git a/drivers/net/netxen/netxen_nic_main.c b/drivers/net/netxen/netxen_nic_main.c
+index fd86e18..e8443af 100644
+--- a/drivers/net/netxen/netxen_nic_main.c
++++ b/drivers/net/netxen/netxen_nic_main.c
+@@ -41,10 +41,6 @@
+ MODULE_DESCRIPTION("QLogic/NetXen (1/10) GbE Converged Ethernet Driver");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(NETXEN_NIC_LINUX_VERSIONID);
+-MODULE_FIRMWARE(NX_P2_MN_ROMIMAGE_NAME);
+-MODULE_FIRMWARE(NX_P3_CT_ROMIMAGE_NAME);
+-MODULE_FIRMWARE(NX_P3_MN_ROMIMAGE_NAME);
+-MODULE_FIRMWARE(NX_UNIFIED_ROMIMAGE_NAME);
+ 
+ char netxen_nic_driver_name[] = "netxen_nic";
+ static char netxen_nic_driver_string[] = "QLogic/NetXen Network Driver v"
 
