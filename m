@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab0HSKbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 06:31:52 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43227 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab0HSKbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 06:31:50 -0400
-Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux@arm.linux.org.uk, khc@pm.waw.pl, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20100814181306U.fujita.tomonori@lab.ntt.co.jp>
-References: <20100811072532.GA21511@n2100.arm.linux.org.uk>
-	 <20100813152224H.fujita.tomonori@lab.ntt.co.jp>
-	 <20100813215413.GA21607@n2100.arm.linux.org.uk>
-	 <20100814181306U.fujita.tomonori@lab.ntt.co.jp>
+	id S1752623Ab0HSKcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 06:32:11 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3577 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752524Ab0HSKcJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 06:32:09 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7JAVmxH013328
+Subject: Re: [PATCH] perf tools: Fix build error on read only source.
+From: Bernd Petrovitsch <bernd@sysprog.at>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Kusanagi Kouichi <slash@ac.auone-net.jp>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100818171917.GH9410@ghostprotocols.net>
+References: <20100817181835.GA21083@ghostprotocols.net>
+	 <20100818123713.1F02414C03B@msa103.auone-net.jp>
+	 <20100818141412.GD9410@ghostprotocols.net>
+	 <1282145141.5822.125.camel@thorin>
+	 <20100818171917.GH9410@ghostprotocols.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 20:31:22 +1000
-Message-ID: <1282213882.22370.360.camel@pasglop>
+Date: Thu, 19 Aug 2010 12:31:48 +0200
+Message-ID: <1282213908.10440.8.camel@thorin>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-14 at 18:30 +0900, FUJITA Tomonori wrote:
+On Mit, 2010-08-18 at 14:19 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Aug 18, 2010 at 05:25:41PM +0200, Bernd Petrovitsch escreveu:
+> > On Mit, 2010-08-18 at 11:14 -0300, Arnaldo Carvalho de Melo wrote:
+[...]
+> > > $(phony feature-tests): 
+> > First, this should probably have been:
+> > .PHONY: feature-tests
 > 
-> A long solution would be having two dma_mask for a device and a
-> bus. We also need something to represent a DMA-capable range instead
-> of the dma mask.
+> Humm, isn't $(phony feature-tests): variation valid and shorter, humm,
+> yeah, seems to be for !GNU make :-\
+> 
+> (http://makepp.sourceforge.net/1.18/t_phony.html)
 
-I'd rather have the arch (aka the bus) be able to filter the mask,
-better than having to deal with multiple masks in the generic code.
-Besides, in embedded-land, you never know how many busses are stacked
-before you reach the device, ie, you'd end up having to AND quite a few
-masks before getting there in some cases.
+Funny, I didn't knew GNU-make's "$(phony target): " construct.
 
-Sounds better to establish that once, at set_coherent_dma_mask() time.
+Hmm, what GNU-make versions and other `make`s are considered (or should
+be) supported?
 
-Cheers,
-Ben.
+[...]
+> There is no use of mktemp in Kbuild, that I try hard to use as reference
+> here.
 
+FWIW fine with me - I just threw an idea in.
+
+	Bernd
+-- 
+mobile: +43 664 4416156              http://www.sysprog.at/
+    Linux Software Development, Consulting and Services
 
