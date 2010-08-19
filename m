@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab0HSP3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:29:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56538 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab0HSP3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:29:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SLrREkdfzsJgVb2z+BUlHknQmmUaCfrJ4AB+8RAB9c2/tTNH8Co0XRtTOQw6QLQxAx
-         Ed22sFqF7ZzwJmLVTB3DDGn26yDaXG+ukalkmpZkaoyltytcFJRERTindG+nELoXWL35
-         Coh58fGpk9B0lxxtJrVbn1d52koZ0yKG9qrGY=
-Date: Fri, 20 Aug 2010 00:29:37 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] oom: fix NULL pointer dereference
-Message-ID: <20100819152937.GE6805@barrios-desktop>
-References: <20100819194707.5FC4.A69D9226@jp.fujitsu.com>
- <20100819195310.5FC7.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819195310.5FC7.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754255Ab0HSPaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:30:35 -0400
+Received: from xenotime.net ([72.52.115.56]:34957 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752030Ab0HSPae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:30:34 -0400
+Date: Thu, 19 Aug 2010 08:30:28 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernel-doc problem
+Message-Id: <20100819083028.6509ab3e.rdunlap@xenotime.net>
+In-Reply-To: <1282224019.4507.3.camel@jlt3.sipsolutions.net>
+References: <1282224019.4507.3.camel@jlt3.sipsolutions.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 07:53:31PM +0900, KOSAKI Motohiro wrote:
-> commit b940fd7035 (oom: remove unnecessary code and cleanup) added
-> unnecessary NULL pointer dereference. remove it.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Thu, 19 Aug 2010 15:20:19 +0200 Johannes Berg wrote:
 
--- 
-Kind regards,
-Minchan Kim
+> Randy, all,
+> 
+> I'm running into a problem where something that I want to be part of a
+> description of a struct member or function parameter gets parsed as a
+> new section. You can easily see the problem by running below test file
+> through kernel-doc, clearly the intent is not to have a new section in
+> the middle of function argument descriptions, but I have no idea how I
+> could fix this.
+> 
+> I'd appreciate if you could take a look.
+> 
+> Thanks,
+> Johannes
+> 
+> --- here's the file ---
+> /**
+>  * fn - test
+>  *
+>  * @a: This is just a non-sense and totally useless dummy function
+>  *	argument: it has absolutely no effect.
+>  */
+> void fn(int a)
+> {
+> }
+
+Colons (':') are bad.  They cause a section instance.
+I don't know how to fix it (inside kernel-doc or docproc or xmlto or wherever).
+Sometimes I change colon to "--" or "." or something that makes some sense,
+but colon is still the better choice if it would work.
+
+The word "example" has a similar problem.  It causes an <informalexample>
+markup to begin, but it's not always terminated properly.
+See recent commit 3d2be54bab7efd97b642838b9c883869ca5b98be.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
