@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab0HSPia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:38:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39739 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab0HSPi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:38:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IoSoY331Y7GW9NGA9xmoRSTix9KdaQooQsUBaFAX619KSkBkU9EYGzoudvyCP5p9bR
-         ADE4DG26Rg6luTgUFR7G45lgA5HBRa6zPCDSsmmeJhpc/b5QLZfTS01M/oUMr8jPNyki
-         pKFDI2nHw742ggAtx3ZuM1f7iyD7vQPV6txFQ=
-Date: Thu, 19 Aug 2010 17:38:47 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: john stultz <johnstul@us.ibm.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100819153847.GA10695@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <1282176776.2865.100.camel@localhost.localdomain>
- <20100819055518.GA4084@riccoc20.at.omicron.at>
- <201008191428.04546.arnd@arndb.de>
+	id S1754372Ab0HSPkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:40:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46546 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754176Ab0HSPkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:40:06 -0400
+Date: Thu, 19 Aug 2010 08:31:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander Shishkin <virtuoso@slind.org>, lkml@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        John Kacur <jkacur@redhat.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
+Message-ID: <20100819153127.GC2985@suse.de>
+References: <1282139739-23832-1-git-send-email-virtuoso@slind.org> <20100818155702.bc62b2a6.akpm@linux-foundation.org> <4C6C7034.4050501@zytor.com> <20100818165303.dd52695a.akpm@linux-foundation.org> <20100819040937.GA8646@suse.de> <20100819083612.GA13293@shutemov.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201008191428.04546.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100819083612.GA13293@shutemov.name>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 02:28:04PM +0200, Arnd Bergmann wrote:
-> My point was that a syscall is better than an ioctl based interface here,
-> which I definitely still think. Given that John knows much more about
-> clocks than I do, we still need to get agreement on the question that
-> he raised, which is whether we actually need to expose this clock to the
-> user or not.
-> 
-> If we can find a way to sync system time accurate enough with PTP and
-> PPS, user applications may not need to see two separate clocks at all.
-
-At the very least, one user application (the PTPd) needs to see the
-PTP clock.
-
-> > SYSCALL_DEFINE3(clock_adjtime, const clockid_t, clkid,
-> > 		int, ppb, struct timespec __user *, ts)
+On Thu, Aug 19, 2010 at 11:36:12AM +0300, Kirill A. Shutemov wrote:
+> On Wed, Aug 18, 2010 at 09:09:37PM -0700, Greg KH wrote:
+> > On Wed, Aug 18, 2010 at 04:53:03PM -0700, Andrew Morton wrote:
+> > > Is sysfs the right interface for this thing?  Bear in mind that
+> > > CONFIG_SYSFS does exist.  
+> > > 
+> > > > +		     fd = open("/sys/kernel/time_notify", O_WRONLY);
+> > > > +		     fdprintf(fd, "%d 1 0 1 1", efd);
+> > > 
+> > > why not
+> > > 
+> > > 		sys_time_notify(efd, 1, 0, 1, 1);
 > > 
-> > ppb - desired frequency adjustment in parts per billion
-> > ts  - desired time step (or jump) in <sec,nsec> to correct
-> >       a measured offset
-> > 
-> > Arguably, this syscall might be useful for other clocks, too.
+> > Yeah, that would be much better than a sysfs file, this is abusing the
+> > sysfs interface quite a lot.
 > 
-> This is a mix of adjtime and adjtimex with the addition of
-> the clkid parameter, right?
+> Do you really think, that increasing number of syscalls is better then
+> fs-based interfaces?
 
-Sort of, but not really. ADJTIME(3) takes an offset and slowly
-corrects the clock using a servo in the kernel, over hours.
+As you are pretty much creating a new syscall here anyway, there is no
+problem with making it a real one, right?  That way you can properly
+handle the user/kernel documentation and persistance over time (i.e. you
+can't change it.)
 
-For this function, the offset passed in the 'ts' parameter will be
-immediately corrected, by jumping to the new time. This reflects the
-way that PTP works. After the first few samples, the PTPd has an
-estimate of the offset to the master and the rate difference. The PTPd
-can proceed in one of two ways.
+So yes, a syscall would be better, especially as this does not exactly
+fit into the model of sysfs, right?
 
-1. If resetting the clock is not desired, then the clock is set to the
-   maximum adjustment (in the right direction) until the clock time is
-   close to the master's time.
+thanks,
 
-2. The estimated offset is added to the current time, resulting in a
-   jump in time.
-
-We need clock_adjtime(id, 0, ts) for the second case.
-
-> Have you considered passing a struct timex instead of ppb and ts?
-
-Yes, but the timex is not suitable, IMHO.
-
-> Is using ppb instead of the timex ppm required to get the accuracy
-> you want?
-
-That is one very good reason.
-
-Another is this: can you explain what the 20+ fields mean?
-
-Consider the field, freq. The comment says "frequency offset (scaled
-ppm)."  To what is it scaled? The only way I know of to find out is to
-read the NTP code (which is fairly complex) and see what the unit
-really is meant to be. Ditto for the other fields.
-
-The timex structure reveals, AFAICT, the inner workings of the kernel
-clock servo. For PTP, we don't need or want the kernel servo. The PTPd
-has its own clock servo in user space.
-
-Richard
+greg k-h
