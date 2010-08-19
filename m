@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab0HSMkV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 08:40:21 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:60531 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab0HSMkT (ORCPT
+	id S1753138Ab0HSMkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 08:40:47 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51589 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab0HSMkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 08:40:19 -0400
-Date: Thu, 19 Aug 2010 06:40:17 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Namhyung Kim <namhyung@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] introduce ptr_diff()
-Message-ID: <20100819124017.GI12892@parisc-linux.org>
-References: <1282217856-8625-1-git-send-email-namhyung@gmail.com> <87aaoiu6z6.fsf@basil.nowhere.org>
+	Thu, 19 Aug 2010 08:40:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NqAh+v/RqKX3P2XbMPLAJL29IDCelS9qofgrkJEM7SMfu0alUtW/obb2yskS9vpveY
+         tLdJRatVMhVcibxeWjsdUqPtE8cP/4AzvzbdvkQQjd66zTXayyDLNCas+S3bwRu9gumH
+         NQGyN+eFDllGO7u2VQqe9HXJtUHGSzeJZqogI=
+Date: Thu, 19 Aug 2010 16:40:42 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
+	<ext-heikki.krogerus@nokia.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dwmw2@infradead.org, felipe.balbi@nokia.com, ameya.palande@nokia.com,
+        markus.lehtonen@nokia.com, roger.quadros@nokia.com
+Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
+Message-ID: <20100819124042.GA15837@oksana.dev.rtsoft.ru>
+References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
+ <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <87aaoiu6z6.fsf@basil.nowhere.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 02:23:09PM +0200, Andi Kleen wrote:
-> IMHO it would be better to simply disable the warning in sparse instead
-> of uglying the code just to work around sparse bogosity. It doesnt' seem
-> to make much sense. A subtraction followed by a shift is not expensive.
+On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
+> From: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
+> 
+> This enables isp1704 power supply driver on RX51, allowing
+> USB charger detection with N900.
+> 
+> Signed-off-by: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
+> ---
+>  arch/arm/mach-omap2/board-rx51-peripherals.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
+> index 9a5eb87..a4b1f8b 100644
+> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
+> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+> @@ -104,6 +104,10 @@ static struct spi_board_info rx51_peripherals_spi_board_info[] __initdata = {
+>  	},
+>  };
+>  
+> +static struct platform_device rx51_charger_device = {
+> +	.name = "isp1704_charger",
+> +};
+> +
+>  #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+>  
+>  #define RX51_GPIO_CAMERA_LENS_COVER	110
+> @@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
+>  	spi_register_board_info(rx51_peripherals_spi_board_info,
+>  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
+>  	omap2_hsmmc_init(mmc);
+> +	platform_device_register(&rx51_charger_device);
 
-What makes you think it's a shift?  struct page isn't necessarily a
-power of two in size.  The original poster said "allyesconfig" which is
-going to add in KMEMCHECK and WANT_PAGE_DEBUG_FLAGS.  I think that makes
-it 76 bytes on x86-32, so sparse is right to warn.
+Maybe
+
+  platform_device_register_simple("isp1704_charger", -1, NULL, 0);
+
+?
+
+Thanks,
 
 -- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
