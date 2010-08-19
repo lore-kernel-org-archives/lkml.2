@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab0HSKxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 06:53:38 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42816 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab0HSKxe (ORCPT
+	id S1752724Ab0HSKxt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 06:53:49 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47381 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab0HSKxr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 06:53:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 1/2] oom: fix NULL pointer dereference
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100819194707.5FC4.A69D9226@jp.fujitsu.com>
-References: <20100819194707.5FC4.A69D9226@jp.fujitsu.com>
-Message-Id: <20100819195310.5FC7.A69D9226@jp.fujitsu.com>
+	Thu, 19 Aug 2010 06:53:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 19 Aug 2010 19:53:31 +0900 (JST)
+In-Reply-To: <1282211446.1926.4609.camel@laptop>
+References: <1282139739-23832-1-git-send-email-virtuoso@slind.org>
+ <20100818155702.bc62b2a6.akpm@linux-foundation.org> <4C6C7034.4050501@zytor.com>
+ <20100818165303.dd52695a.akpm@linux-foundation.org> <1282211446.1926.4609.camel@laptop>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 19 Aug 2010 12:53:31 +0200
+Message-ID: <AANLkTi=R3k+hijuvomR4ABKd9ruhVRV39MhW4Zb4=Dh8@mail.gmail.com>
+Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander Shishkin <virtuoso@slind.org>, lkml@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        John Kacur <jkacur@redhat.com>,
+        Chris Friesen <chris.friesen@genband.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit b940fd7035 (oom: remove unnecessary code and cleanup) added
-unnecessary NULL pointer dereference. remove it.
+On Thu, Aug 19, 2010 at 11:50, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-08-18 at 16:53 -0700, Andrew Morton wrote:
+>>
+>> Such applications might be better served via a wake-me-at-this-time
+>> syscall instead of a sleep-me-for-this-long syscall.  Although such a
+>> thing is less general.
+>>
+> We have timer_create(.clockid = CLOCK_REALTIME) for such things, no?
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Not for repeating events like cron needs.
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 5014e50..17d48a6 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -401,10 +401,9 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
- {
- 	p = find_lock_task_mm(p);
--	if (!p) {
--		task_unlock(p);
-+	if (!p)
- 		return 1;
--	}
-+
- 	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
- 		task_pid_nr(p), p->comm, K(p->mm->total_vm),
- 		K(get_mm_counter(p->mm, MM_ANONPAGES)),
--- 
-1.6.5.2
+Say we want to wakeup at 3pm, now it's 4pm, so we schedule it in 23
+hours. Now the system time changes to 2pm, and we would expect to
+wakeup in one hour, but we take 25.
 
-
-
+Kay
