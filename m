@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab0HSDiC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 23:38:02 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37632 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab0HSDhv (ORCPT
+	id S1751673Ab0HSDiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 23:38:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51350 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab0HSDhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 23:37:51 -0400
+	Wed, 18 Aug 2010 23:37:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=dbHVr3P001sP1K0RB6pklVTUr6HxdzFFrwMHT33BZ86mAucUZ7tGa54Kh7tJr4E2ar
-         jeVVKMlKwRi1SZvYsoKfr3emdXZQAeq3K6ydCGVy7o9HP6eSw9MZXflM05jlHIMKikaT
-         n1n8GQs2ZrsoyP1PeE7vatoLTet7fgkhUzPNc=
+        b=MGIaHOBAC7NAWELzBFt2cMfAlvl1b4d1nRpqPQ2QosHB06IhfI35/RhavUTFjKfl6o
+         rd6zEbqI14HDXcNWCEfDngOy1l15C8OvEDRRgeQcEHKdiz4dofuwSd0T6JAq7DJY9JgK
+         tRfTKLrH+LS0YzU3X3LVn5LjYYpkLD5FhvdQY=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] initramfs: refactor clean_path()
-Date: Thu, 19 Aug 2010 12:37:41 +0900
-Message-Id: <1282189064-3904-2-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 2/4] initramfs: mark dirp as a __user pointer on clean_rootfs()
+Date: Thu, 19 Aug 2010 12:37:42 +0900
+Message-Id: <1282189064-3904-3-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
 References: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
@@ -27,34 +27,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-first param, path, is used only on calling syscall routines which means it is
-always considered as a user pointer. So add __user markup on parameter
-declaration. And &st should be a user pointer also, mark it.
+dirp is used for calling syscall routines so it would be better to be a user
+pointer unless we want to cast it on every syscalls.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- init/initramfs.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ init/initramfs.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
 diff --git a/init/initramfs.c b/init/initramfs.c
-index d9c6e78..75a43c5 100644
+index 75a43c5..d90d1cf 100644
 --- a/init/initramfs.c
 +++ b/init/initramfs.c
-@@ -276,11 +276,12 @@ static int __init maybe_link(void)
- 	return 0;
- }
- 
--static void __init clean_path(char *path, mode_t mode)
-+static void __init clean_path(char __user *path, mode_t mode)
+@@ -526,7 +526,7 @@ static void __init clean_rootfs(void)
  {
- 	struct stat st;
+ 	int fd;
+ 	void *buf;
+-	struct linux_dirent64 *dirp;
++	struct linux_dirent64 __user *dirp;
+ 	int num;
  
--	if (!sys_newlstat(path, &st) && (st.st_mode^mode) & S_IFMT) {
-+	if (!sys_newlstat(path, (struct stat __user __force *)&st) &&
-+	    (st.st_mode^mode) & S_IFMT) {
- 		if (S_ISDIR(st.st_mode))
- 			sys_rmdir(path);
- 		else
+ 	fd = sys_open((const char __user __force *) "/", O_RDONLY, 0);
+@@ -540,14 +540,16 @@ static void __init clean_rootfs(void)
+ 		return;
+ 	}
+ 
+-	dirp = buf;
++	dirp = (struct linux_dirent64 __user __force *) buf;
+ 	num = sys_getdents64(fd, dirp, BUF_SIZE);
+ 	while (num > 0) {
+ 		while (num > 0) {
+ 			struct stat st;
+ 			int ret;
++			unsigned short len;
+ 
+-			ret = sys_newlstat(dirp->d_name, &st);
++			ret = sys_newlstat(dirp->d_name,
++					   (struct stat __user __force *)&st);
+ 			WARN_ON_ONCE(ret);
+ 			if (!ret) {
+ 				if (S_ISDIR(st.st_mode))
+@@ -556,10 +558,11 @@ static void __init clean_rootfs(void)
+ 					sys_unlink(dirp->d_name);
+ 			}
+ 
+-			num -= dirp->d_reclen;
+-			dirp = (void *)dirp + dirp->d_reclen;
++			len = ((struct linux_dirent64 __force *) dirp)->d_reclen;
++			num -= len;
++			dirp = (void __user *)dirp + len;
+ 		}
+-		dirp = buf;
++		dirp = (struct linux_dirent64 __user __force *) buf;
+ 		memset(buf, 0, BUF_SIZE);
+ 		num = sys_getdents64(fd, dirp, BUF_SIZE);
+ 	}
 -- 
 1.7.0.4
 
