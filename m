@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab0HSQYZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 12:24:25 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:40749 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab0HSQYW (ORCPT
+	id S1752955Ab0HSQfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 12:35:47 -0400
+Received: from mx3.sophos.com ([74.202.89.160]:35196 "EHLO mx3.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752468Ab0HSQfp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 12:24:22 -0400
-X-SpamScore: -35
-X-BigFish: VPS-35(zzbb2dK1432N9370J98dN4015L9371P853kzz1202hzz8275bh15d4Rz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 0,
-X-WSS-ID: 0L7EQVX-02-3LA-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
-Date: Thu, 19 Aug 2010 18:23:57 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-pmfixtejun+; KDE/4.5.0; x86_64; ; )
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <AANLkTin2XPHXL_o9hHz9f4beTYEx+isX+PaFRkMMiYHQ@mail.gmail.com> <4C6B79C8.7080602@gmail.com>
-In-Reply-To: <4C6B79C8.7080602@gmail.com>
+	Thu, 19 Aug 2010 12:35:45 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Andreas Gruenbacher <agruen@suse.de>
+Subject: Re: struct fanotify_event_metadata
+Date: Thu, 19 Aug 2010 17:35:41 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: Andreas Schwab <schwab@linux-m68k.org>, Eric Paris <eparis@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <m21va1ozqx.fsf@igel.home> <201008191644.29299.tvrtko.ursulin@sophos.com> <201008191807.02031.agruen@suse.de>
+In-Reply-To: <201008191807.02031.agruen@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-ID: <201008191823.57915.stephan.diestelhorst@amd.com>
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Message-ID: <201008191735.41985.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 19/08/2010 17:35:42,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 19/08/2010 17:35:42,
+	Serialize complete at 19/08/2010 17:35:42
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-
-On Wednesday 18 August 2010, 08:12:24 Tejun Heo wrote:
-> On 08/17/2010 11:28 PM, Stephan Diestelhorst wrote:
-> > 2010/8/17 Tejun Heo <htejun@gmail.com>:
-> >> On 08/17/2010 12:51 PM, Stephan Diestelhorst wrote:
-> >>> I've also confirmed that the "XXX ahci_set_ipm" is present in
-> >>> libahci.ko. So either I've screwed up badly when compiling the initrd,
-> >>> the code is not executed or the printout does not make it into any
-> >>> logfile anymore.
-> >>
-> >> Yeah, that's weird.  You're enabling IPM, right?
+On Thursday 19 Aug 2010 17:07:01 Andreas Gruenbacher wrote:
+> On Thursday 19 August 2010 17:44:29 Tvrtko Ursulin wrote:
+> > On Saturday 14 Aug 2010 18:44:38 Andreas Schwab wrote:
+> > > The pid field of struct fanotify_event_metadata has 64 bits which looks
+> > > excessive.  Wouldn't it make sense to make it 32 bits and swap it with
+> > > the mask field?  That would avoid the unaligned mask field, and remove
+> > > the need for the packed attribute.
+> >
+> > No one seems to have picked up on this what I thought was an obvious good
+> > idea.
 >
-> You can check whether it's enabled by
-> 
-> $ cat /sys/class/scsi_host/host0/link_power_management_policy
-> 
-> If it says max_performance, it's disabled.  If it says anything else,
-> it's enabled.
+> Yes, the pid field should be shrunk; it is a 32-bit value in user-space
+> even on 64-bit platforms.  I also don't see that we'll ever need a 64-bit
+> mask actually.
 
-It says "max_performance", I have not touched anyhting. So it has been
-like that all the time. Would this explain why your patch did not show
-the debug printout?
+You could be probably right since even though at the moment there are 23 bits
+already allocated (purely mechanical count), protocol is future proof to
+expand it later if needed.
 
-Thanks,
-  Stephan
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
+On the other hand since it the same mask as in the syscall (where we really
+want to have enough width top begin with) it is nice that both user interfaces
+agree on the field width and it is probably a negligible overhead anyway.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Tvrtko
 
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
