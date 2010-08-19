@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab0HSWzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 18:55:22 -0400
-Received: from fieldses.org ([174.143.236.118]:37239 "EHLO fieldses.org"
+	id S1753660Ab0HSW6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 18:58:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43359 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751455Ab0HSWzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 18:55:18 -0400
-Date: Thu, 19 Aug 2010 18:53:01 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: "Patrick J. LoPresti" <lopresti@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100819225300.GD9275@fieldses.org>
-References: <20100817174134.GA23176@fieldses.org>
- <20100817182920.GD18161@basil.fritz.box>
- <20100817190447.GA28049@fieldses.org>
- <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
- <20100817203941.729830b7@lxorguk.ukuu.org.uk>
- <AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
- <20100818181240.GA13050@fieldses.org>
- <AANLkTi=cx31Mgfe7FxJz6LUmTKFR4=9KEBgbFsNLjiSE@mail.gmail.com>
- <20100819023106.GB30151@fieldses.org>
- <1282187834.3575.30.camel@localhost.localdomain>
+	id S1751283Ab0HSW6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 18:58:44 -0400
+Date: Thu, 19 Aug 2010 22:58:03 GMT
+From: tip-bot for Borislav Petkov <bp@amd64.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        bp@amd64.org, stable@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com, borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        bp@amd64.org, borislav.petkov@amd.com
+In-Reply-To: <20100819181029.GC17171@aftab>
+References: <20100819181029.GC17171@aftab>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, hotplug: Serialize CPU hotplug to avoid bringup concurrency issues
+Message-ID: <tip-d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11@git.kernel.org>
+Git-Commit-ID: d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1282187834.3575.30.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 22:58:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 08:17:14PM -0700, john stultz wrote:
-> On Wed, 2010-08-18 at 22:31 -0400, J. Bruce Fields wrote:
-> > On Wed, Aug 18, 2010 at 06:41:02PM -0700, john stultz wrote:
-> > > On Wed, Aug 18, 2010 at 11:12 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > > > I'm completely ignorant about higher-resolution time sources.  Any
-> > > > recommended reading?  What resolution do they actually provide, what's
-> > > > the expense of reading them, how reliable are they, and how do the
-> > > > answers to those questions vary across different hardware and kernel
-> > > > versions?  A quick look at drivers/clocksource/ doesn't suggest
-> > > > simple answers.
-> > > 
-> > > Yea, there aren't simple answers. Clocksource hardware varies
-> > > drastically in resolution and access time across systems and
-> > > architectures. Further, clocksources may change while the system is
-> > > up, so we don't really expose the hardware resolution.
-> > > 
-> > > On x86, access latency varies from ~50ns (TSC) to ~1.3us (ACPI PM).
-> > > (And that is ignoring the PIT, which can be 18us per call - luckily
-> > > almost no hardware uses that). The resolution similarly scales from
-> > > sub-ns (TSC @ > 1ghz cpus) to ~279ns (ACPI PM). Of course, across
-> > > architectures you will see even more variance.
-> > 
-> > The race in question occurs when you manage to check mtime between two
-> > file data updates, with all three operations occurring within a clock
-> > tick.
-> > 
-> > No idea if that's feasible in hundreds of nanoseconds.
-> 
-> I think this is what Andi meant that you'll always race with time and
-> that version counters are the only real solution here.
+Commit-ID:  d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11
+Gitweb:     http://git.kernel.org/tip/d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11
+Author:     Borislav Petkov <bp@amd64.org>
+AuthorDate: Thu, 19 Aug 2010 20:10:29 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 19 Aug 2010 14:47:43 -0700
 
-Yeah.  That'll work for NFSv4.  But if possible it'd be nice to have a
-solution for NFSv3.
+x86, hotplug: Serialize CPU hotplug to avoid bringup concurrency issues
 
-As compared to using a higher-resolution time source, a solution for
-mtime based on a global counter would provide better guarantees (on
-filesystems that can store the extra bits), and perform better.  (What
-is the worst-case latency if we're bouncing a cache line back and forth
-between two CPU's?)  Though I guess the possible performance hit would
-rule it out for users that didn't specifically ask for it.  (So, no help
-for userspace nfs servers, make, or whoever else might (wisely or not)
-already depend on mtime detecting changes reliably.)
+When testing cpu hotplug code on 32-bit we kept hitting the "CPU%d:
+Stuck ??" message due to multiple cores concurrently accessing the
+cpu_callin_mask, among others.
 
-> > I'm also not sure how to judge the access latency.  Certainly a
-> > microsecond is a lot compared to just reading a cached mtime value.
-> > 
-> > Will we ever see them go backwards?  (So if I know I wrote to file B
-> > after writing to file A, is there ever a case where I could end up with
-> > an earlier mtime on B than A?)
-> 
-> You should not. However, there have been bugs in the past, and there
-> will probably be a few more in the future.
-> 
-> There are also theoretical issues with SMP systems where the TSCs are
-> not perfectly synced, but the window for those races should be small
-> (ie: smaller then can be detected - otherwise we'll throw out the TSC).
+Since these codepaths are not protected from concurrent access due to
+the fact that there's no sane reason for making an already complex
+code unnecessarily more complex - we hit the issue only when insanely
+switching cores off- and online - serialize hotplugging cores on the
+sysfs level and be done with it.
 
-Got it.  Thanks for your help!
+[ v2.1: fix !HOTPLUG_CPU build ]
 
---b.
+Cc: <stable@kernel.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20100819181029.GC17171@aftab>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig          |    5 +++++
+ arch/x86/kernel/smpboot.c |   19 +++++++++++++++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a84fc34..ac7827f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -245,6 +245,11 @@ config ARCH_HWEIGHT_CFLAGS
+ 
+ config KTIME_SCALAR
+ 	def_bool X86_32
++
++config ARCH_CPU_PROBE_RELEASE
++	def_bool y
++	depends on HOTPLUG_CPU
++
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index abf4a86..8b3bfc4 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -90,6 +90,25 @@ DEFINE_PER_CPU(int, cpu_state) = { 0 };
+ static DEFINE_PER_CPU(struct task_struct *, idle_thread_array);
+ #define get_idle_for_cpu(x)      (per_cpu(idle_thread_array, x))
+ #define set_idle_for_cpu(x, p)   (per_cpu(idle_thread_array, x) = (p))
++
++/*
++ * We need this for trampoline_base protection from concurrent accesses when
++ * off- and onlining cores wildly.
++ */
++static DEFINE_MUTEX(x86_cpu_hotplug_driver_mutex);
++
++void cpu_hotplug_driver_lock()
++{
++        mutex_lock(&x86_cpu_hotplug_driver_mutex);
++}
++
++void cpu_hotplug_driver_unlock()
++{
++        mutex_unlock(&x86_cpu_hotplug_driver_mutex);
++}
++
++ssize_t arch_cpu_probe(const char *buf, size_t count) { return -1; }
++ssize_t arch_cpu_release(const char *buf, size_t count) { return -1; }
+ #else
+ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
+ #define get_idle_for_cpu(x)      (idle_thread_array[(x)])
