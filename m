@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab0HSKxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 06:53:49 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:47381 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab0HSKxr convert rfc822-to-8bit (ORCPT
+	id S1752734Ab0HSKyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 06:54:12 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43067 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab0HSKyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 06:53:47 -0400
+	Thu, 19 Aug 2010 06:54:10 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 2/2] oom: fix tasklist_lock leak
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100819194707.5FC4.A69D9226@jp.fujitsu.com>
+References: <20100819194707.5FC4.A69D9226@jp.fujitsu.com>
+Message-Id: <20100819195346.5FCA.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1282211446.1926.4609.camel@laptop>
-References: <1282139739-23832-1-git-send-email-virtuoso@slind.org>
- <20100818155702.bc62b2a6.akpm@linux-foundation.org> <4C6C7034.4050501@zytor.com>
- <20100818165303.dd52695a.akpm@linux-foundation.org> <1282211446.1926.4609.camel@laptop>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 19 Aug 2010 12:53:31 +0200
-Message-ID: <AANLkTi=R3k+hijuvomR4ABKd9ruhVRV39MhW4Zb4=Dh8@mail.gmail.com>
-Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander Shishkin <virtuoso@slind.org>, lkml@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        John Kacur <jkacur@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 19 Aug 2010 19:54:06 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 11:50, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-08-18 at 16:53 -0700, Andrew Morton wrote:
->>
->> Such applications might be better served via a wake-me-at-this-time
->> syscall instead of a sleep-me-for-this-long syscall.  Although such a
->> thing is less general.
->>
-> We have timer_create(.clockid = CLOCK_REALTIME) for such things, no?
+commit 0aad4b3124 (oom: fold __out_of_memory into out_of_memory)
+introduced tasklist_lock leak. Then it caused following obvious
+danger warings and panic.
 
-Not for repeating events like cron needs.
+    ================================================
+    [ BUG: lock held when returning to user space! ]
+    ------------------------------------------------
+    rsyslogd/1422 is leaving the kernel with locks still held!
+    1 lock held by rsyslogd/1422:
+     #0:  (tasklist_lock){.+.+.+}, at: [<ffffffff810faf64>] out_of_memory+0x164/0x3f0
+    BUG: scheduling while atomic: rsyslogd/1422/0x00000002
+    INFO: lockdep is turned off.
 
-Say we want to wakeup at 3pm, now it's 4pm, so we schedule it in 23
-hours. Now the system time changes to 2pm, and we would expect to
-wakeup in one hour, but we take 25.
+This patch fixes it.
 
-Kay
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 17d48a6..c48c5ef 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -646,6 +646,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 	unsigned long freed = 0;
+ 	unsigned int points;
+ 	enum oom_constraint constraint = CONSTRAINT_NONE;
++	int killed = 0;
+ 
+ 	blocking_notifier_call_chain(&oom_notify_list, 0, &freed);
+ 	if (freed > 0)
+@@ -683,7 +684,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 		if (!oom_kill_process(current, gfp_mask, order, 0, totalpages,
+ 				NULL, nodemask,
+ 				"Out of memory (oom_kill_allocating_task)"))
+-			return;
++			goto out;
+ 	}
+ 
+ retry:
+@@ -691,7 +692,7 @@ retry:
+ 			constraint == CONSTRAINT_MEMORY_POLICY ? nodemask :
+ 								 NULL);
+ 	if (PTR_ERR(p) == -1UL)
+-		return;
++		goto out;
+ 
+ 	/* Found nothing?!?! Either we hang forever, or we panic. */
+ 	if (!p) {
+@@ -703,13 +704,15 @@ retry:
+ 	if (oom_kill_process(p, gfp_mask, order, points, totalpages, NULL,
+ 				nodemask, "Out of memory"))
+ 		goto retry;
++	killed = 1;
++out:
+ 	read_unlock(&tasklist_lock);
+ 
+ 	/*
+ 	 * Give "p" a good chance of killing itself before we
+ 	 * retry to allocate memory unless "p" is current
+ 	 */
+-	if (!test_thread_flag(TIF_MEMDIE))
++	if (killed && !test_thread_flag(TIF_MEMDIE))
+ 		schedule_timeout_uninterruptible(1);
+ }
+ 
+-- 
+1.6.5.2
+
+
+
