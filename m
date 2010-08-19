@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab0HSVwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 17:52:35 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:56331 "EHLO imr3.ericy.com"
+	id S1753328Ab0HSVy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 17:54:58 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45479 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab0HSVwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 17:52:24 -0400
-Date: Thu, 19 Aug 2010 14:51:24 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        lm-sensors <lm-sensors@lm-sensors.org>,
-        Huaxu Wan <huaxu.wan@intel.com>
-Subject: Re: [lm-sensors] [PATCH] drivers/hwmon/coretemp: Remove warnings
- of unused variables
-Message-ID: <20100819215124.GA8097@ericsson.com>
-References: <1282172027-640-1-git-send-email-fenghua.yu@intel.com>
- <1282172027-640-2-git-send-email-fenghua.yu@intel.com>
- <20100819092423.00f76256@hyperion.delvare>
- <4C6D8026.2060800@zytor.com>
- <20100819232655.4223e61f@hyperion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100819232655.4223e61f@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751469Ab0HSVy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 17:54:56 -0400
+Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: khc@pm.waw.pl, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20100820021915C.fujita.tomonori@lab.ntt.co.jp>
+References: <1282213882.22370.360.camel@pasglop>
+	 <20100819234835Y.fujita.tomonori@lab.ntt.co.jp>
+	 <m38w42sfvx.fsf@intrepid.localdomain>
+	 <20100820021915C.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Aug 2010 07:54:28 +1000
+Message-ID: <1282254868.22370.370.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 05:26:55PM -0400, Jean Delvare wrote:
-> On Thu, 19 Aug 2010 12:04:06 -0700, H. Peter Anvin wrote:
-> > On 08/19/2010 12:24 AM, Jean Delvare wrote:
-> > > 
-> > > Thanks for the fix, but it is already in my tree:
-> > > ftp://ftp.kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-hwmon/hwmon-coretemp-fix-warning.patch
-> > > 
-> > > I'll send it to Linus as part as my next batch of hwmon fixes for
-> > > 2.6.36.
-> > 
-> > Hi Jean,
-> > 
-> > Are you overall hwmon maintainer now?  That job is currently listed as
-> > Orphan in the MAINTAINERS file.
-> 
-> MAINTAINERS is correct. I do not have the time, nor the will, to be the
-> single official maintainer of the hwmon subsystem. I would be happy to
-> be a co-maintainer, but nobody stepped in to co-maintain with me.
-> 
-I can step in if needed. I don't want to step on anyone's feet, though,
-and I would not want to be the sole maintainer, at least not yet - I just
-don't know the code well enough.
 
-Guenter
+> linux/device.h defines that it's the device dma mask.
+> 
+> Except for ARM, coherent_dma_mask represents the device dma mask.
+
+That's just verbiage in a header file. Nobody cares. The point is, the
+device DMA mask per-se is a completely useless piece of information, and
+thus there is absolutely no point keeping it around there.
+
+The only thing that matters is the intersection of all the masks on the
+way to memory, which defines where memory can be allocated.
+
+Now the mask thing itself might end up not being enough for ARM in the
+long run, I wouldn't be surprised if we end up with busses that can DMA
+to areas of memory that are not 0 based, but that's a discussion for
+another day.
+
+> We sometimes want to know the device dma mask. Moving to your
+> definition means that we lose that information.
+
+When ?
+
+Cheers,
+Ben.
+
+> > This usually equals device's address space - only because CPU and
+> > bridges next to it have wide (logical) address busses. It's not always
+> > the case, though, and may be not the case on any arch.
+> > 
+> > We should make sure we got it right (including drivers), since any
+> > reduction of the dma*mask would be irreversible (new masks would be
+> > ANDed with the existing masks).
+> > 
+> > > I think that having the generic place for bus'
+> > > dma mask would be better rather than architecture specific
+> > > places.
+> > 
+> > Definitely, if possible. BTW the dmabounce (and equivalent code on other
+> > archs, including probably swiotlb on x86-64) could probably be merged as
+> > well. I don't know the internals very well, though. At least it may be
+> > worth it looking at them.
+> 
+> btw, swiotlb is used by x86_64, ia64, and powerpc.
+> 
+> I'm sure that I can convert ARM to use it instead of dmabounce. But
+> well, even a bug fix patch for dmabounce haven't been merged so I'm
+> not sure that ARM people would accept such change.
+> 
+> http://marc.info/?l=linux-arm-kernel&m=128047064008554&w=2
+> 
+> 
+> > > Adding a new API to set bus' dma mask would make sense too.
+> > 
+> > Not sure. Which bus? There could be many :-)
+> > In practice - 64-bit PCIe -> 32-bit PCI -> 24-bit ISA - etc.
+> > Or, like with IXP/PXA - 26-bit PCI -> 32-bit device.
+> 
+> Seems that we are not on the same page. As I said before, have you
+> seen how POWERPC uses max_direct_dma_addr in dev_archdata struct? I
+> was talking about moving it to the generic place and the API to set
+> it.
+
+
