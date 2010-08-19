@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab0HSCHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 22:07:39 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:38899 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab0HSCHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 22:07:37 -0400
-Date: Wed, 18 Aug 2010 19:07:34 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
-Message-ID: <20100819020734.GL2109@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <20100809210723.GA28171@infradead.org> <20100816161433.GK2109@tux1.beaverton.ibm.com>
+	id S1751530Ab0HSCKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 22:10:19 -0400
+Received: from fieldses.org ([174.143.236.118]:44556 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab0HSCKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 22:10:18 -0400
+Date: Wed, 18 Aug 2010 22:08:03 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Chuck Lever <chuck.lever@oracle.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100819020803.GA30151@fieldses.org>
+References: <20100817182920.GD18161@basil.fritz.box>
+ <20100817190447.GA28049@fieldses.org>
+ <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+ <20100817203941.729830b7@lxorguk.ukuu.org.uk>
+ <20100817192937.GD26609@fieldses.org>
+ <20100818155359.66b9ddb6@notabene>
+ <20100818173203.GC32430@fieldses.org>
+ <0F91AB9D-0E14-4384-ADD6-0A467C3ABFAC@oracle.com>
+ <20100819094136.24fef59b@notabene>
+ <20100819105218.7620ec29@notabene>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100816161433.GK2109@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100819105218.7620ec29@notabene>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 09:14:33AM -0700, Darrick J. Wong wrote:
-> On Mon, Aug 09, 2010 at 05:07:23PM -0400, Christoph Hellwig wrote:
-> > Can you try with the new barrier implementation in the
-> > 
-> > 	[PATCH, RFC] relaxed barriers
-> > 
-> > by making cache flushes just that and not complicated drain barrier
-> > it should speed this case up a lot.
+On Thu, Aug 19, 2010 at 10:52:18AM +1000, Neil Brown wrote:
+> On Thu, 19 Aug 2010 09:41:36 +1000
+> Neil Brown <neilb@suse.de> wrote:
 > 
-> Indeed it does!  The barrier count increases to about 21000, but I also see
-> much higher throughput, about 830 transactions per second (versus 12000 and 760
-> respectively before Tejun's patch).
+> > So I agree that this is probably more of an issue for directories than for
+> > files, and that implementing it just for directories would be a sensible
+> > first step with lower expected overhead - just my reasoning seems to be a bit
+> > different.
+> 
+> Just to be sure we are on the same page:
+>   file_update_time would always refer to current_nfsd_time, but nfsd would
+>   only update current_nfsd_time when a directory was examined (and the other
+>   conditions were met).
+> 
+> 
+> So my current thinking on how this would look - names have been changed:
+> 
+>  - global timespec 'current_fs_precise_time' is zeroed when
+>    current_kernel_time moves backwards and is protected by a seqlock
+> 
+>  - current_fs_time would be
+>          now = max(current_kernel_time(), current_fs_precise_time)
+>          return timespec_trunc(now, sb->s_time_gran)
+>    (with appropriate seqlock protection)
+> 
+>  - new function in fs/inode.c
+>          get_precise_time(timestamp)
 
-Oddly, I ran the entire suite of tests against a larger set of machines, and
-with Tejun's RFC patchset I didn't see nearly as much of an improvement.  I
-have been trying to put together a new tree based on "replace barrier with
-sequenced flush" and Christoph's "explicitly flush/FUA" patch sets, though I've
-gotten lost in the weeds. :(
+Odd name for something that returns nothing of interest;
+bump_precise_time() might be closer?
 
-I also experienced some sort of crash with Tejun's relaxed barrier patch on one
-of my systems.  I was hitting the BUG_ON in drivers/scsi/scsi_lib.c, line 1115.
+And unique_time might be better than precise_time, since the property
+we're asking for is that mtime on a changed file by new?  (Or
+versioned_time?)
 
-Rather than hold on to (aging) test results any further, I'll be posting a new
-fsync coordination patch shortly that includes Andreas' suggestion to use the
-average barrier time instead of a static 500us, and a spreadsheet that shows
-what happens with various patches, and on a wider range of hardware.
+>                 cft = current_fs_time()
+>                 if (timestamp == cft)
+		     /*
+		      * Make sure the next mtime stored will be
+		      * something different from timestamp:
+		      */
+>                    write_seqlock()
+>                    if cft == current_fs_precise_time
+>                         current_fs_precise_time.tv_nsec++
+>                    else if cft > current_fs_precise_time
 
---D
+What's the cft < current_fs_precise_time case?
+
+--b.
+
+>                         current_fs_precise_time = cft
+>                    write_sequnlock()
+>                 return timestamp
+> 
+>   - nfsd xdr response routine does
+>              ts = inode->i_mtime
+>              if (S_ISDIR(inode->i_mode))
+>                 ts = get_precise_time(ts)
+>              xdr_encode_timespec(ts)
+> 
+> 
+> get_precise_time() probably needs a bit more subtlety to handle different
+> s_time_gran values and possible races, but I think it is fairly close.
+> 
+> Then if we ever had an xstat or similar that could ask for precise
+> timestamps, it just makes a similar call to get_precise_time.
+> Also if we added code later to use a hires timer on hardware where it was
+> efficient, get_precise_time could test for that and become a no-op
+> 
+> Yes, I should probably turn this into a patch ... maybe another day.
+> 
+> NeilBrown
