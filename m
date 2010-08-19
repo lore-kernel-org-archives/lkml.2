@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262Ab0HSDRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 23:17:25 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:58714 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037Ab0HSDRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 23:17:23 -0400
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-From: john stultz <johnstul@us.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "Patrick J. LoPresti" <lopresti@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100819023106.GB30151@fieldses.org>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	 <87aaolwar8.fsf@basil.nowhere.org> <20100817174134.GA23176@fieldses.org>
-	 <20100817182920.GD18161@basil.fritz.box>
-	 <20100817190447.GA28049@fieldses.org>
-	 <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
-	 <20100817203941.729830b7@lxorguk.ukuu.org.uk>
-	 <AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
-	 <20100818181240.GA13050@fieldses.org>
-	 <AANLkTi=cx31Mgfe7FxJz6LUmTKFR4=9KEBgbFsNLjiSE@mail.gmail.com>
-	 <20100819023106.GB30151@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 20:17:14 -0700
-Message-ID: <1282187834.3575.30.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751387Ab0HSDVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 23:21:16 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47638 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab0HSDVN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 23:21:13 -0400
+Message-ID: <4C6CA31D.6030407@canonical.com>
+Date: Thu, 19 Aug 2010 11:21:01 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control rf/camera
+ power
+References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com> <1282127719.2747.211.camel@localhost> <20100818155128.GA24363@darkside.kls.lan>
+In-Reply-To: <20100818155128.GA24363@darkside.kls.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 22:31 -0400, J. Bruce Fields wrote:
-> On Wed, Aug 18, 2010 at 06:41:02PM -0700, john stultz wrote:
-> > On Wed, Aug 18, 2010 at 11:12 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > > I'm completely ignorant about higher-resolution time sources.  Any
-> > > recommended reading?  What resolution do they actually provide, what's
-> > > the expense of reading them, how reliable are they, and how do the
-> > > answers to those questions vary across different hardware and kernel
-> > > versions?  A quick look at drivers/clocksource/ doesn't suggest
-> > > simple answers.
-> > 
-> > Yea, there aren't simple answers. Clocksource hardware varies
-> > drastically in resolution and access time across systems and
-> > architectures. Further, clocksources may change while the system is
-> > up, so we don't really expose the hardware resolution.
-> > 
-> > On x86, access latency varies from ~50ns (TSC) to ~1.3us (ACPI PM).
-> > (And that is ignoring the PIT, which can be 18us per call - luckily
-> > almost no hardware uses that). The resolution similarly scales from
-> > sub-ns (TSC @ > 1ghz cpus) to ~279ns (ACPI PM). Of course, across
-> > architectures you will see even more variance.
+On 08/18/2010 11:51 PM, Mario 'BitKoenig' Holbe wrote:
+> On Wed, Aug 18, 2010 at 11:35:19AM +0100, David Woodhouse wrote:
+>> On Wed, 2010-08-18 at 09:36 +0100, Ike Panhc wrote:
+>>> This driver is tested and work fine on Lenovo ideapad B550 and ideapad S10-3.
+>> Works for me too (on S10-3); thanks.
 > 
-> The race in question occurs when you manage to check mtime between two
-> file data updates, with all three operations occurring within a clock
-> tick.
+> It works for me too on S12 w/ VIA Nano - at least somehow... I have two
+> issues with it:
 > 
-> No idea if that's feasible in hundreds of nanoseconds.
-
-I think this is what Andi meant that you'll always race with time and
-that version counters are the only real solution here.
-
-> I'm also not sure how to judge the access latency.  Certainly a
-> microsecond is a lot compared to just reading a cached mtime value.
+> 1st: the camera is not detected:
 > 
-> Will we ever see them go backwards?  (So if I know I wrote to file B
-> after writing to file A, is there ever a case where I could end up with
-> an earlier mtime on B than A?)
+> $ dmesg | grep -i cam
+> [    3.062601] usb 1-4: Product: Lenovo EasyCamera
+> [    7.828202] uvcvideo: Found UVC 1.00 device Lenovo EasyCamera (5986:0241)
+> [    7.842987] input: Lenovo EasyCamera as /devices/pci0000:00/0000:00:10.4/usb1/1-4/1-4:1.0/input/input6
+> $ lsusb | grep -i cam
+> Bus 001 Device 002: ID 5986:0241 Acer, Inc BisonCam, NB Pro
+> $ rfkill list
+> 0: ideapad_wlan: Wireless LAN
+>         Soft blocked: no
+>         Hard blocked: no
+> 1: ideapad_bluetooth: Bluetooth
+>         Soft blocked: no
+>         Hard blocked: no
+> 2: ideapad_killsw: Wireless LAN
+>         Soft blocked: no
+>         Hard blocked: no
+> 3: hci0: Bluetooth
+>         Soft blocked: no
+>         Hard blocked: no
+> 4: phy0: Wireless LAN
+>         Soft blocked: no
+>         Hard blocked: no
+> 
+> Fn-Esc switches the Camera off and on, but there seems to be no soft
+> killswitch for it. I have no idea how to parse through acpidump to find
+> out whether there is some similar device listed or not.
+rfkill for RF devices only. This driver will create an entry on sysfs to
+control the camera power
 
-You should not. However, there have been bugs in the past, and there
-will probably be a few more in the future.
+You can find the entry by "find /sys/devices -name 'camera_power'"
 
-There are also theoretical issues with SMP systems where the TSCs are
-not perfectly synced, but the window for those races should be small
-(ie: smaller then can be detected - otherwise we'll throw out the TSC).
+> 
+> 
+> 2nd: both Bluetooth killswitches reproducibly disappear when I block
+> ideapad_bluetooth either via Gnome bluetooth-applet or via rfkill block
+> 1 and subsequently reboot. After the reboot rfkill list shows:
+> 
+> 0: ideapad_wlan: Wireless LAN
+>         Soft blocked: no
+>         Hard blocked: no
+> 1: ideapad_killsw: Wireless LAN
+>         Soft blocked: no
+>         Hard blocked: no
+> 2: phy0: Wireless LAN
+>         Soft blocked: no
+>         Hard blocked: no
+> 
+> Powering the machine off and on again restores both killswitches.
+> Interesting is: this does not happen when I boot into single-user mode,
+> rfkill block 1 there and reboot. In this case, both killswitches are
+> back.
+This is interesting. looks like the cfgbit will change on S12 if BIOS
+remember it has to shutdown when booting. I will try if the same problem
+happen on my ideapads.
 
-
-thanks
--john
-
+> 
+> 
+> regards
+>    Mario
 
