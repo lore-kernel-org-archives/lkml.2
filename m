@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756Ab0HSHln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 03:41:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49281 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111Ab0HSHlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 03:41:42 -0400
-Date: Thu, 19 Aug 2010 09:41:39 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Heinz Diehl <htd@fritha.org>
-Cc: Alan Ott <alan@signal11.us>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
- called
-In-Reply-To: <20100812164035.GB6761@fritha.org>
-Message-ID: <alpine.LNX.2.00.1008190941120.1019@pobox.suse.cz>
-References: <alpine.LNX.2.00.1008121108540.2702@pobox.suse.cz> <20100812091659.GA1591@arch.tripp.de> <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz> <20100812113624.GB1591@arch.tripp.de> <20100812114513.GA1584@arch.tripp.de> <20100812115657.GA1611@arch.tripp.de>
- <alpine.LNX.2.00.1008121401580.2702@pobox.suse.cz> <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz> <20100812130411.GA1626@arch.tripp.de> <4C63F285.8070801@signal11.us> <20100812164035.GB6761@fritha.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751748Ab0HSHot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 03:44:49 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:40478 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab0HSHoq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 03:44:46 -0400
+Date: Thu, 19 Aug 2010 09:44:44 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: linux-s390@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, dhowells@redhat.com
+Subject: Re: [s390] Build failure with latest 2.6.36-rc1 git (sys_execve)
+Message-ID: <20100819094444.28e7b2e4@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <4C6CBA56.9020909@in.ibm.com>
+References: <4C6CBA56.9020909@in.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Aug 2010, Heinz Diehl wrote:
+On Thu, 19 Aug 2010 10:30:06 +0530
+Sachin Sant <sachinp@in.ibm.com> wrote:
 
-> > >>Could please those of you, who are able to reproduce the problem, verify
-> > >>whether the patch below (completely untested) makes everything behave
-> > >>again? Thanks.
+> Latest 2.6.36-rc1 git fails to build on a s390 with
 > 
-> > >Yes, everything behaves again. Thanks Jiri.
->  
-> > Seconded. Works good. Thanks for your support Jiri.
+> arch/s390/kernel/process.c:272: error: conflicting types for 'sys_execve'
+> arch/s390/kernel/entry.h:45: error: previous declaration of 'sys_execve' was here
+> make[1]: *** [arch/s390/kernel/process.o] Error 1
 > 
-> Thirded! This fixes the warning here.
+> This error was introduced via commit :
+> 
+> commit d7627467b7a8dd6944885290a03a07ceb28c10eb
+> Make do_execve() take a const filename pointer
+> 
+> I guess the corresponding definition of sys_execve()
+> in arch/s390/kernel/entry.h also needs an update.
 
-The fix is now in Linus' tree, and thus will be in -rc2. Thanks everyone 
-for testing.
+Fix is uploaded to git390. Tomorrows -next tree should work again.
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
