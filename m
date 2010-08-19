@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab0HSPGm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:06:42 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:34947 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752304Ab0HSPGk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:06:40 -0400
-Message-ID: <4C6D4864.2040002@example.com>
-Date: Thu, 19 Aug 2010 17:06:12 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Which kernel.org WWW is the master server?
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 5222768193772089624
-X-Ovh-Remote: 83.24.77.226 (dmv226.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	id S1753858Ab0HSPHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:07:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752304Ab0HSPHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:07:22 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100819220338.5FD5.A69D9226@jp.fujitsu.com>
+References: <20100819220338.5FD5.A69D9226@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: dhowells@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: oom: __task_cred() need rcu_read_lock()
+Date: Thu, 19 Aug 2010 16:06:34 +0100
+Message-ID: <7682.1282230394@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-I wrote a simple python script that tells me that a new kernel version 
-appeared. The problem is that it is based exactly on this what appears 
-on the webpage so sometimes it resolves the server IP that the version 
-has changed, despite the fact that it is not true. Which server is the 
-master server?
+> dump_tasks() can call __task_cred() safely because we are holding
+> tasklist_lock. but rcu lock validator don't have enough knowledge and
+> it makes following annoying warning.
 
-Cheers,
+No, it can't.  The tasklist_lock is not protection against the creds changing
+on another CPU.
 
-Piotr Hosowicz
-
--- 
-- Obiecali zbudowac 3 miliony mieszkan! I nie zbudowali!
-- Ale to bardzo dobrze, ze nie zbudowali! Nie od tego jest panstwo!
-- Kwasniewski obiecywal nie 3, a 10 milionow mieszkan!
-- No to wyglada na to, ze Kwasniewski zbudowal siedem,
-   a Kaczynscy teraz musza dobudowac trzy miliony.
-NP: Led Zeppelin - For Your Life
-NB: 2.6.36-rc1-20100819-1517+
+David
