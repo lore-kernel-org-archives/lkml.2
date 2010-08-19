@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab0HSJVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 05:21:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41567 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab0HSJVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 05:21:45 -0400
-Message-ID: <4C6CF6BC.3030804@kernel.org>
-Date: Thu, 19 Aug 2010 11:17:48 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1752103Ab0HSJWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 05:22:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45432 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab0HSJW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 05:22:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FKU8KA0QDL9WufuThhBSnZ7aJwhPbBx/e8z8GJCy3eJ9si0YwHX3PRA7bkNpQgFjiQ
+         64e2NtsStTZHV0/teK+P4fl8DjAacjcq7j3j79XXHLStSIsQduyg/zwaL4EBMNmMDU6V
+         88pW7/X1Gk+0pvTyXfh7rHtaVJQJBiNS9GekI=
+Date: Thu, 19 Aug 2010 11:22:47 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: john stultz <johnstul@us.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        Rodolfo Giometti <giometti@linux.it>, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Message-ID: <20100819092246.GA8484@riccoc20.at.omicron.at>
+References: <cover.1281956490.git.richard.cochran@omicron.at>
+ <201008171336.29375.arnd@arndb.de>
+ <20100818140440.GA22655@riccoc20.at.omicron.at>
+ <201008181702.03384.arnd@arndb.de>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: "Darrick J. Wong" <djwong@us.ibm.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Mingming Cao <cmm@us.ibm.com>, Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
-References: <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <20100809210723.GA28171@infradead.org> <20100816161433.GK2109@tux1.beaverton.ibm.com> <20100819020734.GL2109@tux1.beaverton.ibm.com> <20100819085349.GA8782@infradead.org>
-In-Reply-To: <20100819085349.GA8782@infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 09:21:27 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008181702.03384.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Aug 18, 2010 at 05:02:03PM +0200, Arnd Bergmann wrote:
+> You might want to use callbacks for these system calls that you
+> can register to at module load time, like it is done for the
+> existing syscalls.
 
-On 08/19/2010 10:53 AM, Christoph Hellwig wrote:
-> On Wed, Aug 18, 2010 at 07:07:34PM -0700, Darrick J. Wong wrote:
->> Oddly, I ran the entire suite of tests against a larger set of machines, and
->> with Tejun's RFC patchset I didn't see nearly as much of an improvement.  I
->> have been trying to put together a new tree based on "replace barrier with
->> sequenced flush" and Christoph's "explicitly flush/FUA" patch sets, though I've
->> gotten lost in the weeds. :(
+Can you point me to a specific example?
+
+> The simpler way (e.g. for testing) is using Kconfig dependencies, like
 > 
-> Tejun's patches don't allow concurrent cache flushes to happen, while
-> my patch did.  Tejun said there are drivers that can't handly empty
-> flushes with a bio attached, making this nessecary.   
+> config PTP
+> 	bool "IEEE 1588 Precision Time Protocol"
 > 
-> Tejun, any idea what drivers that would be?
-
-What was the configuration?  If dm was involved, both md and dm can
-only process single flush request at a time.  Supporing multiple
-flushes in flight wouldn't be too difficult.  It's just the way things
-are implemented with the previous barrier implementation.  It can
-definitely be improved.
-
->> I also experienced some sort of crash with Tejun's relaxed barrier
->> patch on one of my systems.  I was hitting the BUG_ON in
->> drivers/scsi/scsi_lib.c, line 1115.
+> config PPS
+> 	tristate "Pulse per Second"
+> 	depends on PTP || !PTP
 > 
-> My kernel source doesn't have a BUG_ON line there, but only one two
-> lines above.  A req->nr_phys_segments that's zero sounds a bit like
-> empty flush requests, I'll need to look into it again.
+> The depends statement is a way of expressing that when PTP is enabled,
+> PPS cannot be a module, while it may be a module if PTP is disabled.
 
-Yeah, definitely sounds like REQ_FS|REQ_FLUSH request causing problem.
-Can you post the kernel log?
+THis did not work for me.
 
-Thanks.
+What I got was, in effect, two independent booleans.
 
--- 
-tejun
+
+Thanks,
+
+Richard
