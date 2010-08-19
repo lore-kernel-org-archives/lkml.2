@@ -1,49 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab0HSQ46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 12:56:58 -0400
-Received: from khc.piap.pl ([195.187.100.11]:46296 "EHLO khc.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752661Ab0HSQ44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 12:56:56 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
-References: <20100813215413.GA21607@n2100.arm.linux.org.uk>
-	<20100814181306U.fujita.tomonori@lab.ntt.co.jp>
-	<m3vd7agmqa.fsf@intrepid.localdomain>
-	<20100819175024W.fujita.tomonori@lab.ntt.co.jp>
-Date: Thu, 19 Aug 2010 18:56:53 +0200
-In-Reply-To: <20100819175024W.fujita.tomonori@lab.ntt.co.jp> (FUJITA
-	Tomonori's message of "Thu, 19 Aug 2010 17:51:51 +0900")
-Message-ID: <m34oeqsfqi.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753648Ab0HSQ5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 12:57:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44378 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340Ab0HSQ5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 12:57:20 -0400
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, randy.dunlap@oracle.com
+Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, naveen_jain@ti.com,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
+Date: Thu, 19 Aug 2010 14:08:51 -0400
+Message-Id: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> writes:
+From: Pavan Savoy <pavan_savoy@ti.com>
 
->> > +++ b/arch/arm/mm/dma-mapping.c
->> > @@ -77,6 +77,11 @@ static struct page *__dma_alloc_buffer(struct device *dev, size_t size, gfp_t gf
->> >  	if (mask < 0xffffffffULL)
->> >  		gfp |= GFP_DMA;
->> >  
->> > +#ifdef CONFIG_DMABOUNCE
->> > +	if (dev->archdata.dmabounce)
->> > +		gfp |= GFP_DMA;
->> > +#endif
->> > +
->> >  	page = alloc_pages(gfp, order);
->> >  	if (!page)
->> >  		return NULL;
+In order to support multiple ST platform devices, a new symbol
+'st_get_plat_device' earlier needed to be exported by the arch/XX/brd-XX.c
+file which intends to add the ST platform device.
 
-> I'll re-send the patch in the proper format. Can you send it to
-> mainline for 2.6.36?
+On removing this dependency, now inside ST driver maintain the array of
+ST platform devices that would be registered.
+As of now let id=0, as and when we end up having such platforms
+where mutliple ST devices can exist, id would come from
+protocol drivers (BT, FM and GPS) as to on which platform device
+they want to register to.
 
-Guess that's a question for Russell.
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/staging/ti-st/st.h      |    1 -
+ drivers/staging/ti-st/st_core.c |    9 ++++-----
+ drivers/staging/ti-st/st_core.h |    2 +-
+ drivers/staging/ti-st/st_kim.c  |   22 +++++++++++++++++++---
+ 4 files changed, 24 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/staging/ti-st/st.h b/drivers/staging/ti-st/st.h
+index 9952579..1b3060e 100644
+--- a/drivers/staging/ti-st/st.h
++++ b/drivers/staging/ti-st/st.h
+@@ -80,5 +80,4 @@ struct st_proto_s {
+ extern long st_register(struct st_proto_s *);
+ extern long st_unregister(enum proto_type);
+ 
+-extern struct platform_device *st_get_plat_device(void);
+ #endif /* ST_H */
+diff --git a/drivers/staging/ti-st/st_core.c b/drivers/staging/ti-st/st_core.c
+index 063c9b1..b85d8bf 100644
+--- a/drivers/staging/ti-st/st_core.c
++++ b/drivers/staging/ti-st/st_core.c
+@@ -38,7 +38,6 @@
+ #include "st_ll.h"
+ #include "st.h"
+ 
+-#define VERBOSE
+ /* strings to be used for rfkill entries and by
+  * ST Core to be used for sysfs debug entry
+  */
+@@ -581,7 +580,7 @@ long st_register(struct st_proto_s *new_proto)
+ 	long err = 0;
+ 	unsigned long flags = 0;
+ 
+-	st_kim_ref(&st_gdata);
++	st_kim_ref(&st_gdata, 0);
+ 	pr_info("%s(%d) ", __func__, new_proto->type);
+ 	if (st_gdata == NULL || new_proto == NULL || new_proto->recv == NULL
+ 	    || new_proto->reg_complete_cb == NULL) {
+@@ -713,7 +712,7 @@ long st_unregister(enum proto_type type)
+ 
+ 	pr_debug("%s: %d ", __func__, type);
+ 
+-	st_kim_ref(&st_gdata);
++	st_kim_ref(&st_gdata, 0);
+ 	if (type < ST_BT || type >= ST_MAX) {
+ 		pr_err(" protocol %d not supported", type);
+ 		return -EPROTONOSUPPORT;
+@@ -767,7 +766,7 @@ long st_write(struct sk_buff *skb)
+ #endif
+ 	long len;
+ 
+-	st_kim_ref(&st_gdata);
++	st_kim_ref(&st_gdata, 0);
+ 	if (unlikely(skb == NULL || st_gdata == NULL
+ 		|| st_gdata->tty == NULL)) {
+ 		pr_err("data/tty unavailable to perform write");
+@@ -818,7 +817,7 @@ static int st_tty_open(struct tty_struct *tty)
+ 	struct st_data_s *st_gdata;
+ 	pr_info("%s ", __func__);
+ 
+-	st_kim_ref(&st_gdata);
++	st_kim_ref(&st_gdata, 0);
+ 	st_gdata->tty = tty;
+ 	tty->disc_data = st_gdata;
+ 
+diff --git a/drivers/staging/ti-st/st_core.h b/drivers/staging/ti-st/st_core.h
+index e0c32d1..8601320 100644
+--- a/drivers/staging/ti-st/st_core.h
++++ b/drivers/staging/ti-st/st_core.h
+@@ -117,7 +117,7 @@ int st_core_init(struct st_data_s **);
+ void st_core_exit(struct st_data_s *);
+ 
+ /* ask for reference from KIM */
+-void st_kim_ref(struct st_data_s **);
++void st_kim_ref(struct st_data_s **, int);
+ 
+ #define GPS_STUB_TEST
+ #ifdef GPS_STUB_TEST
+diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
+index b4a6c7f..9e99463 100644
+--- a/drivers/staging/ti-st/st_kim.c
++++ b/drivers/staging/ti-st/st_kim.c
+@@ -72,11 +72,26 @@ const unsigned char *protocol_names[] = {
+ 	PROTO_ENTRY(ST_GPS, "GPS"),
+ };
+ 
++#define MAX_ST_DEVICES	3	/* Imagine 1 on each UART for now */
++struct platform_device *st_kim_devices[MAX_ST_DEVICES];
+ 
+ /**********************************************************************/
+ /* internal functions */
+ 
+ /**
++ * st_get_plat_device -
++ *	function which returns the reference to the platform device
++ *	requested by id. As of now only 1 such device exists (id=0)
++ *	the context requesting for reference can get the id to be
++ *	requested by a. The protocol driver which is registering or
++ *	b. the tty device which is opened.
++ */
++static struct platform_device *st_get_plat_device(int id)
++{
++	return st_kim_devices[id];
++}
++
++/**
+  * validate_firmware_response -
+  *	function to return whether the firmware response was proper
+  *	in case of error don't complete so that waiting for proper
+@@ -353,7 +368,7 @@ void st_kim_chip_toggle(enum proto_type type, enum kim_gpio_state state)
+ 	struct kim_data_s	*kim_gdata;
+ 	pr_info(" %s ", __func__);
+ 
+-	kim_pdev = st_get_plat_device();
++	kim_pdev = st_get_plat_device(0);
+ 	kim_gdata = dev_get_drvdata(&kim_pdev->dev);
+ 
+ 	if (kim_gdata->gpios[type] == -1) {
+@@ -574,12 +589,12 @@ static int kim_toggle_radio(void *data, bool blocked)
+  *	This would enable multiple such platform devices to exist
+  *	on a given platform
+  */
+-void st_kim_ref(struct st_data_s **core_data)
++void st_kim_ref(struct st_data_s **core_data, int id)
+ {
+ 	struct platform_device	*pdev;
+ 	struct kim_data_s	*kim_gdata;
+ 	/* get kim_gdata reference from platform device */
+-	pdev = st_get_plat_device();
++	pdev = st_get_plat_device(id);
+ 	kim_gdata = dev_get_drvdata(&pdev->dev);
+ 	*core_data = kim_gdata->core_data;
+ }
+@@ -623,6 +638,7 @@ static int kim_probe(struct platform_device *pdev)
+ 	long *gpios = pdev->dev.platform_data;
+ 	struct kim_data_s	*kim_gdata;
+ 
++	st_kim_devices[pdev->id] = pdev;
+ 	kim_gdata = kzalloc(sizeof(struct kim_data_s), GFP_ATOMIC);
+ 	if (!kim_gdata) {
+ 		pr_err("no mem to allocate");
 -- 
-Krzysztof Halasa
+1.6.5
+
