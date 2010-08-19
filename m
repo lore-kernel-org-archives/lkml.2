@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476Ab0HSPuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:50:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50511 "EHLO hera.kernel.org"
+	id S1751673Ab0HSPvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:51:12 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:34498 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab0HSPuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:50:04 -0400
-Message-ID: <4C6D51AF.3050008@kernel.org>
-Date: Thu, 19 Aug 2010 17:45:51 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1750935Ab0HSPvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:51:08 -0400
+Date: Thu, 19 Aug 2010 08:51:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@osdl.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, rientjes@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] oom: __task_cred() need rcu_read_lock()
+Message-ID: <20100819155103.GB2425@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100819152618.21246.68223.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
-        tytso@mit.edu, chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        rusty@rustcorp.com.au, mst@redhat.com,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
-References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com> <4C6A5780.2090100@kernel.org> <20100817140734.GA30768@redhat.com> <4C6ABE12.40705@kernel.org> <4C6D0824.3070908@ct.jp.nec.com>
-In-Reply-To: <4C6D0824.3070908@ct.jp.nec.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 Aug 2010 15:49:35 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100819152618.21246.68223.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 08/19/2010 12:32 PM, Kiyoshi Ueda wrote:
->> I see but single pending flush and steady write streams w/o saturating
->> the mempool would be able to stall dm_wait_for_completeion(), no?  Eh
->> well, it's a separate issue, I guess.
+On Thu, Aug 19, 2010 at 04:26:18PM +0100, David Howells wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> Your understanding is correct, dm_wait_for_completion() for flush
-> will stall in such cases for request-based dm.
-> That's why I mentioned below in
-> https://www.redhat.com/archives/dm-devel/2010-August/msg00026.html.
+> dump_tasks() needs to hold the RCU read lock around its access of the target
+> task's UID.  To this end it should use task_uid() as it only needs that one
+> thing from the creds.
 > 
->     In other words, current request-based device-mapper can't handle
->     other requests while a flush request is in progress.
->
-> In flush request handling, request-based dm uses dm_wait_for_completion()
-> to wait for the completion of cloned flush requests, depending on
-> the fact that there should be only flush requests in flight owning
-> to the block layer sequencing.
+> The fact that dump_tasks() holds tasklist_lock is insufficient to prevent the
+> target process replacing its credentials on another CPU.
+> 
+> Then, this patch change to call rcu_read_lock() explicitly.
+> 
+> 
+> 	===================================================
+> 	[ INFO: suspicious rcu_dereference_check() usage. ]
+> 	---------------------------------------------------
+> 	mm/oom_kill.c:410 invoked rcu_dereference_check() without protection!
+> 
+> 	other info that might help us debug this:
+> 
+> 	rcu_scheduler_active = 1, debug_locks = 1
+> 	4 locks held by kworker/1:2/651:
+> 	 #0:  (events){+.+.+.}, at: [<ffffffff8106aae7>]
+> 	process_one_work+0x137/0x4a0
+> 	 #1:  (moom_work){+.+...}, at: [<ffffffff8106aae7>]
+> 	process_one_work+0x137/0x4a0
+> 	 #2:  (tasklist_lock){.+.+..}, at: [<ffffffff810fafd4>]
+> 	out_of_memory+0x164/0x3f0
+> 	 #3:  (&(&p->alloc_lock)->rlock){+.+...}, at: [<ffffffff810fa48e>]
+> 	find_lock_task_mm+0x2e/0x70
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-I see.  bio based implementation also uses dm_wait_for_completion()
-but it also has DMF_QUEUE_IO_TO_THREAD to plug all the follow up bio's
-while flush is in progress, which sucks for throughput but
-successfully avoids starvation.
+Looks good to me!
 
-> It's not a separate issue and we need to resolve it at least.
-> I'm still considering how I can fix the request-based dm.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Right, I thought you were talking about REQ_FLUSHes not sycnhronized
-against barrier write.  Anyways, yeah, it's a problem.  I don't think
-not being able to handle multiple flushes concurrently would be a
-major issue.  The problem is not being able to process other
-bios/requests while a flush is in progress.  All that's necessary is
-making the completion detection a bit more fine grained so that it
-counts the number of in flight flush bios/requests and completes when
-it reaches zero instead of waiting for all outstanding commands.
-Shouldn't be too hard.
-
-Thanks.
-
--- 
-tejun
+> ---
+> 
+>  mm/oom_kill.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 5014e50..7b03102 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -372,7 +372,7 @@ static void dump_tasks(const struct mem_cgroup *mem)
+>  		}
+> 
+>  		pr_info("[%5d] %5d %5d %8lu %8lu %3u     %3d         %5d %s\n",
+> -			task->pid, __task_cred(task)->uid, task->tgid,
+> +			task->pid, task_uid(task), task->tgid,
+>  			task->mm->total_vm, get_mm_rss(task->mm),
+>  			task_cpu(task), task->signal->oom_adj,
+>  			task->signal->oom_score_adj, task->comm);
+> 
