@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab0HSLyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 07:54:12 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:43860 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab0HSLyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 07:54:07 -0400
-Date: Thu, 19 Aug 2010 13:51:06 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Matthew Wilcox <willy@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>
-Subject: Re: [TESTCASE] Clean pages clogging the VM
-Message-ID: <20100819115106.GG1779@cmpxchg.org>
-References: <20100809133000.GB6981@wil.cx> <20100817195001.GA18817@linux.intel.com> <20100818141308.GD1779@cmpxchg.org> <20100818160613.GE9431@localhost> <20100818160731.GA15002@localhost>
+	id S1753067Ab0HSL5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 07:57:48 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2402 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753000Ab0HSL5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 07:57:44 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7JBvdNZ013730
+Subject: Re: [RFC][PATCH] introduce ptr_diff()
+From: Bernd Petrovitsch <bernd@sysprog.at>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1282217856-8625-1-git-send-email-namhyung@gmail.com>
+References: <1282217856-8625-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Aug 2010 13:57:38 +0200
+Message-ID: <1282219058.10440.26.camel@thorin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818160731.GA15002@localhost>
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 12:07:31AM +0800, Wu Fengguang wrote:
-> On Thu, Aug 19, 2010 at 12:06:13AM +0800, Wu Fengguang wrote:
-> > On Wed, Aug 18, 2010 at 04:13:08PM +0200, Johannes Weiner wrote:
-> > > Hi Matthew,
-> > > 
-> > > On Tue, Aug 17, 2010 at 03:50:01PM -0400, Matthew Wilcox wrote:
-> > > > 
-> > > > No comment on this?  Was it just that I posted it during the VM summit?
-> > > 
-> > > I have not forgotten about it.  I just have a hard time reproducing
-> > > those extreme stalls you observed.
-> > > 
-> > > Running that test on a 2.5GHz machine with 2G of memory gives me
-> > > stalls of up to half a second.  The patchset I am experimenting with
-> > > gets me down to peaks of 70ms, but it needs further work.
-> > > 
-> > > Mapped file pages get two rounds on the LRU list, so once the VM
-> > > starts scanning, it has to go through all of them twice and can only
-> > > reclaim them on the second encounter.
-> > > 
-> > > At that point, since we scan without making progress, we start waiting
-> > > for IO, which is not happening in this case, so we sit there until a
-> > > timeout expires.
-> > 
-> > Right, this could lead to some 1s stall. Shaohua and me also noticed
-> > this when investigating the responsiveness issues. And we are wondering
-> > if it makes sense to do congestion_wait() only when the bdi is really
-> > congested? There are no IO underway anyway in this case.
+On Don, 2010-08-19 at 20:37 +0900, Namhyung Kim wrote:
+> When I compiled allyesconfig'ed kernel with C=1, I got 1519 lines of
+> following message:
+> 
+>  include/linux/mm.h:599:16: warning: potentially expensive pointer subtraction
+> 
+> which is around 10% of total warnings. this was caused by page_to_pfn() macro
+> so I think it's worth to remove it by calculating pointer subtraction
+> manually.
+> 
+> ptr_diff() does subtraction of two pointers as if they were integer values
+> and divides it by the size of their base type. Currently it does not deal
+> with a difference alignment requirement than the size of base type, it
+> would be a trivial job.
+> 
+> Impact: remove a _lot_ of sparse warnings
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+> 
+> I have no idea where the right place is.
+> Please kindly point me to the place if here is not the one.
+> And any comments are greatly welcomed also.
+> 
+> Thanks.
+> 
+>  include/asm-generic/memory_model.h |   23 +++++++++++++++++++----
+>  1 files changed, 19 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/asm-generic/memory_model.h b/include/asm-generic/memory_model.h
+> index fb2d63f..ffec625 100644
+> --- a/include/asm-generic/memory_model.h
+> +++ b/include/asm-generic/memory_model.h
+> @@ -22,13 +22,28 @@
+>  
+>  #endif /* CONFIG_DISCONTIGMEM */
+>  
+> +#include <linux/log2.h>
+> +
+> +#define ptr_diff(p1, p2)					\
+> +({	long __diff;						\
+> +	unsigned long  __addr1 = (unsigned long) (p1);		\
+> +	unsigned long  __addr2 = (unsigned long) (p2);		\
+> +	unsigned __size = sizeof(typeof(*p1));			\
+The typeof() is actually redundant here.
+> +								\
+> +	if (is_power_of_2(__size))				\
+> +		__diff = (__addr1 - __addr2) >> ilog2(__size);	\
+> +	else							\
+> +		__diff = (__addr1 - __addr2) / __size;		\
+> +	__diff;							\
+> +})
+> +
 
-I am currently trying to get rid of all the congestion_wait() in the VM.
-They are used for different purposes, so they need different replacement
-mechanisms.
+IMHO this kills gcc's type compatibility checks on p1 and p2 (even if
+they are suboptimal).
+There is the "__same_type" macro in compiler.h for this or the "else"
+branch uses plain C
+	__diff = p1 - p2;
+to keep them (which probably also keeps sparse's warnings).
 
-I saw Shaohua's patch to make congestion_wait() cleverer.  But I really
-think that congestion is not a good predicate in the first place.  Why
-would the VM care about IO _congestion_?  It needs a bunch of pages to
-complete IO, whether the writing device is congested is not really
-useful information at this point, I think.
+Actually one would assume that gcc internally just does the above as the
+size of the type is statically known (and sparse could be improved to
+not warn where sizeof(*p1) is a power of 2).
 
-> > > since I can not reproduce your observations, I don't know if this is
-> > > the (sole) source of the problem.  Can I send you patches?
-> > 
-> > Sure.
+	Bernd
+-- 
+mobile: +43 664 4416156              http://www.sysprog.at/
+    Linux Software Development, Consulting and Services
 
-Cool!
-
-> > > > On Mon, Aug 09, 2010 at 09:30:00AM -0400, Matthew Wilcox wrote:
-> > > > > 
-> > > > > This testcase shows some odd behaviour from the Linux VM.
-> > > > > 
-> > > > > It creates a 1TB sparse file, mmaps it, and randomly reads locations 
-> > > > > in it.  Due to the file being entirely sparse, the VM allocates new pages
-> > > > > and zeroes them.  Initially, it runs very fast, taking on the order of
-> > > > > 2.7 to 4us per page fault.  Eventually, the VM runs out of free pages,
-> > > > > and starts doing huge amounts of work trying to figure out which of
-> > > > > these clean pages to throw away.
-> > > 
-> > > This is similar to one of my test cases for:
-> > > 
-> > > 	6457474 vmscan: detect mapped file pages used only once
-> > > 	31c0569 vmscan: drop page_mapping_inuse()
-> > > 	dfc8d63 vmscan: factor out page reference checks
-> > > 
-> > > because the situation was even worse before (see the series
-> > > description in dfc8d63).  Maybe asking the obvious, but the kernel you
-> > > tested on did include those commits, right?
-> > > 
-> > > And just to be sure, I sent you a test-patch to disable the used-once
-> > > detection on IRC the other day.  Did you have time to run it yet?
-> > > Here it is again:
-> > > 
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index 9c7e57c..c757bba 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -584,6 +584,7 @@ static enum page_references page_check_references(struct page *page,
-> > >  		return PAGEREF_RECLAIM;
-> > >  
-> > >  	if (referenced_ptes) {
-> > > +		return PAGEREF_ACTIVATE;
-> > 
-> > How come page activation helps?
-
-This is effectively disabling used-once detection and going back to the old
-VM behaviour.  I don't think it helps, but this code is recent and directly
-related to the test-case.  Maybe I/we missed something, it can't hurt to
-make sure, right?
