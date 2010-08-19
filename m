@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262Ab0HSBAs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 21:00:48 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43734 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab0HSBAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 21:00:46 -0400
-Date: Thu, 19 Aug 2010 11:00:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Subject: linux-next: manual merge of the sh tree with Linus' tree
-Message-Id: <20100819110040.9b65bf5e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751337Ab0HSBCC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 21:02:02 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39403 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab0HSBB7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 21:01:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimxbJQ7+cJ20x1Bcm=1xk_JgMANUQDFn-pJ9jZa@mail.gmail.com>
+References: <20100818151857.GA6188@barrios-desktop>
+	<20100818172627.7e38969f@varda>
+	<AANLkTimxbJQ7+cJ20x1Bcm=1xk_JgMANUQDFn-pJ9jZa@mail.gmail.com>
+Date: Wed, 18 Aug 2010 18:01:58 -0700
+Message-ID: <AANLkTimqzQHtSo5f41ze4JEznGCjMNTC_1DPgc21JYT0@mail.gmail.com>
+Subject: Re: android-kernel memory reclaim x20 boost?
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: =?ISO-8859-1?Q?Alejandro_Riveira_Fern=E1ndez?= <ariveira@gmail.com>,
+        swetland@google.com, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, San Mehat <san@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Wed, Aug 18, 2010 at 5:54 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Thu, Aug 19, 2010 at 12:26 AM, Alejandro Riveira Fernández
+> <ariveira@gmail.com> wrote:
+>> El Thu, 19 Aug 2010 00:18:57 +0900
+>> Minchan Kim <minchan.kim@gmail.com> escribió:
+>>
+>>> Hello Android forks,
+>> [ ... ]
+>>>
+>>> I saw the advertisement phrase in this[1].
+>>>
+>>> "Kernel Memory Management Boost: Improved memory reclaim by up to 20x,
+>>> which results in faster app switching and smoother performance
+>>> on memory-constrained devices."
+>>>
+>>> But I can't find any code for it in android kernel git tree.
+>>
+>>  Maybe the enhancements are on the Dalvik VM (shooting in the dark here)
+>
+> Thanks.
+> Android guys! Could you confirm this?
+>
 
-Today's linux-next merge of the sh tree got a conflict in
-arch/sh/kernel/process_32.c between commit
-d7627467b7a8dd6944885290a03a07ceb28c10eb ("Make do_execve() take a const
-filename pointer") from Linus' tree and commit
-d5b7fb7bb8a014ee96cd39b410fc57a7dc239a91 ("sh: fix up fallout from
-syscall arg constification") from the sh tree.
+It is more likely referring to this change:
 
-I used the version from Linus' tree as it was more complete.
+Author: San Mehat <san@google.com>
+Date:   Wed May 5 11:38:42 2010 -0700
 
-I also applied this merge fixup patch to make the header file prototype
-match:
+    staging: android: lowmemkiller: Substantially reduce overhead during reclaim
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 19 Aug 2010 10:56:12 +1000
-Subject: [PATCH] sh: fix prototype of sys_execve to match the new one
+    This patch optimizes lowmemkiller to not do any work when it has
+an outstanding
+    kill-request. This greatly reduces the pressure on the task_list lock
+    (improving interactivity), as well as improving the vmscan performance
+    when under heavy memory pressure (by up to 20x in tests).
 
-Commit d7627467b7 ("Make do_execve() take a const filename pointer")
-missed some.
+    Note: For this enhancement to work, you need CONFIG_PROFILING
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/sh/include/asm/syscalls_32.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+    Signed-off-by: San Mehat <san@google.com>
 
-diff --git a/arch/sh/include/asm/syscalls_32.h b/arch/sh/include/asm/syscalls_32.h
-index be201fd..6089a4e 100644
---- a/arch/sh/include/asm/syscalls_32.h
-+++ b/arch/sh/include/asm/syscalls_32.h
-@@ -19,9 +19,10 @@ asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
- asmlinkage int sys_vfork(unsigned long r4, unsigned long r5,
- 			 unsigned long r6, unsigned long r7,
- 			 struct pt_regs __regs);
--asmlinkage int sys_execve(const char __user *ufilename, char __user * __user *uargv,
--			  char __user * __user *uenvp, unsigned long r7,
--			  struct pt_regs __regs);
-+asmlinkage int sys_execve(const char __user *ufilename,
-+			  const char __user * const __user *uargv,
-+			  const char __user * const __user *uenvp,
-+			  unsigned long r7, struct pt_regs __regs);
- asmlinkage int sys_sigsuspend(old_sigset_t mask, unsigned long r5,
- 			      unsigned long r6, unsigned long r7,
- 			      struct pt_regs __regs);
--- 
-1.7.1
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Arve Hjønnevåg
