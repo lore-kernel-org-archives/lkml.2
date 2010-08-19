@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0HSLXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 07:23:48 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:47608 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab0HSLXr (ORCPT
+	id S1752677Ab0HSLYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 07:24:39 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:58989 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab0HSLYi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 07:23:47 -0400
-Date: Thu, 19 Aug 2010 14:14:41 +0300
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, lkml@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        John Kacur <jkacur@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
-Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
-Message-ID: <20100819111441.GD3003@shisha.kicks-ass.net>
-Mail-Followup-To: Peter Zijlstra <peterz@infradead.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"H. Peter Anvin" <hpa@zytor.com>, lkml@vger.kernel.org,
-	"Kirill A. Shutemov" <kirill@shutemov.name>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	John Stultz <johnstul@us.ibm.com>,
-	Martin Schwidefsky <schwidefsky@de.ibm.com>,
-	Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-	John Kacur <jkacur@redhat.com>,
-	Chris Friesen <chris.friesen@genband.com>,
-	Kay Sievers <kay.sievers@vrfy.org>, Greg KH <gregkh@suse.de>,
-	linux-kernel@vger.kernel.org
-References: <1282139739-23832-1-git-send-email-virtuoso@slind.org>
- <20100818155702.bc62b2a6.akpm@linux-foundation.org>
- <4C6C7034.4050501@zytor.com>
- <20100818165303.dd52695a.akpm@linux-foundation.org>
- <1282211446.1926.4609.camel@laptop>
+	Thu, 19 Aug 2010 07:24:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=esTmP1LwTaUbvRp0/O9IeG0hB/LXUFfq/9GeB9rXdyNl2PKtIxrI421J5PrN89okE
+	R+HEPuNuhnddBDLDGt2CA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282211446.1926.4609.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1282215916.1926.4696.camel@laptop>
+References: <AANLkTimdnYjDsr4GYgw=M74hH0hzyRDeb7WqfiE8-BT1@mail.gmail.com>
+	<1282215916.1926.4696.camel@laptop>
+Date: Thu, 19 Aug 2010 13:24:35 +0200
+Message-ID: <AANLkTincTDeVtekXkt+CnEix73d9rjEZUT4TJYyQGcdw@mail.gmail.com>
+Subject: Re: [BUG] perf_events: NMI watchdog event cannot be throttled
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mackerras <paulus@samba.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        eranian@gmail.com, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 11:50:46 +0200, Peter Zijlstra wrote:
-> On Wed, 2010-08-18 at 16:53 -0700, Andrew Morton wrote:
-> > 
-> > 
-> > Such applications might be better served via a wake-me-at-this-time
-> > syscall instead of a sleep-me-for-this-long syscall.  Although such a
-> > thing is less general.
-> > 
-> We have timer_create(.clockid = CLOCK_REALTIME) for such things, no?
+Yeah, that should probably fix it. Let me try it out.
 
-No. I'll try to summarize all the things that have been said about the
-use cases for this functionality earlier in the followup version so as
-to make things clearer.
 
-> 
-> > > +                  fd = open("/sys/kernel/time_notify", O_WRONLY);
-> > > +                  fdprintf(fd, "%d 1 0 1 1", efd);
-> > 
-> > why not
-> > 
-> >                 sys_time_notify(efd, 1, 0, 1, 1);
-> 
-> And then there is the /dev/time proposal from Plan9:
-> 
->   http://lkml.org/lkml/2009/3/11/363
-> 
-> Their proposal was to add a poll() method to the device which would wake
-> on every change in time.
-
-I haven't seen any poll-related code there, but it looks like the interface
-which duplicates existing functionality for no gain.
-
-It would be nice if they did some work on replacing {get,set}timeofday()
-with read()s/write()s in glibc etc. But as of now this /dev/time looks quite
-a pointless thing to have.
-
-Regards,
---
-Alex
+On Thu, Aug 19, 2010 at 1:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-08-18 at 22:26 +0200, Stephane Eranian wrote:
+>> Hi,
+>>
+>> I ran into some issue  with the NMI watchdog not firing in a deadlock
+>> situation. After some debugging I found the source of the problem.
+>>
+>> The NMI watchdog is currently subject, like any other events, to interrupt
+>> throttling. The heart of the problem is that if you are deadlocked on a CPU
+>> with interrupts masked, the timer interrupt won't fire, therefore the
+>> hwc->interrupts
+>> field won't be reset. Then, depending on the max sampling rate, you
+>> could eventually
+>> fail the max interrupt rate test in __pfm_overflow_handler() and
+>> perf_events would
+>> throttle, i.e., stop, the NMI watchdog event before the 5s delay to panic.
+>> Thus, you would never get the panic. I ran into this problem myself.
+>>
+>> This is a serious issue because perf_events must ensure the watchdog can
+>> always fire, regardless of the interrupt masking situation.
+>>
+>> Look like one way of solving the problem would be to mark the NMI watchdog
+>> event as immune to throttling. The event being internal to the kernel we could
+>> trust the event setup from perf_event_create_kernel_counter().
+>
+> Something like so?
+>
+> ---
+>  kernel/watchdog.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 613bc1f..e0fe6e4 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -206,6 +206,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+>                 struct perf_sample_data *data,
+>                 struct pt_regs *regs)
+>  {
+> +       /* Ensure the watchdog never gets throttled. */
+> +       event->hw.interrupts = 0;
+> +
+>        if (__get_cpu_var(watchdog_nmi_touch) == true) {
+>                __get_cpu_var(watchdog_nmi_touch) = false;
+>                return;
+>
+>
