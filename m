@@ -1,52 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab0HSLpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 07:45:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62834 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab0HSLpt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 07:45:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FP13R/nMZXPU/O3aTp6chy6wnt7/Fh1uEjSErjatQXHhLtrB/e/1WLRa0/Cc9BDbgG
-         r8AEnGNDPVBiJrHsACi8aY59cyJc9v/kMD4z1+0OB2MKTzU/4/aSPAYKtAiikjxxmTVE
-         KNfm2WAXL62AOWJq7GelTj5bq2qpXIJUUukQ0=
-Date: Thu, 19 Aug 2010 08:26:16 +0530
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] scripts/mkversion: Simplify script
-Message-ID: <20100819023705.GF3688@kytes>
-References: <1282165945-27195-1-git-send-email-artagnon@gmail.com>
- <20100819002006.GA13637@merkur.ravnborg.org>
-MIME-Version: 1.0
+	id S1753026Ab0HSLyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 07:54:12 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:43860 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752987Ab0HSLyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 07:54:07 -0400
+Date: Thu, 19 Aug 2010 13:51:06 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>
+Subject: Re: [TESTCASE] Clean pages clogging the VM
+Message-ID: <20100819115106.GG1779@cmpxchg.org>
+References: <20100809133000.GB6981@wil.cx> <20100817195001.GA18817@linux.intel.com> <20100818141308.GD1779@cmpxchg.org> <20100818160613.GE9431@localhost> <20100818160731.GA15002@localhost>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100819002006.GA13637@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100818160731.GA15002@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Aug 19, 2010 at 12:07:31AM +0800, Wu Fengguang wrote:
+> On Thu, Aug 19, 2010 at 12:06:13AM +0800, Wu Fengguang wrote:
+> > On Wed, Aug 18, 2010 at 04:13:08PM +0200, Johannes Weiner wrote:
+> > > Hi Matthew,
+> > > 
+> > > On Tue, Aug 17, 2010 at 03:50:01PM -0400, Matthew Wilcox wrote:
+> > > > 
+> > > > No comment on this?  Was it just that I posted it during the VM summit?
+> > > 
+> > > I have not forgotten about it.  I just have a hard time reproducing
+> > > those extreme stalls you observed.
+> > > 
+> > > Running that test on a 2.5GHz machine with 2G of memory gives me
+> > > stalls of up to half a second.  The patchset I am experimenting with
+> > > gets me down to peaks of 70ms, but it needs further work.
+> > > 
+> > > Mapped file pages get two rounds on the LRU list, so once the VM
+> > > starts scanning, it has to go through all of them twice and can only
+> > > reclaim them on the second encounter.
+> > > 
+> > > At that point, since we scan without making progress, we start waiting
+> > > for IO, which is not happening in this case, so we sit there until a
+> > > timeout expires.
+> > 
+> > Right, this could lead to some 1s stall. Shaohua and me also noticed
+> > this when investigating the responsiveness issues. And we are wondering
+> > if it makes sense to do congestion_wait() only when the bdi is really
+> > congested? There are no IO underway anyway in this case.
 
-Sam Ravnborg writes:
-> On Thu, Aug 19, 2010 at 02:42:25AM +0530, Ramkumar Ramachandra wrote:
-> > Simplify the script and add a line to help editors recognize this as a
-> > shell script.
-> 
-> This does not IMO simplify the script.
-> The original version is simple to follow for the usual C coder.
-> The new version is harder to follow.
-> 
-> Adding the bangshee (#!/bin/sh) is fine.
+I am currently trying to get rid of all the congestion_wait() in the VM.
+They are used for different purposes, so they need different replacement
+mechanisms.
 
-Okay, we can drop the patch.
-I'll pick up some other janiorial tasks to get into the hang of
-writing patches.
+I saw Shaohua's patch to make congestion_wait() cleverer.  But I really
+think that congestion is not a good predicate in the first place.  Why
+would the VM care about IO _congestion_?  It needs a bunch of pages to
+complete IO, whether the writing device is congested is not really
+useful information at this point, I think.
 
--- Ram
+> > > since I can not reproduce your observations, I don't know if this is
+> > > the (sole) source of the problem.  Can I send you patches?
+> > 
+> > Sure.
+
+Cool!
+
+> > > > On Mon, Aug 09, 2010 at 09:30:00AM -0400, Matthew Wilcox wrote:
+> > > > > 
+> > > > > This testcase shows some odd behaviour from the Linux VM.
+> > > > > 
+> > > > > It creates a 1TB sparse file, mmaps it, and randomly reads locations 
+> > > > > in it.  Due to the file being entirely sparse, the VM allocates new pages
+> > > > > and zeroes them.  Initially, it runs very fast, taking on the order of
+> > > > > 2.7 to 4us per page fault.  Eventually, the VM runs out of free pages,
+> > > > > and starts doing huge amounts of work trying to figure out which of
+> > > > > these clean pages to throw away.
+> > > 
+> > > This is similar to one of my test cases for:
+> > > 
+> > > 	6457474 vmscan: detect mapped file pages used only once
+> > > 	31c0569 vmscan: drop page_mapping_inuse()
+> > > 	dfc8d63 vmscan: factor out page reference checks
+> > > 
+> > > because the situation was even worse before (see the series
+> > > description in dfc8d63).  Maybe asking the obvious, but the kernel you
+> > > tested on did include those commits, right?
+> > > 
+> > > And just to be sure, I sent you a test-patch to disable the used-once
+> > > detection on IRC the other day.  Did you have time to run it yet?
+> > > Here it is again:
+> > > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index 9c7e57c..c757bba 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -584,6 +584,7 @@ static enum page_references page_check_references(struct page *page,
+> > >  		return PAGEREF_RECLAIM;
+> > >  
+> > >  	if (referenced_ptes) {
+> > > +		return PAGEREF_ACTIVATE;
+> > 
+> > How come page activation helps?
+
+This is effectively disabling used-once detection and going back to the old
+VM behaviour.  I don't think it helps, but this code is recent and directly
+related to the test-case.  Maybe I/we missed something, it can't hurt to
+make sure, right?
