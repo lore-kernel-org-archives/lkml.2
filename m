@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab0HSIgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 04:36:15 -0400
-Received: from shutemov.name ([188.40.19.243]:59996 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab0HSIgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 04:36:13 -0400
-Date: Thu, 19 Aug 2010 11:36:12 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Greg KH <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander Shishkin <virtuoso@slind.org>, lkml@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        John Kacur <jkacur@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
-Message-ID: <20100819083612.GA13293@shutemov.name>
-References: <1282139739-23832-1-git-send-email-virtuoso@slind.org>
- <20100818155702.bc62b2a6.akpm@linux-foundation.org>
- <4C6C7034.4050501@zytor.com>
- <20100818165303.dd52695a.akpm@linux-foundation.org>
- <20100819040937.GA8646@suse.de>
+	id S1751688Ab0HSIhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 04:37:19 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61961 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751315Ab0HSIhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 04:37:17 -0400
+X-IronPort-AV: E=Sophos;i="4.56,232,1280700000"; 
+   d="scan'208";a="57545555"
+Message-ID: <4C6CED3B.3050709@inria.fr>
+Date: Thu, 19 Aug 2010 10:37:15 +0200
+From: Tomasz Buchert <tomasz.buchert@inria.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr-FR; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819040937.GA8646@suse.de>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
+References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr> <20100810215741.GC2927@count0.beaverton.ibm.com> <4C61D044.2060703@inria.fr> <20100811042738.GH2927@count0.beaverton.ibm.com> <4C6252CF.1090100@inria.fr> <20100812002154.GJ2927@count0.beaverton.ibm.com> <4C634605.50301@inria.fr> <20100812201334.GA29096@count0.beaverton.ibm.com> <4C6B339E.6010907@inria.fr> <20100818022210.GH3648@count0.beaverton.ibm.com>
+In-Reply-To: <20100818022210.GH3648@count0.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 09:09:37PM -0700, Greg KH wrote:
-> On Wed, Aug 18, 2010 at 04:53:03PM -0700, Andrew Morton wrote:
-> > Is sysfs the right interface for this thing?  Bear in mind that
-> > CONFIG_SYSFS does exist.  
-> > 
-> > > +		     fd = open("/sys/kernel/time_notify", O_WRONLY);
-> > > +		     fdprintf(fd, "%d 1 0 1 1", efd);
-> > 
-> > why not
-> > 
-> > 		sys_time_notify(efd, 1, 0, 1, 1);
-> 
-> Yeah, that would be much better than a sysfs file, this is abusing the
-> sysfs interface quite a lot.
+Le 18/08/2010 04:22, Matt Helsley a écrit :
+> On Wed, Aug 18, 2010 at 03:13:02AM +0200, Tomasz Buchert wrote:
+>> Le 12/08/2010 22:13, Matt Helsley a écrit :
+>
+> <snip>
+>
+>>
+>> Matt,
+>> Am I supposed to do something right now? The discussion
+>> became a bit quiet recently.
+>>
+>> Cheers,
+>> Tomasz
+>
+> Hi Tomasz,
+>
+> 	I'm sorry. I haven't had much time to review your latest
+> patches and comment. I thought Andrew put them in his -mm tree
+> so I don't think you have anything to do at the moment.
+>
+> Cheers,
+> 	-Matt
 
-Do you really think, that increasing number of syscalls is better then
-fs-based interfaces?
+Take your time, Matt. I only wish that eventually the problem will be 
+fixed, that or another way.
 
--- 
- Kirill A. Shutemov
+Tomek
