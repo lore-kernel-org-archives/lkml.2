@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab0HSPxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:53:12 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50946 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab0HSPxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:53:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=PyEIwMBOyzu47Cx+wdNWUByTjN6FpLGUs+lUY5FhBxfakJ+osDWD/aLW/4K2EbQykc
-         CXszebSaGakjOlgUmCF3qzztISfl2LcGAKGLRfVTxQ4bpHoLRr6ePwLrypkDTgOvE3sv
-         fda+XDFz1jt3C26wRBSVS9zTnZ33XLOThoUi4=
-Subject: Re: [RFC][PATCH] introduce ptr_diff()
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <87aaoiu6z6.fsf@basil.nowhere.org>
-References: <1282217856-8625-1-git-send-email-namhyung@gmail.com>
-	 <87aaoiu6z6.fsf@basil.nowhere.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Aug 2010 00:53:06 +0900
-Message-ID: <1282233186.1713.10.camel@leonhard>
+	id S1751777Ab0HSP5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:57:22 -0400
+Received: from xenotime.net ([72.52.115.56]:41616 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751445Ab0HSP5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:57:20 -0400
+Date: Thu, 19 Aug 2010 08:57:10 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel-doc: be case insensitive when removing
+ attributes
+Message-Id: <20100819085710.fe790810.rdunlap@xenotime.net>
+In-Reply-To: <1282227222.4507.8.camel@jlt3.sipsolutions.net>
+References: <1282227222.4507.8.camel@jlt3.sipsolutions.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-08-19 (목), 14:23 +0200, Andi Kleen:
-> IMHO it would be better to simply disable the warning in sparse instead
-> of uglying the code just to work around sparse bogosity. It doesnt' seem
-> to make much sense. A subtraction followed by a shift is not expensive.
+On Thu, 19 Aug 2010 16:13:42 +0200 Johannes Berg wrote:
+
+> From: Johannes Berg <johannes.berg@intel.com>
 > 
-> -Andi
+> There are valid attributes that could have upper
+> case letters, but we still want to remove, like
+> for example
+> 	__attribute__((aligned(NETDEV_ALIGN)))
+> as encountered in the wireless code.
 > 
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+> ---
+> I thought we did this before? Bit confused now :)
 
-I'm curious who turns on that switch. -Wptr-subtraction-blows is turned
-off by default, I didn't use CF variable at build time and I could not
-find any reference of it in the source tree. Hmm..
+I have a similar patch, without patch description & signoff,
+so maybe it was from irc.  Oh, and it's in a different script location.
 
--- 
-Regards,
-Namhyung Kim
+@@ -1426,6 +1426,7 @@ sub dump_struct($$) {
+ 	$members =~ s/kmemcheck_bitfield_.*?;//gos;
+ 	# strip attributes
+ 	$members =~ s/__aligned\s*\(\d+\)//gos;
++	$members =~ s/__attribute__\s*\(\([a-zA-Z,_()\s\*]*\)\)//gos;
 
 
+If yours (below) does what is needed, that's fine with me.
+
+>  scripts/kernel-doc |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- wireless-testing.orig/scripts/kernel-doc	2010-08-19 16:11:40.000000000 +0200
+> +++ wireless-testing/scripts/kernel-doc	2010-08-19 16:11:45.000000000 +0200
+> @@ -1679,7 +1679,7 @@ sub check_sections($$$$$$) {
+>  		foreach $px (0 .. $#prms) {
+>  			$prm_clean = $prms[$px];
+>  			$prm_clean =~ s/\[.*\]//;
+> -			$prm_clean =~ s/__attribute__\s*\(\([a-z,_\*\s\(\)]*\)\)//;
+> +			$prm_clean =~ s/__attribute__\s*\(\([a-z,_\*\s\(\)]*\)\)//i;
+>  			# ignore array size in a parameter string;
+>  			# however, the original param string may contain
+>  			# spaces, e.g.:  addr[6 + 2]
+> 
+> 
+> --
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
