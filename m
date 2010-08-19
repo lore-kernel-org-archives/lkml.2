@@ -1,121 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab0HSR27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 13:28:59 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:48134 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab0HSR24 (ORCPT
+	id S1753757Ab0HSRcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 13:32:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23793 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab0HSRci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 13:28:56 -0400
-X-SpamScore: -24
-X-BigFish: VS-24(zz936eK1432N98dNzz1202hzz8275dh15d4Rz32i2a8h87h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L7ETW4-02-8OQ-02
-X-M-MSG: 
-Date: Thu, 19 Aug 2010 19:30:13 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Robin Holt <holt@sgi.com>
-CC: Jack Steiner <steiner@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Stable Maintainers <stable@kernel.org>
-Subject: Re: [Patch] numa:x86_64: Cacheline aliasing makes
- for_each_populated_zone extremely expensive -V2.
-Message-ID: <20100819173013.GG19773@amd.com>
-References: <20100818165653.GX3043@sgi.com>
- <20100818183024.GZ3043@sgi.com>
+	Thu, 19 Aug 2010 13:32:38 -0400
+Message-ID: <4C6D6A9A.3010409@oracle.com>
+Date: Thu, 19 Aug 2010 10:32:10 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100818183024.GZ3043@sgi.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+To: pavan_savoy@ti.com
+CC: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, naveen_jain@ti.com
+Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
+References: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 02:30:24PM -0400, Robin Holt wrote:
-> When I investigated, I noticed that all the zone_data[] structures are
-> allocated precisely at the beginning of the individual node's physical
-> memory.  By simply staggering based upon nodeid, I reduced the average
-> down to 0.0006% of every second.
-
-Interesting. Have you measured cache misses for both cases?
-
-> With this patch, the max value did not change.  I believe that is a
-> combination of cacheline contention updating the zone's vmstat information
-> combined with round_jiffies_common spattering unrelated cpus onto the same
-> jiffie for their next update.  I will investigate those issues seperately.
-
-The max value probably the case where none of the data the code accesses
-is actually in the cache. Cache aliasing does not help then so I would
-not expect a change in the maximum amount here.
-
-> I had no idea whether to ask stable@kernel.org to pull this back to the
-> stable releases.  My reading of the stable_kernel_rules.txt criteria is
-> only fuzzy as to whether this meets the "oh, that's not good" standard.
-> I personally think this meets that criteria, but I am unwilling to defend
-> that position too stridently.  In the end, I punted and added them to
-> the Cc list.  We will be asking both SuSE and RedHat to add this to
-> their upcoming update releases as we expect it to affect their customers.
-
-I don't think this is stable material. It improves performance and does
-not fix a bug. But I am not the one to decide this :-)
-
+On 08/19/10 11:08, pavan_savoy@ti.com wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
 > 
->  arch/x86/mm/numa_64.c |   12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
+> In order to support multiple ST platform devices, a new symbol
+> 'st_get_plat_device' earlier needed to be exported by the arch/XX/brd-XX.c
+> file which intends to add the ST platform device.
 > 
-> Index: round_jiffies/arch/x86/mm/numa_64.c
-> ===================================================================
-> --- round_jiffies.orig/arch/x86/mm/numa_64.c	2010-08-18 11:39:20.495141178 -0500
-> +++ round_jiffies/arch/x86/mm/numa_64.c	2010-08-18 13:24:42.679080103 -0500
-> @@ -198,6 +198,7 @@ setup_node_bootmem(int nodeid, unsigned
->  	unsigned long start_pfn, last_pfn, nodedata_phys;
->  	const int pgdat_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
->  	int nid;
-> +	unsigned long cache_alias_offset;
->  #ifndef CONFIG_NO_BOOTMEM
->  	unsigned long bootmap_start, bootmap_pages, bootmap_size;
->  	void *bootmap;
-> @@ -221,9 +222,16 @@ setup_node_bootmem(int nodeid, unsigned
->  	start_pfn = start >> PAGE_SHIFT;
->  	last_pfn = end >> PAGE_SHIFT;
+> On removing this dependency, now inside ST driver maintain the array of
+> ST platform devices that would be registered.
+> As of now let id=0, as and when we end up having such platforms
+> where mutliple ST devices can exist, id would come from
+> protocol drivers (BT, FM and GPS) as to on which platform device
+> they want to register to.
+> 
+> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+
+Thanks, that builds cleanly.  I'm OK with it if you are comfortable with a
+hard limit on the fixed number of devices that can be supported:
+
++#define MAX_ST_DEVICES	3	/* Imagine 1 on each UART for now */
++struct platform_device *st_kim_devices[MAX_ST_DEVICES];
+
+We usually try not to have such limits nor use arrays like that,
+but if the nature of the device and its platform/environment is like
+that, so be it.
+
+
+> ---
+>  drivers/staging/ti-st/st.h      |    1 -
+>  drivers/staging/ti-st/st_core.c |    9 ++++-----
+>  drivers/staging/ti-st/st_core.h |    2 +-
+>  drivers/staging/ti-st/st_kim.c  |   22 +++++++++++++++++++---
+>  4 files changed, 24 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/staging/ti-st/st.h b/drivers/staging/ti-st/st.h
+> index 9952579..1b3060e 100644
+> --- a/drivers/staging/ti-st/st.h
+> +++ b/drivers/staging/ti-st/st.h
+> @@ -80,5 +80,4 @@ struct st_proto_s {
+>  extern long st_register(struct st_proto_s *);
+>  extern long st_unregister(enum proto_type);
 >  
-> -	node_data[nodeid] = early_node_mem(nodeid, start, end, pgdat_size,
-> +	/*
-> +	 * Allocate an extra cacheline per node to reduce cacheline
-> +	 * aliasing when scanning all node's node_data.
-> +	 */
-> +	cache_alias_offset = nodeid * SMP_CACHE_BYTES;
-> +	node_data[nodeid] = cache_alias_offset +
-> +			    early_node_mem(nodeid, start, end,
-> +					   pgdat_size + cache_alias_offset,
->  					   SMP_CACHE_BYTES);
-> -	if (node_data[nodeid] == NULL)
-> +	if (node_data[nodeid] == (void *)cache_alias_offset)
+> -extern struct platform_device *st_get_plat_device(void);
+>  #endif /* ST_H */
+> diff --git a/drivers/staging/ti-st/st_core.c b/drivers/staging/ti-st/st_core.c
+> index 063c9b1..b85d8bf 100644
+> --- a/drivers/staging/ti-st/st_core.c
+> +++ b/drivers/staging/ti-st/st_core.c
+> @@ -38,7 +38,6 @@
+>  #include "st_ll.h"
+>  #include "st.h"
+>  
+> -#define VERBOSE
+>  /* strings to be used for rfkill entries and by
+>   * ST Core to be used for sysfs debug entry
+>   */
+> @@ -581,7 +580,7 @@ long st_register(struct st_proto_s *new_proto)
+>  	long err = 0;
+>  	unsigned long flags = 0;
+>  
+> -	st_kim_ref(&st_gdata);
+> +	st_kim_ref(&st_gdata, 0);
+>  	pr_info("%s(%d) ", __func__, new_proto->type);
+>  	if (st_gdata == NULL || new_proto == NULL || new_proto->recv == NULL
+>  	    || new_proto->reg_complete_cb == NULL) {
+> @@ -713,7 +712,7 @@ long st_unregister(enum proto_type type)
+>  
+>  	pr_debug("%s: %d ", __func__, type);
+>  
+> -	st_kim_ref(&st_gdata);
+> +	st_kim_ref(&st_gdata, 0);
+>  	if (type < ST_BT || type >= ST_MAX) {
+>  		pr_err(" protocol %d not supported", type);
+>  		return -EPROTONOSUPPORT;
+> @@ -767,7 +766,7 @@ long st_write(struct sk_buff *skb)
+>  #endif
+>  	long len;
+>  
+> -	st_kim_ref(&st_gdata);
+> +	st_kim_ref(&st_gdata, 0);
+>  	if (unlikely(skb == NULL || st_gdata == NULL
+>  		|| st_gdata->tty == NULL)) {
+>  		pr_err("data/tty unavailable to perform write");
+> @@ -818,7 +817,7 @@ static int st_tty_open(struct tty_struct *tty)
+>  	struct st_data_s *st_gdata;
+>  	pr_info("%s ", __func__);
+>  
+> -	st_kim_ref(&st_gdata);
+> +	st_kim_ref(&st_gdata, 0);
+>  	st_gdata->tty = tty;
+>  	tty->disc_data = st_gdata;
+>  
+> diff --git a/drivers/staging/ti-st/st_core.h b/drivers/staging/ti-st/st_core.h
+> index e0c32d1..8601320 100644
+> --- a/drivers/staging/ti-st/st_core.h
+> +++ b/drivers/staging/ti-st/st_core.h
+> @@ -117,7 +117,7 @@ int st_core_init(struct st_data_s **);
+>  void st_core_exit(struct st_data_s *);
+>  
+>  /* ask for reference from KIM */
+> -void st_kim_ref(struct st_data_s **);
+> +void st_kim_ref(struct st_data_s **, int);
+>  
+>  #define GPS_STUB_TEST
+>  #ifdef GPS_STUB_TEST
+> diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
+> index b4a6c7f..9e99463 100644
+> --- a/drivers/staging/ti-st/st_kim.c
+> +++ b/drivers/staging/ti-st/st_kim.c
+> @@ -72,11 +72,26 @@ const unsigned char *protocol_names[] = {
+>  	PROTO_ENTRY(ST_GPS, "GPS"),
+>  };
+>  
+> +#define MAX_ST_DEVICES	3	/* Imagine 1 on each UART for now */
+> +struct platform_device *st_kim_devices[MAX_ST_DEVICES];
+>  
+>  /**********************************************************************/
+>  /* internal functions */
+>  
+>  /**
+> + * st_get_plat_device -
+> + *	function which returns the reference to the platform device
+> + *	requested by id. As of now only 1 such device exists (id=0)
+> + *	the context requesting for reference can get the id to be
+> + *	requested by a. The protocol driver which is registering or
+> + *	b. the tty device which is opened.
+> + */
+> +static struct platform_device *st_get_plat_device(int id)
+> +{
+> +	return st_kim_devices[id];
+> +}
+> +
+> +/**
+>   * validate_firmware_response -
+>   *	function to return whether the firmware response was proper
+>   *	in case of error don't complete so that waiting for proper
+> @@ -353,7 +368,7 @@ void st_kim_chip_toggle(enum proto_type type, enum kim_gpio_state state)
+>  	struct kim_data_s	*kim_gdata;
+>  	pr_info(" %s ", __func__);
+>  
+> -	kim_pdev = st_get_plat_device();
+> +	kim_pdev = st_get_plat_device(0);
+>  	kim_gdata = dev_get_drvdata(&kim_pdev->dev);
+>  
+>  	if (kim_gdata->gpios[type] == -1) {
+> @@ -574,12 +589,12 @@ static int kim_toggle_radio(void *data, bool blocked)
+>   *	This would enable multiple such platform devices to exist
+>   *	on a given platform
+>   */
+> -void st_kim_ref(struct st_data_s **core_data)
+> +void st_kim_ref(struct st_data_s **core_data, int id)
+>  {
+>  	struct platform_device	*pdev;
+>  	struct kim_data_s	*kim_gdata;
+>  	/* get kim_gdata reference from platform device */
+> -	pdev = st_get_plat_device();
+> +	pdev = st_get_plat_device(id);
+>  	kim_gdata = dev_get_drvdata(&pdev->dev);
+>  	*core_data = kim_gdata->core_data;
+>  }
+> @@ -623,6 +638,7 @@ static int kim_probe(struct platform_device *pdev)
+>  	long *gpios = pdev->dev.platform_data;
+>  	struct kim_data_s	*kim_gdata;
+>  
+> +	st_kim_devices[pdev->id] = pdev;
+>  	kim_gdata = kzalloc(sizeof(struct kim_data_s), GFP_ATOMIC);
+>  	if (!kim_gdata) {
+>  		pr_err("no mem to allocate");
 
-It is cleaner to keep the NULL check here and add the cache_alias_offset
-to the pointer after that check. 
-
->  		return;
->  	nodedata_phys = __pa(node_data[nodeid]);
->  	reserve_early(nodedata_phys, nodedata_phys + pgdat_size, "NODE_DATA");
-> 
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
