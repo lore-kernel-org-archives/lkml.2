@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab0HSUhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 16:37:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56247 "EHLO mx1.suse.de"
+	id S1753245Ab0HSUhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 16:37:51 -0400
+Received: from mail.perches.com ([173.55.12.10]:1195 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753115Ab0HSUhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 16:37:31 -0400
-Date: Thu, 19 Aug 2010 13:34:35 -0700
-From: Greg KH <gregkh@suse.de>
-To: Benjamin Gilbert <bgilbert@cs.cmu.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.36-rc1 oopses at boot time in kobject allocation
-Message-ID: <20100819203435.GA28508@suse.de>
-References: <4C6D9289.4000702@cs.cmu.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6D9289.4000702@cs.cmu.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753309Ab0HSUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 16:37:48 -0400
+Subject: Re: pull request: wireless-2.6 2010-08-19
+From: Joe Perches <joe@perches.com>
+To: Jan III Sobieski <jan3sobi3ski@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTikDB2t+ZfcvsSJsw=OMnaR-_3ieG7zcmJjt=mH6@mail.gmail.com>
+References: <20100819174638.GC2672@tuxdriver.com>
+	 <AANLkTi=QmVT_qJb6O7eDE9-VM5CZBa3ueR9njFps5oMs@mail.gmail.com>
+	 <1282243187.6724.250.camel@Joe-Laptop>
+	 <AANLkTikDB2t+ZfcvsSJsw=OMnaR-_3ieG7zcmJjt=mH6@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Aug 2010 13:37:46 -0700
+Message-ID: <1282250266.6724.270.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 04:22:33PM -0400, Benjamin Gilbert wrote:
-> 2.6.36-rc1 and 2.6.36-rc1-127-g763008c fail to boot for me:
+On Thu, 2010-08-19 at 22:08 +0200, Jan III Sobieski wrote:
+> I really like the new Linus policy - merge window is closed - only bug
+> fixes are admitted.
 
-Can you run 'git bisect' to try to track this down?
+This patch fixes a defect introduced during the merge window.
 
-> Other observations:
-> 
-> - Originally the backtrace originated from the yenta driver, so I
-> disabled PCMCIA support and it switched to occurring during EHCI
-> init.
-> 
-> - Disabling kmemleak at boot time prevents the "cannot insert" error
-> but not the bad kernel paging request.
-> 
-> - The offending address is "pci:" in little-endian ASCII.
+Some of the logging messages used %pM to emit a MAC address.
 
-This sounds like a memory overwrite problem somewhere, wierd.
+%pM outputs "xx:xx:xx:xx:xx:xx"
+%pm output "xxxxxxxxxxxx"
 
-thanks,
+When the message forms were standardized,
+strings were lower cased, introducing this defect.
 
-greg k-h
+> IMHO this policy will result in a significant
+> increase in stability.
+
+There have been previous discussions on stability
+vs change.
+
+I think it's unnecessary to rehash them.
+
+cheers, Joe
+
