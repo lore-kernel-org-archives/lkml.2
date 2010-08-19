@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab0HSPIG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:08:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45995 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab0HSPID convert rfc822-to-8bit (ORCPT
+	id S1753905Ab0HSPLe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:11:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:65533 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab0HSPLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:08:03 -0400
+	Thu, 19 Aug 2010 11:11:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=EJW9hScAsldkN34h5yT7tIDS0DYPE/MTj2nhP3dGHksbGK/kb0EEISdatQMe8daZYy
-         oPkV7UYZg7Qcopvs7t9qX+zqv2KIaQeIE4BGCxPbZAHK2XBUsmM/KghdOn7VP3u7wQJt
-         NrLRx5bY7rqN7CkW+8x3XsEwyjzD4caLaFbv8=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: trapdoor6@gmail.com
-Subject: Re: [REGRESSION] [SUSPEND] Opps during suspend to disk (probably also during to ram)
-Date: Thu, 19 Aug 2010 17:07:51 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1; KDE/4.4.5; i686; ; )
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201008182102.03201.maciej.rutecki@gmail.com> <AANLkTik3S91w+92rz-KdHd_U=yfuSPbDWWhD_Vu_rDR9@mail.gmail.com> <AANLkTik4=_3wSNpkfqssWsmG_yCYOPFsA-cMDBaVU4BB@mail.gmail.com>
-In-Reply-To: <AANLkTik4=_3wSNpkfqssWsmG_yCYOPFsA-cMDBaVU4BB@mail.gmail.com>
+        h=from:to:subject:date:user-agent:references:in-reply-to:mime-version
+         :content-type:content-transfer-encoding:message-id;
+        b=kL+iM6E4LOzjr1IJnkHslTHsqqgtldsuIzFd+1YCBg11VRfxyCJPQzXiYh+LcLhube
+         v8WB7FAm6qGUfO/R+vw7voPkMwUG/glvVFiMJKEJM7OP9ETxPXl/viAwO3P2Okr4MKbC
+         obCpPJ22Eu3VAPtF7PIDVf5nMAJn1xanarI/I=
+From: Gene Heskett <gene.heskett@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
+Date: Thu, 19 Aug 2010 11:11:27 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35.2; KDE/4.5.0; i686; ; )
+References: <20100817220917.GA5268@Krystal> <4C6C9E10.9030202@fusionio.com> <1282229572.8139.16.camel@mulgrave.site>
+In-Reply-To: <1282229572.8139.16.camel@mulgrave.site>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201008191707.52057.maciej.rutecki@gmail.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008191111.27323.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On środa, 18 sierpnia 2010 o 23:27:14 trapDoor wrote:
+On Thursday, August 19, 2010, James Bottomley wrote:
+[...] 
+>> > Certainly sir ... and would you like your patches served to your
+>> > table or by the pool?
+>> 
+>> Pool, please. With that first name and the British accent, it's hard
+>> not to boss you around.
+>
+>Well, sir, the wait staff and I thought we'd just write to ask how your
+>convalescence was going.  Sorry about spilling the patch down your
+>front, sir, but the glass was slippery.  Who could have foreseen that
+>you'd step backwards, fall over the pool boy and upset a flaming bananas
+>foster on to the front of your shorts.  I did get a commendation for my
+>quick action with a high pressure hose to the affected area (thank you,
+>sir, for your shocked but grateful expression).  I must say I didn't
+>foresee the force of the blast catapulting you against the pool steps,
+>but a concussion is a small price to pay for avoiding fried nuts with
+>the bananas, eh, sir? It's funny how things turn out, and I bet if you
+>could do it over again, you'd have got off your arse to fetch your own
+>damn patch now, wouldn't you, sir?
+>
+>Yours sincerely,
+>
+>James
 
-> 
-> Maciej,
-> Just FYI I have updated the bugzilla entry
-> (https://bugzilla.kernel.org/show_bug.cgi?id=16615) with relevant
-> details.
+You guys are priceless, thanks for the belly laugh.  Lightens up my whole 
+days it does.
 
-Patch works also on my machine, but I found another problem [1].
-
-Thanks!
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
-
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=16629
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Portability should be the default.
+             -- Larry Wall in <199711072201.OAA01123@wall.org>
