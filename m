@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab0HSPWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 11:22:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45372 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab0HSPWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 11:22:12 -0400
-Date: Thu, 19 Aug 2010 08:22:14 -0700
-From: Greg KH <gregkh@suse.de>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, LKML <linux-kernel@vger.kernel.org>,
-        yong.y.wang@intel.com, qi.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, arjan@linux.intel.com,
-        alan@linux.intel.com, margie.foster@intel.com,
-        Morinaga <morinaga526@dsn.okisemi.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
-Message-ID: <20100819152214.GD2562@suse.de>
-References: <4C6BA385.80409@dsn.okisemi.com> <20100818131401.GA5861@suse.de> <000601cb3f99$8f5a0a20$66f8800a@maildom.okisemi.com>
+	id S1754252Ab0HSPXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 11:23:05 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:57005 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab0HSPXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 11:23:03 -0400
+Date: Thu, 19 Aug 2010 08:23:01 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        john stultz <johnstul@us.ibm.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Message-ID: <20100819152301.GB25193@ovro.caltech.edu>
+References: <cover.1281956490.git.richard.cochran@omicron.at>
+ <201008181702.03384.arnd@arndb.de>
+ <20100819092246.GA8484@riccoc20.at.omicron.at>
+ <201008191429.50008.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000601cb3f99$8f5a0a20$66f8800a@maildom.okisemi.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <201008191429.50008.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Thu, 19 Aug 2010 08:23:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 09:25:03PM +0900, Masayuki Ohtake wrote:
-> Please find <MASA>
-
-If someone takes the time to review your code and ask questions, it is
-considered common courtesy to at least answer them all and not ignore
-some of them.  Please do so.
-
-> > >  drivers/misc/Kconfig    |    9 +
-> > >  drivers/misc/Makefile   |    1 +
-> > >  drivers/misc/pch_phub.c |  722 +++++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 732 insertions(+), 0 deletions(-)
-> > >  create mode 100755 drivers/misc/pch_phub.c
-> >
-> > You forgot to add documentation for your sysfs files in
-> > Documentation/ABI/ which is a requiremend when you add new ones.
+On Thu, Aug 19, 2010 at 02:29:49PM +0200, Arnd Bergmann wrote:
+> On Thursday 19 August 2010, Richard Cochran wrote:
+> > 
+> > On Wed, Aug 18, 2010 at 05:02:03PM +0200, Arnd Bergmann wrote:
+> > > You might want to use callbacks for these system calls that you
+> > > can register to at module load time, like it is done for the
+> > > existing syscalls.
+> > 
+> > Can you point me to a specific example?
 > 
-> <MASA>
-> Which folder should we put stable/ or testing/ ?
-
-Which do you feel it should be in?
-
-> > > +};
-> > > +
-> > > +/* SROM SPEC for MAC address assignment offset */
-> > > +static const int pch_phub_mac_offset[ETH_ALEN] = {0x3, 0x2, 0x1, 0x0, 0xb, 0xa};
-> > > +
-> > > +static DEFINE_MUTEX(pch_phub_mutex);
-> > > +static struct pch_phub_reg pch_phub_reg;
-> >
-> > So you can only have one of these devices in a system at the same time?
-> > What happens when a machine ships with two of them?
+> The struct k_clock contains callback functions to clock source
+> specific implementations of the syscalls and other functions.
+> Adding a new clock source that is (potentially) implemented
+> as a module means you have to define a new k_clock in that module
+> that you register using register_posix_clock.
 > 
-> <MASA>
-> I can't understand the above questioin meaning.
-> Give me more information, please.
-> What's does the above "these devices" mean?
+> If you need additional syscalls to be implemented by the same
+> module, you can put more callback functions into struct k_clock
+> that would then only be implemented by the new module.
+> 
+> > > The simpler way (e.g. for testing) is using Kconfig dependencies, like
+> > > 
+> > > config PTP
+> > >       bool "IEEE 1588 Precision Time Protocol"
+> > > 
+> > > config PPS
+> > >       tristate "Pulse per Second"
+> > >       depends on PTP || !PTP
+> > > 
+> > > The depends statement is a way of expressing that when PTP is enabled,
+> > > PPS cannot be a module, while it may be a module if PTP is disabled.
+> > 
+> > THis did not work for me.
+> > 
+> > What I got was, in effect, two independent booleans.
+> 
+> Hmm, right. I wonder what I was thinking of then.
+> 
+> You can certainly do
+> 
+> config PTP
+> 	bool "IEEE 1588 Precision Time Protocol"
+> 	depends on PPS != m
+> 
+> but that will hide the PTP option if PPS is set to 'm', which is normally
+> not what you want.
+> 
 
-The device the driver is controlling.  What happens when this driver
-runs on a system that has 2 of these devices?  You need to be able to
-handle multiple devices, and that doesn't happen with a single variable,
-right?  Please dynamically allocate it and make the lock associated to
-the actual device, not the whole driver, if possible.
+Arnd,
 
-thanks,
+Perhaps you were thinking of the vhost example (taken from
+drivers/vhost/Kconfig):
 
-greg k-h
+config VHOST_NET
+	tristate "Host kernel accelerator for virtio net (EXPERIMENTAL)"
+	depends on NET && EVENTFD && (TUN || !TUN) && (MACVTAP || !MACVTAP) && EXPERIMENTAL
+
+They have a similar construct with both TUN and MACVTAP there. Perhaps
+the parens are a necessary part of the "X || !X" syntax? Just a random
+guess.
+
+Ira
