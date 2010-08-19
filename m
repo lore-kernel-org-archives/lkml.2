@@ -1,161 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362Ab0HSFzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 01:55:04 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38857 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab0HSFzA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 01:55:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Z98FjQiONvDKfzfhJwXEY6RVvD0em9UlZcjyQ7+oIxtklgRawn9gqB8ZxYvD/CFMNQ
-         Ij9MZko0LiZFqTBVFMqFDH19dH3p9mJT6CTbRynm1Z26xZKV09iI/h+9CQ/44chBaFFB
-         sttxJlC6i4Tlx7kWkMmlv6YYLSgBarmg9Rv18=
-Date: Thu, 19 Aug 2010 07:55:18 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100819055518.GA4084@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
- <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
- <20100817085324.GB3330@riccoc20.at.omicron.at>
- <1282090963.1734.97.camel@localhost>
- <20100818071942.GA4096@riccoc20.at.omicron.at>
- <1282176776.2865.100.camel@localhost.localdomain>
+	id S1751256Ab0HSGFW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 02:05:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16240 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab0HSGFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 02:05:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,231,1280732400"; 
+   d="scan'208";a="598093419"
+Date: Thu, 19 Aug 2010 14:05:16 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: "stable@kernel.org" <stable@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pedro Ribeiro <pedrib@gmail.com>,
+        Mel Gorman <mel@linux.vnet.ibm.com>
+Subject: Re: "vmscan: raise the bar to PAGEOUT_IO_SYNC stalls" to stable?
+Message-ID: <20100819060516.GA14221@localhost>
+References: <4C639E87.3050805@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282176776.2865.100.camel@localhost.localdomain>
+In-Reply-To: <4C639E87.3050805@suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 05:12:56PM -0700, john stultz wrote:
-> On Wed, 2010-08-18 at 09:19 +0200, Richard Cochran wrote:
-> > The timer/alarm stuff is "ancillary" and is not at all necessary. It
-> > is just a "nice to have." I will happily remove it, if it is too
-> > troubling for people.
+Hi Jiri,
+
+On Thu, Aug 12, 2010 at 03:11:03PM +0800, Jiri Slaby wrote:
+> Hi Wu,
 > 
-> If there's a compelling argument for it, I'm interested to hear. But
-> again, it seems like just
-> yet-another-way-to-get-alarm/timer-functionality, so before we add an
-> extra API (or widen an existing API) I'd like to understand the need.
+> maybe you've already sent a backported version of e31f3698cd34 for
+> 2.6.34 stable. If you haven't yet, I'm attaching my version in case you
+> don't want to duplicate work. There is a change where lumpy_reclaim is
+> passed as a parameter, since struct scan_control doesn't contain that
+> yet in 2.6.34.
 
-We don't really need it, IMHO.
+This patch for -stable looks good, thank you!
 
-But if we offer clockid_t CLOCK_PTP, then we get timer_settime()
-without any extra effort.
+Greg, this patch has received pretty positive feedbacks from some users.
+(others feel no changes: there are more sources of responsiveness stalls)
+KOSAKI and me think it's important and safe enough for -stable kernels.
+The patch looks large, however it's mainly cleanups. The real change
+is merely about raising (DEF_PRIORITY-2) to (DEF_PRIORITY/3) in the
+test condition.
 
-> > I was emulating the posix interface. Instead I should use it directly.
+Thanks,
+Fengguang
+
+> From e31f3698cd3499e676f6b0ea12e3528f569c4fa3 Mon Sep 17 00:00:00 2001
+> From: Wu Fengguang <fengguang.wu@intel.com>
+> Date: Mon, 9 Aug 2010 17:20:01 -0700
+> Subject: vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
 > 
-> I'm definitely interested to see what you come up with here. I'm still
-> hesitant with adding a PTP clock_id, but extending the posix-clocks
-> interface in this way isn't unprecedented (see: CLOCK_SGI_CYCLE) I just
-> would like to make sure we don't end up with a clock_id namespace
-> littered with oddball clocks that were not well abstracted (see:
-> CLOCK_SGI_CYCLE :).
+> Fix "system goes unresponsive under memory pressure and lots of
+> dirty/writeback pages" bug.
 > 
-> For instance: imagine if instead of keeping the clocksource abstraction
-> internal to the timekeeping core, we exposed each clocksource to
-> userland via a clock_id.  Every arch would have different ids, and each
-> arch might have multiple ids. Programming against that would be a huge
-> pain.
-
-The clockid_t CLOCK_PTP will be arch-neutral.
-
-> So in thinking about this, try to focus on what the new clock_id
-> provides that the other existing clockids do not? Are they at comparable
-> levels of abstraction? 15 years from now, are folks likely to still be
-> using it? Will it be maintainable? etc...
-
-Arnd convinced me that clockid_t=CLOCK_PTP is a good fit. My plan
-would be to introduce just one additional syscall:
-
-SYSCALL_DEFINE3(clock_adjtime, const clockid_t, clkid,
-		int, ppb, struct timespec __user *, ts)
-
-ppb - desired frequency adjustment in parts per billion
-ts  - desired time step (or jump) in <sec,nsec> to correct
-      a measured offset
-
-Arguably, this syscall might be useful for other clocks, too.
-
-I think the ancillary features from PTP hardware clocks should be made
-available throught the sysfs. A syscall for these would end up very
-ugly, looking like an ioctl. Also, it is hard to see how these
-features relate to the more general idea of the clockid.
-
-In contrast, sysfs attributes will fit the need nicely:
-
-1. enable or disable pps
-2. enable or disable external timestamps
-3. read out external timestamp
-4. configure period for periodic output
-
-> > 1. Use Case: SW timestamping
-> The way I tend to see it: PTP is just one of the many ways to sync
-> system time.
-
-> > 2. Use Case: HW timestamping for industrial control
-> These specialized applications are part of what concerns me the most. 
-
-PTP was not invented to just to get a computer's system time in the
-ball park. For that, NTP is good enough. Rather, some people want to
-use their computers for tasks that require close synchronization, like
-industrial control, audio/video streaming, and many others.
-
-Are you saying that we should not support such applications?
-
-> For example, I can see some parallels between things like audio
-> processing, where you have a buffer consumed by the card at a certain
-> rate. Now, the card has its own crystal it uses to time its consumption,
-> so it has its own time domain, and could drift from system time. Thus
-> you want to trigger buffer-refill interrupts off of the audio card's
-> clock, not the system time which might run the risk of being late.
+> 	http://lkml.org/lkml/2010/4/4/86
 > 
-> But again, we don't expose the audio hardware clock to userland in the
-> same way we expose system time.
+> In the above thread, Andreas Mohr described that
+> 
+> 	Invoking any command locked up for minutes (note that I'm
+> 	talking about attempted additional I/O to the _other_,
+> 	_unaffected_ main system HDD - such as loading some shell
+> 	binaries -, NOT the external SSD18M!!).
+> 
+> This happens when the two conditions are both meet:
+> - under memory pressure
+> - writing heavily to a slow device
+> 
+> OOM also happens in Andreas' system.  The OOM trace shows that 3 processes
+> are stuck in wait_on_page_writeback() in the direct reclaim path.  One in
+> do_fork() and the other two in unix_stream_sendmsg().  They are blocked on
+> this condition:
+> 
+> 	(sc->order && priority < DEF_PRIORITY - 2)
+> 
+> which was introduced in commit 78dc583d (vmscan: low order lumpy reclaim
+> also should use PAGEOUT_IO_SYNC) one year ago.  That condition may be too
+> permissive.  In Andreas' case, 512MB/1024 = 512KB.  If the direct reclaim
+> for the order-1 fork() allocation runs into a range of 512KB
+> hard-to-reclaim LRU pages, it will be stalled.
+> 
+> It's a severe problem in three ways.
+> 
+> Firstly, it can easily happen in daily desktop usage.  vmscan priority can
+> easily go below (DEF_PRIORITY - 2) on _local_ memory pressure.  Even if
+> the system has 50% globally reclaimable pages, it still has good
+> opportunity to have 0.1% sized hard-to-reclaim ranges.  For example, a
+> simple dd can easily create a big range (up to 20%) of dirty pages in the
+> LRU lists.  And order-1 to order-3 allocations are more than common with
+> SLUB.  Try "grep -v '1 :' /proc/slabinfo" to get the list of high order
+> slab caches.  For example, the order-1 radix_tree_node slab cache may
+> stall applications at swap-in time; the order-3 inode cache on most
+> filesystems may stall applications when trying to read some file; the
+> order-2 proc_inode_cache may stall applications when trying to open a
+> /proc file.
+> 
+> Secondly, once triggered, it will stall unrelated processes (not doing IO
+> at all) in the system.  This "one slow USB device stalls the whole system"
+> avalanching effect is very bad.
+> 
+> Thirdly, once stalled, the stall time could be intolerable long for the
+> users.  When there are 20MB queued writeback pages and USB 1.1 is writing
+> them in 1MB/s, wait_on_page_writeback() will stuck for up to 20 seconds.
+> Not to mention it may be called multiple times.
+> 
+> So raise the bar to only enable PAGEOUT_IO_SYNC when priority goes below
+> DEF_PRIORITY/3, or 6.25% LRU size.  As the default dirty throttle ratio is
+> 20%, it will hardly be triggered by pure dirty pages.  We'd better treat
+> PAGEOUT_IO_SYNC as some last resort workaround -- its stall time is so
+> uncomfortably long (easily goes beyond 1s).
+> 
+> The bar is only raised for (order < PAGE_ALLOC_COSTLY_ORDER) allocations,
+> which are easy to satisfy in 1TB memory boxes.  So, although 6.25% of
+> memory could be an awful lot of pages to scan on a system with 1TB of
+> memory, it won't really have to busy scan that much.
+> 
+> Andreas tested an older version of this patch and reported that it mostly
+> fixed his problem.  Mel Gorman helped improve it and KOSAKI Motohiro will
+> fix it further in the next patch.
+> 
+> Reported-by: Andreas Mohr <andi@lisas.de>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  mm/vmscan.c |   53 +++++++++++++++++++++++++++++++++++++++++++++--------
+>  1 file changed, 45 insertions(+), 8 deletions(-)
+> 
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1118,6 +1118,48 @@ static int too_many_isolated(struct zone
+>  }
+>  
+>  /*
+> + * Returns true if the caller should wait to clean dirty/writeback pages.
+> + *
+> + * If we are direct reclaiming for contiguous pages and we do not reclaim
+> + * everything in the list, try again and wait for writeback IO to complete.
+> + * This will stall high-order allocations noticeably. Only do that when really
+> + * need to free the pages under high memory pressure.
+> + */
+> +static inline bool should_reclaim_stall(unsigned long nr_taken,
+> +					unsigned long nr_freed,
+> +					int priority,
+> +					int lumpy_reclaim,
+> +					struct scan_control *sc)
+> +{
+> +	int lumpy_stall_priority;
+> +
+> +	/* kswapd should not stall on sync IO */
+> +	if (current_is_kswapd())
+> +		return false;
+> +
+> +	/* Only stall on lumpy reclaim */
+> +	if (!lumpy_reclaim)
+> +		return false;
+> +
+> +	/* If we have relaimed everything on the isolated list, no stall */
+> +	if (nr_freed == nr_taken)
+> +		return false;
+> +
+> +	/*
+> +	 * For high-order allocations, there are two stall thresholds.
+> +	 * High-cost allocations stall immediately where as lower
+> +	 * order allocations such as stacks require the scanning
+> +	 * priority to be much higher before stalling.
+> +	 */
+> +	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> +		lumpy_stall_priority = DEF_PRIORITY;
+> +	else
+> +		lumpy_stall_priority = DEF_PRIORITY / 3;
+> +
+> +	return priority <= lumpy_stall_priority;
+> +}
+> +
+> +/*
+>   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+>   * of reclaimed pages
+>   */
+> @@ -1209,14 +1251,9 @@ static unsigned long shrink_inactive_lis
+>  		nr_scanned += nr_scan;
+>  		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+>  
+> -		/*
+> -		 * If we are direct reclaiming for contiguous pages and we do
+> -		 * not reclaim everything in the list, try again and wait
+> -		 * for IO to complete. This will stall high-order allocations
+> -		 * but that should be acceptable to the caller
+> -		 */
+> -		if (nr_freed < nr_taken && !current_is_kswapd() &&
+> -		    lumpy_reclaim) {
+> +		/* Check if we should syncronously wait for writeback */
+> +		if (should_reclaim_stall(nr_taken, nr_freed, priority,
+> +					lumpy_reclaim, sc)) {
+>  			congestion_wait(BLK_RW_ASYNC, HZ/10);
+>  
+>  			/*
 
-This is a good example of the poverty (in regards to time
-synchronization) of our current systems.
-
-Lets say I want to build a surround sound audio system, using a set of
-distributed computers, each host connected to one speaker. How I can
-be sure that the samples in one channel (ie one host) pass through the
-DA converter at exactly the same time?
-
-> Again, my knowledge in the networking stack is pretty limited. But it
-> would seem that having an interface that does something to the effect of
-> "adjust the timestamp clock on the hardware that generated it from this
-> packet by Xppb" would feel like the right level of abstraction. Its
-> closely related to SO_TIMESTAMP, option right? Would something like
-> using the setsockopt/getsockopt interface with
-> SO_TIMESTAMP_ADJUST/OFFSET/SET/etc be reasonable?
-
-The clock and its adjustment have nothing to do with a network
-socket. The current PTP hacks floating around all add private ioctls
-to the MAC driver. That is the *wrong* way to do it.
-
-> > 3. Use Case: HW timestamping with PPS to host
-...
-> And yes, this seems perfectly reasonable feature to add. Its not
-> controversial to me, because its likely to work within the existing
-> interfaces and won't expose anything new to userland.
-
-Okay, then will you support an elegant solution for case 3, that also
-supports cases 1 and 2 without any additional work?
-
-> Again, sorry to be such a pain about all of this. I know its frustrating...
-
-Thanks for your comments!
-
-Richard
