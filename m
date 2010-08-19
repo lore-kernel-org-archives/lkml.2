@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0HSKcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 06:32:11 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3577 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752524Ab0HSKcJ (ORCPT
+	id S1752684Ab0HSKdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 06:33:09 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:36992 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab0HSKdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 06:32:09 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7JAVmxH013328
-Subject: Re: [PATCH] perf tools: Fix build error on read only source.
-From: Bernd Petrovitsch <bernd@sysprog.at>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Kusanagi Kouichi <slash@ac.auone-net.jp>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100818171917.GH9410@ghostprotocols.net>
-References: <20100817181835.GA21083@ghostprotocols.net>
-	 <20100818123713.1F02414C03B@msa103.auone-net.jp>
-	 <20100818141412.GD9410@ghostprotocols.net>
-	 <1282145141.5822.125.camel@thorin>
-	 <20100818171917.GH9410@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 12:31:48 +0200
-Message-ID: <1282213908.10440.8.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Thu, 19 Aug 2010 06:33:06 -0400
+Message-ID: <4C6D0824.3070908@ct.jp.nec.com>
+Date: Thu, 19 Aug 2010 19:32:04 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>, Mike Snitzer <snitzer@redhat.com>
+CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
+References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com> <4C6A5780.2090100@kernel.org> <20100817140734.GA30768@redhat.com> <4C6ABE12.40705@kernel.org>
+In-Reply-To: <4C6ABE12.40705@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2010-08-18 at 14:19 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Aug 18, 2010 at 05:25:41PM +0200, Bernd Petrovitsch escreveu:
-> > On Mit, 2010-08-18 at 11:14 -0300, Arnaldo Carvalho de Melo wrote:
-[...]
-> > > $(phony feature-tests): 
-> > First, this should probably have been:
-> > .PHONY: feature-tests
+Hi Tejun, Mike,
+
+On 08/18/2010 01:51 AM +0900, Tejun Heo wrote:
+> On 08/17/2010 04:07 PM, Mike Snitzer wrote:
+>> NOTE: NEC has already given some preliminary feedback to hch in the
+>> "[PATCH, RFC 2/2] dm: support REQ_FLUSH directly" thread:
+>> https://www.redhat.com/archives/dm-devel/2010-August/msg00026.html
+>> https://www.redhat.com/archives/dm-devel/2010-August/msg00033.html
 > 
-> Humm, isn't $(phony feature-tests): variation valid and shorter, humm,
-> yeah, seems to be for !GNU make :-\
+> Hmmm... I think both issues don't exist in this incarnation of
+> conversion although I'm fairly sure there will be other issues.  :-)
+
+The same issue is still there for request-based dm.  See below.
+
+
+>>>     A related question: Is dm_wait_for_completion() used in
+>>>     process_flush() safe against starvation under continuous influx of
+>>>     other commands?
+>> As for your specific dm_wait_for_completion() concern -- I'll defer to
+>> Mikulas.  But I'll add: we haven't had any reported starvation issues
+>> with DM's existing barrier support.  DM uses a mempool for its clones,
+>> so it should naturally throttle (without starvation) when memory gets
+>> low.
 > 
-> (http://makepp.sourceforge.net/1.18/t_phony.html)
+> I see but single pending flush and steady write streams w/o saturating
+> the mempool would be able to stall dm_wait_for_completeion(), no?  Eh
+> well, it's a separate issue, I guess.
 
-Funny, I didn't knew GNU-make's "$(phony target): " construct.
+Your understanding is correct, dm_wait_for_completion() for flush
+will stall in such cases for request-based dm.
+That's why I mentioned below in
+https://www.redhat.com/archives/dm-devel/2010-August/msg00026.html.
 
-Hmm, what GNU-make versions and other `make`s are considered (or should
-be) supported?
+    In other words, current request-based device-mapper can't handle
+    other requests while a flush request is in progress.
 
-[...]
-> There is no use of mktemp in Kbuild, that I try hard to use as reference
-> here.
+In flush request handling, request-based dm uses dm_wait_for_completion()
+to wait for the completion of cloned flush requests, depending on
+the fact that there should be only flush requests in flight owning
+to the block layer sequencing.
 
-FWIW fine with me - I just threw an idea in.
+It's not a separate issue and we need to resolve it at least.
+I'm still considering how I can fix the request-based dm.
 
-	Bernd
--- 
-mobile: +43 664 4416156              http://www.sysprog.at/
-    Linux Software Development, Consulting and Services
-
+Thanks,
+Kiyoshi Ueda
