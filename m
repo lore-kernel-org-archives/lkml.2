@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab0HSVcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 17:32:33 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:47203 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab0HSVcb (ORCPT
+	id S1753757Ab0HSVcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 17:32:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47463 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753711Ab0HSVcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 17:32:31 -0400
-Date: Thu, 19 Aug 2010 23:32:19 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Rudolf Marek <r.marek@assembler.cz>,
-        Huaxu Wan <huaxu.wan@intel.com>, Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        lm-sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH] drivers/hwmon/coretemp: Remove warnings of unused
- variables
-Message-ID: <20100819233219.31cf694f@hyperion.delvare>
-In-Reply-To: <4C6DA1EB.40600@zytor.com>
-References: <1282172027-640-1-git-send-email-fenghua.yu@intel.com>
-	<1282172027-640-2-git-send-email-fenghua.yu@intel.com>
-	<20100819092423.00f76256@hyperion.delvare>
-	<4C6D8026.2060800@zytor.com>
-	<20100819232655.4223e61f@hyperion.delvare>
-	<4C6DA1EB.40600@zytor.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+	Thu, 19 Aug 2010 17:32:39 -0400
+Date: Thu, 19 Aug 2010 14:31:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Russell King <rmk@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/6] mm, highmem: kmap_atomic rework
+Message-Id: <20100819143129.81274c03.akpm@linux-foundation.org>
+In-Reply-To: <20100819201317.673172547@chello.nl>
+References: <20100819201317.673172547@chello.nl>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -32,24 +31,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Aug 2010 14:28:11 -0700, H. Peter Anvin wrote:
-> On 08/19/2010 02:26 PM, Jean Delvare wrote:
-> > 
-> > MAINTAINERS is correct. I do not have the time, nor the will, to be the
-> > single official maintainer of the hwmon subsystem. I would be happy to
-> > be a co-maintainer, but nobody stepped in to co-maintain with me.
-> > 
-> > Meanwhile, I'm doing my best to off-load some of the hwmon work from
-> > Andrew, but that doesn't make me THE maintainer of hwmon.
-> > 
+On Thu, 19 Aug 2010 22:13:17 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+
 > 
-> OK.  I was simply wondering if Fenghua should push his coretemp tree
-> through you rather than direct to Linus.
+> This patch-set reworks the kmap_atomic API to be a stack based, instead of
+> static slot based. Some might remember this from last year, some not ;-)
+> 
+> The advantage is that you no longer need to worry about KM_foo, the
+> disadvantage is that kmap_atomic/kunmap_atomic now needs to be strictly
+> nested (CONFIG_HIGHMEM_DEBUG should complain in case its not) -- and of
+> course its a big massive patch changing a widely used API.
 
-Well, it would certainly make sense for Fenghua to send the patches to
-me (or better, to the lm-sensors list) and/or Andrew. I doubt Linus is
-willing to review random driver patches on a regular basis, especially
-when they don't fix anything critical.
+Nice.  That fixes the "use of irq-only slots from interrupts-on
+context" bugs which people keep adding.
 
--- 
-Jean Delvare
+We don't have any checks in there for the stack overflowing?
+
+Did you add every runtime check you could possibly think of? 
+kmap_atomic_idx_push() and pop() don't have much in there.  It'd be
+good to lard it up with runtime checks for at least a few weeks.
+
+> The patch-set is currently based on tip/master as of today, and compile
+> tested on: i386-all{mod,yes}config, mips-yosemite_defconfig,
+> sparc-sparc32_defconfig, powerpc-ppc6xx_defconfig, and some arm config.
+> 
+> (Sorry dhowells, I again couldn't find frv/mn10300 compilers)
+> 
+> Boot tested with i386-defconfig on kvm.
+> 
+> Since its a rather large set, and somewhat tedious to rebase, I wanted to
+> ask how to go about getting this merged?
+
+
+Well, there's that monster conversion patch.  How's about you
+temporarily do
+
+#define kmap_atomic(x, arg...)  __kmap_atomic(x)
+
+so for a while, both kmap_atomic(a, KM_foo) and kmap_atomic(a) are
+turned into __kmap_atomic(a).  Once all the dust has settled, pull that
+out again?
