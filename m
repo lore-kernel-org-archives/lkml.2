@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab0HSCYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 22:24:14 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:27645 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab0HSCYJ (ORCPT
+	id S1751800Ab0HSCYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 22:24:17 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:5693 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab0HSCYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Aug 2010 22:24:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6078"; a="51500595"
+X-IronPort-AV: E=McAfee;i="5400,1158,6078"; a="51378921"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-arm-msm@linux.kernel.org, linux-kernel@vger.kernel.org,
         Russell King <linux@arm.linux.org.uk>,
         Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH 1/3] [ARM] Translate delay.S into (mostly) C
-Date: Wed, 18 Aug 2010 19:24:01 -0700
-Message-Id: <1282184643-29860-2-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 3/3] [ARM] Implement a timer based __delay() loop
+Date: Wed, 18 Aug 2010 19:24:03 -0700
+Message-Id: <1282184643-29860-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.2.1.66.g0d0ba
 In-Reply-To: <1282184643-29860-1-git-send-email-sboyd@codeaurora.org>
 References: <1282184643-29860-1-git-send-email-sboyd@codeaurora.org>
@@ -23,212 +23,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the next patch we're going to allow machines to override the
-__delay() implementation at runtime so they can implement a timer
-based __delay() routine. It's easier to do this using C, so lets
-write udelay and friends in C.
+udelay() can be incorrect on SMP machines that scale their CPU
+frequencies independently of one another (as pointed out here
+http://article.gmane.org/gmane.linux.kernel/977567). The delay
+loop can either be too fast or too slow depending on which CPU the
+loops_per_jiffy counter is calibrated on and which CPU the delay
+loop is running on. udelay() can also be incorrect if the
+CPU frequency switches during the __delay() loop, causing the loop
+to either terminate too early, or too late. 
 
-We lose the #if 0 code, which according to Russell is used "to
-make the delay loop more stable and predictable on older CPUs"
-(see http://article.gmane.org/gmane.linux.kernel/888867 for more
-info). We shouldn't be too worried though, since the next patch
-adds functionality to allow a machine to set the __delay() loop
-themselves, therefore allowing machines to resurrect the
-commented out code if they need it.
+We'd rather not fix udelay() by forcing it to run on one CPU or
+take the penalty of a rather large loops_per_jiffy being used in
+udelay() when the CPU is actually running slower. Instead we
+solve the problem by making __delay() into a timer based loop
+which should be unaffected by CPU frequency scaling. Therefore,
+implement a timer based __delay() loop which can be used in place
+of the current register based __delay() if a machine so chooses.
 
-bloat-o-meter shows an increase of 12 bytes. Further inspection
-of the assembly shows GCC copying the loops_per_jiffy pointer and
-the magic HZ value to the ends of __const_udelay() and _delay()
-thus contributing an extra 4 and 8 bytes of data to each
-function. These two values weren't taken into account in the
-delay.S version since they weren't part of the function in nm's
-eyes. This means we only really gained an extra 4 bytes due to
-GCC's decision to duplicate the loops_per_jiffy pointer in
-__const_udelay.
+The kernel is already prepared for a timer based approach
+(evident by the read_current_timer() function). If an arch
+implements read_current_timer(), calibrate_delay() will use a
+timer based function, calibrate_delay_direct(), to calculate
+loops_per_jiffy (in which case loops_per_jiffy should really be
+renamed to timer_ticks_per_jiffy). Since the loops_per_jiffy will
+be based on timer ticks, __delay() should be implemented as a
+loop around read_current_timer().
 
- $ scripts/bloat-o-meter vmlinux.orig vmlinux.new
- add/remove: 0/0 grow/shrink: 2/0 up/down: 12/0 (12)
- function                                     old     new   delta
- __udelay                                      48      56      +8
- __const_udelay                                40      44      +4
+Doing this makes the expensive loops_per_jiffy calculation go
+away (saving ~150ms on boot time on my machine) and fixes
+udelay() by making it safe in the face of independently scaling
+CPUs. The only prerequisite is that read_current_timer() is
+monotonically increasing across calls (and doesn't overflow
+within ~2000us).
+
+There is a downside to this approach though. BogoMIPS is no
+longer "accurate" in that it reflects the BogoMIPS of the timer
+and not the CPU. On most SoC's the timer isn't running anywhere
+near as fast as the CPU so BogoMIPS will be ridiculously low (my
+timer runs at 4.8 MHz and thus my BogoMIPS is 9.6 compared to my
+CPU's 800). This shouldn't be too much of a concern though since
+BogoMIPS are bogus anyway (hence the name).
+
+This loop is pretty much a copy of AVR's version made more generic.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
 ---
-
-So maybe we can make the magic HZ value into a #define? UDELAY_SCALAR?
-UDELAY_MAGIC?
-
- arch/arm/include/asm/delay.h |    2 +-
- arch/arm/kernel/armksyms.c   |    4 --
- arch/arm/lib/delay.S         |   65 ------------------------------------------
- arch/arm/lib/delay.c         |   57 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 58 insertions(+), 70 deletions(-)
- delete mode 100644 arch/arm/lib/delay.S
- create mode 100644 arch/arm/lib/delay.c
+ arch/arm/include/asm/delay.h |    1 +
+ arch/arm/lib/delay.c         |   18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
 diff --git a/arch/arm/include/asm/delay.h b/arch/arm/include/asm/delay.h
-index b2deda1..ccc5ed5 100644
+index 7c732b5..5c6b9a3 100644
 --- a/arch/arm/include/asm/delay.h
 +++ b/arch/arm/include/asm/delay.h
-@@ -8,7 +8,7 @@
+@@ -41,6 +41,7 @@ extern void __const_udelay(unsigned long);
+ 	  __udelay(n))
  
- #include <asm/param.h>	/* HZ */
+ extern void set_delay_fn(void (*fn)(unsigned long));
++extern void read_current_timer_delay_loop(unsigned long loops);
  
--extern void __delay(int loops);
-+extern void __delay(unsigned long loops);
+ #endif /* defined(_ARM_DELAY_H) */
+ 
+diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
+index b307fcc..59fdf64 100644
+--- a/arch/arm/lib/delay.c
++++ b/arch/arm/lib/delay.c
+@@ -5,6 +5,7 @@
+  *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+  *  Copyright (C) 1993 Linus Torvalds
+  *  Copyright (C) 1997 Martin Mares <mj@atrey.karlin.mff.cuni.cz>
++ *  Copyright (C) 2005-2006 Atmel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -12,6 +13,7 @@
+  */
+ #include <linux/module.h>
+ #include <linux/delay.h>
++#include <linux/timex.h>
  
  /*
-  * This function intentionally does not exist; if you see references to
-diff --git a/arch/arm/kernel/armksyms.c b/arch/arm/kernel/armksyms.c
-index 8214bfe..259e549 100644
---- a/arch/arm/kernel/armksyms.c
-+++ b/arch/arm/kernel/armksyms.c
-@@ -52,10 +52,6 @@ extern void fpundefinstr(void);
+  * Oh, if only we had a cycle counter...
+@@ -26,6 +28,22 @@ void delay_loop(unsigned long loops)
+ 	);
+ }
  
- EXPORT_SYMBOL(__backtrace);
++#ifdef ARCH_HAS_READ_CURRENT_TIMER
++/*
++ * Assuming read_current_timer() is monotonically increasing
++ * across calls.
++ */
++void read_current_timer_delay_loop(unsigned long loops)
++{
++	unsigned long bclock, now;
++
++	read_current_timer(&bclock);
++	do {
++		read_current_timer(&now);
++	} while ((now - bclock) < loops);
++}
++#endif
++
+ static void (*delay_fn)(unsigned long) = delay_loop;
  
--	/* platform dependent support */
--EXPORT_SYMBOL(__udelay);
--EXPORT_SYMBOL(__const_udelay);
--
- 	/* networking */
- EXPORT_SYMBOL(csum_partial);
- EXPORT_SYMBOL(csum_partial_copy_from_user);
-diff --git a/arch/arm/lib/delay.S b/arch/arm/lib/delay.S
-deleted file mode 100644
-index 8d6a876..0000000
---- a/arch/arm/lib/delay.S
-+++ /dev/null
-@@ -1,65 +0,0 @@
--/*
-- *  linux/arch/arm/lib/delay.S
-- *
-- *  Copyright (C) 1995, 1996 Russell King
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/linkage.h>
--#include <asm/assembler.h>
--#include <asm/param.h>
--		.text
--
--.LC0:		.word	loops_per_jiffy
--.LC1:		.word	(2199023*HZ)>>11
--
--/*
-- * r0  <= 2000
-- * lpj <= 0x01ffffff (max. 3355 bogomips)
-- * HZ  <= 1000
-- */
--
--ENTRY(__udelay)
--		ldr	r2, .LC1
--		mul	r0, r2, r0
--ENTRY(__const_udelay)				@ 0 <= r0 <= 0x7fffff06
--		ldr	r2, .LC0
--		ldr	r2, [r2]		@ max = 0x01ffffff
--		mov	r0, r0, lsr #14		@ max = 0x0001ffff
--		mov	r2, r2, lsr #10		@ max = 0x00007fff
--		mul	r0, r2, r0		@ max = 2^32-1
--		movs	r0, r0, lsr #6
--		moveq	pc, lr
--
--/*
-- * loops = r0 * HZ * loops_per_jiffy / 1000000
-- *
-- * Oh, if only we had a cycle counter...
-- */
--
--@ Delay routine
--ENTRY(__delay)
--		subs	r0, r0, #1
--#if 0
--		movls	pc, lr
--		subs	r0, r0, #1
--		movls	pc, lr
--		subs	r0, r0, #1
--		movls	pc, lr
--		subs	r0, r0, #1
--		movls	pc, lr
--		subs	r0, r0, #1
--		movls	pc, lr
--		subs	r0, r0, #1
--		movls	pc, lr
--		subs	r0, r0, #1
--		movls	pc, lr
--		subs	r0, r0, #1
--#endif
--		bhi	__delay
--		mov	pc, lr
--ENDPROC(__udelay)
--ENDPROC(__const_udelay)
--ENDPROC(__delay)
-diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
-new file mode 100644
-index 0000000..5ee0adc
---- /dev/null
-+++ b/arch/arm/lib/delay.c
-@@ -0,0 +1,57 @@
-+/*
-+ *  Originally from linux/arch/arm/lib/delay.S
-+ *
-+ *  Copyright (C) 1995, 1996 Russell King
-+ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/module.h>
-+#include <linux/delay.h>
-+
-+/*
-+ * loops = usecs * HZ * loops_per_jiffy / 1000000
-+ *
-+ * Oh, if only we had a cycle counter...
-+ */
-+void __delay(unsigned long loops)
-+{
-+	asm volatile(
-+	"1:	subs %0, %0, #1 \n"
-+	"	bhi 1b		\n"
-+	: /* No output */
-+	: "r" (loops)
-+	);
-+}
-+EXPORT_SYMBOL(__delay);
-+
-+/*
-+ * 0 <= xloops <= 0x7fffff06
-+ * loops_per_jiffy <= 0x01ffffff (max. 3355 bogomips)
-+ */
-+void __const_udelay(unsigned long xloops)
-+{
-+	unsigned long lpj;
-+	unsigned long loops;
-+
-+	xloops >>= 14;			/* max = 0x01ffffff */
-+	lpj = loops_per_jiffy >> 10;	/* max = 0x0001ffff */
-+	loops = lpj * xloops;		/* max = 0x00007fff */
-+	loops >>= 6;			/* max = 2^32-1 */
-+
-+	if (loops)
-+		__delay(loops);
-+}
-+EXPORT_SYMBOL(__const_udelay);
-+
-+/*
-+ * usecs  <= 2000
-+ * HZ  <= 1000
-+ */
-+void __udelay(unsigned long usecs)
-+{
-+	__const_udelay(usecs * ((2199023*HZ)>>11));
-+}
-+EXPORT_SYMBOL(__udelay);
+ void set_delay_fn(void (*fn)(unsigned long))
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
