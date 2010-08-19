@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab0HSN2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 09:28:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43876 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab0HSN2q (ORCPT
+	id S1753393Ab0HSN32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 09:29:28 -0400
+Received: from relay03.mail-hub.dodo.com.au ([123.2.6.238]:51013 "EHLO
+	relay03.mail-hub.dodo.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750930Ab0HSN30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 09:28:46 -0400
-Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control
- rf/camera power
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-In-Reply-To: <4C6CA31D.6030407@canonical.com>
-References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>
-	 <1282127719.2747.211.camel@localhost>
-	 <20100818155128.GA24363@darkside.kls.lan>  <4C6CA31D.6030407@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 14:28:36 +0100
-Message-ID: <1282224517.1730.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.6 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 19 Aug 2010 09:29:26 -0400
+Recieved: from [81.199.228.150] with HTTP; Thu, 19 Aug 2010 23:29:00 +1000
+Message-ID: <20100819232900.3841.4C6D29E7E137E-4C6D@webmail.dodo.com.au>
+Date: Thu, 19 Aug 2010 23:29:00 +1000
+From: "Western Union Money Transfer Office" <pepg1@dodo.com.au>
+Reply-to: "Western Union Money Transfer Office" <wumt22@yahoo.com.hk>
+Subject: Attn: Valid Customer
+X-Priority: 3
+X-Mailer: Dodo Internet Webmail Server 
+X-Original-IP: 81.199.228.150
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1";
+MIME-Version: 1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 11:21 +0800, Ike Panhc wrote:
-> 
-> > 2nd: both Bluetooth killswitches reproducibly disappear when I block
-> > ideapad_bluetooth either via Gnome bluetooth-applet or via rfkill block
-> > 1 and subsequently reboot. After the reboot rfkill list shows:
-> > 
-> > 0: ideapad_wlan: Wireless LAN
-> >         Soft blocked: no
-> >         Hard blocked: no
-> > 1: ideapad_killsw: Wireless LAN
-> >         Soft blocked: no
-> >         Hard blocked: no
-> > 2: phy0: Wireless LAN
-> >         Soft blocked: no
-> >         Hard blocked: no
-> > 
-> > Powering the machine off and on again restores both killswitches.
-> > Interesting is: this does not happen when I boot into single-user mode,
-> > rfkill block 1 there and reboot. In this case, both killswitches are
-> > back.
-> This is interesting. looks like the cfgbit will change on S12 if BIOS
-> remember it has to shutdown when booting. I will try if the same problem
-> happen on my ideapads. 
+--
+Attn: Valid Customer,
 
-If we can solve this, I'm inclined to suggest that we submit your code
-to Linus to replace mine in 2.6.36. We needed *something* as a stopgap
-to solve the rfkill issues, but this is better than what we have in
-2-6.36-rc1.
 
--- 
-dwmw2
+We are please to inform you that United Nations Government has made
+payment of £75,000.00 GBP(Seventy five thousand Great Britain Pounds), in
+your names/information, this money has being on hold for the past two
+weeks now, please we need you to give us the go ahead to release the funds
+in other for you to pick up the funds.
+
+
+Note: United Nations Government has instructed us that we send
+$5,000.00USD per day to you, also we still need you to reconfirm your
+address, telephone number including your data to us as to enable us
+proceed with the release of the money via our office transfer agent here
+in London, After you have reconfirm the details we can then send to you
+the details as well as the Mtcn and so on to enable you pick up the first
+$5,000.00USD as per day payment in our next mail, urgently get back to us
+via phone call and email to avoid any delay
+
+
+Regards
+
+Bernard Harry
+Western Union Transfer Agent.
+Telephone: +(44)704-573-8671
+
+
+________________________________________________
+
+This message was sent
+using Dodo Webmail - www.dodo.com.au
 
