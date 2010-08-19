@@ -1,107 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab0HSUqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 16:46:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47730 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab0HSUq2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 16:46:28 -0400
-Date: Thu, 19 Aug 2010 13:44:20 -0700
-From: Joel Becker <boel.becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: [GIT PULL] ocfs2 changes for 2.6.36, part 2.
-Message-ID: <20100819204419.GA1585@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-MIME-Version: 1.0
+	id S1753154Ab0HSUvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 16:51:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37083 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871Ab0HSUvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 16:51:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,235,1280732400"; 
+   d="scan'208";a="546935736"
+Date: Thu, 19 Aug 2010 13:51:20 -0700
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Wan, Huaxu" <huaxu.wan@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit Notification: pkgtemp doc
+Message-ID: <20100819205120.GA22602@linux-os.sc.intel.com>
+References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com> <4C485DF1.5050407@linux.intel.com> <20100722162222.GA22450@linux-os.sc.intel.com> <20100722172726.GA4914@ericsson.com> <20100722175225.GB22450@linux-os.sc.intel.com> <20100722185814.GA5235@ericsson.com> <20100722212111.GC22450@linux-os.sc.intel.com> <20100819174632.239aed93@hyperion.delvare> <20100819162719.GB4160@ericsson.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100819162719.GB4160@ericsson.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Here is the second batch of ocfs2 changes for 2.6.36.  We've
-ironed out all of the ordering with the extN/jbd2 folks, and they have
-stewed for a little as well.
-	There's nothing large in here.  ocfs2 has long supported devices
-larger than 2^32 sectors in the code; we now toggle that capability on.
-Tao has added readahead to our CoW operations.  We also have one more
-ECC fix and a data flush correction.
-	Since negotiating the procedural stuff took a bit, I'm well
-aware that we're past -rc1.  If you would rather any of this wait for
-.37, let me know which pieces and I can respin without them.
-	Please pull.
+On Thu, Aug 19, 2010 at 09:27:19AM -0700, Guenter Roeck wrote:
+> On Thu, Aug 19, 2010 at 11:46:32AM -0400, Jean Delvare wrote:
+> > Hi Fenghua, Guenter,
+> > 
+> > Sorry for joining the discussion a little late, I was on vacation when
+> > it happened. I'll comment now, it's probably "too late" as the patch
+> > set was merged meanwhile, but still...
+> > 
+> There was no discussion at all, unfortunately.
+> 
+> > On Thu, 22 Jul 2010 14:21:11 -0700, Fenghua Yu wrote:
+> > > On Thu, Jul 22, 2010 at 11:58:14AM -0700, Guenter Roeck wrote:
+> > > > You use the argument that there may be other package level sensors in the future.
+> > > > Are there any plans for this, or is this just a theory ?
+> > > 
+> > > Not just a theory. Sandy Bridge already implements other package level sensors.
+> > > If really need to know exactly which sensors are implemented, we might go
+> > > through a channel before releasing the info.
+> > > 
+> > > > Next question is how to handle future sensor types. One hwmon instance per sensor,
+> > > > additional sensors in this driver, or even a new driver ?
+> > > 
+> > > Currently package level thermal just reports the maximum temperature across
+> > > the package. Which sensor is reporting the highest temperature is not exposed.
+> > 
+> > So this isn't a real physical sensor, but more of a meta-sensor? If
+> > this is a case, then we don't need support for this at all. User-space
+> > can compute a maximum by itself, we don't need a dedicated kernel
+> > driver for that.
+> > 
+The pkgtemp reports thermal status for a set of sensors in a package. Please
+note the sensors in a package are not limited to processor sensors which are
+handled by coretemp. The sensors in a package also include gfx sensors, cache
+sensors, memory controllor sensors which are not handled by any hwmon drivers.
 
-Joel
+OS gets maximum package thermal status only from MSR PACKAGE_THERM_STATUS.
+There is no detailed thermal info for each sensor in a package. User-space
+can't compute a maximum by itself. So a piece of kernel driver code, whether
+a seperate driver or a integrated driver, is necessary if user-space wants to
+know thermal status of a package.
 
-The following changes since commit 5af568cbd55f60b5a1d174f621b273e4f585dc35:
+> > > > We had was a separate discussion if the coretemp driver should be redesigned
+> > > > to one instance per CPU. The package sensor would fit into that model,
+> > > > since you would have
+> > > > 
+> > > > coretemp-isa-0000
+> > > > Core0
+> > > > Core1
+> > > > ...
+> > > > CoreN
+> > > > Package
+> > > > 
+> > > > coretemp-isa-0001
+> > > > Core0
+> > > > Core1
+> > > > ...
+> > > > CoreM
+> > > > Package
+> > > > 
+> > > > I personally would prefer that approach. It would avoid ambiguity associating Package X
+> > > > with specific cores, and it would also easily expand to additional non-core future sensors.
+> > 
+> > For the records, I totally support this approach. I want the coretemp
+> > driver to be updated to present a single hwmon device per CPU, no
+> > matter what happens to the "package temperature".
+> > 
+> I might spend some time rewriting the coretemp driver as described above,
+> unless someone else picks it up, and unless there is opposition. 
+> Obviously, that won't include the package sensor since there is now
+> a separate driver for it.
+I agree with this method too. On a multiple socket system, the current coretemp
+output will cause confusion since it only outputs core# without package#.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2010-08-11 09:23:32 -0700)
+If it's ok for you, I can rewrite this part to have hwmon device per CPU with
+both core and package thermal info and send out RFC patch soon.
 
-are available in the git repository at:
+Thanks.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
-
-Goldwyn Rodrigues (1):
-      Reorganize data elements to reduce struct sizes
-
-Jan Kara (2):
-      ocfs2: Flush drive's caches on fdatasync
-      ocfs2: Remove ocfs2_sync_inode()
-
-Joel Becker (2):
-      Merge branch 'cow_readahead' of git://oss.oracle.com/git/tma/linux-2.6 into ocfs2-merge-window
-      libfs: Fix shift bug in generic_check_addressable()
-
-Patrick J. LoPresti (3):
-      ext3/ext4: Factor out disk addressability check
-      JBD2: Allow feature checks before journal recovery
-      OCFS2: Allow huge (> 16 TiB) volumes to mount
-
-Sunil Mushran (2):
-      ocfs2: Fix metaecc error messages
-      ocfs2: Fix incorrect checksum validation error
-
-Tao Ma (9):
-      ocfs2: Add some trace log for orphan scan.
-      ocfs2: Remove obscure error handling in direct_write.
-      ocfs2: Remove unused old_id in ocfs2_commit_cache.
-      ocfs2: Remove obsolete comments before ocfs2_start_trans.
-      ocfs2: pass struct file* to ocfs2_write_begin_nolock.
-      ocfs2: pass struct file* to ocfs2_prepare_inode_for_write.
-      ocfs2: Add struct file to ocfs2_refcount_cow.
-      ocfs2: Add readahead support for CoW.
-      ocfs2: Add readhead during CoW.
-
-Tristan Ye (1):
-      Ocfs2: Add new OCFS2_IOC_INFO ioctl for ocfs2 v8.
-
- fs/ext3/super.c         |    4 +-
- fs/ext4/super.c         |    8 +-
- fs/jbd2/journal.c       |    4 +
- fs/libfs.c              |   29 ++++
- fs/ocfs2/aops.c         |    9 +-
- fs/ocfs2/aops.h         |    3 +-
- fs/ocfs2/blockcheck.c   |    4 +-
- fs/ocfs2/file.c         |   49 +++----
- fs/ocfs2/inode.c        |    6 +-
- fs/ocfs2/inode.h        |   11 +-
- fs/ocfs2/ioctl.c        |  356 +++++++++++++++++++++++++++++++++++++++++++++++
- fs/ocfs2/journal.c      |    9 +-
- fs/ocfs2/journal.h      |    3 +-
- fs/ocfs2/mmap.c         |    7 +-
- fs/ocfs2/ocfs2.h        |   23 ++-
- fs/ocfs2/ocfs2_ioctl.h  |   95 +++++++++++++
- fs/ocfs2/refcounttree.c |   43 ++++++-
- fs/ocfs2/refcounttree.h |    7 +-
- fs/ocfs2/super.c        |   51 ++++++-
- include/linux/fs.h      |    2 +
- 20 files changed, 645 insertions(+), 78 deletions(-)
-
+-Fenghua
