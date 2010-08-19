@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab0HSMkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 08:40:47 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51589 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab0HSMkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 08:40:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NqAh+v/RqKX3P2XbMPLAJL29IDCelS9qofgrkJEM7SMfu0alUtW/obb2yskS9vpveY
-         tLdJRatVMhVcibxeWjsdUqPtE8cP/4AzvzbdvkQQjd66zTXayyDLNCas+S3bwRu9gumH
-         NQGyN+eFDllGO7u2VQqe9HXJtUHGSzeJZqogI=
-Date: Thu, 19 Aug 2010 16:40:42 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
-	<ext-heikki.krogerus@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        dwmw2@infradead.org, felipe.balbi@nokia.com, ameya.palande@nokia.com,
-        markus.lehtonen@nokia.com, roger.quadros@nokia.com
-Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
-Message-ID: <20100819124042.GA15837@oksana.dev.rtsoft.ru>
-References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
- <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
+	id S1752957Ab0HSMoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 08:44:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58623 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab0HSMo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 08:44:29 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [GIT PULL] notification tree: directory events
+Date: Thu, 19 Aug 2010 14:44:08 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <201008181747.15461.agruen@suse.de> <1282147146.21419.165.camel@acb20005.ipt.aol.com>
+In-Reply-To: <1282147146.21419.165.camel@acb20005.ipt.aol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008191444.08966.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
-> From: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
-> 
-> This enables isp1704 power supply driver on RX51, allowing
-> USB charger detection with N900.
-> 
-> Signed-off-by: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
-> ---
->  arch/arm/mach-omap2/board-rx51-peripherals.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> index 9a5eb87..a4b1f8b 100644
-> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> @@ -104,6 +104,10 @@ static struct spi_board_info rx51_peripherals_spi_board_info[] __initdata = {
->  	},
->  };
->  
-> +static struct platform_device rx51_charger_device = {
-> +	.name = "isp1704_charger",
-> +};
-> +
->  #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
->  
->  #define RX51_GPIO_CAMERA_LENS_COVER	110
-> @@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
->  	spi_register_board_info(rx51_peripherals_spi_board_info,
->  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
->  	omap2_hsmmc_init(mmc);
-> +	platform_device_register(&rx51_charger_device);
+On Wednesday 18 August 2010 17:59:06 Eric Paris wrote:
+> I'm going to file your e-mail into my todo list and hopefully I get the
+> time to look at the ability to ignore directory events.
 
-Maybe
+As far as I can remember, several people involved in the previous discussion 
+agreed that a reasonable goal would be to make fanotify  a superset of 
+inotify.  My understanding was that this would be the general direction of 
+development.  The code apparently is not there yet; it only reports a subset 
+of the relevant directory events.  (In other words, the directory event part 
+of the code is currently useless.)  Given that, I was surprised to see the 
+code getting merged.
 
-  platform_device_register_simple("isp1704_charger", -1, NULL, 0);
+Fanotify has a subset of functionality for watching and vetting regular file 
+accesses which seems to be useful in its own right; the anti-malware folks 
+want this part.  Implementing only this part was not what was originally 
+discussed, but I can see some arguments for putting this functionality in now 
+(or rather leaving it in) and adding the rest later.
 
-?
+The half-thought-out directory events are not part of this subset though.  
+They are not useful in their own right and only generate overheads, and much 
+worse, they could even get in the way when proper directory event support is 
+eventually added.  So that part should really be removed ASAP.
 
-Thanks,
+I expect more from you than just ignoring my concerns as you imply.
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+> Nothing hard about it.  It's as easy as defining a flag and adding a
+> conditional in the code but it's not high on my list.
+
+We are not talking about Eric's own private syscalls here.  Things we screw up 
+now may be very hard or impossible to fix later; syscalls don't just change 
+from release to release.
+
+This also applies to the error reporting mess I have commented on.  At least 
+the interface should be changed so that it can report a valid file descriptor 
+and an error condition at the same time; otherwise, we will end up with a 
+weakness in the interface that we won't be able to fix.
+
+Andreas
