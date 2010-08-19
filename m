@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750967Ab0HSEFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 00:05:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40281 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab0HSEFF (ORCPT
+	id S1751050Ab0HSEPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 00:15:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50842 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab0HSEPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 00:05:05 -0400
-From: Tao Ma <tao.ma@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tao Ma <tao.ma@oracle.com>, Jiri Kosina <trivial@kernel.org>
-Subject: [PATCH] trivial: Use kzalloc in idedisk_prep_fn.
-Date: Thu, 19 Aug 2010 12:02:21 +0800
-Message-Id: <1282190541-12154-1-git-send-email-tao.ma@oracle.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 19 Aug 2010 00:15:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=c/OmfH9SkAHKTJaGhvHxVrvQ0ZblwXTyf8/mJ5C4FIR0Smpr6WwSET3KMtIdoa3GR+
+         XFO30aGEhS9JebGFlACyGbQoKJk/TK1wDf0rOpGDvK3/fQPPodNEJPMhja4tGdsYJtua
+         ov1PR8t68sYjAVgNK8pa/EGVWjf/5ucQgwLQg=
+MIME-Version: 1.0
+Date: Thu, 19 Aug 2010 12:15:48 +0800
+Message-ID: <AANLkTinxVG=X-ncpF21kxh+XifUOtLHBfsP2FJ-Cgx6U@mail.gmail.com>
+Subject: Is it possible for addrconf_init_net to kfree no-heap address?
+From: ye janboe <janboe.ye@gmail.com>
+To: davem@davemloft.net, xemul@openvz.org
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Jiri Kosina <trivial@kernel.org>
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
----
- drivers/ide/ide-disk.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+hi, Pavel and David
 
-diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
-index 7433e07..471bb0d 100644
---- a/drivers/ide/ide-disk.c
-+++ b/drivers/ide/ide-disk.c
-@@ -435,12 +435,11 @@ static int idedisk_prep_fn(struct request_queue *q, struct request *rq)
- 	if (!(rq->cmd_flags & REQ_FLUSH))
- 		return BLKPREP_OK;
- 
--	cmd = kmalloc(sizeof(*cmd), GFP_ATOMIC);
-+	cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
- 
- 	/* FIXME: map struct ide_taskfile on rq->cmd[] */
- 	BUG_ON(cmd == NULL);
- 
--	memset(cmd, 0, sizeof(*cmd));
- 	if (ata_id_flush_ext_enabled(drive->id) &&
- 	    (drive->capacity64 >= (1UL << 28)))
- 		cmd->tf.command = ATA_CMD_FLUSH_EXT;
+addrconf_init_net make me a little confused.
+
+if all and dflt are not allocated by kmemdup and sysctl_register
+failed, this function will try to kfree dftl which points to
+ipv6_devconf_dfl which is not a heap address. AFAIK, kfree will panic
+if the address does not belong to slab page.
+
+Is there any special reason for these codes?
+
+many thanks!
+
 -- 
-1.7.1.GIT
-
+Janboe Ye
