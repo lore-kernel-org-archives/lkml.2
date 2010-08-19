@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab0HSOii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 10:38:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58816 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab0HSOif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 10:38:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH 0/4] initramfs: remove sparse warnings
-Date: Thu, 19 Aug 2010 16:38:23 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
+	id S1753594Ab0HSOjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 10:39:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35216 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752318Ab0HSOjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 10:39:45 -0400
+Date: Thu, 19 Aug 2010 07:18:12 -0700
+From: Greg KH <gregkh@suse.de>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        maxinbjohn@gmail.com, orest.bond@outpostembedded.com,
+        vijaykumar@zilogic.com
+Subject: Re: Regarding USB-Serial Device driver
+Message-ID: <20100819141812.GA12375@suse.de>
+References: <20100819055329.M29689@admin-gateway.ncra.tifr.res.in> <20100819061525.M24093@admin-gateway.ncra.tifr.res.in> <201008190938.44532.marek.vasut@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008191638.23248.arnd@arndb.de>
-X-Provags-ID: V02:K0:r+2shXYBGzhw1B5qug/Cx7JTQqAkwPQ0H2GqeK5nvRO
- nvRZDqYxJXqq2wxJ6RkbiVDjlm4YauC4kGdCkM4u8CTTl1RCAk
- SoP/Gn8OjEoY7t9xGgs8MFsad3f4N5gMj6fHocCzEIWJhjhZqK
- Bn5F4jfnwkAzVfX33iVCFSgcwJY4AmqnZIQb3TUpMo/apVnXQu
- tIM4/tMSG553nrbsan1oA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008190938.44532.marek.vasut@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 August 2010, Namhyung Kim wrote:
-> This patchset removes most of sparse warnings in init/initramfs.c.
-> Current implementation of initramfs relies on syscall service rountins heavily
-> so it requires many of arguments to be __user address space pointers but, in
-> most cases, were missing proper markups. This patchset tries to fix those at
-> a minimum change.
+On Thu, Aug 19, 2010 at 09:38:44AM +0200, Marek Vasut wrote:
+> Dne ??t 19. srpna 2010 08:17:30 Raju Rameshwar Uprade napsal(a):
+> > Dear Sir,
+> >          I am trying to write a Pl2303_mcm.c usb-serial device driver which
+> > will be able to talk to several devices using RS-485 interface card.I have
+> > modified the standard pl2303.c by which I am able to enable/disable the
+> > RTS line.
+> > I am sending 10 bytes of data to the device, data is going out but instead
+> > of 10 bytes, device driver is sending a large amount of data as seen on
+> > Lecroy waverunner oscilloscope. Here I am sending the modified file.
+> 
+> Hi, I have no idea why I'm CCed in this, but anyway.
+> 
+> 1) could you please update the driver to a more recent kernel (we are 10 kernel 
+> versions further now)
+> 2) could you please send a diff instead of a whole file? (git diff <file1> 
+> <file2> > diff.diff ... see man git-diff)
 
-I'm skeptical about this, you are adding obviously incorrect annotations
-to the code to make something work that was written without the awareness
-for address spaces.
+Yes, Raju, please see the file, Documentation/SubmittingPatches for how
+to do this properly.
 
-A better way would be to call path_lookup or kern_path to look up the
-path and pass that to a lower-level file I/O function.
+Also, does your updated driver work properly for you?  It would be good
+to have proper RTS support in the pl2303 driver, but I thought that the
+driver already supported this?
 
-	Arnd
+thanks,
+
+greg k-h
