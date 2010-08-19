@@ -1,109 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab0HSUnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 16:43:06 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:36370 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752331Ab0HSUnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 16:43:04 -0400
-Date: Thu, 19 Aug 2010 15:42:56 -0500
-From: Robin Holt <holt@sgi.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: Robin Holt <holt@sgi.com>, Jack Steiner <steiner@sgi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Stable Maintainers <stable@kernel.org>
-Subject: Re: [Patch] numa:x86_64: Cacheline aliasing makes
- for_each_populated_zone extremely expensive -V2.
-Message-ID: <20100819204256.GH3043@sgi.com>
-References: <20100818165653.GX3043@sgi.com>
- <20100818183024.GZ3043@sgi.com>
- <20100819173013.GG19773@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819173013.GG19773@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753268Ab0HSUnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 16:43:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752331Ab0HSUnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 16:43:31 -0400
+Subject: Re: [GIT PULL] notification tree - try 37!
+From: Eric Paris <eparis@redhat.com>
+To: Andreas Gruenbacher <agruen@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+In-Reply-To: <201008192224.12309.agruen@suse.de>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
+	 <201008171009.51737.agruen@suse.de>
+	 <1282057706.21419.130.camel@acb20005.ipt.aol.com>
+	 <201008192224.12309.agruen@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Aug 2010 16:42:45 -0400
+Message-ID: <1282250565.21419.1821.camel@acb20005.ipt.aol.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-I hope my tone in this email comes across as measured as I feel.  I am
-not completely confident I have not missed some thing which may have
-had an effect, but I can not see what that would be.  I believe I am
-correct, but am willing to be shown to be wrong.
-
-On Thu, Aug 19, 2010 at 07:30:13PM +0200, Roedel, Joerg wrote:
-> On Wed, Aug 18, 2010 at 02:30:24PM -0400, Robin Holt wrote:
-> > When I investigated, I noticed that all the zone_data[] structures are
-> > allocated precisely at the beginning of the individual node's physical
-> > memory.  By simply staggering based upon nodeid, I reduced the average
-> > down to 0.0006% of every second.
+On Thu, 2010-08-19 at 22:24 +0200, Andreas Gruenbacher wrote:
+> On Tuesday 17 August 2010 17:08:26 Eric Paris wrote:
+> > On Tue, 2010-08-17 at 10:09 +0200, Andreas Gruenbacher wrote:
+> > > On Tuesday 17 August 2010 05:39:47 Eric Paris wrote:
+> > > > On Mon, 2010-08-16 at 22:32 +0200, Andreas Gruenbacher wrote:
+> > > > > Q: What happens when a process watching for FAN_OPEN_PERM or
+> > > > > FAN_ACCESS_PERM events exits or dies while events are in flight?  I
+> > > > > can't see anything in the code that would wake sleeping processes up
+> > > > > when the fsnotify_group of the listener is torn down.
+> > > > 
+> > > > We can get stuck.  There was code which cleaned that up, but it got
+> > > > accidentally removed long ago when, upon review on list, I was told to
+> > > > remove all timeout code.  It's easy enough to fix up.  I'll post a
+> > > > patch this week.
+> > > 
+> > > This needs to be fixed then.  Not such a big deal, but it shows that the
+> > > tree wasn't ready for being merged yet and needs further review.
+> > 
+> > Code with bugs, shocking!  Two other bugs have been found and patches
+> > for those will be coming shortly.  I've begged for review how many
+> > times?  I don't care when review it comes, I'll address any issues as
+> > they come up.
 > 
-> Interesting. Have you measured cache misses for both cases?
-
-Not directly.  The change made such a compelling difference and was in
-such a method as to strongly suggest it was cache aliasing.
-
-As a result of your question, I did some back of the envelope
-calculations.  The shared L3 cache is 12,288 cachelines in a set, 24
-ways for an 18MB cache.  The sizeof(struct zone) is 1792 bytes or 28
-cache lines.  That means a zone would not overflow an entire set and
-a single set, without the stride value, would hold one zone's info and
-we would exhaust the L3 at 24 nodes.  With the single line stride, we
-increase that to 28 nodes per set, 24 ways, or 672 nodes before we
-exhaust the L3 cache.
-
-This seems like a plausible explanation for the problem and I do not see
-any benefit to further testing unless you have a concern that I have done
-something significantly wrong in my calculation above or you can see some
-assumption I am making which is wrong.
-
-> > With this patch, the max value did not change.  I believe that is a
-> > combination of cacheline contention updating the zone's vmstat information
-> > combined with round_jiffies_common spattering unrelated cpus onto the same
-> > jiffie for their next update.  I will investigate those issues seperately.
+> Here is one more bug: when watching a directory with inotify, doing an ls 
+> gives me:
 > 
-> The max value probably the case where none of the data the code accesses
-> is actually in the cache. Cache aliasing does not help then so I would
-> not expect a change in the maximum amount here.
-
-The only reason I look at the other possible causes is a very weak
-data point I have.  My trace code that I was using to narrow down the
-slowdown area within refresh_cpu_vm_stats captured a couple data points
-where a single cpu had discovered a node with pages present, the scan
-of the per-cpu values and the addition of those values back into the
-node_data's zone took a very long time for the two values which were
-being transferred in each instance.  That seems more likely to have been
-seperate sockets contending for exclusive access to the same cacheline
-on the node_data's zone than a cache refill issue.
-
-I do not disagree that the time to fully refill all node_data's zone
-information would take time, but I would expect that to be a very
-infrequent occurrance since the round_jiffies_common() ends up scheduling
-one thread on each socket to do this calculation on each tick.
-
-> > I had no idea whether to ask stable@kernel.org to pull this back to the
-> > stable releases.  My reading of the stable_kernel_rules.txt criteria is
-> > only fuzzy as to whether this meets the "oh, that's not good" standard.
-> > I personally think this meets that criteria, but I am unwilling to defend
-> > that position too stridently.  In the end, I punted and added them to
-> > the Cc list.  We will be asking both SuSE and RedHat to add this to
-> > their upcoming update releases as we expect it to affect their customers.
+> 	Watching d
+> 	d was opened
+> 	d not opened for writing was closed
 > 
-> I don't think this is stable material. It improves performance and does
-> not fix a bug. But I am not the one to decide this :-)
+> Watching the same directory with fanotify results in:
+> 
+> 	.../d: pid=... open_perm
+> 	.../d: pid=... open
+> 	.../d: pid=... access_perm
+> 	.../d: pid=... access_perm
+> 	.../d: pid=... close
+> 
+> Five events seem a bit excessive; I can't explain why so many are generated.  
+> The real issue is when watching the same directory both with inotify and 
+> fanotify, though: the fanotify result stays the same, but 
 
-The only reason I think it qualifies is we are talking about 0.8% of each
-cpus time.  That means that on the 4096 cpu system, we are dedicating
-the equivalent of 32 cpus to just vmstat_update.  That feels like it
-meets the "oh, that's not good" standard to me.  Compare the relatively
-minor chance for negative impact to the known positive impact and it
-becomes slightly more compelling.
+The extra events are plainly the new events that inotify doesn't
+support: namely permissions events.  You ask for and received extra
+events....
 
-Thanks,
-Robin
+> 	Watching d
+> 	d has not changed
+> 	d was opened
+> 	d has not changed
+> 	d has not changed
+> 	d not opened for writing was closed
+> 
+> In other words, watching a directory with fanotify causes extra inotify events 
+> with mask == 0.
+
+I can't reproduce it.
+
+inotifywait -m /mnt/tmp
+fanotify -p /mnt/tmp
+ls /mnt/tmp
+
+All I see is:
+
+# /tmp/inotifywait.strace -- inotifywait -m /mnt/tmp/
+Setting up watches.  
+Watches established.
+/mnt/tmp/ OPEN,ISDIR 
+/mnt/tmp/ CLOSE_NOWRITE,CLOSE,ISDIR
+
+# /storage/tmp/fanotify/fanotify -p /mnt/tmp
+/mnt/tmp: pid=508 open_perm
+/mnt/tmp: pid=508 open
+/mnt/tmp: pid=508 access_perm
+/mnt/tmp: pid=508 close
+
+# ls
+file  lost+found
+
+You must have some other testing methodology.....
+
