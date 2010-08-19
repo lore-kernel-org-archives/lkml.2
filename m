@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0HSO13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 10:27:29 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:35617 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab0HSO11 convert rfc822-to-8bit (ORCPT
+	id S1753510Ab0HSOfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 10:35:41 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36320 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab0HSOfi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 10:27:27 -0400
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100819141240.GO4879@redhat.com>
-References: <20100804161046.GC5130@lenovo>
-	 <20100804162026.GU3353@redhat.com> <20100804163930.GE5130@lenovo>
-	 <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo>
-	 <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com>
-	 <20100809194829.GB26154@erda.amd.com> <20100817152225.GQ26154@erda.amd.com>
-	 <1282214753.1926.4669.camel@laptop>  <20100819141240.GO4879@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 19 Aug 2010 10:35:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Ras5H/12BodE9+GI7mItt7qrK7BBhfRer8FxhON2bURdrSnpN/3dtlwcaJptQ2Vw1S
+         ey1W4apOIjeJPGqMyjsHLTeORjfYAROY+wbitXZmHcHXywAmbf8gaeLqG1zxbnDPQx+Z
+         uGaK6AJ/g15JA31JYzRFzhDYFilGhE6LypeSw=
+MIME-Version: 1.0
+In-Reply-To: <201008190001.11342.rjw@sisk.pl>
+References: <201008190001.11342.rjw@sisk.pl>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Wed, 18 Aug 2010 18:00:47 -0700
+X-Google-Sender-Auth: Ds4KCNnrA-hxGTeb0m3mUXeBB9E
+Message-ID: <AANLkTi=S3JE=1J9xQtBAN5hHTqGSfohi4vL82iZHMWp+@mail.gmail.com>
+Subject: Re: [Regression, 2.6.36-rc1] ath9k resume problem on Acer Ferrari One
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 19 Aug 2010 16:27:13 +0200
-Message-ID: <1282228033.2605.204.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 10:12 -0400, Don Zickus wrote:
-> On Thu, Aug 19, 2010 at 12:45:53PM +0200, Peter Zijlstra wrote:
-> > 
-> > I queued it with that part changed to:
-> 
-> I realized the other day this change doesn't cover the nehalem, core and p4
-> cases which use
-> 
-> intel_pmu_handle_irq
-> p4_pmu_handle_irq
-> 
-> as their handlers.  Though that patch can go on top of Robert's.
+On Wed, Aug 18, 2010 at 3:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi,
+>
+> While testing 2.6.36-rc1 (with a couple of fixes on top)
 
-Something like this?
+Which couple of fixes?
 
----
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -713,6 +713,7 @@ static int intel_pmu_handle_irq(struct p
- 	struct cpu_hw_events *cpuc;
- 	int bit, loops;
- 	u64 ack, status;
-+	int handled = 0;
- 
- 	perf_sample_data_init(&data, 0);
- 
-@@ -743,12 +744,16 @@ again:
- 	/*
- 	 * PEBS overflow sets bit 62 in the global status register
- 	 */
--	if (__test_and_clear_bit(62, (unsigned long *)&status))
-+	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
-+		handled++;
- 		x86_pmu.drain_pebs(regs);
-+	}
- 
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-+		handled++;
-+
- 		if (!test_bit(bit, cpuc->active_mask))
- 			continue;
- 
-@@ -772,7 +777,7 @@ again:
- 
- done:
- 	intel_pmu_enable_all(0);
--	return 1;
-+	return handled;
- }
- 
- static struct event_constraint *
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -673,7 +673,7 @@ static int p4_pmu_handle_irq(struct pt_r
- 		if (!overflow && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
- 			continue;
- 
--		handled += overflow;
-+		handled += !!overflow;
- 
- 		/* event overflow for sure */
- 		data.period = event->hw.last_period;
-@@ -690,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_r
- 		inc_irq_stat(apic_perf_irqs);
- 	}
- 
--	return handled > 0;
-+	return handled;
- }
- 
- /*
+> I noticed that the ath9k
+> driver didn't work after resume from suspend to RAM.
 
+To rule out if its an ath9k issue you can try
+compat-wireless-2.6.36-rc1 from here:
+
+http://wireless.kernel.org/en/users/Download/stable/
+
+and install it on an older kernel, you can use ./scripts/driver-select
+to only enable ath9k to compile.
+
+I've been using pm-suspend on this release for a few days now without
+any issue but I am using an AR9003 chipset. What chipset are you
+using? Can you provide the dmesg output upon module load?
+
+>  An attempt to unload the
+> driver using rmmod caused the BUG_ON() in kernel/workqueue.c:2844 to trigger.
+
+That's a bug, a regression likely.
+
+> I wonder if that regression is a result of the recent workqueue changes?
+
+Yeah very likely.
+
+  Luis
