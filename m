@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab0HSN3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 09:29:39 -0400
-Received: from mv-drv-hcb004.ocn.ad.jp ([118.23.109.134]:53146 "EHLO
-	mv-drv-hcb004.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab0HSN3g (ORCPT
+	id S1753389Ab0HSNj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 09:39:28 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59318 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab0HSNj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 09:29:36 -0400
-X-Greylist: delayed 170641 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Aug 2010 09:29:35 EDT
-Date: Thu, 19 Aug 2010 22:29:28 +0900 (JST)
-Message-Id: <20100819.222928.35468456.anemo@mba.ocn.ne.jp>
-To: fujita.tomonori@lab.ntt.co.jp
-Cc: ralf@linux-mips.org, linux-mips@linux-mips.org,
+	Thu, 19 Aug 2010 09:39:27 -0400
+Date: Thu, 19 Aug 2010 15:39:22 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+Cc: Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: TX49xx: rename ARCH_KMALLOC_MINALIGN to
- ARCH_DMA_MINALIGN
-From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-In-Reply-To: <20100814160128H.fujita.tomonori@lab.ntt.co.jp>
-References: <20100814160128H.fujita.tomonori@lab.ntt.co.jp>
-X-Fingerprint: 6ACA 1623 39BD 9A94 9B1A  B746 CA77 FE94 2874 D52F
-X-Pgp-Public-Key: http://wwwkeys.pgp.net/pks/lookup?op=get&search=0x2874D52F
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC][PATCH] introduce ptr_diff()
+Message-ID: <20100819133922.GC6729@basil.fritz.box>
+References: <1282217856-8625-1-git-send-email-namhyung@gmail.com>
+ <87aaoiu6z6.fsf@basil.nowhere.org>
+ <1282222109.10440.50.camel@thorin>
+ <20100819125957.GB6729@basil.fritz.box>
+ <1282223113.10440.78.camel@thorin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282223113.10440.78.camel@thorin>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Aug 2010 16:02:37 +0900, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> Architectures need to set ARCH_DMA_MINALIGN to the minimum DMA
-> alignment (the commit
-> a6eb9fe105d5de0053b261148cee56c94b4720ca). Defining
-> ARCH_KMALLOC_MINALIGN doesn't work anymore.
+On Thu, Aug 19, 2010 at 03:05:13PM +0200, Bernd Petrovitsch wrote:
+> On Don, 2010-08-19 at 14:59 +0200, Andi Kleen wrote:
+> > > If so, the warning seems valid as sizeof(struct page) is probably not
+> > > (always) a power of 2. On a native build on x86_64 it is 56 bytes
+> > > hereover.
+> > > Hmm ....
+> > 
+> > gcc just generats a mull with inverted value. mull is cheap on any
+> > reasonable CPU.  Please fix sparse.
+> 
+> Not that I really know the code of sparse but what would be an
+> acceptable condition (except plain simply disabling/removing the warning
+> as such)?
 
-Thank you for picking this up.
+I think acceptable would be to warn if the type is variable sized
+(although I think gcc likely would error out in this case anyways)
 
-Acked-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
