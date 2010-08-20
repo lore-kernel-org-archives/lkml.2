@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab0HTNru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:47:50 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45272 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab0HTNrr convert rfc822-to-8bit (ORCPT
+	id S1752501Ab0HTNsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:48:31 -0400
+Received: from tomts40.bellnexxia.net ([209.226.175.97]:42370 "EHLO
+	tomts40-srv.bellnexxia.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751642Ab0HTNs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:47:47 -0400
-Subject: Re: [patch 3/3] sched: move sched_avg_update() to update_cpu_load()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chris@frostnet.net" <chris@frostnet.net>,
-        "debian00@aliceadsl.fr" <debian00@aliceadsl.fr>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jonathan.protzenko@gmail.com" <jonathan.protzenko@gmail.com>,
-        "mans@mansr.com" <mans@mansr.com>,
-        "psastudio@mail.ru" <psastudio@mail.ru>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "stephan.eicher@web.de" <stephan.eicher@web.de>,
-        "sxxe@gmx.de" <sxxe@gmx.de>,
-        "thomas@archlinux.org" <thomas@archlinux.org>,
-        "venki@google.com" <venki@google.com>,
-        "wonghow@gmail.com" <wonghow@gmail.com>
-In-Reply-To: <1282265478.10905.1.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
-	 <20100813193911.999833492@sbsiddha-MOBL3.sc.intel.com>
-	 <1281945634.1926.968.camel@laptop>
-	 <1281980769.2676.33.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <1281987086.1926.1890.camel@laptop>
-	 <1282265478.10905.1.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 20 Aug 2010 15:47:23 +0200
-Message-ID: <1282312043.2605.1033.camel@laptop>
+	Fri, 20 Aug 2010 09:48:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAO0gbkxGGN19/2dsb2JhbACgS3K7H4U3BA
+Date: Fri, 20 Aug 2010 09:43:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] netfilter: save the hash of the tuple in the
+	original direction for latter use
+Message-ID: <20100820134314.GA3283@Krystal>
+References: <1282228389-3029-1-git-send-email-xiaosuo@gmail.com> <20100819152149.GA19744@Krystal> <AANLkTim5wn0Y-+081gvm7FkWx3NioRvtRMWy2uF4nji2@mail.gmail.com> <1282232786.2549.60.camel@edumazet-laptop> <20100819161112.GA24357@Krystal> <AANLkTinA3-KMPKJa-66QCMUpbDFwey2mjE=VN=9=zg=6@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <AANLkTinA3-KMPKJa-66QCMUpbDFwey2mjE=VN=9=zg=6@mail.gmail.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 09:33:44 up 134 days, 23:25,  4 users,  load average: 0.52, 0.28,
+	0.22
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 17:51 -0700, Suresh Siddha wrote:
-> 
-> From: Suresh Siddha <suresh.b.siddha@intel.com>
-> Subject: sched: move sched_avg_update() to update_cpu_load()
-> 
-> Currently sched_avg_update() (which updates rt_avg stats in the rq) is getting
-> called from scale_rt_power() (in the load balance context) which doesn't take
-> rq->lock.
-> 
-> Fix it by moving the sched_avg_update() to more appropriate update_cpu_load()
-> where the CFS load gets updated aswell.
-> 
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
->  kernel/sched.c      |    3 ++-
->  kernel/sched_fair.c |    2 --
->  2 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> Index: tree/kernel/sched_fair.c
-> ===================================================================
-> --- tree.orig/kernel/sched_fair.c
-> +++ tree/kernel/sched_fair.c
-> @@ -2268,8 +2268,6 @@ unsigned long scale_rt_power(int cpu)
->         struct rq *rq = cpu_rq(cpu);
->         u64 total, available;
->  
-> -       sched_avg_update(rq);
-> -
->         total = sched_avg_period() + (rq->clock - rq->age_stamp);
->         available = total - rq->rt_avg;
->  
-> Index: tree/kernel/sched.c
-> ===================================================================
-> --- tree.orig/kernel/sched.c
-> +++ tree/kernel/sched.c
-> @@ -3182,6 +3182,8 @@ static void update_cpu_load(struct rq *t
->  
->                 this_rq->cpu_load[i] = (old_load * (scale - 1) + new_load) >> i;
->         }
-> +
-> +       sched_avg_update(this_rq);
->  }
->  
->  static void update_cpu_load_active(struct rq *this_rq) 
+[ executive summary: trying to explain why static variable declarations
+  within the body of functions is bad in kernel code. ]
 
-breaks CONFIG_SMP=n builds..
+* Changli Gao (xiaosuo@gmail.com) wrote:
+> On Fri, Aug 20, 2010 at 12:11 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@polymtl.ca> wrote:
+> >
+> > Ah, I see. But I think the static variable should stay declared outside
+> > of the function scope, with a nice comment explaining why it's not
+> > initialized at init-time.
+> >
+> > Hiding global state in function code is usually frowned upon.
+> >
+> 
+> I don't agree with you. We'd better not expose the variable which
+> isn't expected to be used by others. If not, maybe someone will misuse
+> it.
 
-  CC      kernel/sched.o
-/usr/src/linux-2.6/kernel/sched.c: In function ‘update_cpu_load’:
-/usr/src/linux-2.6/kernel/sched.c:3186: error: implicit declaration of function ‘sched_avg_update’  CC      kernel/sched.o
-/usr/src/linux-2.6/kernel/sched.c: In function ‘update_cpu_load’:
-/usr/src/linux-2.6/kernel/sched.c:3186: error: implicit declaration of function ‘sched_avg_update’
+We are talking about a static variable usable only within a single file,
+where is the problem ? A nice comment can have this effect.
 
+> The user should only reply on the interface, but not the internal
+> implementation.
 
+I'm talking about good practice to help code review. This is way more
+important than the potential "encapsulation" benefit of hiding global
+state (a static variable) within the body of a function.
+
+I remember that Andrew Morton has strong opinions about this, and I
+remember being in complete agreement with him on the topic.
+
+Thanks,
+
+Mathieu
+
+> 
+> Thanks.
+> 
+> -- 
+> Regards,
+> Changli Gao(xiaosuo@gmail.com)
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
