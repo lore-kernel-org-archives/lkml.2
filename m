@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab0HTNxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:53:35 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48346 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab0HTNxd (ORCPT
+	id S1752683Ab0HTNxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:53:49 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45637 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab0HTNxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:53:33 -0400
+	Fri, 20 Aug 2010 09:53:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=kPOJqalFhQbjk1zXJ0GVd4e8G/X3QU9xqZe8qqlc2ZahGi1BTqIYonjlNL23tIn1cY
-         IIt4qSxZL3bguTJC0u+h4w9lNjEckNCTJJLwSbEQvb1D5xRWjUx7omhp+LtHQSYSyFVd
-         cQ0uL76ukBXN8LkmHTHn/WU+Nhfg6tj1yuDMY=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=GAPEVb0CXGZ5WvY+TfnV3LDNcroYNfehubmD7h2+9n5EJMU7fsNd8rizVfqoyMcq2t
+         cG7YyqLzwr6IUkHzF5h78T1SwpPhhG80yjB6kXh/dSv664a1lH1rro7UKIYtVAKZVDR0
+         OjJn13DeC42feQah58jVxYOdb5VZvK4NP5ROo=
+Message-ID: <4C6E8925.10603@lwfinger.net>
+Date: Fri, 20 Aug 2010 08:54:45 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <4C6E799A.7060902@cs.cmu.edu>
-References: <4C6D9289.4000702@cs.cmu.edu>
-	<20100819203435.GA28508@suse.de>
-	<4C6E799A.7060902@cs.cmu.edu>
-Date: Fri, 20 Aug 2010 21:53:31 +0800
-Message-ID: <AANLkTikkiD7qfHqkMSq3id=ap6V6gvsddca+tc8Q+bk0@mail.gmail.com>
-Subject: Re: 2.6.36-rc1 oopses at boot time in kobject allocation
-From: Ming Lei <tom.leiming@gmail.com>
-To: Benjamin Gilbert <bgilbert@cs.cmu.edu>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016363ba1f8cb84cb048e419f25
+To: Borislav Petkov <bp@amd64.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: Regression in 2.6.36-rc1 bisected to commit 9d8888c
+References: <4C6DE7E3.4030702@lwfinger.net> <20100820075125.GA23650@aftab>
+In-Reply-To: <20100820075125.GA23650@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016363ba1f8cb84cb048e419f25
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-2010/8/20 Benjamin Gilbert <bgilbert@cs.cmu.edu>:
-> On 08/19/2010 04:34 PM, Greg KH wrote:
->> On Thu, Aug 19, 2010 at 04:22:33PM -0400, Benjamin Gilbert wrote:
->>> 2.6.36-rc1 and 2.6.36-rc1-127-g763008c fail to boot for me:
+On 08/20/2010 02:51 AM, Borislav Petkov wrote:
+> From: Larry Finger <Larry.Finger@lwfinger.net>
+> Date: Thu, Aug 19, 2010 at 09:26:43PM -0500
+> 
+>> With 2.6.36-rc1 from the mainline git tree, my x86_64 system running on an AMD
+>> Turion 64 x2 TL-60 has required pressing keys to get booting to advance. This
+>> behavior begins as soon as the kernel is loaded. I bisected the problem to:
 >>
->> Can you run 'git bisect' to try to track this down?
->
-> commit f8a4bd3456b988fc73b2c291b9e01b434c8fa940
-> Author: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Date: =A0 Fri Jun 4 00:54:43 2010 -0700
->
-> =A0 =A0firmware loader: embed device into firmware_priv structure
+>> commit 9d8888c2a214aece2494a49e699a097c2ba9498b
+--snip--
+>>
+>> This problem is entered into the Kernel Bugzilla as Bug #16636.
+> 
+> Fix is already upstream: http://git.kernel.org/tip/07a7795ca2e6e66d00b184efb46bd0e23d90d3fe
+> 
+> Can you verify it fixes your issue too please?
 
-This commit does introduce one possible double free, maybe is related with
-the issue, please try the attachment patch to see if the oops can be fixed.
+Yes, it does fix my issue. I will note that a patch is available on the Bug report.
 
+Thanks,
 
---=20
-Lei Ming
-
---0016363ba1f8cb84cb048e419f25
-Content-Type: application/octet-stream; 
-	name="fix_possible_double_free.patch"
-Content-Disposition: attachment; filename="fix_possible_double_free.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gd33m9g30
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvYmFzZS9maXJtd2FyZV9jbGFzcy5jIGIvZHJpdmVycy9iYXNl
-L2Zpcm13YXJlX2NsYXNzLmMKaW5kZXggYzhhNDRmNS4uNDBhZjQzZSAxMDA2NDQKLS0tIGEvZHJp
-dmVycy9iYXNlL2Zpcm13YXJlX2NsYXNzLmMKKysrIGIvZHJpdmVycy9iYXNlL2Zpcm13YXJlX2Ns
-YXNzLmMKQEAgLTU2OCw3ICs1NjgsNyBAQCBzdGF0aWMgaW50IF9yZXF1ZXN0X2Zpcm13YXJlKGNv
-bnN0IHN0cnVjdCBmaXJtd2FyZSAqKmZpcm13YXJlX3AsCiBvdXQ6CiAJaWYgKHJldHZhbCkgewog
-CQlyZWxlYXNlX2Zpcm13YXJlKGZpcm13YXJlKTsKLQkJZmlybXdhcmVfcCA9IE5VTEw7CisJCSpm
-aXJtd2FyZV9wID0gTlVMTDsKIAl9CiAKIAlyZXR1cm4gcmV0dmFsOwo=
---0016363ba1f8cb84cb048e419f25--
+Larry
