@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab0HTNxt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:53:49 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45637 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab0HTNxq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:53:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=GAPEVb0CXGZ5WvY+TfnV3LDNcroYNfehubmD7h2+9n5EJMU7fsNd8rizVfqoyMcq2t
-         cG7YyqLzwr6IUkHzF5h78T1SwpPhhG80yjB6kXh/dSv664a1lH1rro7UKIYtVAKZVDR0
-         OjJn13DeC42feQah58jVxYOdb5VZvK4NP5ROo=
-Message-ID: <4C6E8925.10603@lwfinger.net>
-Date: Fri, 20 Aug 2010 08:54:45 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1752509Ab0HTN40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:56:26 -0400
+Received: from mx-out-02.ism.nl ([217.148.190.4]:57554 "EHLO mx-out-02.ism.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750905Ab0HTN4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 09:56:23 -0400
+X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 09:56:23 EDT
+From: Ruben Laban <r.laban@ism.nl>
+Organization: ISM eCompany
+To: scst-devel@lists.sourceforge.net
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+Date: Fri, 20 Aug 2010 15:46:03 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.32-24-generic; KDE/4.4.5; i686; ; )
+Cc: "jack wang" <jack_wang@usish.com>,
+        "'Vladislav Bolkhovitin'" <vst@vlnb.net>,
+        "'James Bottomley'" <James.Bottomley@suse.de>,
+        "'Chetan Loke'" <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com> <4C6C1D70.7020502@vlnb.net> <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+In-Reply-To: <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: Regression in 2.6.36-rc1 bisected to commit 9d8888c
-References: <4C6DE7E3.4030702@lwfinger.net> <20100820075125.GA23650@aftab>
-In-Reply-To: <20100820075125.GA23650@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008201546.03448.r.laban@ism.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2010 02:51 AM, Borislav Petkov wrote:
-> From: Larry Finger <Larry.Finger@lwfinger.net>
-> Date: Thu, Aug 19, 2010 at 09:26:43PM -0500
-> 
->> With 2.6.36-rc1 from the mainline git tree, my x86_64 system running on an AMD
->> Turion 64 x2 TL-60 has required pressing keys to get booting to advance. This
->> behavior begins as soon as the kernel is loaded. I bisected the problem to:
->>
->> commit 9d8888c2a214aece2494a49e699a097c2ba9498b
---snip--
->>
->> This problem is entered into the Kernel Bugzilla as Bug #16636.
-> 
-> Fix is already upstream: http://git.kernel.org/tip/07a7795ca2e6e66d00b184efb46bd0e23d90d3fe
-> 
-> Can you verify it fixes your issue too please?
+On Thursday 19 August 2010 at 03:18 (CET), jack wang wrote:
+> [Jack]Vote for SCST as a user and target driver developer based on SCST.
+> SCST really do good job. 
 
-Yes, it does fix my issue. I will note that a patch is available on the Bug report.
++1 from a happy SCST end-user.
 
-Thanks,
+Regards,
 
-Larry
+Ruben Laban
+Senior Network and Systems Administrator
+ISM eCompany
