@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab0HTN62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:58:28 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33571 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750905Ab0HTN60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:58:26 -0400
-Date: Fri, 20 Aug 2010 08:58:22 -0500
-From: Robin Holt <holt@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Robin Holt <holt@sgi.com>, Jack Steiner <steiner@sgi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Stable Maintainers <stable@kernel.org>
-Subject: Re: [Patch] numa:x86_64: Cacheline aliasing makes
- for_each_populated_zone extremely expensive -V2.
-Message-ID: <20100820135822.GA3220@sgi.com>
-References: <20100818183024.GZ3043@sgi.com>
- <4C6DB62C.9040105@zytor.com>
+	id S1752662Ab0HTOOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 10:14:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48754 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752453Ab0HTOOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 10:14:03 -0400
+Date: Fri, 20 Aug 2010 16:14:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Make is_mem_section_removable more conformable with
+ offlining code
+Message-ID: <20100820141400.GD4636@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C6DB62C.9040105@zytor.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 03:54:36PM -0700, H. Peter Anvin wrote:
-> On 08/18/2010 11:30 AM, Robin Holt wrote:
-> >  
-> > -	node_data[nodeid] = early_node_mem(nodeid, start, end, pgdat_size,
-> > +	/*
-> > +	 * Allocate an extra cacheline per node to reduce cacheline
-> > +	 * aliasing when scanning all node's node_data.
-> > +	 */
-> > +	cache_alias_offset = nodeid * SMP_CACHE_BYTES;
-> > +	node_data[nodeid] = cache_alias_offset +
-> > +			    early_node_mem(nodeid, start, end,
-> > +					   pgdat_size + cache_alias_offset,
-> >  					   SMP_CACHE_BYTES);
-> > -	if (node_data[nodeid] == NULL)
-> > +	if (node_data[nodeid] == (void *)cache_alias_offset)
-> >  		return;
-> >  	nodedata_phys = __pa(node_data[nodeid]);
-> >  	reserve_early(nodedata_phys, nodedata_phys + pgdat_size, "NODE_DATA");
-> 
-> I'm concerned about this, because it really seems to rely on subtleties
-> in the behavior of early_node_mem, as well as the direction of
-> find_e820_area -- which is pretty much intended to change anyway.  It's
-> the "action at a distance" effect.
-> 
-> What we really want, I think, is to push the offsetting into
-> find_early_area().  Right now we have an alignment parameter, but what
-> we need is an alignment and a color parameter (this is just a classic
-> case of cache coloring, after all) which indicates the desirable offset
-> from the alignment base.
+Hi,
+what do you think about the patch below?
 
-That sounds reasonable.  Are there other examples you can think of which
-I can build upon?
+>From b983695b92b5be58f31c719fada1d3245f7b6768 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 20 Aug 2010 15:39:16 +0200
+Subject: [PATCH] Make is_mem_section_removable more conformable with offlining code
 
-Robin
+Currently is_mem_section_removable checks whether each pageblock from
+the given pfn range is of MIGRATE_MOVABLE type or if it is free. If both
+are false then the range is considered non removable.
+
+On the other hand, offlining code (more specifically
+set_migratetype_isolate) doesn't care whether a page is free and instead
+it just checks the migrate type of the page and whether the page's zone
+is movable.
+
+This can lead into a situation when a node is marked as removable even
+though all pages are neither MIGRATE_MOVABLE nor the zone is
+ZONE_MOVABLE.
+
+Also we can mark a node as not removable just because a pageblock is
+MIGRATE_RESERVE and not free (and this situation is much more probable).
+---
+ mm/memory_hotplug.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index a4cfcdc..da20568 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -611,10 +611,10 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
+ 		type = get_pageblock_migratetype(page);
+ 
+ 		/*
+-		 * A pageblock containing MOVABLE or free pages is considered
+-		 * removable
++		 * A pageblock containing MOVABLE or page from movable
++		 * zone are considered removable
+ 		 */
+-		if (type != MIGRATE_MOVABLE && !pageblock_free(page))
++		if (type != MIGRATE_MOVABLE && zone_idx(page) != ZONE_MOVABLE)
+ 			return 0;
+ 
+ 		/*
+-- 
+1.7.1
+
+
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
