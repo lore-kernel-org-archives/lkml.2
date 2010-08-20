@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab0HTF3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 01:29:03 -0400
-Received: from leo.clearchain.com ([199.73.29.74]:33997 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab0HTF3A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 01:29:00 -0400
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pinglinux@gmail.com, rydberg@euromail.se
-Subject: [PATCH 0/3] touch tablet support for the w8001 serial driver
-Date: Fri, 20 Aug 2010 14:55:32 +1000
-Message-Id: <1282280135-15942-1-git-send-email-peter.hutterer@who-t.net>
-X-Mailer: git-send-email 1.7.2.1
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Fri, 20 Aug 2010 14:24:59 +0930 (CST)
+	id S1751521Ab0HTFkV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 01:40:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23111 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab0HTFkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 01:40:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,237,1280732400"; 
+   d="scan'208";a="547056820"
+Date: Fri, 20 Aug 2010 13:40:16 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] VM: kswapd should not do blocking memory allocations
+Message-ID: <20100820054016.GA11847@localhost>
+References: <1282158241.8540.85.camel@heimdal.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282158241.8540.85.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 18, 2010 at 03:04:01PM -0400, Trond Myklebust wrote:
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> 
+> Allowing kswapd to do GFP_KERNEL memory allocations (or any blocking memory
+> allocations) is wrong and can cause deadlocks in try_to_release_page(), as
+> the filesystem believes it is safe to allocate new memory and block,
+> whereas kswapd is there specifically to clear a low-memory situation...
+> 
+> Set the gfp_mask to GFP_IOFS instead.
 
-These patches add support for newer tablets to the wacom w8001 serial
-driver. The first patch simply adds the support for the Pen/Eraser tool and
-the stylus button.
+It would be more descriptive to say "remove the __GFP_WAIT bit".
 
-The second patch detects touch-capable tablets and discard their packets.
-Touch packets are interleaved with pen packets and their length depends on
-the sensor model. Detect these packets and discard them silently.
+The change looks reasonable _in itself_, since we always prefer to
+avoid unnecessary waits for kswapd. So
 
-The third patch adds MT slot support for two-finger touch devices.
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
 
-Patches tested on a 2 finger touch device but i've had positive confirmation
-that 1 finger devices don't break.
-
-Cheers,
-  Peter
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+> 
+>  mm/vmscan.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index ec5ddcc..716dd16 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2095,7 +2095,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
+>  	unsigned long total_scanned;
+>  	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  	struct scan_control sc = {
+> -		.gfp_mask = GFP_KERNEL,
+> +		.gfp_mask = GFP_IOFS,
+>  		.may_unmap = 1,
+>  		.may_swap = 1,
+>  		/*
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
