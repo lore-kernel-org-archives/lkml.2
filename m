@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab0HTKQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 06:16:28 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53837 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751499Ab0HTKQ0 (ORCPT
+	id S1752368Ab0HTKaq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 06:30:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61958 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab0HTKao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 06:16:26 -0400
-Date: Fri, 20 Aug 2010 11:31:25 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Michal Simek <monstr@monstr.eu>,
-        michal.simek@petalogix.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] serial: 8250: Initialize pointer to irq_info
-Message-ID: <20100820113125.6d7b498f@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100819164354.09e30dc9.akpm@linux-foundation.org>
-References: <1282031947-16483-1-git-send-email-monstr@monstr.eu>
-	<20100817091720.56183993@linux.intel.com>
-	<20100819164354.09e30dc9.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Aug 2010 06:30:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=CybfDyDNK82vJdMD9G3ZJrqXvdKWla7BUruNLFMzHoQGGWTtUz3y+wcCqYIP5mYBqz
+         eS/zUuwg1VLB8xqZ0yaIb+9TFPSq5NWHH0+bCMWxr/1CYHex9zIRnkRKjUNQ5wPfL84M
+         wUSzRQjOsL1q5zzqnkwU0cwtzbxU+ffDbLlpk=
+MIME-Version: 1.0
+In-Reply-To: <1282298651.2605.769.camel@laptop>
+References: <20100804184806.GL26154@erda.amd.com>
+	<20100804192634.GG5130@lenovo>
+	<20100806065203.GR26154@erda.amd.com>
+	<20100806142131.GA1874@redhat.com>
+	<20100809194829.GB26154@erda.amd.com>
+	<20100817152225.GQ26154@erda.amd.com>
+	<1282214753.1926.4669.camel@laptop>
+	<20100819141240.GO4879@redhat.com>
+	<1282228033.2605.204.camel@laptop>
+	<20100820015017.GA4879@redhat.com>
+	<20100820081605.GD17551@elte.hu>
+	<1282298651.2605.769.camel@laptop>
+Date: Fri, 20 Aug 2010 14:30:43 +0400
+Message-ID: <AANLkTimfyi4G5TBb8owSQyCnSGqwB=pgU7Wxnmdj8_So@mail.gmail.com>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running perfctrs
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Use a newer compiler - modern ones get this right.
-> 
-> : static void serial_unlink_irq_chain(struct uart_8250_port *up)
-> : {
-> : 	struct irq_info *i;
-> : 	struct hlist_node *n;
-> : 	struct hlist_head *h;
-> : 
-> : 	mutex_lock(&hash_mutex);
-> : 
-> : 	h = &irq_lists[up->port.irq % NR_IRQ_HASH];
-> : 
-> : 	hlist_for_each(n, h) {
-> : 		i = hlist_entry(n, struct irq_info, node);
-> : 		if (i->irq == up->port.irq)
-> : 			break;
-> : 	}
-> : 
-> : 	BUG_ON(n == NULL);
-> : 	BUG_ON(i->head == NULL);
-> 
-> How can any compiler possibly determine that the hlist_for_each() is
-> never executed zero times?
+On 8/20/10, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-08-20 at 10:16 +0200, Ingo Molnar wrote:
+>>
+>>
+>> Please someone send the final version with a changelog, with all the acks
+>> and
+>> tested-by's added, so that i can send it Linuswards.
+>
+> I've got two patches queued, one from Robert (with a slight
+> modification, which removes a goto) and one from myself converting the
+> intel and p4 irq handler.
+>
+> They're available at:
+>
+>   programming.kicks-ass.net/sekrit/patches.tar.bz2
+>
+> I did add Tested-by tags, although I suspect its not the exact same bits
+> Don tested..
+>
 
-We had this argument was it two years ago ?
-
-Modern gcc is capable of at least working out it can't work it out and
-doesn't emit a spurious warning.
-
+My Ack if needed
