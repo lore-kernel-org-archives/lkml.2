@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab0HTVSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:18:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59669 "EHLO mx2.suse.de"
+	id S1752186Ab0HTVS6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:18:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39326 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324Ab0HTVSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:18:34 -0400
-Message-Id: <20100820211538.797351834@suse.com>
+	id S1751385Ab0HTVSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:18:37 -0400
+Message-Id: <20100820211539.079080751@suse.com>
 User-Agent: quilt/0.47-15.10
-Date: Fri, 20 Aug 2010 17:14:07 -0400
+Date: Fri, 20 Aug 2010 17:14:09 -0400
 From: Jeff Mahoney <jeffm@suse.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [patch 06/10] ioctl: Use asm-generic/ioctls.h on ia64 (enables termiox)
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [patch 08/10] ioctl: Use asm-generic/ioctls.h on m68k (enables termiox)
 References: <20100820211401.651509182@suse.com>
-Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-ia64
+Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-m68k
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts ia64 to use asm-generic/ioctls.h instead of its
+This patch converts m68k to use asm-generic/ioctls.h instead of its
 own version.
 
 The differences between the arch-specific version and the generic
 version are as follows:
 
-- The generic version adds TIOCSRS485 and TIOCGRS485, which are unused
+- m68k defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
+- The generic version adds TIOCSRS485 and TIOCGRS485m which are unused
   by any driver available on this architecture.
 - The generic version adds support for termiox
 
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 ---
 
- arch/ia64/include/asm/ioctls.h |   89 -----------------------------------------
- 1 file changed, 1 insertion(+), 88 deletions(-)
+ arch/m68k/include/asm/ioctls.h |   80 -----------------------------------------
+ 1 file changed, 1 insertion(+), 79 deletions(-)
 
---- a/arch/ia64/include/asm/ioctls.h
-+++ b/arch/ia64/include/asm/ioctls.h
-@@ -1,93 +1,6 @@
- #ifndef _ASM_IA64_IOCTLS_H
- #define _ASM_IA64_IOCTLS_H
+--- a/arch/m68k/include/asm/ioctls.h
++++ b/arch/m68k/include/asm/ioctls.h
+@@ -1,86 +1,8 @@
+ #ifndef __ARCH_M68K_IOCTLS_H__
+ #define __ARCH_M68K_IOCTLS_H__
  
--/*
-- * Based on <asm-i386/ioctls.h>
-- *
-- * Modified 1998, 1999, 2002
-- *	David Mosberger-Tang <davidm@hpl.hp.com>, Hewlett-Packard Co
-- */
--
 -#include <asm/ioctl.h>
 -
 -/* 0x54 is just a magic number to make these relatively unique ('T') */
 -
 -#define TCGETS		0x5401
--#define TCSETS		0x5402	/* Clashes with SNDCTL_TMR_START sound ioctl */
+-#define TCSETS		0x5402
 -#define TCSETSW		0x5403
 -#define TCSETSF		0x5404
 -#define TCGETA		0x5405
@@ -119,8 +116,8 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -
 -#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
 -#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define FIOQSIZE	0x5460
--
+ #define FIOQSIZE	0x545E
+ 
 -/* Used for packet mode */
 -#define TIOCPKT_DATA		 0
 -#define TIOCPKT_FLUSHREAD	 1
@@ -134,6 +131,6 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
 +#include <asm-generic/ioctls.h>
  
- #endif /* _ASM_IA64_IOCTLS_H */
+ #endif /* __ARCH_M68K_IOCTLS_H__ */
 
 
