@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab0HSX7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 19:59:36 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51111
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750877Ab0HSX7f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 19:59:35 -0400
-Date: Thu, 19 Aug 2010 16:59:51 -0700 (PDT)
-Message-Id: <20100819.165951.200388018.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2010-08-19
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100819174638.GC2672@tuxdriver.com>
-References: <20100819174638.GC2672@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753157Ab0HTAAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 20:00:53 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60528 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751777Ab0HTAAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 20:00:51 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [GIT PULL] notification tree - try 37!
+Date: Fri, 20 Aug 2010 02:00:27 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>,
+        linux-fsdevel@vger.kernel.org
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <1282016387.21419.113.camel@acb20005.ipt.aol.com> <201008171009.51737.agruen@suse.de>
+In-Reply-To: <201008171009.51737.agruen@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008200200.28582.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Thu, 19 Aug 2010 13:46:38 -0400
+[Adding linux-fsdevel here as well.]
 
-> This collection of fixes intended for 2.6.36 includes a few that look
-> bigger than they really are.  The one from Joe Perches corrects a number
-> of inadvertant upper->lower case conversion from an earlier patch
-> already in 2.6.36.  The ones from Wey-Yi Guy change a timer value in a
-> number of device-dependent data structures in order to avoid excessive
-> firmware resets for those devices.
+On Tuesday 17 August 2010 10:09:50 Andreas Gruenbacher wrote:
+> > > Q: What prevents the system from going out of memory when a listener
+> > > decides to stop reading events or simply can't keep up?  There doesn't
+> > > seem to be a limit on the queue depth.  Listeners currently need
+> > > CAP_SYS_ADMIN, but somehow limiting the queue depth and throttling when
+> > > things start to go bad still sounds like a reasonable thing to do,
+> > > right?
+> > 
+> > It's an interesting question and obviously one that I've thought about.
+> > You remember when we talked previously I said the hardest part left was
+> > allowing non-root users to use the interface.  It gets especially
+> > difficult when thinking about perm-events.  I was specifically told not
+> > to timeout or drop those.  But when dealing with non-root users using
+> > perm events?   As for pure notification we can do something like inotify
+> > does quite easily.
+> > 
+> > I'm not certain exactly what the best semantics are for non trusted
+> > users, so I didn't push any patches that way.  Suggestions welcome   :)
 > 
-> In addition to those, the one from Johannes Berg gives iwl3945 its own
-> filter flag function since sharing the iwlagn version has created
-> regressions for iwl3945.  The one from me corrects a DMA API misuse in
-> ipw2100 that results in warning backtraces.
+> The system will happily go OOM for trusted users and non-perm events if the
+> listener doesn't keep up, so some throttling, dropping, or both needs to
+> happen for non-perm events.  This is the critical case.  Doing what inotify
+> does (queue an overflow event and drop further events) seems to make sense
+> here.
 > 
-> Please let me know if there are problems!
+> The situation with perm-events is less severe because the number of
+> outstanding perm events is bounded by the number of running processes. 
+> This may be enough of a limit.
+> 
+> I don't think we need to worry about perm-events for untrusted users.  We
+> can start supporting some kinds of non-perm-events for untrusted users
+> later; this won't change the existing interface.
 
-Pulled, thanks.
+Another case where fanotify fails to generate useful events is when a listener 
+runs out of file descriptors; events will simply end up with fd == -EMFILE in 
+that case.  I don't think this behavior is useful; instead, reading from the 
+fanotify file descriptor (he one returned by fanotify_init()) should fail to 
+give the listener a chance to react.
+
+Andreas
