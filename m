@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab0HTVAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:00:45 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40675 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab0HTVAl (ORCPT
+	id S1753688Ab0HTVAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:00:55 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:44830 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab0HTVAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:00:41 -0400
+	Fri, 20 Aug 2010 17:00:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=sTzWTY6K71KRzkv69RVzyWnSg2jiNS7stFImkzw4mX38M7FCVF+ajtyCXJIPo0taGF
-         f8pNlzza79Y1BZpBAXnmzkeh7mqehWwHMKz2Jva4L20N73aQqNPD1gN0Vk/hLgyYazk7
-         xcWCRs0bRGEM6YD/9xfhNeqZrD9l+phtP4J3g=
+        b=fbvh0s1DE+faxsXukj0jcJzL8Zs4KLyx2C7hhbw0wIHtFETkwj0kMbGcgEtv6WYtYV
+         4iPYHGuBWNiH5SHE05ttz5L82AzrSwVGkYEZuVNA+EV1NKhIJoJJ5+7L5G9lMTuVubML
+         5EidE1J94ue4PWZgwbZx4Pc0KBr9vq+HSf0bs=
 MIME-Version: 1.0
-Date: Fri, 20 Aug 2010 17:00:41 -0400
-Message-ID: <AANLkTinv6gECrRVbDzVs6Lk3424+W4VJmzYPArOiHG0Y@mail.gmail.com>
-Subject: [PATCH 7/8] Staging: rtl8187se: r8180_wx: fixed alot of checkpatch.pl issues
+Date: Fri, 20 Aug 2010 17:00:48 -0400
+Message-ID: <AANLkTim4gt-cO1yWa9imh_7TQ2PTm042LJjR2p8wLcZa@mail.gmail.com>
+Subject: [PATCH 8/8] Staging: rtl8187se: r8185b_init: fixed alot of
+ checkpatch.pl issues
 From: T Dent <tdent48227@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: greg@kroah.com, bzolnier@gmail.com, Larry.Finger@lwfinger.net,
@@ -26,1463 +27,2416 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From d786a0d10b21b4a3b13053f7b89d7c3ed3457c8a Mon Sep 17 00:00:00 2001
+>From 8d4d4725e5c1c2d17e715b4e9b083af7174774a1 Mon Sep 17 00:00:00 2001
 From: Tracey Dent <Tdent48227@gmail.com>
-Date: Fri, 20 Aug 2010 13:18:09 -0400
-Subject: [PATCH 7/8] Staging: rtl8187se: r8180_wx: fixed alot of
+Date: Fri, 20 Aug 2010 16:26:42 -0400
+Subject: [PATCH 8/8] Staging: rtl8187se: r8185b_init: fixed alot of
 checkpatch.pl issues
 
 Fixed numerous coding style issues using checkpatch.pl
 
-Signed-off-by: Tracey Dent <tdent48227@yahoo.com>
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/staging/rtl8187se/r8180_wx.c |  722 +++++++++++++++++-----------------
- 1 files changed, 354 insertions(+), 368 deletions(-)
+ drivers/staging/rtl8187se/r8185b_init.c | 1509 +++++++++++++++----------------
+ 1 files changed, 716 insertions(+), 793 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/r8180_wx.c
-b/drivers/staging/rtl8187se/r8180_wx.c
-index 124cde3..355c861 100644
---- a/drivers/staging/rtl8187se/r8180_wx.c
-+++ b/drivers/staging/rtl8187se/r8180_wx.c
-@@ -1,20 +1,20 @@
- /*
--   This file contains wireless extension handlers.
-+	This file contains wireless extension handlers.
+diff --git a/drivers/staging/rtl8187se/r8185b_init.c
+b/drivers/staging/rtl8187se/r8185b_init.c
+index a0ece1f..059fa08 100644
+--- a/drivers/staging/rtl8187se/r8185b_init.c
++++ b/drivers/staging/rtl8187se/r8185b_init.c
+@@ -2,14 +2,14 @@
+ Copyright (c) Realtek Semiconductor Corp. All rights reserved.
 
--   This is part of rtl8180 OpenSource driver.
--   Copyright (C) Andrea Merello 2004-2005  <andreamrl@tiscali.it>
--   Released under the terms of GPL (General Public Licence)
-+	This is part of rtl8180 OpenSource driver.
-+	Copyright (C) Andrea Merello 2004-2005  <andreamrl@tiscali.it>
-+	Released under the terms of GPL (General Public Licence)
+ Module Name:
+- 	r8185b_init.c
++	r8185b_init.c
 
--   Parts of this driver are based on the GPL part
--   of the official realtek driver.
-+	Parts of this driver are based on the GPL part
-+	of the official realtek driver.
+ Abstract:
+- 	Hardware Initialization and Hardware IO for RTL8185B
++	Hardware Initialization and Hardware IO for RTL8185B
 
--   Parts of this driver are based on the rtl8180 driver skeleton
--   from Patric Schenke & Andres Salomon.
-+	Parts of this driver are based on the rtl8180 driver skeleton
-+	from Patric Schenke & Andres Salomon.
+ Major Change History:
+-	When        Who      What
+-	----------    ---------------   -------------------------------
++	When		Who				What
++	----------	---------------		-------------------------------
+ 	2006-11-15    Xiong		Created
 
--   Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver.
-+	Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver.
-
--   We want to tanks the Authors of those projects and the Ndiswrapper
--   project Authors.
-+	We want to tanks the Authors of those projects and the Ndiswrapper
-+	project Authors.
- */
-
-
-@@ -23,24 +23,24 @@
-
+ Notes:
+@@ -29,94 +29,94 @@ Notes:
  #include "ieee80211/dot11d.h"
 
--//#define RATE_COUNT 4
--u32 rtl8180_rates[] = {1000000,2000000,5500000,11000000,
--	6000000,9000000,12000000,18000000,24000000,36000000,48000000,54000000};
-+/* #define RATE_COUNT 4 */
-+u32 rtl8180_rates[] = {1000000, 2000000, 5500000, 11000000,
-+	6000000, 9000000, 12000000, 18000000, 24000000, 36000000, 48000000, 54000000};
 
- #define RATE_COUNT ARRAY_SIZE(rtl8180_rates)
+-//#define CONFIG_RTL8180_IO_MAP
++/* #define CONFIG_RTL8180_IO_MAP */
 
- static CHANNEL_LIST DefaultChannelPlan[] = {
--//	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14},14},			//Default channel plan
--	{{1,2,3,4,5,6,7,8,9,10,11,36,40,44,48,52,56,60,64},19},  		//FCC
--	{{1,2,3,4,5,6,7,8,9,10,11},11},                    				//IC
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},  	//ETSI
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},
-//Spain. Change to ETSI.
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},
-	//France. Change to ETSI.
--	{{14,36,40,44,48,52,56,60,64},9},						//MKK
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14, 36,40,44,48,52,56,60,64},22},//MKK1
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},	//Israel.
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,34,38,42,46},17},			// For 11a , TELEC
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14},14}					//For Global Domain.
-1-11:active scan, 12-14 passive scan. //+YJ, 080626
-+/*	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14},14},	*/	/*Default channel plan	*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 52, 56, 60,
-64}, 19},			/*FCC							*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 11},											/*IC							*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40, 44, 48, 52, 56,
-60, 64}, 21},	/*ETSI							*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40, 44, 48, 52, 56,
-60, 64}, 21},	/*Spain. Change to ETSI.		*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40, 44, 48, 52, 56,
-60, 64}, 21},	/*France. Change to ETSI.		*/
-+	{{14, 36, 40, 44, 48, 52, 56, 60, 64}, 9},											/*MKK							*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 36, 40, 44, 48, 52,
-56, 60, 64}, 22},/*MKK1						*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40, 44, 48, 52, 56,
-60, 64}, 21},	/*Israel.						*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 34, 38, 42, 46},
-17},					/*For 11a , TELEC				*/
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, 14}								/*For
-Global Domain. 1-11:active scan, 12-14 passive scan.*/	/* +YJ, 080626
-*/
- };
- static int r8180_wx_get_freq(struct net_device *dev,
- 			     struct iw_request_info *a,
-@@ -58,12 +58,10 @@ int r8180_wx_set_key(struct net_device *dev,
-struct iw_request_info *info,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	struct iw_point *erq = &(wrqu->encoding);
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
--	if (erq->flags & IW_ENCODE_DISABLED) {
--	}
+ #define TC_3W_POLL_MAX_TRY_CNT 5
+-static u8 MAC_REG_TABLE[][2]={
+-                        //PAGA 0:
+-                        // 0x34(BRSR), 0xBE(RATE_FALLBACK_CTL),
+0x1E0(ARFR) would set in HwConfigureRTL8185()
+-                        // 0x272(RFSW_CTRL), 0x1CE(AESMSK_QC) set in
+InitializeAdapter8185().
+-                        // 0x1F0~0x1F8  set in MacConfig_85BASIC()
+-                        {0x08, 0xae}, {0x0a, 0x72}, {0x5b, 0x42},
+-                        {0x84, 0x88}, {0x85, 0x24}, {0x88, 0x54},
+{0x8b, 0xb8}, {0x8c, 0x03},
+-                        {0x8d, 0x40}, {0x8e, 0x00}, {0x8f, 0x00},
+{0x5b, 0x18}, {0x91, 0x03},
+-                        {0x94, 0x0F}, {0x95, 0x32},
+-                        {0x96, 0x00}, {0x97, 0x07}, {0xb4, 0x22}, {0xdb, 0x00},
+-                        {0xf0, 0x32}, {0xf1, 0x32}, {0xf2, 0x00},
+{0xf3, 0x00}, {0xf4, 0x32},
+-                        {0xf5, 0x43}, {0xf6, 0x00}, {0xf7, 0x00},
+{0xf8, 0x46}, {0xf9, 0xa4},
+-                        {0xfa, 0x00}, {0xfb, 0x00}, {0xfc, 0x96},
+{0xfd, 0xa4}, {0xfe, 0x00},
+-                        {0xff, 0x00},
 -
-+	if (erq->flags & IW_ENCODE_DISABLED)
+-                        //PAGE 1:
+-                        // For Flextronics system Logo PCIHCT failure:
+-			// 0x1C4~0x1CD set no-zero value to avoid PCI configuration space 0x45[7]=1
+-                        {0x5e, 0x01},
+-                        {0x58, 0x00}, {0x59, 0x00}, {0x5a, 0x04},
+{0x5b, 0x00}, {0x60, 0x24},
+-                        {0x61, 0x97}, {0x62, 0xF0}, {0x63, 0x09},
+{0x80, 0x0F}, {0x81, 0xFF},
+-                        {0x82, 0xFF}, {0x83, 0x03},
+-                        {0xC4, 0x22}, {0xC5, 0x22}, {0xC6, 0x22},
+{0xC7, 0x22}, {0xC8, 0x22}, //lzm add 080826
+-			{0xC9, 0x22}, {0xCA, 0x22}, {0xCB, 0x22}, {0xCC, 0x22}, {0xCD,
+0x22},//lzm add 080826
+-                        {0xe2, 0x00},
+-
+-
+-                        //PAGE 2:
+-                        {0x5e, 0x02},
+-                        {0x0c, 0x04}, {0x4c, 0x30}, {0x4d, 0x08},
+{0x50, 0x05}, {0x51, 0xf5},
+-                        {0x52, 0x04}, {0x53, 0xa0}, {0x54, 0xff},
+{0x55, 0xff}, {0x56, 0xff},
+-                        {0x57, 0xff}, {0x58, 0x08}, {0x59, 0x08},
+{0x5a, 0x08}, {0x5b, 0x08},
+-                        {0x60, 0x08}, {0x61, 0x08}, {0x62, 0x08},
+{0x63, 0x08}, {0x64, 0x2f},
+-                        {0x8c, 0x3f}, {0x8d, 0x3f}, {0x8e, 0x3f},
+-                        {0x8f, 0x3f}, {0xc4, 0xff}, {0xc5, 0xff},
+{0xc6, 0xff}, {0xc7, 0xff},
+-                        {0xc8, 0x00}, {0xc9, 0x00}, {0xca, 0x80}, {0xcb, 0x00},
+-
+-                        //PAGA 0:
+-                        {0x5e, 0x00},{0x9f, 0x03}
+-                };
+-
+-
+-static u8  ZEBRA_AGC[]={
++static u8 MAC_REG_TABLE[][2] =	{
++                        /*PAGA 0:	*/
++						/* 0x34(BRSR), 0xBE(RATE_FALLBACK_CTL), 0x1E0(ARFR) would set
+in HwConfigureRTL8185()	*/
++						/* 0x272(RFSW_CTRL), 0x1CE(AESMSK_QC) set in
+InitializeAdapter8185().					*/
++						/* 0x1F0~0x1F8  set in MacConfig_85BASIC()												*/
++						{0x08, 0xae}, {0x0a, 0x72}, {0x5b, 0x42},
++						{0x84, 0x88}, {0x85, 0x24}, {0x88, 0x54}, {0x8b, 0xb8}, {0x8c, 0x03},
++						{0x8d, 0x40}, {0x8e, 0x00}, {0x8f, 0x00}, {0x5b, 0x18}, {0x91, 0x03},
++						{0x94, 0x0F}, {0x95, 0x32},
++						{0x96, 0x00}, {0x97, 0x07}, {0xb4, 0x22}, {0xdb, 0x00},
++						{0xf0, 0x32}, {0xf1, 0x32}, {0xf2, 0x00}, {0xf3, 0x00}, {0xf4, 0x32},
++						{0xf5, 0x43}, {0xf6, 0x00}, {0xf7, 0x00}, {0xf8, 0x46}, {0xf9, 0xa4},
++						{0xfa, 0x00}, {0xfb, 0x00}, {0xfc, 0x96}, {0xfd, 0xa4}, {0xfe, 0x00},
++						{0xff, 0x00},
++
++						/*PAGE 1:	*/
++						/* For Flextronics system Logo PCIHCT failure:	*/
++				/* 0x1C4~0x1CD set no-zero value to avoid PCI configuration space
+0x45[7]=1	*/
++						{0x5e, 0x01},
++						{0x58, 0x00}, {0x59, 0x00}, {0x5a, 0x04}, {0x5b, 0x00}, {0x60, 0x24},
++						{0x61, 0x97}, {0x62, 0xF0}, {0x63, 0x09}, {0x80, 0x0F}, {0x81, 0xFF},
++						{0x82, 0xFF}, {0x83, 0x03},
++						{0xC4, 0x22}, {0xC5, 0x22}, {0xC6, 0x22}, {0xC7, 0x22}, {0xC8,
+0x22}, /* lzm add 080826 */
++						{0xC9, 0x22}, {0xCA, 0x22}, {0xCB, 0x22}, {0xCC, 0x22}, {0xCD,
+0x22},/* lzm add 080826 */
++						{0xe2, 0x00},
++
++
++						/* PAGE 2: */
++						{0x5e, 0x02},
++						{0x0c, 0x04}, {0x4c, 0x30}, {0x4d, 0x08}, {0x50, 0x05}, {0x51, 0xf5},
++						{0x52, 0x04}, {0x53, 0xa0}, {0x54, 0xff}, {0x55, 0xff}, {0x56, 0xff},
++						{0x57, 0xff}, {0x58, 0x08}, {0x59, 0x08}, {0x5a, 0x08}, {0x5b, 0x08},
++						{0x60, 0x08}, {0x61, 0x08}, {0x62, 0x08}, {0x63, 0x08}, {0x64, 0x2f},
++						{0x8c, 0x3f}, {0x8d, 0x3f}, {0x8e, 0x3f},
++						{0x8f, 0x3f}, {0xc4, 0xff}, {0xc5, 0xff}, {0xc6, 0xff}, {0xc7, 0xff},
++						{0xc8, 0x00}, {0xc9, 0x00}, {0xca, 0x80}, {0xcb, 0x00},
++
++						/* PAGA 0: */
++						{0x5e, 0x00}, {0x9f, 0x03}
++			};
++
++
++static u8  ZEBRA_AGC[]	=	{
+ 			0,
+-			0x7E,0x7E,0x7E,0x7E,0x7D,0x7C,0x7B,0x7A,0x79,0x78,0x77,0x76,0x75,0x74,0x73,0x72,
+-			0x71,0x70,0x6F,0x6E,0x6D,0x6C,0x6B,0x6A,0x69,0x68,0x67,0x66,0x65,0x64,0x63,0x62,
+-			0x48,0x47,0x46,0x45,0x44,0x29,0x28,0x27,0x26,0x25,0x24,0x23,0x22,0x21,0x08,0x07,
+-			0x06,0x05,0x04,0x03,0x02,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+-			0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x10,0x11,0x12,0x13,0x15,0x16,
+-			0x17,0x17,0x18,0x18,0x19,0x1a,0x1a,0x1b,0x1b,0x1c,0x1c,0x1d,0x1d,0x1d,0x1e,0x1e,
+-			0x1f,0x1f,0x1f,0x20,0x20,0x20,0x20,0x21,0x21,0x21,0x22,0x22,0x22,0x23,0x23,0x24,
+-			0x24,0x25,0x25,0x25,0x26,0x26,0x27,0x27,0x2F,0x2F,0x2F,0x2F,0x2F,0x2F,0x2F,0x2F
++			0x7E, 0x7E, 0x7E, 0x7E, 0x7D, 0x7C, 0x7B, 0x7A, 0x79, 0x78, 0x77,
+0x76, 0x75, 0x74, 0x73, 0x72,
++			0x71, 0x70, 0x6F, 0x6E, 0x6D, 0x6C, 0x6B, 0x6A, 0x69, 0x68, 0x67,
+0x66, 0x65, 0x64, 0x63, 0x62,
++			0x48, 0x47, 0x46, 0x45, 0x44, 0x29, 0x28, 0x27, 0x26, 0x25, 0x24,
+0x23, 0x22, 0x21, 0x08, 0x07,
++			0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00,
++			0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x10,
+0x11, 0x12, 0x13, 0x15, 0x16,
++			0x17, 0x17, 0x18, 0x18, 0x19, 0x1a, 0x1a, 0x1b, 0x1b, 0x1c, 0x1c,
+0x1d, 0x1d, 0x1d, 0x1e, 0x1e,
++			0x1f, 0x1f, 0x1f, 0x20, 0x20, 0x20, 0x20, 0x21, 0x21, 0x21, 0x22,
+0x22, 0x22, 0x23, 0x23, 0x24,
++			0x24, 0x25, 0x25, 0x25, 0x26, 0x26, 0x27, 0x27, 0x2F, 0x2F, 0x2F,
+0x2F, 0x2F, 0x2F, 0x2F, 0x2F
+ 			};
 
- /*	i = erq->flags & IW_ENCODE_INDEX;
- 	if (i < 1 || i > 4)
-@@ -71,15 +69,15 @@ int r8180_wx_set_key(struct net_device *dev,
-struct iw_request_info *info,
+-static u32 ZEBRA_RF_RX_GAIN_TABLE[]={
+-			0x0096,0x0076,0x0056,0x0036,0x0016,0x01f6,0x01d6,0x01b6,
+-			0x0196,0x0176,0x00F7,0x00D7,0x00B7,0x0097,0x0077,0x0057,
+-			0x0037,0x00FB,0x00DB,0x00BB,0x00FF,0x00E3,0x00C3,0x00A3,
+-			0x0083,0x0063,0x0043,0x0023,0x0003,0x01E3,0x01C3,0x01A3,
+-			0x0183,0x0163,0x0143,0x0123,0x0103
++static u32 ZEBRA_RF_RX_GAIN_TABLE[]	=	{
++			0x0096, 0x0076, 0x0056, 0x0036, 0x0016, 0x01f6, 0x01d6, 0x01b6,
++			0x0196, 0x0176, 0x00F7, 0x00D7, 0x00B7, 0x0097, 0x0077, 0x0057,
++			0x0037, 0x00FB, 0x00DB, 0x00BB, 0x00FF, 0x00E3, 0x00C3, 0x00A3,
++			0x0083, 0x0063, 0x0043, 0x0023, 0x0003, 0x01E3, 0x01C3, 0x01A3,
++			0x0183, 0x0163, 0x0143, 0x0123, 0x0103
+ 	};
 
- 	if (erq->length > 0) {
+-static u8 OFDM_CONFIG[]={
+-			// OFDM reg0x06[7:0]=0xFF: Enable power saving mode in RX
+-			// OFDM reg0x3C[4]=1'b1: Enable RX power saving mode
+-			// ofdm 0x3a = 0x7b ,(original : 0xfb) For ECS shielding room TP test
++static u8 OFDM_CONFIG[]	=	{
++			/* OFDM reg0x06[7:0]=0xFF: Enable power saving mode in RX				*/
++			/* OFDM reg0x3C[4]=1'b1: Enable RX power saving mode					*/
++			/* ofdm 0x3a = 0x7b ,(original : 0xfb) For ECS shielding room TP test	*/
 
--		//int len = erq->length <= 5 ? 5 : 13;
-+		/*int len = erq->length <= 5 ? 5 : 13;	*/
+-			// 0x00
++			/* 0x00	*/
+ 			0x10, 0x0F, 0x0A, 0x0C, 0x14, 0xFA, 0xFF, 0x50,
+ 			0x00, 0x50, 0x00, 0x00, 0x00, 0x5C, 0x00, 0x00,
+-			// 0x10
++			/* 0x10	*/
+ 			0x40, 0x00, 0x40, 0x00, 0x00, 0x00, 0xA8, 0x26,
+ 			0x32, 0x33, 0x06, 0xA5, 0x6F, 0x55, 0xC8, 0xBB,
+-			// 0x20
++			/* 0x20	*/
+ 			0x0A, 0xE1, 0x2C, 0x4A, 0x86, 0x83, 0x34, 0x00,
+ 			0x4F, 0x24, 0x6F, 0xC2, 0x03, 0x40, 0x80, 0x00,
+-			// 0x30
++			/* 0x30	*/
+ 			0xC0, 0xC1, 0x58, 0xF1, 0x00, 0xC4, 0x90, 0x3e,
+ 			0xD8, 0x3C, 0x7B, 0x10, 0x10
+ 		};
 
--		u32* tkey= (u32*) key;
-+		u32* tkey = (u32*) key;
- 		priv->key0[0] = tkey[0];
- 		priv->key0[1] = tkey[1];
- 		priv->key0[2] = tkey[2];
--		priv->key0[3] = tkey[3] &0xff;
-+		priv->key0[3] = tkey[3] & 0xff;
- 		DMESG("Setting wep key to %x %x %x %x",
--		      tkey[0],tkey[1],tkey[2],tkey[3]);
-+		      tkey[0], tkey[1], tkey[2], tkey[3]);
- 		rtl8180_set_hw_wep(dev);
- 	}
- 	return 0;
-@@ -94,13 +92,13 @@ static int r8180_wx_set_beaconinterval(struct
-net_device *dev, struct iw_request
+-/*---------------------------------------------------------------
+-  * Hardware IO
+-  * the code is ported from Windows source code
+-  ----------------------------------------------------------------*/
++/*	---------------------------------------------------------------
++	*	Hardware IO
++	*	the code is ported from Windows source code
++	----------------------------------------------------------------*/
 
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
--	DMESG("setting beacon interval to %x",bi);
-+	DMESG("setting beacon interval to %x", bi);
-
--	priv->ieee80211->current_network.beacon_interval=bi;
-+	priv->ieee80211->current_network.beacon_interval = bi;
- 	rtl8180_commit(dev);
- 	up(&priv->wx_sem);
-
-@@ -113,7 +111,7 @@ static int r8180_wx_get_mode(struct net_device
-*dev, struct iw_request_info *a,
- 			     union iwreq_data *wrqu, char *b)
+ void
+ PlatformIOWrite1Byte(
+@@ -126,7 +126,7 @@ PlatformIOWrite1Byte(
+ 	)
  {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	return ieee80211_wx_get_mode(priv->ieee80211,a,wrqu,b);
-+	return ieee80211_wx_get_mode(priv->ieee80211, a, wrqu, b);
+ 	write_nic_byte(dev, offset, data);
+-	read_nic_byte(dev, offset); // To make sure write operation is
+completed, 2005.11.09, by rcnjko.
++	read_nic_byte(dev, offset); /* To make sure write operation is
+completed, 2005.11.09, by rcnjko.	*/
+
  }
 
-
-@@ -123,7 +121,7 @@ static int r8180_wx_get_rate(struct net_device *dev,
- 			     union iwreq_data *wrqu, char *extra)
+@@ -138,7 +138,7 @@ PlatformIOWrite2Byte(
+ 	)
  {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	return ieee80211_wx_get_rate(priv->ieee80211,info,wrqu,extra);
-+	return ieee80211_wx_get_rate(priv->ieee80211, info, wrqu, extra);
+ 	write_nic_word(dev, offset, data);
+-	read_nic_word(dev, offset); // To make sure write operation is
+completed, 2005.11.09, by rcnjko.
++	read_nic_word(dev, offset); /* To make sure write operation is
+completed, 2005.11.09, by rcnjko. */
+
+
  }
+@@ -151,9 +151,9 @@ PlatformIOWrite4Byte(
+ 	u32		data
+ 	)
+ {
+-//{by amy 080312
+-if (offset == PhyAddr)
+-	{//For Base Band configuration.
++/* {by amy 080312 */
++if (offset == PhyAddr)	{
++/* For Base Band configuration. */
+ 		unsigned char	cmdByte;
+ 		unsigned long	dataBytes;
+ 		unsigned char	idx;
+@@ -162,37 +162,36 @@ if (offset == PhyAddr)
+ 		cmdByte = (u8)(data & 0x000000ff);
+ 		dataBytes = data>>8;
 
-
-@@ -136,12 +134,12 @@ static int r8180_wx_set_rate(struct net_device *dev,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-
--	ret = ieee80211_wx_set_rate(priv->ieee80211,info,wrqu,extra);
-+	ret = ieee80211_wx_set_rate(priv->ieee80211, info, wrqu, extra);
-
- 	up(&priv->wx_sem);
-
-@@ -159,20 +157,20 @@ static int r8180_wx_set_crcmon(struct net_device *dev,
- 	short prev = priv->crcmon;
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-
--	if(enable)
--		priv->crcmon=1;
-+	if (enable)
-+		priv->crcmon = 1;
- 	else
--		priv->crcmon=0;
-+		priv->crcmon = 0;
-
- 	DMESG("bad CRC in monitor mode are %s",
- 	      priv->crcmon ? "accepted" : "rejected");
-
--	if(prev != priv->crcmon && priv->up){
-+	if (prev != priv->crcmon && priv->up)	{
- 		rtl8180_down(dev);
- 		rtl8180_up(dev);
- 	}
-@@ -190,47 +188,46 @@ static int r8180_wx_set_mode(struct net_device
-*dev, struct iw_request_info *a,
- 	int ret;
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
--//	printk("set mode ENABLE_IPS\n");
--	if(priv->bInactivePs){
--		if(wrqu->mode == IW_MODE_ADHOC)
-+/*	printk("set mode ENABLE_IPS\n");	*/
-+	if (priv->bInactivePs)	{
-+		if (wrqu->mode == IW_MODE_ADHOC)
- 			IPSLeave(dev);
- 	}
--	ret = ieee80211_wx_set_mode(priv->ieee80211,a,wrqu,b);
-+	ret = ieee80211_wx_set_mode(priv->ieee80211, a, wrqu, b);
-
--	//rtl8180_commit(dev);
-+/*	rtl8180_commit(dev);	*/
-
- 	up(&priv->wx_sem);
- 	return ret;
- }
-
--//YJ,add,080819,for hidden ap
--struct  iw_range_with_scan_capa
--{
--        /* Informative stuff (to choose between different interface) */
--        __u32           throughput;     /* To give an idea... */
--        /* In theory this value should be the maximum benchmarked
--         * TCP/IP throughput, because with most of these devices the
--         * bit rate is meaningless (overhead an co) to estimate how
--         * fast the connection will go and pick the fastest one.
--         * I suggest people to play with Netperf or any benchmark...
--         */
+-		//
+-		// 071010, rcnjko:
+-		// The critical section is only BB read/write race condition.
+-		// Assumption:
+-		// 1. We assume NO one will access BB at DIRQL, otherwise, system
+will crash for
+-		// acquiring the spinlock in such context.
+-		// 2. PlatformIOWrite4Byte() MUST NOT be recursive.
+-		//
+-//		NdisAcquireSpinLock( &(pDevice->IoSpinLock) );
 -
--        /* NWID (or domain id) */
--        __u32           min_nwid;       /* Minimal NWID we are able to set */
--        __u32           max_nwid;       /* Maximal NWID we are able to set */
--
--        /* Old Frequency (backward compat - moved lower ) */
--        __u16           old_num_channels;
--        __u8            old_num_frequency;
--
--        /* Scan capabilities */
--        __u8            scan_capa;
-+/* YJ,add,080819,for hidden ap */
-+struct  iw_range_with_scan_capa	{
-+		/* Informative stuff (to choose between different interface)	*/
-+		__u32		throughput;		/* To give an idea...				*/
-+		/* In theory this value should be the maximum benchmarked
-+		* TCP/IP throughput, because with most of these devices the
-+		* bit rate is meaningless (overhead an co) to estimate how
-+		* fast the connection will go and pick the fastest one.
-+		* I suggest people to play with Netperf or any benchmark...
+-		for(idx = 0; idx < 30; idx++)
+-		{ // Make sure command bit is clear before access it.
++		/*
++			071010, rcnjko:
++			The critical section is only BB read/write race condition.
++			Assumption:
++			1. We assume NO one will access BB at DIRQL, otherwise, system
+will crash for
++			acquiring the spinlock in such context.
++			2. PlatformIOWrite4Byte() MUST NOT be recursive.
 +		*/
++/*		NdisAcquireSpinLock( &(pDevice->IoSpinLock) );	*/
 +
-+		/* NWID (or domain id)	*/
-+		__u32           min_nwid;       /* Minimal NWID we are able to set */
-+		__u32			max_nwid;		/* Maximal NWID we are able to set */
-+
-+		/* Old Frequency (backward compat - moved lower ) */
-+		__u16			old_num_channels;
-+		__u8			old_num_frequency;
-+
-+		/* Scan capabilities */
-+		__u8			scan_capa;
- };
--//YJ,add,080819,for hidden ap
-+/* YJ,add,080819,for hidden ap */
-
-
- static int rtl8180_wx_get_range(struct net_device *dev,
-@@ -241,7 +238,7 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	u16 val;
- 	int i;
--	//struct iw_range_with_scan_capa* tmp = (struct
-iw_range_with_scan_capa*)range; //YJ,add,080819,for hidden ap
-+	/*struct iw_range_with_scan_capa* tmp = (struct
-iw_range_with_scan_capa*)range; */ /*YJ,add,080819,for hidden ap */
-
- 	wrqu->data.length = sizeof(*range);
- 	memset(range, 0, sizeof(*range));
-@@ -257,16 +254,16 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	/* ~5 Mb/s real (802.11b) */
- 	range->throughput = 5 * 1000 * 1000;
-
--	// TODO: Not used in 802.11b?
--//	range->min_nwid;	/* Minimal NWID we are able to set */
--	// TODO: Not used in 802.11b?
--//	range->max_nwid;	/* Maximal NWID we are able to set */
-+	/* TODO: Not used in 802.11b?	*/
-+/*	range->min_nwid; */	/* Minimal NWID we are able to set */
-+	/* TODO: Not used in 802.11b?
-+/*	range->max_nwid; */	/* Maximal NWID we are able to set */
-
--        /* Old Frequency (backward compat - moved lower ) */
--//	range->old_num_channels;
--//	range->old_num_frequency;
--//	range->old_freq[6]; /* Filler to keep "version" at the same offset */
--	if(priv->rf_set_sens != NULL)
-+		/* Old Frequency (backward compat - moved lower ) */
-+/*	range->old_num_channels; */
-+/*	range->old_num_frequency; */
-+/*	range->old_freq[6]; */ /* Filler to keep "version" at the same offset */
-+	if (priv->rf_set_sens != NULL)
- 		range->sensitivity = priv->max_sens;	/* signal level threshold range */
-
- 	range->max_qual.qual = 100;
-@@ -283,9 +280,8 @@ static int rtl8180_wx_get_range(struct net_device *dev,
-
- 	range->num_bitrates = RATE_COUNT;
-
--	for (i = 0; i < RATE_COUNT && i < IW_MAX_BITRATES; i++) {
-+	for (i = 0; i < RATE_COUNT && i < IW_MAX_BITRATES; i++)
- 		range->bitrate[i] = rtl8180_rates[i];
--	}
-
- 	range->min_frag = MIN_FRAG_THRESHOLD;
- 	range->max_frag = MAX_FRAG_THRESHOLD;
-@@ -295,27 +291,27 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	range->we_version_compiled = WIRELESS_EXT;
- 	range->we_version_source = 16;
-
--//	range->retry_capa;	/* What retry options are supported */
--//	range->retry_flags;	/* How to decode max/min retry limit */
--//	range->r_time_flags;	/* How to decode max/min retry life */
--//	range->min_retry;	/* Minimal number of retries */
--//	range->max_retry;	/* Maximal number of retries */
--//	range->min_r_time;	/* Minimal retry lifetime */
--//	range->max_r_time;	/* Maximal retry lifetime */
-+/*	range->retry_capa;	*/	/* What retry options are supported */
-+/*	range->retry_flags;	*/	/* How to decode max/min retry limit */
-+/*	range->r_time_flags;*/	/* How to decode max/min retry life */
-+/*	range->min_retry;	*/	/* Minimal number of retries */
-+/*	range->max_retry;	*/	/* Maximal number of retries */
-+/*	range->min_r_time;	*/	/* Minimal retry lifetime */
-+/*	range->max_r_time;	*/	/* Maximal retry lifetime */
-
--        range->num_channels = 14;
-+		range->num_channels = 14;
-
- 	for (i = 0, val = 0; i < 14; i++) {
-
--		// Include only legal frequencies for some countries
-+		/* Include only legal frequencies for some countries */
- 		if ((GET_DOT11D_INFO(priv->ieee80211)->channel_map)[i+1]) {
--		        range->freq[val].i = i + 1;
-+				range->freq[val].i = i + 1;
- 			range->freq[val].m = ieee80211_wlan_frequencies[i] * 100000;
- 			range->freq[val].e = 1;
- 			val++;
- 		} else {
--			// FIXME: do we need to set anything for channels
--			// we don't use ?
-+			/* FIXME: do we need to set anything for channels	*/
-+			/* we don't use ?	*/
++		for (idx = 0; idx < 30; idx++)	{
++		/* Make sure command bit is clear before access it.	*/
+ 			u1bTmp = PlatformIORead1Byte(dev, PhyAddr);
+-			if((u1bTmp & BIT7) == 0)
++			if ((u1bTmp & BIT7) == 0)
+ 				break;
+ 			else
+ 				mdelay(10);
  		}
 
- 		if (val == IW_MAX_FREQUENCIES)
-@@ -324,9 +320,9 @@ static int rtl8180_wx_get_range(struct net_device *dev,
-
- 	range->num_frequency = val;
- 	range->enc_capa = IW_ENC_CAPA_WPA | IW_ENC_CAPA_WPA2 |
--                          IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
-+						IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
-
--	//tmp->scan_capa = 0x01; //YJ,add,080819,for hidden ap
-+	/*tmp->scan_capa = 0x01;	*/	/*YJ,add,080819,for hidden ap	*/
-
- 	return 0;
- }
-@@ -340,64 +336,57 @@ static int r8180_wx_set_scan(struct net_device
-*dev, struct iw_request_info *a,
- 	struct ieee80211_device* ieee = priv->ieee80211;
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
--//YJ,add,080819, for hidden ap
--	//printk("==*&*&*&==>%s in\n", __func__);
--	//printk("=*&*&*&*===>flag:%x, %x\n", wrqu->data.flags, IW_SCAN_THIS_ESSID);
--	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)
--	{
-+/*YJ,add,080819, for hidden ap	*/
-+	/*printk("==*&*&*&==>%s in\n", __func__);	*/
-+	/*printk("=*&*&*&*===>flag:%x, %x\n", wrqu->data.flags,
-IW_SCAN_THIS_ESSID);	*/
-+	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)	{
- 		struct iw_scan_req* req = (struct iw_scan_req*)b;
--		if (req->essid_len)
+-		for(idx=0; idx < 3; idx++)
 -		{
--			//printk("==**&*&*&**===>scan set ssid:%s\n", req->essid);
-+		if (req->essid_len)		{
-+			/*printk("==**&*&*&**===>scan set ssid:%s\n", req->essid); */
- 			ieee->current_network.ssid_len = req->essid_len;
- 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
--			//printk("=====>network ssid:%s\n", ieee->current_network.ssid);
-+			/*printk("=====>network ssid:%s\n", ieee->current_network.ssid); */
+-			PlatformIOWrite1Byte(dev,offset+1+idx,((u8*)&dataBytes)[idx] );
+-		}
++		for (idx = 0; idx < 3; idx++)
++			PlatformIOWrite1Byte(dev, offset+1+idx, ((u8 *)&dataBytes)[idx]);
++
+ 		write_nic_byte(dev, offset, cmdByte);
+
+-//		NdisReleaseSpinLock( &(pDevice->IoSpinLock) );
++/*		NdisReleaseSpinLock( &(pDevice->IoSpinLock) ); */
+ 	}
+-//by amy 080312}
+-	else{
++/* by amy 080312} */
++	else	{
+ 		write_nic_dword(dev, offset, data);
+-		read_nic_dword(dev, offset); // To make sure write operation is
+completed, 2005.11.09, by rcnjko.
++		read_nic_dword(dev, offset); /* To make sure write operation is
+completed, 2005.11.09, by rcnjko. */
+ 	}
+ }
+
+@@ -256,59 +255,49 @@ HwHSSIThreeWire(
+ 	u8	TryCnt;
+ 	u8	u1bTmp;
+
+-	do
+-	{
+-		// Check if WE and RE are cleared.
+-		for(TryCnt = 0; TryCnt < TC_3W_POLL_MAX_TRY_CNT; TryCnt++)
+-		{
++	do	{
++		/* Check if WE and RE are cleared. */
++		for (TryCnt = 0; TryCnt < TC_3W_POLL_MAX_TRY_CNT; TryCnt++)	{
+ 			u1bTmp = read_nic_byte(dev, SW_3W_CMD1);
+-			if( (u1bTmp & (SW_3W_CMD1_RE|SW_3W_CMD1_WE)) == 0 )
+-			{
++			if ((u1bTmp & (SW_3W_CMD1_RE|SW_3W_CMD1_WE)) == 0)
+ 				break;
+-			}
++
+ 			udelay(10);
+ 		}
+ 		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT)
+ 			panic("HwThreeWire(): CmdReg: %#X RE|WE bits are not clear!!\n", u1bTmp);
+
+-		// RTL8187S HSSI Read/Write Function
++		/* RTL8187S HSSI Read/Write Function */
+ 		u1bTmp = read_nic_byte(dev, RF_SW_CONFIG);
+
+-		if(bSI)
+-		{
+-			u1bTmp |=   RF_SW_CFG_SI;   //reg08[1]=1 Serial Interface(SI)
+-		}else
+-		{
+-			u1bTmp &= ~RF_SW_CFG_SI;  //reg08[1]=0 Parallel Interface(PI)
+-		}
++		if (bSI)
++			u1bTmp |=   RF_SW_CFG_SI;   /* reg08[1]=1 Serial Interface(SI)	*/
++
++		else
++			u1bTmp &= ~RF_SW_CFG_SI;  /* reg08[1]=0 Parallel Interface(PI)	*/
++
+
+ 		write_nic_byte(dev, RF_SW_CONFIG, u1bTmp);
+
+-		if(bSI)
+-		{
+-			// jong: HW SI read must set reg84[3]=0.
++		if (bSI)	{
++			/* jong: HW SI read must set reg84[3]=0. */
+ 			u1bTmp = read_nic_byte(dev, RFPinsSelect);
+ 			u1bTmp &= ~BIT3;
+-			write_nic_byte(dev, RFPinsSelect, u1bTmp );
++			write_nic_byte(dev, RFPinsSelect, u1bTmp);
+ 		}
+-	 	// Fill up data buffer for write operation.
+-
+-		if(bWrite)
+-		{
+-			if(nDataBufBitCnt == 16)
+-			{
+-				write_nic_word(dev, SW_3W_DB0, *((u16*)pDataBuf));
+-			}
+-			else if(nDataBufBitCnt == 64)  // RTL8187S shouldn't enter this case
+-			{
+-				write_nic_dword(dev, SW_3W_DB0, *((u32*)pDataBuf));
+-				write_nic_dword(dev, SW_3W_DB1, *((u32*)(pDataBuf + 4)));
+-			}
+-			else
+-			{
++		/*  Fill up data buffer for write operation. */
++
++		if (bWrite)	{
++			if (nDataBufBitCnt == 16)	{
++				write_nic_word(dev, SW_3W_DB0, *((u16 *)pDataBuf));
++			}	else if (nDataBufBitCnt == 64)	{
++			/* RTL8187S shouldn't enter this case */
++				write_nic_dword(dev, SW_3W_DB0, *((u32 *)pDataBuf));
++				write_nic_dword(dev, SW_3W_DB1, *((u32 *)(pDataBuf + 4)));
++			}	else	{
+ 				int idx;
+ 				int ByteCnt = nDataBufBitCnt / 8;
+-                                //printk("%d\n",nDataBufBitCnt);
++								/* printk("%d\n",nDataBufBitCnt); */
+ 				if ((nDataBufBitCnt % 8) != 0)
+ 				panic("HwThreeWire(): nDataBufBitCnt(%d) should be multiple of 8!!!\n",
+ 				nDataBufBitCnt);
+@@ -317,67 +306,53 @@ HwHSSIThreeWire(
+ 				panic("HwThreeWire(): nDataBufBitCnt(%d) should <= 64!!!\n",
+ 				nDataBufBitCnt);
+
+-				for(idx = 0; idx < ByteCnt; idx++)
+-				{
++				for (idx = 0; idx < ByteCnt; idx++)
+ 					write_nic_byte(dev, (SW_3W_DB0+idx), *(pDataBuf+idx));
+-				}
+-			}
+-		}
+-		else		//read
+-		{
+-			if(bSI)
+-			{
+-				// SI - reg274[3:0] : RF register's Address
+-				write_nic_word(dev, SW_3W_DB0, *((u16*)pDataBuf) );
++
+ 			}
+-			else
+-			{
+-				// PI - reg274[15:12] : RF register's Address
+-				write_nic_word(dev, SW_3W_DB0, (*((u16*)pDataBuf)) << 12);
++		}	else	{	/* read */
++			if (bSI)	{
++				/* SI - reg274[3:0] : RF register's Address	*/
++				write_nic_word(dev, SW_3W_DB0, *((u16 *)pDataBuf));
++			}	else	{
++				/*  PI - reg274[15:12] : RF register's Address */
++				write_nic_word(dev, SW_3W_DB0, (*((u16 *)pDataBuf)) << 12);
+ 			}
+ 		}
+
+-		// Set up command: WE or RE.
+-		if(bWrite)
+-		{
++		/* Set up command: WE or RE. */
++		if (bWrite)
+ 			write_nic_byte(dev, SW_3W_CMD1, SW_3W_CMD1_WE);
+-		}
++
+ 		else
+-		{
+ 			write_nic_byte(dev, SW_3W_CMD1, SW_3W_CMD1_RE);
+-		}
+
+-		// Check if DONE is set.
+-		for(TryCnt = 0; TryCnt < TC_3W_POLL_MAX_TRY_CNT; TryCnt++)
+-		{
++
++		/* Check if DONE is set. */
++		for (TryCnt = 0; TryCnt < TC_3W_POLL_MAX_TRY_CNT; TryCnt++)	{
+ 			u1bTmp = read_nic_byte(dev, SW_3W_CMD1);
+-			if(  (u1bTmp & SW_3W_CMD1_DONE) != 0 )
+-			{
++			if ((u1bTmp & SW_3W_CMD1_DONE) != 0)
+ 				break;
+-			}
++
+ 			udelay(10);
+ 		}
+
+ 		write_nic_byte(dev, SW_3W_CMD1, 0);
+
+-		// Read back data for read operation.
+-		if(bWrite == 0)
+-		{
+-			if(bSI)
+-			{
+-				//Serial Interface : reg363_362[11:0]
+-				*((u16*)pDataBuf) = read_nic_word(dev, SI_DATA_READ) ;
+-			}
+-			else
+-			{
+-				//Parallel Interface : reg361_360[11:0]
+-				*((u16*)pDataBuf) = read_nic_word(dev, PI_DATA_READ);
++		/* Read back data for read operation.	*/
++		if (bWrite == 0)	{
++			if (bSI)		{
++				/* Serial Interface : reg363_362[11:0] */
++				*((u16 *)pDataBuf) = read_nic_word(dev, SI_DATA_READ) ;
++			}	else	{
++				/* Parallel Interface : reg361_360[11:0] */
++				*((u16 *)pDataBuf) = read_nic_word(dev, PI_DATA_READ);
+ 			}
+
+-			*((u16*)pDataBuf) &= 0x0FFF;
++			*((u16 *)pDataBuf) &= 0x0FFF;
+ 		}
+
+-	}while(0);
++	}	while (0);
+
+ 	return bResult;
+ }
+@@ -410,25 +385,25 @@ u32 RF_ReadReg(struct net_device *dev, u8 offset)
+ }
+
+
+-// by Owen on 04/07/14 for writing BB register successfully
++/* by Owen on 04/07/14 for writing BB register successfully */
+ void
+ WriteBBPortUchar(
+ 	struct net_device *dev,
+ 	u32		Data
+ 	)
+ {
+-	//u8	TimeoutCounter;
++	/* u8	TimeoutCounter; */
+ 	u8	RegisterContent;
+ 	u8	UCharData;
+
+ 	UCharData = (u8)((Data & 0x0000ff00) >> 8);
+ 	PlatformIOWrite4Byte(dev, PhyAddr, Data);
+-	//for(TimeoutCounter = 10; TimeoutCounter > 0; TimeoutCounter--)
++	/* for(TimeoutCounter = 10; TimeoutCounter > 0; TimeoutCounter--) */
+ 	{
+ 		PlatformIOWrite4Byte(dev, PhyAddr, Data & 0xffffff7f);
+ 		RegisterContent = PlatformIORead1Byte(dev, PhyDataR);
+-		//if(UCharData == RegisterContent)
+-		//	break;
++		/*if(UCharData == RegisterContent)	*/
++		/*	break;	*/
+ 	}
+ }
+
+@@ -438,7 +413,7 @@ ReadBBPortUchar(
+ 	u32		addr
+ 	)
+ {
+-	//u8	TimeoutCounter;
++	/*u8	TimeoutCounter; */
+ 	u8	RegisterContent;
+
+ 	PlatformIOWrite4Byte(dev, PhyAddr, addr & 0xffffff7f);
+@@ -446,93 +421,87 @@ ReadBBPortUchar(
+
+ 	return RegisterContent;
+ }
+-//{by amy 080312
+-//
+-//	Description:
+-//		Perform Antenna settings with antenna diversity on 87SE.
+-//    Created by Roger, 2008.01.25.
+-//
++/* {by amy 080312 */
++/*
++	Description:
++	Perform Antenna settings with antenna diversity on 87SE.
++		Created by Roger, 2008.01.25.
++*/
+ bool
+ SetAntennaConfig87SE(
+ 	struct net_device *dev,
+-	u8			DefaultAnt,		// 0: Main, 1: Aux.
+-	bool		bAntDiversity 	// 1:Enable, 0: Disable.
++	u8			DefaultAnt,		/* 0: Main, 1: Aux.			*/
++	bool		bAntDiversity	/* 1:Enable, 0: Disable.	*/
+ )
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	bool   bAntennaSwitched = true;
+
+-	//printk("SetAntennaConfig87SE(): DefaultAnt(%d),
+bAntDiversity(%d)\n", DefaultAnt, bAntDiversity);
++	/* printk("SetAntennaConfig87SE(): DefaultAnt(%d),
+bAntDiversity(%d)\n", DefaultAnt, bAntDiversity); */
+
+-	// Threshold for antenna diversity.
+-	write_phy_cck(dev, 0x0c, 0x09); // Reg0c : 09
++	/* Threshold for antenna diversity.	*/
++	write_phy_cck(dev, 0x0c, 0x09); /* Reg0c : 09 */
+
+-	if( bAntDiversity )  //  Enable Antenna Diversity.
+-	{
+-		if( DefaultAnt == 1 )  // aux antenna
+-		{
+-			// Mac register, aux antenna
++	if (bAntDiversity)	{	/*	Enable Antenna Diversity.	*/
++		if (DefaultAnt == 1)	{	/* aux antenna			*/
++
++			/* Mac register, aux antenna	*/
+ 			write_nic_byte(dev, ANTSEL, 0x00);
+
+-			// Config CCK RX antenna.
+-			write_phy_cck(dev, 0x11, 0xbb); // Reg11 : bb
+-			write_phy_cck(dev, 0x01, 0xc7); // Reg01 : c7
++			/* Config CCK RX antenna.		*/
++			write_phy_cck(dev, 0x11, 0xbb); /* Reg11 : bb */
++			write_phy_cck(dev, 0x01, 0xc7); /* Reg01 : c7 */
+
+-			// Config OFDM RX antenna.
+-			write_phy_ofdm(dev, 0x0D, 0x54);   // Reg0d : 54
+-			write_phy_ofdm(dev, 0x18, 0xb2);  // Reg18 : b2
+-		}
+-		else //  use main antenna
+-		{
+-			// Mac register, main antenna
++			/* Config OFDM RX antenna.	*/
++			write_phy_ofdm(dev, 0x0D, 0x54);	/* Reg0d : 54	*/
++			write_phy_ofdm(dev, 0x18, 0xb2);	/* Reg18 : b2		*/
++		}	else	{	/*  use main antenna	*/
++			/* Mac register, main antenna		*/
+ 			write_nic_byte(dev, ANTSEL, 0x03);
+-			//base band
+-			// Config CCK RX antenna.
+-			write_phy_cck(dev, 0x11, 0x9b); // Reg11 : 9b
+-			write_phy_cck(dev, 0x01, 0xc7); // Reg01 : c7
+-
+-			// Config OFDM RX antenna.
+-			write_phy_ofdm(dev, 0x0d, 0x5c);   // Reg0d : 5c
+-			write_phy_ofdm(dev, 0x18, 0xb2);  // Reg18 : b2
++			/* base band				*/
++			/*  Config CCK RX antenna.	*/
++			write_phy_cck(dev, 0x11, 0x9b); /* Reg11 : 9b	*/
++			write_phy_cck(dev, 0x01, 0xc7); /* Reg01 : c7	*/
++
++			/* Config OFDM RX antenna. */
++			write_phy_ofdm(dev, 0x0d, 0x5c);  /* Reg0d : 5c	*/
++			write_phy_ofdm(dev, 0x18, 0xb2);  /* Reg18 : b2	*/
+ 		}
+-	}
+-	else   // Disable Antenna Diversity.
+-	{
+-		if( DefaultAnt == 1 ) // aux Antenna
+-		{
+-			// Mac register, aux antenna
++	}	else	{
++		/* Disable Antenna Diversity. */
++		if (DefaultAnt == 1)	{	/* aux Antenna */
++			/* Mac register, aux antenna */
+ 			write_nic_byte(dev, ANTSEL, 0x00);
+
+-			// Config CCK RX antenna.
+-			write_phy_cck(dev, 0x11, 0xbb); // Reg11 : bb
+-			write_phy_cck(dev, 0x01, 0x47); // Reg01 : 47
++			/* Config CCK RX antenna. */
++			write_phy_cck(dev, 0x11, 0xbb); /* Reg11 : bb	*/
++			write_phy_cck(dev, 0x01, 0x47); /* Reg01 : 47	*/
+
+-			// Config OFDM RX antenna.
+-			write_phy_ofdm(dev, 0x0D, 0x54);   // Reg0d : 54
+-			write_phy_ofdm(dev, 0x18, 0x32);  // Reg18 : 32
+-		}
+-		else // main Antenna
+-		{
+-			// Mac register, main antenna
++			/* Config OFDM RX antenna. */
++			write_phy_ofdm(dev, 0x0D, 0x54);	/* Reg0d : 54	*/
++			write_phy_ofdm(dev, 0x18, 0x32);	/* Reg18 : 32	*/
++		}	else	{	/* main Antenna */
++			/* Mac register, main antenna */
+ 			write_nic_byte(dev, ANTSEL, 0x03);
+
+-			// Config CCK RX antenna.
+-			write_phy_cck(dev, 0x11, 0x9b); // Reg11 : 9b
+-			write_phy_cck(dev, 0x01, 0x47); // Reg01 : 47
++			/* Config CCK RX antenna.	*/
++			write_phy_cck(dev, 0x11, 0x9b); /* Reg11 : 9b */
++			write_phy_cck(dev, 0x01, 0x47); /* Reg01 : 47 */
+
+-			// Config OFDM RX antenna.
+-			write_phy_ofdm(dev, 0x0D, 0x5c);   // Reg0d : 5c
+-			write_phy_ofdm(dev, 0x18, 0x32);  // Reg18 : 32
++			/* Config OFDM RX antenna.		*/
++			write_phy_ofdm(dev, 0x0D, 0x5c);	/* Reg0d : 5c	*/
++			write_phy_ofdm(dev, 0x18, 0x32);	/*Reg18 : 32	*/
  		}
  	}
--//YJ,add,080819, for hidden ap, end
-+/*YJ,add,080819, for hidden ap, end */
-
- 	down(&priv->wx_sem);
--	if(priv->up){
--//		printk("set scan ENABLE_IPS\n");
-+	if (priv->up)	{
-+/*		printk("set scan ENABLE_IPS\n");	*/
- 		priv->ieee80211->actscanning = true;
--		if(priv->bInactivePs && (priv->ieee80211->state != IEEE80211_LINKED)){
-+		if (priv->bInactivePs && (priv->ieee80211->state != IEEE80211_LINKED))	{
- 			IPSLeave(dev);
--//			down(&priv->ieee80211->wx_sem);
--
--//			if (priv->ieee80211->iw_mode == IW_MODE_MONITOR ||
-!(priv->ieee80211->proto_started)){
--//				ret = -1;
--//				up(&priv->ieee80211->wx_sem);
--//				up(&priv->wx_sem);
--//				return ret;
--//			}
--
--	//	queue_work(priv->ieee80211->wq, &priv->ieee80211->wx_sync_scan_wq);
--		//printk("start scan============================>\n");
-+			/*down(&priv->ieee80211->wx_sem);	*/
+-	priv->CurrAntennaIndex = DefaultAnt; // Update default settings.
++	priv->CurrAntennaIndex = DefaultAnt; /* Update default settings. */
+ 	return	bAntennaSwitched;
+ }
+-//by amy 080312
+-/*---------------------------------------------------------------
+-  * Hardware Initialization.
+-  * the code is ported from Windows source code
+-  ----------------------------------------------------------------*/
++/* by amy 080312 */
 +/*
-+			if (priv->ieee80211->iw_mode == IW_MODE_MONITOR ||
-!(priv->ieee80211->proto_started)){
-+				ret = -1;
-+				up(&priv->ieee80211->wx_sem);
-+				up(&priv->wx_sem);
-+				return ret;
-+			}
++---------------------------------------------------------------
++	*	Hardware Initialization.
++	*	the code is ported from Windows source code
++----------------------------------------------------------------*/
+
+ void
+ ZEBRA_Config_85BASIC_HardCode(
+@@ -542,36 +511,38 @@ ZEBRA_Config_85BASIC_HardCode(
+
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	u32			i;
+-	u32	addr,data;
++	u32	addr, data;
+ 	u32	u4bRegOffset, u4bRegValue, u4bRF23, u4bRF24;
+-       u8			u1b24E;
++	u8			u1b24E;
+ 	int d_cut = 0;
+
+
+-	//=============================================================================
+-	// 87S_PCIE :: RADIOCFG.TXT
+-	//=============================================================================
++/*
++=============================================================================
++	87S_PCIE :: RADIOCFG.TXT
++=============================================================================
 +*/
-+	/*	queue_work(priv->ieee80211->wq, &priv->ieee80211->wx_sync_scan_wq); */
-+		/* printk("start scan============================>\n"); */
- 		ieee80211_softmac_ips_scan_syncro(priv->ieee80211);
--//ieee80211_rtl_start_scan(priv->ieee80211);
-+/* ieee80211_rtl_start_scan(priv->ieee80211); */
- 		/* intentionally forget to up sem */
--//			up(&priv->ieee80211->wx_sem);
-+/*			up(&priv->ieee80211->wx_sem); */
- 			ret = 0;
+
+
+-	// Page1 : reg16-reg30
+-	RF_WriteReg(dev, 0x00, 0x013f);			mdelay(1); // switch to page1
+-	u4bRF23= RF_ReadReg(dev, 0x08);			mdelay(1);
+-	u4bRF24= RF_ReadReg(dev, 0x09);			mdelay(1);
++	/* Page1 : reg16-reg30 */
++	RF_WriteReg(dev, 0x00, 0x013f);			mdelay(1); /* switch to page1 */
++	u4bRF23 = RF_ReadReg(dev, 0x08);			mdelay(1);
++	u4bRF24 = RF_ReadReg(dev, 0x09);			mdelay(1);
+
+ 	if (u4bRF23 == 0x818 && u4bRF24 == 0x70C) {
+ 		d_cut = 1;
+ 		printk(KERN_INFO "rtl8187se: card type changed from C- to D-cut\n");
+ 	}
+
+-	// Page0 : reg0-reg15
++	/* Page0 : reg0-reg15	*/
+
+-	RF_WriteReg(dev, 0x00, 0x009f);      	mdelay(1);// 1
++	RF_WriteReg(dev, 0x00, 0x009f);			mdelay(1);/* 1	*/
+
+ 	RF_WriteReg(dev, 0x01, 0x06e0);			mdelay(1);
+
+-	RF_WriteReg(dev, 0x02, 0x004d);			mdelay(1);// 2
++	RF_WriteReg(dev, 0x02, 0x004d);			mdelay(1);/* 2	*/
+
+-	RF_WriteReg(dev, 0x03, 0x07f1);			mdelay(1);// 3
++	RF_WriteReg(dev, 0x03, 0x07f1);			mdelay(1);/* 3	*/
+
+ 	RF_WriteReg(dev, 0x04, 0x0975);			mdelay(1);
+ 	RF_WriteReg(dev, 0x05, 0x0c72);			mdelay(1);
+@@ -587,7 +558,7 @@ ZEBRA_Config_85BASIC_HardCode(
+ 	RF_WriteReg(dev, 0x0f, 0x0990);			mdelay(1);
+
+
+-	// Page1 : reg16-reg30
++	/*  Page1 : reg16-reg30 */
+ 	RF_WriteReg(dev, 0x00, 0x013f);			mdelay(1);
+
+ 	RF_WriteReg(dev, 0x03, 0x0806);			mdelay(1);
+@@ -598,143 +569,142 @@ ZEBRA_Config_85BASIC_HardCode(
+
+
+ 	RF_WriteReg(dev, 0x07, 0x01A0);			mdelay(1);
+-// Don't write RF23/RF24 to make a difference between 87S C cut and D
+cut. asked by SD3 stevenl.
++/* Don't write RF23/RF24 to make a difference between 87S C cut and D
+cut. asked by SD3 stevenl. */
+ 	RF_WriteReg(dev, 0x0a, 0x0001);			mdelay(1);
+ 	RF_WriteReg(dev, 0x0b, 0x0418);			mdelay(1);
+
+ 	if (d_cut) {
+ 		RF_WriteReg(dev, 0x0c, 0x0fbe);			mdelay(1);
+ 		RF_WriteReg(dev, 0x0d, 0x0008);			mdelay(1);
+-		RF_WriteReg(dev, 0x0e, 0x0807);			mdelay(1); // RX LO buffer
+-	} else {
++		RF_WriteReg(dev, 0x0e, 0x0807);			mdelay(1); /* RX LO buffer */
++	}	else	{
+ 		RF_WriteReg(dev, 0x0c, 0x0fbe);			mdelay(1);
+ 		RF_WriteReg(dev, 0x0d, 0x0008);			mdelay(1);
+-		RF_WriteReg(dev, 0x0e, 0x0806);			mdelay(1); // RX LO buffer
++		RF_WriteReg(dev, 0x0e, 0x0806);			mdelay(1); /* RX LO buffer */
+ 	}
+
+ 	RF_WriteReg(dev, 0x0f, 0x0acc);			mdelay(1);
+
+-	RF_WriteReg(dev, 0x00, 0x01d7);			mdelay(1);// 6
++	RF_WriteReg(dev, 0x00, 0x01d7);			mdelay(1); /* 6 */
+
+ 	RF_WriteReg(dev, 0x03, 0x0e00);			mdelay(1);
+ 	RF_WriteReg(dev, 0x04, 0x0e50);			mdelay(1);
+-	for(i=0;i<=36;i++)
+-	{
++	for (i = 0; i <= 36; i++)	{
+ 		RF_WriteReg(dev, 0x01, i);                     mdelay(1);
+ 		RF_WriteReg(dev, 0x02, ZEBRA_RF_RX_GAIN_TABLE[i]); mdelay(1);
+ 	}
+
+-	RF_WriteReg(dev, 0x05, 0x0203);			mdelay(1); 	/// 203, 343
+-	RF_WriteReg(dev, 0x06, 0x0200);			mdelay(1);	// 400
++	RF_WriteReg(dev, 0x05, 0x0203);			mdelay(1);	/* 203, 343	*/
++	RF_WriteReg(dev, 0x06, 0x0200);			mdelay(1);	/* 400		*/
+
+-	RF_WriteReg(dev, 0x00, 0x0137);			mdelay(1);	// switch to
+reg16-reg30, and HSSI disable 137
+-	mdelay(10); 	// Deay 10 ms. //0xfd
++	RF_WriteReg(dev, 0x00, 0x0137);			mdelay(1);	/* switch to
+reg16-reg30, and HSSI disable 137	*/
++	mdelay(10);		/* Deay 10 ms.	*/	/* 0xfd */
+
+-	RF_WriteReg(dev, 0x0d, 0x0008);			mdelay(1);	// Z4 synthesizer loop
+filter setting, 392
+-	mdelay(10); 	// Deay 10 ms. //0xfd
++	RF_WriteReg(dev, 0x0d, 0x0008);			mdelay(1);	/* Z4 synthesizer loop
+filter setting, 392		*/
++	mdelay(10);		/* Deay 10 ms.	*/	/* 0xfd */
+
+-	RF_WriteReg(dev, 0x00, 0x0037);			mdelay(1);	// switch to
+reg0-reg15, and HSSI disable
+-	mdelay(10); 	// Deay 10 ms. //0xfd
++	RF_WriteReg(dev, 0x00, 0x0037);			mdelay(1);	/* switch to
+reg0-reg15, and HSSI disable		*/
++	mdelay(10);		/* Deay 10 ms.	*/	/* 0xfd	*/
+
+-	RF_WriteReg(dev, 0x04, 0x0160);			mdelay(1); 	// CBC on, Tx Rx
+disable, High gain
+-	mdelay(10); 	// Deay 10 ms. //0xfd
++	RF_WriteReg(dev, 0x04, 0x0160);			mdelay(1);	/* CBC on, Tx Rx
+disable, High gain				*/
++	mdelay(10);		/* Deay 10 ms.	*/	/* 0xfd	*/
+
+-	RF_WriteReg(dev, 0x07, 0x0080);			mdelay(1);	// Z4 setted channel 1
+-	mdelay(10); 	// Deay 10 ms. //0xfd
++	RF_WriteReg(dev, 0x07, 0x0080);			mdelay(1);	/* Z4 setted channel 1							*/
++	mdelay(10);		/* Deay 10 ms.	*/	/* 0xfd	*/
+
+-	RF_WriteReg(dev, 0x02, 0x088D);			mdelay(1);	// LC calibration
+-	mdelay(200); 	// Deay 200 ms. //0xfd
+-	mdelay(10); 	// Deay 10 ms. //0xfd
+-	mdelay(10); 	// Deay 10 ms. //0xfd
++	RF_WriteReg(dev, 0x02, 0x088D);			mdelay(1);	/* LC calibration								*/
++	mdelay(200);	/* Deay 200 ms.	*/	/* 0xfd	*/
++	mdelay(10);		/* Deay 10 ms.	*/	/* 0xfd	*/
++	mdelay(10);		/* Deay 10 ms.	*	/* 0xfd	*/
+
+-	RF_WriteReg(dev, 0x00, 0x0137);			mdelay(1);	// switch to
+reg16-reg30 137, and HSSI disable 137
+-	mdelay(10); 	// Deay 10 ms. //0xfd
++	RF_WriteReg(dev, 0x00, 0x0137);			mdelay(1);	/* switch to
+reg16-reg30 137, and HSSI disable 137	*/
++	mdelay(10);		/* Deay 10 ms.	*/	/* 0xfd	*/
+
+ 	RF_WriteReg(dev, 0x07, 0x0000);			mdelay(1);
+ 	RF_WriteReg(dev, 0x07, 0x0180);			mdelay(1);
+ 	RF_WriteReg(dev, 0x07, 0x0220);			mdelay(1);
+ 	RF_WriteReg(dev, 0x07, 0x03E0);			mdelay(1);
+
+-	// DAC calibration off 20070702
++	/* DAC calibration off 20070702	*/
+ 	RF_WriteReg(dev, 0x06, 0x00c1);			mdelay(1);
+ 	RF_WriteReg(dev, 0x0a, 0x0001);			mdelay(1);
+-//{by amy 080312
+-	// For crystal calibration, added by Roger, 2007.12.11.
+-	if( priv->bXtalCalibration ) // reg 30.
+-	{ // enable crystal calibration.
+-		// RF Reg[30], (1)Xin:[12:9], Xout:[8:5],  addr[4:0].
+-		// (2)PA Pwr delay timer[15:14], default: 2.4us, set BIT15=0
+-		// (3)RF signal on/off when calibration[13], default: on, set BIT13=0.
+-		// So we should minus 4 BITs offset.
+-		RF_WriteReg(dev, 0x0f,
+(priv->XtalCal_Xin<<5)|(priv->XtalCal_Xout<<1)|BIT11|BIT9);			mdelay(1);
++/* {by amy 080312 */
++	/* For crystal calibration, added by Roger, 2007.12.11. */
++	if (priv->bXtalCalibration)	{	/* reg 30.	*/
++	 /* enable crystal calibration.
++			RF Reg[30], (1)Xin:[12:9], Xout:[8:5],  addr[4:0].
++			(2)PA Pwr delay timer[15:14], default: 2.4us, set BIT15=0
++			(3)RF signal on/off when calibration[13], default: on, set BIT13=0.
++			So we should minus 4 BITs offset.		*/
++		RF_WriteReg(dev, 0x0f, (priv->XtalCal_Xin<<5) |
+(priv->XtalCal_Xout<<1) | BIT11 | BIT9);			mdelay(1);
+ 		printk("ZEBRA_Config_85BASIC_HardCode(): (%02x)\n",
+-				(priv->XtalCal_Xin<<5) | (priv->XtalCal_Xout<<1) | BIT11| BIT9);
+-	}
+-	else
+-	{ // using default value. Xin=6, Xout=6.
++				(priv->XtalCal_Xin<<5) | (priv->XtalCal_Xout<<1) | BIT11 | BIT9);
++	}	else	{
++		/* using default value. Xin=6, Xout=6.	*/
+ 		RF_WriteReg(dev, 0x0f, 0x0acc);			mdelay(1);
+ 	}
+-//by amy 080312
+-
+-	RF_WriteReg(dev, 0x00, 0x00bf);			mdelay(1); // switch to
+reg0-reg15, and HSSI enable
+-	RF_WriteReg(dev, 0x0d, 0x08df);			mdelay(1); // Rx BB start
+calibration, 00c//+edward
+-	RF_WriteReg(dev, 0x02, 0x004d);			mdelay(1); // temperature meter off
+-	RF_WriteReg(dev, 0x04, 0x0975);			mdelay(1); // Rx mode
+-	mdelay(10);	// Deay 10 ms. //0xfe
+-	mdelay(10);	// Deay 10 ms. //0xfe
+-	mdelay(10);	// Deay 10 ms. //0xfe
+-	RF_WriteReg(dev, 0x00, 0x0197);			mdelay(1); // Rx mode//+edward
+-	RF_WriteReg(dev, 0x05, 0x05ab);			mdelay(1); // Rx mode//+edward
+-	RF_WriteReg(dev, 0x00, 0x009f);			mdelay(1); // Rx mode//+edward
+-
+-	RF_WriteReg(dev, 0x01, 0x0000);			mdelay(1); // Rx mode//+edward
+-	RF_WriteReg(dev, 0x02, 0x0000);			mdelay(1); // Rx mode//+edward
+-	//power save parameters.
++/* by amy 080312 */
++
++	RF_WriteReg(dev, 0x00, 0x00bf);			mdelay(1); /* switch to
+reg0-reg15, and HSSI enable	*/
++	RF_WriteReg(dev, 0x0d, 0x08df);			mdelay(1); /* Rx BB start
+calibration, 00c//+edward	*/
++	RF_WriteReg(dev, 0x02, 0x004d);			mdelay(1); /* temperature meter off					*/
++	RF_WriteReg(dev, 0x04, 0x0975);			mdelay(1); /* Rx mode								*/
++	mdelay(10);	/* Deay 10 ms.*/	/* 0xfe	*/
++	mdelay(10);	/* Deay 10 ms.*/	/* 0xfe	*/
++	mdelay(10);	/* Deay 10 ms.*/	/* 0xfe	*/
++	RF_WriteReg(dev, 0x00, 0x0197);			mdelay(1); /* Rx mode*/	/*+edward	*/
++	RF_WriteReg(dev, 0x05, 0x05ab);			mdelay(1); /* Rx mode*/	/*+edward	*/
++	RF_WriteReg(dev, 0x00, 0x009f);			mdelay(1); /* Rx mode*/	/*+edward	*/
++
++	RF_WriteReg(dev, 0x01, 0x0000);			mdelay(1); /* Rx mode*/	/*+edward	*/
++	RF_WriteReg(dev, 0x02, 0x0000);			mdelay(1); /* Rx mode*/	/*+edward	*/
++	/* power save parameters.	*/
+ 	u1b24E = read_nic_byte(dev, 0x24E);
+ 	write_nic_byte(dev, 0x24E, (u1b24E & (~(BIT5|BIT6))));
+
+-	//=============================================================================
+-
+-	//=============================================================================
+-	// CCKCONF.TXT
+-	//=============================================================================
++	/*=============================================================================
+
++	=============================================================================
++	CCKCONF.TXT
++	=============================================================================
++	*/
+ 	/*	[POWER SAVE] Power Saving Parameters by jong. 2007-11-27
+-	   	CCK reg0x00[7]=1'b1 :power saving for TX (default)
++		CCK reg0x00[7]=1'b1 :power saving for TX (default)
+ 		CCK reg0x00[6]=1'b1: power saving for RX (default)
+ 		CCK reg0x06[4]=1'b1: turn off channel estimation related circuits
+if not doing channel estimation.
+ 		CCK reg0x06[3]=1'b1: turn off unused circuits before cca = 1
+ 		CCK reg0x06[2]=1'b1: turn off cck's circuit if macrst =0
+ 	*/
+
+-	write_phy_cck(dev,0x00,0xc8);
+-	write_phy_cck(dev,0x06,0x1c);
+-	write_phy_cck(dev,0x10,0x78);
+-	write_phy_cck(dev,0x2e,0xd0);
+-	write_phy_cck(dev,0x2f,0x06);
+-	write_phy_cck(dev,0x01,0x46);
++	write_phy_cck(dev, 0x00, 0xc8);
++	write_phy_cck(dev, 0x06, 0x1c);
++	write_phy_cck(dev, 0x10, 0x78);
++	write_phy_cck(dev, 0x2e, 0xd0);
++	write_phy_cck(dev, 0x2f, 0x06);
++	write_phy_cck(dev, 0x01, 0x46);
+
+-	// power control
++	/* power control	*/
+ 	write_nic_byte(dev, CCK_TXAGC, 0x10);
+ 	write_nic_byte(dev, OFDM_TXAGC, 0x1B);
+ 	write_nic_byte(dev, ANTSEL, 0x03);
+
+
+
+-	//=============================================================================
+-	// AGC.txt
+-	//=============================================================================
++	/*
++	=============================================================================
++		AGC.txt
++	=============================================================================
++	*/
+
+ 	write_phy_ofdm(dev, 0x00, 0x12);
+
+-	for (i=0; i<128; i++)
+-	{
++	for (i = 0; i < 128; i++)	{
+
+ 		data = ZEBRA_AGC[i+1];
+ 		data = data << 8;
+ 		data = data | 0x0000008F;
+
+-		addr = i + 0x80; //enable writing AGC table
++		addr = i + 0x80; /* enable writing AGC table */
+ 		addr = addr << 8;
+ 		addr = addr | 0x0000008E;
+
+@@ -743,18 +713,19 @@ ZEBRA_Config_85BASIC_HardCode(
+ 		WriteBBPortUchar(dev, 0x0000008E);
+ 	}
+
+-	PlatformIOWrite4Byte( dev, PhyAddr, 0x00001080);	// Annie, 2006-05-05
++	PlatformIOWrite4Byte(dev, PhyAddr, 0x00001080);	/* Annie, 2006-05-05 */
+
+-	//=============================================================================
++	/*
++	=============================================================================
+
+-	//=============================================================================
+-	// OFDMCONF.TXT
+-	//=============================================================================
++	=============================================================================
++	OFDMCONF.TXT
++	=============================================================================
++	*/
+
+-	for(i=0; i<60; i++)
+-	{
+-		u4bRegOffset=i;
+-		u4bRegValue=OFDM_CONFIG[i];
++	for (i = 0; i < 60; i++)	{
++		u4bRegOffset = i;
++		u4bRegValue = OFDM_CONFIG[i];
+
+ 		WriteBBPortUchar(dev,
+ 						(0x00000080 |
+@@ -762,14 +733,16 @@ ZEBRA_Config_85BASIC_HardCode(
+ 						((u4bRegValue & 0xff) << 8)));
+ 	}
+
+-	//=============================================================================
+-//by amy for antenna
+-	//=============================================================================
+-//{by amy 080312
+-	// Config Sw/Hw  Combinational Antenna Diversity. Added by Roger, 2008.02.26.
++	/*
++	=============================================================================
++	by amy for antenna
++	=============================================================================
++	*/
++/* {by amy 080312 */
++	/* Config Sw/Hw  Combinational Antenna Diversity. Added by Roger,
+2008.02.26.	*/
+ 	SetAntennaConfig87SE(dev, priv->bDefaultAntenna1, priv->bSwAntennaDiverity);
+-//by amy 080312}
+-//by amy for antenna
++/* by amy 080312} */
++/* by amy for antenna */
+ }
+
+
+@@ -780,13 +753,13 @@ UpdateInitialGain(
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+
+-	//lzm add 080826
+-	if(priv->eRFPowerState != eRfOn)
+-	{
+-		//Don't access BB/RF under disable PLL situation.
+-		//RT_TRACE(COMP_DIG, DBG_LOUD, ("UpdateInitialGain -
+pHalData->eRFPowerState!=eRfOn\n"));
+-		// Back to the original state
+-		priv->InitialGain= priv->InitialGainBackUp;
++	/* lzm add 080826 */
++	if (priv->eRFPowerState != eRfOn)	{
++		/*	Don't access BB/RF under disable PLL situation.
++			RT_TRACE(COMP_DIG, DBG_LOUD, ("UpdateInitialGain -
+pHalData->eRFPowerState!=eRfOn\n"));
++			Back to the original state
++		*/
++		priv->InitialGain = priv->InitialGainBackUp;
+ 		return;
+ 	}
+
+@@ -846,11 +819,11 @@ UpdateInitialGain(
+ 		break;
+ 	}
+ }
+-//
+-//	Description:
+-//		Tx Power tracking mechanism routine on 87SE.
+-// 	Created by Roger, 2007.12.11.
+-//
++/*
++	Description:
++		Tx Power tracking mechanism routine on 87SE.
++	Created by Roger, 2007.12.11.
++*/
+ void
+ InitTxPwrTracking87SE(
+ 	struct net_device *dev
+@@ -860,7 +833,7 @@ InitTxPwrTracking87SE(
+
+ 	u4bRfReg = RF_ReadReg(dev, 0x02);
+
+-	// Enable Thermal meter indication.
++	/* Enable Thermal meter indication.	*/
+ 	RF_WriteReg(dev, 0x02, u4bRfReg|PWR_METER_EN);			mdelay(1);
+ }
+
+@@ -870,28 +843,27 @@ PhyConfig8185(
+ 	)
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+-       write_nic_dword(dev, RCR, priv->ReceiveConfig);
++		write_nic_dword(dev, RCR, priv->ReceiveConfig);
+ 	   priv->RFProgType = read_nic_byte(dev, CONFIG4) & 0x03;
+ 	/*  RF config */
+ 	ZEBRA_Config_85BASIC_HardCode(dev);
+-//{by amy 080312
+-	// Set default initial gain state to 4, approved by SD3 DZ, by
+Bruce, 2007-06-06.
+-	if(priv->bDigMechanism)
+-	{
+-		if(priv->InitialGain == 0)
++/* {by amy 080312 */
++	/* Set default initial gain state to 4, approved by SD3 DZ, by
+Bruce, 2007-06-06. */
++	if (priv->bDigMechanism)	{
++		if (priv->InitialGain == 0)
+ 			priv->InitialGain = 4;
+ 	}
+
+-	//
+-	// Enable thermal meter indication to implement TxPower tracking on 87SE.
+-	// We initialize thermal meter here to avoid unsuccessful configuration.
+-	// Added by Roger, 2007.12.11.
+-	//
+-	if(priv->bTxPowerTrack)
++	/*
++		Enable thermal meter indication to implement TxPower tracking on 87SE.
++		We initialize thermal meter here to avoid unsuccessful configuration.
++		Added by Roger, 2007.12.11.
++	*/
++	if (priv->bTxPowerTrack)
+ 		InitTxPwrTracking87SE(dev);
+
+-//by amy 080312}
+-	priv->InitialGainBackUp= priv->InitialGain;
++/* by amy 080312} */
++	priv->InitialGainBackUp = priv->InitialGain;
+ 	UpdateInitialGain(dev);
+
+ 	return;
+@@ -902,63 +874,56 @@ HwConfigureRTL8185(
+ 		struct net_device *dev
+ 		)
+ {
+-	//RTL8185_TODO: Determine Retrylimit, TxAGC, AutoRateFallback control.
+-        u8              bUNIVERSAL_CONTROL_RL = 0;
++	/* RTL8185_TODO: Determine Retrylimit, TxAGC, AutoRateFallback control. */
++	u8		bUNIVERSAL_CONTROL_RL = 0;
+ 	u8		bUNIVERSAL_CONTROL_AGC = 1;
+ 	u8		bUNIVERSAL_CONTROL_ANT = 1;
+ 	u8		bAUTO_RATE_FALLBACK_CTL = 1;
+ 	u8		val8;
+-        write_nic_word(dev, BRSR, 0x0fff);
+-	// Retry limit
++	write_nic_word(dev, BRSR, 0x0fff);
++	/* Retry limit */
+ 	val8 = read_nic_byte(dev, CW_CONF);
+
+-	if(bUNIVERSAL_CONTROL_RL)
++	if (bUNIVERSAL_CONTROL_RL)
+ 		val8 = val8 & 0xfd;
+ 	else
+ 		val8 = val8 | 0x02;
+
+ 	write_nic_byte(dev, CW_CONF, val8);
+
+-	// Tx AGC
++	/* Tx AGC */
+ 	val8 = read_nic_byte(dev, TXAGC_CTL);
+-	if(bUNIVERSAL_CONTROL_AGC)
+-	{
++	if (bUNIVERSAL_CONTROL_AGC)	{
+ 		write_nic_byte(dev, CCK_TXAGC, 128);
+ 		write_nic_byte(dev, OFDM_TXAGC, 128);
+ 		val8 = val8 & 0xfe;
+-	}
+-	else
+-	{
++	}	else	{
+ 		val8 = val8 | 0x01 ;
+ 	}
+
+
+ 	write_nic_byte(dev, TXAGC_CTL, val8);
+
+-	// Tx Antenna including Feedback control
+-	val8 = read_nic_byte(dev, TXAGC_CTL );
++	/* Tx Antenna including Feedback control	*/
++	val8 = read_nic_byte(dev, TXAGC_CTL);
+
+-	if(bUNIVERSAL_CONTROL_ANT)
+-	{
++	if (bUNIVERSAL_CONTROL_ANT)	{
+ 		write_nic_byte(dev, ANTSEL, 0x00);
+ 		val8 = val8 & 0xfd;
+-	}
+-	else
+-	{
+-		val8 = val8 & (val8|0x02); //xiong-2006-11-15
++	}	else	{
++		val8 = val8 & (val8|0x02); /* xiong-2006-11-15 */
+ 	}
+
+ 	write_nic_byte(dev, TXAGC_CTL, val8);
+
+-	// Auto Rate fallback control
++	/* Auto Rate fallback control	*/
+ 	val8 = read_nic_byte(dev, RATE_FALLBACK);
+ 	val8 &= 0x7c;
+-	if( bAUTO_RATE_FALLBACK_CTL )
+-	{
++	if (bAUTO_RATE_FALLBACK_CTL)	{
+ 		val8 |= RATE_FALLBACK_CTL_ENABLE | RATE_FALLBACK_CTL_AUTO_STEP1;
+
+-		// <RJ_TODO_8185B> We shall set up the ARFR according to user's setting.
+-	        PlatformIOWrite2Byte(dev, ARFR, 0x0fff); //set 1M ~ 54Mbps.
++		/* <RJ_TODO_8185B> We shall set up the ARFR according to user's setting. */
++		PlatformIOWrite2Byte(dev, ARFR, 0x0fff); /* set 1M ~ 54Mbps. */
+ 	}
+ 	write_nic_byte(dev, RATE_FALLBACK, val8);
+ }
+@@ -967,32 +932,31 @@ static void
+ MacConfig_85BASIC_HardCode(
+ 	struct net_device *dev)
+ {
+-	//============================================================================
+-	// MACREG.TXT
+-	//============================================================================
++	/*
++	============================================================================
++	MACREG.TXT
++	============================================================================
++	*/
+ 	int			nLinesRead = 0;
+
+-	u32	u4bRegOffset, u4bRegValue,u4bPageIndex = 0;
++	u32	u4bRegOffset, u4bRegValue, u4bPageIndex = 0;
+ 	int	i;
+
+-	nLinesRead=sizeof(MAC_REG_TABLE)/2;
++	nLinesRead = sizeof(MAC_REG_TABLE)/2;
++
++	for (i = 0; i < nLinesRead; i++)	{	/* nLinesRead=101 */
++		u4bRegOffset = MAC_REG_TABLE[i][0];
++		u4bRegValue = MAC_REG_TABLE[i][1];
++
++				if (u4bRegOffset == 0x5e)
++					u4bPageIndex = u4bRegValue;
++
++				else
++						u4bRegOffset |= (u4bPageIndex << 8);
+
+-	for(i = 0; i < nLinesRead; i++)  //nLinesRead=101
+-	{
+-		u4bRegOffset=MAC_REG_TABLE[i][0];
+-		u4bRegValue=MAC_REG_TABLE[i][1];
+-
+-                if(u4bRegOffset == 0x5e)
+-                {
+-                    u4bPageIndex = u4bRegValue;
+-                }
+-                else
+-                {
+-                    u4bRegOffset |= (u4bPageIndex << 8);
+-                }
+ 		write_nic_byte(dev, u4bRegOffset, (u8)u4bRegValue);
+ 	}
+-	//============================================================================
++	/* ============================================================================
+*/
+ }
+
+ static void
+@@ -1000,34 +964,34 @@ MacConfig_85BASIC(
+ 	struct net_device *dev)
+ {
+
+-       u8			u1DA;
++	u8			u1DA;
+ 	MacConfig_85BASIC_HardCode(dev);
+
+-	//============================================================================
++	/* ============================================================================
+*/
+
+-	// Follow TID_AC_MAP of WMac.
++	/* Follow TID_AC_MAP of WMac. */
+ 	write_nic_word(dev, TID_AC_MAP, 0xfa50);
+
+-	// Interrupt Migration, Jong suggested we use set 0x0000 first,
+2005.12.14, by rcnjko.
++	/* Interrupt Migration, Jong suggested we use set 0x0000 first,
+2005.12.14, by rcnjko. */
+ 	write_nic_word(dev, IntMig, 0x0000);
+
+-	// Prevent TPC to cause CRC error. Added by Annie, 2006-06-10.
++	/* Prevent TPC to cause CRC error. Added by Annie, 2006-06-10. */
+ 	PlatformIOWrite4Byte(dev, 0x1F0, 0x00000000);
+ 	PlatformIOWrite4Byte(dev, 0x1F4, 0x00000000);
+ 	PlatformIOWrite1Byte(dev, 0x1F8, 0x00);
+
+-	// Asked for by SD3 CM Lin, 2006.06.27, by rcnjko.
+-	// power save parameter based on "87SE power save parameters
+20071127.doc", as follow.
++	/* Asked for by SD3 CM Lin, 2006.06.27, by rcnjko.	*/
++	/* power save parameter based on "87SE power save parameters
+20071127.doc", as follow.	*/
+
+-	//Enable DA10 TX power saving
++	/* Enable DA10 TX power saving */
+ 	u1DA = read_nic_byte(dev, PHYPR);
+-	write_nic_byte(dev, PHYPR, (u1DA | BIT2) );
++	write_nic_byte(dev, PHYPR, (u1DA | BIT2));
+
+-	//POWER:
++	/* POWER:	*/
+ 	write_nic_word(dev, 0x360, 0x1000);
+ 	write_nic_word(dev, 0x362, 0x1000);
+
+-	// AFE.
++	/* AFE.		*/
+ 	write_nic_word(dev, 0x370, 0x0560);
+ 	write_nic_word(dev, 0x372, 0x0560);
+ 	write_nic_word(dev, 0x374, 0x0DA4);
+@@ -1035,8 +999,8 @@ MacConfig_85BASIC(
+ 	write_nic_word(dev, 0x378, 0x0560);
+ 	write_nic_word(dev, 0x37A, 0x0560);
+ 	write_nic_word(dev, 0x37C, 0x00EC);
+-	write_nic_word(dev, 0x37E, 0x00EC);//+edward
+-       write_nic_byte(dev, 0x24E,0x01);
++	write_nic_word(dev, 0x37E, 0x00EC);	/*+edward	*/
++	write_nic_byte(dev, 0x24E, 0x01);
+ }
+
+ u8
+@@ -1064,63 +1028,60 @@ ActUpdateChannelAccessSetting(
+ 	u8	bFollowLegacySetting = 0;
+ 	u8   u1bAIFS;
+
+-	//
+-	// <RJ_TODO_8185B>
+-	// TODO: We still don't know how to set up these registers, just
+follow WMAC to
+-	// verify 8185B FPAG.
+-	//
+-	// <RJ_TODO_8185B>
+-	// Jong said CWmin/CWmax register are not functional in 8185B,
+-	// so we shall fill channel access realted register into AC
+parameter registers,
+-	// even in nQBss.
+-	//
+-	ChnlAccessSetting->SIFS_Timer = 0x22; // Suggested by Jong, 2005.12.08.
+-	ChnlAccessSetting->DIFS_Timer = 0x1C; // 2006.06.02, by rcnjko.
+-	ChnlAccessSetting->SlotTimeTimer = 9; // 2006.06.02, by rcnjko.
+-	ChnlAccessSetting->EIFS_Timer = 0x5B; // Suggested by wcchu, it is
+the default value of EIFS register, 2005.12.08.
+-	ChnlAccessSetting->CWminIndex = 3; // 2006.06.02, by rcnjko.
+-	ChnlAccessSetting->CWmaxIndex = 7; // 2006.06.02, by rcnjko.
++	/*
++		<RJ_TODO_8185B>
++		TODO: We still don't know how to set up these registers, just follow WMAC to
++		verify 8185B FPAG.
++
++		<RJ_TODO_8185B>
++		Jong said CWmin/CWmax register are not functional in 8185B,
++		so we shall fill channel access realted register into AC parameter registers,
++		even in nQBss.
++	*/
++	ChnlAccessSetting->SIFS_Timer = 0x22; /* Suggested by Jong, 2005.12.08. */
++	ChnlAccessSetting->DIFS_Timer = 0x1C; /* 2006.06.02, by rcnjko.			*/
++	ChnlAccessSetting->SlotTimeTimer = 9; /* 2006.06.02, by rcnjko.			*/
++	ChnlAccessSetting->EIFS_Timer = 0x5B; /* Suggested by wcchu, it is
+the default value of EIFS register, 2005.12.08.	*/
++	ChnlAccessSetting->CWminIndex = 3; /* 2006.06.02, by rcnjko.			*/
++	ChnlAccessSetting->CWmaxIndex = 7; /* 2006.06.02, by rcnjko.			*/
+
+ 	write_nic_byte(dev, SIFS, ChnlAccessSetting->SIFS_Timer);
+-	write_nic_byte(dev, SLOT, ChnlAccessSetting->SlotTimeTimer);	//
+Rewrited from directly use PlatformEFIOWrite1Byte(), by Annie,
+2006-03-29.
++	write_nic_byte(dev, SLOT, ChnlAccessSetting->SlotTimeTimer);	/*
+Rewrited from directly use PlatformEFIOWrite1Byte(), by Annie,
+2006-03-29. */
+
+-	u1bAIFS = aSifsTime + (2 * ChnlAccessSetting->SlotTimeTimer );
++	u1bAIFS = aSifsTime + (2 * ChnlAccessSetting->SlotTimeTimer);
+
+ 	write_nic_byte(dev, EIFS, ChnlAccessSetting->EIFS_Timer);
+
+-	write_nic_byte(dev, AckTimeOutReg, 0x5B); // <RJ_EXPR_QOS> Suggested
+by wcchu, it is the default value of EIFS register, 2005.12.08.
++	write_nic_byte(dev, AckTimeOutReg, 0x5B); /* <RJ_EXPR_QOS> Suggested
+by wcchu, it is the default value of EIFS register, 2005.12.08. */
+
+-	{ // Legacy 802.11.
++	{ /* Legacy 802.11. */
+ 		bFollowLegacySetting = 1;
+
+ 	}
+
+-	// this setting is copied from rtl8187B.  xiong-2006-11-13
+-	if(bFollowLegacySetting)
+-	{
+-
++	/* this setting is copied from rtl8187B.  xiong-2006-11-13 */
++	if (bFollowLegacySetting)	{
+
+-		//
+-		// Follow 802.11 seeting to AC parameter, all AC shall use the same
+parameter.
+-		// 2005.12.01, by rcnjko.
+-		//
++		/*
++			Follow 802.11 seeting to AC parameter, all AC shall use the same parameter.
++			2005.12.01, by rcnjko.
++		*/
+ 		AcParam.longData = 0;
+-		AcParam.f.AciAifsn.f.AIFSN = 2; // Follow 802.11 DIFS.
++		AcParam.f.AciAifsn.f.AIFSN = 2; /* Follow 802.11 DIFS.	*/
+ 		AcParam.f.AciAifsn.f.ACM = 0;
+-		AcParam.f.Ecw.f.ECWmin = ChnlAccessSetting->CWminIndex; // Follow
+802.11 CWmin.
+-		AcParam.f.Ecw.f.ECWmax = ChnlAccessSetting->CWmaxIndex; // Follow
+802.11 CWmax.
++		AcParam.f.Ecw.f.ECWmin = ChnlAccessSetting->CWminIndex; /*	Follow
+802.11 CWmin.	*/
++		AcParam.f.Ecw.f.ECWmax = ChnlAccessSetting->CWmaxIndex; /*	Follow
+802.11 CWmax.	*/
+ 		AcParam.f.TXOPLimit = 0;
+
+-		//lzm reserved 080826
+-		// For turbo mode setting. port from 87B by Isaiah 2008-08-01
+-		if( ieee->current_network.Turbo_Enable == 1 )
++		/* lzm reserved 080826 */
++		/* For turbo mode setting. port from 87B by Isaiah 2008-08-01 */
++		if (ieee->current_network.Turbo_Enable == 1)
+ 			AcParam.f.TXOPLimit = 0x01FF;
+-		// For 87SE with Intel 4965  Ad-Hoc mode have poor throughput (19MB)
++		/* For 87SE with Intel 4965  Ad-Hoc mode have poor throughput (19MB) */
+ 		if (ieee->iw_mode == IW_MODE_ADHOC)
+ 			AcParam.f.TXOPLimit = 0x0020;
+
+-		for(eACI = 0; eACI < AC_MAX; eACI++)
+-		{
++		for (eACI = 0; eACI < AC_MAX; eACI++)	{
+ 			AcParam.f.AciAifsn.f.ACI = (u8)eACI;
+ 			{
+ 				PAC_PARAM	pAcParam = (PAC_PARAM)(&AcParam);
+@@ -1128,85 +1089,81 @@ ActUpdateChannelAccessSetting(
+ 				u8		u1bAIFS;
+ 				u32		u4bAcParam;
+
+-				// Retrive paramters to udpate.
++				/*  Retrive paramters to udpate. */
+ 				eACI = pAcParam->f.AciAifsn.f.ACI;
+ 				u1bAIFS = pAcParam->f.AciAifsn.f.AIFSN *
+ChnlAccessSetting->SlotTimeTimer + aSifsTime;
+-				u4bAcParam = (	(((u32)(pAcParam->f.TXOPLimit)) <<
+AC_PARAM_TXOP_LIMIT_OFFSET)	|
++				u4bAcParam = ((((u32)(pAcParam->f.TXOPLimit)) <<
+AC_PARAM_TXOP_LIMIT_OFFSET)	|
+ 						(((u32)(pAcParam->f.Ecw.f.ECWmax)) << AC_PARAM_ECW_MAX_OFFSET)	|
+ 						(((u32)(pAcParam->f.Ecw.f.ECWmin)) << AC_PARAM_ECW_MIN_OFFSET)	|
+ 						(((u32)u1bAIFS) << AC_PARAM_AIFS_OFFSET));
+
+-				switch(eACI)
+-				{
+-					case AC1_BK:
+-						//write_nic_dword(dev, AC_BK_PARAM, u4bAcParam);
+-						break;
++				switch (eACI)	{
++				case AC1_BK:
++					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
++					break;
+
+-					case AC0_BE:
+-						//write_nic_dword(dev, AC_BE_PARAM, u4bAcParam);
+-						break;
++				case AC0_BE:
++					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
++					break;
+
+-					case AC2_VI:
+-						//write_nic_dword(dev, AC_VI_PARAM, u4bAcParam);
+-						break;
++				case AC2_VI:
++					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
++					break;
+
+-					case AC3_VO:
+-						//write_nic_dword(dev, AC_VO_PARAM, u4bAcParam);
+-						break;
++				case AC3_VO:
++					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
++					break;
+
+-					default:
+-						DMESGW( "SetHwReg8185(): invalid ACI: %d !\n", eACI);
+-						break;
++				default:
++					DMESGW("SetHwReg8185(): invalid ACI: %d !\n", eACI);
++					break;
+ 				}
+
+-				// Cehck ACM bit.
+-				// If it is set, immediately set ACM control bit to downgrading
+AC for passing WMM testplan. Annie, 2005-12-13.
++				/* Cehck ACM bit.	*/
++				/* If it is set, immediately set ACM control bit to downgrading
+AC for passing WMM testplan. Annie, 2005-12-13.	*/
+ 				{
+ 					PACI_AIFSN	pAciAifsn = (PACI_AIFSN)(&pAcParam->f.AciAifsn);
+ 					AC_CODING	eACI = pAciAifsn->f.ACI;
+
+-					//modified Joseph
+-					//for 8187B AsynIORead issue
++					/*modified Joseph				*/
++					/*for 8187B AsynIORead issue	*/
+ 					u8	AcmCtrl = 0;
+-					if( pAciAifsn->f.ACM )
+-					{ // ACM bit is 1.
+-						switch(eACI)
+-						{
+-							case AC0_BE:
+-								AcmCtrl |= (BEQ_ACM_EN|BEQ_ACM_CTL|ACM_HW_EN);	// or 0x21
+-								break;
+-
+-							case AC2_VI:
+-								AcmCtrl |= (VIQ_ACM_EN|VIQ_ACM_CTL|ACM_HW_EN);	// or 0x42
+-								break;
+-
+-							case AC3_VO:
+-								AcmCtrl |= (VOQ_ACM_EN|VOQ_ACM_CTL|ACM_HW_EN);	// or 0x84
+-								break;
+-
+-							default:
+-								DMESGW("SetHwReg8185(): [HW_VAR_ACM_CTRL] ACM set failed:
+eACI is %d\n", eACI );
+-								break;
++					if (pAciAifsn->f.ACM)	{
++						/* ACM bit is 1. */
++						switch (eACI)	{
++						case AC0_BE:
++							AcmCtrl |= (BEQ_ACM_EN|BEQ_ACM_CTL|ACM_HW_EN);	/* or 0x21 */
++							break;
++
++						case AC2_VI:
++							AcmCtrl |= (VIQ_ACM_EN|VIQ_ACM_CTL|ACM_HW_EN);	/* or 0x42	*/
++							break;
++
++						case AC3_VO:
++							AcmCtrl |= (VOQ_ACM_EN|VOQ_ACM_CTL|ACM_HW_EN);	/* or 0x84 */
++							break;
++
++						default:
++							DMESGW("SetHwReg8185(): [HW_VAR_ACM_CTRL] ACM set failed: eACI
+is %d\n", eACI);
++							break;
+ 						}
+-					}
+-					else
+-					{ // ACM bit is 0.
+-						switch(eACI)
+-						{
+-							case AC0_BE:
+-								AcmCtrl &= ( (~BEQ_ACM_EN) & (~BEQ_ACM_CTL) & (~ACM_HW_EN)
+);	// and 0xDE
+-								break;
+-
+-							case AC2_VI:
+-								AcmCtrl &= ( (~VIQ_ACM_EN) & (~VIQ_ACM_CTL) & (~ACM_HW_EN)
+);	// and 0xBD
+-								break;
+-
+-							case AC3_VO:
+-								AcmCtrl &= ( (~VOQ_ACM_EN) & (~VOQ_ACM_CTL) & (~ACM_HW_EN)
+);	// and 0x7B
+-								break;
+-
+-							default:
+-								break;
++					}	else	{
++						/* ACM bit is 0. */
++						switch (eACI)	{
++						case AC0_BE:
++							AcmCtrl &= ((~BEQ_ACM_EN) & (~BEQ_ACM_CTL) & (~ACM_HW_EN));	/*
+and 0xDE */
++							break;
++
++						case AC2_VI:
++							AcmCtrl &= ((~VIQ_ACM_EN) & (~VIQ_ACM_CTL) & (~ACM_HW_EN));	/*
+and 0xBD */
++							break;
++
++						case AC3_VO:
++							AcmCtrl &= ((~VOQ_ACM_EN) & (~VOQ_ACM_CTL) & (~ACM_HW_EN));	/*
+and 0x7B */
++							break;
++
++						default:
++							break;
+ 						}
+ 					}
+ 					write_nic_byte(dev, ACM_CONTROL, 0);
+@@ -1226,33 +1183,26 @@ ActSetWirelessMode8185(
+ 	struct ieee80211_device *ieee = priv->ieee80211;
+ 	u8	btSupportedWirelessMode = GetSupportedWirelessMode8185(dev);
+
+-	if( (btWirelessMode & btSupportedWirelessMode) == 0 )
+-	{ // Don't switch to unsupported wireless mode, 2006.02.15, by rcnjko.
++	if ((btWirelessMode & btSupportedWirelessMode) == 0)	{
++		/* Don't switch to unsupported wireless mode, 2006.02.15, by rcnjko.	*/
+ 		DMESGW("ActSetWirelessMode8185(): WirelessMode(%d) is not supported (%d)!\n",
+ 			btWirelessMode, btSupportedWirelessMode);
+ 		return;
+ 	}
+
+-	// 1. Assign wireless mode to swtich if necessary.
+-	if (btWirelessMode == WIRELESS_MODE_AUTO)
+-	{
+-		if((btSupportedWirelessMode & WIRELESS_MODE_A))
+-		{
++	/* 1. Assign wireless mode to swtich if necessary.	*/
++	if (btWirelessMode == WIRELESS_MODE_AUTO)	{
++		if ((btSupportedWirelessMode & WIRELESS_MODE_A))				{
+ 			btWirelessMode = WIRELESS_MODE_A;
+-		}
+-		else if((btSupportedWirelessMode & WIRELESS_MODE_G))
+-		{
+-			btWirelessMode = WIRELESS_MODE_G;
+-		}
+-		else if((btSupportedWirelessMode & WIRELESS_MODE_B))
+-		{
+-			btWirelessMode = WIRELESS_MODE_B;
 -		}
 -		else
 -		{
--			//YJ,add,080828, prevent scan in BusyTraffic
--			//FIXME: Need to consider last scan time
--			if ((priv->link_detect.bBusyTraffic) && (true))
--			{
-+		}	else	{
-+			/* YJ,add,080828, prevent scan in BusyTraffic */
-+			/* FIXME: Need to consider last scan time */
-+			if ((priv->link_detect.bBusyTraffic) && (true))	{
- 				ret = 0;
- 				printk("Now traffic is busy, please try later!\n");
--			}
--			else
--			//YJ,add,080828, prevent scan in BusyTraffic,end
--				ret = ieee80211_wx_set_scan(priv->ieee80211,a,wrqu,b);
-+			}	else
-+				/* YJ,add,080828, prevent scan in BusyTraffic,end */
-+				ret = ieee80211_wx_set_scan(priv->ieee80211, a, wrqu, b);
- 		}
--	}
--	else
--		ret = -1;
-+	}	else
-+			ret = -1;
-
- 	up(&priv->wx_sem);
-
-@@ -413,8 +402,8 @@ static int r8180_wx_get_scan(struct net_device
-*dev, struct iw_request_info *a,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
- 	down(&priv->wx_sem);
--	if(priv->up)
--		ret = ieee80211_wx_get_scan(priv->ieee80211,a,wrqu,b);
-+	if (priv->up)
-+		ret = ieee80211_wx_get_scan(priv->ieee80211, a, wrqu, b);
- 	else
- 		ret = -1;
-
-@@ -431,16 +420,16 @@ static int r8180_wx_set_essid(struct net_device *dev,
-
- 	int ret;
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
--	//printk("set essid ENABLE_IPS\n");
--	if(priv->bInactivePs)
-+	/* printk("set essid ENABLE_IPS\n"); */
-+	if (priv->bInactivePs)
- 		IPSLeave(dev);
--//	printk("haha:set essid %s essid_len = %d essid_flgs = %d\n",b,
-wrqu->essid.length, wrqu->essid.flags);
-+/*	printk("haha:set essid %s essid_len = %d essid_flgs = %d\n",b,
-wrqu->essid.length, wrqu->essid.flags);	*/
-
--	ret = ieee80211_wx_set_essid(priv->ieee80211,a,wrqu,b);
-+	ret = ieee80211_wx_set_essid(priv->ieee80211, a, wrqu, b);
-
- 	up(&priv->wx_sem);
- 	return ret;
-@@ -471,7 +460,7 @@ static int r8180_wx_set_freq(struct net_device
-*dev, struct iw_request_info *a,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-@@ -497,7 +486,7 @@ static int r8180_wx_set_frag(struct net_device *dev,
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	if (wrqu->frag.disabled)
-@@ -536,12 +525,12 @@ static int r8180_wx_set_wap(struct net_device *dev,
- 	int ret;
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-
--	ret = ieee80211_wx_set_wap(priv->ieee80211,info,awrq,extra);
-+	ret = ieee80211_wx_set_wap(priv->ieee80211, info, awrq, extra);
-
- 	up(&priv->wx_sem);
- 	return ret;
-@@ -555,7 +544,7 @@ static int r8180_wx_get_wap(struct net_device *dev,
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
--	return ieee80211_wx_get_wap(priv->ieee80211,info,wrqu,extra);
-+	return ieee80211_wx_get_wap(priv->ieee80211, info, wrqu, extra);
- }
-
-
-@@ -566,16 +555,16 @@ static int r8180_wx_set_enc(struct net_device *dev,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	int ret;
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
-
- 	down(&priv->wx_sem);
-
--	if(priv->hw_wep) ret = r8180_wx_set_key(dev,info,wrqu,key);
--	else{
-+	if (priv->hw_wep) ret = r8180_wx_set_key(dev, info, wrqu, key);
-+	else	{
- 		DMESG("Setting SW wep key");
--		ret = ieee80211_wx_set_encode(priv->ieee80211,info,wrqu,key);
-+		ret = ieee80211_wx_set_encode(priv->ieee80211, info, wrqu, key);
- 	}
-
- 	up(&priv->wx_sem);
-@@ -594,13 +583,13 @@ static int r8180_wx_get_enc(struct net_device *dev,
-
-
- static int r8180_wx_set_scan_type(struct net_device *dev, struct
-iw_request_info *aa, union
-- iwreq_data *wrqu, char *p){
-+	iwreq_data *wrqu, char *p)	{
-
-- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	int *parms=(int*)p;
--	int mode=parms[0];
-+	struct r8180_priv *priv = ieee80211_priv(dev);
-+	int *parms = (int*)p;
-+	int mode = parms[0];
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	priv->ieee80211->active_scan = mode;
-@@ -612,14 +601,14 @@ static int r8180_wx_set_scan_type(struct
-net_device *dev, struct iw_request_info
- /* added by christian */
- /*
- static int r8180_wx_set_monitor_type(struct net_device *dev, struct
-iw_request_info *aa, union
-- iwreq_data *wrqu, char *p){
-+	iwreq_data *wrqu, char *p){
-
-- 	struct r8180_priv *priv = ieee80211_priv(dev);
-+	struct r8180_priv *priv = ieee80211_priv(dev);
- 	int *parms=(int*)p;
- 	int mode=parms[0];
-
- 	if(priv->ieee80211->iw_mode != IW_MODE_MONITOR) return -1;
--  	priv->prism_hdr = mode;
-+	priv->prism_hdr = mode;
- 	if(!mode)dev->type=ARPHRD_IEEE80211;
- 	else dev->type=ARPHRD_IEEE80211_PRISM;
- 	DMESG("using %s RX encap", mode ? "AVS":"80211");
-@@ -627,7 +616,7 @@ static int r8180_wx_set_monitor_type(struct
-net_device *dev, struct iw_request_i
-
- }
- */
--//of         r8180_wx_set_monitor_type
-+/*of         r8180_wx_set_monitor_type */
- /* end added christian */
-
- static int r8180_wx_set_retry(struct net_device *dev,
-@@ -637,30 +626,30 @@ static int r8180_wx_set_retry(struct net_device *dev,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	int err = 0;
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-
- 	if (wrqu->retry.flags & IW_RETRY_LIFETIME ||
--	    wrqu->retry.disabled){
-+	    wrqu->retry.disabled)	{
- 		err = -EINVAL;
- 		goto exit;
- 	}
--	if (!(wrqu->retry.flags & IW_RETRY_LIMIT)){
-+	if (!(wrqu->retry.flags & IW_RETRY_LIMIT))	{
- 		err = -EINVAL;
- 		goto exit;
- 	}
-
--	if(wrqu->retry.value > R8180_MAX_RETRY){
--		err= -EINVAL;
-+	if (wrqu->retry.value > R8180_MAX_RETRY)	{
-+		err = -EINVAL;
- 		goto exit;
- 	}
- 	if (wrqu->retry.flags & IW_RETRY_MAX) {
- 		priv->retry_rts = wrqu->retry.value;
- 		DMESG("Setting retry for RTS/CTS data to %d", wrqu->retry.value);
-
--	}else {
-+	}	else {
- 		priv->retry_data = wrqu->retry.value;
- 		DMESG("Setting retry for non RTS/CTS data to %d", wrqu->retry.value);
- 	}
-@@ -671,7 +660,7 @@ static int r8180_wx_set_retry(struct net_device *dev,
- 	 * I'm unsure if whole reset is really needed
- 	 */
-
-- 	rtl8180_commit(dev);
-+	rtl8180_commit(dev);
- 	/*
- 	if(priv->up){
- 		rtl8180_rtx_disable(dev);
-@@ -706,7 +695,7 @@ static int r8180_wx_get_retry(struct net_device *dev,
- 		wrqu->retry.flags = IW_RETRY_LIMIT & IW_RETRY_MIN;
- 		wrqu->retry.value = priv->retry_data;
- 	}
--	//DMESG("returning %d",wrqu->retry.value);
-+	/* DMESG("returning %d",wrqu->retry.value); */
-
-
- 	return 0;
-@@ -717,7 +706,7 @@ static int r8180_wx_get_sens(struct net_device *dev,
- 				union iwreq_data *wrqu, char *extra)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	if(priv->rf_set_sens == NULL)
-+	if (priv->rf_set_sens == NULL)
- 		return -1; /* we have not this support for this radio */
- 	wrqu->sens.value = priv->sens;
- 	return 0;
-@@ -733,19 +722,19 @@ static int r8180_wx_set_sens(struct net_device *dev,
-
- 	short err = 0;
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
--	//DMESG("attempt to set sensivity to %ddb",wrqu->sens.value);
--	if(priv->rf_set_sens == NULL) {
--		err= -1; /* we have not this support for this radio */
-+	/* DMESG("attempt to set sensivity to %ddb",wrqu->sens.value); */
-+	if (priv->rf_set_sens == NULL) {
-+		err = -1; /* we have not this support for this radio */
- 		goto exit;
- 	}
--	if(priv->rf_set_sens(dev, wrqu->sens.value) == 0)
-+	if (priv->rf_set_sens(dev, wrqu->sens.value) == 0)
- 		priv->sens = wrqu->sens.value;
- 	else
--		err= -EINVAL;
-+		err = -EINVAL;
-
- exit:
- 	up(&priv->wx_sem);
-@@ -761,7 +750,7 @@ static int r8180_wx_set_rawtx(struct net_device *dev,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	int ret;
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-@@ -798,15 +787,15 @@ static int r8180_wx_set_power(struct net_device *dev,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
--	printk("=>>>>>>>>>>=============================>set
-power:%d,%d!\n",wrqu->power.disabled, wrqu->power.flags);
--	if (wrqu->power.disabled==0) {
--		wrqu->power.flags|=IW_POWER_ALL_R;
--		wrqu->power.flags|=IW_POWER_TIMEOUT;
--		wrqu->power.value =1000;
-+	printk("=>>>>>>>>>>=============================>set power:%d,
-%d!\n", wrqu->power.disabled, wrqu->power.flags);
-+	if (wrqu->power.disabled == 0) {
-+		wrqu->power.flags |= IW_POWER_ALL_R;
-+		wrqu->power.flags |= IW_POWER_TIMEOUT;
-+		wrqu->power.value = 1000;
- 	}
-
- 	ret = ieee80211_wx_set_power(priv->ieee80211, info, wrqu, extra);
-@@ -823,7 +812,7 @@ static int r8180_wx_set_rts(struct net_device *dev,
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	if (wrqu->rts.disabled)
-@@ -853,7 +842,7 @@ static int r8180_wx_get_rts(struct net_device *dev,
- 	return 0;
- }
- static int dummy(struct net_device *dev, struct iw_request_info *a,
--		 union iwreq_data *wrqu,char *b)
-+		 union iwreq_data *wrqu, char *b)
- {
- 	return -1;
- }
-@@ -878,7 +867,7 @@ static int r8180_wx_get_psmode(struct net_device *dev,
- 			goto exit;
- 		}
- 		*((unsigned int *)extra) = IW_POWER_TIMEOUT;
-- 	if (ieee->ps & IEEE80211_PS_MBCAST)
-+	if (ieee->ps & IEEE80211_PS_MBCAST)
- 			*((unsigned int *)extra) |= IW_POWER_ALL_R;
- 		else
- 			*((unsigned int *)extra) |= IW_POWER_UNICAST_R;
-@@ -925,11 +914,11 @@ static int r8180_wx_get_iwmode(struct net_device *dev,
- 	ieee = priv->ieee80211;
-
- 	strcpy(extra, "802.11");
--	if(ieee->modulation & IEEE80211_CCK_MODULATION) {
-+	if (ieee->modulation & IEEE80211_CCK_MODULATION) {
- 		strcat(extra, "b");
--		if(ieee->modulation & IEEE80211_OFDM_MODULATION)
-+		if (ieee->modulation & IEEE80211_OFDM_MODULATION)
- 			strcat(extra, "/g");
--	} else if(ieee->modulation & IEEE80211_OFDM_MODULATION)
-+	} else if (ieee->modulation & IEEE80211_OFDM_MODULATION)
- 		strcat(extra, "g");
-
- 	up(&priv->wx_sem);
-@@ -947,7 +936,7 @@ static int r8180_wx_set_iwmode(struct net_device *dev,
- 	int modulation = 0, mode = 0;
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-@@ -967,7 +956,7 @@ static int r8180_wx_set_iwmode(struct net_device *dev,
- 	printk(KERN_INFO "B/G mode!\n");
- 	}
-
--	if(ieee->proto_started) {
-+	if (ieee->proto_started) {
- 		ieee80211_stop_protocol(ieee);
- 		ieee->mode = mode;
- 		ieee->modulation = modulation;
-@@ -975,7 +964,7 @@ static int r8180_wx_set_iwmode(struct net_device *dev,
- 	} else {
- 		ieee->mode = mode;
- 		ieee->modulation = modulation;
--//		ieee80211_start_protocol(ieee);
-+/*		ieee80211_start_protocol(ieee); */
- 	}
-
- 	up(&priv->wx_sem);
-@@ -994,7 +983,7 @@ static int r8180_wx_get_preamble(struct net_device *dev,
-
-
-
--	*extra = (char) priv->plcp_preamble_mode; 	// 0:auto 1:short 2:long
-+	*extra = (char) priv->plcp_preamble_mode;	/* 0:auto 1:short 2:long */
- 	up(&priv->wx_sem);
-
- 	return 0;
-@@ -1007,11 +996,11 @@ static int r8180_wx_set_preamble(struct net_device *dev,
- 	int ret = 0;
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
--	if (*extra<0||*extra>2)
-+	if (*extra < 0 || *extra > 2)
- 		ret = -1;
- 	else
- 		priv->plcp_preamble_mode = *((short *)extra) ;
-@@ -1027,14 +1016,14 @@ static int r8180_wx_get_siglevel(struct net_device *dev,
- 			       union iwreq_data *wrqu, char *extra)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	//struct ieee80211_network *network = &(priv->ieee80211->current_network);
-+	/* struct ieee80211_network *network = &(priv->ieee80211->current_network); */
- 	int ret = 0;
-
-
-
- 	down(&priv->wx_sem);
--	// Modify by hikaru 6.5
--	*((int *)extra) = priv->wstats.qual.level;//for interface test ,it
-should be the priv->wstats.qual.level;
-+	/* Modify by hikaru 6.5 */
-+	*((int *)extra) = priv->wstats.qual.level;/*for interface test ,it
-should be the priv->wstats.qual.level; */
-
-
-
-@@ -1047,14 +1036,14 @@ static int r8180_wx_get_sigqual(struct net_device *dev,
- 			       union iwreq_data *wrqu, char *extra)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	//struct ieee80211_network *network = &(priv->ieee80211->current_network);
-+	/* struct ieee80211_network *network = &(priv->ieee80211->current_network); */
- 	int ret = 0;
-
-
-
- 	down(&priv->wx_sem);
--	// Modify by hikaru 6.5
--	*((int *)extra) = priv->wstats.qual.qual;//for interface test ,it
-should be the priv->wstats.qual.qual;
-+	/* Modify by hikaru 6.5	*/
-+	*((int *)extra) = priv->wstats.qual.qual;/* for interface test ,it
-should be the priv->wstats.qual.qual; */
-
-
-
-@@ -1066,7 +1055,7 @@ static int r8180_wx_reset_stats(struct net_device *dev,
- 				struct iw_request_info *info,
- 				union iwreq_data *wrqu, char *extra)
- {
--	struct r8180_priv *priv =ieee80211_priv(dev);
-+	struct r8180_priv *priv = ieee80211_priv(dev);
- 	down(&priv->wx_sem);
-
- 	priv->stats.txrdu = 0;
-@@ -1091,11 +1080,11 @@ static int r8180_wx_reset_stats(struct net_device *dev,
- 	priv->stats.txbeaconerr = 0;
- 	priv->stats.txlpokint = 0;
- 	priv->stats.txlperr = 0;
--	priv->stats.txretry =0;//20060601
--	priv->stats.rxcrcerrmin=0;
--	priv->stats.rxcrcerrmid=0;
--	priv->stats.rxcrcerrmax=0;
--	priv->stats.rxicverr=0;
-+	priv->stats.txretry = 0;/* 20060601 */
-+	priv->stats.rxcrcerrmin = 0 ;
-+	priv->stats.rxcrcerrmid = 0;
-+	priv->stats.rxcrcerrmax = 0;
-+	priv->stats.rxicverr = 0;
-
- 	up(&priv->wx_sem);
-
-@@ -1106,9 +1095,9 @@ static int r8180_wx_radio_on(struct net_device *dev,
- 				struct iw_request_info *info,
- 				union iwreq_data *wrqu, char *extra)
- {
--	struct r8180_priv *priv =ieee80211_priv(dev);
-+	struct r8180_priv *priv = ieee80211_priv(dev);
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
-
-@@ -1125,9 +1114,9 @@ static int r8180_wx_radio_off(struct net_device *dev,
- 				struct iw_request_info *info,
- 				union iwreq_data *wrqu, char *extra)
- {
--	struct r8180_priv *priv =ieee80211_priv(dev);
-+	struct r8180_priv *priv = ieee80211_priv(dev);
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
-
-@@ -1161,28 +1150,26 @@ static int r8180_wx_set_channelplan(struct
-net_device *dev,
- 			     union iwreq_data *wrqu, char *extra)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	//struct ieee80211_device *ieee = netdev_priv(dev);
-+	/* struct ieee80211_device *ieee = netdev_priv(dev); */
- 	int *val = (int *)extra;
- 	int i;
- 	printk("-----in fun %s\n", __func__);
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
--	//unsigned long flags;
-+	/* unsigned long flags; */
- 	down(&priv->wx_sem);
--	if (DefaultChannelPlan[*val].Len != 0){
--		priv ->channel_plan = *val;
--		// Clear old channel map
--		for (i=1;i<=MAX_CHANNEL_NUMBER;i++)
--		{
-+	if (DefaultChannelPlan[*val].Len != 0)	{
-+		priv->channel_plan = *val;
-+		/* Clear old channel map 8 */
-+		for (i = 1; i <= MAX_CHANNEL_NUMBER; i++)
- 			GET_DOT11D_INFO(priv->ieee80211)->channel_map[i] = 0;
--		}
--		// Set new channel map
--		for (i=1;i<=DefaultChannelPlan[*val].Len;i++)
--		{
+-			DMESGW("ActSetWirelessMode8185(): No valid wireless mode
+supported, btSupportedWirelessMode(%x)!!!\n",
+-					 btSupportedWirelessMode);
+-			btWirelessMode = WIRELESS_MODE_B;
++		}	else if (btSupportedWirelessMode & WIRELESS_MODE_G))	{
++				btWirelessMode = WIRELESS_MODE_G;
 +
-+		/* Set new channel map */
-+		for (i = 1; i <= DefaultChannelPlan[*val].Len; i++)
- 			GET_DOT11D_INFO(priv->ieee80211)->channel_map[DefaultChannelPlan[*val].Channel[i-1]]
-= 1;
--		}
-+		
++		}	else if ((btSupportedWirelessMode & WIRELESS_MODE_B))	{
++				btWirelessMode = WIRELESS_MODE_B;
++		}	else	{
++				DMESGW("ActSetWirelessMode8185(): No valid wireless mode
+supported, btSupportedWirelessMode(%x)!!!\n",
++						btSupportedWirelessMode);
++				btWirelessMode = WIRELESS_MODE_B;
+ 		}
  	}
- 	up(&priv->wx_sem);
 
-@@ -1194,7 +1181,7 @@ static int r8180_wx_get_version(struct net_device *dev,
- 			       union iwreq_data *wrqu, char *extra)
+@@ -1262,15 +1212,13 @@ ActSetWirelessMode8185(
+ 	 * Update current wireless mode if we swtich to specified band
+successfully. */
+ 	ieee->mode = (WIRELESS_MODE)btWirelessMode;
+
+-	// 3. Change related setting.
+-	if( ieee->mode == WIRELESS_MODE_A ){
++	/* 3. Change related setting.	/*
++	if( ieee->mode == WIRELESS_MODE_A )	{
+ 		DMESG("WIRELESS_MODE_A\n");
+-	}
+-	else if( ieee->mode == WIRELESS_MODE_B ){
+-		DMESG("WIRELESS_MODE_B\n");
+-	}
+-	else if( ieee->mode == WIRELESS_MODE_G ){
+-		DMESG("WIRELESS_MODE_G\n");
++	}	else if( ieee->mode == WIRELESS_MODE_B )	{
++			DMESG("WIRELESS_MODE_B\n");
++	}	else if( ieee->mode == WIRELESS_MODE_G )	{
++			DMESG("WIRELESS_MODE_G\n");
+ 	}
+ 	ActUpdateChannelAccessSetting( dev, ieee->mode, &priv->ChannelAccessSetting);
+ }
+@@ -1282,15 +1230,15 @@ void rtl8185b_irq_enable(struct net_device *dev)
+ 	priv->irq_enabled = 1;
+ 	write_nic_dword(dev, IMR, priv->IntrMask);
+ }
+-//by amy for power save
++/* by amy for power save */
+ void
+ DrvIFIndicateDisassociation(
+ 	struct net_device *dev,
+ 	u16			reason
+ 	)
  {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	//struct ieee80211_device *ieee;
-+	/* struct ieee80211_device *ieee; */
+-	// nothing is needed after disassociation request.
+-}
++		/* nothing is needed after disassociation request. */
++	}
+ void
+ MgntDisconnectIBSS(
+ 	struct net_device *dev
+@@ -1300,17 +1248,21 @@ MgntDisconnectIBSS(
+ 	u8			i;
 
- 	down(&priv->wx_sem);
- 	strcpy(extra, "1020.0808");
-@@ -1203,8 +1190,8 @@ static int r8180_wx_get_version(struct net_device *dev,
- 	return 0;
+ 	DrvIFIndicateDisassociation(dev, unspec_reason);
+-	for(i=0;i<6;i++)  priv->ieee80211->current_network.bssid[i] = 0x55;
+
+-	priv->ieee80211->state = IEEE80211_NOLINK;
++	for (i = 0; i < 6 ; i++)
++		priv->ieee80211->current_network.bssid[i] = 0x55;
+
+-	//Stop Beacon.
+
+-	// Vista add a Adhoc profile, HW radio off untill OID_DOT11_RESET_REQUEST
+-	// Driver would set MSR=NO_LINK, then HW Radio ON, MgntQueue Stuck.
+-	// Because Bcn DMA isn't complete, mgnt queue would stuck until Bcn
+packet send.
+
+-	// Disable Beacon Queue Own bit, suggested by jong
++	priv->ieee80211->state = IEEE80211_NOLINK;
++	/*
++		Stop Beacon.
++
++		Vista add a Adhoc profile, HW radio off untill OID_DOT11_RESET_REQUEST
++		Driver would set MSR=NO_LINK, then HW Radio ON, MgntQueue Stuck.
++		Because Bcn DMA isn't complete, mgnt queue would stuck until Bcn packet send.
++
++		Disable Beacon Queue Own bit, suggested by jong	*/
+ 	ieee80211_stop_send_beacons(priv->ieee80211);
+
+ 	priv->ieee80211->link_change(dev);
+@@ -1319,22 +1271,25 @@ MgntDisconnectIBSS(
+ void
+ MlmeDisassociateRequest(
+ 	struct net_device *dev,
+-	u8*			asSta,
+-	u8			asRsn
++	u8 *asSta,
++	u8	asRsn
+ 	)
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	u8 i;
+
+-	SendDisassociation(priv->ieee80211, asSta, asRsn );
++	SendDisassociation(priv->ieee80211, asSta, asRsn);
+
+-	if( memcmp(priv->ieee80211->current_network.bssid, asSta, 6 ) == 0 ){
+-		//ShuChen TODO: change media status.
+-		//ShuChen TODO: What to do when disassociate.
++	if (memcmp(priv->ieee80211->current_network.bssid, asSta, 6) == 0)	{
++		/*ShuChen TODO: change media status.			*/
++		/*ShuChen TODO: What to do when disassociate.	*/
+ 		DrvIFIndicateDisassociation(dev, unspec_reason);
+
+
+-		for(i=0;i<6;i++)  priv->ieee80211->current_network.bssid[i] = 0x22;
++
++		for (i = 0; i < 6; i++)
++			priv->ieee80211->current_network.bssid[i] = 0x22;
++
+ 		ieee80211_disassociate(priv->ieee80211);
+ 	}
+
+@@ -1348,15 +1303,15 @@ MgntDisconnectAP(
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+
+-//
+-// Commented out by rcnjko, 2005.01.27:
+-// I move SecClearAllKeys() to MgntActSet_802_11_DISASSOCIATE().
+-//
+-//	//2004/09/15, kcwu, the key should be cleared, or the new
+handshaking will not success
++	/*
++	Commented out by rcnjko, 2005.01.27:
++	I move SecClearAllKeys() to MgntActSet_802_11_DISASSOCIATE().
++
++		2004/09/15, kcwu, the key should be cleared, or the new handshaking
+will not success
+
+-	// In WPA WPA2 need to Clear all key ... because new key will set
+after new handshaking.
+-	// 2004.10.11, by rcnjko.
+-	MlmeDisassociateRequest( dev, priv->ieee80211->current_network.bssid, asRsn );
++		In WPA WPA2 need to Clear all key ... because new key will set
+after new handshaking.
++		2004.10.11, by rcnjko. */
++	MlmeDisassociateRequest(dev, priv->ieee80211->current_network.bssid, asRsn);
+
+ 	priv->ieee80211->state = IEEE80211_NOLINK;
+ }
+@@ -1367,40 +1322,37 @@ MgntDisconnect(
+ )
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+-	//
+-	// Schedule an workitem to wake up for ps mode, 070109, by rcnjko.
+-	//
++	/*
++		Schedule an workitem to wake up for ps mode, 070109, by rcnjko.
++	*/
+
+-	if(IS_DOT11D_ENABLE(priv->ieee80211))
++	if (IS_DOT11D_ENABLE(priv->ieee80211))
+ 		Dot11d_Reset(priv->ieee80211);
+-	// In adhoc mode, update beacon frame.
+-	if( priv->ieee80211->state == IEEE80211_LINKED )
+-	{
+-		if( priv->ieee80211->iw_mode == IW_MODE_ADHOC )
+-		{
++	/* In adhoc mode, update beacon frame.	*/
++	if (priv->ieee80211->state == IEEE80211_LINKED)	{
++		if (priv->ieee80211->iw_mode == IW_MODE_ADHOC)
+ 			MgntDisconnectIBSS(dev);
+-		}
+-		if( priv->ieee80211->iw_mode == IW_MODE_INFRA )
+-		{
+-			// We clear key here instead of MgntDisconnectAP() because that
+-			// MgntActSet_802_11_DISASSOCIATE() is an interface called by OS,
+-			// e.g. OID_802_11_DISASSOCIATE in Windows while as MgntDisconnectAP() is
+-			// used to handle disassociation related things to AP, e.g. send Disassoc
+-			// frame to AP.  2005.01.27, by rcnjko.
++
++		if (priv->ieee80211->iw_mode == IW_MODE_INFRA)	{
++			/*	We clear key here instead of MgntDisconnectAP() because that
++				MgntActSet_802_11_DISASSOCIATE() is an interface called by OS,
++				e.g. OID_802_11_DISASSOCIATE in Windows while as MgntDisconnectAP() is
++				used to handle disassociation related things to AP, e.g. send Disassoc
++				frame to AP.  2005.01.27, by rcnjko.	*/
+ 			MgntDisconnectAP(dev, asRsn);
+ 		}
+-		// Inidicate Disconnect, 2005.02.23, by rcnjko.
++		/* Inidicate Disconnect, 2005.02.23, by rcnjko.	*/
+ 	}
+ 	return true;
+ }
+-//
+-//	Description:
+-//		Chang RF Power State.
+-//		Note that, only MgntActSet_RF_State() is allowed to set HW_VAR_RF_STATE.
+-//
+-//	Assumption:
+-//		PASSIVE LEVEL.
+-//
++/*
++	Description:
++		Chang RF Power State.
++		Note that, only MgntActSet_RF_State() is allowed to set HW_VAR_RF_STATE.
++
++	Assumption:
++		PASSIVE LEVEL.
++*/
+ bool
+ SetRFPowerState(
+ 	struct net_device *dev,
+@@ -1410,10 +1362,8 @@ SetRFPowerState(
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	bool			bResult = false;
+
+-	if(eRFPowerState == priv->eRFPowerState)
+-	{
++	if (eRFPowerState == priv->eRFPowerState)
+ 		return bResult;
+-	}
+
+ 	 bResult = SetZebraRFPowerState8185(dev, eRFPowerState);
+
+@@ -1442,83 +1392,70 @@ MgntActSet_RF_State(
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	bool				bActionAllowed = false;
+ 	bool				bConnectBySSID = false;
+-	RT_RF_POWER_STATE 	rtState;
++	RT_RF_POWER_STATE	rtState;
+ 	u16				RFWaitCounter = 0;
+ 	unsigned long flag;
+-	//
+-	// Prevent the race condition of RF state change. By Bruce, 2007-11-28.
+-	// Only one thread can change the RF state at one time, and others
+should wait to be executed.
+-	//
+-	while(true)
+-	{
+-		spin_lock_irqsave(&priv->rf_ps_lock,flag);
+-		if(priv->RFChangeInProgress)
+-		{
+-			spin_unlock_irqrestore(&priv->rf_ps_lock,flag);
+-			// Set RF after the previous action is done.
+-			while(priv->RFChangeInProgress)
+-			{
+-				RFWaitCounter ++;
+-				udelay(1000); // 1 ms
+-
+-				// Wait too long, return FALSE to avoid to be stuck here.
+-				if(RFWaitCounter > 1000) // 1sec
+-				{
++	/*
++		Prevent the race condition of RF state change. By Bruce, 2007-11-28.
++		Only one thread can change the RF state at one time, and others
+should wait to be executed.
++	*/
++	while (true)	{
++		spin_lock_irqsave(&priv->rf_ps_lock, flag);
++		if (priv->RFChangeInProgress)	{
++			spin_unlock_irqrestore(&priv->rf_ps_lock, flag);
++			/*  Set RF after the previous action is done.	*/
++			while (priv->RFChangeInProgress)	{
++				RFWaitCounter++;
++				udelay(1000); /* 1 ms	*/
++
++				/* Wait too long, return FALSE to avoid to be stuck here.	*/
++				if (RFWaitCounter > 1000)	{	/* 1sec	*/
+ 					printk("MgntActSet_RF_State(): Wait too long to set RF\n");
+-					// TODO: Reset RF state?
++					/* TODO: Reset RF state?	*/
+ 					return false;
+ 				}
+ 			}
+-		}
+-		else
+-		{
++		}	else	{
+ 			priv->RFChangeInProgress = true;
+-			spin_unlock_irqrestore(&priv->rf_ps_lock,flag);
++			spin_unlock_irqrestore(&priv->rf_ps_lock, flag);
+ 			break;
+ 		}
+ 	}
+ 	rtState = priv->eRFPowerState;
+
+-	switch(StateToSet)
+-	{
++	switch (StateToSet)	{
+ 	case eRfOn:
+-		//
+-		// Turn On RF no matter the IPS setting because we need to update
+the RF state to Ndis under Vista, or
+-		// the Windows does not allow the driver to perform site survey any
+more. By Bruce, 2007-10-02.
+-		//
++		/*
++			Turn On RF no matter the IPS setting because we need to update the
+RF state to Ndis under Vista, or
++			the Windows does not allow the driver to perform site survey any
+more. By Bruce, 2007-10-02.
++		*/
+ 		priv->RfOffReason &= (~ChangeSource);
+
+-		if(! priv->RfOffReason)
+-		{
++		if (!priv->RfOffReason)	{
+ 			priv->RfOffReason = 0;
+ 			bActionAllowed = true;
+
+-			if(rtState == eRfOff && ChangeSource >=RF_CHANGE_BY_HW && !priv->bInHctTest)
+-			{
++			if (rtState == eRfOff && ChangeSource >= RF_CHANGE_BY_HW &&
+!priv->bInHctTest)
+ 				bConnectBySSID = true;
+-			}
+-		}
+-		else
+-			;
++
++		}	else
++				;
+ 		break;
+
+ 	case eRfOff:
+-		 // 070125, rcnjko: we always keep connected in AP mode.
++		 /* 070125, rcnjko: we always keep connected in AP mode.	*/
+
+-			if (priv->RfOffReason > RF_CHANGE_BY_IPS)
+-			{
+-				//
+-				// 060808, Annie:
+-				// Disconnect to current BSS when radio off. Asked by QuanTa.
+-				//
+-
+-				//
+-				// Calling MgntDisconnect() instead of MgntActSet_802_11_DISASSOCIATE(),
+-				// because we do NOT need to set ssid to dummy ones.
+-				//
+-				MgntDisconnect( dev, disas_lv_ss );
+-
+-				// Clear content of bssDesc[] and bssDesc4Query[] to avoid
+reporting old bss to UI.
++			if (priv->RfOffReason > RF_CHANGE_BY_IPS)	{
++				/*
++					060808, Annie:
++					Disconnect to current BSS when radio off. Asked by QuanTa.
++
++					Calling MgntDisconnect() instead of MgntActSet_802_11_DISASSOCIATE(),
++					because we do NOT need to set ssid to dummy ones.
++				*/
++				MgntDisconnect(dev, disas_lv_ss);
++
++				/* Clear content of bssDesc[] and bssDesc4Query[] to avoid
+reporting old bss to UI.	*/
+ 			}
+
+ 		priv->RfOffReason |= ChangeSource;
+@@ -1532,31 +1469,27 @@ MgntActSet_RF_State(
+ 		break;
+ 	}
+
+-	if(bActionAllowed)
+-	{
+-                // Config HW to the specified mode.
++	if (bActionAllowed)	{
++				/* Config HW to the specified mode.	*/
+ 		SetRFPowerState(dev, StateToSet);
+
+-		// Turn on RF.
+-		if(StateToSet == eRfOn)
+-		{
++		/* Turn on RF.	*/
++		if (StateToSet == eRfOn)		{
+ 			HalEnableRx8185Dummy(dev);
+-			if(bConnectBySSID)
+-			{
+-			// by amy not supported
+-			}
++			if (bConnectBySSID)
++				/* by amy not supported	*/
++
+ 		}
+-		// Turn off RF.
+-		else if(StateToSet == eRfOff)
+-		{
++		/* Turn off RF.	*/
++		else if (StateToSet == eRfOff)
+ 			HalDisableRx8185Dummy(dev);
+-		}
++
+ 	}
+
+-	// Release RF spinlock
+-	spin_lock_irqsave(&priv->rf_ps_lock,flag);
++	/* Release RF spinlock	*/
++	spin_lock_irqsave(&priv->rf_ps_lock, flag);
+ 	priv->RFChangeInProgress = false;
+-	spin_unlock_irqrestore(&priv->rf_ps_lock,flag);
++	spin_unlock_irqrestore(&priv->rf_ps_lock, flag);
+ 	return bActionAllowed;
+ }
+ void
+@@ -1565,28 +1498,28 @@ InactivePowerSave(
+ 	)
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+-	//
+-	// This flag "bSwRfProcessing", indicates the status of IPS
+procedure, should be set if the IPS workitem
+-	// is really scheduled.
+-	// The old code, sets this flag before scheduling the IPS workitem
+and however, at the same time the
+-	// previous IPS workitem did not end yet, fails to schedule the
+current workitem. Thus, bSwRfProcessing
+-	// blocks the IPS procedure of switching RF.
+-	//
++	/*
++		This flag "bSwRfProcessing", indicates the status of IPS procedure,
+should be set if the IPS workitem
++		is really scheduled.
++		The old code, sets this flag before scheduling the IPS workitem and
+however, at the same time the
++		previous IPS workitem did not end yet, fails to schedule the
+current workitem. Thus, bSwRfProcessing
++		blocks the IPS procedure of switching RF.
++	*/
+ 	priv->bSwRfProcessing = true;
+
+ 	MgntActSet_RF_State(dev, priv->eInactivePowerState, RF_CHANGE_BY_IPS);
+
+-	//
+-	// To solve CAM values miss in RF OFF, rewrite CAM values after RF
+ON. By Bruce, 2007-09-20.
+-	//
++	/*
++		To solve CAM values miss in RF OFF, rewrite CAM values after RF ON.
+By Bruce, 2007-09-20.
++	*/
+
+ 	priv->bSwRfProcessing = false;
  }
 
--//added by amy 080818
--//receive datarate from user typing valid rate is from 2 to 108 (1 -
-54M), if input 0, return to normal rate adaptive.
-+/* added by amy 080818 */
-+/*receive datarate from user typing valid rate is from 2 to 108 (1 -
-54M), if input 0, return to normal rate adaptive. */
- static int r8180_wx_set_forcerate(struct net_device *dev,
- 			     struct iw_request_info *info,
- 			     union iwreq_data *wrqu, char *extra)
-@@ -1214,36 +1201,33 @@ static int r8180_wx_set_forcerate(struct
-net_device *dev,
-
- 	down(&priv->wx_sem);
-
--	printk("==============>%s(): forcerate is %d\n",__func__,forcerate);
--	if((forcerate == 2) || (forcerate == 4) || (forcerate == 11) ||
-(forcerate == 22) || (forcerate == 12) ||
-+	printk("==============>%s(): forcerate is %d\n", __func__, forcerate);
-+	if ((forcerate == 2) || (forcerate == 4) || (forcerate == 11) ||
-(forcerate == 22) || (forcerate == 12) ||
- 		(forcerate == 18) || (forcerate == 24) || (forcerate == 36) ||
-(forcerate == 48) || (forcerate == 72) ||
- 		(forcerate == 96) || (forcerate == 108))
- 	{
- 		priv->ForcedDataRate = 1;
- 		priv->ieee80211->rate = forcerate * 5;
--	}
--	else if(forcerate == 0)
+-//
+-//	Description:
+-//		Enter the inactive power save mode. RF will be off
+-//
++/*
++	Description:
++		Enter the inactive power save mode. RF will be off
++*/
+ void
+ IPSEnter(
+ 	struct net_device *dev
+@@ -1594,21 +1527,19 @@ IPSEnter(
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	RT_RF_POWER_STATE rtState;
+-	if (priv->bInactivePs)
 -	{
-+	}	else if (forcerate == 0)	{
- 		priv->ForcedDataRate = 0;
- 		printk("OK! return rate adaptive\n");
++	if (priv->bInactivePs)	{
+ 		rtState = priv->eRFPowerState;
+
+-		//
+-		// Do not enter IPS in the following conditions:
+-		// (1) RF is already OFF or Sleep
+-		// (2) bSwRfProcessing (indicates the IPS is still under going)
+-		// (3) Connectted (only disconnected can trigger IPS)
+-		// (4) IBSS (send Beacon)
+-		// (5) AP mode (send Beacon)
+-		//
++		/*
++			Do not enter IPS in the following conditions:
++			(1) RF is already OFF or Sleep
++			(2) bSwRfProcessing (indicates the IPS is still under going)
++			(3) Connectted (only disconnected can trigger IPS)
++			(4) IBSS (send Beacon)
++			(5) AP mode (send Beacon)
++		*/
+ 		if (rtState == eRfOn && !priv->bSwRfProcessing
+-			&& (priv->ieee80211->state != IEEE80211_LINKED ))
+-		{
++			&& (priv->ieee80211->state != IEEE80211_LINKED))	{
+ 			priv->eInactivePowerState = eRfOff;
+ 			InactivePowerSave(dev);
+ 		}
+@@ -1621,11 +1552,9 @@ IPSLeave(
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	RT_RF_POWER_STATE rtState;
+-	if (priv->bInactivePs)
+-	{
++	if (priv->bInactivePs)	{
+ 		rtState = priv->eRFPowerState;
+-		if ((rtState == eRfOff || rtState == eRfSleep) &&
+(!priv->bSwRfProcessing) && priv->RfOffReason <= RF_CHANGE_BY_IPS)
+-		{
++		if ((rtState == eRfOff || rtState == eRfSleep) &&
+(!priv->bSwRfProcessing) && priv->RfOffReason <= RF_CHANGE_BY_IPS)	{
+ 			priv->eInactivePowerState = eRfOn;
+ 			InactivePowerSave(dev);
+ 		}
+@@ -1634,7 +1563,7 @@ IPSLeave(
+
+ void rtl8185b_adapter_start(struct net_device *dev)
+ {
+-      struct r8180_priv *priv = ieee80211_priv(dev);
++	struct r8180_priv *priv = ieee80211_priv(dev);
+ 	struct ieee80211_device *ieee = priv->ieee80211;
+
+ 	u8 SupportedWirelessMode;
+@@ -1645,141 +1574,133 @@ void rtl8185b_adapter_start(struct net_device *dev)
+ 	u8 TmpU1b;
+ 	u8 btPSR;
+
+-	write_nic_byte(dev,0x24e, (BIT5|BIT6|BIT0));
++	write_nic_byte(dev, 0x24e, (BIT5|BIT6|BIT0));
+ 	rtl8180_reset(dev);
+
+ 	priv->dma_poll_mask = 0;
+ 	priv->dma_poll_stop_mask = 0;
+
+ 	HwConfigureRTL8185(dev);
+-	write_nic_dword(dev, MAC0, ((u32*)dev->dev_addr)[0]);
+-	write_nic_word(dev, MAC4, ((u32*)dev->dev_addr)[1] & 0xffff );
+-	write_nic_byte(dev, MSR, read_nic_byte(dev, MSR) & 0xf3);	// default
+network type to 'No	Link'
++	write_nic_dword(dev, MAC0, ((u32 *)dev->dev_addr)[0]);
++	write_nic_word(dev, MAC4, ((u32 *)dev->dev_addr)[1] & 0xffff);
++	write_nic_byte(dev, MSR, read_nic_byte(dev, MSR) & 0xf3);	/* default
+network type to 'No	Link'	*/
+ 	write_nic_word(dev, BcnItv, 100);
+ 	write_nic_word(dev, AtimWnd, 2);
+ 	PlatformIOWrite2Byte(dev, FEMR, 0xFFFF);
+ 	write_nic_byte(dev, WPA_CONFIG, 0);
+ 	MacConfig_85BASIC(dev);
+-	// Override the RFSW_CTRL (MAC offset 0x272-0x273), 2006.06.07, by rcnjko.
+-	// BT_DEMO_BOARD type
++	/*	Override the RFSW_CTRL (MAC offset 0x272-0x273), 2006.06.07, by rcnjko.	*/
++	/*	BT_DEMO_BOARD type	*/
+ 	PlatformIOWrite2Byte(dev, RFSW_CTRL, 0x569a);
+
+-	//-----------------------------------------------------------------------------
+-	// Set up PHY related.
+-	//-----------------------------------------------------------------------------
+-	// Enable Config3.PARAM_En to revise AnaaParm.
+-	write_nic_byte(dev, CR9346, 0xc0);	// enable config register write
++	/*
++	-----------------------------------------------------------------------------
++		Set up PHY related.
++	-----------------------------------------------------------------------------
++	*/
++	/* Enable Config3.PARAM_En to revise AnaaParm.	*/
++	write_nic_byte(dev, CR9346, 0xc0);	/* enable config register write */
+ 	tmpu8 = read_nic_byte(dev, CONFIG3);
+-	write_nic_byte(dev, CONFIG3, (tmpu8 |CONFIG3_PARM_En) );
+-	// Turn on Analog power.
+-	// Asked for by William, otherwise, MAC 3-wire can't work,
+2006.06.27, by rcnjko.
++	write_nic_byte(dev, CONFIG3, (tmpu8 | CONFIG3_PARM_En));
++	/* Turn on Analog power.	*/
++	/* Asked for by William, otherwise, MAC 3-wire can't work,
+2006.06.27, by rcnjko.	*/
+ 	write_nic_dword(dev, ANAPARAM2, ANAPARM2_ASIC_ON);
+ 	write_nic_dword(dev, ANAPARAM, ANAPARM_ASIC_ON);
+ 	write_nic_word(dev, ANAPARAM3, 0x0010);
+
+ 	write_nic_byte(dev, CONFIG3, tmpu8);
+ 	write_nic_byte(dev, CR9346, 0x00);
+-	// enable EEM0 and EEM1 in 9346CR
++	/* enable EEM0 and EEM1 in 9346CR			*/
+ 	btCR9346 = read_nic_byte(dev, CR9346);
+-	write_nic_byte(dev, CR9346, (btCR9346|0xC0) );
++	write_nic_byte(dev, CR9346, (btCR9346 | 0xC0));
+
+-	// B cut use LED1 to control HW RF on/off
++	/* B cut use LED1 to control HW RF on/off	*/
+ 	TmpU1b = read_nic_byte(dev, CONFIG5);
+ 	TmpU1b = TmpU1b & ~BIT3;
+-	write_nic_byte(dev,CONFIG5, TmpU1b);
++	write_nic_byte(dev, CONFIG5, TmpU1b);
+
+-	// disable EEM0 and EEM1 in 9346CR
++	/* disable EEM0 and EEM1 in 9346CR	*/
+ 	btCR9346 &= ~(0xC0);
+ 	write_nic_byte(dev, CR9346, btCR9346);
+
+-	//Enable Led (suggested by Jong)
+-	// B-cut RF Radio on/off  5e[3]=0
++	/* Enable Led (suggested by Jong)	*/
++	/* B-cut RF Radio on/off  5e[3]=0	*/
+ 	btPSR = read_nic_byte(dev, PSR);
+ 	write_nic_byte(dev, PSR, (btPSR | BIT3));
+-	// setup initial timing for RFE.
++	/* setup initial timing for RFE.	*/
+ 	write_nic_word(dev, RFPinsOutput, 0x0480);
+ 	SetOutputEnableOfRfPins(dev);
+ 	write_nic_word(dev, RFPinsSelect, 0x2488);
+
+-	// PHY config.
++	/* PHY config.	*/
+ 	PhyConfig8185(dev);
+
+-	// We assume RegWirelessMode has already been initialized before,
+-	// however, we has to validate the wireless mode here and provide a
+-	// reasonable initialized value if necessary. 2005.01.13, by rcnjko.
++	/*
++		We assume RegWirelessMode has already been initialized before,
++		however, we has to validate the wireless mode here and provide a
++		reasonable initialized value if necessary. 2005.01.13, by rcnjko.
++	*/
+ 	SupportedWirelessMode = GetSupportedWirelessMode8185(dev);
+-	if(	(ieee->mode != WIRELESS_MODE_B) &&
++	if ((ieee->mode != WIRELESS_MODE_B) &&
+ 		(ieee->mode != WIRELESS_MODE_G) &&
+ 		(ieee->mode != WIRELESS_MODE_A) &&
+-		(ieee->mode != WIRELESS_MODE_AUTO))
+-	{ // It should be one of B, G, A, or AUTO.
++		(ieee->mode != WIRELESS_MODE_AUTO))	{
++		/* It should be one of B, G, A, or AUTO.	*/
+ 		bInvalidWirelessMode = 1;
 -	}
 -	else
--		printk("ERR: wrong rate\n");
-+	}	else
-+			printk("ERR: wrong rate\n");
- 	up(&priv->wx_sem);
- 	return 0;
- }
+-	{ // One of B, G, A, or AUTO.
+-		// Check if the wireless mode is supported by RF.
+-		if( (ieee->mode != WIRELESS_MODE_AUTO) &&
+-			(ieee->mode & SupportedWirelessMode) == 0 )
+-		{
++	}	else	{
++	/* One of B, G, A, or AUTO.	*/
++		/* Check if the wireless mode is supported by RF.	*/
++		if	((ieee->mode != WIRELESS_MODE_AUTO) &&
++			(ieee->mode & SupportedWirelessMode) == 0)	{
+ 			bInvalidWirelessMode = 1;
+ 		}
+ 	}
 
- static int r8180_wx_set_enc_ext(struct net_device *dev,
--                                        struct iw_request_info *info,
--                                        union iwreq_data *wrqu, char *extra)
-+										struct iw_request_info *info,
-+										union iwreq_data *wrqu, char *extra)
- {
+-	if(bInvalidWirelessMode || ieee->mode==WIRELESS_MODE_AUTO)
+-	{ // Auto or other invalid value.
+-		// Assigne a wireless mode to initialize.
+-		if((SupportedWirelessMode & WIRELESS_MODE_A))
+-		{
++	if (bInvalidWirelessMode || ieee->mode == WIRELESS_MODE_AUTO)	{
++		/* Auto or other invalid value.				*/
++		/* Assigne a wireless mode to initialize.	*/
++		if ((SupportedWirelessMode & WIRELESS_MODE_A))	{
+ 			InitWirelessMode = WIRELESS_MODE_A;
+-		}
+-		else if((SupportedWirelessMode & WIRELESS_MODE_G))
+-		{
++		}	else if ((SupportedWirelessMode & WIRELESS_MODE_G))	{
+ 			InitWirelessMode = WIRELESS_MODE_G;
+-		}
+-		else if((SupportedWirelessMode & WIRELESS_MODE_B))
+-		{
++		}	else if ((SupportedWirelessMode & WIRELESS_MODE_B))	{
+ 			InitWirelessMode = WIRELESS_MODE_B;
+-		}
+-		else
+-		{
++		}	else	{
+ 			DMESGW("InitializeAdapter8185(): No valid wireless mode supported,
+SupportedWirelessMode(%x)!!!\n",
+ 				 SupportedWirelessMode);
+ 			InitWirelessMode = WIRELESS_MODE_B;
+ 		}
 
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	//printk("===>%s()\n", __func__);
-+	/* printk("===>%s()\n", __func__); */
-
--	int ret=0;
-+	int ret = 0;
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-@@ -1256,11 +1240,11 @@ static int r8180_wx_set_auth(struct net_device *dev,
- 			     struct iw_request_info *info,
- 			     union iwreq_data *wrqu, char *extra)
- {
--	//printk("====>%s()\n", __func__);
-+	/* printk("====>%s()\n", __func__); */
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	int ret=0;
-+	int ret = 0;
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
- 	down(&priv->wx_sem);
-@@ -1270,16 +1254,16 @@ static int r8180_wx_set_auth(struct net_device *dev,
- }
-
- static int r8180_wx_set_mlme(struct net_device *dev,
--                                        struct iw_request_info *info,
--                                        union iwreq_data *wrqu, char *extra)
-+										struct iw_request_info *info,
-+										union iwreq_data *wrqu, char *extra)
- {
--	//printk("====>%s()\n", __func__);
-+	/* printk("====>%s()\n", __func__); */
-
--	int ret=0;
-+	int ret = 0;
- 	struct r8180_priv *priv = ieee80211_priv(dev);
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
-
-@@ -1294,82 +1278,81 @@ static int r8180_wx_set_gen_ie(struct net_device *dev,
- 			       struct iw_request_info *info,
- 			       union iwreq_data *wrqu, char *extra)
- {
--//	printk("====>%s(), len:%d\n", __func__, data->length);
--	int ret=0;
--        struct r8180_priv *priv = ieee80211_priv(dev);
-+/*	printk("====>%s(), len:%d\n", __func__, data->length); */
-+	int ret = 0;
-+		struct r8180_priv *priv = ieee80211_priv(dev);
-
-
--	if(priv->ieee80211->bHwRadioOff)
-+	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
-
--        down(&priv->wx_sem);
-+		down(&priv->wx_sem);
- #if 1
--        ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra,
-wrqu->data.length);
-+		ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, wrqu->data.length);
- #endif
--        up(&priv->wx_sem);
--	//printk("<======%s(), ret:%d\n", __func__, ret);
--        return ret;
-+		up(&priv->wx_sem);
-+	/* printk("<======%s(), ret:%d\n", __func__, ret); */
-+		return ret;
-
-
- }
--static iw_handler r8180_wx_handlers[] =
--{
--        NULL,                     /* SIOCSIWCOMMIT */
--        r8180_wx_get_name,   	  /* SIOCGIWNAME */
--        dummy,                    /* SIOCSIWNWID */
--        dummy,                    /* SIOCGIWNWID */
--        r8180_wx_set_freq,        /* SIOCSIWFREQ */
--        r8180_wx_get_freq,        /* SIOCGIWFREQ */
--        r8180_wx_set_mode,        /* SIOCSIWMODE */
--        r8180_wx_get_mode,        /* SIOCGIWMODE */
--        r8180_wx_set_sens,        /* SIOCSIWSENS */
--        r8180_wx_get_sens,        /* SIOCGIWSENS */
--        NULL,                     /* SIOCSIWRANGE */
--        rtl8180_wx_get_range,	  /* SIOCGIWRANGE */
--        NULL,                     /* SIOCSIWPRIV */
--        NULL,                     /* SIOCGIWPRIV */
--        NULL,                     /* SIOCSIWSTATS */
--        NULL,                     /* SIOCGIWSTATS */
--        dummy,                    /* SIOCSIWSPY */
--        dummy,                    /* SIOCGIWSPY */
--        NULL,                     /* SIOCGIWTHRSPY */
--        NULL,                     /* SIOCWIWTHRSPY */
--        r8180_wx_set_wap,      	  /* SIOCSIWAP */
--        r8180_wx_get_wap,         /* SIOCGIWAP */
--	r8180_wx_set_mlme,        /* SIOCSIWMLME*/
--        dummy,                    /* SIOCGIWAPLIST -- depricated */
--        r8180_wx_set_scan,        /* SIOCSIWSCAN */
--        r8180_wx_get_scan,        /* SIOCGIWSCAN */
--        r8180_wx_set_essid,       /* SIOCSIWESSID */
--        r8180_wx_get_essid,       /* SIOCGIWESSID */
--        dummy,                    /* SIOCSIWNICKN */
--        dummy,                    /* SIOCGIWNICKN */
--        NULL,                     /* -- hole -- */
--        NULL,                     /* -- hole -- */
--        r8180_wx_set_rate,        /* SIOCSIWRATE */
--        r8180_wx_get_rate,        /* SIOCGIWRATE */
--        r8180_wx_set_rts,         /* SIOCSIWRTS */
--        r8180_wx_get_rts,         /* SIOCGIWRTS */
--        r8180_wx_set_frag,        /* SIOCSIWFRAG */
--        r8180_wx_get_frag,        /* SIOCGIWFRAG */
--        dummy,                    /* SIOCSIWTXPOW */
--        dummy,                    /* SIOCGIWTXPOW */
--        r8180_wx_set_retry,       /* SIOCSIWRETRY */
--        r8180_wx_get_retry,       /* SIOCGIWRETRY */
--        r8180_wx_set_enc,         /* SIOCSIWENCODE */
--        r8180_wx_get_enc,         /* SIOCGIWENCODE */
--        r8180_wx_set_power,       /* SIOCSIWPOWER */
--        r8180_wx_get_power,       /* SIOCGIWPOWER */
--        NULL,			  /*---hole---*/
--	NULL, 			  /*---hole---*/
--	r8180_wx_set_gen_ie,      /* SIOCSIWGENIE */
--	NULL, 			  /* SIOCSIWGENIE */
--	r8180_wx_set_auth,	  /* SIOCSIWAUTH */
--	NULL,                     /* SIOCSIWAUTH */
--	r8180_wx_set_enc_ext, 	  /* SIOCSIWENCODEEXT */
--	NULL,                  	  /* SIOCSIWENCODEEXT */
--	NULL, 			 /* SIOCSIWPMKSA */
--	NULL, 			  /*---hole---*/
-+static iw_handler r8180_wx_handlers[] =	{
-+		NULL,						/* SIOCSIWCOMMIT */
-+		r8180_wx_get_name,			/* SIOCGIWNAME */
-+		dummy,						/* SIOCSIWNWID */
-+		dummy,						/* SIOCGIWNWID */
-+		r8180_wx_set_freq,			/* SIOCSIWFREQ */
-+		r8180_wx_get_freq,			/* SIOCGIWFREQ */
-+		r8180_wx_set_mode,			/* SIOCSIWMODE */
-+		r8180_wx_get_mode,			/* SIOCGIWMODE */
-+		r8180_wx_set_sens,			/* SIOCSIWSENS */
-+		r8180_wx_get_sens,			/* SIOCGIWSENS */
-+		NULL,						/* SIOCSIWRANGE */
-+		rtl8180_wx_get_range,		/* SIOCGIWRANGE */
-+		NULL,						/* SIOCSIWPRIV */
-+		NULL,						/* SIOCGIWPRIV */
-+		NULL,						/* SIOCSIWSTATS */
-+		NULL,						/* SIOCGIWSTATS */
-+		dummy,						/* SIOCSIWSPY */
-+		dummy,						/* SIOCGIWSPY */
-+		NULL,						/* SIOCGIWTHRSPY */
-+		NULL,						/* SIOCWIWTHRSPY */
-+		r8180_wx_set_wap,			/* SIOCSIWAP */
-+		r8180_wx_get_wap,			/* SIOCGIWAP */
-+		r8180_wx_set_mlme,			/* SIOCSIWMLME*/
-+		dummy,						/* SIOCGIWAPLIST -- depricated */
-+		r8180_wx_set_scan,			/* SIOCSIWSCAN */
-+		r8180_wx_get_scan,			/* SIOCGIWSCAN */
-+		r8180_wx_set_essid,			/* SIOCSIWESSID */
-+		r8180_wx_get_essid,			/* SIOCGIWESSID */
-+		dummy,						/* SIOCSIWNICKN */
-+		dummy,						/* SIOCGIWNICKN */
-+		NULL,						/* -- hole -- */
-+		NULL,						/* -- hole -- */
-+		r8180_wx_set_rate,			/* SIOCSIWRATE */
-+		r8180_wx_get_rate,			/* SIOCGIWRATE */
-+		r8180_wx_set_rts,			/* SIOCSIWRTS */
-+		r8180_wx_get_rts,			/* SIOCGIWRTS */
-+		r8180_wx_set_frag,			/* SIOCSIWFRAG */
-+		r8180_wx_get_frag,			/* SIOCGIWFRAG */
-+		dummy,						/* SIOCSIWTXPOW */
-+		dummy,						/* SIOCGIWTXPOW */
-+		r8180_wx_set_retry,			/* SIOCSIWRETRY */
-+		r8180_wx_get_retry,			/* SIOCGIWRETRY */
-+		r8180_wx_set_enc,			/* SIOCSIWENCODE */
-+		r8180_wx_get_enc,			/* SIOCGIWENCODE */
-+		r8180_wx_set_power,			/* SIOCSIWPOWER */
-+		r8180_wx_get_power,			/* SIOCGIWPOWER */
-+		NULL,						/*---hole---*/
-+		NULL,						/*---hole---*/
-+		r8180_wx_set_gen_ie,		/* SIOCSIWGENIE */
-+		NULL,						/* SIOCSIWGENIE */
-+		r8180_wx_set_auth,			/* SIOCSIWAUTH */
-+		NULL,						/* SIOCSIWAUTH */
-+		r8180_wx_set_enc_ext,		/* SIOCSIWENCODEEXT */
-+		NULL,						/* SIOCSIWENCODEEXT */
-+		NULL,						/* SIOCSIWPMKSA */
-+		NULL,						/*---hole---*/
- };
-
-
-@@ -1391,10 +1374,12 @@ static const struct iw_priv_args
-r8180_private_args[] = {
-
- 	},
- 	/* added by christian */
--	//{
--	//	SIOCIWFIRSTPRIV + 0x2,
--	//	IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "prismhdr"
--	//},
-+	/*
-+	{
-+		SIOCIWFIRSTPRIV + 0x2,
-+		IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "prismhdr"
-+	},
-+	*/
- 	/* end added by christian */
+-		// Initialize RegWirelessMode if it is not a valid one.
+-		if(bInvalidWirelessMode)
+-		{
++		/* Initialize RegWirelessMode if it is not a valid one.	*/
++		if (bInvalidWirelessMode)
+ 			ieee->mode = (WIRELESS_MODE)InitWirelessMode;
+-		}
+-	}
+-	else
+-	{ // One of B, G, A.
++
++	}	else	{
++	/* One of B, G, A.	*/
+ 		InitWirelessMode = ieee->mode;
+ 	}
+-//by amy for power save
++/* by amy for power save	*/
+ 	priv->eRFPowerState = eRfOff;
+ 	priv->RfOffReason = 0;
  	{
- 		SIOCIWFIRSTPRIV + 0x4,
-@@ -1414,15 +1399,17 @@ static const struct iw_priv_args
-r8180_private_args[] = {
- 		0, 0, "dummy"
-
- 	},
--//	{
--//		SIOCIWFIRSTPRIV + 0x5,
--//		0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "getpsmode"
--//	},
--//	{
--//		SIOCIWFIRSTPRIV + 0x6,
--//		IW_PRIV_SIZE_FIXED, 0, "setpsmode"
--//	},
--//set/get mode have been realized in public handlers
-+/*
-+	{
-+		SIOCIWFIRSTPRIV + 0x5,
-+		0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "getpsmode"
-+	},
-+	{
-+		SIOCIWFIRSTPRIV + 0x6,
-+		IW_PRIV_SIZE_FIXED, 0, "setpsmode"
-+	},
-+*/
-+/* set/get mode have been realized in public handlers */
-
- 	{
- 		SIOCIWFIRSTPRIV + 0x8,
-@@ -1453,39 +1440,39 @@ static const struct iw_priv_args
-r8180_private_args[] = {
- 	{
- 		SIOCIWFIRSTPRIV + 0xF,
- 		0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "getlinkqual"
-- 	},
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x10,
- 		0, 0, "resetstats"
-- 	},
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x11,
--		0,0, "dummy"
-- 	},
-+		0, 0, "dummy"
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x12,
- 		0, 0, "radioon"
-- 	},
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x13,
- 		0, 0, "radiooff"
-- 	},
-- 	{
-+	},
-+	{
- 		SIOCIWFIRSTPRIV + 0x14,
- 		IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "setchannel"
-- 	},
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x15,
- 		0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "getchannel"
-- 	},
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x16,
--		0,0, "dummy"
-- 	},
-+		0, 0, "dummy"
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x17,
--		0,IW_PRIV_TYPE_CHAR | IW_PRIV_SIZE_FIXED | 32, "getversion"
-- 	},
-+		0, IW_PRIV_TYPE_CHAR | IW_PRIV_SIZE_FIXED | 32, "getversion"
-+	},
- 	{
- 		SIOCIWFIRSTPRIV + 0x18,
- 		IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "setrate"
-@@ -1498,7 +1485,7 @@ static iw_handler r8180_private_handler[] = {
- 	dummy,
- 	r8180_wx_set_beaconinterval,
- 	dummy,
--	//r8180_wx_set_monitor_type,
-+	/* r8180_wx_set_monitor_type, */
- 	r8180_wx_set_scan_type,
- 	dummy,
- 	r8180_wx_set_rawtx,
-@@ -1512,7 +1499,7 @@ static iw_handler r8180_private_handler[] = {
- 	dummy,
- 	r8180_wx_get_sigqual,
- 	r8180_wx_reset_stats,
--	dummy,//r8180_wx_get_stats
-+	dummy,/* r8180_wx_get_stats */
- 	r8180_wx_radio_on,
- 	r8180_wx_radio_off,
- 	r8180_wx_set_channelplan,
-@@ -1523,39 +1510,38 @@ static iw_handler r8180_private_handler[] = {
- };
-
- static inline int is_same_network(struct ieee80211_network *src,
--                                  struct ieee80211_network *dst,
-+									struct ieee80211_network *dst,
- 				  struct ieee80211_device *ieee)
- {
--        /* A network is only a duplicate if the channel, BSSID, ESSID
--         * and the capability field (in particular IBSS and BSS) all match.
--         * We treat all <hidden> with the same BSSID and channel
--         * as one network */
--        return (((src->ssid_len == dst->ssid_len)||(ieee->iw_mode ==
-IW_MODE_INFRA)) &&  //YJ,mod, 080819,for hidden ap
--			//((src->ssid_len == dst->ssid_len) &&
-+		/*		A network is only a duplicate if the channel, BSSID, ESSID
-+		* and the capability field (in particular IBSS and BSS) all match.
-+		* We treat all <hidden> with the same BSSID and channel
-+		* as one network		*/
-+		return (((src->ssid_len == dst->ssid_len) || (ieee->iw_mode ==
-IW_MODE_INFRA)) &&	/* YJ,mod, 080819,for hidden ap	*/
-+			/* ((src->ssid_len == dst->ssid_len) && */
- 			(src->channel == dst->channel) &&
- 			!memcmp(src->bssid, dst->bssid, ETH_ALEN) &&
--			(!memcmp(src->ssid, dst->ssid, src->ssid_len)||(ieee->iw_mode ==
-IW_MODE_INFRA)) &&  //YJ,mod, 080819,for hidden ap
--			//!memcmp(src->ssid, dst->ssid, src->ssid_len) &&
-+			(!memcmp(src->ssid, dst->ssid, src->ssid_len) || (ieee->iw_mode ==
-IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
-+			/*!memcmp(src->ssid, dst->ssid, src->ssid_len) && */
- 			((src->capability & WLAN_CAPABILITY_IBSS) ==
- 			(dst->capability & WLAN_CAPABILITY_IBSS)) &&
- 			((src->capability & WLAN_CAPABILITY_BSS) ==
- 			(dst->capability & WLAN_CAPABILITY_BSS)));
- }
-
--//WB modefied to show signal to GUI on 18-01-2008
-+/* WB modefied to show signal to GUI on 18-01-2008 */
- static struct iw_statistics *r8180_get_wireless_stats(struct net_device *dev)
- {
--       struct r8180_priv *priv = ieee80211_priv(dev);
-+	struct r8180_priv *priv = ieee80211_priv(dev);
- 	struct ieee80211_device* ieee = priv->ieee80211;
- 	struct iw_statistics* wstats = &priv->wstats;
--	//struct ieee80211_network* target = NULL;
-+	/* struct ieee80211_network* target = NULL; */
- 	int tmp_level = 0;
- 	int tmp_qual = 0;
- 	int tmp_noise = 0;
--	//unsigned long flag;
-+	/* unsigned long flag; */
-
--	if (ieee->state < IEEE80211_LINKED)
+ 		MgntActSet_RF_State(dev, eRfOn, 0);
+ 	}
+-		//
+-		// If inactive power mode is enabled, disable rf while in disconnected state.
+-		//
++		/*
++			If inactive power mode is enabled, disable rf while in disconnected state.
++		*/
+ 	if (priv->bInactivePs)
 -	{
-+	if (ieee->state < IEEE80211_LINKED)	{
- 		wstats->qual.qual = 0;
- 		wstats->qual.level = 0;
- 		wstats->qual.noise = 0;
-@@ -1566,22 +1552,22 @@ static struct iw_statistics
-*r8180_get_wireless_stats(struct net_device *dev)
- 	tmp_level = (&ieee->current_network)->stats.signal;
- 	tmp_qual = (&ieee->current_network)->stats.signalstrength;
- 	tmp_noise = (&ieee->current_network)->stats.noise;
--	//printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise);
-+	/* printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise); */
+-		MgntActSet_RF_State(dev,eRfOff, RF_CHANGE_BY_IPS);
+-	}
+-//by amy for power save
++		MgntActSet_RF_State(dev , eRfOff, RF_CHANGE_BY_IPS);
++
++/* by amy for power save	*/
 
--//	printk("level:%d\n", tmp_level);
-+/*	printk("level:%d\n", tmp_level);	*/
- 	wstats->qual.level = tmp_level;
- 	wstats->qual.qual = tmp_qual;
- 	wstats->qual.noise = tmp_noise;
--	wstats->qual.updated = IW_QUAL_ALL_UPDATED| IW_QUAL_DBM;
-+	wstats->qual.updated = IW_QUAL_ALL_UPDATED | IW_QUAL_DBM;
- 	return wstats;
+ 	ActSetWirelessMode8185(dev, (u8)(InitWirelessMode));
+
+-	//-----------------------------------------------------------------------------
++	/* -----------------------------------------------------------------------------
+*/
+
+ 	rtl8185b_irq_enable(dev);
+
+ 	netif_start_queue(dev);
+- }
++	}
+
+ void rtl8185b_rx_enable(struct net_device *dev)
+ {
+@@ -1787,27 +1708,29 @@ void rtl8185b_rx_enable(struct net_device *dev)
+ 	/* for now we accept data, management & ctl frame*/
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+
+-	if (dev->flags & IFF_PROMISC) DMESG ("NIC in promisc mode");
+
+-	if(priv->ieee80211->iw_mode == IW_MODE_MONITOR || \
+-	   dev->flags & IFF_PROMISC){
+-	   	priv->ReceiveConfig = priv->ReceiveConfig & (~RCR_APM);
++	if (dev->flags & IFF_PROMISC)
++		DMESG("NIC in promisc mode");
++
++	if (priv->ieee80211->iw_mode == IW_MODE_MONITOR || \
++	   dev->flags & IFF_PROMISC)	{
++		priv->ReceiveConfig = priv->ReceiveConfig & (~RCR_APM);
+ 		priv->ReceiveConfig = priv->ReceiveConfig | RCR_AAP;
+ 	}
+
+-	if(priv->ieee80211->iw_mode == IW_MODE_MONITOR){
++	if (priv->ieee80211->iw_mode == IW_MODE_MONITOR)
+ 		priv->ReceiveConfig = priv->ReceiveConfig | RCR_ACF | RCR_APWRMGT | RCR_AICV;
+-	}
+
+-	if( priv->crcmon == 1 && priv->ieee80211->iw_mode == IW_MODE_MONITOR)
++
++	if (priv->crcmon == 1 && priv->ieee80211->iw_mode == IW_MODE_MONITOR)
+ 		priv->ReceiveConfig = priv->ReceiveConfig | RCR_ACRC32;
+
+ 	write_nic_dword(dev, RCR, priv->ReceiveConfig);
+
+ 	fix_rx_fifo(dev);
+
+-	cmd=read_nic_byte(dev,CMD);
+-	write_nic_byte(dev,CMD,cmd | (1<<CMD_RX_ENABLE_SHIFT));
++	cmd = read_nic_byte(dev, CMD);
++	write_nic_byte(dev, CMD, cmd | (1<<CMD_RX_ENABLE_SHIFT));
+
  }
 
--struct iw_handler_def  r8180_wx_handlers_def={
-+struct iw_handler_def  r8180_wx_handlers_def = {
- 	.standard = r8180_wx_handlers,
- 	.num_standard = ARRAY_SIZE(r8180_wx_handlers),
- 	.private = r8180_private_handler,
- 	.num_private = ARRAY_SIZE(r8180_private_handler),
-- 	.num_private_args = sizeof(r8180_private_args) / sizeof(struct iw_priv_args),
-+	.num_private_args = sizeof(r8180_private_args) / sizeof(struct iw_priv_args),
- 	.get_wireless_stats = r8180_get_wireless_stats,
- 	.private_args = (struct iw_priv_args *)r8180_private_args,
- };
+@@ -1824,7 +1747,7 @@ void rtl8185b_tx_enable(struct net_device *dev)
+
+ 	fix_tx_fifo(dev);
+
+-	cmd=read_nic_byte(dev,CMD);
+-	write_nic_byte(dev,CMD,cmd | (1<<CMD_TX_ENABLE_SHIFT));
++	cmd = read_nic_byte(dev, CMD);
++	write_nic_byte(dev, CMD, cmd | (1<<CMD_TX_ENABLE_SHIFT));
+ }
+
 -- 
 1.7.2.1
