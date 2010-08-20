@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab0HTTH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 15:07:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56992 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab0HTTHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 15:07:25 -0400
-Date: Fri, 20 Aug 2010 12:07:19 -0700
-From: Greg KH <gregkh@suse.de>
-To: Benjamin Gilbert <bgilbert@cs.cmu.edu>
-Cc: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.36-rc1 oopses at boot time in kobject allocation
-Message-ID: <20100820190719.GA8804@suse.de>
-References: <4C6D9289.4000702@cs.cmu.edu>
- <20100819203435.GA28508@suse.de>
- <4C6E799A.7060902@cs.cmu.edu>
- <AANLkTikkiD7qfHqkMSq3id=ap6V6gvsddca+tc8Q+bk0@mail.gmail.com>
- <4C6ED15E.3050506@cs.cmu.edu>
+	id S1753280Ab0HTTMn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 15:12:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37711 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab0HTTMl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 15:12:41 -0400
+Date: Fri, 20 Aug 2010 16:12:30 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: callchain sampling bug in perf?
+Message-ID: <20100820191230.GD14788@ghostprotocols.net>
+References: <20100815225359.GA32152@infradead.org>
+ <20100819005720.GB5324@nowhere>
+ <20100819085700.GB8782@infradead.org>
+ <20100819150422.GA325@ghostprotocols.net>
+ <20100820091645.GA20138@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4C6ED15E.3050506@cs.cmu.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100820091645.GA20138@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 03:02:54PM -0400, Benjamin Gilbert wrote:
-> Ming Lei wrote:
-> >2010/8/20 Benjamin Gilbert <bgilbert@cs.cmu.edu>:
-> >>commit f8a4bd3456b988fc73b2c291b9e01b434c8fa940
-> >>Author: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >>Date:   Fri Jun 4 00:54:43 2010 -0700
-> >>
-> >>   firmware loader: embed device into firmware_priv structure
-> >
-> >This commit does introduce one possible double free, maybe is related with
-> >the issue, please try the attachment patch to see if the oops can be fixed.
+Em Fri, Aug 20, 2010 at 05:16:45AM -0400, Christoph Hellwig escreveu:
+> On Thu, Aug 19, 2010 at 12:04:22PM -0300, Arnaldo Carvalho de Melo wrote:
+> > 
+> > [acme@doppio tmp]$ perf report
+> > 
+> > http://vger.kernel.org/~acme/perf/perf-report-tui-callchain-xlog_sync.png
+> > 
+> > So it seems to work (you tell me if the callchains make sense), and the problem
 > 
-> The patch fixes it for me.  Thanks.
+> I've rebuilt perf with libnewt to reproduce it, but to get any of the
+> callchain data I need to call perf report with a -g argument (which is
+> rather expected from the documentation anyway)
 
-Great, it's in my queue to go to Linus in a day or so.
+In fact I never run 'perf report' specifying '-g', have you tried it
+that way?
+ 
+> I still see the same problems as with the TUI perf report with that.
+> With the -g {mode},0.0 there is nothing to expand inside the GUI for
+> e.g. the pythong process, and with the 0.0 threshold I can only expand
+> a few 0.<something> callchains, but I never see the 80% your screenshot
+> shows.  What perf version are you running?
 
-thanks for testing.
+IIRC I tried this on perf/urgent and on perf/core, the former should be what
+is Linus tree.
 
-greg k-h
+Lemme try again, right, just checked out from torvalds/master and running it
+as:
+
+$ perf report
+
+that screenshot is reproduced.
+
+> Also the flat mode is rendered incorrectly, it just adds different call
+> graphs inside a single process directly after each other instead of
+> separating them in the rendering.
+
+Probably because of what I said above, i.e. I still have to try 'perf
+record -g flat' on the TUI, lets see...
+
+Running it as:
+
+$ perf report -g flat,0,0
+
+This is produced:
+
+http://vger.kernel.org/~acme/perf/perf-report-tui-g-flat.png
+
+which has the flat percentages missing, have to fix that but hey, at least I
+finally tried it! 8-)
+
+The TUI code started with the default:
+
+[acme@doppio linux-2.6-tip]$ perf report --help
+<SNIP>
+       -g [type,min], --call-graph
+           Display callchains using type and min percent threshold. type can
+           be either:
+
+           ·   flat: single column, linear exposure of callchains.
+
+           ·   graph: use a graph tree, displaying absolute overhead rates.
+
+           ·   fractal: like graph, but displays relative rates. Each branch
+               of the tree is considered as a new profiled object. Default:
+                                                                   ^^^^^^^^
+               fractal,0.5.
+               ^^^^^^^^^^^
+<SNIP>
+
+The TUI took longer than I antecipated to get right, requiring writing a
+generic tree widget from scratch, not using any libnewt code, as the one newt
+has is too cumbersome and inflexible to use :-\
+
+I will work to have the "flat" and "graph" modes working properly in the coming
+weeks.
+
+It should work on the stdio mode, IIRC Frédéric told me he found and fixed the
+problem there, right?
+
+- Arnaldo
