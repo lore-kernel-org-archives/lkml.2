@@ -1,69 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab0HTCvS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 22:51:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58125 "EHLO mga09.intel.com"
+	id S1751608Ab0HTC6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 22:58:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18709 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059Ab0HTCvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 22:51:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,236,1280732400"; 
-   d="scan'208";a="547026157"
-Date: Fri, 20 Aug 2010 10:51:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com, npiggin@suse.de,
-        hch@lst.de, axboe@kernel.dk
-Subject: Re: [PATCH 2/3] writeback: Adding pages_dirtied and
- pages_entered_writeback
-Message-ID: <20100820025111.GB5502@localhost>
-References: <1282251447-16937-1-git-send-email-mrubin@google.com>
- <1282251447-16937-3-git-send-email-mrubin@google.com>
+	id S1751242Ab0HTC6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 22:58:43 -0400
+Date: Thu, 19 Aug 2010 22:57:49 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Len Brown <len.brown@intel.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Andy Grover <andy.grover@oracle.com>
+Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
+ and touch_softlockup_watchdog
+Message-ID: <20100820025749.GB4879@redhat.com>
+References: <20100817025954.GA12366@nowhere>
+ <AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
+ <20100817083945.GA12022@swordfish.minsk.epam.com>
+ <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
+ <20100817092407.GB12022@swordfish.minsk.epam.com>
+ <AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
+ <20100817103948.GA5352@swordfish.minsk.epam.com>
+ <20100817131320.GX4879@redhat.com>
+ <20100818024802.GA24748@nowhere>
+ <20100818130156.43a183d9.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282251447-16937-3-git-send-email-mrubin@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100818130156.43a183d9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 01:57:26PM -0700, Michael Rubin wrote:
-> To help developers and applications gain visibility into writeback
-> behaviour adding four read only sysctl files into /proc/sys/vm.
-> These files allow user apps to understand writeback behaviour over time
-> and learn how it is impacting their performance.
+On Wed, Aug 18, 2010 at 01:01:56PM -0700, Andrew Morton wrote:
+> The surprise new requirement that touch_nmi_watchdog() be called from
+> non-preemptible code does seem to make sense IMO.  It's hard to see why
+> anyone would be touching the watchdog unless he's spinning in irqs-off
+> code.  Except, of course, when we have a utility function which can be
+> called from wither irqs-on or irqs-off: acpi_os_stall().
 > 
->    # cat /proc/sys/vm/pages_dirtied
->    3747
->    # cat /proc/sys/vm/pages_entered_writeback
->    3618
+> That being said, it's not good to introduce new API requirements by
+> accident!  An audit of all callers should first be performed, at least.
+> 
+> 
+> The surprise new requirement that touch_softlockup_watchdog() be called
+> from non-preemptible code doesn't make sense IMO.  If I have a piece of
+> code in the kernel which I expect to sit in TASK_UNINTERRUPTIBLE state
+> for three minutes waiting for my egg to boil, I should be able to do
+> that and I should be able to touch the softlockup detector without
+> needing to go non-preemptible.
 
-As Rik said, /proc/sys is not a suitable place.
+Ok, so here is my patch that syncs the touch_*_watchdog back in line with
+the old semantics.  Hopefully this will undo any harm I caused.
 
-Frankly speaking I've worked on writeback for years and never felt
-the need to add these counters. What I often do is:
+------------cut -->---------------------------
 
-$ vmmon -d 1 nr_writeback nr_dirty nr_unstable
+>From b372e821c804982438db090db6b4a2f753c78091 Mon Sep 17 00:00:00 2001
+From: Don Zickus <dzickus@redhat.com>
+Date: Thu, 19 Aug 2010 22:48:26 -0400
+Subject: [PATCH] [lockup detector] sync touch_*_watchdog back to old semantics
 
-     nr_writeback         nr_dirty      nr_unstable
-            68738                0            39568
-            66051                0            42255
-            63406                0            44900
-            60643                0            47663
-            57954                0            50352
-            55264                0            53042
-            52592                0            55715
-            49922                0            58385
-That is what I get when copying /dev/zero to NFS.
+During my rewrite, the semantics of touch_nmi_watchdog and
+touch_softlockup_watchdog changed enough to break some drivers
+(mostly over preemptable regions).
 
-You can find vmmon.c in Andrew Morton's ext3-tools package.
-Also attached for your convenience.
+This change brings those touch_*_watchdog functions back in line
+to how they used to work.
 
-I'm very interested in Google's use case for this patch, and why
-the simple /proc/vmstat based vmmon tool is not enough.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   17 ++++++++++++-----
+ 1 files changed, 12 insertions(+), 5 deletions(-)
 
-Thanks,
-Fengguang
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 613bc1f..99e35a2 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -122,7 +122,7 @@ static void __touch_watchdog(void)
+ 
+ void touch_softlockup_watchdog(void)
+ {
+-	__get_cpu_var(watchdog_touch_ts) = 0;
++	__raw_get_cpu_var(watchdog_touch_ts) = 0;
+ }
+ EXPORT_SYMBOL(touch_softlockup_watchdog);
+ 
+@@ -142,7 +142,14 @@ void touch_all_softlockup_watchdogs(void)
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ void touch_nmi_watchdog(void)
+ {
+-	__get_cpu_var(watchdog_nmi_touch) = true;
++	if (watchdog_enabled) {
++		unsigned cpu;
++
++		for_each_present_cpu(cpu) {
++			if (per_cpu(watchdog_nmi_touch, cpu) != true)
++				per_cpu(watchdog_nmi_touch, cpu) = true;
++		}
++	}
+ 	touch_softlockup_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+@@ -430,6 +437,9 @@ static int watchdog_enable(int cpu)
+ 		wake_up_process(p);
+ 	}
+ 
++	/* if any cpu succeeds, watchdog is considered enabled for the system */
++	watchdog_enabled = 1;
++
+ 	return 0;
+ }
+ 
+@@ -452,9 +462,6 @@ static void watchdog_disable(int cpu)
+ 		per_cpu(softlockup_watchdog, cpu) = NULL;
+ 		kthread_stop(p);
+ 	}
+-
+-	/* if any cpu succeeds, watchdog is considered enabled for the system */
+-	watchdog_enabled = 1;
+ }
+ 
+ static void watchdog_enable_all_cpus(void)
+-- 
+1.7.2.1
+
+
