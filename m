@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab0HTWXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 18:23:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64250 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab0HTWXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 18:23:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jeff Mahoney <jeffm@suse.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [patch 00/10] ioctls: Convert ten architectures to asm-generic/ioctls.h
-Date: Sat, 21 Aug 2010 00:22:28 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.5.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>
-References: <20100820211401.651509182@suse.com>
-In-Reply-To: <20100820211401.651509182@suse.com>
+	id S1753036Ab0HTWYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 18:24:54 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35463 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009Ab0HTWYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 18:24:52 -0400
+Date: Fri, 20 Aug 2010 17:24:50 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Dustin Kirkland <kirkland@canonical.com>,
+        ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ecryptfs: properly mark init functions
+Message-ID: <20100820222450.GA28193@boomer>
+References: <4C6AA995.6040008@redhat.com>
+ <20100819002836.GA8552@boomer>
+ <4C6CEA20.5010802@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008210022.28726.arnd@arndb.de>
-X-Provags-ID: V02:K0:sNCfJVrYrmmzPEHpXSWAgES978KaeYctKL4EiqiqoAf
- UZII7ZydFq07XQUxr3w9+kBd9Ln273BNFNgilMipR7/AUbJ1y5
- g8ALpt7M57M34SskNDGhOwrzZxnQEZOdEbNhxTTyijS3awBNHk
- MJSnVTl764l06NJ9+GQ6bII+/7BQuOFnid2KPxCa73+CiYv0+k
- NnGTkcJ+82XZ5tXFTIM+w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6CEA20.5010802@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 August 2010 23:14:01 Jeff Mahoney wrote:
-> - The generic list contains the termiox ioctl set. This seems to have
->   been added to x86 with the expectation that other arch maintainers
->   would add it to their own. New architectures have inherited this
->   automatically via asm-generic/ioctls.h and there isn't anything
->   inherently architecture specific about it. It's safe to just
->   add it to the affected architectures. If there is resistance to
->   this, I can submit a separate patchset to enable it on those
->   architectures and THEN apply this patchet, but it seems like a
->   waste of time.
+On Thu Aug 19, 2010 at 10:24:00AM +0200, Jerome Marchand <jmarchan@redhat.com> wrote:
+> On 08/19/2010 02:28 AM, Tyler Hicks wrote:
+> > On Tue Aug 17, 2010 at 05:24:05PM +0200, Jerome Marchand <jmarchan@redhat.com> wrote:
+> >>
+> >> Some ecryptfs init functions are not prefixed by __init and thus not
+> >> freed after initialization. This patch saved about 1kB in ecryptfs
+> >> module.
+> >>
+> >> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+> >> ---
+> > 
+> > Thanks Jerome - We could also get away with marking
+> > ecryptfs_init_kmem_caches() and do_sysfs_registration() with __init,
+> > right?
+> > 
+> > Tyler
+> > 
+> 
+> I guess we could. But it doesn't really matter, these are static functions which
+> are called from only one place, so they're inlined anyway. I don't know what the
+> convention is in such case.
+> 
 
-Note that AFAICT there is not a single device driver that implements
-the {set,get}_termiox functions, but enablign it does add extra code.
+Good point - this has been applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
 
-Alan added the infrastructure two years ago (see below), but it
-seems we never adopted the use, or all the drivers using it were
-already phased out again in the meantime.
-
-I very much welcome making all architectures use the asm-generic/ioctls.h
-file, that's why I added it in the first place. Whether or not we
-actually want to have termiox support enabled without any drivers
-using it is a separate question, but this would be a good time to
-answer it.
-
-	Arnd
-
----
-commit 1d65b4a088de407e99714fdc27862449db04fb5c
-Author: Alan Cox <alan@redhat.com>
-Date:   Mon Oct 13 10:38:18 2008 +0100
-
-    tty: Add termiox
-    
-    We need a way to describe the various additional modes and flow control
-    features that random weird hardware shows up and software such as wine
-    wants to emulate as Windows supports them.
-    
-    TCGETX/TCSETX and the termiox ioctl are a SYS5 extension that we might as
-    well adopt. This patches adds the structures and the basic ioctl interfaces
-    when the TCGETX etc defines are added for an architecture. Drivers wishing
-    to use this stuff need to add new methods.
-    
-    Signed-off-by: Alan Cox <alan@redhat.com>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
+Thanks,
+Tyler
