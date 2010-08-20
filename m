@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab0HTKyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 06:54:50 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:45924 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab0HTKys convert rfc822-to-8bit (ORCPT
+	id S1752800Ab0HTLBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 07:01:10 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:25378 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752688Ab0HTLBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 06:54:48 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Fri, 20 Aug 2010 12:54:02 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH/RFCv3 0/6] The Contiguous Memory Allocator framework
-In-reply-to: <20100820193328P.fujita.tomonori@lab.ntt.co.jp>
+	Fri, 20 Aug 2010 07:01:08 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: ALKeZx0VM1lMlbHNcNs7XdEt8nnMZdck7uA64dkCLjeDb.t
+ naRbAVQOTRIF7ZA6n3V20pkR7Fyn8VC3mItzTy485pxIfnR4C_toqRuu1h6_
+ hbbb6y55HyWxHorK2WwcrwZlFbD6Fk.NBxlmP3I9IU8ITmUeY2ZNAuAHbpX1
+ 8yLu7sXXRtfj2cft3AqF3FkrYKNCAJjf2ifG8v3OTov6SjUJrhVoE1fMapGp
+ wSq8ExO12OZZqObkhPi5FIURsx8fmhoAcCvRl6hV4e3mh2uSlHg3t6mBphiW
+ rYoFs5bxm8DFBzhE9WYg4kmDbT_mu7JHGZzyEnyyVpP525lzoCC5k9Ixqw0_
+ DmPVQsHbhGidXO3LCcQ--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: hverkuil@xs4all.nl, dwalker@codeaurora.org, linux@arm.linux.org.uk,
-        corbet@lwn.net, p.osciak@samsung.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        hvaibhav@ti.com, linux-mm@kvack.org, kyungmin.park@samsung.com,
-        kgene.kim@samsung.com, zpfeffer@codeaurora.org, jaeryul.oh@samsung.com,
-        m.szyprowski@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-Message-id: <op.vhqgkcgj7p4s8u@localhost>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.61 (Linux)
-References: <op.vhp4pws27p4s8u@localhost>
- <20100820155617S.fujita.tomonori@lab.ntt.co.jp> <op.vhp7rxz77p4s8u@localhost>
- <20100820193328P.fujita.tomonori@lab.ntt.co.jp>
+Cc: michaelc@cs.wisc.edu, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
+        hare@suse.de
+In-Reply-To: <20100820194231R.fujita.tomonori@lab.ntt.co.jp>
+References: <1282295674.30453.337.camel@haakon2.linux-iscsi.org>
+	 <20100820184031L.fujita.tomonori@lab.ntt.co.jp>
+	 <1282298560.30453.370.camel@haakon2.linux-iscsi.org>
+	 <20100820194231R.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Date: Fri, 20 Aug 2010 03:57:26 -0700
+Message-Id: <1282301846.30453.383.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 12:35:01 +0200, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+On Fri, 2010-08-20 at 19:43 +0900, FUJITA Tomonori wrote:
+> On Fri, 20 Aug 2010 03:02:40 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> > review of TCM core and TCM_Loop.   But perhaps at this point LIO-Target
+> > should go in together with TCM Core and TCM_Loop once mnc can review the
+> > software iSCSI target pieces..?
+> 
+> I think that James meant that we have only one scsi target
+> implementation and we need to replace the current in-kernel target
+> mode driver. So I don't think that we can merge TCM core without its
+> ibm vscsi driver. I might be wrong though.
 
-> On Fri, 20 Aug 2010 10:10:45 +0200
-> **UNKNOWN CHARSET** <m.nazarewicz@samsung.com> wrote:
->
->> > I wrote "similar to the existing API', not "reuse the existing API".
->>
->> Yes, but I don't really know what you have in mind.  CMA is similar to various
->> APIs in various ways: it's similar to any allocator since it takes
->> size in bytes,
->
-> why don't take gfp_t flags?
+Ah yes the ibm vscsi driver.   Well for that part I suppose we will need
+a seperate tcm_ibmvscsi fabric module moving forward.  This is where
+that python script I mentioned when tcm_lpfc, tcm_qla2xxx, tcm_mvsas
+where originally posted that would generates a new functioning configfs
+skeleton with NOP I/O path handlers from a handful of user input.
 
-Because they are insufficient.  Either that or I don't understand gfp_t.
+Anyways, something like this would really come in handy for making ibm
+vscsi go, and plus it makes life easier for me too.  I will try to get a
+script along this lines coded up in the next week(s) so that we can
+finally have a pain-free method of generation for new v4 kernel target
+mode modules for new developers.
 
-With CMA, platform can define many memory types.  For instance, if there are
-two memory bans there can be two memory types for the two banks.  For at least one
-of the device I'm in contact with, another type for it's firmware is also needed.
-Bottom line is that there may be possibly many types which won't map to gfp_t.
+There will be no limit per customer.  ;)
 
-> Something like dev_alloc_page is more appropriate name?
-
-Two things: I'd prefer a "cma" prefix rather then "dev" and I think it should
-be "pages", right? Then, size should be given in pages rather then bytes.
-
-Nonetheless, I don't really see at the moment why this should be better.
-
-> Or something similar to dmapool API (mm/dmapool.c) might work
-> better. The purpose of dmapool API is creating a pool for consistent
-> memory per device. It's similar to yours, creating a pool for
-> contiguous memory per device(s)?
-
-I'll try to look at it later on and think about it.  I'm still somehow reluctant
-to change the names but still, thank you for suggestions.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+--nab
 
