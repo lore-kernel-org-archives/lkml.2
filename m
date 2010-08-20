@@ -1,146 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab0HTCe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 22:34:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57577 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab0HTCeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 22:34:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,236,1280732400"; 
-   d="scan'208";a="547022969"
-Date: Fri, 20 Aug 2010 10:34:19 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com, npiggin@suse.de,
-        hch@lst.de, axboe@kernel.dk
-Subject: Re: [PATCH 1/3] mm: helper functions for dirty and writeback
- accounting
-Message-ID: <20100820023419.GA5502@localhost>
-References: <1282251447-16937-1-git-send-email-mrubin@google.com>
- <1282251447-16937-2-git-send-email-mrubin@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282251447-16937-2-git-send-email-mrubin@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751984Ab0HTCsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 22:48:01 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56184 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab0HTCr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 22:47:59 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 3/3] perf ui browser: Add routines to compactly specify exit keys
+Date: Thu, 19 Aug 2010 23:47:49 -0300
+Message-Id: <1282272469-3675-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1282272469-3675-1-git-send-email-acme@infradead.org>
+References: <1282272469-3675-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 01:57:25PM -0700, Michael Rubin wrote:
-> Exporting account_pages_dirty and adding a symmetric routine
-> account_pages_writeback.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-s/account_pages_writeback/account_page_writeback/
+This makes the usual idiom for specifying a series of key codes to exit
+ui_browser__run() for specialized processing (search, annotate, etc) or
+plain exiting the browser more compact.
 
-I'd recommend to separate the changes into two patches.
-It's actually a bug fix to export account_pages_dirty() for ceph,
-which should be a good candidate for 2.6.36.
+It also abstracts away some more libnewt operations. At some point we'll
+also replace NEWT_KEY_foo with something that can be mapped to NEWT or,
+say, gtk.
 
-> This allows code outside of the mm core to safely manipulate page state
-> and not worry about the other accounting. Not using these routines means
-> that some code will lose track of the accounting and we get bugs. This
-> has happened once already.
-> 
-> Signed-off-by: Michael Rubin <mrubin@google.com>
-> ---
->  fs/ceph/addr.c      |    8 ++------
->  fs/nilfs2/segment.c |    2 +-
->  include/linux/mm.h  |    1 +
->  mm/page-writeback.c |   15 +++++++++++++++
->  4 files changed, 19 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> index d9c60b8..359aa3a 100644
-> --- a/fs/ceph/addr.c
-> +++ b/fs/ceph/addr.c
-> @@ -106,12 +106,8 @@ static int ceph_set_page_dirty(struct page *page)
->  	if (page->mapping) {	/* Race with truncate? */
->  		WARN_ON_ONCE(!PageUptodate(page));
->  
-> -		if (mapping_cap_account_dirty(mapping)) {
-> -			__inc_zone_page_state(page, NR_FILE_DIRTY);
-> -			__inc_bdi_stat(mapping->backing_dev_info,
-> -					BDI_RECLAIMABLE);
-> -			task_io_account_write(PAGE_CACHE_SIZE);
-> -		}
-> +		if (mapping_cap_account_dirty(mapping))
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browser.c           |   30 ++++++++++++++++++++----------
+ tools/perf/util/ui/browser.h           |    2 ++
+ tools/perf/util/ui/browsers/annotate.c |   12 +++++++-----
+ tools/perf/util/ui/browsers/hists.c    |   13 +++----------
+ tools/perf/util/ui/browsers/map.c      |    8 +-------
+ tools/perf/util/ui/util.c              |    4 +---
+ 6 files changed, 34 insertions(+), 35 deletions(-)
 
-That 'if' is not necessary. account_page_dirtied() already has one.
-The extra 'if' is not an optimization either, because the ceph fs is
-not likely to have un-accountable mappings.
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 669a980..930c4ac 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -11,8 +11,6 @@
+ #include "../util.h"
+ #include <stdio.h>
+ 
+-newtComponent newt_form__new(void);
+-
+ static int ui_browser__percent_color(double percent, bool current)
+ {
+ 	if (current)
+@@ -147,10 +145,28 @@ void ui_browser__reset_index(struct ui_browser *self)
+ 	self->seek(self, 0, SEEK_SET);
+ }
+ 
++void ui_browser__add_exit_key(struct ui_browser *self, int key)
++{
++	newtFormAddHotKey(self->form, key);
++}
++
++void ui_browser__add_exit_keys(struct ui_browser *self, int keys[])
++{
++	int i = 0;
++
++	while (keys[i] && i < 64) {
++		ui_browser__add_exit_key(self, keys[i]);
++		++i;
++	}
++}
++
+ int ui_browser__show(struct ui_browser *self, const char *title,
+ 		     const char *helpline, ...)
+ {
+ 	va_list ap;
++	int keys[] = { NEWT_KEY_UP, NEWT_KEY_DOWN, NEWT_KEY_PGUP,
++		       NEWT_KEY_PGDN, NEWT_KEY_HOME, NEWT_KEY_END, ' ',
++		       NEWT_KEY_LEFT, NEWT_KEY_ESCAPE, 'q', CTRL('c'), 0 };
+ 
+ 	if (self->form != NULL) {
+ 		newtFormDestroy(self->form);
+@@ -158,7 +174,7 @@ int ui_browser__show(struct ui_browser *self, const char *title,
+ 	}
+ 	ui_browser__refresh_dimensions(self);
+ 	newtCenteredWindow(self->width, self->height, title);
+-	self->form = newt_form__new();
++	self->form = newtForm(NULL, NULL, 0);
+ 	if (self->form == NULL)
+ 		return -1;
+ 
+@@ -168,13 +184,7 @@ int ui_browser__show(struct ui_browser *self, const char *title,
+ 	if (self->sb == NULL)
+ 		return -1;
+ 
+-	newtFormAddHotKey(self->form, NEWT_KEY_UP);
+-	newtFormAddHotKey(self->form, NEWT_KEY_DOWN);
+-	newtFormAddHotKey(self->form, NEWT_KEY_PGUP);
+-	newtFormAddHotKey(self->form, NEWT_KEY_PGDN);
+-	newtFormAddHotKey(self->form, NEWT_KEY_HOME);
+-	newtFormAddHotKey(self->form, NEWT_KEY_END);
+-	newtFormAddHotKey(self->form, ' ');
++	ui_browser__add_exit_keys(self, keys);
+ 	newtFormAddComponent(self->form, self->sb);
+ 
+ 	va_start(ap, helpline);
+diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
+index 332a675..0dc7e4d 100644
+--- a/tools/perf/util/ui/browser.h
++++ b/tools/perf/util/ui/browser.h
+@@ -33,6 +33,8 @@ void ui_browser__refresh_dimensions(struct ui_browser *self);
+ void ui_browser__reset_index(struct ui_browser *self);
+ 
+ void ui_browser__gotorc(struct ui_browser *self, int y, int x);
++void ui_browser__add_exit_key(struct ui_browser *self, int key);
++void ui_browser__add_exit_keys(struct ui_browser *self, int keys[]);
+ int ui_browser__show(struct ui_browser *self, const char *title,
+ 		     const char *helpline, ...);
+ void ui_browser__hide(struct ui_browser *self);
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index a8bc2c0..82b78f9 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -142,14 +142,16 @@ static int annotate_browser__run(struct annotate_browser *self)
+ 	if (ui_browser__show(&self->b, he->ms.sym->name,
+ 			     "<-, -> or ESC: exit, TAB/shift+TAB: cycle thru samples") < 0)
+ 		return -1;
+-
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
++	/*
++	 * To allow builtin-annotate to cycle thru multiple symbols by
++	 * examining the exit key for this function.
++	 */
++	ui_browser__add_exit_key(&self->b, NEWT_KEY_RIGHT);
+ 
+ 	nd = self->curr_hot;
+ 	if (nd) {
+-		newtFormAddHotKey(self->b.form, NEWT_KEY_TAB);
+-		newtFormAddHotKey(self->b.form, NEWT_KEY_UNTAB);
++		int tabs[] = { NEWT_KEY_TAB, NEWT_KEY_UNTAB, 0 };
++		ui_browser__add_exit_keys(&self->b, tabs);
+ 	}
+ 
+ 	while (1) {
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 1735c48..b13b978 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -198,6 +198,8 @@ static bool hist_browser__toggle_fold(struct hist_browser *self)
+ static int hist_browser__run(struct hist_browser *self, const char *title)
+ {
+ 	int key;
++	int exit_keys[] = { 'a', '?', 'h', 'd', 'D', 't', NEWT_KEY_ENTER,
++			    NEWT_KEY_RIGHT, NEWT_KEY_LEFT, 0, };
+ 	char str[256], unit;
+ 	unsigned long nr_events = self->hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 
+@@ -215,16 +217,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title)
+ 			     "Press '?' for help on key bindings") < 0)
+ 		return -1;
+ 
+-	newtFormAddHotKey(self->b.form, 'a');
+-	newtFormAddHotKey(self->b.form, '?');
+-	newtFormAddHotKey(self->b.form, 'h');
+-	newtFormAddHotKey(self->b.form, 'd');
+-	newtFormAddHotKey(self->b.form, 'D');
+-	newtFormAddHotKey(self->b.form, 't');
+-
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
++	ui_browser__add_exit_keys(&self->b, exit_keys);
+ 
+ 	while (1) {
+ 		key = ui_browser__run(&self->b);
+diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
+index 16b7d70..1bf0979 100644
+--- a/tools/perf/util/ui/browsers/map.c
++++ b/tools/perf/util/ui/browsers/map.c
+@@ -1,6 +1,5 @@
+ #include "../libslang.h"
+ #include <elf.h>
+-#include <newt.h>
+ #include <sys/ttydefaults.h>
+ #include <ctype.h>
+ #include <string.h>
+@@ -106,13 +105,8 @@ static int map_browser__run(struct map_browser *self)
+ 			     verbose ? "" : "restart with -v to use") < 0)
+ 		return -1;
+ 
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_ESCAPE);
+-	newtFormAddHotKey(self->b.form, 'Q');
+-	newtFormAddHotKey(self->b.form, 'q');
+-	newtFormAddHotKey(self->b.form, CTRL('c'));
+ 	if (verbose)
+-		newtFormAddHotKey(self->b.form, '/');
++		ui_browser__add_exit_key(&self->b, '/');
+ 
+ 	while (1) {
+ 		key = ui_browser__run(&self->b);
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+index 04600e2..9706d9d 100644
+--- a/tools/perf/util/ui/util.c
++++ b/tools/perf/util/ui/util.c
+@@ -11,8 +11,6 @@
+ #include "helpline.h"
+ #include "util.h"
+ 
+-newtComponent newt_form__new(void);
+-
+ static void newt_form__set_exit_keys(newtComponent self)
+ {
+ 	newtFormAddHotKey(self, NEWT_KEY_LEFT);
+@@ -22,7 +20,7 @@ static void newt_form__set_exit_keys(newtComponent self)
+ 	newtFormAddHotKey(self, CTRL('c'));
+ }
+ 
+-newtComponent newt_form__new(void)
++static newtComponent newt_form__new(void)
+ {
+ 	newtComponent self = newtForm(NULL, NULL, 0);
+ 	if (self)
+-- 
+1.6.2.5
 
-> +			account_page_dirtied(page, page->mapping);
->  		radix_tree_tag_set(&mapping->page_tree,
->  				page_index(page), PAGECACHE_TAG_DIRTY);
->  
-> diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-> index c920164..967ed7d 100644
-> --- a/fs/nilfs2/segment.c
-> +++ b/fs/nilfs2/segment.c
-> @@ -1599,7 +1599,7 @@ nilfs_copy_replace_page_buffers(struct page *page, struct list_head *out)
->  	kunmap_atomic(kaddr, KM_USER0);
->  
->  	if (!TestSetPageWriteback(clone_page))
-> -		inc_zone_page_state(clone_page, NR_WRITEBACK);
-> +		account_page_writeback(clone_page, page_mapping(clone_page));
->  	unlock_page(clone_page);
->  
->  	return 0;
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index a2b4804..b138392 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -855,6 +855,7 @@ int __set_page_dirty_no_writeback(struct page *page);
->  int redirty_page_for_writepage(struct writeback_control *wbc,
->  				struct page *page);
->  void account_page_dirtied(struct page *page, struct address_space *mapping);
-> +void account_page_writeback(struct page *page, struct address_space *mapping);
->  int set_page_dirty(struct page *page);
->  int set_page_dirty_lock(struct page *page);
->  int clear_page_dirty_for_io(struct page *page);
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 37498ef..b8e7b3b 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1096,6 +1096,21 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
->  		task_io_account_write(PAGE_CACHE_SIZE);
->  	}
->  }
-> +EXPORT_SYMBOL(account_page_dirtied);
-> +
-> +/*
-> + * Helper function for set_page_writeback family.
-> + * NOTE: Unlike account_page_dirtied this does not rely on being atomic
-> + * wrt interrupts.
-> + */
-> +
-> +void account_page_writeback(struct page *page, struct address_space *mapping)
-> +{
-> +	if (mapping_cap_account_dirty(mapping))
-
-The 'if' test and *mapping parameter looks unnecessary at least for
-now. The only place a mapping has BDI_CAP_NO_ACCT_WB but not
-BDI_CAP_NO_WRITEBACK is fuse, which does its own accounting.
-
-Thanks,
-Fengguang
-
-> +		inc_zone_page_state(page, NR_WRITEBACK);
-> +}
-> +EXPORT_SYMBOL(account_page_writeback);
-> +
->  
->  /*
->   * For address_spaces which do not use buffers.  Just tag the page as dirty in
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
