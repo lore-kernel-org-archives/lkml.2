@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab0HTIiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:38:05 -0400
-Received: from web82806.mail.mud.yahoo.com ([68.142.201.99]:20658 "HELO
-	web82806.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751557Ab0HTIiC (ORCPT
+	id S1752869Ab0HTIiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:38:19 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39722 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab0HTIiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:38:02 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 04:38:02 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=ifUOrGxFNE6il7RSD79+JdsxlAx59qfaL3BBWKcc5i7pCgDwBcMi9LlftllMkyrmO0P4D+FRD7NLSxnCEsRTw2srlkuFmZCn8+2IHnz4qdfwM+es4sxH1LDni9cgjK7IB+Ro27j6RNRRVXA2j3tTQQD0ZluZJpra6MBOcVY7K3Q=;
-Message-ID: <279867.72733.qm@web82806.mail.mud.yahoo.com>
-X-YMail-OSG: u_unEQwVM1lP6M_G8F1PNQ7G.u.dlV6WGMB42oGQ1nF0L_h
- DUEDQRgdZ.D2B.CEJb1Nm5bHogpIXTQ4XmKKzd49own12J4nX5xTA2.hq3rV
- weG2ozCaSg3Rzirm0pXtOhQsXxcrCwCZEbJ1OTl0y5QiROjB7ByJpWwrklV7
- vp0PEahrxGKXZ_KB9JpHKBk8r1vShg8fsrq7Cn72PSMDnPLm8v2vfR82gTcd
- 2AoR7M6THaRIAKokFMOXcSoAOnHHmu77jNNgvkA--
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Fri, 20 Aug 2010 01:31:20 -0700 (PDT)
-From: Euro-millions Promo <jean-rinehart@sbcglobal.net>
-To: undisclosed recipients:;
+	Fri, 20 Aug 2010 04:38:03 -0400
+X-SpamScore: 7
+X-BigFish: VPS7(z3cfcs329eqzbb2cK98dN148cMzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L7FZW9-01-PEC-02
+X-M-MSG: 
+Date: Fri, 20 Aug 2010 10:36:09 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100820083609.GX26154@erda.amd.com>
+References: <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+ <20100817152225.GQ26154@erda.amd.com>
+ <1282214753.1926.4669.camel@laptop>
+ <20100819141240.GO4879@redhat.com>
+ <1282228033.2605.204.camel@laptop>
+ <20100820015017.GA4879@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100820015017.GA4879@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19.08.10 21:50:17, Don Zickus wrote:
+> I tested this patch and Robert's on an AMD box and Nehalem box.  Both
+> worked as intended.  However I did notice that whenever the AMD box
+> detected handled >1, it was shortly followed by an unknown_nmi that was
+> properly eaten with Robert's logic.  Whereas on the Nehalem box I saw a
+> lot of 'handled > 1' messages but very very few of them were followed by
+> an unknown_nmi message (and those messages that did come were properly
+> eaten).
 
-Your email id has won 2,500,000.00 Pounds
-Name...
-Country...
-Age...
+Don, thanks for testing this.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
