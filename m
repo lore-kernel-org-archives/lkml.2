@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab0HTRk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 13:40:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab0HTRky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 13:40:54 -0400
-Date: Fri, 20 Aug 2010 14:40:44 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 12/35] Robust TSC compensation
-Message-ID: <20100820174044.GG2937@mothafucka.localdomain>
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
- <1282291669-25709-13-git-send-email-zamsden@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282291669-25709-13-git-send-email-zamsden@redhat.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+	id S1751993Ab0HTRnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 13:43:12 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:26476 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751784Ab0HTRnJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 13:43:09 -0400
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@suse.de>
+In-Reply-To: <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com>
+References: <20100818203143.735033743@clark.site>
+	 <1282308887.3170.5439.camel@zakaz.uk.xensource.com>
+	 <AANLkTin7L=v1GR2=U-mvESyrP2vySYLRa4U-fh9-L38F@mail.gmail.com>
+	 <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com>
+	 <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-Zqv9107XNwJ+d66bWp0Y"
+Date: Fri, 20 Aug 2010 18:43:02 +0100
+Message-ID: <1282326182.29609.789.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+X-SA-Exim-Connect-IP: 192.168.1.7
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [2/3] mm: fix up some user-visible effects of the stack guard
+ page
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=4QByPj+6Iq2k/6L54d+eVKTdgQxdscpRskJJReCfdXo= c=1 sm=0 a=isDwiucj6PoA:10 a=Z4Rwk6OoAAAA:8 a=3kiAjA4kGuRBMZo4KM8A:9 a=A_Oq5kbJnAtRwE8BVynfoFipVmgA:4 a=wPNLvfGTeEIA:10 a=jbrJJM5MRmoA:10 a=8qN4eHysdWosld3ynxMA:9 a=f-qCW-El6TKJBEtXFsUKrbhQKNUA:4 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 10:07:26PM -1000, Zachary Amsden wrote:
-> Make the match of TSC find TSC writes that are close to each other
-> instead of perfectly identical; this allows the compensator to also
-> work in migration / suspend scenarios.
-> 
-> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-> ---
->  arch/x86/kvm/x86.c |   14 ++++++++++----
->  1 files changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 52680f6..0f3e5fb 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -928,21 +928,27 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
->  	struct kvm *kvm = vcpu->kvm;
->  	u64 offset, ns, elapsed;
->  	unsigned long flags;
-> +	s64 sdiff;
->  
->  	spin_lock_irqsave(&kvm->arch.tsc_write_lock, flags);
->  	offset = data - native_read_tsc();
->  	ns = get_kernel_ns();
->  	elapsed = ns - kvm->arch.last_tsc_nsec;
-> +	sdiff = data - kvm->arch.last_tsc_write;
-> +	if (sdiff < 0)
-> +		sdiff = -sdiff;
->  
->  	/*
-> -	 * Special case: identical write to TSC within 5 seconds of
-> +	 * Special case: close write to TSC within 5 seconds of
->  	 * another CPU is interpreted as an attempt to synchronize
-> -	 * (the 5 seconds is to accomodate host load / swapping).
-> +	 * The 5 seconds is to accomodate host load / swapping as
-> +	 * well as any reset of TSC during the boot process.
->  	 *
->  	 * In that case, for a reliable TSC, we can match TSC offsets,
-> -	 * or make a best guest using kernel_ns value.
-> +	 * or make a best guest using elapsed value.
->  	 */
-> -	if (data == kvm->arch.last_tsc_write && elapsed < 5ULL * NSEC_PER_SEC) {
-> +	if (sdiff < nsec_to_cycles(5ULL * NSEC_PER_SEC) &&
-> +	    elapsed < 5ULL * NSEC_PER_SEC) {
->  		if (!check_tsc_unstable()) {
-Isn't 5 way too long for this case?
 
+--=-Zqv9107XNwJ+d66bWp0Y
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 2010-08-20 at 09:24 -0700, Linus Torvalds wrote:
+> On Fri, Aug 20, 2010 at 9:07 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > That said, it does strike me as rather odd to do VM ops on partial
+> > stacks. What are you doing, exactly, to hit this?
+>=20
+> The reason I ask is that the _sane_ thing to do - if we really care
+> about this - is to change the 'vm_next' singly-linked list into using
+> 'list.h'. It would clean up a fair amount of stuff, like removing the
+> need for that disgusting 'find_vma_prev()' thing. There are actually
+> several users of vma's that want to look at the previous vma, but
+> because it's hard to get at, they do something non-intuitive or odd.
+
+I wasn't sure at first what you were getting at here, so let me see if I
+figured it out...
+
+If we could easily get at the previous VMA (instead of just the next
+one) then we could easily check if we were mlocking a VM_GROWSDOWN
+region which had another VM_GROWSDOWN region immediately below it and
+therefore avoid introducing a guard page at the boundary. Doing this
+check is currently too expensive because of the need to use
+find_vma_prev. Is that right?
+
+> At the same time, we've had that vm_next pointer since pretty much day
+> one, and I also get a strong feeling that it's not really worth the
+> churn.
+
+It does look like a big task, but if it seems like the only sane option
+I'll take a look at it and see if can be broken down into manageable
+stages.
+
+You mentioned making this a tunable in your original commit message,
+that would at least help in the short term so I may look into that too.
+(prctl would be the right interface?)
+
+I wonder if there's any way to auto tune, for example automatically
+disabling the guard page for a process which mlocks only part of its
+stack VMA. That would obviously target the specific issue I'm seeing
+pretty directly and would only reopen the hole for applications which
+were already doing odd things (c.f. your earlier comment about the guard
+page not being magic or helping with wilfully crazy userspace).
+
+Ian.
+
+--=20
+Ian Campbell
+
+Let he who takes the plunge remember to return it by Tuesday.
+
+--=-Zqv9107XNwJ+d66bWp0Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkxuvqYACgkQM0+0qS9rzVnxzgCfXTU71KttJRYV3IjqJ+NcIPn7
+aY4An0IbU4YYj+Utht8EQ3cepiKHz32i
+=WZOn
+-----END PGP SIGNATURE-----
+
+--=-Zqv9107XNwJ+d66bWp0Y--
 
