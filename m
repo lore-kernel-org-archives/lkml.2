@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab0HTJdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 05:33:04 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50500 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab0HTJcc (ORCPT
+	id S1752726Ab0HTJec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 05:34:32 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59182 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab0HTJea convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 05:32:32 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=h8MXBuz7fUAy2MXkBWodDPZgee9kTtHjG749WlKOezsnl90eAr1yndMrxGIHykymK
-	Mlu3n20zxlfpfchm/RbYw==
-From: Michael Rubin <mrubin@google.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: fengguang.wu@intel.com, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com, npiggin@kernel.dk,
-        hch@lst.de, axboe@kernel.dk, Michael Rubin <mrubin@google.com>
-Subject: [PATCH 4/4] writeback: Reporting dirty thresholds in /proc/vmstat
-Date: Fri, 20 Aug 2010 02:31:29 -0700
-Message-Id: <1282296689-25618-5-git-send-email-mrubin@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282296689-25618-1-git-send-email-mrubin@google.com>
-References: <1282296689-25618-1-git-send-email-mrubin@google.com>
+	Fri, 20 Aug 2010 05:34:30 -0400
+Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
+From: Peter Zijlstra <peterz@infradead.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: "Lin, Ming M" <ming.m.lin@intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "acme@redhat.com" <acme@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+In-Reply-To: <1282268675.5181.1608.camel@rui>
+References: <1282118350.5181.115.camel@rui>
+	 <1282134329.1926.3918.camel@laptop>
+	 <20100818124116.GA17957@console-pimps.org>
+	 <1282188497.11858.94.camel@minggr.sh.intel.com>
+	 <1282208521.1926.4535.camel@laptop>  <1282268675.5181.1608.camel@rui>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 20 Aug 2010 11:34:15 +0200
+Message-ID: <1282296855.2605.724.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel already exposes the user desired thresholds in /proc/sys/vm
-with dirty_background_ratio and background_ratio. But the kernel may
-alter the number requested without giving the user any indication that
-is the case.
+On Fri, 2010-08-20 at 09:44 +0800, Zhang Rui wrote:
+> On Thu, 2010-08-19 at 17:02 +0800, Peter Zijlstra wrote:
 
-Knowing the actual ratios the kernel is honoring can help app developers
-understand how their buffered IO will be sent to the disk.
+> > its some obscure perf feature:
+> > 
+> >  leader = sys_perf_event_open(&hrtimer_attr, pid, cpu, 0, 0);
+> >  sibling = sys_perf_event_open(&rapl_attr, pid, cpu, leader, 0);
+> > 
+> > will create an even group (which means that both events require to be
+> > co-scheduled). If you then provided:
+> > 
+> > hrtimer_attr.read_format |= PERF_FORMAT_GROUP;
+> > hrtimer_attr.sample_type |= PERF_SAMPLE_READ;
+> > 
+> hrtimer_attr is only shared in an event group, and rapl needs its owen
+> event group, right?
 
-	$ grep threshold /proc/vmstat
-	nr_dirty_threshold 409111
-	nr_dirty_background_threshold 818223
+Uhm, no. The idea is to group the hrtimer and rapl event in order to
+obtain rapl 'samples'.
 
-Signed-off-by: Michael Rubin <mrubin@google.com>
----
- include/linux/mmzone.h |    3 +++
- mm/vmstat.c            |    5 +++++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+That is, you get hrtimer samples which include the rapl count. For this
+we use the grouping construct where group siblings are always
+co-scheduled and can report on each others count.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index fe4e6dd..c2243d0 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -106,6 +106,9 @@ enum zone_stat_item {
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
- 	NR_FILE_PAGES_DIRTIED,	/* number of times pages get dirtied */
- 	NR_PAGES_ENTERED_WRITEBACK, /* number of times pages enter writeback */
-+	NR_DIRTY_THRESHOLD,	/* writeback threshold */
-+	NR_DIRTY_BG_THRESHOLD,	/* bg writeback threshold */
-+
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 073a496..c755d71 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -17,6 +17,7 @@
- #include <linux/vmstat.h>
- #include <linux/sched.h>
- #include <linux/math64.h>
-+#include <linux/writeback.h>
- 
- #ifdef CONFIG_VM_EVENT_COUNTERS
- DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
-@@ -734,6 +735,8 @@ static const char * const vmstat_text[] = {
- 	"nr_shmem",
- 	"nr_dirtied",
- 	"nr_entered_writeback",
-+	"nr_dirty_threshold",
-+	"nr_dirty_background_threshold",
- 
- #ifdef CONFIG_NUMA
- 	"numa_hit",
-@@ -917,6 +920,8 @@ static void *vmstat_start(struct seq_file *m, loff_t *pos)
- 		return ERR_PTR(-ENOMEM);
- 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
- 		v[i] = global_page_state(i);
-+
-+	global_dirty_limits(v + NR_DIRTY_THRESHOLD, v + NR_DIRTY_BG_THRESHOLD);
- #ifdef CONFIG_VM_EVENT_COUNTERS
- 	e = v + NR_VM_ZONE_STAT_ITEMS;
- 	all_vm_events(e);
--- 
-1.7.1
+> so what do you think the rapl counter should look like in userspace?
+> showing it in perf-stat looks nice, right? :)
+
+Right, so the userspace interface would be using Lin's sysfs bits, which
+I still need to read up on. But the general idea is that each PMU gets a
+sysfs representation somewhere in the system topology reflecting its
+actual site (RAPL would be CPU local), this sysfs representation would
+then also allow you to discover all events it provides.
+
+perf list will then use sysfs to discover all available events, and you
+can still use perf stat -e $foo to select it, where foo is some to be
+determined string that identifies the thing, maybe something like:
+rapl:watts or somesuch (with rapl identifying the pmu and watts the
+actual event for that pmu).
+
+
 
