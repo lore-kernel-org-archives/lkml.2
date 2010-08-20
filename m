@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab0HTQYt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 12:24:49 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:58688 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab0HTQYp (ORCPT
+	id S1752013Ab0HTQZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 12:25:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58242 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750931Ab0HTQZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 12:24:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=f7xkV8CYdwoq111b8caGGl6/yOdhwV4j6wBRZqMw6gvt14c2usYWlQM3gKX8Dblm+h
-         uSKWA6n783xzWbzRDf7o3occ/R8Mr7NnMsshckJPWFyMIhsnvdh3r8q1M7wvFDT6vbh+
-         AahePnc9W344GdwV3EPhM2mY7i4eLSa/rTXe0=
-Date: Fri, 20 Aug 2010 20:24:40 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
-	<ext-heikki.krogerus@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "Lehtonen Markus (Nokia-MS/Helsinki)" <markus.lehtonen@nokia.com>,
-        Roger Quadros <roger.quadros@nokia.com>
-Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
-Message-ID: <20100820162440.GA31661@oksana.dev.rtsoft.ru>
-References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
- <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
- <20100819124042.GA15837@oksana.dev.rtsoft.ru>
- <20100819130937.GC4363@esdhcp041123.research.nokia.com>
- <4C6D3EED.7040703@nokia.com>
- <20100820072525.GJ25742@atomide.com>
+	Fri, 20 Aug 2010 12:25:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100820072525.GJ25742@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com>
+References: <20100818203143.735033743@clark.site> <1282308887.3170.5439.camel@zakaz.uk.xensource.com>
+ <AANLkTin7L=v1GR2=U-mvESyrP2vySYLRa4U-fh9-L38F@mail.gmail.com> <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 Aug 2010 09:24:50 -0700
+Message-ID: <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com>
+Subject: Re: [2/3] mm: fix up some user-visible effects of the stack guard page
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 10:25:26AM +0300, Tony Lindgren wrote:
-> Hi,
-> 
-> * Roger Quadros <roger.quadros@nokia.com> [100819 17:17]:
-> > On 08/19/2010 04:09 PM, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
-> > >On Thu, Aug 19, 2010 at 02:40:42PM +0200, ext Anton Vorontsov wrote:
-> > >>On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
-> > >>>@@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
-> > >>>  	spi_register_board_info(rx51_peripherals_spi_board_info,
-> > >>>  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
-> > >>>  	omap2_hsmmc_init(mmc);
-> > >>>+	platform_device_register(&rx51_charger_device);
-> > >>
-> > >>Maybe
-> > >>
-> > >>   platform_device_register_simple("isp1704_charger", -1, NULL, 0);
-> > >
-> > >I guess it's enough in this case. Ameya, Roger, any objections?
-> > >
-> > I'm fine with the current approach. No need to re-spin.
-> 
-> Just checking.. Anton, can you please queue up this 2/2 patch too to
-> keep them together? Here's my ack:
-> 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+On Fri, Aug 20, 2010 at 9:07 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> That said, it does strike me as rather odd to do VM ops on partial
+> stacks. What are you doing, exactly, to hit this?
 
-Sure thing, applied.
+The reason I ask is that the _sane_ thing to do - if we really care
+about this - is to change the 'vm_next' singly-linked list into using
+'list.h'. It would clean up a fair amount of stuff, like removing the
+need for that disgusting 'find_vma_prev()' thing. There are actually
+several users of vma's that want to look at the previous vma, but
+because it's hard to get at, they do something non-intuitive or odd.
 
-Thanks!
+At the same time, we've had that vm_next pointer since pretty much day
+one, and I also get a strong feeling that it's not really worth the
+churn.
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+                         Linus
