@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab0HTVSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:18:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59660 "EHLO mx2.suse.de"
+	id S1751585Ab0HTVSf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:18:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59662 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab0HTVSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751090Ab0HTVSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Aug 2010 17:18:33 -0400
-Message-Id: <20100820211538.375796948@suse.com>
+Message-Id: <20100820211537.982686153@suse.com>
 User-Agent: quilt/0.47-15.10
-Date: Fri, 20 Aug 2010 17:14:04 -0400
+Date: Fri, 20 Aug 2010 17:14:02 -0400
 From: Jeff Mahoney <jeffm@suse.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Russell King <linux@arm.linux.org.uk>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [patch 03/10] ioctl: Use asm-generic/ioctls.h on cris (enables termiox)
+Subject: [patch 01/10] ioctl: Use asm-generic/ioctls.h on arm (enables termiox)
 References: <20100820211401.651509182@suse.com>
-Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-cris
+Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-arm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts cris to use asm-generic/ioctls.h instead of its
+This patch converts arm to use asm-generic/ioctls.h instead of its
 own version.
 
 The differences between the arch-specific version and the generic
 version are as follows:
 
-- CRIS defines two ioctls: TIOCSERSETRS485 and TIOCSERWRRS485,
-  kept in arch-specific portion
-- CRIS defines a different value for TIOCSRS485, kept via ifndef in generic
+- ARM defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
 - The generic version adds support for termiox
 
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 ---
 
- arch/cris/include/asm/ioctls.h |   84 -----------------------------------------
- include/asm-generic/ioctls.h   |    2 
- 2 files changed, 3 insertions(+), 83 deletions(-)
+ arch/arm/include/asm/ioctls.h |   83 ------------------------------------------
+ 1 file changed, 1 insertion(+), 82 deletions(-)
 
---- a/arch/cris/include/asm/ioctls.h
-+++ b/arch/cris/include/asm/ioctls.h
-@@ -1,93 +1,11 @@
- #ifndef __ARCH_CRIS_IOCTLS_H__
- #define __ARCH_CRIS_IOCTLS_H__
+--- a/arch/arm/include/asm/ioctls.h
++++ b/arch/arm/include/asm/ioctls.h
+@@ -1,89 +1,8 @@
+ #ifndef __ASM_ARM_IOCTLS_H
+ #define __ASM_ARM_IOCTLS_H
  
--/* verbatim copy of asm-i386/ioctls.h */
--
 -#include <asm/ioctl.h>
 -
 -/* 0x54 is just a magic number to make these relatively unique ('T') */
@@ -104,6 +97,9 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
 -#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
 -
+-#define TIOCGRS485      0x542E
+-#define TIOCSRS485      0x542F
+-
 -#define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
 -#define FIOCLEX		0x5451
 -#define FIOASYNC	0x5452
@@ -112,20 +108,15 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSERSWILD	0x5455
 -#define TIOCGLCKTRMIOS	0x5456
 -#define TIOCSLCKTRMIOS	0x5457
- #define TIOCSERGSTRUCT	0x5458 /* For debugging only */
+-#define TIOCSERGSTRUCT	0x5458 /* For debugging only */
 -#define TIOCSERGETLSR   0x5459 /* Get line status register */
 -#define TIOCSERGETMULTI 0x545A /* Get multiport config  */
 -#define TIOCSERSETMULTI 0x545B /* Set multiport config */
 -
 -#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
 -#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define FIOQSIZE	0x5460
--
- #define TIOCSERSETRS485	0x5461  /* enable rs-485 (deprecated) */
- #define TIOCSERWRRS485	0x5462  /* write rs-485 */
- #define TIOCSRS485	0x5463  /* enable rs-485 */
--#define TIOCGRS485	0x542E  /* get rs-485 */
--
+ #define FIOQSIZE	0x545E
+ 
 -/* Used for packet mode */
 -#define TIOCPKT_DATA		 0
 -#define TIOCPKT_FLUSHREAD	 1
@@ -135,22 +126,10 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCPKT_NOSTOP		16
 -#define TIOCPKT_DOSTOP		32
 -#define TIOCPKT_IOCTL		64
- 
--#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+-
+-#define TIOCSER_TEMT	0x01	/* Transmitter physically empty */
 +#include <asm-generic/ioctls.h>
  
  #endif
---- a/include/asm-generic/ioctls.h
-+++ b/include/asm-generic/ioctls.h
-@@ -62,7 +62,9 @@
- #define TCSETSW2	_IOW('T', 0x2C, struct termios2)
- #define TCSETSF2	_IOW('T', 0x2D, struct termios2)
- #define TIOCGRS485	0x542E
-+#ifndef TIOCSRS485
- #define TIOCSRS485	0x542F
-+#endif
- #define TIOCGPTN	_IOR('T', 0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
- #define TIOCSPTLCK	_IOW('T', 0x31, int)  /* Lock/unlock Pty */
- #define TCGETX		0x5432 /* SYS5 TCGETX compatibility */
 
 
