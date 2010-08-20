@@ -1,113 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab0HTPRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 11:17:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33180 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab0HTPRj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 11:17:39 -0400
+	id S1753260Ab0HTPSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 11:18:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54880 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751421Ab0HTPS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 11:18:27 -0400
+Message-ID: <4C6E9CAF.5010202@redhat.com>
+Date: Fri, 20 Aug 2010 11:18:07 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Message-ID: <66336896-4396-458f-b8a5-51282a925816@default>
-Date: Fri, 20 Aug 2010 08:14:59 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, ngupta@vflare.org,
-        akpm@linux-foundation.org, Chris Mason <chris.mason@oracle.com>,
-        viro@zeniv.linux.org.uk, Andreas Dilger <andreas.dilger@oracle.com>,
-        tytso@mit.edu, mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>,
-        matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, jeremy@goop.org, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@suse.de,
-        Dave Mccracken <dave.mccracken@oracle.com>, riel@redhat.com,
-        Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>
-Subject: cleancache followup from LSF10/MM summit
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6535.5005]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: Christoph Hellwig <hch@lst.de>
+CC: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        jack@suse.cz, hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100820132214.GA6184@lst.de>
+In-Reply-To: <20100820132214.GA6184@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christophe (and others interested in cleancache progress) --
+On 08/20/2010 09:22 AM, Christoph Hellwig wrote:
+> FYI: here's a little writeup to document the new cache flushing scheme,
+> intended to replace Documentation/block/barriers.txt.  Any good
+> suggestion for a filename in the kernel tree?
+>
+> ---
 
-Thanks for taking some time to talk with me about cleancache
-at LSF summit!  You had some interesting thoughts and suggestions
-that I said I would investigate.  They are:
+I was thinking that we might be better off using the "durable writes" term more 
+since it is well documented (at least in the database world, where it is the "D" 
+in ACID properties).  Maybe "durable_writes_support.txt" ?
 
-1) use inode kva as key instead of i_ino
-2) eliminate cleancache shim and call zcache directly
-3) fs's requiring key > inode_t (e.g. 64-bit-fs on 32-bit-kernel)
-4) eliminate fs-specific code entirely (e.g. "opt-in")
-5) eliminate global variable
 
-Here's my conclusions:
+>
+> Explicit volatile write cache control
+> =====================================
+>
+> Introduction
+> ------------
+>
+> Many storage devices, especially in the consumer market, come with volatile
+> write back caches.  That means the devices signal I/O completion to the
+> operating system before data actually has hit the physical medium.  This
+> behavior obviously speeds up various workloads, but it means the operating
+> system needs to force data out to the physical medium when it performs
+> a data integrity operation like fsync, sync or an unmount.
+>
+> The Linux block layer provides a two simple mechanism that lets filesystems
+> control the caching behavior of the storage device.  These mechanisms are
+> a forced cache flush, and the Force Unit Access (FUA) flag for requests.
+>
 
-1) You suggested using the inode kva as a "key" for cleancache.
-   I think your goal was to make it more fs-independent and also
-   to eliminate the need for using a per-fs enabler and "pool id".
-   I looked at this but it will not work because cleancache
-   retains page cache data pages persistently even when the
-   inode has been pruned from the inode_unused_list and only
-   flushes the data pages if the file gets removed/truncated.  If
-   cleancache used the inode kva, there would be coherency issues
-   when the inode kva is reused.  Alternately, if cleancache
-   flushed the pages when the inode kva was freed, much of
-   the value of cleancache would be lost because the cache
-   of pages in cleancache is potentially much larger than
-   the page cache and is most useful if the pages survive
-   inode cache removal.
+Should we mention that users can also disable the write cache on the target device?
 
-   If I misunderstood your proposal or if you disagree, please
-   let me know.
+It might also be worth mentioning that storage needs to be properly configured - 
+i.e., an internal hardware RAID card with battery backing needs can expose 
+itself as a writethrough cache *only if* it actually has control over all of the 
+backend disks and can flush/disable their write caches.
 
-2) You suggested eliminating the cleancache shim layer and just
-   directly calling zcache, effectively eliminating Xen as
-   a user.  During and after LSF summit, I talked to developers
-   from Google who are interested in investigating the cleancache
-   interface for use with cgroups, an IBM developer who was
-   interested in cleancache for optimizing NUMA, and soon I
-   will be talking to HP Labs about using it as an interface
-   for "memory blades".  I also think Rik van Riel and Mel Gorman
-   were intrigued about its use for collecting better memory
-   utilization statistics to drive guest/host memory "rightsizing".
-   While it is true that none of these are current users yet, even
-   if you prefer to ignore Xen tmem as a user, it seems silly to
-   throw away the cleanly-layered generic cleancache interface now,
-   only to add it back later when more users are added.
+Maybe that is too much detail, but I know that people have lost data with some 
+of these setups.
 
-3) You re-emphasized the problem where cleancache's use of
-   the inode number as a key will cause problems on many 64-bit
-   filesystems especially running on a 32-bit kernel.  With
-   help from Andreas Dilger, I'm trying to work out a generic
-   solution for this using s_export_op->encode_fh which would
-   be used for any fs that provides it to guarantee a unique
-   multi-word key for a file, while preserving the
-   shorter i_ino as a key for fs's for which i_ino is unique.
+The rest of the write up below sounds good, thanks for pulling this together!
 
-4) Though you were out of the room during the cleancache
-   lightning talk, other filesystem developers seemed OK
-   with the "opt-in" approach (as documented in lwn.net)...
-   one even asked "can't you just add a bit to the superblock?"
-   to which I answered "that's essentially what the one
-   line opt-in addition does".  Not sure if you are still
-   objecting to that, but especially given that the 64-bit-fs-on
-   32-bit-kernel issue above only affects some filesystems,
-   I'm still thinking it is necessary.
+Ric
 
-5) You commented (before LSF) that the global variable should
-   be avoided which is certainly valid, and I will try Nitin's
-   suggestion to add a registration interface.
 
-Did I miss anything?
+>
+> Explicit cache flushes
+> ----------------------
+>
+> The REQ_FLUSH flag can be OR ed into the r/w flags of a bio submitted from the
+> filesystem and will make sure the volatile cache of the storage device
+> has been flushed before the actual I/O operation is started.  The explicit
+> guarantees write requests that have completed before the bio was submitted
+> actually are on the physical medium before this request has started.
+> In addition the REQ_FLUSH flag can be set on an otherwise empty bio
+> structure, which causes only an explicit cache flush without any dependent
+> I/O.  It is recommend to use the blkdev_issue_flush() helper for a pure
+> cache flush.
+>
+>
+> Forced Unit Access
+> -----------------
+>
+> The REQ_FUA flag can be OR ed into the r/w flags of a bio submitted from the
+> filesystem and will make sure that I/O completion for this requests is not
+> signaled before the data has made it to non-volatile storage on the
+> physical medium.
+>
+>
+> Implementation details for filesystems
+> --------------------------------------
+>
+> Filesystem can simply set the REQ_FLUSH and REQ_FUA bits and do not have to
+> worry if the underlying devices need any explicit cache flushing and how
+> the Forced Unit Access is implemented.  The REQ_FLUSH and REQ_FUA flags
+> may both be set on a single bio.
+>
+>
+> Implementation details for make_request_fn based block drivers
+> --------------------------------------------------------------
+>
+> These drivers will always see the REQ_FLUSH and REQ_FUA bits as they sit
+> directly below the submit_bio interface.  For remapping drivers the REQ_FUA
+> bits needs to be propagate to underlying devices, and a global flush needs
+> to be implemented for bios with the REQ_FLUSH bit set.  For real device
+> drivers that do not have a volatile cache the REQ_FLUSH and REQ_FUA bits
+> on non-empty bios can simply be ignored, and REQ_FLUSH requests without
+> data can be completed successfully without doing any work.  Drivers for
+> devices with volatile caches need to implement the support for these
+> flags themselves without any help from the block layer.
+>
+>
+> Implementation details for request_fn based block drivers
+> --------------------------------------------------------------
+>
+> For devices that do not support volatile write caches there is no driver
+> support required, the block layer completes empty REQ_FLUSH requests before
+> entering the driver and strips off the REQ_FLUSH and REQ_FUA bits from
+> requests that have a payload.  For device with volatile write caches the
+> driver needs to tell the block layer that it supports flushing caches by
+> doing:
+>
+> 	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH);
+>
+> and handle empty REQ_FLUSH requests in it's prep_fn/request_fn.  Note that
+> REQ_FLUSH requests with a payload are automatically turned into a sequence
+> of empty REQ_FLUSH and the actual write by the block layer.  For devices
+> that also support the FUA bit the block layer needs to be told to pass
+> through that bit using:
+>
+> 	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH | REQ_FUA);
+>
+> and handle write requests that have the REQ_FUA bit set properly in it's
+> prep_fn/request_fn.  If the FUA bit is not natively supported the block
+> layer turns it into an empty REQ_FLUSH requests after the actual write.
 
-I plan to submit a V4 for cleancache soon, and hope you will
-be inclined to ack this time.
-
-Thanks,
-Dan
