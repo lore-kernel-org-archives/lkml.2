@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab0HTPWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 11:22:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49932 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab0HTPWp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 11:22:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=QNTE4AhV8I7Lce7JNyfkv74DEbyvWBaj2kA94f9wNKxTJEGWOYDwUju9bxrSwIym5I
-         un9v0yRcYcgMl3eGZqVXIjBz3kqG39p+/wWoLwV61Kcq74em5Ywfpw1fTGXvoDg3bxAc
-         oA4HD2TqJcRWrmLmmAYO9JAuIh7YNfEsIWj/M=
+	id S1753276Ab0HTPZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 11:25:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43049 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752824Ab0HTPZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 11:25:25 -0400
+Date: Fri, 20 Aug 2010 17:25:10 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100820152510.GA4167@elte.hu>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <1282317016.2484.173.camel@edumazet-laptop>
-References: <1282316003-2966-1-git-send-email-xiaosuo@gmail.com> <1282317016.2484.173.camel@edumazet-laptop>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Fri, 20 Aug 2010 23:22:23 +0800
-Message-ID: <AANLkTimj=6HBdZK0WiPBxhm9YPG_8zRXEZyP--E7Shj8@mail.gmail.com>
-Subject: Re: [PATCH v3] netfilter: save the hash of the tuple in the original
- direction for latter use
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        akpm@linux-foundation.org, netfilter-devel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 11:10 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le vendredi 20 août 2010 à 22:53 +0800, Changli Gao a écrit :
->> Since we don't change the tuple in the original direction, we can save it
->> in ct->tuplehash[IP_CT_DIR_REPLY].hnode.pprev for __nf_conntrack_confirm()
->> use.
->>
->> __hash_conntrack() is split into two steps: ____hash_conntrack() is used
->> to get the raw hash, and __hash_bucket() is used to get the bucket id.
->>
->> In SYN-flood case, early_drop() doesn't need to recompute the hash again.
->>
->> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
->> ---
->
-> Hmm... so to accept a few more SYN packets per second in SYNFLOOD
-> attack, we slow a bit normal operations ?
 
-SYN-flood case is just a side effect. What I want to do is eliminating
-the second call to hash_conntrack() of the original tuple in
-__nf_conntrack_confirm().
+* Don Zickus <dzickus@redhat.com> wrote:
 
-> (adding one test on each
-> packet going through conntrack)
+> I'll test tip later today to see if I can reproduce it.
+> 
+> Cheers,
+> Don
+> 
+> Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> >
+> >it's not working so well, i'm getting:
+> >
+> > Uhhuh. NMI received for unknown reason 00 on CPU 9.
+> > Do you have a strange power saving mode enabled?
+> > Dazed and confused, but trying to continue
+> >
+> >on a nehalem box, after a perf top and perf stat run.
 
-Do you mean the rnd test?
+FYI, it does not trigger on an AMD box.
 
->
-> If yes (I dont think we should, hackers are stronger than you anyway,
-> just face it)
->
-> v4:
->        __read_mostly on nf_conntrack_rnd
->
->
-> What would happen if we let the initialization of nf_conntrack_rnd
-> only in the insertion case (like currently done) ?
-> Only the first packet received on the machine/conntrack might be hashed
-> on a wrong slot. Is it a big deal ? If yes, maybe find a way to
-> recompute the hash in this case, instead of reusing 'wrong' one ?
->
+Thanks,
 
-I should keep the old way, but fix a race.
-
-        if (unlikely(!nf_conntrack_hash_rnd_initted)) {
-                get_random_bytes(&nf_conntrack_hash_rnd,
-                                sizeof(nf_conntrack_hash_rnd));
-                nf_conntrack_hash_rnd_initted = 1;
-        }
-
-nf_conntrack_alloc() isn't called with in the nf_conntrack_lock. So
-the above code maybe executed more than once on different CPUs. It is
-easy to fix with the cmpxchg() trick.
-
-Thanks.
-
--- 
-Regards,
-Changli Gao(xiaosuo@gmail.com)
+	Ingo
