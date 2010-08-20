@@ -1,65 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab0HTHZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 03:25:31 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:60189 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab0HTHZ3 (ORCPT
+	id S1751288Ab0HTHbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 03:31:52 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:65406 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab0HTHbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 03:25:29 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+gQQHHhENsAJoBNyeKG+8U
-Date: Fri, 20 Aug 2010 10:25:26 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
-	<ext-heikki.krogerus@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "Lehtonen Markus (Nokia-MS/Helsinki)" <markus.lehtonen@nokia.com>,
-        Roger Quadros <roger.quadros@nokia.com>
-Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
-Message-ID: <20100820072525.GJ25742@atomide.com>
-References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
- <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
- <20100819124042.GA15837@oksana.dev.rtsoft.ru>
- <20100819130937.GC4363@esdhcp041123.research.nokia.com>
- <4C6D3EED.7040703@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6D3EED.7040703@nokia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 20 Aug 2010 03:31:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=wJfFfvJE32IaHC/NIO3EsBlZzQdvbzEvB8DeS0mKJFjQ4kdKCDbeZ1fDk8orXBZ8Fh
+         tNRsbpijtoVVINvSfH4Qjursz78B3cQRqHIPQZuZJMM+JVEl7LbKEcSu0dwIbw7wAqpC
+         kmUPpzuZ7ltiMsdDn8jfUSpG80ZriUfnDX+a4=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: [PATCH] mmc: rename dev_to_mmc_card to mmc_dev_to_card
+Date: Fri, 20 Aug 2010 10:32:31 +0300
+Message-Id: <1282289551-12865-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <20100820002332.93b0c44d.akpm@linux-foundation.org>
+References: <20100820002332.93b0c44d.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+---
+ drivers/mmc/card/mmc_test.c |    2 +-
+ drivers/mmc/core/bus.c      |   14 +++++++-------
+ drivers/mmc/core/bus.h      |    2 +-
+ include/linux/mmc/card.h    |    2 +-
+ 4 files changed, 10 insertions(+), 10 deletions(-)
 
-* Roger Quadros <roger.quadros@nokia.com> [100819 17:17]:
-> On 08/19/2010 04:09 PM, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
-> >On Thu, Aug 19, 2010 at 02:40:42PM +0200, ext Anton Vorontsov wrote:
-> >>On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
-> >>>@@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
-> >>>  	spi_register_board_info(rx51_peripherals_spi_board_info,
-> >>>  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
-> >>>  	omap2_hsmmc_init(mmc);
-> >>>+	platform_device_register(&rx51_charger_device);
-> >>
-> >>Maybe
-> >>
-> >>   platform_device_register_simple("isp1704_charger", -1, NULL, 0);
-> >
-> >I guess it's enough in this case. Ameya, Roger, any objections?
-> >
-> I'm fine with the current approach. No need to re-spin.
+diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
+index 82d39bd..61253ee 100644
+--- a/drivers/mmc/card/mmc_test.c
++++ b/drivers/mmc/card/mmc_test.c
+@@ -1935,7 +1935,7 @@ static ssize_t mmc_test_show(struct device *dev,
+ static ssize_t mmc_test_store(struct device *dev,
+ 	struct device_attribute *attr, const char *buf, size_t count)
+ {
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 	struct mmc_test_card *test;
+ 	int testcase;
+ 
+diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
+index 27326c4..1752097 100644
+--- a/drivers/mmc/core/bus.c
++++ b/drivers/mmc/core/bus.c
+@@ -27,7 +27,7 @@
+ static ssize_t mmc_type_show(struct device *dev,
+ 	struct device_attribute *attr, char *buf)
+ {
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 
+ 	switch (card->type) {
+ 	case MMC_TYPE_MMC:
+@@ -61,7 +61,7 @@ static int mmc_bus_match(struct device *dev, struct device_driver *drv)
+ static int
+ mmc_bus_uevent(struct device *dev, struct kobj_uevent_env *env)
+ {
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 	const char *type;
+ 	int retval = 0;
+ 
+@@ -104,7 +104,7 @@ mmc_bus_uevent(struct device *dev, struct kobj_uevent_env *env)
+ static int mmc_bus_probe(struct device *dev)
+ {
+ 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 
+ 	return drv->probe(card);
+ }
+@@ -112,7 +112,7 @@ static int mmc_bus_probe(struct device *dev)
+ static int mmc_bus_remove(struct device *dev)
+ {
+ 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 
+ 	drv->remove(card);
+ 
+@@ -122,7 +122,7 @@ static int mmc_bus_remove(struct device *dev)
+ static int mmc_bus_suspend(struct device *dev, pm_message_t state)
+ {
+ 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 	int ret = 0;
+ 
+ 	if (dev->driver && drv->suspend)
+@@ -133,7 +133,7 @@ static int mmc_bus_suspend(struct device *dev, pm_message_t state)
+ static int mmc_bus_resume(struct device *dev)
+ {
+ 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 	int ret = 0;
+ 
+ 	if (dev->driver && drv->resume)
+@@ -188,7 +188,7 @@ EXPORT_SYMBOL(mmc_unregister_driver);
+ 
+ static void mmc_release_card(struct device *dev)
+ {
+-	struct mmc_card *card = dev_to_mmc_card(dev);
++	struct mmc_card *card = mmc_to_dev_card(dev);
+ 
+ 	sdio_free_common_cis(card);
+ 
+diff --git a/drivers/mmc/core/bus.h b/drivers/mmc/core/bus.h
+index 7813954..74584af 100644
+--- a/drivers/mmc/core/bus.h
++++ b/drivers/mmc/core/bus.h
+@@ -14,7 +14,7 @@
+ #define MMC_DEV_ATTR(name, fmt, args...)					\
+ static ssize_t mmc_##name##_show (struct device *dev, struct device_attribute *attr, char *buf)	\
+ {										\
+-	struct mmc_card *card = dev_to_mmc_card(dev);				\
++	struct mmc_card *card = mmc_to_dev_card(dev);				\
+ 	return sprintf(buf, fmt, args);						\
+ }										\
+ static DEVICE_ATTR(name, S_IRUGO, mmc_##name##_show, NULL)
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 71acf19..e18bad4 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -173,7 +173,7 @@ static inline int mmc_blksz_for_byte_mode(const struct mmc_card *c)
+ #define mmc_card_name(c)	((c)->cid.prod_name)
+ #define mmc_card_id(c)		(dev_name(&(c)->dev))
+ 
+-#define dev_to_mmc_card(d)	container_of(d, struct mmc_card, dev)
++#define mmc_to_dev_card(d)	container_of(d, struct mmc_card, dev)
+ 
+ #define mmc_list_to_card(l)	container_of(l, struct mmc_card, node)
+ #define mmc_get_drvdata(c)	dev_get_drvdata(&(c)->dev)
+-- 
+1.6.3.3
 
-Just checking.. Anton, can you please queue up this 2/2 patch too to
-keep them together? Here's my ack:
-
-Acked-by: Tony Lindgren <tony@atomide.com>
