@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0HTPge (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 11:36:34 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:50894 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab0HTPgd (ORCPT
+	id S1753389Ab0HTPgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 11:36:50 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:58770 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab0HTPgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 11:36:33 -0400
-Date: Fri, 20 Aug 2010 08:37:03 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Wu Fengguang <fengguang.wu@intel.com>
-cc: Michael Rubin <mrubin@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH 1/4] mm: exporting account_page_dirty
-In-Reply-To: <20100820093951.GA8440@localhost>
-Message-ID: <Pine.LNX.4.64.1008200836060.22373@cobra.newdream.net>
-References: <1282296689-25618-1-git-send-email-mrubin@google.com>
- <1282296689-25618-2-git-send-email-mrubin@google.com> <20100820093951.GA8440@localhost>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 20 Aug 2010 11:36:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ngKqiacv94R0/1LfcbnL2urr8zQyMvAa7Q1JkVAPPuzUmOpQ08jffTW4pOB1LJ9iLR
+         jCNdytt9p+LJg8OWhdUXDT6kfokusevtJVQxTJZqjvHb6mWkr4plwrp40LZcLXu+IiZc
+         Vz8dnev+KHv7BtCTWQVFz3LVzsakH9B+vudsM=
+Subject: Re: [PATCH 0/4] initramfs: remove sparse warnings
+From: Namhyung Kim <namhyung@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100820120001.GR31363@ZenIV.linux.org.uk>
+References: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
+	 <201008191638.23248.arnd@arndb.de>
+	 <20100820120001.GR31363@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Aug 2010 00:36:41 +0900
+Message-ID: <1282318601.1626.9.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010, Wu Fengguang wrote:
-> Sage,
-> 
-> This is actually a bug fix for ceph, which missed the task_dirty_inc()
-> call in account_page_dirty().
-> 
-> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+2010-08-20 (금), 13:00 +0100, Al Viro:
+> No.  This code should *NOT* use the VFS guts, TYVM.  The whole fscking point
+> is that this puppy is a sequence of plain vanilla syscalls, ideally run
+> simply in userland thread.  We used to have a magical mystery shite in there
+> and it had been a huge PITA.
 
-Thanks, I missed this one earlier.  I'll queue it up.
+So is it worth to work on removing the warnings like this patchset does?
+Or else, how can I improve the code even a bit? Can you please give me a
+direction?
 
-sage
+-- 
+Regards,
+Namhyung Kim
 
 
-
-> 
-> On Fri, Aug 20, 2010 at 05:31:26PM +0800, Michael Rubin wrote:
-> > This allows code outside of the mm core to safely manipulate page state
-> > and not worry about the other accounting. Not using these routines means
-> > that some code will lose track of the accounting and we get bugs. This
-> > has happened once already.
-> > 
-> > Signed-off-by: Michael Rubin <mrubin@google.com>
-> > ---
-> >  fs/ceph/addr.c      |    8 +-------
-> >  mm/page-writeback.c |    1 +
-> >  2 files changed, 2 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> > index 5598a0d..420d469 100644
-> > --- a/fs/ceph/addr.c
-> > +++ b/fs/ceph/addr.c
-> > @@ -105,13 +105,7 @@ static int ceph_set_page_dirty(struct page *page)
-> >  	spin_lock_irq(&mapping->tree_lock);
-> >  	if (page->mapping) {	/* Race with truncate? */
-> >  		WARN_ON_ONCE(!PageUptodate(page));
-> > -
-> > -		if (mapping_cap_account_dirty(mapping)) {
-> > -			__inc_zone_page_state(page, NR_FILE_DIRTY);
-> > -			__inc_bdi_stat(mapping->backing_dev_info,
-> > -					BDI_RECLAIMABLE);
-> > -			task_io_account_write(PAGE_CACHE_SIZE);
-> > -		}
-> > +		account_page_dirtied(page, page->mapping);
-> >  		radix_tree_tag_set(&mapping->page_tree,
-> >  				page_index(page), PAGECACHE_TAG_DIRTY);
-> >  
-> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> > index 7262aac..9d07a8d 100644
-> > --- a/mm/page-writeback.c
-> > +++ b/mm/page-writeback.c
-> > @@ -1131,6 +1131,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
-> >  		task_io_account_write(PAGE_CACHE_SIZE);
-> >  	}
-> >  }
-> > +EXPORT_SYMBOL(account_page_dirtied);
-> >  
-> >  /*
-> >   * For address_spaces which do not use buffers.  Just tag the page as dirty in
-> > -- 
-> > 1.7.1
-> 
-> 
