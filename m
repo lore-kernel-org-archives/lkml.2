@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab0HTIeV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:34:21 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:11854 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab0HTIeS (ORCPT
+	id S1752428Ab0HTIfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:35:12 -0400
+Received: from atlantide.nekhem.com ([213.92.23.148]:40555 "EHLO
+	atlantide.nekhem.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab0HTIfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:34:18 -0400
-Date: Fri, 20 Aug 2010 10:33:56 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Wan, Huaxu" <huaxu.wan@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit
- Notification: pkgtemp doc
-Message-ID: <20100820103356.01c9907f@hyperion.delvare>
-In-Reply-To: <20100819205120.GA22602@linux-os.sc.intel.com>
-References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com>
-	<4C485DF1.5050407@linux.intel.com>
-	<20100722162222.GA22450@linux-os.sc.intel.com>
-	<20100722172726.GA4914@ericsson.com>
-	<20100722175225.GB22450@linux-os.sc.intel.com>
-	<20100722185814.GA5235@ericsson.com>
-	<20100722212111.GC22450@linux-os.sc.intel.com>
-	<20100819174632.239aed93@hyperion.delvare>
-	<20100819162719.GB4160@ericsson.com>
-	<20100819205120.GA22602@linux-os.sc.intel.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+	Fri, 20 Aug 2010 04:35:10 -0400
+X-Greylist: delayed 1177 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 04:35:10 EDT
+Subject: On omap3evm kernel 2.6.34+ doesn't boot (solved)
+From: Giuseppe Pagano <giuseppe.pagano@fastwebnet.it>
+Reply-To: giuseppe.pagano@fastwebnet.it
+To: linux-kernel@vger.kernel.org
+Cc: source@mvista.com
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 20 Aug 2010 10:08:43 +0200
+Message-ID: <1282291723.3725.13.camel@anam.i-m3d.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fenghua,
+Hi,
+I'm developing on an arm OMAP3530 based board, machine omap3evm.
 
-On Thu, 19 Aug 2010 13:51:20 -0700, Fenghua Yu wrote:
-> On Thu, Aug 19, 2010 at 09:27:19AM -0700, Guenter Roeck wrote:
-> > I might spend some time rewriting the coretemp driver as described above,
-> > unless someone else picks it up, and unless there is opposition. 
-> > Obviously, that won't include the package sensor since there is now
-> > a separate driver for it.
->
-> I agree with this method too. On a multiple socket system, the current coretemp
-> output will cause confusion since it only outputs core# without package#.
+Starting from kernel versione 2.6.34 machine doesn't boot (On the serial
+console I can see just the uboot message, afther the console freese,
+anche there is no output from the kernel).
 
-Good point.
+I have found that changing this line in 
+arch/arm/plat-omap/include/plat/uncompress.h
 
-> If it's ok for you, I can rewrite this part to have hwmon device per CPU with
-> both core and package thermal info and send out RFC patch soon.
+-               DEBUG_LL_OMAP2(1, omap3evm);
++               DEBUG_LL_OMAP3(3, omap3evm);
 
-Yes, please! If you have time to work on this, it would be very great.
-I am really curious to see how the driver would look like if we go with
-this approach. I can test the code, too (although I understand you
-won't have any difficulties getting your hands on recent Intel
-systems ;)
+solves the problem. 
 
-Also see my reply in the other thread about the handling of removed
-siblings. I suspect it will be very easy to add to the new design.
+I thing this is a bug, so I write this email.
 
-Side question: is it safe to assume a maximum of 2 siblings per core on
-Intel x86 CPUs?
+Thanks
+Giuseppe
 
--- 
-Jean Delvare
