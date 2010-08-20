@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab0HTRNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 13:13:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33415 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab0HTRNK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 13:13:10 -0400
-Date: Fri, 20 Aug 2010 10:12:46 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Miloslav =?UTF-8?B?VHJtYcSN?= <mitr@redhat.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/19] User-space API definition
-Message-Id: <20100820101246.6c7a3729.randy.dunlap@oracle.com>
-In-Reply-To: <1282293963-27807-2-git-send-email-mitr@redhat.com>
-References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
-	<1282293963-27807-2-git-send-email-mitr@redhat.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	id S1753524Ab0HTRQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 13:16:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51215 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752678Ab0HTRQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 13:16:28 -0400
+Message-ID: <4C6EB823.1070300@zytor.com>
+Date: Fri, 20 Aug 2010 10:15:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>
+Subject: Re: 2.6.36-rc1: Doesn't boot on an AMD-based machine
+References: <201008172206.14349.rjw@sisk.pl> <201008180307.42504.rjw@sisk.pl> <AANLkTim6+4DVX8FgLEcFgq-afjJNouKE9qOe_xzsxFM_@mail.gmail.com>
+In-Reply-To: <AANLkTim6+4DVX8FgLEcFgq-afjJNouKE9qOe_xzsxFM_@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 10:45:44 +0200 Miloslav Trmač wrote:
+On 08/20/2010 10:09 AM, Linus Torvalds wrote:
+> On Tue, Aug 17, 2010 at 6:07 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>
+>> It doesn't revert cleanly so appended is the revert patch I used for the
+>> verification if this commit is really responsible for the boot failure.
+> 
+> Hans, Peter? What's the status of this? Should I just take the revert
+> from Rafael? Ping?
+> 
 
-> +#define NCRIO_KEY_INIT			_IO('c', 204)
-> +/* generate a secret key */
-> +#define NCRIO_KEY_GENERATE     	_IOWR('c', 205, struct ncr_key_generate)
-> +/* generate a public key pair */
-> +#define NCRIO_KEY_GENERATE_PAIR _IOWR('c', 206, struct ncr_key_generate_pair)
-> +/* derive a new key from an old one */
-> +#define NCRIO_KEY_DERIVE        _IOWR('c', 207, struct ncr_key_derive)
-> +/* return information on a key */
-> +#define NCRIO_KEY_GET_INFO      _IOWR('c', 208, struct ncr_key_get_info)
-> +/* export a secret key */
-> +#define NCRIO_KEY_EXPORT       	_IOWR('c', 209, struct ncr_key_export)
-> +/* import a secret key */
-> +#define NCRIO_KEY_IMPORT       	_IOWR('c', 210, struct ncr_key_import)
-> +
-> +#define NCRIO_KEY_DEINIT       _IOR ('c', 215, ncr_key_t)
+I have a fix from Hans queued up in x86/urgent and it will be in the
+next push of the fixes queue, which I am planning to send you today.
 
+http://git.kernel.org/tip/07a7795ca2e6e66d00b184efb46bd0e23d90d3fe
 
-Please add (another) 'c' entry to Documentation/ioctl/ioctl-number.txt.
+	-hpa
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
