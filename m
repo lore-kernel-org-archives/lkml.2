@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab0HTSk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 14:40:29 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60440 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab0HTSkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 14:40:01 -0400
-Subject: Re: [KVM timekeeping 17/35] Implement getnsboottime kernel API
-From: john stultz <johnstul@us.ibm.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1282291669-25709-18-git-send-email-zamsden@redhat.com>
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
-	 <1282291669-25709-18-git-send-email-zamsden@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Aug 2010 11:39:54 -0700
-Message-ID: <1282329594.3302.39.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752870Ab0HTSp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 14:45:27 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:32986 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751578Ab0HTSpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 14:45:25 -0400
+Date: Fri, 20 Aug 2010 11:45:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: [PATCH tip/core/rcu 0/7] Yet more RCU commits queued for 2.6.37
+Message-ID: <20100820184521.GA24715@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 22:07 -1000, Zachary Amsden wrote:
-> Add a kernel call to get the number of nanoseconds since boot.  This
-> is generally useful enough to make it a generic call.
+Hello!
 
-Few comments here.
+This patchset shows additional patches queued for 2.6.37, over
+and above those posted at http://lkml.org/lkml/2010/7/14/334 and
+at http://lkml.org/lkml/2010/8/9/332.  These are all trivial fixes.
+The patches are as follows:
 
-> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-> ---
->  include/linux/time.h      |    1 +
->  kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
->  2 files changed, 28 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/time.h b/include/linux/time.h
-> index ea3559f..5d04108 100644
-> --- a/include/linux/time.h
-> +++ b/include/linux/time.h
-> @@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
->  extern void getrawmonotonic(struct timespec *ts);
->  extern void getboottime(struct timespec *ts);
->  extern void monotonic_to_bootbased(struct timespec *ts);
-> +extern s64 getnsboottime(void);
+1.	Allow kernel debuggers to avoid spurious RCU CPU stall warnings
+	when restarting from a breakpoint via a new rcu_cpu_stall_reset().
+2.	Repair code-duplication FIXMEs.  This code was temporarily
+	duplicated to avoid inter-patch dependencies in the RCU tree.
+3.	Document some additional ways of stalling updates to prevent
+	call_rcu()-induced OOM situations.
+4.	Update srcu_read_lock() docbook comment to note that it is
+	illegal to wait for a given flavor of SRCU grace period while
+	in that same flavor of SRCU read-side critical section.
+5.	Combine duplicate code, courtesy of a newly refurbished
+	CONFIG_PREEMPT_RCU symbol.  Also convert from macro to
+	static inline function in a couple of places.
+6.	Apply the TINY_PREEMPT_RCU read-side speedups/fixes to
+	TREE_PREEMPT_RCU.  This update to TINY_PREEMPT_RCU update was
+	posted at http://lkml.org/lkml/2010/8/17/437.
+7.	Add a comment stating that list_empty() serves the function of
+	the non-existent list_empty_rcu().
 
-So instead of converting the timespec from getboottime, why did you add
-a new interface? Also if not a timespec, why did you pick a s64 instead
-of a ktime_t?
+For a testing-only version of this patchset from git, please see:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
 
->  extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
->  extern int timekeeping_valid_for_hres(void);
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index caf8d4d..d250f0a 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
->  }
->  EXPORT_SYMBOL_GPL(ktime_get_ts);
-> 
-> +
-> +/**
-> + * getnsboottime - get the bootbased clock in nsec format
-> + *
-> + * The function calculates the bootbased clock from the realtime
-> + * clock and the wall_to_monotonic offset and stores the result
-> + * in normalized timespec format in the variable pointed to by @ts.
-> + */
-> +s64 getnsboottime(void)
-> +{
-> +	unsigned int seq;
-> +	s64 secs, nsecs;
-> +
-> +	WARN_ON(timekeeping_suspended);
-> +
-> +	do {
-> +		seq = read_seqbegin(&xtime_lock);
-> +		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
-> +		secs += total_sleep_time.tv_sec;
-> +		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
-> +		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
-> +
-> +	} while (read_seqretry(&xtime_lock, seq));
-> +	return nsecs + (secs * NSEC_PER_SEC);
-> +}
-> +EXPORT_SYMBOL_GPL(getnsboottime);
+							Thanx, Paul
 
-You forgot to include the boottime.tv_sec/nsec offset in this. Take a
-look again at getboottime()
-
-thanks
--john
-
-
+ b/Documentation/RCU/checklist.txt |   23 ++++++++---
+ b/include/linux/rculist.h         |    9 ++++
+ b/include/linux/rcupdate.h        |   15 +++++++
+ b/include/linux/rcutiny.h         |    4 ++
+ b/include/linux/rcutree.h         |    1 
+ b/include/linux/srcu.h            |    7 +++
+ b/kernel/rcutiny_plugin.h         |    4 --
+ b/kernel/rcutree.c                |   20 ++++++++++
+ b/kernel/rcutree.h                |    1 
+ b/kernel/rcutree_plugin.h         |   18 +++++++++
+ include/linux/rcupdate.h          |   75 ++++++++++++++++++++++++++++++++++++--
+ include/linux/rcutiny.h           |   58 -----------------------------
+ include/linux/rcutree.h           |   56 ----------------------------
+ kernel/rcutree.h                  |    3 -
+ kernel/rcutree_plugin.h           |   15 ++-----
+ 15 files changed, 166 insertions(+), 143 deletions(-)
