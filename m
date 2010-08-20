@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab0HTIiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:38:19 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39722 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab0HTIiD (ORCPT
+	id S1752761Ab0HTImT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:42:19 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:17571 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab0HTImR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:38:03 -0400
-X-SpamScore: 7
-X-BigFish: VPS7(z3cfcs329eqzbb2cK98dN148cMzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L7FZW9-01-PEC-02
-X-M-MSG: 
-Date: Fri, 20 Aug 2010 10:36:09 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
+	Fri, 20 Aug 2010 04:42:17 -0400
+Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
+From: Ameya Palande <ameya.palande@nokia.com>
+To: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
+	<ext-heikki.krogerus@nokia.com>
+Cc: ext Anton Vorontsov <cbouatmailru@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100820083609.GX26154@erda.amd.com>
-References: <20100804184806.GL26154@erda.amd.com>
- <20100804192634.GG5130@lenovo>
- <20100806065203.GR26154@erda.amd.com>
- <20100806142131.GA1874@redhat.com>
- <20100809194829.GB26154@erda.amd.com>
- <20100817152225.GQ26154@erda.amd.com>
- <1282214753.1926.4669.camel@laptop>
- <20100819141240.GO4879@redhat.com>
- <1282228033.2605.204.camel@laptop>
- <20100820015017.GA4879@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100820015017.GA4879@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
+        "Lehtonen Markus (Nokia-MS/Helsinki)" <markus.lehtonen@nokia.com>,
+        "Quadros Roger (Nokia-MS/Helsinki)" <roger.quadros@nokia.com>,
+        Tony Lindgren <tony@atomide.com>
+In-Reply-To: <20100819130937.GC4363@esdhcp041123.research.nokia.com>
+References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
+	 <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
+	 <20100819124042.GA15837@oksana.dev.rtsoft.ru>
+	 <20100819130937.GC4363@esdhcp041123.research.nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Fri, 20 Aug 2010 11:41:51 +0300
+Message-ID: <1282293711.1925.32.camel@chotu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Aug 2010 08:42:00.0123 (UTC) FILETIME=[8E19C0B0:01CB4043]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.08.10 21:50:17, Don Zickus wrote:
-> I tested this patch and Robert's on an AMD box and Nehalem box.  Both
-> worked as intended.  However I did notice that whenever the AMD box
-> detected handled >1, it was shortly followed by an unknown_nmi that was
-> properly eaten with Robert's logic.  Whereas on the Nehalem box I saw a
-> lot of 'handled > 1' messages but very very few of them were followed by
-> an unknown_nmi message (and those messages that did come were properly
-> eaten).
+Hi Heikki,
 
-Don, thanks for testing this.
+On Thu, 2010-08-19 at 15:09 +0200, Krogerus Heikki (EXT-Teleca/Helsinki)
+wrote:
+> On Thu, Aug 19, 2010 at 02:40:42PM +0200, ext Anton Vorontsov wrote:
+> > On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
+> >> @@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
+> >>  	spi_register_board_info(rx51_peripherals_spi_board_info,
+> >>  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
+> >>  	omap2_hsmmc_init(mmc);
+> >> +	platform_device_register(&rx51_charger_device);
+> > 
+> > Maybe
+> > 
+> >   platform_device_register_simple("isp1704_charger", -1, NULL, 0);
+> 
+> I guess it's enough in this case. Ameya, Roger, any objections?
 
--Robert
+Yes, I would have preferred "platform_device_register_simple" instead of
+"platform_device_register", but doesn't matter now ;)
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Cheers,
+Ameya.
 
