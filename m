@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab0HTItV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:49:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50935 "EHLO mx1.redhat.com"
+	id S1753245Ab0HTIuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:50:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29022 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab0HTIqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:46:54 -0400
+	id S1751568Ab0HTIqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:46:50 -0400
 From: =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>
 Cc: linux-crypto@vger.kernel.org,
         Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
         Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
-Subject: [PATCH 10/19] Add libtommath implementation
-Date: Fri, 20 Aug 2010 10:45:54 +0200
-Message-Id: <1282293963-27807-12-git-send-email-mitr@redhat.com>
+Subject: [PATCH 09/19] Add libtommath implementation
+Date: Fri, 20 Aug 2010 10:45:52 +0200
+Message-Id: <1282293963-27807-10-git-send-email-mitr@redhat.com>
 In-Reply-To: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,9164 +28,10406 @@ replacing the implementation by something based on libgcrypt, which is
 more actively maintained and has been probably more thorouhgly examined
 for vulnerabilities.)
 ---
- crypto/userspace/Makefile                          |   38 ++-
- .../libtomcrypt/hashes/crypt_hash_is_valid.c       |   30 ++
- crypto/userspace/libtomcrypt/hashes/hash_get_oid.c |   78 ++++
- crypto/userspace/libtomcrypt/hashes/hash_memory.c  |   66 ++++
- .../libtomcrypt/hashes/hash_memory_multi.c         |   84 +++++
- .../userspace/libtomcrypt/headers/tomcrypt_prng.h  |   80 ++++
- crypto/userspace/libtomcrypt/math/rand_prime.c     |   80 ++++
- .../libtomcrypt/misc/crypt/crypt_argchk.c          |   28 ++
- crypto/userspace/libtomcrypt/misc/pk_get_oid.c     |   40 ++
- crypto/userspace/libtomcrypt/misc/qsort.c          |  247 ++++++++++++
- crypto/userspace/libtomcrypt/misc/zeromem.c        |   34 ++
- .../pk/asn1/der/bit/der_decode_bit_string.c        |  106 ++++++
- .../pk/asn1/der/bit/der_encode_bit_string.c        |   92 +++++
- .../pk/asn1/der/bit/der_length_bit_string.c        |   54 +++
- .../pk/asn1/der/boolean/der_decode_boolean.c       |   47 +++
- .../pk/asn1/der/boolean/der_encode_boolean.c       |   51 +++
- .../pk/asn1/der/boolean/der_length_boolean.c       |   35 ++
- .../pk/asn1/der/choice/der_decode_choice.c         |  182 +++++++++
- .../pk/asn1/der/ia5/der_decode_ia5_string.c        |   96 +++++
- .../pk/asn1/der/ia5/der_encode_ia5_string.c        |   85 +++++
- .../pk/asn1/der/ia5/der_length_ia5_string.c        |  194 ++++++++++
- .../pk/asn1/der/integer/der_decode_integer.c       |  110 ++++++
- .../pk/asn1/der/integer/der_encode_integer.c       |  130 +++++++
- .../pk/asn1/der/integer/der_length_integer.c       |   82 ++++
- .../der_decode_object_identifier.c                 |   99 +++++
- .../der_encode_object_identifier.c                 |  111 ++++++
- .../der_length_object_identifier.c                 |   89 +++++
- .../pk/asn1/der/octet/der_decode_octet_string.c    |   91 +++++
- .../pk/asn1/der/octet/der_encode_octet_string.c    |   86 +++++
- .../pk/asn1/der/octet/der_length_octet_string.c    |   53 +++
- .../printable_string/der_decode_printable_string.c |   96 +++++
- .../printable_string/der_encode_printable_string.c |   85 +++++
- .../printable_string/der_length_printable_string.c |  166 ++++++++
- .../pk/asn1/der/sequence/der_decode_sequence_ex.c  |  287 ++++++++++++++
- .../asn1/der/sequence/der_decode_sequence_flexi.c  |  394 ++++++++++++++++++++
- .../asn1/der/sequence/der_decode_sequence_multi.c  |  140 +++++++
- .../pk/asn1/der/sequence/der_encode_sequence_ex.c  |  335 +++++++++++++++++
- .../asn1/der/sequence/der_encode_sequence_multi.c  |  139 +++++++
- .../pk/asn1/der/sequence/der_length_sequence.c     |  169 +++++++++
- .../pk/asn1/der/sequence/der_sequence_free.c       |   66 ++++
- .../libtomcrypt/pk/asn1/der/set/der_encode_set.c   |  104 +++++
- .../libtomcrypt/pk/asn1/der/set/der_encode_setof.c |  163 ++++++++
- .../der/short_integer/der_decode_short_integer.c   |   68 ++++
- .../der/short_integer/der_encode_short_integer.c   |   97 +++++
- .../der/short_integer/der_length_short_integer.c   |   70 ++++
- .../pk/asn1/der/utctime/der_decode_utctime.c       |  127 +++++++
- .../pk/asn1/der/utctime/der_encode_utctime.c       |   83 ++++
- .../pk/asn1/der/utctime/der_length_utctime.c       |   46 +++
- .../pk/asn1/der/utf8/der_decode_utf8_string.c      |  111 ++++++
- .../pk/asn1/der/utf8/der_encode_utf8_string.c      |  105 ++++++
- .../pk/asn1/der/utf8/der_length_utf8_string.c      |   83 ++++
- .../der/x509/der_decode_subject_public_key_info.c  |  112 ++++++
- .../der/x509/der_encode_subject_public_key_info.c  |   83 ++++
- crypto/userspace/libtomcrypt/pk/dsa/dsa_export.c   |   99 +++++
- crypto/userspace/libtomcrypt/pk/dsa/dsa_free.c     |   34 ++
- crypto/userspace/libtomcrypt/pk/dsa/dsa_import.c   |  101 +++++
- crypto/userspace/libtomcrypt/pk/dsa/dsa_make_key.c |  125 ++++++
- .../userspace/libtomcrypt/pk/dsa/dsa_sign_hash.c   |  147 ++++++++
- .../userspace/libtomcrypt/pk/dsa/dsa_verify_hash.c |  126 +++++++
- .../userspace/libtomcrypt/pk/dsa/dsa_verify_key.c  |  100 +++++
- .../userspace/libtomcrypt/pk/pkcs1/pkcs_1_i2osp.c  |   51 +++
- .../userspace/libtomcrypt/pk/pkcs1/pkcs_1_mgf1.c   |   91 +++++
- .../libtomcrypt/pk/pkcs1/pkcs_1_oaep_decode.c      |  192 ++++++++++
- .../libtomcrypt/pk/pkcs1/pkcs_1_oaep_encode.c      |  164 ++++++++
- .../userspace/libtomcrypt/pk/pkcs1/pkcs_1_os2ip.c  |   36 ++
- .../libtomcrypt/pk/pkcs1/pkcs_1_pss_decode.c       |  168 +++++++++
- .../libtomcrypt/pk/pkcs1/pkcs_1_pss_encode.c       |  157 ++++++++
- .../libtomcrypt/pk/pkcs1/pkcs_1_v1_5_decode.c      |  110 ++++++
- .../libtomcrypt/pk/pkcs1/pkcs_1_v1_5_encode.c      |   95 +++++
- .../userspace/libtomcrypt/pk/rsa/rsa_decrypt_key.c |  107 ++++++
- .../userspace/libtomcrypt/pk/rsa/rsa_encrypt_key.c |   96 +++++
- crypto/userspace/libtomcrypt/pk/rsa/rsa_export.c   |   87 +++++
- crypto/userspace/libtomcrypt/pk/rsa/rsa_exptmod.c  |  147 ++++++++
- crypto/userspace/libtomcrypt/pk/rsa/rsa_free.c     |   34 ++
- crypto/userspace/libtomcrypt/pk/rsa/rsa_import.c   |  128 +++++++
- crypto/userspace/libtomcrypt/pk/rsa/rsa_make_key.c |  105 ++++++
- .../userspace/libtomcrypt/pk/rsa/rsa_sign_hash.c   |  130 +++++++
- .../userspace/libtomcrypt/pk/rsa/rsa_verify_hash.c |  170 +++++++++
- 78 files changed, 8526 insertions(+), 1 deletions(-)
- create mode 100644 crypto/userspace/libtomcrypt/hashes/crypt_hash_is_valid.c
- create mode 100644 crypto/userspace/libtomcrypt/hashes/hash_get_oid.c
- create mode 100644 crypto/userspace/libtomcrypt/hashes/hash_memory.c
- create mode 100644 crypto/userspace/libtomcrypt/hashes/hash_memory_multi.c
- create mode 100644 crypto/userspace/libtomcrypt/headers/tomcrypt_prng.h
- create mode 100644 crypto/userspace/libtomcrypt/math/rand_prime.c
- create mode 100644 crypto/userspace/libtomcrypt/misc/crypt/crypt_argchk.c
- create mode 100644 crypto/userspace/libtomcrypt/misc/pk_get_oid.c
- create mode 100644 crypto/userspace/libtomcrypt/misc/qsort.c
- create mode 100644 crypto/userspace/libtomcrypt/misc/zeromem.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_decode_bit_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_encode_bit_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_length_bit_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_decode_boolean.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_encode_boolean.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_length_boolean.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/choice/der_decode_choice.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_decode_ia5_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_encode_ia5_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_length_ia5_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_decode_integer.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_encode_integer.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_length_integer.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_decode_object_identifier.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_encode_object_identifier.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_length_object_identifier.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_decode_octet_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_encode_octet_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_length_octet_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_decode_printable_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_encode_printable_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_length_printable_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_ex.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_flexi.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_multi.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_ex.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_multi.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_length_sequence.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_sequence_free.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_set.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_setof.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_decode_short_integer.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_encode_short_integer.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_length_short_integer.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_decode_utctime.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_encode_utctime.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_length_utctime.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_decode_utf8_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_encode_utf8_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_length_utf8_string.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_decode_subject_public_key_info.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_encode_subject_public_key_info.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/dsa/dsa_export.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/dsa/dsa_free.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/dsa/dsa_import.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/dsa/dsa_make_key.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/dsa/dsa_sign_hash.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_hash.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_key.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_i2osp.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_mgf1.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_decode.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_encode.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_os2ip.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_decode.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_encode.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_decode.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_encode.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_decrypt_key.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_encrypt_key.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_export.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_exptmod.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_free.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_import.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_make_key.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_sign_hash.c
- create mode 100644 crypto/userspace/libtomcrypt/pk/rsa/rsa_verify_hash.c
+ crypto/userspace/Makefile                          |   31 ++-
+ crypto/userspace/libtommath/LICENSE                |    4 +
+ crypto/userspace/libtommath/bn_error.c             |   47 +++
+ crypto/userspace/libtommath/bn_fast_mp_invmod.c    |  148 ++++++++
+ .../libtommath/bn_fast_mp_montgomery_reduce.c      |  172 +++++++++
+ .../userspace/libtommath/bn_fast_s_mp_mul_digs.c   |  107 ++++++
+ .../libtommath/bn_fast_s_mp_mul_high_digs.c        |   98 +++++
+ crypto/userspace/libtommath/bn_fast_s_mp_sqr.c     |  114 ++++++
+ crypto/userspace/libtommath/bn_mp_2expt.c          |   48 +++
+ crypto/userspace/libtommath/bn_mp_abs.c            |   43 +++
+ crypto/userspace/libtommath/bn_mp_add.c            |   53 +++
+ crypto/userspace/libtommath/bn_mp_add_d.c          |  112 ++++++
+ crypto/userspace/libtommath/bn_mp_addmod.c         |   41 ++
+ crypto/userspace/libtommath/bn_mp_and.c            |   57 +++
+ crypto/userspace/libtommath/bn_mp_clamp.c          |   44 +++
+ crypto/userspace/libtommath/bn_mp_clear.c          |   45 +++
+ crypto/userspace/libtommath/bn_mp_clear_multi.c    |   34 ++
+ crypto/userspace/libtommath/bn_mp_cmp.c            |   43 +++
+ crypto/userspace/libtommath/bn_mp_cmp_d.c          |   44 +++
+ crypto/userspace/libtommath/bn_mp_cmp_mag.c        |   55 +++
+ crypto/userspace/libtommath/bn_mp_cnt_lsb.c        |   53 +++
+ crypto/userspace/libtommath/bn_mp_copy.c           |   68 ++++
+ crypto/userspace/libtommath/bn_mp_count_bits.c     |   45 +++
+ crypto/userspace/libtommath/bn_mp_div.c            |  292 ++++++++++++++
+ crypto/userspace/libtommath/bn_mp_div_2.c          |   68 ++++
+ crypto/userspace/libtommath/bn_mp_div_2d.c         |   97 +++++
+ crypto/userspace/libtommath/bn_mp_div_3.c          |   79 ++++
+ crypto/userspace/libtommath/bn_mp_div_d.c          |  115 ++++++
+ crypto/userspace/libtommath/bn_mp_dr_is_modulus.c  |   43 +++
+ crypto/userspace/libtommath/bn_mp_dr_reduce.c      |   94 +++++
+ crypto/userspace/libtommath/bn_mp_dr_setup.c       |   32 ++
+ crypto/userspace/libtommath/bn_mp_exch.c           |   34 ++
+ crypto/userspace/libtommath/bn_mp_expt_d.c         |   57 +++
+ crypto/userspace/libtommath/bn_mp_exptmod.c        |  112 ++++++
+ crypto/userspace/libtommath/bn_mp_exptmod_fast.c   |  321 ++++++++++++++++
+ crypto/userspace/libtommath/bn_mp_exteuclid.c      |   82 ++++
+ crypto/userspace/libtommath/bn_mp_gcd.c            |  105 +++++
+ crypto/userspace/libtommath/bn_mp_get_int.c        |   45 +++
+ crypto/userspace/libtommath/bn_mp_grow.c           |   58 +++
+ crypto/userspace/libtommath/bn_mp_init.c           |   47 +++
+ crypto/userspace/libtommath/bn_mp_init_copy.c      |   32 ++
+ crypto/userspace/libtommath/bn_mp_init_multi.c     |   59 +++
+ crypto/userspace/libtommath/bn_mp_init_set.c       |   32 ++
+ crypto/userspace/libtommath/bn_mp_init_set_int.c   |   31 ++
+ crypto/userspace/libtommath/bn_mp_init_size.c      |   49 +++
+ crypto/userspace/libtommath/bn_mp_invmod.c         |   43 +++
+ crypto/userspace/libtommath/bn_mp_invmod_slow.c    |  175 +++++++++
+ crypto/userspace/libtommath/bn_mp_is_square.c      |  109 ++++++
+ crypto/userspace/libtommath/bn_mp_jacobi.c         |  105 +++++
+ crypto/userspace/libtommath/bn_mp_karatsuba_mul.c  |  167 ++++++++
+ crypto/userspace/libtommath/bn_mp_karatsuba_sqr.c  |  121 ++++++
+ crypto/userspace/libtommath/bn_mp_lcm.c            |   60 +++
+ crypto/userspace/libtommath/bn_mp_lshd.c           |   67 ++++
+ crypto/userspace/libtommath/bn_mp_mod.c            |   48 +++
+ crypto/userspace/libtommath/bn_mp_mod_2d.c         |   55 +++
+ crypto/userspace/libtommath/bn_mp_mod_d.c          |   27 ++
+ .../bn_mp_montgomery_calc_normalization.c          |   59 +++
+ .../userspace/libtommath/bn_mp_montgomery_reduce.c |  118 ++++++
+ .../userspace/libtommath/bn_mp_montgomery_setup.c  |   59 +++
+ crypto/userspace/libtommath/bn_mp_mul.c            |   66 ++++
+ crypto/userspace/libtommath/bn_mp_mul_2.c          |   82 ++++
+ crypto/userspace/libtommath/bn_mp_mul_2d.c         |   85 +++++
+ crypto/userspace/libtommath/bn_mp_mul_d.c          |   79 ++++
+ crypto/userspace/libtommath/bn_mp_mulmod.c         |   40 ++
+ crypto/userspace/libtommath/bn_mp_n_root.c         |  132 +++++++
+ crypto/userspace/libtommath/bn_mp_neg.c            |   40 ++
+ crypto/userspace/libtommath/bn_mp_or.c             |   50 +++
+ crypto/userspace/libtommath/bn_mp_prime_fermat.c   |   62 +++
+ .../libtommath/bn_mp_prime_is_divisible.c          |   50 +++
+ crypto/userspace/libtommath/bn_mp_prime_is_prime.c |   83 ++++
+ .../libtommath/bn_mp_prime_miller_rabin.c          |  103 +++++
+ .../userspace/libtommath/bn_mp_prime_next_prime.c  |  170 +++++++++
+ .../libtommath/bn_mp_prime_rabin_miller_trials.c   |   52 +++
+ .../userspace/libtommath/bn_mp_prime_random_ex.c   |  126 ++++++
+ crypto/userspace/libtommath/bn_mp_radix_size.c     |   78 ++++
+ crypto/userspace/libtommath/bn_mp_radix_smap.c     |   24 ++
+ crypto/userspace/libtommath/bn_mp_rand.c           |   55 +++
+ crypto/userspace/libtommath/bn_mp_read_radix.c     |   85 +++++
+ .../userspace/libtommath/bn_mp_read_signed_bin.c   |   41 ++
+ .../userspace/libtommath/bn_mp_read_unsigned_bin.c |   55 +++
+ crypto/userspace/libtommath/bn_mp_reduce.c         |  100 +++++
+ crypto/userspace/libtommath/bn_mp_reduce_2k.c      |   61 +++
+ crypto/userspace/libtommath/bn_mp_reduce_2k_l.c    |   62 +++
+ .../userspace/libtommath/bn_mp_reduce_2k_setup.c   |   47 +++
+ .../userspace/libtommath/bn_mp_reduce_2k_setup_l.c |   44 +++
+ crypto/userspace/libtommath/bn_mp_reduce_is_2k.c   |   52 +++
+ crypto/userspace/libtommath/bn_mp_reduce_is_2k_l.c |   44 +++
+ crypto/userspace/libtommath/bn_mp_reduce_setup.c   |   34 ++
+ crypto/userspace/libtommath/bn_mp_rshd.c           |   72 ++++
+ crypto/userspace/libtommath/bn_mp_set.c            |   29 ++
+ crypto/userspace/libtommath/bn_mp_set_int.c        |   48 +++
+ crypto/userspace/libtommath/bn_mp_shrink.c         |   36 ++
+ .../userspace/libtommath/bn_mp_signed_bin_size.c   |   27 ++
+ crypto/userspace/libtommath/bn_mp_sqr.c            |   58 +++
+ crypto/userspace/libtommath/bn_mp_sqrmod.c         |   41 ++
+ crypto/userspace/libtommath/bn_mp_sqrt.c           |   81 ++++
+ crypto/userspace/libtommath/bn_mp_sub.c            |   59 +++
+ crypto/userspace/libtommath/bn_mp_sub_d.c          |   93 +++++
+ crypto/userspace/libtommath/bn_mp_submod.c         |   42 ++
+ crypto/userspace/libtommath/bn_mp_to_signed_bin.c  |   33 ++
+ .../userspace/libtommath/bn_mp_to_signed_bin_n.c   |   31 ++
+ .../userspace/libtommath/bn_mp_to_unsigned_bin.c   |   48 +++
+ .../userspace/libtommath/bn_mp_to_unsigned_bin_n.c |   31 ++
+ crypto/userspace/libtommath/bn_mp_toom_mul.c       |  284 ++++++++++++++
+ crypto/userspace/libtommath/bn_mp_toom_sqr.c       |  226 +++++++++++
+ crypto/userspace/libtommath/bn_mp_toradix.c        |   75 ++++
+ crypto/userspace/libtommath/bn_mp_toradix_n.c      |   88 +++++
+ .../userspace/libtommath/bn_mp_unsigned_bin_size.c |   28 ++
+ crypto/userspace/libtommath/bn_mp_xor.c            |   51 +++
+ crypto/userspace/libtommath/bn_mp_zero.c           |   36 ++
+ crypto/userspace/libtommath/bn_prime_tab.c         |   61 +++
+ crypto/userspace/libtommath/bn_reverse.c           |   39 ++
+ crypto/userspace/libtommath/bn_s_mp_add.c          |  109 ++++++
+ crypto/userspace/libtommath/bn_s_mp_exptmod.c      |  252 +++++++++++++
+ crypto/userspace/libtommath/bn_s_mp_mul_digs.c     |   90 +++++
+ .../userspace/libtommath/bn_s_mp_mul_high_digs.c   |   81 ++++
+ crypto/userspace/libtommath/bn_s_mp_sqr.c          |   84 ++++
+ crypto/userspace/libtommath/bn_s_mp_sub.c          |   89 +++++
+ crypto/userspace/libtommath/bncore.c               |   36 ++
+ crypto/userspace/libtommath/changes.txt            |  397 ++++++++++++++++++++
+ crypto/userspace/libtommath/pretty.build           |   66 ++++
+ 121 files changed, 9425 insertions(+), 1 deletions(-)
+ create mode 100644 crypto/userspace/libtommath/LICENSE
+ create mode 100644 crypto/userspace/libtommath/bn_error.c
+ create mode 100644 crypto/userspace/libtommath/bn_fast_mp_invmod.c
+ create mode 100644 crypto/userspace/libtommath/bn_fast_mp_montgomery_reduce.c
+ create mode 100644 crypto/userspace/libtommath/bn_fast_s_mp_mul_digs.c
+ create mode 100644 crypto/userspace/libtommath/bn_fast_s_mp_mul_high_digs.c
+ create mode 100644 crypto/userspace/libtommath/bn_fast_s_mp_sqr.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_2expt.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_abs.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_add.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_add_d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_addmod.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_and.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_clamp.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_clear.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_clear_multi.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_cmp.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_cmp_d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_cmp_mag.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_cnt_lsb.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_copy.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_count_bits.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_div.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_div_2.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_div_2d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_div_3.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_div_d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_dr_is_modulus.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_dr_reduce.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_dr_setup.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_exch.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_expt_d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_exptmod.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_exptmod_fast.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_exteuclid.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_gcd.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_get_int.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_grow.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_init.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_init_copy.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_init_multi.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_init_set.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_init_set_int.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_init_size.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_invmod.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_invmod_slow.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_is_square.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_jacobi.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_karatsuba_mul.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_karatsuba_sqr.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_lcm.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_lshd.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mod.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mod_2d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mod_d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_montgomery_calc_normalization.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_montgomery_reduce.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_montgomery_setup.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mul.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mul_2.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mul_2d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mul_d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_mulmod.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_n_root.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_neg.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_or.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_prime_fermat.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_prime_is_divisible.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_prime_is_prime.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_prime_miller_rabin.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_prime_next_prime.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_prime_rabin_miller_trials.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_prime_random_ex.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_radix_size.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_radix_smap.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_rand.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_read_radix.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_read_signed_bin.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_read_unsigned_bin.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce_2k.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce_2k_l.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce_2k_setup.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce_2k_setup_l.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce_is_2k.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce_is_2k_l.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_reduce_setup.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_rshd.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_set.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_set_int.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_shrink.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_signed_bin_size.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_sqr.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_sqrmod.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_sqrt.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_sub.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_sub_d.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_submod.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_to_signed_bin.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_to_signed_bin_n.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_to_unsigned_bin.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_to_unsigned_bin_n.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_toom_mul.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_toom_sqr.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_toradix.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_toradix_n.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_unsigned_bin_size.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_xor.c
+ create mode 100644 crypto/userspace/libtommath/bn_mp_zero.c
+ create mode 100644 crypto/userspace/libtommath/bn_prime_tab.c
+ create mode 100644 crypto/userspace/libtommath/bn_reverse.c
+ create mode 100644 crypto/userspace/libtommath/bn_s_mp_add.c
+ create mode 100644 crypto/userspace/libtommath/bn_s_mp_exptmod.c
+ create mode 100644 crypto/userspace/libtommath/bn_s_mp_mul_digs.c
+ create mode 100644 crypto/userspace/libtommath/bn_s_mp_mul_high_digs.c
+ create mode 100644 crypto/userspace/libtommath/bn_s_mp_sqr.c
+ create mode 100644 crypto/userspace/libtommath/bn_s_mp_sub.c
+ create mode 100644 crypto/userspace/libtommath/bncore.c
+ create mode 100644 crypto/userspace/libtommath/changes.txt
+ create mode 100644 crypto/userspace/libtommath/pretty.build
 
 diff --git a/crypto/userspace/Makefile b/crypto/userspace/Makefile
-index 60a9b31..81e4122 100644
+index 3dfbc39..60a9b31 100644
 --- a/crypto/userspace/Makefile
 +++ b/crypto/userspace/Makefile
-@@ -28,8 +28,44 @@ TOMMATH_OBJECTS = libtommath/bncore.o libtommath/bn_mp_init.o libtommath/bn_mp_c
- 	libtommath/bn_mp_init_set_int.o libtommath/bn_mp_invmod_slow.o libtommath/bn_mp_prime_rabin_miller_trials.o \
- 	libtommath/bn_mp_to_signed_bin_n.o libtommath/bn_mp_to_unsigned_bin_n.o
+@@ -1,6 +1,35 @@
+ ccflags-y += -I$(src)/libtommath -I$(src)/libtomcrypt/headers -I$(src) -DLTC_SOURCE
  
-+TOMCRYPT_OBJECTS = libtomcrypt/misc/zeromem.o libtomcrypt/misc/crypt/crypt_argchk.o \
-+	libtomcrypt/math/rand_prime.o  libtomcrypt/misc/qsort.o libtomcrypt/hashes/hash_get_oid.o \
-+	libtomcrypt/hashes/crypt_hash_is_valid.o libtomcrypt/hashes/hash_memory.o libtomcrypt/hashes/hash_memory_multi.o \
-+	libtomcrypt/pk/dsa/dsa_make_key.o libtomcrypt/pk/dsa/dsa_export.o libtomcrypt/pk/dsa/dsa_import.o \
-+	libtomcrypt/pk/dsa/dsa_free.o libtomcrypt/pk/dsa/dsa_sign_hash.o libtomcrypt/pk/dsa/dsa_verify_hash.o \
-+	libtomcrypt/pk/dsa/dsa_verify_key.o \
-+	libtomcrypt/pk/asn1/der/bit/der_decode_bit_string.o libtomcrypt/pk/asn1/der/bit/der_encode_bit_string.o \
-+	libtomcrypt/pk/asn1/der/bit/der_length_bit_string.o libtomcrypt/pk/asn1/der/boolean/der_decode_boolean.o \
-+	libtomcrypt/pk/asn1/der/boolean/der_encode_boolean.o libtomcrypt/pk/asn1/der/boolean/der_length_boolean.o \
-+	libtomcrypt/pk/asn1/der/choice/der_decode_choice.o libtomcrypt/pk/asn1/der/ia5/der_decode_ia5_string.o \
-+	libtomcrypt/pk/asn1/der/ia5/der_encode_ia5_string.o libtomcrypt/pk/asn1/der/ia5/der_length_ia5_string.o \
-+	libtomcrypt/pk/asn1/der/integer/der_decode_integer.o libtomcrypt/pk/asn1/der/integer/der_encode_integer.o \
-+	libtomcrypt/pk/asn1/der/integer/der_length_integer.o libtomcrypt/pk/asn1/der/object_identifier/der_decode_object_identifier.o \
-+	libtomcrypt/pk/asn1/der/object_identifier/der_encode_object_identifier.o libtomcrypt/pk/asn1/der/object_identifier/der_length_object_identifier.o \
-+	libtomcrypt/pk/asn1/der/octet/der_decode_octet_string.o libtomcrypt/pk/asn1/der/octet/der_encode_octet_string.o \
-+	libtomcrypt/pk/asn1/der/octet/der_length_octet_string.o libtomcrypt/pk/asn1/der/printable_string/der_decode_printable_string.o \
-+	libtomcrypt/pk/asn1/der/printable_string/der_encode_printable_string.o libtomcrypt/pk/asn1/der/printable_string/der_length_printable_string.o \
-+	libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_ex.o libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_flexi.o \
-+	libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_multi.o libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_ex.o \
-+	libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_multi.o libtomcrypt/pk/asn1/der/sequence/der_length_sequence.o \
-+	libtomcrypt/pk/asn1/der/sequence/der_sequence_free.o libtomcrypt/pk/asn1/der/short_integer/der_decode_short_integer.o \
-+	libtomcrypt/pk/asn1/der/short_integer/der_encode_short_integer.o libtomcrypt/pk/asn1/der/short_integer/der_length_short_integer.o \
-+	libtomcrypt/pk/asn1/der/utctime/der_decode_utctime.o libtomcrypt/pk/asn1/der/utctime/der_encode_utctime.o \
-+	libtomcrypt/pk/asn1/der/utctime/der_length_utctime.o libtomcrypt/pk/asn1/der/utf8/der_decode_utf8_string.o \
-+	libtomcrypt/pk/asn1/der/utf8/der_encode_utf8_string.o libtomcrypt/pk/asn1/der/utf8/der_length_utf8_string.o \
-+	libtomcrypt/pk/asn1/der/set/der_encode_set.o  libtomcrypt/pk/asn1/der/set/der_encode_setof.o \
-+	libtomcrypt/pk/rsa/rsa_decrypt_key.o libtomcrypt/pk/rsa/rsa_encrypt_key.o libtomcrypt/pk/rsa/rsa_export.o \
-+	libtomcrypt/pk/rsa/rsa_exptmod.o libtomcrypt/pk/rsa/rsa_free.o libtomcrypt/pk/rsa/rsa_import.o \
-+	libtomcrypt/pk/rsa/rsa_make_key.o libtomcrypt/pk/rsa/rsa_sign_hash.o libtomcrypt/pk/rsa/rsa_verify_hash.o \
-+	libtomcrypt/pk/pkcs1/pkcs_1_i2osp.o libtomcrypt/pk/pkcs1/pkcs_1_mgf1.o 	libtomcrypt/pk/pkcs1/pkcs_1_oaep_decode.o \
-+	libtomcrypt/pk/pkcs1/pkcs_1_oaep_encode.o libtomcrypt/pk/pkcs1/pkcs_1_os2ip.o libtomcrypt/pk/pkcs1/pkcs_1_pss_decode.o \
-+	libtomcrypt/pk/pkcs1/pkcs_1_pss_encode.o libtomcrypt/pk/pkcs1/pkcs_1_v1_5_decode.o libtomcrypt/pk/pkcs1/pkcs_1_v1_5_encode.o \
-+	libtomcrypt/misc/pk_get_oid.o libtomcrypt/pk/asn1/der/x509/der_encode_subject_public_key_info.o \
-+	libtomcrypt/pk/asn1/der/x509/der_decode_subject_public_key_info.o
+-cryptodev-objs := cryptodev_main.o cryptodev_cipher.o ncr-limits.o utils.o
++TOMMATH_OBJECTS = libtommath/bncore.o libtommath/bn_mp_init.o libtommath/bn_mp_clear.o libtommath/bn_mp_exch.o libtommath/bn_mp_grow.o libtommath/bn_mp_shrink.o \
++	libtommath/bn_mp_clamp.o libtommath/bn_mp_zero.o  libtommath/bn_mp_set.o libtommath/bn_mp_set_int.o libtommath/bn_mp_init_size.o libtommath/bn_mp_copy.o \
++	libtommath/bn_mp_init_copy.o libtommath/bn_mp_abs.o libtommath/bn_mp_neg.o libtommath/bn_mp_cmp_mag.o libtommath/bn_mp_cmp.o libtommath/bn_mp_cmp_d.o \
++	libtommath/bn_mp_rshd.o libtommath/bn_mp_lshd.o libtommath/bn_mp_mod_2d.o libtommath/bn_mp_div_2d.o libtommath/bn_mp_mul_2d.o libtommath/bn_mp_div_2.o \
++	libtommath/bn_mp_mul_2.o libtommath/bn_s_mp_add.o libtommath/bn_s_mp_sub.o libtommath/bn_fast_s_mp_mul_digs.o libtommath/bn_s_mp_mul_digs.o \
++	libtommath/bn_fast_s_mp_mul_high_digs.o libtommath/bn_s_mp_mul_high_digs.o libtommath/bn_fast_s_mp_sqr.o libtommath/bn_s_mp_sqr.o \
++	libtommath/bn_mp_add.o libtommath/bn_mp_sub.o libtommath/bn_mp_karatsuba_mul.o libtommath/bn_mp_mul.o libtommath/bn_mp_karatsuba_sqr.o \
++	libtommath/bn_mp_sqr.o libtommath/bn_mp_div.o libtommath/bn_mp_mod.o libtommath/bn_mp_add_d.o libtommath/bn_mp_sub_d.o libtommath/bn_mp_mul_d.o \
++	libtommath/bn_mp_div_d.o libtommath/bn_mp_mod_d.o libtommath/bn_mp_expt_d.o libtommath/bn_mp_addmod.o libtommath/bn_mp_submod.o \
++	libtommath/bn_mp_mulmod.o libtommath/bn_mp_sqrmod.o libtommath/bn_mp_gcd.o libtommath/bn_mp_lcm.o libtommath/bn_fast_mp_invmod.o libtommath/bn_mp_invmod.o \
++	libtommath/bn_mp_reduce.o libtommath/bn_mp_montgomery_setup.o libtommath/bn_fast_mp_montgomery_reduce.o libtommath/bn_mp_montgomery_reduce.o \
++	libtommath/bn_mp_exptmod_fast.o libtommath/bn_mp_exptmod.o libtommath/bn_mp_2expt.o libtommath/bn_mp_n_root.o libtommath/bn_mp_jacobi.o libtommath/bn_reverse.o \
++	libtommath/bn_mp_count_bits.o libtommath/bn_mp_read_unsigned_bin.o libtommath/bn_mp_read_signed_bin.o libtommath/bn_mp_to_unsigned_bin.o \
++	libtommath/bn_mp_to_signed_bin.o libtommath/bn_mp_unsigned_bin_size.o libtommath/bn_mp_signed_bin_size.o  \
++	libtommath/bn_mp_xor.o libtommath/bn_mp_and.o libtommath/bn_mp_or.o libtommath/bn_mp_rand.o libtommath/bn_mp_montgomery_calc_normalization.o \
++	libtommath/bn_mp_prime_is_divisible.o libtommath/bn_prime_tab.o libtommath/bn_mp_prime_fermat.o libtommath/bn_mp_prime_miller_rabin.o \
++	libtommath/bn_mp_prime_is_prime.o libtommath/bn_mp_prime_next_prime.o libtommath/bn_mp_dr_reduce.o \
++	libtommath/bn_mp_dr_is_modulus.o libtommath/bn_mp_dr_setup.o libtommath/bn_mp_reduce_setup.o \
++	libtommath/bn_mp_toom_mul.o libtommath/bn_mp_toom_sqr.o libtommath/bn_mp_div_3.o libtommath/bn_s_mp_exptmod.o \
++	libtommath/bn_mp_reduce_2k.o libtommath/bn_mp_reduce_is_2k.o libtommath/bn_mp_reduce_2k_setup.o \
++	libtommath/bn_mp_reduce_2k_l.o libtommath/bn_mp_reduce_is_2k_l.o libtommath/bn_mp_reduce_2k_setup_l.o \
++	libtommath/bn_mp_radix_smap.o libtommath/bn_mp_read_radix.o libtommath/bn_mp_toradix.o libtommath/bn_mp_radix_size.o \
++	libtommath/bn_mp_cnt_lsb.o libtommath/bn_error.o \
++	libtommath/bn_mp_init_multi.o libtommath/bn_mp_clear_multi.o libtommath/bn_mp_exteuclid.o libtommath/bn_mp_toradix_n.o \
++	libtommath/bn_mp_prime_random_ex.o libtommath/bn_mp_get_int.o libtommath/bn_mp_sqrt.o libtommath/bn_mp_is_square.o libtommath/bn_mp_init_set.o \
++	libtommath/bn_mp_init_set_int.o libtommath/bn_mp_invmod_slow.o libtommath/bn_mp_prime_rabin_miller_trials.o \
++	libtommath/bn_mp_to_signed_bin_n.o libtommath/bn_mp_to_unsigned_bin_n.o
 +
- cryptodev-objs := cryptodev_main.o cryptodev_cipher.o ncr-limits.o \
--	utils.o $(TOMMATH_OBJECTS)
-+	utils.o $(TOMMATH_OBJECTS) \
-+	$(TOMCRYPT_OBJECTS)
++cryptodev-objs := cryptodev_main.o cryptodev_cipher.o ncr-limits.o \
++	utils.o $(TOMMATH_OBJECTS)
  
  
  obj-$(CONFIG_CRYPTO_USERSPACE) += cryptodev.o
-diff --git a/crypto/userspace/libtomcrypt/hashes/crypt_hash_is_valid.c b/crypto/userspace/libtomcrypt/hashes/crypt_hash_is_valid.c
+diff --git a/crypto/userspace/libtommath/LICENSE b/crypto/userspace/libtommath/LICENSE
 new file mode 100644
-index 0000000..d01d418
+index 0000000..5baa792
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/hashes/crypt_hash_is_valid.c
-@@ -0,0 +1,30 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
++++ b/crypto/userspace/libtommath/LICENSE
+@@ -0,0 +1,4 @@
++LibTomMath is hereby released into the Public Domain.  
 +
-+/**
-+  @file crypt_hash_is_valid.c
-+  Determine if hash is valid, Tom St Denis
-+*/  
++-- Tom St Denis
 +
-+/*
-+   Test if a hash index is valid
-+   @param idx   The hash to search for
-+   @return CRYPT_OK if valid
-+*/
-+int hash_is_valid(const struct algo_properties_st *hash)
-+{
-+   return CRYPT_OK;
-+}
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/misc/crypt/crypt_hash_is_valid.c,v $ */
-+/* $Revision: 1.6 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/hashes/hash_get_oid.c b/crypto/userspace/libtomcrypt/hashes/hash_get_oid.c
+diff --git a/crypto/userspace/libtommath/bn_error.c b/crypto/userspace/libtommath/bn_error.c
 new file mode 100644
-index 0000000..39f4372
+index 0000000..b1b7177
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/hashes/hash_get_oid.c
-@@ -0,0 +1,78 @@
-+/* LibTomCrypt, modular cryptographic library
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+
-+/*
-+   Returns the OID of the hash.
-+   @param idx   The hash identifier of the hash to search for
-+   @return CRYPT_OK if valid
-+*/
-+
-+static const oid_st sha1_oid = {
-+   .OIDlen = 6,
-+   .OID = { 1, 3, 14, 3, 2, 26  },
-+};
-+
-+static const oid_st md5_oid = {
-+   .OIDlen = 6,
-+   .OID = { 1, 2, 840, 113549, 2, 5,  },
-+};
-+
-+static const oid_st sha224_oid = {
-+   .OIDlen = 9,
-+   .OID = { 2, 16, 840, 1, 101, 3, 4, 2, 4,  },
-+};
-+
-+static const oid_st sha256_oid = {
-+   .OIDlen = 9,
-+   .OID = { 2, 16, 840, 1, 101, 3, 4, 2, 1,  },
-+};
-+
-+static const oid_st sha384_oid = {
-+   .OIDlen = 9,
-+   .OID = { 2, 16, 840, 1, 101, 3, 4, 2, 2,  },
-+};
-+
-+static const oid_st sha512_oid = {
-+   .OIDlen = 9,
-+   .OID = { 2, 16, 840, 1, 101, 3, 4, 2, 3,  },
-+};
-+
-+int hash_get_oid(const struct algo_properties_st *hash, oid_st *st)
-+{
-+   switch (hash->algo) {
-+      case NCR_ALG_SHA1:
-+         memcpy(st, &sha1_oid, sizeof(*st));
-+         break;
-+      case NCR_ALG_MD5:
-+         memcpy(st, &md5_oid, sizeof(*st));
-+         break;
-+      case NCR_ALG_SHA2_224:
-+         memcpy(st, &sha224_oid, sizeof(*st));
-+         break;
-+      case NCR_ALG_SHA2_256:
-+         memcpy(st, &sha256_oid, sizeof(*st));
-+         break;
-+      case NCR_ALG_SHA2_384:
-+         memcpy(st, &sha384_oid, sizeof(*st));
-+         break;
-+      case NCR_ALG_SHA2_512:
-+         memcpy(st, &sha512_oid, sizeof(*st));
-+         break;
-+      default:
-+         return CRYPT_INVALID_ARG;
-+   }
-+   return CRYPT_OK;
-+}
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/misc/crypt/crypt_hash_is_valid.c,v $ */
-+/* $Revision: 1.6 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/hashes/hash_memory.c b/crypto/userspace/libtomcrypt/hashes/hash_memory.c
-new file mode 100644
-index 0000000..a416de9
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/hashes/hash_memory.c
-@@ -0,0 +1,66 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+#include <cryptodev_int.h>
-+
-+/**
-+  @file hash_memory.c
-+  Hash memory helper, Tom St Denis
-+*/
-+
-+/**
-+  Hash a block of memory and store the digest.
-+  @param hash   The hash you wish to use
-+  @param in     The data you wish to hash
-+  @param inlen  The length of the data to hash (octets)
-+  @param out    [out] Where to store the digest
-+  @param outlen [in/out] Max size and resulting size of the digest
-+  @return CRYPT_OK if successful
-+*/
-+int hash_memory(const struct algo_properties_st *hash, const unsigned char *in, unsigned long inlen, unsigned char *out, unsigned long *outlen)
-+{
-+    int err;
-+    struct hash_data hdata;
-+
-+    LTC_ARGCHK(in     != NULL);
-+    LTC_ARGCHK(out    != NULL);
-+    LTC_ARGCHK(outlen != NULL);
-+
-+    if ((err = hash_is_valid(hash)) != CRYPT_OK) {
-+        return err;
-+    }
-+
-+    if (*outlen < hash->digest_size) {
-+       *outlen = hash->digest_size;
-+       return CRYPT_BUFFER_OVERFLOW;
-+    }
-+
-+    err = cryptodev_hash_init( &hdata, hash->kstr, 0, NULL, 0);
-+    if (err < 0) {
-+       err = CRYPT_INVALID_HASH;
-+       goto LBL_ERR;
-+    }
-+
-+    if ((err = _cryptodev_hash_update(&hdata, in, inlen)) < 0) {
-+       err = CRYPT_ERROR;
-+       goto LBL_ERR;
-+    }
-+    
-+    err = cryptodev_hash_final(&hdata, out);
-+    
-+    *outlen = hash->digest_size;
-+LBL_ERR:
-+    cryptodev_hash_deinit(&hdata);
-+
-+    return err;
-+}
-+
-diff --git a/crypto/userspace/libtomcrypt/hashes/hash_memory_multi.c b/crypto/userspace/libtomcrypt/hashes/hash_memory_multi.c
-new file mode 100644
-index 0000000..a914916
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/hashes/hash_memory_multi.c
-@@ -0,0 +1,84 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <stdarg.h>
-+#include <ncr-int.h>
-+#include <cryptodev_int.h>
-+
-+/**
-+  @file hash_memory_multi.c
-+  Hash (multiple buffers) memory helper, Tom St Denis
-+*/
-+
-+/**
-+  Hash multiple (non-adjacent) blocks of memory at once.  
-+  @param hash   The hash you wish to use
-+  @param out    [out] Where to store the digest
-+  @param outlen [in/out] Max size and resulting size of the digest
-+  @param in     The data you wish to hash
-+  @param inlen  The length of the data to hash (octets)
-+  @param ...    tuples of (data,len) pairs to hash, terminated with a (NULL,x) (x=don't care)
-+  @return CRYPT_OK if successful
-+*/  
-+int hash_memory_multi(const struct algo_properties_st *hash, unsigned char *out, unsigned long *outlen,
-+                      const unsigned char *in, unsigned long inlen, ...)
-+{
-+    struct hash_data hdata;
-+    int                  err;
-+    va_list              args;
-+    const unsigned char *curptr;
-+    unsigned long        curlen;
-+
-+    LTC_ARGCHK(in     != NULL);
-+    LTC_ARGCHK(out    != NULL);
-+    LTC_ARGCHK(outlen != NULL);
-+
-+    if ((err = hash_is_valid(hash)) != CRYPT_OK) {
-+        return err;
-+    }
-+
-+    if (*outlen < hash->digest_size) {
-+       *outlen = hash->digest_size;
-+       return CRYPT_BUFFER_OVERFLOW;
-+    }
-+
-+    err = cryptodev_hash_init( &hdata, hash->kstr, 0, NULL, 0);
-+    if (err < 0) {
-+       err = CRYPT_INVALID_HASH;
-+       goto LBL_ERR;
-+    }
-+
-+    va_start(args, inlen);
-+    curptr = in; 
-+    curlen = inlen;
-+    for (;;) {
-+       /* process buf */
-+       if ((err = _cryptodev_hash_update(&hdata, curptr, curlen)) < 0) {
-+	   err = CRYPT_ERROR;
-+           goto LBL_ERR;
-+       }
-+       /* step to next */
-+       curptr = va_arg(args, const unsigned char*);
-+       if (curptr == NULL) {
-+          break;
-+       }
-+       curlen = va_arg(args, unsigned long);
-+    }
-+ 
-+    err = cryptodev_hash_final(&hdata, out);
-+    
-+    *outlen = hash->digest_size;
-+LBL_ERR:
-+    cryptodev_hash_deinit(&hdata);
-+    va_end(args);
-+    return err;
-+}
-+
-diff --git a/crypto/userspace/libtomcrypt/headers/tomcrypt_prng.h b/crypto/userspace/libtomcrypt/headers/tomcrypt_prng.h
-new file mode 100644
-index 0000000..26bf711
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/headers/tomcrypt_prng.h
-@@ -0,0 +1,80 @@
-+/* ---- PRNG Stuff ---- */
-+
-+typedef union Prng_state {
-+    char dummy[1];
-+} prng_state;
-+
-+/** PRNG descriptor */
-+extern struct ltc_prng_descriptor {
-+    /** Name of the PRNG */
-+    char *name;
-+    /** size in bytes of exported state */
-+    int  export_size;
-+    /** Start a PRNG state
-+        @param prng   [out] The state to initialize
-+        @return CRYPT_OK if successful
-+    */
-+    int (*start)(prng_state *prng);
-+    /** Add entropy to the PRNG
-+        @param in         The entropy
-+        @param inlen      Length of the entropy (octets)\
-+        @param prng       The PRNG state
-+        @return CRYPT_OK if successful
-+    */
-+    int (*add_entropy)(const unsigned char *in, unsigned long inlen, prng_state *prng);
-+    /** Ready a PRNG state to read from
-+        @param prng       The PRNG state to ready
-+        @return CRYPT_OK if successful
-+    */
-+    int (*ready)(prng_state *prng);
-+    /** Read from the PRNG
-+        @param out     [out] Where to store the data
-+        @param outlen  Length of data desired (octets)
-+        @param prng    The PRNG state to read from
-+        @return Number of octets read
-+    */
-+    unsigned long (*read)(unsigned char *out, unsigned long outlen, prng_state *prng);
-+    /** Terminate a PRNG state
-+        @param prng   The PRNG state to terminate
-+        @return CRYPT_OK if successful
-+    */
-+    int (*done)(prng_state *prng);
-+    /** Export a PRNG state  
-+        @param out     [out] The destination for the state
-+        @param outlen  [in/out] The max size and resulting size of the PRNG state
-+        @param prng    The PRNG to export
-+        @return CRYPT_OK if successful
-+    */
-+    int (*pexport)(unsigned char *out, unsigned long *outlen, prng_state *prng);
-+    /** Import a PRNG state
-+        @param in      The data to import
-+        @param inlen   The length of the data to import (octets)
-+        @param prng    The PRNG to initialize/import
-+        @return CRYPT_OK if successful
-+    */
-+    int (*pimport)(const unsigned char *in, unsigned long inlen, prng_state *prng);
-+    /** Self-test the PRNG
-+        @return CRYPT_OK if successful, CRYPT_NOP if self-testing has been disabled
-+    */
-+    int (*test)(void);
-+} prng_descriptor[];
-+
-+int linux_start(prng_state *prng);
-+int linux_add_entropy(const unsigned char *in, unsigned long inlen, prng_state *prng);
-+int linux_ready(prng_state *prng);
-+unsigned long linux_read(unsigned char *out, unsigned long outlen, prng_state *prng);
-+int linux_done(prng_state *prng);
-+int  linux_export(unsigned char *out, unsigned long *outlen, prng_state *prng);
-+int  linux_import(const unsigned char *in, unsigned long inlen, prng_state *prng);
-+int  linux_test(void);
-+
-+extern const struct ltc_prng_descriptor linux_desc;
-+
-+int find_prng(const char *name);
-+int register_prng(const struct ltc_prng_descriptor *prng);
-+int unregister_prng(const struct ltc_prng_descriptor *prng);
-+int prng_is_valid(int idx);
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/headers/tomcrypt_prng.h,v $ */
-+/* $Revision: 1.9 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/math/rand_prime.c b/crypto/userspace/libtomcrypt/math/rand_prime.c
-new file mode 100644
-index 0000000..ab73cd0
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/math/rand_prime.c
-@@ -0,0 +1,80 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+  @file rand_prime.c
-+  Generate a random prime, Tom St Denis
-+*/  
-+
-+#define USE_BBS 1
-+
-+int rand_prime(mp_int *N, long len)
-+{
-+   int            err, res, type;
-+   unsigned char *buf;
-+
-+   LTC_ARGCHK(N != NULL);
-+
-+   /* get type */
-+   if (len < 0) {
-+      type = USE_BBS;
-+      len = -len;
-+   } else {
-+      type = 0;
-+   }
-+
-+   /* allow sizes between 2 and 512 bytes for a prime size */
-+   if (len < 2 || len > 512) { 
-+      return CRYPT_INVALID_PRIME_SIZE;
-+   }
-+
-+   /* allocate buffer to work with */
-+   buf = XCALLOC(1, len);
-+   if (buf == NULL) {
-+       return CRYPT_MEM;
-+   }
-+
-+   do {
-+      /* generate value */
-+      get_random_bytes( buf, len);
-+
-+      /* munge bits */
-+      buf[0]     |= 0x80 | 0x40;
-+      buf[len-1] |= 0x01 | ((type & USE_BBS) ? 0x02 : 0x00);
-+
-+      /* load value */
-+      if ((err = mp_read_unsigned_bin(N, buf, len)) != CRYPT_OK) {
-+         XFREE(buf);
-+         return err;
-+      }
-+
-+      /* test */
-+      if ((err = mp_prime_is_prime(N, 8, &res)) != CRYPT_OK) {
-+         XFREE(buf);
-+         return err;
-+      }
-+   } while (res == LTC_MP_NO);
-+
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(buf, len);
-+#endif
-+
-+   XFREE(buf);
-+   return CRYPT_OK;
-+}
-+      
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/math/rand_prime.c,v $ */
-+/* $Revision: 1.7 $ */
-+/* $Date: 2006/12/28 01:27:23 $ */
-diff --git a/crypto/userspace/libtomcrypt/misc/crypt/crypt_argchk.c b/crypto/userspace/libtomcrypt/misc/crypt/crypt_argchk.c
-new file mode 100644
-index 0000000..143b784
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/misc/crypt/crypt_argchk.c
-@@ -0,0 +1,28 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file crypt_argchk.c
-+  Perform argument checking, Tom St Denis
-+*/  
-+
-+#if (ARGTYPE == 0)
-+void crypt_argchk(char *v, char *s, int d)
-+{
-+ printk("LTC_ARGCHK '%s' failure on line %d of file %s\n",
-+         v, d, s);
-+}
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/misc/crypt/crypt_argchk.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/misc/pk_get_oid.c b/crypto/userspace/libtomcrypt/misc/pk_get_oid.c
-new file mode 100644
-index 0000000..197d7ae
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/misc/pk_get_oid.c
-@@ -0,0 +1,40 @@
-+/* LibTomCrypt, modular cryptographic library
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ */
-+#include "tomcrypt.h"
-+
-+static const oid_st rsa_oid = {
-+   .OIDlen = 7,
-+   .OID = { 1, 2, 840, 113549, 1, 1, 1  },
-+};
-+
-+static const oid_st dsa_oid = {
-+   .OIDlen = 6,
-+   .OID = { 1, 2, 840, 10040, 4, 1  },
-+};
-+
-+/*
-+   Returns the OID of the public key algorithm.
-+   @return CRYPT_OK if valid
-+*/
-+int pk_get_oid(int pk, oid_st *st)
-+{
-+   switch (pk) {
-+      case PKA_RSA:
-+         memcpy(st, &rsa_oid, sizeof(*st));
-+         break;
-+      case PKA_DSA:
-+         memcpy(st, &dsa_oid, sizeof(*st));
-+         break;
-+      default:
-+         return CRYPT_INVALID_ARG;
-+   }
-+   return CRYPT_OK;
-+}
-+
-diff --git a/crypto/userspace/libtomcrypt/misc/qsort.c b/crypto/userspace/libtomcrypt/misc/qsort.c
-new file mode 100644
-index 0000000..72f5108
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/misc/qsort.c
-@@ -0,0 +1,247 @@
-+/* Copyright (C) 1991,1992,1996,1997,1999,2004 Free Software Foundation, Inc.
-+   This file is part of the GNU C Library.
-+   Written by Douglas C. Schmidt (schmidt@ics.uci.edu).
-+
-+   The GNU C Library is free software; you can redistribute it and/or
-+   modify it under the terms of the GNU Lesser General Public
-+   License as published by the Free Software Foundation; either
-+   version 2.1 of the License, or (at your option) any later version.
-+
-+   The GNU C Library is distributed in the hope that it will be useful,
-+   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+   Lesser General Public License for more details.
-+
-+   You should have received a copy of the GNU Lesser General Public
-+   License along with the GNU C Library; if not, write to the Free
-+   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-+   02111-1307 USA.  */
-+
-+/* If you consider tuning this algorithm, you should consult first:
-+   Engineering a sort function; Jon Bentley and M. Douglas McIlroy;
-+   Software - Practice and Experience; Vol. 23 (11), 1249-1265, 1993.  */
-+
-+#include <tomcrypt.h>
-+
-+/* Byte-wise swap two items of size SIZE. */
-+#define SWAP(a, b, size)						      \
-+  do									      \
-+    {									      \
-+      register size_t __size = (size);					      \
-+      register char *__a = (a), *__b = (b);				      \
-+      do								      \
-+	{								      \
-+	  char __tmp = *__a;						      \
-+	  *__a++ = *__b;						      \
-+	  *__b++ = __tmp;						      \
-+	} while (--__size > 0);						      \
-+    } while (0)
-+
-+/* Discontinue quicksort algorithm when partition gets below this size.
-+   This particular magic number was chosen to work best on a Sun 4/260. */
-+#define MAX_THRESH 4
-+
-+/* Stack node declarations used to store unfulfilled partition obligations. */
-+typedef struct
-+  {
-+    char *lo;
-+    char *hi;
-+  } stack_node;
-+
-+/* The next 4 #defines implement a very fast in-line stack abstraction. */
-+/* The stack needs log (total_elements) entries (we could even subtract
-+   log(MAX_THRESH)).  Since total_elements has type size_t, we get as
-+   upper bound for log (total_elements):
-+   bits per byte (CHAR_BIT) * sizeof(size_t).  */
-+#define STACK_SIZE	(CHAR_BIT * sizeof(size_t))
-+#define PUSH(low, high)	((void) ((top->lo = (low)), (top->hi = (high)), ++top))
-+#define	POP(low, high)	((void) (--top, (low = top->lo), (high = top->hi)))
-+#define	STACK_NOT_EMPTY	(stack < top)
-+
-+
-+/* Order size using quicksort.  This implementation incorporates
-+   four optimizations discussed in Sedgewick:
-+
-+   1. Non-recursive, using an explicit stack of pointer that store the
-+      next array partition to sort.  To save time, this maximum amount
-+      of space required to store an array of SIZE_MAX is allocated on the
-+      stack.  Assuming a 32-bit (64 bit) integer for size_t, this needs
-+      only 32 * sizeof(stack_node) == 256 bytes (for 64 bit: 1024 bytes).
-+      Pretty cheap, actually.
-+
-+   2. Chose the pivot element using a median-of-three decision tree.
-+      This reduces the probability of selecting a bad pivot value and
-+      eliminates certain extraneous comparisons.
-+
-+   3. Only quicksorts TOTAL_ELEMS / MAX_THRESH partitions, leaving
-+      insertion sort to order the MAX_THRESH items within each partition.
-+      This is a big win, since insertion sort is faster for small, mostly
-+      sorted array segments.
-+
-+   4. The larger of the two sub-partitions is always pushed onto the
-+      stack first, with the algorithm then concentrating on the
-+      smaller partition.  This *guarantees* no more than log (total_elems)
-+      stack size is needed (actually O(1) in this case)!  */
-+
-+typedef int(*__compar_fn_t)(const void *, const void *);
-+
-+void
-+qsort (void *const pbase, size_t total_elems, size_t size,
-+	    __compar_fn_t cmp)
-+{
-+  register char *base_ptr = (char *) pbase;
-+
-+  const size_t max_thresh = MAX_THRESH * size;
-+
-+  if (total_elems == 0)
-+    /* Avoid lossage with unsigned arithmetic below.  */
-+    return;
-+
-+  if (total_elems > MAX_THRESH)
-+    {
-+      char *lo = base_ptr;
-+      char *hi = &lo[size * (total_elems - 1)];
-+      stack_node stack[STACK_SIZE];
-+      stack_node *top = stack;
-+
-+      PUSH (NULL, NULL);
-+
-+      while (STACK_NOT_EMPTY)
-+        {
-+          char *left_ptr;
-+          char *right_ptr;
-+
-+	  /* Select median value from among LO, MID, and HI. Rearrange
-+	     LO and HI so the three values are sorted. This lowers the
-+	     probability of picking a pathological pivot value and
-+	     skips a comparison for both the LEFT_PTR and RIGHT_PTR in
-+	     the while loops. */
-+
-+	  char *mid = lo + size * ((hi - lo) / size >> 1);
-+
-+	  if ((*cmp) ((void *) mid, (void *) lo) < 0)
-+	    SWAP (mid, lo, size);
-+	  if ((*cmp) ((void *) hi, (void *) mid) < 0)
-+	    SWAP (mid, hi, size);
-+	  else
-+	    goto jump_over;
-+	  if ((*cmp) ((void *) mid, (void *) lo) < 0)
-+	    SWAP (mid, lo, size);
-+	jump_over:;
-+
-+	  left_ptr  = lo + size;
-+	  right_ptr = hi - size;
-+
-+	  /* Here's the famous ``collapse the walls'' section of quicksort.
-+	     Gotta like those tight inner loops!  They are the main reason
-+	     that this algorithm runs much faster than others. */
-+	  do
-+	    {
-+	      while ((*cmp) ((void *) left_ptr, (void *) mid) < 0)
-+		left_ptr += size;
-+
-+	      while ((*cmp) ((void *) mid, (void *) right_ptr) < 0)
-+		right_ptr -= size;
-+
-+	      if (left_ptr < right_ptr)
-+		{
-+		  SWAP (left_ptr, right_ptr, size);
-+		  if (mid == left_ptr)
-+		    mid = right_ptr;
-+		  else if (mid == right_ptr)
-+		    mid = left_ptr;
-+		  left_ptr += size;
-+		  right_ptr -= size;
-+		}
-+	      else if (left_ptr == right_ptr)
-+		{
-+		  left_ptr += size;
-+		  right_ptr -= size;
-+		  break;
-+		}
-+	    }
-+	  while (left_ptr <= right_ptr);
-+
-+          /* Set up pointers for next iteration.  First determine whether
-+             left and right partitions are below the threshold size.  If so,
-+             ignore one or both.  Otherwise, push the larger partition's
-+             bounds on the stack and continue sorting the smaller one. */
-+
-+          if ((size_t) (right_ptr - lo) <= max_thresh)
-+            {
-+              if ((size_t) (hi - left_ptr) <= max_thresh)
-+		/* Ignore both small partitions. */
-+                POP (lo, hi);
-+              else
-+		/* Ignore small left partition. */
-+                lo = left_ptr;
-+            }
-+          else if ((size_t) (hi - left_ptr) <= max_thresh)
-+	    /* Ignore small right partition. */
-+            hi = right_ptr;
-+          else if ((right_ptr - lo) > (hi - left_ptr))
-+            {
-+	      /* Push larger left partition indices. */
-+              PUSH (lo, right_ptr);
-+              lo = left_ptr;
-+            }
-+          else
-+            {
-+	      /* Push larger right partition indices. */
-+              PUSH (left_ptr, hi);
-+              hi = right_ptr;
-+            }
-+        }
-+    }
-+
-+  /* Once the BASE_PTR array is partially sorted by quicksort the rest
-+     is completely sorted using insertion sort, since this is efficient
-+     for partitions below MAX_THRESH size. BASE_PTR points to the beginning
-+     of the array to sort, and END_PTR points at the very last element in
-+     the array (*not* one beyond it!). */
-+
-+  {
-+    char *const end_ptr = &base_ptr[size * (total_elems - 1)];
-+    char *tmp_ptr = base_ptr;
-+    char *thresh = min(end_ptr, base_ptr + max_thresh);
-+    register char *run_ptr;
-+
-+    /* Find smallest element in first threshold and place it at the
-+       array's beginning.  This is the smallest array element,
-+       and the operation speeds up insertion sort's inner loop. */
-+
-+    for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size)
-+      if ((*cmp) ((void *) run_ptr, (void *) tmp_ptr) < 0)
-+        tmp_ptr = run_ptr;
-+
-+    if (tmp_ptr != base_ptr)
-+      SWAP (tmp_ptr, base_ptr, size);
-+
-+    /* Insertion sort, running from left-hand-side up to right-hand-side.  */
-+
-+    run_ptr = base_ptr + size;
-+    while ((run_ptr += size) <= end_ptr)
-+      {
-+	tmp_ptr = run_ptr - size;
-+	while ((*cmp) ((void *) run_ptr, (void *) tmp_ptr) < 0)
-+	  tmp_ptr -= size;
-+
-+	tmp_ptr += size;
-+        if (tmp_ptr != run_ptr)
-+          {
-+            char *trav;
-+
-+	    trav = run_ptr + size;
-+	    while (--trav >= run_ptr)
-+              {
-+                char c = *trav;
-+                char *hi, *lo;
-+
-+                for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo)
-+                  *hi = *lo;
-+                *hi = c;
-+              }
-+          }
-+      }
-+  }
-+}
-diff --git a/crypto/userspace/libtomcrypt/misc/zeromem.c b/crypto/userspace/libtomcrypt/misc/zeromem.c
-new file mode 100644
-index 0000000..a4bb124
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/misc/zeromem.c
-@@ -0,0 +1,34 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+   @file zeromem.c
-+   Zero a block of memory, Tom St Denis
-+*/
-+
-+/**
-+   Zero a block of memory
-+   @param out    The destination of the area to zero
-+   @param outlen The length of the area to zero (octets)
-+*/
-+void zeromem(void *out, size_t outlen)
-+{
-+   unsigned char *mem = out;
-+   LTC_ARGCHKVD(out != NULL);
-+   while (outlen-- > 0) {
-+      *mem++ = 0;
-+   }
-+}
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/misc/zeromem.c,v $ */
-+/* $Revision: 1.7 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_decode_bit_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_decode_bit_string.c
-new file mode 100644
-index 0000000..c9f6368
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_decode_bit_string.c
-@@ -0,0 +1,106 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_bit_string.c
-+  ASN.1 DER, encode a BIT STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+#define setbit(v, n)    (v=((unsigned char)(v) | (1U << (unsigned char)(n))))
-+
-+/**
-+  Store a BIT STRING
-+  @param in      The DER encoded BIT STRING
-+  @param inlen   The size of the DER BIT STRING
-+  @param out     [out] The array of bits stored (8 per char)
-+  @param outlen  [in/out] The number of bits stored
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_bit_string(const unsigned char *in,  unsigned long inlen,
-+                                unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long dlen, blen, x, y;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* packet must be at least 4 bytes */
-+   if (inlen < 4) {
-+       return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* check for 0x03 */
-+   if ((in[0]&0x1F) != 0x03) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+    /* offset in the data */
-+    x = 1;
-+
-+   /* get the length of the data */
-+   if (in[x] & 0x80) {
-+      /* long format get number of length bytes */
-+      y = in[x++] & 0x7F;
-+
-+      /* invalid if 0 or > 2 */
-+      if (y == 0 || y > 2) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* read the data len */
-+      dlen = 0;
-+      while (y--) {
-+         dlen = (dlen << 8) | (unsigned long)in[x++];
-+      }
-+   } else {
-+      /* short format */
-+      dlen = in[x++] & 0x7F;
-+   }
-+  
-+   /* is the data len too long or too short? */
-+   if ((dlen == 0) || (dlen + x > inlen)) {
-+       return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* get padding count */
-+   blen = ((dlen - 1) << 3) - (in[x++] & 7);
-+
-+   /* too many bits? */
-+   if (blen > *outlen) {
-+      *outlen = blen;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* decode/store the bits */
-+   for (y = 0; y < blen; y++) {
-+       if (in[x] & (1 << (7 - (y & 7)))) {
-+          setbit(out[y/8], 7-(y%8));
-+       }
-+       if ((y & 7) == 7) {
-+          ++x;
-+       }
-+   }
-+
-+   /* we done */
-+   *outlen = blen;
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/bit/der_decode_bit_string.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_encode_bit_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_encode_bit_string.c
-new file mode 100644
-index 0000000..d1b6064
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_encode_bit_string.c
-@@ -0,0 +1,92 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_bit_string.c
-+  ASN.1 DER, encode a BIT STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+#define getbit(n, k) (((n) & ( 1 << (k) )) >> (k))
-+
-+/**
-+  Store a BIT STRING
-+  @param in       The array of bits to store (8 per char)
-+  @param inlen    The number of bits tostore
-+  @param out      [out] The destination for the DER encoded BIT STRING
-+  @param outlen   [in/out] The max size and resulting size of the DER BIT STRING
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_bit_string(const unsigned char *in, unsigned long inlen,
-+                                unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long len, x, y;
-+   unsigned char buf;
-+   int           err;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* avoid overflows */
-+   if ((err = der_length_bit_string(inlen, &len)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   if (len > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* store header (include bit padding count in length) */
-+   x = 0;
-+   y = (inlen >> 3) + ((inlen&7) ? 1 : 0) + 1;
-+
-+   out[x++] = 0x03;
-+   if (y < 128) {
-+      out[x++] = (unsigned char)y;
-+   } else if (y < 256) {
-+      out[x++] = 0x81;
-+      out[x++] = (unsigned char)y;
-+   } else if (y < 65536) {
-+      out[x++] = 0x82;
-+      out[x++] = (unsigned char)((y>>8)&255);
-+      out[x++] = (unsigned char)(y&255);
-+   }
-+
-+   /* store number of zero padding bits */
-+   out[x++] = (unsigned char)((8 - inlen) & 7);
-+
-+   /* store the bits in big endian format */
-+   for (y = buf = 0; y < inlen; y++) {
-+        buf |= (getbit(in[y/8],7-y%8)?1:0) << (7 - (y & 7));
-+       if ((y & 7) == 7) {
-+          out[x++] = buf;
-+          buf      = 0;
-+       }
-+   }
-+   /* store last byte */
-+   if (inlen & 7) {
-+      out[x++] = buf;
-+   }
-+
-+   *outlen = x;
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/bit/der_encode_bit_string.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_length_bit_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_length_bit_string.c
-new file mode 100644
-index 0000000..3b7a8e1
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/bit/der_length_bit_string.c
-@@ -0,0 +1,54 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_bit_string.c
-+  ASN.1 DER, get length of BIT STRING, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+/**
-+  Gets length of DER encoding of BIT STRING 
-+  @param nbits  The number of bits in the string to encode
-+  @param outlen [out] The length of the DER encoding for the given string
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_bit_string(unsigned long nbits, unsigned long *outlen)
-+{
-+   unsigned long nbytes;
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* get the number of the bytes */
-+   nbytes = (nbits >> 3) + ((nbits & 7) ? 1 : 0) + 1;
-+ 
-+   if (nbytes < 128) {
-+      /* 03 LL PP DD DD DD ... */
-+      *outlen = 2 + nbytes;
-+   } else if (nbytes < 256) {
-+      /* 03 81 LL PP DD DD DD ... */
-+      *outlen = 3 + nbytes;
-+   } else if (nbytes < 65536) {
-+      /* 03 82 LL LL PP DD DD DD ... */
-+      *outlen = 4 + nbytes;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/bit/der_length_bit_string.c,v $ */
-+/* $Revision: 1.3 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_decode_boolean.c b/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_decode_boolean.c
-new file mode 100644
-index 0000000..f374aa6
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_decode_boolean.c
++++ b/crypto/userspace/libtommath/bn_error.c
 @@ -0,0 +1,47 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++#include <tommath.h>
++#ifdef BN_ERROR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
 + *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_boolean.c
-+  ASN.1 DER, decode a BOOLEAN, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Read a BOOLEAN
-+  @param in      The destination for the DER encoded BOOLEAN
-+  @param inlen   The size of the DER BOOLEAN
-+  @param out     [out]  The boolean to decode
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_boolean(const unsigned char *in, unsigned long inlen,
-+                                       int *out)
-+{
-+   LTC_ARGCHK(in  != NULL);
-+   LTC_ARGCHK(out != NULL);
-+   
-+   if (inlen != 3 || in[0] != 0x01 || in[1] != 0x01 || (in[2] != 0x00 && in[2] != 0xFF)) {
-+      return CRYPT_INVALID_ARG;
-+   }
-+   
-+   *out = (in[2]==0xFF) ? 1 : 0;
-+   
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/boolean/der_decode_boolean.c,v $ */
-+/* $Revision: 1.2 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_encode_boolean.c b/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_encode_boolean.c
-new file mode 100644
-index 0000000..df497bf
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_encode_boolean.c
-@@ -0,0 +1,51 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
 + */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_boolean.c
-+  ASN.1 DER, encode a BOOLEAN, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store a BOOLEAN
-+  @param in       The boolean to encode
-+  @param out      [out] The destination for the DER encoded BOOLEAN
-+  @param outlen   [in/out] The max size and resulting size of the DER BOOLEAN
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_boolean(int in, 
-+                       unsigned char *out, unsigned long *outlen)
-+{
-+   LTC_ARGCHK(outlen != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   
-+   if (*outlen < 3) {
-+       *outlen = 3;
-+       return CRYPT_BUFFER_OVERFLOW;
-+   }
-+   
-+   *outlen = 3;
-+   out[0] = 0x01;
-+   out[1] = 0x01;
-+   out[2] = in ? 0xFF : 0x00;
-+   
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/boolean/der_encode_boolean.c,v $ */
-+/* $Revision: 1.4 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_length_boolean.c b/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_length_boolean.c
-new file mode 100644
-index 0000000..aa3e03d
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/boolean/der_length_boolean.c
-@@ -0,0 +1,35 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_boolean.c
-+  ASN.1 DER, get length of a BOOLEAN, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+/**
-+  Gets length of DER encoding of a BOOLEAN 
-+  @param outlen [out] The length of the DER encoding
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_boolean(unsigned long *outlen)
-+{
-+   LTC_ARGCHK(outlen != NULL);
-+   *outlen = 3;
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/boolean/der_length_boolean.c,v $ */
-+/* $Revision: 1.3 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/choice/der_decode_choice.c b/crypto/userspace/libtomcrypt/pk/asn1/der/choice/der_decode_choice.c
-new file mode 100644
-index 0000000..277c731
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/choice/der_decode_choice.c
-@@ -0,0 +1,182 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_choice.c
-+  ASN.1 DER, decode a CHOICE, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+   Decode a CHOICE
-+   @param in       The DER encoded input
-+   @param inlen    [in/out] The size of the input and resulting size of read type
-+   @param list     The list of items to decode
-+   @param outlen   The number of items in the list
-+   @return CRYPT_OK on success
-+*/
-+int der_decode_choice(const unsigned char *in,   unsigned long *inlen,
-+                            ltc_asn1_list *list, unsigned long  outlen)
-+{
-+   unsigned long size, x, z;
-+   void          *data;
-+
-+   LTC_ARGCHK(in    != NULL);
-+   LTC_ARGCHK(inlen != NULL);
-+   LTC_ARGCHK(list  != NULL);
-+
-+   /* get blk size */
-+   if (*inlen < 2) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* set all of the "used" flags to zero */
-+   for (x = 0; x < outlen; x++) {
-+       list[x].used = 0;
-+   }
-+
-+   /* now scan until we have a winner */
-+   for (x = 0; x < outlen; x++) {
-+       size = list[x].size;
-+       data = list[x].data;
-+
-+       switch (list[x].type) {
-+           case LTC_ASN1_INTEGER:
-+               if (der_decode_integer(in, *inlen, data) == CRYPT_OK) {
-+                  if (der_length_integer(data, &z) == CRYPT_OK) {
-+                      list[x].used = 1;
-+                      *inlen       = z;
-+                      return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           case LTC_ASN1_SHORT_INTEGER:
-+               if (der_decode_short_integer(in, *inlen, data) == CRYPT_OK) {
-+                  if (der_length_short_integer(size, &z) == CRYPT_OK) {
-+                      list[x].used = 1;
-+                      *inlen       = z;
-+                      return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           case LTC_ASN1_BIT_STRING:
-+               if (der_decode_bit_string(in, *inlen, data, &size) == CRYPT_OK) {
-+                  if (der_length_bit_string(size, &z) == CRYPT_OK) {
-+                     list[x].used = 1;
-+                     list[x].size = size;
-+                     *inlen       = z;
-+                     return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           case LTC_ASN1_OCTET_STRING:
-+               if (der_decode_octet_string(in, *inlen, data, &size) == CRYPT_OK) {
-+                  if (der_length_octet_string(size, &z) == CRYPT_OK) {
-+                     list[x].used = 1;
-+                     list[x].size = size;
-+                     *inlen       = z;
-+                     return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           case LTC_ASN1_NULL:
-+               if (*inlen == 2 && in[x] == 0x05 && in[x+1] == 0x00) {
-+                  *inlen = 2;
-+                  list[x].used   = 1;
-+                  return CRYPT_OK;
-+               }
-+               break;
-+                  
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+               if (der_decode_object_identifier(in, *inlen, data, &size) == CRYPT_OK) {
-+                  if (der_length_object_identifier(data, size, &z) == CRYPT_OK) {
-+                     list[x].used = 1;
-+                     list[x].size = size;
-+                     *inlen       = z;
-+                     return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           case LTC_ASN1_IA5_STRING:
-+               if (der_decode_ia5_string(in, *inlen, data, &size) == CRYPT_OK) {
-+                  if (der_length_ia5_string(data, size, &z) == CRYPT_OK) {
-+                     list[x].used = 1;
-+                     list[x].size = size;
-+                     *inlen       = z;
-+                     return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+
-+           case LTC_ASN1_PRINTABLE_STRING:
-+               if (der_decode_printable_string(in, *inlen, data, &size) == CRYPT_OK) {
-+                  if (der_length_printable_string(data, size, &z) == CRYPT_OK) {
-+                     list[x].used = 1;
-+                     list[x].size = size;
-+                     *inlen       = z;
-+                     return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           case LTC_ASN1_UTF8_STRING:
-+               if (der_decode_utf8_string(in, *inlen, data, &size) == CRYPT_OK) {
-+                  if (der_length_utf8_string(data, size, &z) == CRYPT_OK) {
-+                     list[x].used = 1;
-+                     list[x].size = size;
-+                     *inlen       = z;
-+                     return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           case LTC_ASN1_UTCTIME:
-+               z = *inlen;
-+               if (der_decode_utctime(in, &z, data) == CRYPT_OK) {
-+                  list[x].used = 1;
-+                  *inlen       = z;
-+                  return CRYPT_OK;
-+               }
-+               break;
-+
-+           case LTC_ASN1_SET:
-+           case LTC_ASN1_SETOF:
-+           case LTC_ASN1_SEQUENCE:
-+               if (der_decode_sequence(in, *inlen, data, size) == CRYPT_OK) {
-+                  if (der_length_sequence(data, size, &z) == CRYPT_OK) {
-+                     list[x].used = 1;
-+                     *inlen       = z;
-+                     return CRYPT_OK;
-+                  }
-+               }
-+               break;
-+
-+           default:
-+               return CRYPT_INVALID_ARG;
-+       }
-+   }
-+
-+   return CRYPT_INVALID_PACKET;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/choice/der_decode_choice.c,v $ */
-+/* $Revision: 1.9 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_decode_ia5_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_decode_ia5_string.c
-new file mode 100644
-index 0000000..001477b
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_decode_ia5_string.c
-@@ -0,0 +1,96 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_ia5_string.c
-+  ASN.1 DER, encode a IA5 STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store a IA5 STRING
-+  @param in      The DER encoded IA5 STRING
-+  @param inlen   The size of the DER IA5 STRING
-+  @param out     [out] The array of octets stored (one per char)
-+  @param outlen  [in/out] The number of octets stored
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_ia5_string(const unsigned char *in, unsigned long inlen,
-+                                unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long x, y, len;
-+   int           t;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* must have header at least */
-+   if (inlen < 2) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* check for 0x16 */
-+   if ((in[0] & 0x1F) != 0x16) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+   x = 1;
-+
-+   /* decode the length */
-+   if (in[x] & 0x80) {
-+      /* valid # of bytes in length are 1,2,3 */
-+      y = in[x] & 0x7F;
-+      if ((y == 0) || (y > 3) || ((x + y) > inlen)) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* read the length in */
-+      len = 0;
-+      ++x;
-+      while (y--) {
-+         len = (len << 8) | in[x++];
-+      }
-+   } else {
-+      len = in[x++] & 0x7F;
-+   }
-+
-+   /* is it too long? */
-+   if (len > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   if (len + x > inlen) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* read the data */
-+   for (y = 0; y < len; y++) {
-+       t = der_ia5_value_decode(in[x++]);
-+       if (t == -1) {
-+           return CRYPT_INVALID_ARG;
-+       }
-+       out[y] = t;
-+   }
-+
-+   *outlen = y;
-+
-+   return CRYPT_OK;
-+}
-+ 
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/ia5/der_decode_ia5_string.c,v $ */
-+/* $Revision: 1.4 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_encode_ia5_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_encode_ia5_string.c
-new file mode 100644
-index 0000000..82ed466
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_encode_ia5_string.c
-@@ -0,0 +1,85 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_ia5_string.c
-+  ASN.1 DER, encode a IA5 STRING, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store an IA5 STRING
-+  @param in       The array of IA5 to store (one per char)
-+  @param inlen    The number of IA5 to store
-+  @param out      [out] The destination for the DER encoded IA5 STRING
-+  @param outlen   [in/out] The max size and resulting size of the DER IA5 STRING
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_ia5_string(const unsigned char *in, unsigned long inlen,
-+                                unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long x, y, len;
-+   int           err;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* get the size */
-+   if ((err = der_length_ia5_string(in, inlen, &len)) != CRYPT_OK) {
-+      return err; 
-+   }
-+
-+   /* too big? */
-+   if (len > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* encode the header+len */
-+   x = 0;
-+   out[x++] = 0x16;
-+   if (inlen < 128) {
-+      out[x++] = (unsigned char)inlen;
-+   } else if (inlen < 256) {
-+      out[x++] = 0x81;
-+      out[x++] = (unsigned char)inlen;
-+   } else if (inlen < 65536UL) {
-+      out[x++] = 0x82;
-+      out[x++] = (unsigned char)((inlen>>8)&255);
-+      out[x++] = (unsigned char)(inlen&255);
-+   } else if (inlen < 16777216UL) {
-+      out[x++] = 0x83;
-+      out[x++] = (unsigned char)((inlen>>16)&255);
-+      out[x++] = (unsigned char)((inlen>>8)&255);
-+      out[x++] = (unsigned char)(inlen&255);
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* store octets */
-+   for (y = 0; y < inlen; y++) {
-+       out[x++] = der_ia5_char_encode(in[y]);
-+   }
-+
-+   /* retun length */
-+   *outlen = x;
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/ia5/der_encode_ia5_string.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_length_ia5_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_length_ia5_string.c
-new file mode 100644
-index 0000000..4d60f8e
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/ia5/der_length_ia5_string.c
-@@ -0,0 +1,194 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_ia5_string.c
-+  ASN.1 DER, get length of IA5 STRING, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
 +
 +static const struct {
-+   int code, value;
-+} ia5_table[] = {
-+{ '\0', 0 },
-+{ '\a', 7 }, 
-+{ '\b', 8 }, 
-+{ '\t', 9 }, 
-+{ '\n', 10 }, 
-+{ '\f', 12 }, 
-+{ '\r', 13 }, 
-+{ ' ', 32 }, 
-+{ '!', 33 }, 
-+{ '"', 34 }, 
-+{ '#', 35 }, 
-+{ '$', 36 }, 
-+{ '%', 37 }, 
-+{ '&', 38 }, 
-+{ '\'', 39 }, 
-+{ '(', 40 }, 
-+{ ')', 41 }, 
-+{ '*', 42 }, 
-+{ '+', 43 }, 
-+{ ',', 44 }, 
-+{ '-', 45 }, 
-+{ '.', 46 }, 
-+{ '/', 47 }, 
-+{ '0', 48 }, 
-+{ '1', 49 }, 
-+{ '2', 50 }, 
-+{ '3', 51 }, 
-+{ '4', 52 }, 
-+{ '5', 53 }, 
-+{ '6', 54 }, 
-+{ '7', 55 }, 
-+{ '8', 56 }, 
-+{ '9', 57 }, 
-+{ ':', 58 }, 
-+{ ';', 59 }, 
-+{ '<', 60 }, 
-+{ '=', 61 }, 
-+{ '>', 62 }, 
-+{ '?', 63 }, 
-+{ '@', 64 }, 
-+{ 'A', 65 }, 
-+{ 'B', 66 }, 
-+{ 'C', 67 }, 
-+{ 'D', 68 }, 
-+{ 'E', 69 }, 
-+{ 'F', 70 }, 
-+{ 'G', 71 }, 
-+{ 'H', 72 }, 
-+{ 'I', 73 }, 
-+{ 'J', 74 }, 
-+{ 'K', 75 }, 
-+{ 'L', 76 }, 
-+{ 'M', 77 }, 
-+{ 'N', 78 }, 
-+{ 'O', 79 }, 
-+{ 'P', 80 }, 
-+{ 'Q', 81 }, 
-+{ 'R', 82 }, 
-+{ 'S', 83 }, 
-+{ 'T', 84 }, 
-+{ 'U', 85 }, 
-+{ 'V', 86 }, 
-+{ 'W', 87 }, 
-+{ 'X', 88 }, 
-+{ 'Y', 89 }, 
-+{ 'Z', 90 }, 
-+{ '[', 91 }, 
-+{ '\\', 92 }, 
-+{ ']', 93 }, 
-+{ '^', 94 }, 
-+{ '_', 95 }, 
-+{ '`', 96 }, 
-+{ 'a', 97 }, 
-+{ 'b', 98 }, 
-+{ 'c', 99 }, 
-+{ 'd', 100 }, 
-+{ 'e', 101 }, 
-+{ 'f', 102 }, 
-+{ 'g', 103 }, 
-+{ 'h', 104 }, 
-+{ 'i', 105 }, 
-+{ 'j', 106 }, 
-+{ 'k', 107 }, 
-+{ 'l', 108 }, 
-+{ 'm', 109 }, 
-+{ 'n', 110 }, 
-+{ 'o', 111 }, 
-+{ 'p', 112 }, 
-+{ 'q', 113 }, 
-+{ 'r', 114 }, 
-+{ 's', 115 }, 
-+{ 't', 116 }, 
-+{ 'u', 117 }, 
-+{ 'v', 118 }, 
-+{ 'w', 119 }, 
-+{ 'x', 120 }, 
-+{ 'y', 121 }, 
-+{ 'z', 122 }, 
-+{ '{', 123 }, 
-+{ '|', 124 }, 
-+{ '}', 125 }, 
-+{ '~', 126 }
++     int code;
++     char *msg;
++} msgs[] = {
++     { MP_OKAY, "Successful" },
++     { MP_MEM,  "Out of heap" },
++     { MP_VAL,  "Value out of range" }
 +};
 +
-+int der_ia5_char_encode(int c)
++/* return a char * string for a given code */
++char *mp_error_to_string(int code)
 +{
 +   int x;
-+   for (x = 0; x < (int)(sizeof(ia5_table)/sizeof(ia5_table[0])); x++) {
-+       if (ia5_table[x].code == c) {
-+          return ia5_table[x].value;
-+       }
-+   }
-+   return -1;
-+}
 +
-+int der_ia5_value_decode(int v)
-+{
-+   int x;
-+   for (x = 0; x < (int)(sizeof(ia5_table)/sizeof(ia5_table[0])); x++) {
-+       if (ia5_table[x].value == v) {
-+          return ia5_table[x].code;
-+       }
-+   }
-+   return -1;
-+}
-+   
-+/**
-+  Gets length of DER encoding of IA5 STRING 
-+  @param octets   The values you want to encode 
-+  @param noctets  The number of octets in the string to encode
-+  @param outlen   [out] The length of the DER encoding for the given string
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_ia5_string(const unsigned char *octets, unsigned long noctets, unsigned long *outlen)
-+{
-+   unsigned long x;
-+
-+   LTC_ARGCHK(outlen != NULL);
-+   LTC_ARGCHK(octets != NULL);
-+
-+   /* scan string for validity */
-+   for (x = 0; x < noctets; x++) {
-+       if (der_ia5_char_encode(octets[x]) == -1) {
-+          return CRYPT_INVALID_ARG;
++   /* scan the lookup table for the given message */
++   for (x = 0; x < (int)(sizeof(msgs) / sizeof(msgs[0])); x++) {
++       if (msgs[x].code == code) {
++          return msgs[x].msg;
 +       }
 +   }
 +
-+   if (noctets < 128) {
-+      /* 16 LL DD DD DD ... */
-+      *outlen = 2 + noctets;
-+   } else if (noctets < 256) {
-+      /* 16 81 LL DD DD DD ... */
-+      *outlen = 3 + noctets;
-+   } else if (noctets < 65536UL) {
-+      /* 16 82 LL LL DD DD DD ... */
-+      *outlen = 4 + noctets;
-+   } else if (noctets < 16777216UL) {
-+      /* 16 83 LL LL LL DD DD DD ... */
-+      *outlen = 5 + noctets;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   return CRYPT_OK;
++   /* generic reply for invalid code */
++   return "Invalid error code";
 +}
 +
 +#endif
 +
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/ia5/der_length_ia5_string.c,v $ */
-+/* $Revision: 1.3 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_decode_integer.c b/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_decode_integer.c
-new file mode 100644
-index 0000000..d7b13cf
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_decode_integer.c
-@@ -0,0 +1,110 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_integer.c
-+  ASN.1 DER, decode an integer, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Read a mp_int integer
-+  @param in       The DER encoded data
-+  @param inlen    Size of DER encoded data
-+  @param num      The first mp_int to decode
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_integer(const unsigned char *in, unsigned long inlen, mp_int_t num)
-+{
-+   unsigned long x, y, z;
-+   int           err;
-+
-+   LTC_ARGCHK(num    != NULL);
-+   LTC_ARGCHK(in     != NULL);
-+
-+   /* min DER INTEGER is 0x02 01 00 == 0 */
-+   if (inlen < (1 + 1 + 1)) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* ok expect 0x02 when we AND with 0001 1111 [1F] */
-+   x = 0;
-+   if ((in[x++] & 0x1F) != 0x02) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* now decode the len stuff */
-+   z = in[x++];
-+
-+   if ((z & 0x80) == 0x00) {
-+      /* short form */
-+
-+      /* will it overflow? */
-+      if (x + z > inlen) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+     
-+      /* no so read it */
-+      if ((err = mp_read_unsigned_bin(num, (unsigned char *)in + x, z)) != CRYPT_OK) {
-+         return err;
-+      }
-+   } else {
-+      /* long form */
-+      z &= 0x7F;
-+      
-+      /* will number of length bytes overflow? (or > 4) */
-+      if (((x + z) > inlen) || (z > 4) || (z == 0)) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* now read it in */
-+      y = 0;
-+      while (z--) {
-+         y = ((unsigned long)(in[x++])) | (y << 8);
-+      }
-+
-+      /* now will reading y bytes overrun? */
-+      if ((x + y) > inlen) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* no so read it */
-+      if ((err = mp_read_unsigned_bin(num, (unsigned char *)in + x, y)) != CRYPT_OK) {
-+         return err;
-+      }
-+   }
-+
-+   /* see if it's negative */
-+   if (in[x] & 0x80) {
-+      mp_int tmp;
-+      if (mp_init(&tmp) != CRYPT_OK) {
-+         return CRYPT_MEM;
-+      }
-+
-+      if (mp_2expt(&tmp, mp_count_bits(num)) != CRYPT_OK || mp_sub(num, &tmp, num) != CRYPT_OK) {
-+         mp_clear(&tmp);
-+         return CRYPT_MEM;
-+      }
-+      mp_clear(&tmp);
-+   } 
-+
-+   return CRYPT_OK;
-+
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/integer/der_decode_integer.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_encode_integer.c b/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_encode_integer.c
-new file mode 100644
-index 0000000..830446a
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_encode_integer.c
-@@ -0,0 +1,130 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_integer.c
-+  ASN.1 DER, encode an integer, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/* Exports a positive bignum as DER format (upto 2^32 bytes in size) */
-+/**
-+  Store a mp_int integer
-+  @param num      The first mp_int to encode
-+  @param out      [out] The destination for the DER encoded integers
-+  @param outlen   [in/out] The max size and resulting size of the DER encoded integers
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_integer(mp_int_t num, unsigned char *out, unsigned long *outlen)
-+{  
-+   unsigned long tmplen, y;
-+   int           err, leading_zero;
-+
-+   LTC_ARGCHK(num    != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* find out how big this will be */
-+   if ((err = der_length_integer(num, &tmplen)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   if (*outlen < tmplen) {
-+      *outlen = tmplen;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   if (mp_cmp_d(num, 0) != LTC_MP_LT) {
-+      /* we only need a leading zero if the msb of the first byte is one */
-+      if ((mp_count_bits(num) & 7) == 0 || mp_iszero(num) == LTC_MP_YES) {
-+         leading_zero = 1;
-+      } else {
-+         leading_zero = 0;
-+      }
-+
-+      /* get length of num in bytes (plus 1 since we force the msbyte to zero) */
-+      y = mp_unsigned_bin_size(num) + leading_zero;
-+   } else {
-+      leading_zero = 0;
-+      y            = mp_count_bits(num);
-+      y            = y + (8 - (y & 7));
-+      y            = y >> 3;
-+      if (((mp_cnt_lsb(num)+1)==mp_count_bits(num)) && ((mp_count_bits(num)&7)==0)) --y;
-+   }
-+
-+   /* now store initial data */
-+   *out++ = 0x02;
-+   if (y < 128) {
-+      /* short form */
-+      *out++ = (unsigned char)y;
-+   } else if (y < 256) {
-+      *out++ = 0x81;
-+      *out++ = (unsigned char)y;
-+   } else if (y < 65536UL) {
-+      *out++ = 0x82;
-+      *out++ = (unsigned char)((y>>8)&255);
-+      *out++ = (unsigned char)y;
-+   } else if (y < 16777216UL) {
-+      *out++ = 0x83;
-+      *out++ = (unsigned char)((y>>16)&255);
-+      *out++ = (unsigned char)((y>>8)&255);
-+      *out++ = (unsigned char)y;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* now store msbyte of zero if num is non-zero */
-+   if (leading_zero) {
-+      *out++ = 0x00;
-+   }
-+
-+   /* if it's not zero store it as big endian */
-+   if (mp_cmp_d(num, 0) == LTC_MP_GT) {
-+      /* now store the mpint */
-+      if ((err = mp_to_unsigned_bin(num, out)) != CRYPT_OK) {
-+          return err;
-+      }
-+   } else if (mp_iszero(num) != LTC_MP_YES) {
-+      mp_int tmp;
-+         
-+      /* negative */
-+      if (mp_init(&tmp) != CRYPT_OK) {
-+         return CRYPT_MEM;
-+      }
-+
-+      /* 2^roundup and subtract */
-+      y = mp_count_bits(num);
-+      y = y + (8 - (y & 7));
-+      if (((mp_cnt_lsb(num)+1)==mp_count_bits(num)) && ((mp_count_bits(num)&7)==0)) y -= 8;
-+      if (mp_2expt(&tmp, y) != CRYPT_OK || mp_add(&tmp, num, &tmp) != CRYPT_OK) {
-+         mp_clear(&tmp);
-+         return CRYPT_MEM;
-+      }
-+      if ((err = mp_to_unsigned_bin(&tmp, out)) != CRYPT_OK) {
-+         mp_clear(&tmp);
-+         return err;
-+      }
-+      mp_clear(&tmp);
-+   }
-+
-+   /* we good */
-+   *outlen = tmplen; 
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/integer/der_encode_integer.c,v $ */
-+/* $Revision: 1.9 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_length_integer.c b/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_length_integer.c
-new file mode 100644
-index 0000000..40addd5
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/integer/der_length_integer.c
-@@ -0,0 +1,82 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_integer.c
-+  ASN.1 DER, get length of encoding, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+/**
-+  Gets length of DER encoding of num 
-+  @param num    The int to get the size of 
-+  @param outlen [out] The length of the DER encoding for the given integer
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_integer(mp_int_t num, unsigned long *outlen)
-+{
-+   unsigned long z, len;
-+   int           leading_zero;
-+
-+   LTC_ARGCHK(num     != NULL);
-+   LTC_ARGCHK(outlen  != NULL);
-+
-+   if (mp_cmp_d(num, 0) != LTC_MP_LT) {
-+      /* positive */
-+
-+      /* we only need a leading zero if the msb of the first byte is one */
-+      if ((mp_count_bits(num) & 7) == 0 || mp_iszero(num) == LTC_MP_YES) {
-+         leading_zero = 1;
-+      } else {
-+         leading_zero = 0;
-+      }
-+
-+      /* size for bignum */
-+      z = len = leading_zero + mp_unsigned_bin_size(num);
-+   } else {
-+      /* it's negative */
-+      /* find power of 2 that is a multiple of eight and greater than count bits */
-+      leading_zero = 0;
-+      z = mp_count_bits(num);
-+      z = z + (8 - (z & 7));
-+      if (((mp_cnt_lsb(num)+1)==mp_count_bits(num)) && ((mp_count_bits(num)&7)==0)) --z;
-+      len = z = z >> 3;
-+   }
-+
-+   /* now we need a length */
-+   if (z < 128) {
-+      /* short form */
-+      ++len;
-+   } else {
-+      /* long form (relies on z != 0), assumes length bytes < 128 */
-+      ++len;
-+
-+      while (z) {
-+         ++len;
-+         z >>= 8;
-+      }
-+   }
-+
-+   /* we need a 0x02 to indicate it's INTEGER */
-+   ++len;
-+
-+   /* return length */
-+   *outlen = len; 
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/integer/der_length_integer.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_decode_object_identifier.c b/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_decode_object_identifier.c
-new file mode 100644
-index 0000000..cdd296d
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_decode_object_identifier.c
-@@ -0,0 +1,99 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_object_identifier.c
-+  ASN.1 DER, Decode Object Identifier, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+/**
-+  Decode OID data and store the array of integers in words
-+  @param in      The OID DER encoded data
-+  @param inlen   The length of the OID data
-+  @param words   [out] The destination of the OID words
-+  @param outlen  [in/out] The number of OID words
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_object_identifier(const unsigned char *in,    unsigned long  inlen,
-+                                       unsigned long *words, unsigned long *outlen)
-+{
-+   unsigned long x, y, t, len;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(words  != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* header is at least 3 bytes */
-+   if (inlen < 3) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* must be room for at least two words */
-+   if (*outlen < 2) {
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* decode the packet header */
-+   x = 0;
-+   if ((in[x++] & 0x1F) != 0x06) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+   
-+   /* get the length */
-+   if (in[x] < 128) {
-+      len = in[x++]; 
-+   } else {
-+       if (in[x] < 0x81 || in[x] > 0x82) {
-+          return CRYPT_INVALID_PACKET;
-+       }
-+       y   = in[x++] & 0x7F;
-+       len = 0;
-+       while (y--) {
-+          len = (len << 8) | (unsigned long)in[x++];
-+       }
-+   }
-+
-+   if (len < 1 || (len + x) > inlen) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* decode words */
-+   y = 0;
-+   t = 0;
-+   while (len--) {
-+       t = (t << 7) | (in[x] & 0x7F);
-+       if (!(in[x++] & 0x80)) {
-+           /* store t */
-+           if (y >= *outlen) {
-+              return CRYPT_BUFFER_OVERFLOW;
-+           }
-+      if (y == 0) {
-+         words[0] = t / 40;
-+         words[1] = t % 40;
-+         y = 2;
-+      } else {
-+              words[y++] = t;
-+      }
-+           t          = 0;
-+       }
-+   }
-+       
-+   *outlen = y;
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/object_identifier/der_decode_object_identifier.c,v $ */
-+/* $Revision: 1.6 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_encode_object_identifier.c b/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_encode_object_identifier.c
-new file mode 100644
-index 0000000..b26ebdf
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_encode_object_identifier.c
-@@ -0,0 +1,111 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_object_identifier.c
-+  ASN.1 DER, Encode Object Identifier, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+/**
-+  Encode an OID
-+  @param words   The words to encode  (upto 32-bits each)
-+  @param nwords  The number of words in the OID
-+  @param out     [out] Destination of OID data
-+  @param outlen  [in/out] The max and resulting size of the OID
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_object_identifier(unsigned long *words, unsigned long  nwords,
-+                                 unsigned char *out,   unsigned long *outlen)
-+{
-+   unsigned long i, x, y, z, t, mask, wordbuf;
-+   int           err;
-+
-+   LTC_ARGCHK(words  != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* check length */
-+   if ((err = der_length_object_identifier(words, nwords, &x)) != CRYPT_OK) {
-+      return err;
-+   }
-+   if (x > *outlen) {
-+      *outlen = x;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* compute length to store OID data */
-+   z = 0;
-+   wordbuf = words[0] * 40 + words[1];
-+   for (y = 1; y < nwords; y++) {
-+       t = der_object_identifier_bits(wordbuf);
-+       z += t/7 + ((t%7) ? 1 : 0) + (wordbuf == 0 ? 1 : 0);
-+       if (y < nwords - 1) {
-+          wordbuf = words[y + 1];
-+       }
-+   }
-+
-+   /* store header + length */
-+   x = 0; 
-+   out[x++] = 0x06;
-+   if (z < 128) {
-+      out[x++] = (unsigned char)z;
-+   } else if (z < 256) {
-+      out[x++] = 0x81;
-+      out[x++] = (unsigned char)z;
-+   } else if (z < 65536UL) {
-+      out[x++] = 0x82;
-+      out[x++] = (unsigned char)((z>>8)&255);
-+      out[x++] = (unsigned char)(z&255);
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* store first byte */
-+    wordbuf = words[0] * 40 + words[1];   
-+    for (i = 1; i < nwords; i++) {
-+        /* store 7 bit words in little endian */
-+        t    = wordbuf & 0xFFFFFFFF;
-+        if (t) {
-+           y    = x;
-+           mask = 0;
-+           while (t) {
-+               out[x++] = (unsigned char)((t & 0x7F) | mask);
-+               t    >>= 7;
-+               mask  |= 0x80;  /* upper bit is set on all but the last byte */
-+           }
-+           /* now swap bytes y...x-1 */
-+           z = x - 1;
-+           while (y < z) {
-+               t = out[y]; out[y] = out[z]; out[z] = (unsigned char)t;
-+               ++y; 
-+               --z;
-+           }
-+       } else {
-+          /* zero word */
-+          out[x++] = 0x00;
-+       }
-+       
-+       if (i < nwords - 1) {
-+          wordbuf = words[i + 1];
-+       }
-+   }
-+
-+   *outlen = x;
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/object_identifier/der_encode_object_identifier.c,v $ */
-+/* $Revision: 1.7 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_length_object_identifier.c b/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_length_object_identifier.c
-new file mode 100644
-index 0000000..ada54ab
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/object_identifier/der_length_object_identifier.c
-@@ -0,0 +1,89 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_object_identifier.c
-+  ASN.1 DER, get length of Object Identifier, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+unsigned long der_object_identifier_bits(unsigned long x)
-+{
-+   unsigned long c;
-+   x &= 0xFFFFFFFF;
-+   c  = 0;
-+   while (x) {
-+     ++c;
-+     x >>= 1;
-+   }
-+   return c;
-+}
-+
-+
-+/**
-+  Gets length of DER encoding of Object Identifier
-+  @param nwords   The number of OID words 
-+  @param words    The actual OID words to get the size of
-+  @param outlen   [out] The length of the DER encoding for the given string
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_object_identifier(unsigned long *words, unsigned long nwords, unsigned long *outlen)
-+{
-+   unsigned long y, z, t, wordbuf;   
-+
-+   LTC_ARGCHK(words  != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+
-+   /* must be >= 2 words */
-+   if (nwords < 2) {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* word1 = 0,1,2,3 and word2 0..39 */
-+   if (words[0] > 3 || (words[0] < 2 && words[1] > 39)) {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* leading word is the first two */
-+   z = 0;
-+   wordbuf = words[0] * 40 + words[1];
-+   for (y = 1; y < nwords; y++) {
-+       t = der_object_identifier_bits(wordbuf);
-+       z += t/7 + ((t%7) ? 1 : 0) + (wordbuf == 0 ? 1 : 0);
-+       if (y < nwords - 1) {
-+          /* grab next word */
-+          wordbuf = words[y+1];
-+       }
-+   }
-+
-+   /* now depending on the length our length encoding changes */
-+   if (z < 128) {
-+      z += 2;
-+   } else if (z < 256) {
-+      z += 3;
-+   } else if (z < 65536UL) {
-+      z += 4;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   *outlen = z;
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/object_identifier/der_length_object_identifier.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_decode_octet_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_decode_octet_string.c
-new file mode 100644
-index 0000000..ab5bc10
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_decode_octet_string.c
-@@ -0,0 +1,91 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_octet_string.c
-+  ASN.1 DER, encode a OCTET STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store a OCTET STRING
-+  @param in      The DER encoded OCTET STRING
-+  @param inlen   The size of the DER OCTET STRING
-+  @param out     [out] The array of octets stored (one per char)
-+  @param outlen  [in/out] The number of octets stored
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_octet_string(const unsigned char *in, unsigned long inlen,
-+                                  unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long x, y, len;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* must have header at least */
-+   if (inlen < 2) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* check for 0x04 */
-+   if ((in[0] & 0x1F) != 0x04) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+   x = 1;
-+
-+   /* decode the length */
-+   if (in[x] & 0x80) {
-+      /* valid # of bytes in length are 1,2,3 */
-+      y = in[x] & 0x7F;
-+      if ((y == 0) || (y > 3) || ((x + y) > inlen)) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* read the length in */
-+      len = 0;
-+      ++x;
-+      while (y--) {
-+         len = (len << 8) | in[x++];
-+      }
-+   } else {
-+      len = in[x++] & 0x7F;
-+   }
-+
-+   /* is it too long? */
-+   if (len > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   if (len + x > inlen) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* read the data */
-+   for (y = 0; y < len; y++) {
-+       out[y] = in[x++];
-+   }
-+
-+   *outlen = y;
-+
-+   return CRYPT_OK;
-+}
-+ 
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/octet/der_decode_octet_string.c,v $ */
++/* $Source: /cvs/libtom/libtommath/bn_error.c,v $ */
 +/* $Revision: 1.4 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_encode_octet_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_encode_octet_string.c
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_fast_mp_invmod.c b/crypto/userspace/libtommath/bn_fast_mp_invmod.c
 new file mode 100644
-index 0000000..64a0770
+index 0000000..ff03dff
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_encode_octet_string.c
-@@ -0,0 +1,86 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++++ b/crypto/userspace/libtommath/bn_fast_mp_invmod.c
+@@ -0,0 +1,148 @@
++#include <tommath.h>
++#ifdef BN_FAST_MP_INVMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
 + */
-+#include "tomcrypt.h"
 +
-+/**
-+  @file der_encode_octet_string.c
-+  ASN.1 DER, encode a OCTET STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store an OCTET STRING
-+  @param in       The array of OCTETS to store (one per char)
-+  @param inlen    The number of OCTETS to store
-+  @param out      [out] The destination for the DER encoded OCTET STRING
-+  @param outlen   [in/out] The max size and resulting size of the DER OCTET STRING
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_octet_string(const unsigned char *in, unsigned long inlen,
-+                                  unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long x, y, len;
-+   int           err;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* get the size */
-+   if ((err = der_length_octet_string(inlen, &len)) != CRYPT_OK) {
-+      return err; 
-+   }
-+
-+   /* too big? */
-+   if (len > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* encode the header+len */
-+   x = 0;
-+   out[x++] = 0x04;
-+   if (inlen < 128) {
-+      out[x++] = (unsigned char)inlen;
-+   } else if (inlen < 256) {
-+      out[x++] = 0x81;
-+      out[x++] = (unsigned char)inlen;
-+   } else if (inlen < 65536UL) {
-+      out[x++] = 0x82;
-+      out[x++] = (unsigned char)((inlen>>8)&255);
-+      out[x++] = (unsigned char)(inlen&255);
-+   } else if (inlen < 16777216UL) {
-+      out[x++] = 0x83;
-+      out[x++] = (unsigned char)((inlen>>16)&255);
-+      out[x++] = (unsigned char)((inlen>>8)&255);
-+      out[x++] = (unsigned char)(inlen&255);
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* store octets */
-+   for (y = 0; y < inlen; y++) {
-+       out[x++] = in[y];
-+   }
-+
-+   /* retun length */
-+   *outlen = x;
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/octet/der_encode_octet_string.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_length_octet_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_length_octet_string.c
-new file mode 100644
-index 0000000..c494159
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/octet/der_length_octet_string.c
-@@ -0,0 +1,53 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++/* computes the modular inverse via binary extended euclidean algorithm, 
++ * that is c = 1/a mod b 
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ * Based on slow invmod except this is optimized for the case where b is 
++ * odd as per HAC Note 14.64 on pp. 610
 + */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_octet_string.c
-+  ASN.1 DER, get length of OCTET STRING, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+/**
-+  Gets length of DER encoding of OCTET STRING 
-+  @param noctets  The number of octets in the string to encode
-+  @param outlen   [out] The length of the DER encoding for the given string
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_octet_string(unsigned long noctets, unsigned long *outlen)
++int fast_mp_invmod (mp_int * a, mp_int * b, mp_int * c)
 +{
-+   LTC_ARGCHK(outlen != NULL);
++  mp_int  x, y, u, v, B, D;
++  int     res, neg;
 +
-+   if (noctets < 128) {
-+      /* 04 LL DD DD DD ... */
-+      *outlen = 2 + noctets;
-+   } else if (noctets < 256) {
-+      /* 04 81 LL DD DD DD ... */
-+      *outlen = 3 + noctets;
-+   } else if (noctets < 65536UL) {
-+      /* 04 82 LL LL DD DD DD ... */
-+      *outlen = 4 + noctets;
-+   } else if (noctets < 16777216UL) {
-+      /* 04 83 LL LL LL DD DD DD ... */
-+      *outlen = 5 + noctets;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/octet/der_length_octet_string.c,v $ */
-+/* $Revision: 1.3 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_decode_printable_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_decode_printable_string.c
-new file mode 100644
-index 0000000..8504f77
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_decode_printable_string.c
-@@ -0,0 +1,96 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_printable_string.c
-+  ASN.1 DER, encode a printable STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store a printable STRING
-+  @param in      The DER encoded printable STRING
-+  @param inlen   The size of the DER printable STRING
-+  @param out     [out] The array of octets stored (one per char)
-+  @param outlen  [in/out] The number of octets stored
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_printable_string(const unsigned char *in, unsigned long inlen,
-+                                unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long x, y, len;
-+   int           t;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* must have header at least */
-+   if (inlen < 2) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* check for 0x13 */
-+   if ((in[0] & 0x1F) != 0x13) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+   x = 1;
-+
-+   /* decode the length */
-+   if (in[x] & 0x80) {
-+      /* valid # of bytes in length are 1,2,3 */
-+      y = in[x] & 0x7F;
-+      if ((y == 0) || (y > 3) || ((x + y) > inlen)) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* read the length in */
-+      len = 0;
-+      ++x;
-+      while (y--) {
-+         len = (len << 8) | in[x++];
-+      }
-+   } else {
-+      len = in[x++] & 0x7F;
-+   }
-+
-+   /* is it too long? */
-+   if (len > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   if (len + x > inlen) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* read the data */
-+   for (y = 0; y < len; y++) {
-+       t = der_printable_value_decode(in[x++]);
-+       if (t == -1) {
-+           return CRYPT_INVALID_ARG;
-+       }
-+       out[y] = t;
-+   }
-+
-+   *outlen = y;
-+
-+   return CRYPT_OK;
-+}
-+ 
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/printable_string/der_decode_printable_string.c,v $ */
-+/* $Revision: 1.4 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_encode_printable_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_encode_printable_string.c
-new file mode 100644
-index 0000000..deccdee
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_encode_printable_string.c
-@@ -0,0 +1,85 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_printable_string.c
-+  ASN.1 DER, encode a printable STRING, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store an printable STRING
-+  @param in       The array of printable to store (one per char)
-+  @param inlen    The number of printable to store
-+  @param out      [out] The destination for the DER encoded printable STRING
-+  @param outlen   [in/out] The max size and resulting size of the DER printable STRING
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_printable_string(const unsigned char *in, unsigned long inlen,
-+                                unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long x, y, len;
-+   int           err;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* get the size */
-+   if ((err = der_length_printable_string(in, inlen, &len)) != CRYPT_OK) {
-+      return err; 
-+   }
-+
-+   /* too big? */
-+   if (len > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* encode the header+len */
-+   x = 0;
-+   out[x++] = 0x13;
-+   if (inlen < 128) {
-+      out[x++] = (unsigned char)inlen;
-+   } else if (inlen < 256) {
-+      out[x++] = 0x81;
-+      out[x++] = (unsigned char)inlen;
-+   } else if (inlen < 65536UL) {
-+      out[x++] = 0x82;
-+      out[x++] = (unsigned char)((inlen>>8)&255);
-+      out[x++] = (unsigned char)(inlen&255);
-+   } else if (inlen < 16777216UL) {
-+      out[x++] = 0x83;
-+      out[x++] = (unsigned char)((inlen>>16)&255);
-+      out[x++] = (unsigned char)((inlen>>8)&255);
-+      out[x++] = (unsigned char)(inlen&255);
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* store octets */
-+   for (y = 0; y < inlen; y++) {
-+       out[x++] = der_printable_char_encode(in[y]);
-+   }
-+
-+   /* retun length */
-+   *outlen = x;
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/printable_string/der_encode_printable_string.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_length_printable_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_length_printable_string.c
-new file mode 100644
-index 0000000..997d3b5
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/printable_string/der_length_printable_string.c
-@@ -0,0 +1,166 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_printable_string.c
-+  ASN.1 DER, get length of Printable STRING, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+static const struct {
-+   int code, value;
-+} printable_table[] = {
-+{ ' ', 32 }, 
-+{ '\'', 39 }, 
-+{ '(', 40 }, 
-+{ ')', 41 }, 
-+{ '+', 43 }, 
-+{ ',', 44 }, 
-+{ '-', 45 }, 
-+{ '.', 46 }, 
-+{ '/', 47 }, 
-+{ '0', 48 }, 
-+{ '1', 49 }, 
-+{ '2', 50 }, 
-+{ '3', 51 }, 
-+{ '4', 52 }, 
-+{ '5', 53 }, 
-+{ '6', 54 }, 
-+{ '7', 55 }, 
-+{ '8', 56 }, 
-+{ '9', 57 }, 
-+{ ':', 58 }, 
-+{ '=', 61 }, 
-+{ '?', 63 }, 
-+{ 'A', 65 }, 
-+{ 'B', 66 }, 
-+{ 'C', 67 }, 
-+{ 'D', 68 }, 
-+{ 'E', 69 }, 
-+{ 'F', 70 }, 
-+{ 'G', 71 }, 
-+{ 'H', 72 }, 
-+{ 'I', 73 }, 
-+{ 'J', 74 }, 
-+{ 'K', 75 }, 
-+{ 'L', 76 }, 
-+{ 'M', 77 }, 
-+{ 'N', 78 }, 
-+{ 'O', 79 }, 
-+{ 'P', 80 }, 
-+{ 'Q', 81 }, 
-+{ 'R', 82 }, 
-+{ 'S', 83 }, 
-+{ 'T', 84 }, 
-+{ 'U', 85 }, 
-+{ 'V', 86 }, 
-+{ 'W', 87 }, 
-+{ 'X', 88 }, 
-+{ 'Y', 89 }, 
-+{ 'Z', 90 }, 
-+{ 'a', 97 }, 
-+{ 'b', 98 }, 
-+{ 'c', 99 }, 
-+{ 'd', 100 }, 
-+{ 'e', 101 }, 
-+{ 'f', 102 }, 
-+{ 'g', 103 }, 
-+{ 'h', 104 }, 
-+{ 'i', 105 }, 
-+{ 'j', 106 }, 
-+{ 'k', 107 }, 
-+{ 'l', 108 }, 
-+{ 'm', 109 }, 
-+{ 'n', 110 }, 
-+{ 'o', 111 }, 
-+{ 'p', 112 }, 
-+{ 'q', 113 }, 
-+{ 'r', 114 }, 
-+{ 's', 115 }, 
-+{ 't', 116 }, 
-+{ 'u', 117 }, 
-+{ 'v', 118 }, 
-+{ 'w', 119 }, 
-+{ 'x', 120 }, 
-+{ 'y', 121 }, 
-+{ 'z', 122 }, 
-+};
-+
-+int der_printable_char_encode(int c)
-+{
-+   int x;
-+   for (x = 0; x < (int)(sizeof(printable_table)/sizeof(printable_table[0])); x++) {
-+       if (printable_table[x].code == c) {
-+          return printable_table[x].value;
-+       }
-+   }
-+   return -1;
-+}
-+
-+int der_printable_value_decode(int v)
-+{
-+   int x;
-+   for (x = 0; x < (int)(sizeof(printable_table)/sizeof(printable_table[0])); x++) {
-+       if (printable_table[x].value == v) {
-+          return printable_table[x].code;
-+       }
-+   }
-+   return -1;
-+}
-+   
-+/**
-+  Gets length of DER encoding of Printable STRING 
-+  @param octets   The values you want to encode 
-+  @param noctets  The number of octets in the string to encode
-+  @param outlen   [out] The length of the DER encoding for the given string
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_printable_string(const unsigned char *octets, unsigned long noctets, unsigned long *outlen)
-+{
-+   unsigned long x;
-+
-+   LTC_ARGCHK(outlen != NULL);
-+   LTC_ARGCHK(octets != NULL);
-+
-+   /* scan string for validity */
-+   for (x = 0; x < noctets; x++) {
-+       if (der_printable_char_encode(octets[x]) == -1) {
-+          return CRYPT_INVALID_ARG;
-+       }
-+   }
-+
-+   if (noctets < 128) {
-+      /* 16 LL DD DD DD ... */
-+      *outlen = 2 + noctets;
-+   } else if (noctets < 256) {
-+      /* 16 81 LL DD DD DD ... */
-+      *outlen = 3 + noctets;
-+   } else if (noctets < 65536UL) {
-+      /* 16 82 LL LL DD DD DD ... */
-+      *outlen = 4 + noctets;
-+   } else if (noctets < 16777216UL) {
-+      /* 16 83 LL LL LL DD DD DD ... */
-+      *outlen = 5 + noctets;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/printable_string/der_length_printable_string.c,v $ */
-+/* $Revision: 1.3 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_ex.c b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_ex.c
-new file mode 100644
-index 0000000..2067437
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_ex.c
-@@ -0,0 +1,287 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <stdarg.h>
-+
-+
-+/**
-+  @file der_decode_sequence_ex.c
-+  ASN.1 DER, decode a SEQUENCE, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+   Decode a SEQUENCE
-+   @param in       The DER encoded input
-+   @param inlen    The size of the input
-+   @param list     The list of items to decode
-+   @param outlen   The number of items in the list
-+   @param ordered  Search an unordeded or ordered list
-+   @return CRYPT_OK on success
-+*/
-+int der_decode_sequence_ex(const unsigned char *in, unsigned long  inlen,
-+                           ltc_asn1_list *list,     unsigned long  outlen, int ordered)
-+{
-+   int           err, type;
-+   unsigned long size, x, y, z, i, blksize;
-+   void          *data;
-+
-+   LTC_ARGCHK(in   != NULL);
-+   LTC_ARGCHK(list != NULL);
-+   
-+   /* get blk size */
-+   if (inlen < 2) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* sequence type? We allow 0x30 SEQUENCE and 0x31 SET since fundamentally they're the same structure */
-+   x = 0;
-+   if (in[x] != 0x30 && in[x] != 0x31) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+   ++x;
-+
-+   if (in[x] < 128) {
-+      blksize = in[x++];
-+   } else if (in[x] & 0x80) {
-+      if (in[x] < 0x81 || in[x] > 0x83) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+      y = in[x++] & 0x7F;
-+
-+      /* would reading the len bytes overrun? */
-+      if (x + y > inlen) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* read len */
-+      blksize = 0;
-+      while (y--) {
-+          blksize = (blksize << 8) | (unsigned long)in[x++];
-+      }
++  /* 2. [modified] b must be odd   */
++  if (mp_iseven (b) == 1) {
++    return MP_VAL;
 +  }
 +
-+  /* would this blksize overflow? */
-+  if (x + blksize > inlen) {
-+     return CRYPT_INVALID_PACKET;
++  /* init all our temps */
++  if ((res = mp_init_multi(&x, &y, &u, &v, &B, &D, NULL)) != MP_OKAY) {
++     return res;
 +  }
 +
-+   /* mark all as unused */
-+   for (i = 0; i < outlen; i++) {
-+       list[i].used = 0;
-+   }     
-+
-+  /* ok read data */
-+   inlen = blksize;
-+   for (i = 0; i < outlen; i++) {
-+       z    = 0;
-+       type = list[i].type;
-+       size = list[i].size;
-+       data = list[i].data;
-+       if (!ordered && list[i].used == 1) { continue; }
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+           case LTC_ASN1_BOOLEAN:
-+               z = inlen;
-+               if ((err = der_decode_boolean(in + x, z, ((int *)data))) != CRYPT_OK) {
-+                   goto LBL_ERR;
-+               }
-+               if ((err = der_length_boolean(&z)) != CRYPT_OK) {
-+                   goto LBL_ERR;
-+                }
-+                break;
-+          
-+           case LTC_ASN1_INTEGER:
-+               z = inlen;
-+               if ((err = der_decode_integer(in + x, z, data)) != CRYPT_OK) {
-+                  if (!ordered) {  continue; }
-+                  goto LBL_ERR;
-+               }
-+               if ((err = der_length_integer(data, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           case LTC_ASN1_SHORT_INTEGER:
-+               z = inlen;
-+               if ((err = der_decode_short_integer(in + x, z, data)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               if ((err = der_length_short_integer(((unsigned long*)data)[0], &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               
-+               break;
-+
-+           case LTC_ASN1_BIT_STRING:
-+               z = inlen;
-+               if ((err = der_decode_bit_string(in + x, z, data, &size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               list[i].size = size;
-+               if ((err = der_length_bit_string(size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           case LTC_ASN1_OCTET_STRING:
-+               z = inlen;
-+               if ((err = der_decode_octet_string(in + x, z, data, &size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               list[i].size = size;
-+               if ((err = der_length_octet_string(size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           case LTC_ASN1_NULL:
-+               if (inlen < 2 || in[x] != 0x05 || in[x+1] != 0x00) {
-+                  if (!ordered) { continue; }
-+                  err = CRYPT_INVALID_PACKET;
-+                  goto LBL_ERR;
-+               }
-+               z = 2;
-+               break;
-+                  
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+               z = inlen;
-+               if ((err = der_decode_object_identifier(in + x, z, data, &size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               list[i].size = size;
-+               if ((err = der_length_object_identifier(data, size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           case LTC_ASN1_IA5_STRING:
-+               z = inlen;
-+               if ((err = der_decode_ia5_string(in + x, z, data, &size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               list[i].size = size;
-+               if ((err = der_length_ia5_string(data, size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+
-+           case LTC_ASN1_PRINTABLE_STRING:
-+               z = inlen;
-+               if ((err = der_decode_printable_string(in + x, z, data, &size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               list[i].size = size;
-+               if ((err = der_length_printable_string(data, size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           case LTC_ASN1_UTF8_STRING:
-+               z = inlen;
-+               if ((err = der_decode_utf8_string(in + x, z, data, &size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               list[i].size = size;
-+               if ((err = der_length_utf8_string(data, size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           case LTC_ASN1_UTCTIME:
-+               z = inlen;
-+               if ((err = der_decode_utctime(in + x, &z, data)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           case LTC_ASN1_SET:
-+               z = inlen;
-+               if ((err = der_decode_set(in + x, z, data, size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               if ((err = der_length_sequence(data, size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+           
-+           case LTC_ASN1_SETOF:
-+           case LTC_ASN1_SEQUENCE:
-+               /* detect if we have the right type */
-+               if ((type == LTC_ASN1_SETOF && (in[x] & 0x3F) != 0x31) || (type == LTC_ASN1_SEQUENCE && (in[x] & 0x3F) != 0x30)) {
-+                  err = CRYPT_INVALID_PACKET;
-+                  goto LBL_ERR;
-+               }
-+
-+               z = inlen;
-+               if ((err = der_decode_sequence(in + x, z, data, size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               if ((err = der_length_sequence(data, size, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+
-+           case LTC_ASN1_CHOICE:
-+               z = inlen;
-+               if ((err = der_decode_choice(in + x, &z, data, size)) != CRYPT_OK) {
-+                  if (!ordered) { continue; }
-+                  goto LBL_ERR;
-+               }
-+               break;
-+
-+           default:
-+               err = CRYPT_INVALID_ARG;
-+               goto LBL_ERR;
-+       }
-+       x           += z;
-+       inlen       -= z;
-+       list[i].used = 1;
-+       if (!ordered) { 
-+          /* restart the decoder */
-+          i = -1;
-+       }          
-+   }
-+     
-+   for (i = 0; i < outlen; i++) {
-+      if (list[i].used == 0) {
-+          err = CRYPT_INVALID_PACKET;
-+          goto LBL_ERR;
-+      }
-+   }                
-+   err = CRYPT_OK;   
-+
-+LBL_ERR:
-+   return err;
-+}  
-+ 
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/sequence/der_decode_sequence_ex.c,v $ */
-+/* $Revision: 1.16 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_flexi.c b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_flexi.c
-new file mode 100644
-index 0000000..3f01a57
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_flexi.c
-@@ -0,0 +1,394 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+  @file der_decode_sequence_flexi.c
-+  ASN.1 DER, decode an array of ASN.1 types with a flexi parser, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+static unsigned long fetch_length(const unsigned char *in, unsigned long inlen)
-+{
-+   unsigned long x, y, z;
-+
-+   y = 0;
-+
-+   /* skip type and read len */
-+   if (inlen < 2) {
-+      return 0xFFFFFFFF;
-+   }
-+   ++in; ++y;
-+   
-+   /* read len */
-+   x = *in++; ++y;
-+   
-+   /* <128 means literal */
-+   if (x < 128) {
-+      return x+y;
-+   }
-+   x     &= 0x7F; /* the lower 7 bits are the length of the length */
-+   inlen -= 2;
-+   
-+   /* len means len of len! */
-+   if (x == 0 || x > 4 || x > inlen) {
-+      return 0xFFFFFFFF;
-+   }
-+   
-+   y += x;
-+   z = 0;
-+   while (x--) {   
-+      z = (z<<8) | ((unsigned long)*in);
-+      ++in;
-+   }
-+   return z+y;
-+}
-+
-+/** 
-+   ASN.1 DER Flexi(ble) decoder will decode arbitrary DER packets and create a linked list of the decoded elements.
-+   @param in      The input buffer
-+   @param inlen   [in/out] The length of the input buffer and on output the amount of decoded data 
-+   @param out     [out] A pointer to the linked list
-+   @return CRYPT_OK on success.
-+*/   
-+int der_decode_sequence_flexi(const unsigned char *in, unsigned long *inlen, ltc_asn1_list **out)
-+{
-+   ltc_asn1_list *l;
-+   unsigned long err, type, len, totlen, x, y;
-+   void          *realloc_tmp;
-+   
-+   LTC_ARGCHK(in    != NULL);
-+   LTC_ARGCHK(inlen != NULL);
-+   LTC_ARGCHK(out   != NULL);
-+
-+   l = NULL;
-+   totlen = 0;
-+   
-+   /* scan the input and and get lengths and what not */
-+   while (*inlen) {     
-+      /* read the type byte */
-+      type = *in;
-+
-+      /* fetch length */
-+      len = fetch_length(in, *inlen);
-+      if (len > *inlen) {
-+         err = CRYPT_INVALID_PACKET;
-+         goto error;
-+      }
-+
-+      /* alloc new link */
-+      if (l == NULL) {
-+         l = XCALLOC(1, sizeof(*l));
-+         if (l == NULL) {
-+            err = CRYPT_MEM;
-+            goto error;
-+         }
-+      } else {
-+         l->next = XCALLOC(1, sizeof(*l));
-+         if (l->next == NULL) {
-+            err = CRYPT_MEM;
-+            goto error;
-+         }
-+         l->next->prev = l;
-+         l = l->next;
-+      }
-+
-+      /* now switch on type */
-+      switch (type) {
-+         case 0x01: /* BOOLEAN */
-+            l->type = LTC_ASN1_BOOLEAN;
-+            l->size = 1;
-+            l->data = XCALLOC(1, sizeof(int));
-+       
-+            if ((err = der_decode_boolean(in, *inlen, l->data)) != CRYPT_OK) {
-+               goto error;
-+            }
-+        
-+            if ((err = der_length_boolean(&len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            break;
-+
-+         case 0x02: /* INTEGER */
-+             /* init field */
-+             l->type = LTC_ASN1_INTEGER;
-+             l->size = 1;
-+
-+             l->data = XMALLOC(sizeof(mp_int));
-+             if (l->data == NULL) {
-+                 err = CRYPT_MEM;
-+                 goto error;
-+             }
-+
-+             if ((err = mp_init((mp_int_t)l->data)) != CRYPT_OK) {
-+                 goto error;
-+             }
-+             
-+             /* decode field */
-+             if ((err = der_decode_integer(in, *inlen, (mp_int_t)l->data)) != CRYPT_OK) {
-+                 goto error;
-+             }
-+             
-+             /* calc length of object */
-+             if ((err = der_length_integer((mp_int_t)l->data, &len)) != CRYPT_OK) {
-+                 goto error;
-+             }
-+             break;
-+
-+         case 0x03: /* BIT */
-+            /* init field */
-+            l->type = LTC_ASN1_BIT_STRING;
-+            l->size = len * 8; /* *8 because we store decoded bits one per char and they are encoded 8 per char.  */
-+
-+            if ((l->data = XCALLOC(1, l->size)) == NULL) {
-+               err = CRYPT_MEM;
-+               goto error;
-+            }
-+            
-+            if ((err = der_decode_bit_string(in, *inlen, l->data, &l->size)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            if ((err = der_length_bit_string(l->size, &len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            break;
-+
-+         case 0x04: /* OCTET */
-+
-+            /* init field */
-+            l->type = LTC_ASN1_OCTET_STRING;
-+            l->size = len;
-+
-+            if ((l->data = XCALLOC(1, l->size)) == NULL) {
-+               err = CRYPT_MEM;
-+               goto error;
-+            }
-+            
-+            if ((err = der_decode_octet_string(in, *inlen, l->data, &l->size)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            if ((err = der_length_octet_string(l->size, &len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            break;
-+
-+         case 0x05: /* NULL */
-+         
-+            /* valid NULL is 0x05 0x00 */
-+            if (in[0] != 0x05 || in[1] != 0x00) {
-+               err = CRYPT_INVALID_PACKET;
-+               goto error;
-+            }
-+            
-+            /* simple to store ;-) */
-+            l->type = LTC_ASN1_NULL;
-+            l->data = NULL;
-+            l->size = 0;
-+            len     = 2;
-+            
-+            break;
-+         
-+         case 0x06: /* OID */
-+         
-+            /* init field */
-+            l->type = LTC_ASN1_OBJECT_IDENTIFIER;
-+            l->size = len;
-+
-+            if ((l->data = XCALLOC(len, sizeof(unsigned long))) == NULL) {
-+               err = CRYPT_MEM;
-+               goto error;
-+            }
-+            
-+            if ((err = der_decode_object_identifier(in, *inlen, l->data, &l->size)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            if ((err = der_length_object_identifier(l->data, l->size, &len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            /* resize it to save a bunch of mem */
-+            if ((realloc_tmp = XREALLOC(l->data, l->size * sizeof(unsigned long))) == NULL) {
-+               /* out of heap but this is not an error */
-+               break;
-+            }
-+            l->data = realloc_tmp;
-+            break;
-+  
-+         case 0x0C: /* UTF8 */
-+         
-+            /* init field */
-+            l->type = LTC_ASN1_UTF8_STRING;
-+            l->size = len;
-+
-+            if ((l->data = XCALLOC(sizeof(wchar_t), l->size)) == NULL) {
-+               err = CRYPT_MEM;
-+               goto error;
-+            }
-+            
-+            if ((err = der_decode_utf8_string(in, *inlen, l->data, &l->size)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            if ((err = der_length_utf8_string(l->data, l->size, &len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            break;
-+
-+         case 0x13: /* PRINTABLE */
-+         
-+            /* init field */
-+            l->type = LTC_ASN1_PRINTABLE_STRING;
-+            l->size = len;
-+
-+            if ((l->data = XCALLOC(1, l->size)) == NULL) {
-+               err = CRYPT_MEM;
-+               goto error;
-+            }
-+            
-+            if ((err = der_decode_printable_string(in, *inlen, l->data, &l->size)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            if ((err = der_length_printable_string(l->data, l->size, &len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            break;
-+         
-+         case 0x16: /* IA5 */
-+         
-+            /* init field */
-+            l->type = LTC_ASN1_IA5_STRING;
-+            l->size = len;
-+
-+            if ((l->data = XCALLOC(1, l->size)) == NULL) {
-+               err = CRYPT_MEM;
-+               goto error;
-+            }
-+            
-+            if ((err = der_decode_ia5_string(in, *inlen, l->data, &l->size)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            if ((err = der_length_ia5_string(l->data, l->size, &len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            break;
-+         
-+         case 0x17: /* UTC TIME */
-+         
-+            /* init field */
-+            l->type = LTC_ASN1_UTCTIME;
-+            l->size = 1;
-+
-+            if ((l->data = XCALLOC(1, sizeof(ltc_utctime))) == NULL) {
-+               err = CRYPT_MEM;
-+               goto error;
-+            }
-+            
-+            len = *inlen;
-+            if ((err = der_decode_utctime(in, &len, l->data)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            
-+            if ((err = der_length_utctime(l->data, &len)) != CRYPT_OK) {
-+               goto error;
-+            }
-+            break;
-+         
-+         case 0x30: /* SEQUENCE */
-+         case 0x31: /* SET */
-+         
-+             /* init field */
-+             l->type = (type == 0x30) ? LTC_ASN1_SEQUENCE : LTC_ASN1_SET;
-+             
-+             /* we have to decode the SEQUENCE header and get it's length */
-+             
-+                /* move past type */
-+                ++in; --(*inlen);
-+                
-+                /* read length byte */
-+                x = *in++; --(*inlen);
-+                
-+                /* smallest SEQUENCE/SET header */
-+                y = 2;
-+                
-+                /* now if it's > 127 the next bytes are the length of the length */
-+                if (x > 128) {
-+                   x      &= 0x7F;
-+                   in     += x;
-+                   *inlen -= x;
-+                   
-+                   /* update sequence header len */
-+                   y      += x;
-+                }
-+             
-+             /* Sequence elements go as child */
-+             len = len - y;
-+             if ((err = der_decode_sequence_flexi(in, &len, &(l->child))) != CRYPT_OK) {
-+                goto error;
-+             }
-+             
-+             /* len update */
-+             totlen += y;
-+             
-+             /* link them up y0 */
-+             l->child->parent = l;
-+             
-+             break;
-+         default:
-+           /* invalid byte ... this is a soft error */
-+           /* remove link */
-+           l       = l->prev;
-+           XFREE(l->next);
-+           l->next = NULL;
-+           goto outside;
-+      }
-+      
-+      /* advance pointers */
-+      totlen  += len;
-+      in      += len;
-+      *inlen  -= len;
-+   }
-+   
-+outside:   
-+
-+   /* rewind l please */
-+   while (l->prev != NULL || l->parent != NULL) {
-+      if (l->parent != NULL) {
-+         l = l->parent;
-+      } else {
-+         l = l->prev;
-+      }
-+   }
-+   
-+   /* return */
-+   *out   = l;
-+   *inlen = totlen;
-+   return CRYPT_OK;
-+
-+error:
-+   /* free list */
-+   der_sequence_free(l);
-+
-+   return err;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/sequence/der_decode_sequence_flexi.c,v $ */
-+/* $Revision: 1.26 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_multi.c b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_multi.c
-new file mode 100644
-index 0000000..d1b7878
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_multi.c
-@@ -0,0 +1,140 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <stdarg.h>
-+#include <linux/slab.h>
-+
-+
-+/**
-+  @file der_decode_sequence_multi.c
-+  ASN.1 DER, decode a SEQUENCE, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Decode a SEQUENCE type using a VA list
-+  @param in    Input buffer
-+  @param inlen Length of input in octets
-+  @remark <...> is of the form <type, size, data> (int, unsigned long, void*)
-+  @return CRYPT_OK on success
-+*/  
-+int der_decode_sequence_multi(const unsigned char *in, unsigned long inlen, ...)
-+{
-+   int           err, type;
-+   unsigned long size, x;
-+   void          *data;
-+   va_list       args;
-+   ltc_asn1_list *list;
-+
-+   LTC_ARGCHK(in    != NULL);
-+
-+   /* get size of output that will be required */
-+   va_start(args, inlen);
-+   x = 0;
-+   for (;;) {
-+       type = va_arg(args, int);
-+       size = va_arg(args, unsigned long);
-+       data = va_arg(args, void*);
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+           case LTC_ASN1_BOOLEAN:
-+           case LTC_ASN1_INTEGER:
-+           case LTC_ASN1_SHORT_INTEGER:
-+           case LTC_ASN1_BIT_STRING:
-+           case LTC_ASN1_OCTET_STRING:
-+           case LTC_ASN1_NULL:
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+           case LTC_ASN1_IA5_STRING:
-+           case LTC_ASN1_PRINTABLE_STRING:
-+           case LTC_ASN1_UTF8_STRING:
-+           case LTC_ASN1_UTCTIME:
-+           case LTC_ASN1_SET:
-+           case LTC_ASN1_SETOF:
-+           case LTC_ASN1_SEQUENCE:
-+           case LTC_ASN1_CHOICE:
-+                ++x; 
-+                break;
-+          
-+           default:
-+               va_end(args);
-+               return CRYPT_INVALID_ARG;
-+       }
-+   }
-+   va_end(args);
-+
-+   /* allocate structure for x elements */
-+   if (x == 0) {
-+      return CRYPT_NOP;
-+   }
-+
-+   list = XCALLOC(sizeof(*list), x);
-+   if (list == NULL) {
-+      return CRYPT_MEM;
-+   }
-+
-+   /* fill in the structure */
-+   va_start(args, inlen);
-+   x = 0;
-+   for (;;) {
-+       type = va_arg(args, int);
-+       size = va_arg(args, unsigned long);
-+       data = va_arg(args, void*);
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+           case LTC_ASN1_BOOLEAN:
-+           case LTC_ASN1_INTEGER:
-+           case LTC_ASN1_SHORT_INTEGER:
-+           case LTC_ASN1_BIT_STRING:
-+           case LTC_ASN1_OCTET_STRING:
-+           case LTC_ASN1_NULL:
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+           case LTC_ASN1_IA5_STRING:
-+           case LTC_ASN1_PRINTABLE_STRING:
-+           case LTC_ASN1_UTF8_STRING:
-+           case LTC_ASN1_UTCTIME:
-+           case LTC_ASN1_SEQUENCE:
-+           case LTC_ASN1_SET:
-+           case LTC_ASN1_SETOF:          
-+           case LTC_ASN1_CHOICE:
-+                list[x].type   = type;
-+                list[x].size   = size;
-+                list[x++].data = data;
-+                break;
-+         
-+           default:
-+               va_end(args);
-+               err = CRYPT_INVALID_ARG;
-+               goto LBL_ERR;
-+       }
-+   }
-+   va_end(args);
-+
-+   err = der_decode_sequence(in, inlen, list, x);
-+LBL_ERR:
-+   XFREE(list);
-+   return err;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/sequence/der_decode_sequence_multi.c,v $ */
-+/* $Revision: 1.13 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_ex.c b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_ex.c
-new file mode 100644
-index 0000000..e92f7c3
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_ex.c
-@@ -0,0 +1,335 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <stdarg.h>
-+
-+
-+/**
-+  @file der_encode_sequence_ex.c
-+  ASN.1 DER, encode a SEQUENCE, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+   Encode a SEQUENCE
-+   @param list      The list of items to encode
-+   @param inlen     The number of items in the list
-+   @param out       [out] The destination 
-+   @param outlen    [in/out] The size of the output
-+   @param type_of   LTC_ASN1_SEQUENCE or LTC_ASN1_SET/LTC_ASN1_SETOF
-+   @return CRYPT_OK on success
-+*/
-+int der_encode_sequence_ex(ltc_asn1_list *list, unsigned long inlen,
-+                           unsigned char *out,  unsigned long *outlen, int type_of) 
-+{
-+   int           err, type;
-+   unsigned long size, x, y, z, i;
-+   void          *data;
-+
-+   LTC_ARGCHK(list    != NULL);
-+   LTC_ARGCHK(out     != NULL);
-+   LTC_ARGCHK(outlen  != NULL);
-+
-+   /* get size of output that will be required */
-+   y = 0;
-+   for (i = 0; i < inlen; i++) {
-+       type = list[i].type;
-+       size = list[i].size;
-+       data = list[i].data;
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+            case LTC_ASN1_BOOLEAN:
-+               if ((err = der_length_boolean(&x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_INTEGER:
-+               if ((err = der_length_integer(data, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_SHORT_INTEGER:
-+               if ((err = der_length_short_integer(*((unsigned long*)data), &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_BIT_STRING:
-+               if ((err = der_length_bit_string(size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_OCTET_STRING:
-+               if ((err = der_length_octet_string(size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_NULL:
-+               y += 2;
-+               break;
-+
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+               if ((err = der_length_object_identifier(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_IA5_STRING:
-+               if ((err = der_length_ia5_string(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_PRINTABLE_STRING:
-+               if ((err = der_length_printable_string(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_UTF8_STRING:
-+               if ((err = der_length_utf8_string(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_UTCTIME:
-+               if ((err = der_length_utctime(data, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_SET:
-+           case LTC_ASN1_SETOF:
-+           case LTC_ASN1_SEQUENCE:
-+               if ((err = der_length_sequence(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+          
-+           default:
-+               err = CRYPT_INVALID_ARG;
-+               goto LBL_ERR;
-+       }
-+   }
-+
-+   /* calc header size */
-+   z = y;
-+   if (y < 128) {
-+      y += 2;
-+   } else if (y < 256) {
-+      /* 0x30 0x81 LL */
-+      y += 3;
-+   } else if (y < 65536UL) {
-+      /* 0x30 0x82 LL LL */
-+      y += 4;
-+   } else if (y < 16777216UL) {
-+      /* 0x30 0x83 LL LL LL */
-+      y += 5;
-+   } else {
-+      err = CRYPT_INVALID_ARG;
++  /* x == modulus, y == value to invert */
++  if ((res = mp_copy (b, &x)) != MP_OKAY) {
++    goto LBL_ERR;
++  }
++
++  /* we need y = |a| */
++  if ((res = mp_mod (a, b, &y)) != MP_OKAY) {
++    goto LBL_ERR;
++  }
++
++  /* 3. u=x, v=y, A=1, B=0, C=0,D=1 */
++  if ((res = mp_copy (&x, &u)) != MP_OKAY) {
++    goto LBL_ERR;
++  }
++  if ((res = mp_copy (&y, &v)) != MP_OKAY) {
++    goto LBL_ERR;
++  }
++  mp_set (&D, 1);
++
++top:
++  /* 4.  while u is even do */
++  while (mp_iseven (&u) == 1) {
++    /* 4.1 u = u/2 */
++    if ((res = mp_div_2 (&u, &u)) != MP_OKAY) {
 +      goto LBL_ERR;
-+   }
-+
-+   /* too big ? */
-+   if (*outlen < y) {
-+      *outlen = y;
-+      err = CRYPT_BUFFER_OVERFLOW;
-+      goto LBL_ERR;
-+   }
-+
-+   /* store header */
-+   x = 0;
-+   out[x++] = (type_of == LTC_ASN1_SEQUENCE) ? 0x30 : 0x31;
-+      
-+   if (z < 128) {
-+      out[x++] = (unsigned char)z;
-+   } else if (z < 256) {
-+      out[x++] = 0x81;
-+      out[x++] = (unsigned char)z;
-+   } else if (z < 65536UL) {
-+      out[x++] = 0x82;
-+      out[x++] = (unsigned char)((z>>8UL)&255);
-+      out[x++] = (unsigned char)(z&255);
-+   } else if (z < 16777216UL) {
-+      out[x++] = 0x83;
-+      out[x++] = (unsigned char)((z>>16UL)&255);
-+      out[x++] = (unsigned char)((z>>8UL)&255);
-+      out[x++] = (unsigned char)(z&255);
-+   }
-+
-+   /* store data */
-+   *outlen -= x;
-+   for (i = 0; i < inlen; i++) {
-+       type = list[i].type;
-+       size = list[i].size;
-+       data = list[i].data;
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+            case LTC_ASN1_BOOLEAN:
-+               z = *outlen;
-+               if ((err = der_encode_boolean(*((int *)data), out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+          
-+           case LTC_ASN1_INTEGER:
-+               z = *outlen;
-+               if ((err = der_encode_integer(data, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_SHORT_INTEGER:
-+               z = *outlen;
-+               if ((err = der_encode_short_integer(*((unsigned long*)data), out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_BIT_STRING:
-+               z = *outlen;
-+               if ((err = der_encode_bit_string(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_OCTET_STRING:
-+               z = *outlen;
-+               if ((err = der_encode_octet_string(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_NULL:
-+               out[x++] = 0x05;
-+               out[x++] = 0x00;
-+               *outlen -= 2;
-+               break;
-+
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+               z = *outlen;
-+               if ((err = der_encode_object_identifier(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_IA5_STRING:
-+               z = *outlen;
-+               if ((err = der_encode_ia5_string(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+          
-+           case LTC_ASN1_PRINTABLE_STRING:
-+               z = *outlen;
-+               if ((err = der_encode_printable_string(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_UTF8_STRING:
-+               z = *outlen;
-+               if ((err = der_encode_utf8_string(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_UTCTIME:
-+               z = *outlen;
-+               if ((err = der_encode_utctime(data, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_SET:
-+               z = *outlen;
-+               if ((err = der_encode_set(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_SETOF:
-+               z = *outlen;
-+               if ((err = der_encode_setof(data, size, out + x, &z)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+
-+           case LTC_ASN1_SEQUENCE:
-+               z = *outlen;
-+               if ((err = der_encode_sequence_ex(data, size, out + x, &z, type)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               x       += z;
-+               *outlen -= z;
-+               break;
-+           
-+           default:
-+               err = CRYPT_INVALID_ARG;
-+               goto LBL_ERR;
-+       }
-+   }
-+   *outlen = x;
-+   err = CRYPT_OK;   
-+
-+LBL_ERR:
-+   return err;
-+}
-+
-+#endif
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_multi.c b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_multi.c
-new file mode 100644
-index 0000000..7e813172
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_multi.c
-@@ -0,0 +1,139 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <stdarg.h>
-+#include <linux/slab.h>
-+
-+
-+/**
-+  @file der_encode_sequence_multi.c
-+  ASN.1 DER, encode a SEQUENCE, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Encode a SEQUENCE type using a VA list
-+  @param out    [out] Destination for data
-+  @param outlen [in/out] Length of buffer and resulting length of output
-+  @remark <...> is of the form <type, size, data> (int, unsigned long, void*)
-+  @return CRYPT_OK on success
-+*/  
-+int der_encode_sequence_multi(unsigned char *out, unsigned long *outlen, ...)
-+{
-+   int           err, type;
-+   unsigned long size, x;
-+   void          *data;
-+   va_list       args;
-+   ltc_asn1_list *list;
-+
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* get size of output that will be required */
-+   va_start(args, outlen);
-+   x = 0;
-+   for (;;) {
-+       type = va_arg(args, int);
-+       size = va_arg(args, unsigned long);
-+       data = va_arg(args, void*);
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+           case LTC_ASN1_BOOLEAN:
-+           case LTC_ASN1_INTEGER:
-+           case LTC_ASN1_SHORT_INTEGER:
-+           case LTC_ASN1_BIT_STRING:
-+           case LTC_ASN1_OCTET_STRING:
-+           case LTC_ASN1_NULL:
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+           case LTC_ASN1_IA5_STRING:
-+           case LTC_ASN1_PRINTABLE_STRING:
-+           case LTC_ASN1_UTF8_STRING:
-+           case LTC_ASN1_UTCTIME:
-+           case LTC_ASN1_SEQUENCE:
-+           case LTC_ASN1_SET:
-+           case LTC_ASN1_SETOF:
-+                ++x; 
-+                break;
-+          
-+           default:
-+               va_end(args);
-+               return CRYPT_INVALID_ARG;
-+       }
-+   }
-+   va_end(args);
-+
-+   /* allocate structure for x elements */
-+   if (x == 0) {
-+      return CRYPT_NOP;
-+   }
-+
-+   list = XCALLOC(sizeof(*list), x);
-+   if (list == NULL) {
-+      return CRYPT_MEM;
-+   }
-+
-+   /* fill in the structure */
-+   va_start(args, outlen);
-+   x = 0;
-+   for (;;) {
-+       type = va_arg(args, int);
-+       size = va_arg(args, unsigned long);
-+       data = va_arg(args, void*);
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+           case LTC_ASN1_BOOLEAN:
-+           case LTC_ASN1_INTEGER:
-+           case LTC_ASN1_SHORT_INTEGER:
-+           case LTC_ASN1_BIT_STRING:
-+           case LTC_ASN1_OCTET_STRING:
-+           case LTC_ASN1_NULL:
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+           case LTC_ASN1_IA5_STRING:
-+           case LTC_ASN1_PRINTABLE_STRING:
-+           case LTC_ASN1_UTF8_STRING:
-+           case LTC_ASN1_UTCTIME:
-+           case LTC_ASN1_SEQUENCE:
-+           case LTC_ASN1_SET:
-+           case LTC_ASN1_SETOF:
-+                list[x].type   = type;
-+                list[x].size   = size;
-+                list[x++].data = data;
-+                break;
-+         
-+           default:
-+               va_end(args);
-+               err = CRYPT_INVALID_ARG;
-+               goto LBL_ERR;
-+       }
-+   }
-+   va_end(args);
-+
-+   err = der_encode_sequence(list, x, out, outlen);   
-+LBL_ERR:
-+   XFREE(list);
-+   return err;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/sequence/der_encode_sequence_multi.c,v $ */
-+/* $Revision: 1.12 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_length_sequence.c b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_length_sequence.c
-new file mode 100644
-index 0000000..d2e9803
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_length_sequence.c
-@@ -0,0 +1,169 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_sequence.c
-+  ASN.1 DER, length a SEQUENCE, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+   Get the length of a DER sequence 
-+   @param list   The sequences of items in the SEQUENCE
-+   @param inlen  The number of items
-+   @param outlen [out] The length required in octets to store it 
-+   @return CRYPT_OK on success
-+*/
-+int der_length_sequence(ltc_asn1_list *list, unsigned long inlen,
-+                        unsigned long *outlen) 
-+{
-+   int           err, type;
-+   unsigned long size, x, y, z, i;
-+   void          *data;
-+
-+   LTC_ARGCHK(list    != NULL);
-+   LTC_ARGCHK(outlen  != NULL);
-+
-+   /* get size of output that will be required */
-+   y = 0;
-+   for (i = 0; i < inlen; i++) {
-+       type = list[i].type;
-+       size = list[i].size;
-+       data = list[i].data;
-+
-+       if (type == LTC_ASN1_EOL) { 
-+          break;
-+       }
-+
-+       switch (type) {
-+           case LTC_ASN1_BOOLEAN:
-+              if ((err = der_length_boolean(&x)) != CRYPT_OK) {
-+                 goto LBL_ERR;
-+              }
-+              y += x;
-+              break;
-+          
-+           case LTC_ASN1_INTEGER:
-+               if ((err = der_length_integer(data, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_SHORT_INTEGER:
-+               if ((err = der_length_short_integer(*((unsigned long *)data), &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_BIT_STRING:
-+               if ((err = der_length_bit_string(size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_OCTET_STRING:
-+               if ((err = der_length_octet_string(size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_NULL:
-+               y += 2;
-+               break;
-+
-+           case LTC_ASN1_OBJECT_IDENTIFIER:
-+               if ((err = der_length_object_identifier(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_IA5_STRING:
-+               if ((err = der_length_ia5_string(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_PRINTABLE_STRING:
-+               if ((err = der_length_printable_string(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_UTCTIME:
-+               if ((err = der_length_utctime(data, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_UTF8_STRING:
-+               if ((err = der_length_utf8_string(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+           case LTC_ASN1_SET:
-+           case LTC_ASN1_SETOF:
-+           case LTC_ASN1_SEQUENCE:
-+               if ((err = der_length_sequence(data, size, &x)) != CRYPT_OK) {
-+                  goto LBL_ERR;
-+               }
-+               y += x;
-+               break;
-+
-+          
-+           default:
-+               err = CRYPT_INVALID_ARG;
-+               goto LBL_ERR;
-+       }
-+   }
-+
-+   /* calc header size */
-+   z = y;
-+   if (y < 128) {
-+      y += 2;
-+   } else if (y < 256) {
-+      /* 0x30 0x81 LL */
-+      y += 3;
-+   } else if (y < 65536UL) {
-+      /* 0x30 0x82 LL LL */
-+      y += 4;
-+   } else if (y < 16777216UL) {
-+      /* 0x30 0x83 LL LL LL */
-+      y += 5;
-+   } else {
-+      err = CRYPT_INVALID_ARG;
-+      goto LBL_ERR;
-+   }
-+
-+   /* store size */
-+   *outlen = y;
-+   err     = CRYPT_OK;
-+
-+LBL_ERR:
-+   return err;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/sequence/der_length_sequence.c,v $ */
-+/* $Revision: 1.14 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_sequence_free.c b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_sequence_free.c
-new file mode 100644
-index 0000000..eed73e7
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/sequence/der_sequence_free.c
-@@ -0,0 +1,66 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+  @file der_sequence_free.c
-+  ASN.1 DER, free's a structure allocated by der_decode_sequence_flexi(), Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Free memory allocated by der_decode_sequence_flexi()
-+  @param in     The list to free
-+*/  
-+void der_sequence_free(ltc_asn1_list *in)
-+{
-+   ltc_asn1_list *l;
-+   
-+   /* walk to the start of the chain */
-+   while (in->prev != NULL || in->parent != NULL) {
-+      if (in->parent != NULL) {
-+          in = in->parent;
-+      } else {
-+          in = in->prev;
-+      }
-+   }
-+   
-+   /* now walk the list and free stuff */
-+   while (in != NULL) {
-+      /* is there a child? */
-+      if (in->child) {
-+         /* disconnect */
-+         in->child->parent = NULL;
-+         der_sequence_free(in->child);
-+      }
-+      
-+      switch (in->type) { 
-+         case LTC_ASN1_SET:
-+         case LTC_ASN1_SETOF:
-+         case LTC_ASN1_SEQUENCE: break;
-+         case LTC_ASN1_INTEGER : if (in->data != NULL) { mp_clear(in->data); XFREE(in->data); } break;
-+         default               : if (in->data != NULL) { XFREE(in->data);    }
-+      }
-+      
-+      /* move to next and free current */
-+      l = in->next;
-+      XFREE(in);
-+      in = l;
-+   }     
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/sequence/der_sequence_free.c,v $ */
-+/* $Revision: 1.4 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_set.c b/crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_set.c
-new file mode 100644
-index 0000000..babb9ea
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_set.c
-@@ -0,0 +1,104 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+  @file der_encode_set.c
-+  ASN.1 DER, Encode a SET, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/* LTC define to ASN.1 TAG */
-+static int ltc_to_asn1(int v)
-+{
-+   switch (v) {
-+      case LTC_ASN1_BOOLEAN:                 return 0x01;
-+      case LTC_ASN1_INTEGER:
-+      case LTC_ASN1_SHORT_INTEGER:           return 0x02;
-+      case LTC_ASN1_BIT_STRING:              return 0x03;
-+      case LTC_ASN1_OCTET_STRING:            return 0x04;
-+      case LTC_ASN1_NULL:                    return 0x05;
-+      case LTC_ASN1_OBJECT_IDENTIFIER:       return 0x06;
-+      case LTC_ASN1_UTF8_STRING:             return 0x0C;
-+      case LTC_ASN1_PRINTABLE_STRING:        return 0x13;
-+      case LTC_ASN1_IA5_STRING:              return 0x16;
-+      case LTC_ASN1_UTCTIME:                 return 0x17;
-+      case LTC_ASN1_SEQUENCE:                return 0x30;
-+      case LTC_ASN1_SET:
-+      case LTC_ASN1_SETOF:                   return 0x31;
-+      default: return -1;
-+   }
-+}         
-+      
-+
-+static int qsort_helper(const void *a, const void *b)
-+{
-+   ltc_asn1_list *A = (ltc_asn1_list *)a, *B = (ltc_asn1_list *)b;
-+   int            r;
-+   
-+   r = ltc_to_asn1(A->type) - ltc_to_asn1(B->type);
-+   
-+   /* for QSORT the order is UNDEFINED if they are "equal" which means it is NOT DETERMINISTIC.  So we force it to be :-) */
-+   if (r == 0) {
-+      /* their order in the original list now determines the position */
-+      return A->used - B->used;
-+   } else {
-+      return r;
-+   }
-+}   
-+
-+/*
-+   Encode a SET type
-+   @param list      The list of items to encode
-+   @param inlen     The number of items in the list
-+   @param out       [out] The destination 
-+   @param outlen    [in/out] The size of the output
-+   @return CRYPT_OK on success
-+*/
-+int der_encode_set(ltc_asn1_list *list, unsigned long inlen,
-+                   unsigned char *out,  unsigned long *outlen)
-+{
-+   ltc_asn1_list  *copy;
-+   unsigned long   x;
-+   int             err;
-+   
-+   /* make copy of list */
-+   copy = XCALLOC(inlen, sizeof(*copy));
-+   if (copy == NULL) {
-+      return CRYPT_MEM;
-+   }      
-+   
-+   /* fill in used member with index so we can fully sort it */
-+   for (x = 0; x < inlen; x++) {
-+       copy[x]      = list[x];
-+       copy[x].used = x;
-+   }       
-+   
-+   /* sort it by the "type" field */
-+   XQSORT(copy, inlen, sizeof(*copy), &qsort_helper);   
-+   
-+   /* call der_encode_sequence_ex() */
-+   err = der_encode_sequence_ex(copy, inlen, out, outlen, LTC_ASN1_SET);   
-+   
-+   /* free list */
-+   XFREE(copy);
-+   
-+   return err;
-+}                   
-+
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/set/der_encode_set.c,v $ */
-+/* $Revision: 1.12 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_setof.c b/crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_setof.c
-new file mode 100644
-index 0000000..2a343f2
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/set/der_encode_setof.c
-@@ -0,0 +1,163 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+  @file der_encode_setof.c
-+  ASN.1 DER, Encode SET OF, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+struct edge {
-+   unsigned char *start;
-+   unsigned long  size;
-+};
-+
-+static int qsort_helper(const void *a, const void *b)
-+{
-+   struct edge   *A = (struct edge *)a, *B = (struct edge *)b;
-+   int            r;
-+   unsigned long  x;
-+   
-+   /* compare min length */
-+   r = XMEMCMP(A->start, B->start, MIN(A->size, B->size));
-+   
-+   if (r == 0 && A->size != B->size) {
-+      if (A->size > B->size) {
-+         for (x = B->size; x < A->size; x++) {
-+            if (A->start[x]) {
-+               return 1;
-+            }
-+         }
-+      } else {
-+         for (x = A->size; x < B->size; x++) {
-+            if (B->start[x]) {
-+               return -1;
-+            }
-+         }
-+      }         
-+   }
-+   
-+   return r;      
-+}
-+
-+/**
-+   Encode a SETOF stucture
-+   @param list      The list of items to encode
-+   @param inlen     The number of items in the list
-+   @param out       [out] The destination 
-+   @param outlen    [in/out] The size of the output
-+   @return CRYPT_OK on success
-+*/   
-+int der_encode_setof(ltc_asn1_list *list, unsigned long inlen,
-+                     unsigned char *out,  unsigned long *outlen)
-+{
-+   unsigned long  x, y, z, hdrlen;
-+   int            err;
-+   struct edge   *edges;
-+   unsigned char *ptr, *buf;
-+   
-+   /* check that they're all the same type */
-+   for (x = 1; x < inlen; x++) {
-+      if (list[x].type != list[x-1].type) {
-+         return CRYPT_INVALID_ARG;
-+      }
-+   }
-+
-+   /* alloc buffer to store copy of output */
-+   buf = XCALLOC(1, *outlen);
-+   if (buf == NULL) {
-+      return CRYPT_MEM;
-+   }      
-+                  
-+   /* encode list */
-+   if ((err = der_encode_sequence_ex(list, inlen, buf, outlen, LTC_ASN1_SETOF)) != CRYPT_OK) {
-+       XFREE(buf);
-+       return err;
-+   }
-+   
-+   /* allocate edges */
-+   edges = XCALLOC(inlen, sizeof(*edges));
-+   if (edges == NULL) {
-+      XFREE(buf);
-+      return CRYPT_MEM;
-+   }      
-+   
-+   /* skip header */
-+      ptr = buf + 1;
-+
-+      /* now skip length data */
-+      x = *ptr++;
-+      if (x >= 0x80) {
-+         ptr += (x & 0x7F);
-+      }
-+      
-+      /* get the size of the static header */
-+      hdrlen = ((unsigned long)ptr) - ((unsigned long)buf);
-+      
-+      
-+   /* scan for edges */
-+   x = 0;
-+   while (ptr < (buf + *outlen)) {
-+      /* store start */
-+      edges[x].start = ptr;
-+      
-+      /* skip type */
-+      z = 1;
-+      
-+      /* parse length */
-+      y = ptr[z++];
-+      if (y < 128) {
-+         edges[x].size = y;
-+      } else {
-+         y &= 0x7F;
-+         edges[x].size = 0;
-+         while (y--) {
-+            edges[x].size = (edges[x].size << 8) | ((unsigned long)ptr[z++]);
-+         }
-+      }
-+      
-+      /* skip content */
-+      edges[x].size += z;
-+      ptr           += edges[x].size;
-+      ++x;
-+   }      
-+      
-+   /* sort based on contents (using edges) */
-+   XQSORT(edges, inlen, sizeof(*edges), &qsort_helper);
-+   
-+   /* copy static header */
-+   XMEMCPY(out, buf, hdrlen);
-+   
-+   /* copy+sort using edges+indecies to output from buffer */
-+   for (y = hdrlen, x = 0; x < inlen; x++) {
-+      XMEMCPY(out+y, edges[x].start, edges[x].size);
-+      y += edges[x].size;
-+   }      
-+   
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(buf, *outlen);
-+#endif      
-+   
-+   /* free buffers */
-+   XFREE(edges);
-+   XFREE(buf);
-+   
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/set/der_encode_setof.c,v $ */
-+/* $Revision: 1.12 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_decode_short_integer.c b/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_decode_short_integer.c
-new file mode 100644
-index 0000000..fbb89a4
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_decode_short_integer.c
-@@ -0,0 +1,68 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_short_integer.c
-+  ASN.1 DER, decode an integer, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Read a short integer
-+  @param in       The DER encoded data
-+  @param inlen    Size of data
-+  @param num      [out] The integer to decode
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_short_integer(const unsigned char *in, unsigned long inlen, unsigned long *num)
-+{
-+   unsigned long len, x, y;
-+
-+   LTC_ARGCHK(num    != NULL);
-+   LTC_ARGCHK(in     != NULL);
-+
-+   /* check length */
-+   if (inlen < 2) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* check header */
-+   x = 0;
-+   if ((in[x++] & 0x1F) != 0x02) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* get the packet len */
-+   len = in[x++];
-+
-+   if (x + len > inlen) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* read number */
-+   y = 0;
-+   while (len--) {
-+      y = (y<<8) | (unsigned long)in[x++];
-+   }
-+   *num = y;
-+
-+   return CRYPT_OK;
-+
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/short_integer/der_decode_short_integer.c,v $ */
-+/* $Revision: 1.7 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_encode_short_integer.c b/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_encode_short_integer.c
-new file mode 100644
-index 0000000..cd9e6d1
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_encode_short_integer.c
-@@ -0,0 +1,97 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_short_integer.c
-+  ASN.1 DER, encode an integer, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store a short integer in the range (0,2^32-1)
-+  @param num      The integer to encode
-+  @param out      [out] The destination for the DER encoded integers
-+  @param outlen   [in/out] The max size and resulting size of the DER encoded integers
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_short_integer(unsigned long num, unsigned char *out, unsigned long *outlen)
-+{  
-+   unsigned long len, x, y, z;
-+   int           err;
-+   
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* force to 32 bits */
-+   num &= 0xFFFFFFFFUL;
-+
-+   /* find out how big this will be */
-+   if ((err = der_length_short_integer(num, &len)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   if (*outlen < len) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* get len of output */
-+   z = 0;
-+   y = num;
-+   while (y) {
-+     ++z;
-+     y >>= 8;
-+   }
-+
-+   /* handle zero */
-+   if (z == 0) {
-+      z = 1;
-+   }
-+
-+   /* see if msb is set */
-+   z += (num&(1UL<<((z<<3) - 1))) ? 1 : 0;
-+
-+   /* adjust the number so the msB is non-zero */
-+   for (x = 0; (z <= 4) && (x < (4 - z)); x++) {
-+      num <<= 8;
-+   }
-+
-+   /* store header */
-+   x = 0;
-+   out[x++] = 0x02;
-+   out[x++] = (unsigned char)z;
-+
-+   /* if 31st bit is set output a leading zero and decrement count */
-+   if (z == 5) {
-+      out[x++] = 0;
-+      --z;
-+   }
-+
-+   /* store values */
-+   for (y = 0; y < z; y++) {
-+      out[x++] = (unsigned char)((num >> 24) & 0xFF);
-+      num    <<= 8;
-+   }
-+
-+   /* we good */
-+   *outlen = x;
-+ 
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/short_integer/der_encode_short_integer.c,v $ */
-+/* $Revision: 1.8 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_length_short_integer.c b/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_length_short_integer.c
-new file mode 100644
-index 0000000..ec3f8f1
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/short_integer/der_length_short_integer.c
-@@ -0,0 +1,70 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_short_integer.c
-+  ASN.1 DER, get length of encoding, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+/**
-+  Gets length of DER encoding of num 
-+  @param num    The integer to get the size of 
-+  @param outlen [out] The length of the DER encoding for the given integer
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_short_integer(unsigned long num, unsigned long *outlen)
-+{
-+   unsigned long z, y, len;
-+
-+   LTC_ARGCHK(outlen  != NULL);
-+
-+   /* force to 32 bits */
-+   num &= 0xFFFFFFFFUL;
-+
-+   /* get the number of bytes */
-+   z = 0;
-+   y = num;
-+   while (y) {
-+     ++z;
-+     y >>= 8;
-+   }
-+   
-+   /* handle zero */
-+   if (z == 0) {
-+      z = 1;
-+   }
-+
-+   /* we need a 0x02 to indicate it's INTEGER */
-+   len = 1;
-+
-+   /* length byte */
-+   ++len;
-+
-+   /* bytes in value */
-+   len += z;
-+
-+   /* see if msb is set */
-+   len += (num&(1UL<<((z<<3) - 1))) ? 1 : 0;
-+
-+   /* return length */
-+   *outlen = len; 
-+   
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/short_integer/der_length_short_integer.c,v $ */
-+/* $Revision: 1.6 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_decode_utctime.c b/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_decode_utctime.c
-new file mode 100644
-index 0000000..54fc204
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_decode_utctime.c
-@@ -0,0 +1,127 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_utctime.c
-+  ASN.1 DER, decode a  UTCTIME, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+static int char_to_int(unsigned char x)
-+{
-+   switch (x)  {
-+      case '0': return 0;
-+      case '1': return 1;
-+      case '2': return 2;
-+      case '3': return 3;
-+      case '4': return 4;
-+      case '5': return 5;
-+      case '6': return 6;
-+      case '7': return 7;
-+      case '8': return 8;
-+      case '9': return 9;
-+   }
-+   return 100;
-+}
-+
-+#define DECODE_V(y, max) \
-+   y  = char_to_int(buf[x])*10 + char_to_int(buf[x+1]); \
-+   if (y >= max) return CRYPT_INVALID_PACKET;           \
-+   x += 2;
-+
-+/**
-+  Decodes a UTC time structure in DER format (reads all 6 valid encoding formats)
-+  @param in     Input buffer
-+  @param inlen  Length of input buffer in octets
-+  @param out    [out] Destination of UTC time structure
-+  @return CRYPT_OK   if successful
-+*/
-+int der_decode_utctime(const unsigned char *in, unsigned long *inlen,
-+                             ltc_utctime   *out)
-+{
-+   unsigned char buf[32];
-+   unsigned long x;
-+   int           y;
-+
-+   LTC_ARGCHK(in    != NULL);
-+   LTC_ARGCHK(inlen != NULL);
-+   LTC_ARGCHK(out   != NULL);
-+
-+   /* check header */
-+   if (*inlen < 2UL || (in[1] >= sizeof(buf)) || ((in[1] + 2UL) > *inlen)) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* decode the string */
-+   for (x = 0; x < in[1]; x++) {
-+       y = der_ia5_value_decode(in[x+2]);
-+       if (y == -1) {
-+          return CRYPT_INVALID_PACKET;
-+       }
-+       buf[x] = y;
-+   }
-+   *inlen = 2 + x;
-+
-+
-+   /* possible encodings are 
-+YYMMDDhhmmZ
-+YYMMDDhhmm+hh'mm'
-+YYMMDDhhmm-hh'mm'
-+YYMMDDhhmmssZ
-+YYMMDDhhmmss+hh'mm'
-+YYMMDDhhmmss-hh'mm'
-+
-+    So let's do a trivial decode upto [including] mm 
-+   */
-+
-+    x = 0;
-+    DECODE_V(out->YY, 100);
-+    DECODE_V(out->MM, 13);
-+    DECODE_V(out->DD, 32);
-+    DECODE_V(out->hh, 24);
-+    DECODE_V(out->mm, 60);
-+
-+    /* clear timezone and seconds info */
-+    out->off_dir = out->off_hh = out->off_mm = out->ss = 0;
-+
-+    /* now is it Z, +, - or 0-9 */
-+    if (buf[x] == 'Z') {
-+       return CRYPT_OK;
-+    } else if (buf[x] == '+' || buf[x] == '-') {
-+       out->off_dir = (buf[x++] == '+') ? 0 : 1;
-+       DECODE_V(out->off_hh, 24);
-+       DECODE_V(out->off_mm, 60);
-+       return CRYPT_OK;
 +    }
-+
-+    /* decode seconds */
-+    DECODE_V(out->ss, 60);
-+
-+    /* now is it Z, +, - */
-+    if (buf[x] == 'Z') {
-+       return CRYPT_OK;
-+    } else if (buf[x] == '+' || buf[x] == '-') {
-+       out->off_dir = (buf[x++] == '+') ? 0 : 1;
-+       DECODE_V(out->off_hh, 24);
-+       DECODE_V(out->off_mm, 60);
-+       return CRYPT_OK;
-+    } else {
-+       return CRYPT_INVALID_PACKET;
-+    }
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/utctime/der_decode_utctime.c,v $ */
-+/* $Revision: 1.9 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_encode_utctime.c b/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_encode_utctime.c
-new file mode 100644
-index 0000000..cb32dfa
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_encode_utctime.c
-@@ -0,0 +1,83 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_utctime.c
-+  ASN.1 DER, encode a  UTCTIME, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+static const char *baseten = "0123456789";
-+
-+#define STORE_V(y) \
-+    out[x++] = der_ia5_char_encode(baseten[(y/10) % 10]); \
-+    out[x++] = der_ia5_char_encode(baseten[y % 10]);
-+
-+/**
-+  Encodes a UTC time structure in DER format
-+  @param utctime      The UTC time structure to encode
-+  @param out          The destination of the DER encoding of the UTC time structure
-+  @param outlen       [in/out] The length of the DER encoding
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_utctime(ltc_utctime *utctime, 
-+                       unsigned char *out,   unsigned long *outlen)
-+{
-+    unsigned long x, tmplen;
-+    int           err;
-+ 
-+    LTC_ARGCHK(utctime != NULL);
-+    LTC_ARGCHK(out     != NULL);
-+    LTC_ARGCHK(outlen  != NULL);
-+
-+    if ((err = der_length_utctime(utctime, &tmplen)) != CRYPT_OK) {
-+       return err;
-+    }
-+    if (tmplen > *outlen) {
-+        *outlen = tmplen;
-+        return CRYPT_BUFFER_OVERFLOW;
-+    }
-+    
-+    /* store header */
-+    out[0] = 0x17;
-+
-+    /* store values */
-+    x = 2;
-+    STORE_V(utctime->YY);
-+    STORE_V(utctime->MM);
-+    STORE_V(utctime->DD);
-+    STORE_V(utctime->hh);
-+    STORE_V(utctime->mm);
-+    STORE_V(utctime->ss);
-+
-+    if (utctime->off_mm || utctime->off_hh) {
-+       out[x++] = der_ia5_char_encode(utctime->off_dir ? '-' : '+');
-+       STORE_V(utctime->off_hh);
-+       STORE_V(utctime->off_mm);
-+    } else {
-+       out[x++] = der_ia5_char_encode('Z');
-+    }
-+
-+    /* store length */
-+    out[1] = (unsigned char)(x - 2);
-+   
-+    /* all good let's return */
-+    *outlen = x;
-+    return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/utctime/der_encode_utctime.c,v $ */
-+/* $Revision: 1.10 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_length_utctime.c b/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_length_utctime.c
-new file mode 100644
-index 0000000..e5922b0
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/utctime/der_length_utctime.c
-@@ -0,0 +1,46 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_utctime.c
-+  ASN.1 DER, get length of UTCTIME, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Gets length of DER encoding of UTCTIME
-+  @param utctime      The UTC time structure to get the size of
-+  @param outlen [out] The length of the DER encoding
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_utctime(ltc_utctime *utctime, unsigned long *outlen)
-+{
-+   LTC_ARGCHK(outlen  != NULL);
-+   LTC_ARGCHK(utctime != NULL);
-+
-+   if (utctime->off_hh == 0 && utctime->off_mm == 0) {
-+      /* we encode as YYMMDDhhmmssZ */
-+      *outlen = 2 + 13;
-+   } else {
-+      /* we encode as YYMMDDhhmmss{+|-}hh'mm' */
-+      *outlen = 2 + 17;
-+   }
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/utctime/der_length_utctime.c,v $ */
-+/* $Revision: 1.5 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_decode_utf8_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_decode_utf8_string.c
-new file mode 100644
-index 0000000..9df7e23
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_decode_utf8_string.c
-@@ -0,0 +1,111 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_decode_utf8_string.c
-+  ASN.1 DER, encode a UTF8 STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store a UTF8 STRING
-+  @param in      The DER encoded UTF8 STRING
-+  @param inlen   The size of the DER UTF8 STRING
-+  @param out     [out] The array of utf8s stored (one per char)
-+  @param outlen  [in/out] The number of utf8s stored
-+  @return CRYPT_OK if successful
-+*/
-+int der_decode_utf8_string(const unsigned char *in,  unsigned long inlen,
-+                                       wchar_t *out, unsigned long *outlen)
-+{
-+   wchar_t       tmp;
-+   unsigned long x, y, z, len;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* must have header at least */
-+   if (inlen < 2) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* check for 0x0C */
-+   if ((in[0] & 0x1F) != 0x0C) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+   x = 1;
-+
-+   /* decode the length */
-+   if (in[x] & 0x80) {
-+      /* valid # of bytes in length are 1,2,3 */
-+      y = in[x] & 0x7F;
-+      if ((y == 0) || (y > 3) || ((x + y) > inlen)) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* read the length in */
-+      len = 0;
-+      ++x;
-+      while (y--) {
-+         len = (len << 8) | in[x++];
-+      }
-+   } else {
-+      len = in[x++] & 0x7F;
-+   }
-+
-+   if (len + x > inlen) {
-+      return CRYPT_INVALID_PACKET;
-+   }
-+
-+   /* proceed to decode */
-+   for (y = 0; x < inlen; ) {
-+      /* get first byte */
-+      tmp = in[x++];
-+ 
-+      /* count number of bytes */
-+      for (z = 0; (tmp & 0x80) && (z <= 4); z++, tmp = (tmp << 1) & 0xFF);
-+      
-+      if (z > 4 || (x + (z - 1) > inlen)) {
-+         return CRYPT_INVALID_PACKET;
-+      }
-+
-+      /* decode, grab upper bits */
-+      tmp >>= z;
-+
-+      /* grab remaining bytes */
-+      if (z > 1) { --z; }
-+      while (z-- != 0) {
-+         if ((in[x] & 0xC0) != 0x80) {
-+            return CRYPT_INVALID_PACKET;
-+         }
-+         tmp = (tmp << 6) | ((wchar_t)in[x++] & 0x3F);
-+      }
-+
-+      if (y > *outlen) {
-+         *outlen = y;
-+         return CRYPT_BUFFER_OVERFLOW;
-+      }
-+      out[y++] = tmp;
-+   }
-+   *outlen = y;
-+
-+   return CRYPT_OK;
-+}
-+ 
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/utf8/der_decode_utf8_string.c,v $ */
-+/* $Revision: 1.8 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_encode_utf8_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_encode_utf8_string.c
-new file mode 100644
-index 0000000..d1efb09
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_encode_utf8_string.c
-@@ -0,0 +1,105 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_utf8_string.c
-+  ASN.1 DER, encode a UTF8 STRING, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_DER
-+
-+/**
-+  Store an UTF8 STRING
-+  @param in       The array of UTF8 to store (one per wchar_t)
-+  @param inlen    The number of UTF8 to store
-+  @param out      [out] The destination for the DER encoded UTF8 STRING
-+  @param outlen   [in/out] The max size and resulting size of the DER UTF8 STRING
-+  @return CRYPT_OK if successful
-+*/
-+int der_encode_utf8_string(const wchar_t *in,  unsigned long inlen,
-+                           unsigned char *out, unsigned long *outlen)
-+{
-+   unsigned long x, y, len;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* get the size */
-+   for (x = len = 0; x < inlen; x++) {
-+       if (in[x] < 0 || in[x] > 0x1FFFF) { 
-+          return CRYPT_INVALID_ARG;
-+       }
-+       len += der_utf8_charsize(in[x]);
-+   }
-+
-+   if (len < 128) {
-+      y = 2 + len;
-+   } else if (len < 256) {
-+      y = 3 + len;
-+   } else if (len < 65536UL) {
-+      y = 4 + len;
-+   } else if (len < 16777216UL) {
-+      y = 5 + len;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* too big? */
-+   if (y > *outlen) {
-+      *outlen = len;
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* encode the header+len */
-+   x = 0;
-+   out[x++] = 0x0C;
-+   if (len < 128) {
-+      out[x++] = (unsigned char)len;
-+   } else if (len < 256) {
-+      out[x++] = 0x81;
-+      out[x++] = (unsigned char)len;
-+   } else if (len < 65536UL) {
-+      out[x++] = 0x82;
-+      out[x++] = (unsigned char)((len>>8)&255);
-+      out[x++] = (unsigned char)(len&255);
-+   } else if (len < 16777216UL) {
-+      out[x++] = 0x83;
-+      out[x++] = (unsigned char)((len>>16)&255);
-+      out[x++] = (unsigned char)((len>>8)&255);
-+      out[x++] = (unsigned char)(len&255);
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* store UTF8 */
-+   for (y = 0; y < inlen; y++) {
-+       switch (der_utf8_charsize(in[y])) {
-+          case 1: out[x++] = (unsigned char)in[y]; break;
-+          case 2: out[x++] = 0xC0 | ((in[y] >> 6) & 0x1F);  out[x++] = 0x80 | (in[y] & 0x3F); break;
-+          case 3: out[x++] = 0xE0 | ((in[y] >> 12) & 0x0F); out[x++] = 0x80 | ((in[y] >> 6) & 0x3F); out[x++] = 0x80 | (in[y] & 0x3F); break;
-+          case 4: out[x++] = 0xF0 | ((in[y] >> 18) & 0x07); out[x++] = 0x80 | ((in[y] >> 12) & 0x3F); out[x++] = 0x80 | ((in[y] >> 6) & 0x3F); out[x++] = 0x80 | (in[y] & 0x3F); break;
-+       }
-+   }
-+
-+   /* retun length */
-+   *outlen = x;
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/utf8/der_encode_utf8_string.c,v $ */
-+/* $Revision: 1.9 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_length_utf8_string.c b/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_length_utf8_string.c
-new file mode 100644
-index 0000000..920bd00
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/utf8/der_length_utf8_string.c
-@@ -0,0 +1,83 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_length_utf8_string.c
-+  ASN.1 DER, get length of UTF8 STRING, Tom St Denis
-+*/
-+
-+#ifdef LTC_DER
-+
-+/** Return the size in bytes of a UTF-8 character
-+  @param c   The UTF-8 character to measure
-+  @return    The size in bytes
-+*/
-+unsigned long der_utf8_charsize(const wchar_t c)
-+{
-+   if (c <= 0x7F) {
-+      return 1;
-+   } else if (c <= 0x7FF) {
-+      return 2;
-+   } else if (c <= 0xFFFF) {
-+      return 3;
-+   } else {
-+      return 4;
-+   }
-+}
-+
-+/**
-+  Gets length of DER encoding of UTF8 STRING 
-+  @param in       The characters to measure the length of
-+  @param noctets  The number of octets in the string to encode
-+  @param outlen   [out] The length of the DER encoding for the given string
-+  @return CRYPT_OK if successful
-+*/
-+int der_length_utf8_string(const wchar_t *in, unsigned long noctets, unsigned long *outlen)
-+{
-+   unsigned long x, len;
-+
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   len = 0;
-+   for (x = 0; x < noctets; x++) {
-+      if (in[x] < 0 || in[x] > 0x10FFFF) {
-+         return CRYPT_INVALID_ARG;
-+      }
-+      len += der_utf8_charsize(in[x]);
-+   }
-+
-+   if (len < 128) {
-+      /* 0C LL DD DD DD ... */
-+      *outlen = 2 + len;
-+   } else if (len < 256) {
-+      /* 0C 81 LL DD DD DD ... */
-+      *outlen = 3 + len;
-+   } else if (len < 65536UL) {
-+      /* 0C 82 LL LL DD DD DD ... */
-+      *outlen = 4 + len;
-+   } else if (len < 16777216UL) {
-+      /* 0C 83 LL LL LL DD DD DD ... */
-+      *outlen = 5 + len;
-+   } else {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   return CRYPT_OK;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/asn1/der/utf8/der_length_utf8_string.c,v $ */
-+/* $Revision: 1.6 $ */
-+/* $Date: 2006/12/28 01:27:24 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_decode_subject_public_key_info.c b/crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_decode_subject_public_key_info.c
-new file mode 100644
-index 0000000..8a5005f
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_decode_subject_public_key_info.c
-@@ -0,0 +1,112 @@
-+/*
-+ * New driver for /dev/crypto device (aka CryptoDev)
-+
-+ * Copyright (c) 2010 Katholieke Universiteit Leuven
-+ *
-+ * Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
-+ *
-+ * This file is part of linux cryptodev.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * 
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ * 
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+/**
-+  @file der_encode_sequence_multi.c
-+  ASN.1 DER, encode a Subject Public Key structure --nmav
-+*/
-+
-+#ifdef LTC_DER
-+
-+/* AlgorithmIdentifier := SEQUENCE {
-+ *    algorithm OBJECT IDENTIFIER,
-+ *    parameters ANY DEFINED BY algorithm
-+ * }
-+ * 
-+ * SubjectPublicKeyInfo := SEQUENCE {
-+ *    algorithm AlgorithmIdentifier,
-+ *    subjectPublicKey BIT STRING
-+ * }
-+ */
-+/**
-+  Encode a SEQUENCE type using a VA list
-+  @param out    [out] Destination for data
-+  @param outlen [in/out] Length of buffer and resulting length of output
-+  @remark <...> is of the form <type, size, data> (int, unsigned long, void*)
-+  @return CRYPT_OK on success
-+*/  
-+int der_decode_subject_public_key_info(const unsigned char *in, unsigned long inlen,
-+        unsigned int algorithm, void* public_key, unsigned long* public_key_len,
-+        unsigned long parameters_type, ltc_asn1_list* parameters, unsigned long parameters_len)
-+{
-+   int err, len;
-+   oid_st oid;
-+   unsigned char *tmpbuf;
-+   unsigned long  tmpoid[16];
-+   ltc_asn1_list alg_id[2];
-+   ltc_asn1_list subject_pubkey[2];
-+
-+   LTC_ARGCHK(in    != NULL);
-+   LTC_ARGCHK(inlen != 0);
-+
-+   err = pk_get_oid(algorithm, &oid);
-+   if (err != CRYPT_OK) {
-+        return err;
-+   }
-+
-+   /* see if the OpenSSL DER format RSA public key will work */
-+   tmpbuf = XCALLOC(1, MAX_RSA_SIZE*8);
-+   if (tmpbuf == NULL) {
-+       err = CRYPT_MEM;
-+       goto LBL_ERR;
-+   }
-+
-+   /* this includes the internal hash ID and optional params (NULL in this case) */
-+   LTC_SET_ASN1(alg_id, 0, LTC_ASN1_OBJECT_IDENTIFIER, tmpoid, sizeof(tmpoid)/sizeof(tmpoid[0]));   
-+   LTC_SET_ASN1(alg_id, 1, parameters_type, parameters, parameters_len);
-+
-+   /* the actual format of the SSL DER key is odd, it stores a RSAPublicKey in a **BIT** string ... so we have to extract it
-+      then proceed to convert bit to octet 
-+    */
-+   LTC_SET_ASN1(subject_pubkey, 0, LTC_ASN1_SEQUENCE, alg_id, 2);
-+   LTC_SET_ASN1(subject_pubkey, 1, LTC_ASN1_BIT_STRING, tmpbuf, MAX_RSA_SIZE*8);
-+
-+   err=der_decode_sequence(in, inlen, subject_pubkey, 2UL);
-+   if (err != CRYPT_OK) {
-+           goto LBL_ERR;
-+   }
-+
-+   len = subject_pubkey[1].size/8;
-+   if (*public_key_len > len) {
-+       memcpy(public_key, subject_pubkey[1].data, len);
-+       *public_key_len = len;
-+    } else {
-+        *public_key_len = len;
-+        err = CRYPT_BUFFER_OVERFLOW;
++    /* 4.2 if B is odd then */
++    if (mp_isodd (&B) == 1) {
++      if ((res = mp_sub (&B, &x, &B)) != MP_OKAY) {
 +        goto LBL_ERR;
++      }
++    }
++    /* B = B/2 */
++    if ((res = mp_div_2 (&B, &B)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++  }
++
++  /* 5.  while v is even do */
++  while (mp_iseven (&v) == 1) {
++    /* 5.1 v = v/2 */
++    if ((res = mp_div_2 (&v, &v)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++    /* 5.2 if D is odd then */
++    if (mp_isodd (&D) == 1) {
++      /* D = (D-x)/2 */
++      if ((res = mp_sub (&D, &x, &D)) != MP_OKAY) {
++        goto LBL_ERR;
++      }
++    }
++    /* D = D/2 */
++    if ((res = mp_div_2 (&D, &D)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++  }
++
++  /* 6.  if u >= v then */
++  if (mp_cmp (&u, &v) != MP_LT) {
++    /* u = u - v, B = B - D */
++    if ((res = mp_sub (&u, &v, &u)) != MP_OKAY) {
++      goto LBL_ERR;
 +    }
 +
-+    err = CRYPT_OK;
-+    
-+LBL_ERR:
-+
-+    XFREE(tmpbuf);
-+        
-+    return err;
-+}
-+
-+#endif
-+
-+
-diff --git a/crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_encode_subject_public_key_info.c b/crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_encode_subject_public_key_info.c
-new file mode 100644
-index 0000000..4c7e966
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/asn1/der/x509/der_encode_subject_public_key_info.c
-@@ -0,0 +1,83 @@
-+/*
-+ * New driver for /dev/crypto device (aka CryptoDev)
-+
-+ * Copyright (c) 2010 Katholieke Universiteit Leuven
-+ *
-+ * Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
-+ *
-+ * This file is part of linux cryptodev.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * 
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ * 
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file der_encode_sequence_multi.c
-+  ASN.1 DER, encode a Subject Public Key structure --nmav
-+*/
-+
-+#ifdef LTC_DER
-+
-+/* AlgorithmIdentifier := SEQUENCE {
-+ *    algorithm OBJECT IDENTIFIER,
-+ *    parameters ANY DEFINED BY algorithm
-+ * }
-+ * 
-+ * SubjectPublicKeyInfo := SEQUENCE {
-+ *    algorithm AlgorithmIdentifier,
-+ *    subjectPublicKey BIT STRING
-+ * }
-+ */
-+/**
-+  Encode a SEQUENCE type using a VA list
-+  @param out    [out] Destination for data
-+  @param outlen [in/out] Length of buffer and resulting length of output
-+  @remark <...> is of the form <type, size, data> (int, unsigned long, void*)
-+  @return CRYPT_OK on success
-+*/  
-+int der_encode_subject_public_key_info(unsigned char *out, unsigned long *outlen, 
-+        unsigned int algorithm, void* public_key, unsigned long public_key_len, 
-+        unsigned long parameters_type, void* parameters, unsigned long parameters_len)
-+{
-+   int           err;
-+   ltc_asn1_list alg_id[2];
-+   oid_st oid;
-+
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+   
-+   err = pk_get_oid(algorithm, &oid);
-+   if (err != CRYPT_OK) {
-+        return err;
-+   }
-+
-+   alg_id[0].data = oid.OID;
-+   alg_id[0].size = oid.OIDlen;
-+   alg_id[0].type = LTC_ASN1_OBJECT_IDENTIFIER;
-+
-+   alg_id[1].data = parameters;
-+   alg_id[1].size = parameters_len;
-+   alg_id[1].type = parameters_type;
-+
-+   return der_encode_sequence_multi(out, outlen, 
-+        LTC_ASN1_SEQUENCE, (unsigned long)sizeof(alg_id)/sizeof(alg_id[0]), alg_id, 
-+        LTC_ASN1_BIT_STRING, (unsigned long)(public_key_len*8), public_key,
-+        LTC_ASN1_EOL,     0UL, NULL);
-+
-+}
-+
-+#endif
-+
-+
-diff --git a/crypto/userspace/libtomcrypt/pk/dsa/dsa_export.c b/crypto/userspace/libtomcrypt/pk/dsa/dsa_export.c
-new file mode 100644
-index 0000000..f2cd714
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/dsa/dsa_export.c
-@@ -0,0 +1,99 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+   @file dsa_export.c
-+   DSA implementation, export key, Tom St Denis
-+*/
-+
-+#ifdef LTC_MDSA
-+
-+/**
-+  Export a DSA key to a binary packet
-+  @param out    [out] Where to store the packet
-+  @param outlen [in/out] The max size and resulting size of the packet
-+  @param type   The type of key to export (PK_PRIVATE or PK_PUBLIC)
-+  @param key    The key to export
-+  @return CRYPT_OK if successful
-+*/
-+int dsa_export(unsigned char *out, unsigned long *outlen, int type, dsa_key *key)
-+{
-+   unsigned long zero=0;
-+   int err;
-+
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+   LTC_ARGCHK(key    != NULL);
-+
-+   /* can we store the static header?  */
-+   if (type == PK_PRIVATE && key->type != PK_PRIVATE) {
-+      return CRYPT_PK_TYPE_MISMATCH;
-+   }
-+
-+   if (type != PK_PUBLIC && type != PK_PRIVATE) {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* This encoding is different from the one in original
-+    * libtomcrypt. It uses a compatible encoding with gnutls
-+    * and openssl 
-+    */
-+   if (type == PK_PRIVATE) {
-+      return der_encode_sequence_multi(out, outlen,
-+                          LTC_ASN1_SHORT_INTEGER, 1UL, &zero, 
-+                          LTC_ASN1_INTEGER,      1UL, &key->p,
-+                          LTC_ASN1_INTEGER,      1UL, &key->q,
-+                          LTC_ASN1_INTEGER,      1UL, &key->g,
-+                          LTC_ASN1_INTEGER,      1UL, &key->y,
-+                          LTC_ASN1_INTEGER,      1UL, &key->x,
-+                          LTC_ASN1_EOL,          0UL, NULL);
-+   } else {
-+      unsigned long tmplen = (mp_count_bits(&key->y)/8)+8;
-+      unsigned char* tmp = XMALLOC(tmplen);
-+      ltc_asn1_list int_list[3];
-+   
-+      if (tmp == NULL) {
-+	   return CRYPT_MEM;
-+      }
-+      
-+      err = der_encode_integer(&key->y, tmp, &tmplen);
-+      if (err != CRYPT_OK) {
-+		  goto error;
-+      }
-+
-+      int_list[0].data = &key->p;
-+      int_list[0].size = 1UL;
-+      int_list[0].type = LTC_ASN1_INTEGER;
-+      int_list[1].data = &key->q;
-+      int_list[1].size = 1UL;
-+      int_list[1].type = LTC_ASN1_INTEGER;
-+      int_list[2].data = &key->g;
-+      int_list[2].size = 1UL;
-+      int_list[2].type = LTC_ASN1_INTEGER;
-+
-+      err = der_encode_subject_public_key_info(out, outlen, 
-+        PKA_DSA, tmp, tmplen, 
-+        LTC_ASN1_SEQUENCE, int_list, sizeof(int_list)/sizeof(int_list[0]));
-+      
-+error:
-+      XFREE(tmp);
-+      return err;
-+   }
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/dsa/dsa_export.c,v $ */
-+/* $Revision: 1.10 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/dsa/dsa_free.c b/crypto/userspace/libtomcrypt/pk/dsa/dsa_free.c
-new file mode 100644
-index 0000000..37a330d
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/dsa/dsa_free.c
-@@ -0,0 +1,34 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+   @file dsa_free.c
-+   DSA implementation, free a DSA key, Tom St Denis
-+*/
-+
-+#ifdef LTC_MDSA
-+
-+/**
-+   Free a DSA key
-+   @param key   The key to free from memory
-+*/
-+void dsa_free(dsa_key *key)
-+{
-+   LTC_ARGCHKVD(key != NULL);
-+   mp_clear_multi(&key->g, &key->q, &key->p, &key->x, &key->y, NULL);
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/dsa/dsa_free.c,v $ */
-+/* $Revision: 1.8 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/dsa/dsa_import.c b/crypto/userspace/libtomcrypt/pk/dsa/dsa_import.c
-new file mode 100644
-index 0000000..99001f2
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/dsa/dsa_import.c
-@@ -0,0 +1,101 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+   @file dsa_import.c
-+   DSA implementation, import a DSA key, Tom St Denis
-+*/
-+
-+#ifdef LTC_MDSA
-+
-+/**
-+   Import a DSA key 
-+   @param in       The binary packet to import from
-+   @param inlen    The length of the binary packet
-+   @param key      [out] Where to store the imported key
-+   @return CRYPT_OK if successful, upon error this function will free all allocated memory
-+*/
-+int dsa_import(const unsigned char *in, unsigned long inlen, dsa_key *key)
-+{
-+   int           err;
-+   unsigned long zero = 0;
-+   unsigned char* tmpbuf = NULL;
-+
-+   LTC_ARGCHK(in  != NULL);
-+   LTC_ARGCHK(key != NULL);
-+
-+   /* init key */
-+   if (mp_init_multi(&key->p, &key->g, &key->q, &key->x, &key->y, NULL) != CRYPT_OK) {
-+      return CRYPT_MEM;
-+   }
-+
-+   /* get key type */
-+   if ((err = der_decode_sequence_multi(in, inlen,
-+                          LTC_ASN1_SHORT_INTEGER, 1UL, &zero, 
-+                          LTC_ASN1_INTEGER,      1UL, &key->p,
-+                          LTC_ASN1_INTEGER,      1UL, &key->q,
-+                          LTC_ASN1_INTEGER,      1UL, &key->g,
-+                          LTC_ASN1_INTEGER,      1UL, &key->y,
-+                          LTC_ASN1_INTEGER,      1UL, &key->x,
-+                          LTC_ASN1_EOL,          0UL, NULL)) == CRYPT_OK) {
-+      key->type = PK_PRIVATE;
-+   } else { /* public */
-+      ltc_asn1_list params[3];
-+      unsigned long tmpbuf_len = MAX_RSA_SIZE*8;
-+
-+      LTC_SET_ASN1(params, 0, LTC_ASN1_INTEGER, &key->p, 1UL);   
-+      LTC_SET_ASN1(params, 1, LTC_ASN1_INTEGER, &key->q, 1UL);
-+      LTC_SET_ASN1(params, 2, LTC_ASN1_INTEGER, &key->g, 1UL);
-+
-+      tmpbuf = XCALLOC(1, tmpbuf_len);
-+      if (tmpbuf == NULL) {
-+          err = CRYPT_MEM;
-+          goto LBL_ERR;
-+      }
-+
-+      err = der_decode_subject_public_key_info(in, inlen,
-+        PKA_DSA, tmpbuf, &tmpbuf_len,
-+        LTC_ASN1_SEQUENCE, params, 3);
-+      if (err != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
-+
-+      if ((err=der_decode_integer(tmpbuf, tmpbuf_len, &key->y)) != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
-+      
-+      XFREE(tmpbuf);
-+      key->type = PK_PUBLIC;
-+  }
-+
-+  key->qord = mp_unsigned_bin_size(&key->q);
-+
-+  if (key->qord >= LTC_MDSA_MAX_GROUP || key->qord <= 15 ||
-+      (unsigned long)key->qord >= mp_unsigned_bin_size(&key->p) || (mp_unsigned_bin_size(&key->p) - key->qord) >= LTC_MDSA_DELTA) {
-+      err = CRYPT_INVALID_PACKET;
++    if ((res = mp_sub (&B, &D, &B)) != MP_OKAY) {
 +      goto LBL_ERR;
-+   }
-+
-+  return CRYPT_OK;
-+
-+LBL_ERR:
-+   XFREE(tmpbuf);
-+   mp_clear_multi(&key->p, &key->g, &key->q, &key->x, &key->y, NULL);
-+   return err;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/dsa/dsa_import.c,v $ */
-+/* $Revision: 1.14 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/dsa/dsa_make_key.c b/crypto/userspace/libtomcrypt/pk/dsa/dsa_make_key.c
-new file mode 100644
-index 0000000..1831853
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/dsa/dsa_make_key.c
-@@ -0,0 +1,125 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+   @file dsa_make_key.c
-+   DSA implementation, generate a DSA key, Tom St Denis
-+*/
-+
-+#ifdef LTC_MDSA
-+
-+/**
-+  Create a DSA key
-+  @param group_size    Size of the multiplicative group (octets)
-+  @param modulus_size  Size of the modulus (octets)
-+  @param key           [out] Where to store the created key
-+  @return CRYPT_OK if successful, upon error this function will free all allocated memory
-+*/
-+int dsa_make_key(int group_size, int modulus_size, dsa_key *key)
-+{
-+   mp_int         tmp, tmp2;
-+   int            err, res;
-+   unsigned char *buf;
-+
-+   LTC_ARGCHK(key  != NULL);
-+
-+   /* check size */
-+   if (group_size >= LTC_MDSA_MAX_GROUP || group_size <= 15 || 
-+       group_size >= modulus_size || (modulus_size - group_size) >= LTC_MDSA_DELTA) {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   /* allocate ram */
-+   buf = XMALLOC(LTC_MDSA_DELTA);
-+   if (buf == NULL) {
-+      return CRYPT_MEM;
-+   }
-+
-+   /* init mp_ints  */
-+   if ((err = mp_init_multi(&tmp, &tmp2, &key->g, &key->q, &key->p, &key->x, &key->y, NULL)) != CRYPT_OK) {
-+      XFREE(buf);
-+      return err;
-+   }
-+
-+   /* make our prime q */
-+   if ((err = rand_prime(&key->q, group_size)) != CRYPT_OK)                { goto error; }
-+
-+   /* double q  */
-+   if ((err = mp_add(&key->q, &key->q, &tmp)) != CRYPT_OK)                                { goto error; }
-+
-+   /* now make a random string and multply it against q */
-+   get_random_bytes(buf+1, modulus_size - group_size);
-+
-+   /* force magnitude */
-+   buf[0] |= 0xC0;
-+
-+   /* force even */
-+   buf[modulus_size - group_size - 1] &= ~1;
-+
-+   if ((err = mp_read_unsigned_bin(&tmp2, buf, modulus_size - group_size)) != CRYPT_OK) { goto error; }
-+   if ((err = mp_mul(&key->q, &tmp2, &key->p)) != CRYPT_OK)                               { goto error; }
-+   if ((err = mp_add_d(&key->p, 1, &key->p)) != CRYPT_OK)                                { goto error; }
-+
-+   /* now loop until p is prime */
-+   for (;;) {
-+       if ((err = mp_prime_is_prime(&key->p, 8, &res)) != CRYPT_OK)                     { goto error; }
-+       if (res == LTC_MP_YES) break;
-+
-+       /* add 2q to p and 2 to tmp2 */
-+       if ((err = mp_add(&tmp, &key->p, &key->p)) != CRYPT_OK)                            { goto error; }
-+       if ((err = mp_add_d(&tmp2, 2, &tmp2)) != CRYPT_OK)                                { goto error; }
-+   }
-+
-+   /* now p = (q * tmp2) + 1 is prime, find a value g for which g^tmp2 != 1 */
-+   mp_set(&key->g, 1);
-+
-+   do {
-+      if ((err = mp_add_d(&key->g, 1, &key->g)) != CRYPT_OK)                             { goto error; }
-+      if ((err = mp_exptmod(&key->g, &tmp2, &key->p, &tmp)) != CRYPT_OK)                   { goto error; }
-+   } while (mp_cmp_d(&tmp, 1) == LTC_MP_EQ);
-+
-+   /* at this point tmp generates a group of order q mod p */
-+   mp_exch(&tmp, &key->g);
-+
-+   /* so now we have our DH structure, generator g, order q, modulus p 
-+      Now we need a random exponent [mod q] and it's power g^x mod p 
-+    */
-+   do {
-+      get_random_bytes(buf, group_size);
-+
-+      if ((err = mp_read_unsigned_bin(&key->x, buf, group_size)) != CRYPT_OK)           { goto error; }
-+   } while (mp_cmp_d(&key->x, 1) != LTC_MP_GT);
-+   if ((err = mp_exptmod(&key->g, &key->x, &key->p, &key->y)) != CRYPT_OK)                 { goto error; }
-+  
-+   key->type = PK_PRIVATE;
-+   key->qord = group_size;
-+
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(buf, LTC_MDSA_DELTA);
-+#endif
-+
-+   err = CRYPT_OK;
-+   goto done;
-+error: 
-+    mp_clear_multi(&key->g, &key->q, &key->p, &key->x, &key->y, NULL);
-+done: 
-+    mp_clear_multi(&tmp, &tmp2, NULL);
-+    XFREE(buf);
-+    return err;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/dsa/dsa_make_key.c,v $ */
-+/* $Revision: 1.12 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/dsa/dsa_sign_hash.c b/crypto/userspace/libtomcrypt/pk/dsa/dsa_sign_hash.c
-new file mode 100644
-index 0000000..b48d5a5
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/dsa/dsa_sign_hash.c
-@@ -0,0 +1,147 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
-+
-+/**
-+   @file dsa_sign_hash.c
-+   DSA implementation, sign a hash, Tom St Denis
-+*/
-+
-+#ifdef LTC_MDSA
-+
-+/**
-+  Sign a hash with DSA
-+  @param in       The hash to sign
-+  @param inlen    The length of the hash to sign
-+  @param r        The "r" integer of the signature (caller must initialize with mp_init() first)
-+  @param s        The "s" integer of the signature (caller must initialize with mp_init() first)
-+  @param key      A private DSA key
-+  @return CRYPT_OK if successful
-+*/
-+int dsa_sign_hash_raw(const unsigned char *in,  unsigned long inlen,
-+                                   mp_int_t r,   mp_int_t s,
-+                               dsa_key *key)
-+{
-+   mp_int         k, kinv, tmp;
-+   unsigned char *buf;
-+   int            err;
-+
-+   LTC_ARGCHK(in  != NULL);
-+   LTC_ARGCHK(r   != NULL);
-+   LTC_ARGCHK(s   != NULL);
-+   LTC_ARGCHK(key != NULL);
-+
-+   if (key->type != PK_PRIVATE) {
-+      return CRYPT_PK_NOT_PRIVATE;
-+   }
-+
-+   /* check group order size  */
-+   if (key->qord >= LTC_MDSA_MAX_GROUP) {
-+      return CRYPT_INVALID_ARG;
-+   }
-+
-+   buf = XMALLOC(LTC_MDSA_MAX_GROUP);
-+   if (buf == NULL) {
-+      return CRYPT_MEM;
-+   }
-+
-+   /* Init our temps */
-+   if ((err = mp_init_multi(&k, &kinv, &tmp, NULL)) != CRYPT_OK)                       { goto ERRBUF; }
-+
-+retry:
-+
-+   do {
-+      /* gen random k */
-+      get_random_bytes(buf, key->qord);
-+
-+      /* read k */
-+      if ((err = mp_read_unsigned_bin(&k, buf, key->qord)) != CRYPT_OK)                 { goto error; }
-+
-+      /* k > 1 ? */
-+      if (mp_cmp_d(&k, 1) != LTC_MP_GT)                                                 { goto retry; }
-+
-+      /* test gcd */
-+      if ((err = mp_gcd(&k, &key->q, &tmp)) != CRYPT_OK)                                  { goto error; }
-+   } while (mp_cmp_d(&tmp, 1) != LTC_MP_EQ);
-+
-+   /* now find 1/k mod q */
-+   if ((err = mp_invmod(&k, &key->q, &kinv)) != CRYPT_OK)                                 { goto error; }
-+
-+   /* now find r = g^k mod p mod q */
-+   if ((err = mp_exptmod(&key->g, &k, &key->p, r)) != CRYPT_OK)                           { goto error; }
-+   if ((err = mp_mod(r, &key->q, r)) != CRYPT_OK)                                       { goto error; }
-+
-+   if (mp_iszero(r) == LTC_MP_YES)                                                     { goto retry; }
-+
-+   /* now find s = (in + xr)/k mod q */
-+   if ((err = mp_read_unsigned_bin(&tmp, (unsigned char *)in, inlen)) != CRYPT_OK)      { goto error; }
-+   if ((err = mp_mul(&key->x, r, s)) != CRYPT_OK)                                       { goto error; }
-+   if ((err = mp_add(s, &tmp, s)) != CRYPT_OK)                                          { goto error; }
-+   if ((err = mp_mulmod(s, &kinv, &key->q, s)) != CRYPT_OK)                              { goto error; }
-+
-+   if (mp_iszero(s) == LTC_MP_YES)                                                     { goto retry; }
-+
-+   err = CRYPT_OK;
-+error: 
-+   mp_clear_multi(&k, &kinv, &tmp, NULL);
-+ERRBUF:
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(buf, LTC_MDSA_MAX_GROUP);
-+#endif
-+   XFREE(buf);
-+   return err;
-+}
-+
-+/**
-+  Sign a hash with DSA
-+  @param in       The hash to sign
-+  @param inlen    The length of the hash to sign
-+  @param out      [out] Where to store the signature
-+  @param outlen   [in/out] The max size and resulting size of the signature
-+  @param key      A private DSA key
-+  @return CRYPT_OK if successful
-+*/
-+int dsa_sign_hash(const unsigned char *in,  unsigned long inlen,
-+                        unsigned char *out, unsigned long *outlen,
-+                        dsa_key *key)
-+{
-+   mp_int        r, s;
-+   int           err;
-+
-+   LTC_ARGCHK(in      != NULL);
-+   LTC_ARGCHK(out     != NULL);
-+   LTC_ARGCHK(outlen  != NULL);
-+   LTC_ARGCHK(key     != NULL);
-+
-+   if (mp_init_multi(&r, &s, NULL) != CRYPT_OK) {
-+      return CRYPT_MEM;
-+   }
-+
-+   if ((err = dsa_sign_hash_raw(in, inlen, &r, &s, key)) != CRYPT_OK) {
-+      goto error;
-+   }
-+
-+   err = der_encode_sequence_multi(out, outlen, 
-+                             LTC_ASN1_INTEGER, 1UL, &r, 
-+                             LTC_ASN1_INTEGER, 1UL, &s, 
-+                             LTC_ASN1_EOL,     0UL, NULL);
-+
-+error:
-+   mp_clear_multi(&r, &s, NULL);
-+   return err;
-+}
-+
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/dsa/dsa_sign_hash.c,v $ */
-+/* $Revision: 1.14 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_hash.c b/crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_hash.c
-new file mode 100644
-index 0000000..3a82d1b
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_hash.c
-@@ -0,0 +1,126 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+   @file dsa_verify_hash.c
-+   DSA implementation, verify a signature, Tom St Denis
-+*/
-+
-+
-+#ifdef LTC_MDSA
-+
-+/**
-+  Verify a DSA signature
-+  @param r        DSA "r" parameter
-+  @param s        DSA "s" parameter
-+  @param hash     The hash that was signed
-+  @param hashlen  The length of the hash that was signed
-+  @param stat     [out] The result of the signature verification, 1==valid, 0==invalid
-+  @param key      The corresponding public DH key
-+  @return CRYPT_OK if successful (even if the signature is invalid)
-+*/
-+int dsa_verify_hash_raw(         mp_int_t r,          mp_int_t s,
-+                    const unsigned char *hash, unsigned long hashlen, 
-+                                    int *stat,      dsa_key *key)
-+{
-+   mp_int        w, v, u1, u2;
-+   int           err;
-+
-+   LTC_ARGCHK(r    != NULL);
-+   LTC_ARGCHK(s    != NULL);
-+   LTC_ARGCHK(stat != NULL);
-+   LTC_ARGCHK(key  != NULL);
-+
-+   /* default to invalid signature */
-+   *stat = 0;
-+
-+   /* init our variables */
-+   if ((err = mp_init_multi(&w, &v, &u1, &u2, NULL)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   /* neither r or s can be null or >q*/
-+   if (mp_iszero(r) == LTC_MP_YES || mp_iszero(s) == LTC_MP_YES || mp_cmp(r, &key->q) != LTC_MP_LT || mp_cmp(s, &key->q) != LTC_MP_LT) {
-+      err = CRYPT_INVALID_PACKET;
-+      goto error;
-+   }
-+   
-+   /* w = 1/s mod q */
-+   if ((err = mp_invmod(s, &key->q, &w)) != CRYPT_OK)                                       { goto error; }
-+
-+   /* u1 = m * w mod q */
-+   if ((err = mp_read_unsigned_bin(&u1, (unsigned char *)hash, hashlen)) != CRYPT_OK)      { goto error; }
-+   if ((err = mp_mulmod(&u1, &w, &key->q, &u1)) != CRYPT_OK)                                  { goto error; }
-+
-+   /* u2 = r*w mod q */
-+   if ((err = mp_mulmod(r, &w, &key->q, &u2)) != CRYPT_OK)                                   { goto error; } 
-+
-+   /* v = g^u1 * y^u2 mod p mod q */
-+   if ((err = mp_exptmod(&key->g, &u1, &key->p, &u1)) != CRYPT_OK)                            { goto error; }
-+   if ((err = mp_exptmod(&key->y, &u2, &key->p, &u2)) != CRYPT_OK)                            { goto error; }
-+   if ((err = mp_mulmod(&u1, &u2, &key->p, &v)) != CRYPT_OK)                                  { goto error; }
-+   if ((err = mp_mod(&v, &key->q, &v)) != CRYPT_OK)                                          { goto error; }
-+
-+   /* if r = v then we're set */
-+   if (mp_cmp(r, &v) == LTC_MP_EQ) {
-+      *stat = 1;
-+   }
-+
-+   err = CRYPT_OK;
-+error:
-+   mp_clear_multi(&w, &v, &u1, &u2, NULL);
-+   return err;
-+}
-+
-+/**
-+  Verify a DSA signature
-+  @param sig      The signature
-+  @param siglen   The length of the signature (octets)
-+  @param hash     The hash that was signed
-+  @param hashlen  The length of the hash that was signed
-+  @param stat     [out] The result of the signature verification, 1==valid, 0==invalid
-+  @param key      The corresponding public DH key
-+  @return CRYPT_OK if successful (even if the signature is invalid)
-+*/
-+int dsa_verify_hash(const unsigned char *sig, unsigned long siglen,
-+                    const unsigned char *hash, unsigned long hashlen, 
-+                    int *stat, dsa_key *key)
-+{
-+   int    err;
-+   mp_int r, s;
-+
-+   if ((err = mp_init_multi(&r, &s, NULL)) != CRYPT_OK) {
-+      return CRYPT_MEM;
-+   }
-+
-+   /* decode the sequence */
-+   if ((err = der_decode_sequence_multi(sig, siglen,
-+                                  LTC_ASN1_INTEGER, 1UL, &r, 
-+                                  LTC_ASN1_INTEGER, 1UL, &s, 
-+                                  LTC_ASN1_EOL,     0UL, NULL)) != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* do the op */
-+   err = dsa_verify_hash_raw(&r, &s, hash, hashlen, stat, key);
-+
-+LBL_ERR:
-+   mp_clear_multi(&r, &s, NULL);
-+   return err;
-+}
-+
-+#endif
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/dsa/dsa_verify_hash.c,v $ */
-+/* $Revision: 1.15 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_key.c b/crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_key.c
-new file mode 100644
-index 0000000..71635d2
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/dsa/dsa_verify_key.c
-@@ -0,0 +1,100 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+   @file dsa_verify_key.c
-+   DSA implementation, verify a key, Tom St Denis
-+*/
-+
-+#ifdef LTC_MDSA
-+
-+/**
-+   Verify a DSA key for validity
-+   @param key   The key to verify
-+   @param stat  [out]  Result of test, 1==valid, 0==invalid
-+   @return CRYPT_OK if successful
-+*/
-+int dsa_verify_key(dsa_key *key, int *stat)
-+{
-+   mp_int tmp, tmp2;
-+   int    res, err;
-+
-+   LTC_ARGCHK(key  != NULL);
-+   LTC_ARGCHK(stat != NULL);
-+
-+   /* default to an invalid key */
-+   *stat = 0;
-+
-+   /* first make sure key->q and key->p are prime */
-+   if ((err = mp_prime_is_prime(&key->q, 8, &res)) != CRYPT_OK) {
-+      return err;
-+   }
-+   if (res == 0) {
-+      return CRYPT_OK;
-+   }
-+
-+   if ((err = mp_prime_is_prime(&key->p, 8, &res)) != CRYPT_OK) {
-+      return err;
-+   }
-+   if (res == 0) {
-+      return CRYPT_OK;
-+   }
-+
-+   /* now make sure that g is not -1, 0 or 1 and <p */
-+   if (mp_cmp_d(&key->g, 0) == LTC_MP_EQ || mp_cmp_d(&key->g, 1) == LTC_MP_EQ) {
-+      return CRYPT_OK;
-+   }
-+   if ((err = mp_init_multi(&tmp, &tmp2, NULL)) != CRYPT_OK)               { return err; }
-+   if ((err = mp_sub_d(&key->p, 1, &tmp)) != CRYPT_OK)                       { goto error; }
-+   if (mp_cmp(&tmp, &key->g) == LTC_MP_EQ || mp_cmp(&key->g, &key->p) != LTC_MP_LT) {
-+      err = CRYPT_OK;
-+      goto error;
-+   }
-+
-+   /* 1 < y < p-1 */
-+   if (!(mp_cmp_d(&key->y, 1) == LTC_MP_GT && mp_cmp(&key->y, &tmp) == LTC_MP_LT)) {
-+      err = CRYPT_OK;
-+      goto error;
-+   }
-+
-+   /* now we have to make sure that g^q = 1, and that p-1/q gives 0 remainder */
-+   if ((err = mp_div(&tmp, &key->q, &tmp, &tmp2)) != CRYPT_OK)             { goto error; }
-+   if (mp_iszero(&tmp2) != LTC_MP_YES) {
-+      err = CRYPT_OK;
-+      goto error;
-+   }
-+
-+   if ((err = mp_exptmod(&key->g, &key->q, &key->p, &tmp)) != CRYPT_OK)    { goto error; }
-+   if (mp_cmp_d(&tmp, 1) != LTC_MP_EQ) {
-+      err = CRYPT_OK;
-+      goto error;
-+   }
-+
-+   /* now we have to make sure that y^q = 1, this makes sure y \in g^x mod p */
-+   if ((err = mp_exptmod(&key->y, &key->q, &key->p, &tmp)) != CRYPT_OK)       { goto error; }
-+   if (mp_cmp_d(&tmp, 1) != LTC_MP_EQ) {
-+      err = CRYPT_OK;
-+      goto error;
-+   }
-+
-+   /* at this point we are out of tests ;-( */
-+   err   = CRYPT_OK;
-+   *stat = 1;
-+error: 
-+   mp_clear_multi(&tmp, &tmp2, NULL);
-+   return err;
-+}
-+#endif
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/dsa/dsa_verify_key.c,v $ */
-+/* $Revision: 1.8 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_i2osp.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_i2osp.c
-new file mode 100644
-index 0000000..70294a5
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_i2osp.c
-@@ -0,0 +1,51 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/** 
-+  @file pkcs_1_i2osp.c
-+  Integer to Octet I2OSP, Tom St Denis 
-+*/
-+
-+#ifdef LTC_PKCS_1
-+
-+/* always stores the same # of bytes, pads with leading zero bytes
-+   as required
-+ */
-+
-+/**
-+   LTC_PKCS #1 Integer to binary
-+   @param n             The integer to store
-+   @param modulus_len   The length of the RSA modulus
-+   @param out           [out] The destination for the integer
-+   @return CRYPT_OK if successful
-+*/
-+int pkcs_1_i2osp(void *n, unsigned long modulus_len, unsigned char *out)
-+{
-+   unsigned long size;
-+
-+   size = mp_unsigned_bin_size(n);
-+
-+   if (size > modulus_len) {
-+      return CRYPT_BUFFER_OVERFLOW;
-+   }
-+
-+   /* store it */
-+   zeromem(out, modulus_len);
-+   return mp_to_unsigned_bin(n, out+(modulus_len-size));
-+}
-+
-+#endif /* LTC_PKCS_1 */
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_i2osp.c,v $ */
-+/* $Revision: 1.7 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_mgf1.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_mgf1.c
-new file mode 100644
-index 0000000..86ba218
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_mgf1.c
-@@ -0,0 +1,91 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+#include <linux/slab.h>
-+
-+/**
-+  @file pkcs_1_mgf1.c
-+  The Mask Generation Function (MGF1) for LTC_PKCS #1, Tom St Denis 
-+*/
-+
-+#ifdef LTC_PKCS_1
-+
-+/**
-+   Perform LTC_PKCS #1 MGF1 (internal)
-+   @param seed        The seed for MGF1
-+   @param seedlen     The length of the seed
-+   @param hash        The desired hash
-+   @param mask        [out] The destination
-+   @param masklen     The length of the mask desired
-+   @return CRYPT_OK if successful
-+*/
-+int pkcs_1_mgf1(const struct algo_properties_st *hash,
-+                const unsigned char *seed, unsigned long seedlen,
-+                      unsigned char *mask, unsigned long masklen)
-+{
-+   unsigned long hLen, x;
-+   ulong32       counter;
-+   int           err;
-+   unsigned char *buf;
-+ 
-+   LTC_ARGCHK(seed != NULL);
-+   LTC_ARGCHK(mask != NULL);
-+
-+   /* ensure valid hash */
-+   if ((err = hash_is_valid(hash)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   /* get hash output size */
-+   hLen = hash->digest_size;
-+
-+   /* allocate memory */
-+   buf = XMALLOC(hLen);
-+   if (buf == NULL) {
-+      return CRYPT_MEM;
-+   }
-+
-+   /* start counter */
-+   counter = 0;
-+
-+   while (masklen > 0) {
-+       /* handle counter */
-+       STORE32H(counter, buf);
-+       ++counter;
-+
-+       err = hash_memory_multi(hash, buf, &hLen, seed, seedlen, buf, (unsigned long) 4, NULL, 0);
-+       if (err != CRYPT_OK) {
-+          goto LBL_ERR;
-+       }
-+
-+       /* store it */
-+       for (x = 0; x < hLen && masklen > 0; x++, masklen--) {
-+          *mask++ = buf[x];
-+       }
-+   }
-+
-+   err = CRYPT_OK;
-+LBL_ERR:
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(buf, hLen);
-+#endif
-+
-+   XFREE(buf);
-+
-+   return err;
-+}
-+
-+#endif /* LTC_PKCS_1 */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_mgf1.c,v $ */
-+/* $Revision: 1.8 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_decode.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_decode.c
-new file mode 100644
-index 0000000..717d99d
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_decode.c
-@@ -0,0 +1,192 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+#include <linux/slab.h>
-+
-+/**
-+  @file pkcs_1_oaep_decode.c
-+  OAEP Padding for LTC_PKCS #1, Tom St Denis 
-+*/
-+
-+#ifdef LTC_PKCS_1
-+
-+/**
-+   LTC_PKCS #1 v2.00 OAEP decode
-+   @param msg              The encoded data to decode
-+   @param msglen           The length of the encoded data (octets)
-+   @param lparam           The session or system data (can be NULL)
-+   @param lparamlen        The length of the lparam
-+   @param modulus_bitlen   The bit length of the RSA modulus
-+   @param hash             The desired hash
-+   @param out              [out] Destination of decoding
-+   @param outlen           [in/out] The max size and resulting size of the decoding
-+   @param res              [out] Result of decoding, 1==valid, 0==invalid
-+   @return CRYPT_OK if successful (even if invalid)
-+*/
-+int pkcs_1_oaep_decode(const unsigned char *msg,    unsigned long msglen,
-+                       const unsigned char *lparam, unsigned long lparamlen,
-+                             unsigned long modulus_bitlen, const struct algo_properties_st *hash,
-+                             unsigned char *out,    unsigned long *outlen,
-+                             int           *res)
-+{
-+   unsigned char *DB, *seed, *mask;
-+   unsigned long hLen, x, y, modulus_len;
-+   int           err;
-+
-+   LTC_ARGCHK(msg    != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+   LTC_ARGCHK(res    != NULL);
-+
-+   /* default to invalid packet */
-+   *res = 0;
-+   
-+   /* test valid hash */
-+   if ((err = hash_is_valid(hash)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   hLen = hash->digest_size;
-+   modulus_len = (modulus_bitlen >> 3) + (modulus_bitlen & 7 ? 1 : 0);
-+
-+   /* test hash/message size */
-+   if ((2*hLen >= (modulus_len - 2)) || (msglen != modulus_len)) {
-+      return CRYPT_PK_INVALID_SIZE;
-+   }
-+
-+   /* allocate ram for DB/mask/salt of size modulus_len */
-+   DB   = XMALLOC(modulus_len);
-+   mask = XMALLOC(modulus_len);
-+   seed = XMALLOC(hLen);
-+   if (DB == NULL || mask == NULL || seed == NULL) {
-+      if (DB != NULL) {
-+         XFREE(DB);
-+      }
-+      if (mask != NULL) {
-+         XFREE(mask);
-+      }
-+      if (seed != NULL) {
-+         XFREE(seed);
-+      }
-+      return CRYPT_MEM;
-+   }
-+
-+   /* ok so it's now in the form
-+  
-+      0x00  || maskedseed || maskedDB 
-+  
-+       1    ||   hLen     ||  modulus_len - hLen - 1
-+   
-+    */
-+
-+   /* must have leading 0x00 byte */
-+   if (msg[0] != 0x00) {
-+      err = CRYPT_OK;
-+      goto LBL_ERR;
-+   }
-+
-+   /* now read the masked seed */
-+   x = 1;
-+   XMEMCPY(seed, msg + x, hLen);
-+   x += hLen;
-+
-+   /* now read the masked DB */
-+   XMEMCPY(DB, msg + x, modulus_len - hLen - 1);
-+   x += modulus_len - hLen - 1;
-+
-+   /* compute MGF1 of maskedDB (hLen) */ 
-+   if ((err = pkcs_1_mgf1(hash, DB, modulus_len - hLen - 1, mask, hLen)) != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* XOR against seed */
-+   for (y = 0; y < hLen; y++) {
-+      seed[y] ^= mask[y];
-+   }
-+
-+   /* compute MGF1 of seed (k - hlen - 1) */
-+   if ((err = pkcs_1_mgf1(hash, seed, hLen, mask, modulus_len - hLen - 1)) != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* xor against DB */
-+   for (y = 0; y < (modulus_len - hLen - 1); y++) {
-+       DB[y] ^= mask[y]; 
-+   }
-+
-+   /* now DB == lhash || PS || 0x01 || M, PS == k - mlen - 2hlen - 2 zeroes */
-+
-+   /* compute lhash and store it in seed [reuse temps!] */
-+   x = modulus_len;
-+   if (lparam != NULL) {
-+      if ((err = hash_memory(hash, lparam, lparamlen, seed, &x)) != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
-+   } else {
-+      /* can't pass hash_memory a NULL so use DB with zero length */
-+      if ((err = hash_memory(hash, DB, 0, seed, &x)) != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
-+   }
-+
-+   /* compare the lhash'es */
-+   if (XMEMCMP(seed, DB, hLen) != 0) {
-+      err = CRYPT_OK;
-+      goto LBL_ERR;
-+   }
-+
-+   /* now zeroes before a 0x01 */
-+   for (x = hLen; x < (modulus_len - hLen - 1) && DB[x] == 0x00; x++) {
-+      /* step... */
-+   }
-+
-+   /* error out if wasn't 0x01 */
-+   if (x == (modulus_len - hLen - 1) || DB[x] != 0x01) {
-+      err = CRYPT_INVALID_PACKET;
-+      goto LBL_ERR;
-+   }
-+
-+   /* rest is the message (and skip 0x01) */
-+   if ((modulus_len - hLen - 1 - ++x) > *outlen) {
-+      *outlen = modulus_len - hLen - 1 - x;
-+      err = CRYPT_BUFFER_OVERFLOW;
-+      goto LBL_ERR;
-+   }
-+
-+   /* copy message */
-+   *outlen = modulus_len - hLen - 1 - x;
-+   XMEMCPY(out, DB + x, modulus_len - hLen - 1 - x);
-+   x += modulus_len - hLen - 1;
-+
-+   /* valid packet */
-+   *res = 1;
-+
-+   err = CRYPT_OK;
-+LBL_ERR:
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(DB,   modulus_len);
-+   zeromem(seed, hLen);
-+   zeromem(mask, modulus_len);
-+#endif
-+
-+   XFREE(seed);
-+   XFREE(mask);
-+   XFREE(DB);
-+
-+   return err;
-+}
-+
-+#endif /* LTC_PKCS_1 */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_oaep_decode.c,v $ */
-+/* $Revision: 1.13 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_encode.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_encode.c
-new file mode 100644
-index 0000000..331516f
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_oaep_encode.c
-@@ -0,0 +1,164 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+#include <linux/slab.h>
-+
-+/**
-+  @file pkcs_1_oaep_encode.c
-+  OAEP Padding for LTC_PKCS #1, Tom St Denis 
-+*/
-+
-+#ifdef LTC_PKCS_1
-+
-+/**
-+  LTC_PKCS #1 v2.00 OAEP encode
-+  @param msg             The data to encode
-+  @param msglen          The length of the data to encode (octets)
-+  @param lparam          A session or system parameter (can be NULL)
-+  @param lparamlen       The length of the lparam data
-+  @param modulus_bitlen  The bit length of the RSA modulus
-+  @param hash            The desired hash
-+  @param out             [out] The destination for the encoded data
-+  @param outlen          [in/out] The max size and resulting size of the encoded data
-+  @return CRYPT_OK if successful
-+*/
-+int pkcs_1_oaep_encode(const unsigned char *msg,    unsigned long msglen,
-+                       const unsigned char *lparam, unsigned long lparamlen,
-+                             unsigned long modulus_bitlen, const struct algo_properties_st *hash,
-+                             unsigned char *out,    unsigned long *outlen)
-+{
-+   unsigned char *DB, *seed, *mask;
-+   unsigned long hLen, x, y, modulus_len;
-+   int           err;
-+
-+   LTC_ARGCHK(msg    != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+
-+   /* test valid hash */
-+   if ((err = hash_is_valid(hash)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   hLen = hash->digest_size;
-+   modulus_len = (modulus_bitlen >> 3) + (modulus_bitlen & 7 ? 1 : 0);
-+
-+   /* test message size */
-+   if ((2*hLen >= (modulus_len - 2)) || (msglen > (modulus_len - 2*hLen - 2))) {
-+      return CRYPT_PK_INVALID_SIZE;
-+   }
-+
-+   /* allocate ram for DB/mask/salt of size modulus_len */
-+   DB   = XMALLOC(modulus_len);
-+   mask = XMALLOC(modulus_len);
-+   seed = XMALLOC(hLen);
-+   if (DB == NULL || mask == NULL || seed == NULL) {
-+      if (DB != NULL) {
-+         XFREE(DB);
-+      }
-+      if (mask != NULL) {
-+         XFREE(mask);
-+      }
-+      if (seed != NULL) {
-+         XFREE(seed);
-+      }
-+      return CRYPT_MEM;
-+   }
-+
-+   /* get lhash */
-+   /* DB == lhash || PS || 0x01 || M, PS == k - mlen - 2hlen - 2 zeroes */
-+   x = modulus_len;
-+   if (lparam != NULL) {
-+      if ((err = hash_memory(hash, lparam, lparamlen, DB, &x)) != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
-+   } else {
-+      /* can't pass hash_memory a NULL so use DB with zero length */
-+      if ((err = hash_memory(hash, DB, 0, DB, &x)) != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
-+   }
-+
-+   /* append PS then 0x01 (to lhash)  */
-+   x = hLen;
-+   y = modulus_len - msglen - 2*hLen - 2;
-+   XMEMSET(DB+x, 0, y);
-+   x += y;
-+
-+   /* 0x01 byte */
-+   DB[x++] = 0x01;
-+
-+   /* message (length = msglen) */
-+   XMEMCPY(DB+x, msg, msglen);
-+   x += msglen;
-+
-+   /* now choose a random seed */
-+   get_random_bytes(seed, hLen);
-+
-+   /* compute MGF1 of seed (k - hlen - 1) */
-+   if ((err = pkcs_1_mgf1(hash, seed, hLen, mask, modulus_len - hLen - 1)) != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* xor against DB */
-+   for (y = 0; y < (modulus_len - hLen - 1); y++) {
-+       DB[y] ^= mask[y]; 
-+   }
-+
-+   /* compute MGF1 of maskedDB (hLen) */ 
-+   if ((err = pkcs_1_mgf1(hash, DB, modulus_len - hLen - 1, mask, hLen)) != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* XOR against seed */
-+   for (y = 0; y < hLen; y++) {
-+      seed[y] ^= mask[y];
-+   }
-+
-+   /* create string of length modulus_len */
-+   if (*outlen < modulus_len) {
-+      *outlen = modulus_len;
-+      err = CRYPT_BUFFER_OVERFLOW;
-+      goto LBL_ERR;
-+   }
-+
-+   /* start output which is 0x00 || maskedSeed || maskedDB */
-+   x = 0;
-+   out[x++] = 0x00;
-+   XMEMCPY(out+x, seed, hLen);
-+   x += hLen;
-+   XMEMCPY(out+x, DB, modulus_len - hLen - 1);
-+   x += modulus_len - hLen - 1;
-+
-+   *outlen = x;
-+    
-+   err = CRYPT_OK;
-+LBL_ERR:
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(DB,   modulus_len);
-+   zeromem(seed, hLen);
-+   zeromem(mask, modulus_len);
-+#endif
-+
-+   XFREE(seed);
-+   XFREE(mask);
-+   XFREE(DB);
-+
-+   return err;
-+}
-+
-+#endif /* LTC_PKCS_1 */
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_oaep_encode.c,v $ */
-+/* $Revision: 1.9 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_os2ip.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_os2ip.c
-new file mode 100644
-index 0000000..513abb6
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_os2ip.c
-@@ -0,0 +1,36 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/** 
-+  @file pkcs_1_os2ip.c
-+  Octet to Integer OS2IP, Tom St Denis 
-+*/
-+#ifdef LTC_PKCS_1
-+
-+/**
-+  Read a binary string into an mp_int
-+  @param n          [out] The mp_int destination
-+  @param in         The binary string to read
-+  @param inlen      The length of the binary string
-+  @return CRYPT_OK if successful
-+*/
-+int pkcs_1_os2ip(void *n, unsigned char *in, unsigned long inlen)
-+{
-+   return mp_read_unsigned_bin(n, in, inlen);
-+}
-+
-+#endif /* LTC_PKCS_1 */
-+
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_os2ip.c,v $ */
-+/* $Revision: 1.7 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_decode.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_decode.c
-new file mode 100644
-index 0000000..5d44ce8
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_decode.c
-@@ -0,0 +1,168 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+#include <linux/slab.h>
-+
-+/**
-+  @file pkcs_1_pss_decode.c
-+  LTC_PKCS #1 PSS Signature Padding, Tom St Denis 
-+*/
-+
-+#ifdef LTC_PKCS_1
-+
-+/**
-+   LTC_PKCS #1 v2.00 PSS decode
-+   @param  msghash         The hash to verify
-+   @param  msghashlen      The length of the hash (octets)
-+   @param  sig             The signature data (encoded data)
-+   @param  siglen          The length of the signature data (octets)
-+   @param  saltlen         The length of the salt used (octets)
-+   @param  hash_algo       The desired hash
-+   @param  modulus_bitlen  The bit length of the RSA modulus
-+   @param  res             [out] The result of the comparison, 1==valid, 0==invalid
-+   @return CRYPT_OK if successful (even if the comparison failed)
-+*/
-+int pkcs_1_pss_decode(const unsigned char *msghash, unsigned long msghashlen,
-+                      const unsigned char *sig,     unsigned long siglen,
-+                            unsigned long saltlen, const struct algo_properties_st *hash_algo,
-+                            unsigned long modulus_bitlen, int    *res)
-+{
-+   unsigned char *DB, *mask, *salt, *hash;
-+   unsigned long x, y, hLen, modulus_len;
-+   int           err;
-+
-+   LTC_ARGCHK(msghash != NULL);
-+   LTC_ARGCHK(res     != NULL);
-+
-+   /* default to invalid */
-+   *res = 0;
-+
-+   /* ensure hash is valid */
-+   if ((err = hash_is_valid(hash_algo)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   hLen = hash_algo->digest_size;
-+   modulus_len = (modulus_bitlen>>3) + (modulus_bitlen & 7 ? 1 : 0);
-+
-+   /* check sizes */
-+   if ((saltlen > modulus_len) || 
-+       (modulus_len < hLen + saltlen + 2) || (siglen != modulus_len)) {
-+      return CRYPT_PK_INVALID_SIZE;
-+   }
-+
-+   /* allocate ram for DB/mask/salt/hash of size modulus_len */
-+   DB   = XMALLOC(modulus_len);
-+   mask = XMALLOC(modulus_len);
-+   salt = XMALLOC(modulus_len);
-+   hash = XMALLOC(modulus_len);
-+   if (DB == NULL || mask == NULL || salt == NULL || hash == NULL) {
-+      if (DB != NULL) {
-+         XFREE(DB);
-+      }
-+      if (mask != NULL) {
-+         XFREE(mask);
-+      }
-+      if (salt != NULL) {
-+         XFREE(salt);
-+      }
-+      if (hash != NULL) {
-+         XFREE(hash);
-+      }
-+      return CRYPT_MEM;
-+   }
-+
-+   /* ensure the 0xBC byte */
-+   if (sig[siglen-1] != 0xBC) {
-+      err = CRYPT_INVALID_PACKET;
-+      goto LBL_ERR;
-+   }
-+
-+   /* copy out the DB */
-+   x = 0;
-+   XMEMCPY(DB, sig + x, modulus_len - hLen - 1);
-+   x += modulus_len - hLen - 1;
-+
-+   /* copy out the hash */
-+   XMEMCPY(hash, sig + x, hLen);
-+   x += hLen;
-+
-+   /* check the MSB */
-+   if ((sig[0] & ~(0xFF >> ((modulus_len<<3) - (modulus_bitlen-1)))) != 0) {
-+      err = CRYPT_INVALID_PACKET;
-+      goto LBL_ERR;
-+   }
-+
-+   /* generate mask of length modulus_len - hLen - 1 from hash */
-+   if ((err = pkcs_1_mgf1(hash_algo, hash, hLen, mask, modulus_len - hLen - 1)) != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* xor against DB */
-+   for (y = 0; y < (modulus_len - hLen - 1); y++) {
-+      DB[y] ^= mask[y];
-+   }
-+   
-+   /* now clear the first byte [make sure smaller than modulus] */
-+   DB[0] &= 0xFF >> ((modulus_len<<3) - (modulus_bitlen-1));
-+
-+   /* DB = PS || 0x01 || salt, PS == modulus_len - saltlen - hLen - 2 zero bytes */
-+
-+   /* check for zeroes and 0x01 */
-+   for (x = 0; x < modulus_len - saltlen - hLen - 2; x++) {
-+       if (DB[x] != 0x00) {
-+          err = CRYPT_INVALID_PACKET;
-+          goto LBL_ERR;
-+       }
-+   }
-+
-+   /* check for the 0x01 */
-+   if (DB[x++] != 0x01) {
-+      err = CRYPT_INVALID_PACKET;
-+      goto LBL_ERR;
-+   }
-+
-+   zeromem(mask, 8);
-+
-+   /* M = (eight) 0x00 || msghash || salt, mask = H(M) */
-+   err = hash_memory_multi(hash_algo, mask, &hLen, mask, (unsigned long)8, msghash, (unsigned long)msghashlen, DB+x, (unsigned long)saltlen, NULL, 0);
-+   if (err != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* mask == hash means valid signature */
-+   if (XMEMCMP(mask, hash, hLen) == 0) {
-+      *res = 1;
-+   }
-+
-+   err = CRYPT_OK;
-+LBL_ERR:
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(DB,   modulus_len);   
-+   zeromem(mask, modulus_len);   
-+   zeromem(salt, modulus_len);   
-+   zeromem(hash, modulus_len);   
-+#endif
-+
-+   XFREE(hash);
-+   XFREE(salt);
-+   XFREE(mask);
-+   XFREE(DB);
-+
-+   return err;
-+}
-+
-+#endif /* LTC_PKCS_1 */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_pss_decode.c,v $ */
-+/* $Revision: 1.11 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_encode.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_encode.c
-new file mode 100644
-index 0000000..9416eae
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_pss_encode.c
-@@ -0,0 +1,157 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+#include <linux/slab.h>
-+
-+/**
-+  @file pkcs_1_pss_encode.c
-+  LTC_PKCS #1 PSS Signature Padding, Tom St Denis 
-+*/
-+
-+#ifdef LTC_PKCS_1
-+
-+/**
-+   LTC_PKCS #1 v2.00 Signature Encoding
-+   @param msghash          The hash to encode
-+   @param msghashlen       The length of the hash (octets)
-+   @param saltlen          The length of the salt desired (octets)
-+   @param hash_algo        The desired hash
-+   @param modulus_bitlen   The bit length of the RSA modulus
-+   @param out              [out] The destination of the encoding
-+   @param outlen           [in/out] The max size and resulting size of the encoded data
-+   @return CRYPT_OK if successful
-+*/
-+int pkcs_1_pss_encode(const unsigned char *msghash, unsigned long msghashlen,
-+                            unsigned long saltlen, const struct algo_properties_st *hash_algo,
-+                            unsigned long modulus_bitlen,
-+                            unsigned char *out,     unsigned long *outlen)
-+{
-+   unsigned char *DB, *mask, *salt, *hash;
-+   unsigned long x, y, hLen, modulus_len;
-+   int           err;
-+
-+   LTC_ARGCHK(msghash != NULL);
-+   LTC_ARGCHK(out     != NULL);
-+   LTC_ARGCHK(outlen  != NULL);
-+
-+   /* ensure hash and PRNG are valid */
-+   if ((err = hash_is_valid(hash_algo)) != CRYPT_OK) {
-+      return err;
-+   }
-+
-+   hLen = hash_algo->digest_size;
-+   modulus_len = (modulus_bitlen>>3) + (modulus_bitlen & 7 ? 1 : 0);
-+
-+   /* check sizes */
-+   if ((saltlen > modulus_len) || (modulus_len < hLen + saltlen + 2)) {
-+      return CRYPT_PK_INVALID_SIZE;
-+   }
-+
-+   /* allocate ram for DB/mask/salt/hash of size modulus_len */
-+   DB   = XMALLOC(modulus_len);
-+   mask = XMALLOC(modulus_len);
-+   salt = XMALLOC(modulus_len);
-+   hash = XMALLOC(modulus_len);
-+   if (DB == NULL || mask == NULL || salt == NULL || hash == NULL) {
-+      if (DB != NULL) {
-+         XFREE(DB);
-+      }
-+      if (mask != NULL) {
-+         XFREE(mask);
-+      }
-+      if (salt != NULL) {
-+         XFREE(salt);
-+      }
-+      if (hash != NULL) {
-+         XFREE(hash);
-+      }
-+      return CRYPT_MEM;
-+   }
-+
-+
-+   /* generate random salt */
-+   if (saltlen > 0) {
-+      get_random_bytes(salt, saltlen);
-+   }
-+   
-+   zeromem(DB, 8);
-+
-+   /* M = (eight) 0x00 || msghash || salt, hash = H(M) */
-+   err = hash_memory_multi(hash_algo, hash, &hLen, DB, (unsigned long)8, msghash, (unsigned long)msghashlen, salt, (unsigned long)saltlen, NULL, 0);
-+   if (err != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* generate DB = PS || 0x01 || salt, PS == modulus_len - saltlen - hLen - 2 zero bytes */
-+   x = 0;
-+   XMEMSET(DB + x, 0, modulus_len - saltlen - hLen - 2);
-+   x += modulus_len - saltlen - hLen - 2;
-+   DB[x++] = 0x01;
-+   XMEMCPY(DB + x, salt, saltlen);
-+   x += saltlen;
-+
-+   /* generate mask of length modulus_len - hLen - 1 from hash */
-+   if ((err = pkcs_1_mgf1(hash_algo, hash, hLen, mask, modulus_len - hLen - 1)) != CRYPT_OK) {
-+      goto LBL_ERR;
-+   }
-+
-+   /* xor against DB */
-+   for (y = 0; y < (modulus_len - hLen - 1); y++) {
-+      DB[y] ^= mask[y];
-+   }
-+
-+   /* output is DB || hash || 0xBC */
-+   if (*outlen < modulus_len) {
-+      *outlen = modulus_len;
-+      err = CRYPT_BUFFER_OVERFLOW;
-+      goto LBL_ERR;
-+   }
-+
-+   /* DB len = modulus_len - hLen - 1 */
-+   y = 0;
-+   XMEMCPY(out + y, DB, modulus_len - hLen - 1);
-+   y += modulus_len - hLen - 1;
-+
-+   /* hash */
-+   XMEMCPY(out + y, hash, hLen);
-+   y += hLen;
-+
-+   /* 0xBC */
-+   out[y] = 0xBC;
-+
-+   /* now clear the 8*modulus_len - modulus_bitlen most significant bits */
-+   out[0] &= 0xFF >> ((modulus_len<<3) - (modulus_bitlen-1));
-+
-+   /* store output size */
-+   *outlen = modulus_len;
-+   err = CRYPT_OK;
-+LBL_ERR:
-+#ifdef LTC_CLEAN_STACK
-+   zeromem(DB,   modulus_len);   
-+   zeromem(mask, modulus_len);   
-+   zeromem(salt, modulus_len);   
-+   zeromem(hash, modulus_len);   
-+#endif
-+
-+   XFREE(hash);
-+   XFREE(salt);
-+   XFREE(mask);
-+   XFREE(DB);
-+
-+   return err;
-+}
-+
-+#endif /* LTC_PKCS_1 */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_pss_encode.c,v $ */
-+/* $Revision: 1.9 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_decode.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_decode.c
-new file mode 100644
-index 0000000..1bb08e3
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_decode.c
-@@ -0,0 +1,110 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/** @file pkcs_1_v1_5_decode.c
-+ *
-+ *  LTC_PKCS #1 v1.5 Padding. (Andreas Lange)
-+ */
-+
-+#ifdef LTC_PKCS_1
-+
-+/** @brief LTC_PKCS #1 v1.5 decode.
-+ *
-+ *  @param msg              The encoded data to decode
-+ *  @param msglen           The length of the encoded data (octets)
-+ *  @param block_type       Block type to use in padding (\sa ltc_pkcs_1_v1_5_blocks)
-+ *  @param modulus_bitlen   The bit length of the RSA modulus
-+ *  @param out              [out] Destination of decoding
-+ *  @param outlen           [in/out] The max size and resulting size of the decoding
-+ *  @param is_valid         [out] Boolean whether the padding was valid
-+ *
-+ *  @return CRYPT_OK if successful (even if invalid)
-+ */
-+int pkcs_1_v1_5_decode(const unsigned char *msg, 
-+                             unsigned long  msglen,
-+                                       int  block_type,
-+                             unsigned long  modulus_bitlen,
-+                             unsigned char *out, 
-+                             unsigned long *outlen,
-+                                       int *is_valid)
-+{
-+  unsigned long modulus_len, ps_len, i;
-+  int result;
-+
-+  /* default to invalid packet */
-+  *is_valid = 0;
-+
-+  modulus_len = (modulus_bitlen >> 3) + (modulus_bitlen & 7 ? 1 : 0);
-+
-+  /* test message size */
-+
-+  if ((msglen > modulus_len) || (modulus_len < 11)) {
-+    return CRYPT_PK_INVALID_SIZE;
-+  }
-+
-+  /* separate encoded message */
-+
-+  if ((msg[0] != 0x00) || (msg[1] != (unsigned char)block_type)) {
-+    result = CRYPT_INVALID_PACKET;
-+    goto bail;
-+  }
-+
-+  if (block_type == LTC_LTC_PKCS_1_EME) {
-+    for (i = 2; i < modulus_len; i++) {
-+      /* separator */
-+      if (msg[i] == 0x00) { break; }
-+    }
-+    ps_len = i++ - 2;
-+
-+    if ((i >= modulus_len) || (ps_len < 8)) {
-+      /* There was no octet with hexadecimal value 0x00 to separate ps from m,
-+       * or the length of ps is less than 8 octets.
-+       */
-+      result = CRYPT_INVALID_PACKET;
-+      goto bail;
 +    }
 +  } else {
-+    for (i = 2; i < modulus_len - 1; i++) {
-+       if (msg[i] != 0xFF) { break; }
++    /* v - v - u, D = D - B */
++    if ((res = mp_sub (&v, &u, &v)) != MP_OKAY) {
++      goto LBL_ERR;
 +    }
 +
-+    /* separator check */
-+    if (msg[i] != 0) {
-+      /* There was no octet with hexadecimal value 0x00 to separate ps from m. */
-+      result = CRYPT_INVALID_PACKET;
-+      goto bail;
++    if ((res = mp_sub (&D, &B, &D)) != MP_OKAY) {
++      goto LBL_ERR;
 +    }
-+
-+    ps_len = i - 2;
 +  }
 +
-+  if (*outlen < (msglen - (2 + ps_len + 1))) {
-+    *outlen = msglen - (2 + ps_len + 1);
-+    result = CRYPT_BUFFER_OVERFLOW;
-+    goto bail;
++  /* if not zero goto step 4 */
++  if (mp_iszero (&u) == 0) {
++    goto top;
 +  }
 +
-+  *outlen = (msglen - (2 + ps_len + 1));
-+  XMEMCPY(out, &msg[2 + ps_len + 1], *outlen);
++  /* now a = C, b = D, gcd == g*v */
 +
-+  /* valid packet */
-+  *is_valid = 1;
-+  result    = CRYPT_OK;
-+bail:
-+  return result;
-+} /* pkcs_1_v1_5_decode */
-+
-+#endif /* #ifdef LTC_PKCS_1 */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_v1_5_decode.c,v $ */
-+/* $Revision: 1.7 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_encode.c b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_encode.c
-new file mode 100644
-index 0000000..048fe69
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_encode.c
-@@ -0,0 +1,95 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
-+ *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/*! \file pkcs_1_v1_5_encode.c
-+ *
-+ *  LTC_PKCS #1 v1.5 Padding (Andreas Lange)
-+ */
-+
-+#ifdef LTC_PKCS_1
-+
-+/*! \brief LTC_PKCS #1 v1.5 encode.
-+ *
-+ *  \param msg              The data to encode
-+ *  \param msglen           The length of the data to encode (octets)
-+ *  \param block_type       Block type to use in padding (\sa ltc_pkcs_1_v1_5_blocks)
-+ *  \param modulus_bitlen   The bit length of the RSA modulus
-+ *  \param out              [out] The destination for the encoded data
-+ *  \param outlen           [in/out] The max size and resulting size of the encoded data
-+ *
-+ *  \return CRYPT_OK if successful
-+ */
-+int pkcs_1_v1_5_encode(const unsigned char *msg, 
-+                             unsigned long  msglen,
-+                                       int  block_type,
-+                             unsigned long  modulus_bitlen,
-+                             unsigned char *out, 
-+                             unsigned long *outlen)
-+{
-+  unsigned long modulus_len, ps_len, i;
-+  unsigned char *ps;
-+  int result;
-+
-+  /* valid block_type? */
-+  if ((block_type != LTC_LTC_PKCS_1_EMSA) &&
-+      (block_type != LTC_LTC_PKCS_1_EME)) {
-+     return CRYPT_PK_INVALID_PADDING;
++  /* if v != 1 then there is no inverse */
++  if (mp_cmp_d (&v, 1) != MP_EQ) {
++    res = MP_VAL;
++    goto LBL_ERR;
 +  }
 +
-+  modulus_len = (modulus_bitlen >> 3) + (modulus_bitlen & 7 ? 1 : 0);
-+
-+  /* test message size */
-+  if ((msglen + 11) > modulus_len) {
-+    return CRYPT_PK_INVALID_SIZE;
-+  }
-+
-+  if (*outlen < modulus_len) {
-+    *outlen = modulus_len;
-+    result = CRYPT_BUFFER_OVERFLOW;
-+    goto bail;
-+  }
-+
-+  /* generate an octets string PS */
-+  ps = &out[2];
-+  ps_len = modulus_len - msglen - 3;
-+
-+  if (block_type == LTC_LTC_PKCS_1_EME) {
-+    /* now choose a random ps */
-+    get_random_bytes(ps, ps_len);
-+
-+    /* transform zero bytes (if any) to non-zero random bytes */
-+    for (i = 0; i < ps_len; i++) {
-+      while (ps[i] == 0) {
-+        get_random_bytes(&ps[i], 1);
-+      }
++  /* b is now the inverse */
++  neg = a->sign;
++  while (D.sign == MP_NEG) {
++    if ((res = mp_add (&D, b, &D)) != MP_OKAY) {
++      goto LBL_ERR;
 +    }
-+  } else {
-+    XMEMSET(ps, 0xFF, ps_len);
 +  }
++  mp_exch (&D, c);
++  c->sign = neg;
++  res = MP_OKAY;
 +
-+  /* create string of length modulus_len */
-+  out[0]          = 0x00;
-+  out[1]          = (unsigned char)block_type;  /* block_type 1 or 2 */
-+  out[2 + ps_len] = 0x00;
-+  XMEMCPY(&out[2 + ps_len + 1], msg, msglen);
-+  *outlen = modulus_len;
++LBL_ERR:mp_clear_multi (&x, &y, &u, &v, &B, &D, NULL);
++  return res;
++}
++#endif
 +
-+  result  = CRYPT_OK;
-+bail:
-+  return result;
-+} /* pkcs_1_v1_5_encode */
-+
-+#endif /* #ifdef LTC_PKCS_1 */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/pkcs1/pkcs_1_v1_5_encode.c,v $ */
++/* $Source: /cvs/libtom/libtommath/bn_fast_mp_invmod.c,v $ */
 +/* $Revision: 1.4 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_decrypt_key.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_decrypt_key.c
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_fast_mp_montgomery_reduce.c b/crypto/userspace/libtommath/bn_fast_mp_montgomery_reduce.c
 new file mode 100644
-index 0000000..ba16e32
+index 0000000..b6c0694
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_decrypt_key.c
++++ b/crypto/userspace/libtommath/bn_fast_mp_montgomery_reduce.c
+@@ -0,0 +1,172 @@
++#include <tommath.h>
++#ifdef BN_FAST_MP_MONTGOMERY_REDUCE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* computes xR**-1 == x (mod N) via Montgomery Reduction
++ *
++ * This is an optimized implementation of montgomery_reduce
++ * which uses the comba method to quickly calculate the columns of the
++ * reduction.
++ *
++ * Based on Algorithm 14.32 on pp.601 of HAC.
++*/
++int fast_mp_montgomery_reduce (mp_int * x, mp_int * n, mp_digit rho)
++{
++  int     ix, res, olduse;
++  mp_word W[MP_WARRAY];
++
++  /* get old used count */
++  olduse = x->used;
++
++  /* grow a as required */
++  if (x->alloc < n->used + 1) {
++    if ((res = mp_grow (x, n->used + 1)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  /* first we have to get the digits of the input into
++   * an array of double precision words W[...]
++   */
++  {
++    register mp_word *_W;
++    register mp_digit *tmpx;
++
++    /* alias for the W[] array */
++    _W   = W;
++
++    /* alias for the digits of  x*/
++    tmpx = x->dp;
++
++    /* copy the digits of a into W[0..a->used-1] */
++    for (ix = 0; ix < x->used; ix++) {
++      *_W++ = *tmpx++;
++    }
++
++    /* zero the high words of W[a->used..m->used*2] */
++    for (; ix < n->used * 2 + 1; ix++) {
++      *_W++ = 0;
++    }
++  }
++
++  /* now we proceed to zero successive digits
++   * from the least significant upwards
++   */
++  for (ix = 0; ix < n->used; ix++) {
++    /* mu = ai * m' mod b
++     *
++     * We avoid a double precision multiplication (which isn't required)
++     * by casting the value down to a mp_digit.  Note this requires
++     * that W[ix-1] have  the carry cleared (see after the inner loop)
++     */
++    register mp_digit mu;
++    mu = (mp_digit) (((W[ix] & MP_MASK) * rho) & MP_MASK);
++
++    /* a = a + mu * m * b**i
++     *
++     * This is computed in place and on the fly.  The multiplication
++     * by b**i is handled by offseting which columns the results
++     * are added to.
++     *
++     * Note the comba method normally doesn't handle carries in the
++     * inner loop In this case we fix the carry from the previous
++     * column since the Montgomery reduction requires digits of the
++     * result (so far) [see above] to work.  This is
++     * handled by fixing up one carry after the inner loop.  The
++     * carry fixups are done in order so after these loops the
++     * first m->used words of W[] have the carries fixed
++     */
++    {
++      register int iy;
++      register mp_digit *tmpn;
++      register mp_word *_W;
++
++      /* alias for the digits of the modulus */
++      tmpn = n->dp;
++
++      /* Alias for the columns set by an offset of ix */
++      _W = W + ix;
++
++      /* inner loop */
++      for (iy = 0; iy < n->used; iy++) {
++          *_W++ += ((mp_word)mu) * ((mp_word)*tmpn++);
++      }
++    }
++
++    /* now fix carry for next digit, W[ix+1] */
++    W[ix + 1] += W[ix] >> ((mp_word) DIGIT_BIT);
++  }
++
++  /* now we have to propagate the carries and
++   * shift the words downward [all those least
++   * significant digits we zeroed].
++   */
++  {
++    register mp_digit *tmpx;
++    register mp_word *_W, *_W1;
++
++    /* nox fix rest of carries */
++
++    /* alias for current word */
++    _W1 = W + ix;
++
++    /* alias for next word, where the carry goes */
++    _W = W + ++ix;
++
++    for (; ix <= n->used * 2 + 1; ix++) {
++      *_W++ += *_W1++ >> ((mp_word) DIGIT_BIT);
++    }
++
++    /* copy out, A = A/b**n
++     *
++     * The result is A/b**n but instead of converting from an
++     * array of mp_word to mp_digit than calling mp_rshd
++     * we just copy them in the right order
++     */
++
++    /* alias for destination word */
++    tmpx = x->dp;
++
++    /* alias for shifted double precision result */
++    _W = W + n->used;
++
++    for (ix = 0; ix < n->used + 1; ix++) {
++      *tmpx++ = (mp_digit)(*_W++ & ((mp_word) MP_MASK));
++    }
++
++    /* zero oldused digits, if the input a was larger than
++     * m->used+1 we'll have to clear the digits
++     */
++    for (; ix < olduse; ix++) {
++      *tmpx++ = 0;
++    }
++  }
++
++  /* set the max used and clamp */
++  x->used = n->used + 1;
++  mp_clamp (x);
++
++  /* if A >= m then A = A - m */
++  if (mp_cmp_mag (x, n) != MP_LT) {
++    return s_mp_sub (x, n, x);
++  }
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_fast_mp_montgomery_reduce.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_fast_s_mp_mul_digs.c b/crypto/userspace/libtommath/bn_fast_s_mp_mul_digs.c
+new file mode 100644
+index 0000000..91e10d6
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_fast_s_mp_mul_digs.c
 @@ -0,0 +1,107 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++#include <tommath.h>
++#ifdef BN_FAST_S_MP_MUL_DIGS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
 + *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+#include "ncr-int.h"
-+#include <linux/slab.h>
-+
-+/**
-+  @file rsa_decrypt_key.c
-+  RSA LTC_PKCS #1 Decryption, Tom St Denis and Andreas Lange
-+*/
-+
-+#ifdef LTC_MRSA
-+
-+/**
-+   LTC_PKCS #1 decrypt then v1.5 or OAEP depad
-+   @param in          The ciphertext
-+   @param inlen       The length of the ciphertext (octets)
-+   @param out         [out] The plaintext
-+   @param outlen      [in/out] The max size and resulting size of the plaintext (octets)
-+   @param lparam      The system "lparam" value
-+   @param lparamlen   The length of the lparam value (octets)
-+   @param hash        The desired hash
-+   @param padding     Type of padding (LTC_LTC_PKCS_1_OAEP or LTC_LTC_PKCS_1_V1_5)
-+   @param stat        [out] Result of the decryption, 1==valid, 0==invalid
-+   @param key         The corresponding private RSA key
-+   @return CRYPT_OK if succcessul (even if invalid)
-+*/
-+int rsa_decrypt_key_ex(const unsigned char *in,       unsigned long  inlen,
-+                             unsigned char *out,      unsigned long *outlen,
-+                       const unsigned char *lparam,   unsigned long  lparamlen,
-+                       const struct algo_properties_st *hash, int padding,
-+                             int           *stat,     rsa_key       *key)
-+{
-+  unsigned long modulus_bitlen, modulus_bytelen, x;
-+  int           err;
-+  unsigned char *tmp;
-+
-+  LTC_ARGCHK(out    != NULL);
-+  LTC_ARGCHK(outlen != NULL);
-+  LTC_ARGCHK(key    != NULL);
-+  LTC_ARGCHK(stat   != NULL);
-+
-+  /* default to invalid */
-+  *stat = 0;
-+
-+  /* valid padding? */
-+
-+  if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-+      (padding != LTC_LTC_PKCS_1_OAEP)) {
-+    return CRYPT_PK_INVALID_PADDING;
-+  }
-+
-+  if (padding == LTC_LTC_PKCS_1_OAEP) {
-+    /* valid hash ? */
-+    if ((err = hash_is_valid(hash)) != CRYPT_OK) {
-+       return err;
-+    }
-+  }
-+
-+  /* get modulus len in bits */
-+  modulus_bitlen = mp_count_bits( (&key->N));
-+
-+  /* outlen must be at least the size of the modulus */
-+  modulus_bytelen = mp_unsigned_bin_size( (&key->N));
-+  if (modulus_bytelen != inlen) {
-+     return CRYPT_INVALID_PACKET;
-+  }
-+
-+  /* allocate ram */
-+  tmp = XMALLOC(inlen);
-+  if (tmp == NULL) {
-+     return CRYPT_MEM;
-+  }
-+
-+  /* rsa decode the packet */
-+  x = inlen;
-+  if ((err = rsa_exptmod(in, inlen, tmp, &x, PK_PRIVATE, key)) != CRYPT_OK) {
-+     XFREE(tmp);
-+     return err;
-+  }
-+
-+  if (padding == LTC_LTC_PKCS_1_OAEP) {
-+    /* now OAEP decode the packet */
-+    err = pkcs_1_oaep_decode(tmp, x, lparam, lparamlen, modulus_bitlen, hash,
-+                             out, outlen, stat);
-+  } else {
-+    /* now LTC_PKCS #1 v1.5 depad the packet */
-+    err = pkcs_1_v1_5_decode(tmp, x, LTC_LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
-+  }
-+
-+  XFREE(tmp);
-+  return err;
-+}
-+
-+#endif /* LTC_MRSA */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_decrypt_key.c,v $ */
-+/* $Revision: 1.10 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_encrypt_key.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_encrypt_key.c
-new file mode 100644
-index 0000000..8d3f2db
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_encrypt_key.c
-@@ -0,0 +1,96 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
-+ *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
 + */
-+#include "tomcrypt.h"
-+#include "ncr-int.h"
 +
-+/**
-+  @file rsa_encrypt_key.c
-+  RSA LTC_PKCS #1 encryption, Tom St Denis and Andreas Lange
-+*/
-+
-+#ifdef LTC_MRSA
-+
-+/**
-+    (LTC_PKCS #1 v2.0) OAEP pad then encrypt
-+    @param in          The plaintext
-+    @param inlen       The length of the plaintext (octets)
-+    @param out         [out] The ciphertext
-+    @param outlen      [in/out] The max size and resulting size of the ciphertext
-+    @param lparam      The system "lparam" for the encryption
-+    @param lparamlen   The length of lparam (octets)
-+    @param hash        The desired hash
-+    @param padding     Type of padding (LTC_LTC_PKCS_1_OAEP or LTC_LTC_PKCS_1_V1_5)
-+    @param key         The RSA key to encrypt to
-+    @return CRYPT_OK if successful
-+*/
-+int rsa_encrypt_key_ex(const unsigned char *in,     unsigned long inlen,
-+                             unsigned char *out,    unsigned long *outlen,
-+                       const unsigned char *lparam, unsigned long lparamlen,
-+                       const struct algo_properties_st *hash, int padding, rsa_key *key)
-+{
-+  unsigned long modulus_bitlen, modulus_bytelen, x;
-+  int           err;
-+
-+  LTC_ARGCHK(in     != NULL);
-+  LTC_ARGCHK(out    != NULL);
-+  LTC_ARGCHK(outlen != NULL);
-+  LTC_ARGCHK(key    != NULL);
-+
-+  /* valid padding? */
-+  if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-+      (padding != LTC_LTC_PKCS_1_OAEP)) {
-+    return CRYPT_PK_INVALID_PADDING;
-+  }
-+
-+  if (padding == LTC_LTC_PKCS_1_OAEP) {
-+    /* valid hash? */
-+    if ((err = hash_is_valid(hash)) != CRYPT_OK) {
-+       return err;
-+    }
-+  }
-+
-+  /* get modulus len in bits */
-+  modulus_bitlen = mp_count_bits( (&key->N));
-+
-+  /* outlen must be at least the size of the modulus */
-+  modulus_bytelen = mp_unsigned_bin_size( (&key->N));
-+  if (modulus_bytelen > *outlen) {
-+     *outlen = modulus_bytelen;
-+     return CRYPT_BUFFER_OVERFLOW;
-+  }
-+
-+  if (padding == LTC_LTC_PKCS_1_OAEP) {
-+    /* OAEP pad the key */
-+    x = *outlen;
-+    if ((err = pkcs_1_oaep_encode(in, inlen, lparam,
-+                                  lparamlen, modulus_bitlen, hash,
-+				  out, &x)) != CRYPT_OK) {
-+       return err;
-+    }
-+  } else {
-+    /* LTC_PKCS #1 v1.5 pad the key */
-+    x = *outlen;
-+    if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_LTC_PKCS_1_EME,
-+                                  modulus_bitlen, 
-+                                  out, &x)) != CRYPT_OK) {
-+      return err;
-+    }
-+  }
-+
-+  /* rsa exptmod the OAEP or LTC_PKCS #1 v1.5 pad */
-+  return rsa_exptmod(out, x, out, outlen, PK_PUBLIC, key);
-+}
-+
-+#endif /* LTC_MRSA */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_encrypt_key.c,v $ */
-+/* $Revision: 1.10 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_export.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_export.c
-new file mode 100644
-index 0000000..c5e8ff0
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_export.c
-@@ -0,0 +1,87 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++/* Fast (comba) multiplier
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * This is the fast column-array [comba] multiplier.  It is 
++ * designed to compute the columns of the product first 
++ * then handle the carries afterwards.  This has the effect 
++ * of making the nested loops that compute the columns very
++ * simple and schedulable on super-scalar processors.
 + *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
++ * This has been modified to produce a variable number of 
++ * digits of output so if say only a half-product is required 
++ * you don't have to compute the upper half (a feature 
++ * required for fast Barrett reduction).
 + *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ * Based on Algorithm 14.12 on pp.595 of HAC.
++ *
 + */
-+#include "tomcrypt.h"
-+#include <ncr-int.h>
-+#include <linux/slab.h>
-+/**
-+  @file rsa_export.c
-+  Export RSA LTC_PKCS keys, Tom St Denis
-+*/  
-+
-+#ifdef LTC_MRSA
-+
-+/**
-+    This will export either an RSAPublicKey or RSAPrivateKey [defined in LTC_PKCS #1 v2.1] 
-+    @param out       [out] Destination of the packet
-+    @param outlen    [in/out] The max size and resulting size of the packet
-+    @param type      The type of exported key (PK_PRIVATE or PK_PUBLIC)
-+    @param key       The RSA key to export
-+    @return CRYPT_OK if successful
-+*/    
-+int rsa_export(unsigned char *out, unsigned long *outlen, int type, rsa_key *key)
++int fast_s_mp_mul_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
 +{
-+   unsigned long zero=0;
-+   int err;
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+   LTC_ARGCHK(key    != NULL);
++  int     olduse, res, pa, ix, iz;
++  mp_digit W[MP_WARRAY];
++  register mp_word  _W;
 +
-+   /* type valid? */
-+   if (!(key->type == PK_PRIVATE) && (type == PK_PRIVATE)) {
-+      return CRYPT_PK_INVALID_TYPE;
-+   }
++  /* grow the destination as required */
++  if (c->alloc < digs) {
++    if ((res = mp_grow (c, digs)) != MP_OKAY) {
++      return res;
++    }
++  }
 +
-+   if (type == PK_PRIVATE) {
-+      /* private key */
-+      /* output is 
-+            Version, n, e, d, p, q, d mod (p-1), d mod (q - 1), 1/q mod p
++  /* number of output digits to produce */
++  pa = MIN(digs, a->used + b->used);
++
++  /* clear the carry */
++  _W = 0;
++  for (ix = 0; ix < pa; ix++) { 
++      int      tx, ty;
++      int      iy;
++      mp_digit *tmpx, *tmpy;
++
++      /* get offsets into the two bignums */
++      ty = MIN(b->used-1, ix);
++      tx = ix - ty;
++
++      /* setup temp aliases */
++      tmpx = a->dp + tx;
++      tmpy = b->dp + ty;
++
++      /* this is the number of times the loop will iterrate, essentially 
++         while (tx++ < a->used && ty-- >= 0) { ... }
 +       */
-+      return der_encode_sequence_multi(out, outlen, 
-+                          LTC_ASN1_SHORT_INTEGER, 1UL, &zero, 
-+                          LTC_ASN1_INTEGER, 1UL,  &key->N, 
-+                          LTC_ASN1_INTEGER, 1UL,  &key->e,
-+                          LTC_ASN1_INTEGER, 1UL,  &key->d, 
-+                          LTC_ASN1_INTEGER, 1UL,  &key->p, 
-+                          LTC_ASN1_INTEGER, 1UL,  &key->q, 
-+                          LTC_ASN1_INTEGER, 1UL,  &key->dP,
-+                          LTC_ASN1_INTEGER, 1UL,  &key->dQ, 
-+                          LTC_ASN1_INTEGER, 1UL,  &key->qP, 
-+                          LTC_ASN1_EOL,     0UL, NULL);
-+   } else {
-+      unsigned long tmplen = (mp_count_bits(&key->N)/8)*2+8;
-+      unsigned char* tmp = XMALLOC(tmplen);
-+      
-+      if (tmp == NULL) {
-+	   return CRYPT_MEM;
++      iy = MIN(a->used-tx, ty+1);
++
++      /* execute loop */
++      for (iz = 0; iz < iy; ++iz) {
++         _W += ((mp_word)*tmpx++)*((mp_word)*tmpy--);
++
 +      }
 +
-+      err = der_encode_sequence_multi(tmp, &tmplen, 
-+                                 LTC_ASN1_INTEGER, 1UL,  &key->N, 
-+                                 LTC_ASN1_INTEGER, 1UL,  &key->e, 
-+                                 LTC_ASN1_EOL,     0UL, NULL);
-+      if (err != CRYPT_OK) {
-+		  goto error;
-+      }
++      /* store term */
++      W[ix] = ((mp_digit)_W) & MP_MASK;
 +
-+      err = der_encode_subject_public_key_info(out, outlen, 
-+        PKA_RSA, tmp, tmplen, LTC_ASN1_NULL, NULL, 0);
-+      
-+error:
-+      XFREE(tmp);
-+      return err;
-+   }
++      /* make next carry */
++      _W = _W >> ((mp_word)DIGIT_BIT);
++ }
++
++  /* setup dest */
++  olduse  = c->used;
++  c->used = pa;
++
++  {
++    register mp_digit *tmpc;
++    tmpc = c->dp;
++    for (ix = 0; ix < pa+1; ix++) {
++      /* now extract the previous digit [below the carry] */
++      *tmpc++ = W[ix];
++    }
++
++    /* clear unused digits [that existed in the old copy of c] */
++    for (; ix < olduse; ix++) {
++      *tmpc++ = 0;
++    }
++  }
++  mp_clamp (c);
++  return MP_OKAY;
 +}
++#endif
 +
-+#endif /* LTC_MRSA */
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_export.c,v $ */
-+/* $Revision: 1.17 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_exptmod.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_exptmod.c
++/* $Source: /cvs/libtom/libtommath/bn_fast_s_mp_mul_digs.c,v $ */
++/* $Revision: 1.8 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_fast_s_mp_mul_high_digs.c b/crypto/userspace/libtommath/bn_fast_s_mp_mul_high_digs.c
 new file mode 100644
-index 0000000..35ebfe3
+index 0000000..5b114d7
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_exptmod.c
-@@ -0,0 +1,147 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++++ b/crypto/userspace/libtommath/bn_fast_s_mp_mul_high_digs.c
+@@ -0,0 +1,98 @@
++#include <tommath.h>
++#ifdef BN_FAST_S_MP_MUL_HIGH_DIGS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ * 
-+ * Added RSA blinding --nmav
 + */
-+#include "tomcrypt.h"
 +
-+/**
-+  @file rsa_exptmod.c
-+  RSA LTC_PKCS exptmod, Tom St Denis
-+*/  
-+
-+#ifdef LTC_MRSA
-+
-+/** 
-+   Compute an RSA modular exponentiation 
-+   @param in         The input data to send into RSA
-+   @param inlen      The length of the input (octets)
-+   @param out        [out] The destination 
-+   @param outlen     [in/out] The max size and resulting size of the output
-+   @param which      Which exponent to use, e.g. PK_PRIVATE or PK_PUBLIC
-+   @param key        The RSA key to use 
-+   @return CRYPT_OK if successful
-+*/   
-+int rsa_exptmod(const unsigned char *in,   unsigned long inlen,
-+                      unsigned char *out,  unsigned long *outlen, int which,
-+                      rsa_key *key)
++/* this is a modified version of fast_s_mul_digs that only produces
++ * output digits *above* digs.  See the comments for fast_s_mul_digs
++ * to see how it works.
++ *
++ * This is used in the Barrett reduction since for one of the multiplications
++ * only the higher digits were needed.  This essentially halves the work.
++ *
++ * Based on Algorithm 14.12 on pp.595 of HAC.
++ */
++int fast_s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
 +{
-+   mp_int        tmp, tmpa, tmpb, rnd, rndi /* inverse of rnd */;
-+   unsigned long x;
-+   int           err;
++  int     olduse, res, pa, ix, iz;
++  mp_digit W[MP_WARRAY];
++  mp_word  _W;
 +
-+   LTC_ARGCHK(in     != NULL);
-+   LTC_ARGCHK(out    != NULL);
-+   LTC_ARGCHK(outlen != NULL);
-+   LTC_ARGCHK(key    != NULL);
++  /* grow the destination as required */
++  pa = a->used + b->used;
++  if (c->alloc < pa) {
++    if ((res = mp_grow (c, pa)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  /* number of output digits to produce */
++  pa = a->used + b->used;
++  _W = 0;
++  for (ix = digs; ix < pa; ix++) { 
++      int      tx, ty, iy;
++      mp_digit *tmpx, *tmpy;
++
++      /* get offsets into the two bignums */
++      ty = MIN(b->used-1, ix);
++      tx = ix - ty;
++
++      /* setup temp aliases */
++      tmpx = a->dp + tx;
++      tmpy = b->dp + ty;
++
++      /* this is the number of times the loop will iterrate, essentially its 
++         while (tx++ < a->used && ty-- >= 0) { ... }
++       */
++      iy = MIN(a->used-tx, ty+1);
++
++      /* execute loop */
++      for (iz = 0; iz < iy; iz++) {
++         _W += ((mp_word)*tmpx++)*((mp_word)*tmpy--);
++      }
++
++      /* store term */
++      W[ix] = ((mp_digit)_W) & MP_MASK;
++
++      /* make next carry */
++      _W = _W >> ((mp_word)DIGIT_BIT);
++  }
 +  
-+   /* is the key of the right type for the operation? */
-+   if (which == PK_PRIVATE && (key->type != PK_PRIVATE)) {
-+      return CRYPT_PK_NOT_PRIVATE;
-+   }
++  /* setup dest */
++  olduse  = c->used;
++  c->used = pa;
 +
-+   /* must be a private or public operation */
-+   if (which != PK_PRIVATE && which != PK_PUBLIC) {
-+      return CRYPT_PK_INVALID_TYPE;
-+   }
++  {
++    register mp_digit *tmpc;
 +
-+   /* init and copy into tmp */
-+   if ((err = mp_init_multi(&tmp, &tmpa, &tmpb, &rnd, &rndi, NULL)) != CRYPT_OK) 
-+        { return err; }
-+   if ((err = mp_read_unsigned_bin(&tmp, (unsigned char *)in, (int)inlen)) != CRYPT_OK)                 
-+        { goto error; }
++    tmpc = c->dp + digs;
++    for (ix = digs; ix < pa; ix++) {
++      /* now extract the previous digit [below the carry] */
++      *tmpc++ = W[ix];
++    }
 +
-+   /* sanity check on the input */
-+   if (mp_cmp(&key->N, &tmp) == LTC_MP_LT) {
-+      err = CRYPT_PK_INVALID_SIZE;
-+      goto error;
-+   }
++    /* clear unused digits [that existed in the old copy of c] */
++    for (; ix < olduse; ix++) {
++      *tmpc++ = 0;
++    }
++  }
++  mp_clamp (c);
++  return MP_OKAY;
++}
++#endif
 +
-+   /* are we using the private exponent and is the key optimized? */
-+   if (which == PK_PRIVATE) {
-+      /* do blinding */
-+      err = mp_rand(&rnd, mp_count_bits(&key->N));
-+      if (err != CRYPT_OK) {
-+             goto error;
++/* $Source: /cvs/libtom/libtommath/bn_fast_s_mp_mul_high_digs.c,v $ */
++/* $Revision: 1.6 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_fast_s_mp_sqr.c b/crypto/userspace/libtommath/bn_fast_s_mp_sqr.c
+new file mode 100644
+index 0000000..19e92ef
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_fast_s_mp_sqr.c
+@@ -0,0 +1,114 @@
++#include <tommath.h>
++#ifdef BN_FAST_S_MP_SQR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* the jist of squaring...
++ * you do like mult except the offset of the tmpx [one that 
++ * starts closer to zero] can't equal the offset of tmpy.  
++ * So basically you set up iy like before then you min it with
++ * (ty-tx) so that it never happens.  You double all those 
++ * you add in the inner loop
++
++After that loop you do the squares and add them in.
++*/
++
++int fast_s_mp_sqr (mp_int * a, mp_int * b)
++{
++  int       olduse, res, pa, ix, iz;
++  mp_digit   W[MP_WARRAY], *tmpx;
++  mp_word   W1;
++
++  /* grow the destination as required */
++  pa = a->used + a->used;
++  if (b->alloc < pa) {
++    if ((res = mp_grow (b, pa)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  /* number of output digits to produce */
++  W1 = 0;
++  for (ix = 0; ix < pa; ix++) { 
++      int      tx, ty, iy;
++      mp_word  _W;
++      mp_digit *tmpy;
++
++      /* clear counter */
++      _W = 0;
++
++      /* get offsets into the two bignums */
++      ty = MIN(a->used-1, ix);
++      tx = ix - ty;
++
++      /* setup temp aliases */
++      tmpx = a->dp + tx;
++      tmpy = a->dp + ty;
++
++      /* this is the number of times the loop will iterrate, essentially
++         while (tx++ < a->used && ty-- >= 0) { ... }
++       */
++      iy = MIN(a->used-tx, ty+1);
++
++      /* now for squaring tx can never equal ty 
++       * we halve the distance since they approach at a rate of 2x
++       * and we have to round because odd cases need to be executed
++       */
++      iy = MIN(iy, (ty-tx+1)>>1);
++
++      /* execute loop */
++      for (iz = 0; iz < iy; iz++) {
++         _W += ((mp_word)*tmpx++)*((mp_word)*tmpy--);
 +      }
-+        
-+      /* rndi = 1/rnd mod N */
-+      err = mp_invmod( &rnd, &key->N, &rndi);
-+      if (err != CRYPT_OK) {
-+             goto error;
-+      }
-+        
-+      /* rnd = rnd^e */
-+      err = mp_exptmod( &rnd, &key->e, &key->N, &rnd);
-+      if (err != CRYPT_OK) {
-+             goto error;
++
++      /* double the inner product and add carry */
++      _W = _W + _W + W1;
++
++      /* even columns have the square term in them */
++      if ((ix&1) == 0) {
++         _W += ((mp_word)a->dp[ix>>1])*((mp_word)a->dp[ix>>1]);
 +      }
 +
-+      /* tmp = tmp*rnd mod N */
-+      err = mp_mulmod( &tmp, &rnd, &key->N, &tmp);
-+      if (err != CRYPT_OK) {
-+             goto error;
-+      }
++      /* store it */
++      W[ix] = (mp_digit)(_W & MP_MASK);
 +
-+      /* tmpa = tmp^dP mod p */
-+      if ((err = mp_exptmod(&tmp, &key->dP, &key->p, &tmpa)) != CRYPT_OK)                               { goto error; }
++      /* make next carry */
++      W1 = _W >> ((mp_word)DIGIT_BIT);
++  }
 +
-+      /* tmpb = tmp^dQ mod q */
-+      if ((err = mp_exptmod(&tmp, &key->dQ, &key->q, &tmpb)) != CRYPT_OK)                               { goto error; }
++  /* setup dest */
++  olduse  = b->used;
++  b->used = a->used+a->used;
 +
-+      /* tmp = (tmpa - tmpb) * qInv (mod p) */
-+      if ((err = mp_sub(&tmpa, &tmpb, &tmp)) != CRYPT_OK)                                              { goto error; }
-+      if ((err = mp_mulmod(&tmp, &key->qP, &key->p, &tmp)) != CRYPT_OK)                                { goto error; }
++  {
++    mp_digit *tmpb;
++    tmpb = b->dp;
++    for (ix = 0; ix < pa; ix++) {
++      *tmpb++ = W[ix] & MP_MASK;
++    }
 +
-+      /* tmp = tmpb + q * tmp */
-+      if ((err = mp_mul(&tmp, &key->q, &tmp)) != CRYPT_OK)                                             { goto error; }
-+      if ((err = mp_add(&tmp, &tmpb, &tmp)) != CRYPT_OK)                                               { goto error; }
-+      
-+      /* unblind */
-+      err = mp_mulmod( &tmp, &rndi, &key->N, &tmp);
-+      if (err != CRYPT_OK) {
-+             goto error;
-+      }
-+   } else {
-+      /* exptmod it */
-+      if ((err = mp_exptmod(&tmp, &key->e, &key->N, &tmp)) != CRYPT_OK)                                { goto error; }
-+   }
++    /* clear unused digits [that existed in the old copy of c] */
++    for (; ix < olduse; ix++) {
++      *tmpb++ = 0;
++    }
++  }
++  mp_clamp (b);
++  return MP_OKAY;
++}
++#endif
 +
-+   /* read it back */
-+   x = (unsigned long)mp_unsigned_bin_size(&key->N);
-+   if (x > *outlen) {
-+      *outlen = x;
-+      err = CRYPT_BUFFER_OVERFLOW;
-+      goto error;
-+   }
++/* $Source: /cvs/libtom/libtommath/bn_fast_s_mp_sqr.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_2expt.c b/crypto/userspace/libtommath/bn_mp_2expt.c
+new file mode 100644
+index 0000000..f422ffc
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_2expt.c
+@@ -0,0 +1,48 @@
++#include <tommath.h>
++#ifdef BN_MP_2EXPT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
 +
-+   /* this should never happen ... */
-+   if (mp_unsigned_bin_size(&tmp) > mp_unsigned_bin_size(&key->N)) {
-+      err = CRYPT_ERROR;
-+      goto error;
-+   }
-+   *outlen = x;
++/* computes a = 2**b 
++ *
++ * Simple algorithm which zeroes the int, grows it then just sets one bit
++ * as required.
++ */
++int
++mp_2expt (mp_int * a, int b)
++{
++  int     res;
 +
-+   /* convert it */
-+   zeromem(out, x);
-+   if ((err = mp_to_unsigned_bin(&tmp, out+(x-mp_unsigned_bin_size(&tmp)))) != CRYPT_OK)               { goto error; }
++  /* zero a as per default */
++  mp_zero (a);
 +
-+   /* clean up and return */
-+   err = CRYPT_OK;
-+error:
-+   mp_clear_multi(&tmp, &tmpa, &tmpb, &rnd, &rndi, NULL);
-+   return err;
++  /* grow a to accomodate the single bit */
++  if ((res = mp_grow (a, b / DIGIT_BIT + 1)) != MP_OKAY) {
++    return res;
++  }
++
++  /* set the used count of where the bit will go */
++  a->used = b / DIGIT_BIT + 1;
++
++  /* put the single bit in its place */
++  a->dp[b / DIGIT_BIT] = ((mp_digit)1) << (b % DIGIT_BIT);
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_2expt.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_abs.c b/crypto/userspace/libtommath/bn_mp_abs.c
+new file mode 100644
+index 0000000..09dd722
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_abs.c
+@@ -0,0 +1,43 @@
++#include <tommath.h>
++#ifdef BN_MP_ABS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* b = |a| 
++ *
++ * Simple function copies the input and fixes the sign to positive
++ */
++int
++mp_abs (mp_int * a, mp_int * b)
++{
++  int     res;
++
++  /* copy a to b */
++  if (a != b) {
++     if ((res = mp_copy (a, b)) != MP_OKAY) {
++       return res;
++     }
++  }
++
++  /* force the sign of b to positive */
++  b->sign = MP_ZPOS;
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_abs.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_add.c b/crypto/userspace/libtommath/bn_mp_add.c
+new file mode 100644
+index 0000000..be20644
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_add.c
+@@ -0,0 +1,53 @@
++#include <tommath.h>
++#ifdef BN_MP_ADD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* high level addition (handles signs) */
++int mp_add (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     sa, sb, res;
++
++  /* get sign of both inputs */
++  sa = a->sign;
++  sb = b->sign;
++
++  /* handle two cases, not four */
++  if (sa == sb) {
++    /* both positive or both negative */
++    /* add their magnitudes, copy the sign */
++    c->sign = sa;
++    res = s_mp_add (a, b, c);
++  } else {
++    /* one positive, the other negative */
++    /* subtract the one with the greater magnitude from */
++    /* the one of the lesser magnitude.  The result gets */
++    /* the sign of the one with the greater magnitude. */
++    if (mp_cmp_mag (a, b) == MP_LT) {
++      c->sign = sb;
++      res = s_mp_sub (b, a, c);
++    } else {
++      c->sign = sa;
++      res = s_mp_sub (a, b, c);
++    }
++  }
++  return res;
 +}
 +
 +#endif
 +
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_exptmod.c,v $ */
-+/* $Revision: 1.18 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_free.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_free.c
++/* $Source: /cvs/libtom/libtommath/bn_mp_add.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_add_d.c b/crypto/userspace/libtommath/bn_mp_add_d.c
 new file mode 100644
-index 0000000..d38b266
+index 0000000..8ca36c1
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_free.c
++++ b/crypto/userspace/libtommath/bn_mp_add_d.c
+@@ -0,0 +1,112 @@
++#include <tommath.h>
++#ifdef BN_MP_ADD_D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* single digit addition */
++int
++mp_add_d (mp_int * a, mp_digit b, mp_int * c)
++{
++  int     res, ix, oldused;
++  mp_digit *tmpa, *tmpc, mu;
++
++  /* grow c as required */
++  if (c->alloc < a->used + 1) {
++     if ((res = mp_grow(c, a->used + 1)) != MP_OKAY) {
++        return res;
++     }
++  }
++
++  /* if a is negative and |a| >= b, call c = |a| - b */
++  if (a->sign == MP_NEG && (a->used > 1 || a->dp[0] >= b)) {
++     /* temporarily fix sign of a */
++     a->sign = MP_ZPOS;
++
++     /* c = |a| - b */
++     res = mp_sub_d(a, b, c);
++
++     /* fix sign  */
++     a->sign = c->sign = MP_NEG;
++
++     /* clamp */
++     mp_clamp(c);
++
++     return res;
++  }
++
++  /* old number of used digits in c */
++  oldused = c->used;
++
++  /* sign always positive */
++  c->sign = MP_ZPOS;
++
++  /* source alias */
++  tmpa    = a->dp;
++
++  /* destination alias */
++  tmpc    = c->dp;
++
++  /* if a is positive */
++  if (a->sign == MP_ZPOS) {
++     /* add digit, after this we're propagating
++      * the carry.
++      */
++     *tmpc   = *tmpa++ + b;
++     mu      = *tmpc >> DIGIT_BIT;
++     *tmpc++ &= MP_MASK;
++
++     /* now handle rest of the digits */
++     for (ix = 1; ix < a->used; ix++) {
++        *tmpc   = *tmpa++ + mu;
++        mu      = *tmpc >> DIGIT_BIT;
++        *tmpc++ &= MP_MASK;
++     }
++     /* set final carry */
++     ix++;
++     *tmpc++  = mu;
++
++     /* setup size */
++     c->used = a->used + 1;
++  } else {
++     /* a was negative and |a| < b */
++     c->used  = 1;
++
++     /* the result is a single digit */
++     if (a->used == 1) {
++        *tmpc++  =  b - a->dp[0];
++     } else {
++        *tmpc++  =  b;
++     }
++
++     /* setup count so the clearing of oldused
++      * can fall through correctly
++      */
++     ix       = 1;
++  }
++
++  /* now zero to oldused */
++  while (ix++ < oldused) {
++     *tmpc++ = 0;
++  }
++  mp_clamp(c);
++
++  return MP_OKAY;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_add_d.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_addmod.c b/crypto/userspace/libtommath/bn_mp_addmod.c
+new file mode 100644
+index 0000000..6d8afe1
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_addmod.c
+@@ -0,0 +1,41 @@
++#include <tommath.h>
++#ifdef BN_MP_ADDMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* d = a + b (mod c) */
++int
++mp_addmod (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
++{
++  int     res;
++  mp_int  t;
++
++  if ((res = mp_init (&t)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_add (a, b, &t)) != MP_OKAY) {
++    mp_clear (&t);
++    return res;
++  }
++  res = mp_mod (&t, c, d);
++  mp_clear (&t);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_addmod.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_and.c b/crypto/userspace/libtommath/bn_mp_and.c
+new file mode 100644
+index 0000000..8ea2287
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_and.c
+@@ -0,0 +1,57 @@
++#include <tommath.h>
++#ifdef BN_MP_AND_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* AND two ints together */
++int
++mp_and (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     res, ix, px;
++  mp_int  t, *x;
++
++  if (a->used > b->used) {
++    if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
++      return res;
++    }
++    px = b->used;
++    x = b;
++  } else {
++    if ((res = mp_init_copy (&t, b)) != MP_OKAY) {
++      return res;
++    }
++    px = a->used;
++    x = a;
++  }
++
++  for (ix = 0; ix < px; ix++) {
++    t.dp[ix] &= x->dp[ix];
++  }
++
++  /* zero digits above the last from the smallest mp_int */
++  for (; ix < t.used; ix++) {
++    t.dp[ix] = 0;
++  }
++
++  mp_clamp (&t);
++  mp_exch (c, &t);
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_and.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_clamp.c b/crypto/userspace/libtommath/bn_mp_clamp.c
+new file mode 100644
+index 0000000..359c2ff
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_clamp.c
+@@ -0,0 +1,44 @@
++#include <tommath.h>
++#ifdef BN_MP_CLAMP_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* trim unused digits 
++ *
++ * This is used to ensure that leading zero digits are
++ * trimed and the leading "used" digit will be non-zero
++ * Typically very fast.  Also fixes the sign if there
++ * are no more leading digits
++ */
++void
++mp_clamp (mp_int * a)
++{
++  /* decrease used while the most significant digit is
++   * zero.
++   */
++  while (a->used > 0 && a->dp[a->used - 1] == 0) {
++    --(a->used);
++  }
++
++  /* reset the sign flag if used == 0 */
++  if (a->used == 0) {
++    a->sign = MP_ZPOS;
++  }
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_clamp.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_clear.c b/crypto/userspace/libtommath/bn_mp_clear.c
+new file mode 100644
+index 0000000..05ee8e7
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_clear.c
+@@ -0,0 +1,45 @@
++#include <tommath.h>
++#include <linux/slab.h>
++#ifdef BN_MP_CLEAR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* clear one (frees)  */
++void
++mp_clear (mp_int * a)
++{
++  int i;
++
++  /* only do anything if a hasn't been freed previously */
++  if (a->dp != NULL) {
++    /* first zero the digits */
++    for (i = 0; i < a->used; i++) {
++        a->dp[i] = 0;
++    }
++
++    /* free ram */
++    XFREE(a->dp);
++
++    /* reset members to make debugging easier */
++    a->dp    = NULL;
++    a->alloc = a->used = 0;
++    a->sign  = MP_ZPOS;
++  }
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_clear.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_clear_multi.c b/crypto/userspace/libtommath/bn_mp_clear_multi.c
+new file mode 100644
+index 0000000..daaea79
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_clear_multi.c
 @@ -0,0 +1,34 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++#include <tommath.h>
++#ifdef BN_MP_CLEAR_MULTI_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
 + */
-+#include "tomcrypt.h"
++#include <stdarg.h>
 +
-+/**
-+  @file rsa_free.c
-+  Free an RSA key, Tom St Denis
-+*/  
-+
-+#ifdef LTC_MRSA
-+
-+/**
-+  Free an RSA key from memory
-+  @param key   The RSA key to free
-+*/
-+void rsa_free(rsa_key *key)
++void mp_clear_multi(mp_int *mp, ...) 
 +{
-+   LTC_ARGCHKVD(key != NULL);
-+   mp_clear_multi(&key->e, &key->d, &key->N, &key->dQ, &key->dP, &key->qP, &key->p, &key->q, NULL);
++    mp_int* next_mp = mp;
++    va_list args;
++    va_start(args, mp);
++    while (next_mp != NULL) {
++        mp_clear(next_mp);
++        next_mp = va_arg(args, mp_int*);
++    }
++    va_end(args);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_clear_multi.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_cmp.c b/crypto/userspace/libtommath/bn_mp_cmp.c
+new file mode 100644
+index 0000000..533f36b
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_cmp.c
+@@ -0,0 +1,43 @@
++#include <tommath.h>
++#ifdef BN_MP_CMP_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* compare two ints (signed)*/
++int
++mp_cmp (mp_int * a, mp_int * b)
++{
++  /* compare based on sign */
++  if (a->sign != b->sign) {
++     if (a->sign == MP_NEG) {
++        return MP_LT;
++     } else {
++        return MP_GT;
++     }
++  }
++  
++  /* compare digits */
++  if (a->sign == MP_NEG) {
++     /* if negative compare opposite direction */
++     return mp_cmp_mag(b, a);
++  } else {
++     return mp_cmp_mag(a, b);
++  }
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_cmp.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_cmp_d.c b/crypto/userspace/libtommath/bn_mp_cmp_d.c
+new file mode 100644
+index 0000000..724c1c3
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_cmp_d.c
+@@ -0,0 +1,44 @@
++#include <tommath.h>
++#ifdef BN_MP_CMP_D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* compare a digit */
++int mp_cmp_d(mp_int * a, mp_digit b)
++{
++  /* compare based on sign */
++  if (a->sign == MP_NEG) {
++    return MP_LT;
++  }
++
++  /* compare based on magnitude */
++  if (a->used > 1) {
++    return MP_GT;
++  }
++
++  /* compare the only digit of a to b */
++  if (a->dp[0] > b) {
++    return MP_GT;
++  } else if (a->dp[0] < b) {
++    return MP_LT;
++  } else {
++    return MP_EQ;
++  }
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_cmp_d.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_cmp_mag.c b/crypto/userspace/libtommath/bn_mp_cmp_mag.c
+new file mode 100644
+index 0000000..693eb7c
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_cmp_mag.c
+@@ -0,0 +1,55 @@
++#include <tommath.h>
++#ifdef BN_MP_CMP_MAG_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* compare maginitude of two ints (unsigned) */
++int mp_cmp_mag (mp_int * a, mp_int * b)
++{
++  int     n;
++  mp_digit *tmpa, *tmpb;
++
++  /* compare based on # of non-zero digits */
++  if (a->used > b->used) {
++    return MP_GT;
++  }
++  
++  if (a->used < b->used) {
++    return MP_LT;
++  }
++
++  /* alias for a */
++  tmpa = a->dp + (a->used - 1);
++
++  /* alias for b */
++  tmpb = b->dp + (a->used - 1);
++
++  /* compare based on digits  */
++  for (n = 0; n < a->used; ++n, --tmpa, --tmpb) {
++    if (*tmpa > *tmpb) {
++      return MP_GT;
++    }
++
++    if (*tmpa < *tmpb) {
++      return MP_LT;
++    }
++  }
++  return MP_EQ;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_cmp_mag.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_cnt_lsb.c b/crypto/userspace/libtommath/bn_mp_cnt_lsb.c
+new file mode 100644
+index 0000000..66d1a74
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_cnt_lsb.c
+@@ -0,0 +1,53 @@
++#include <tommath.h>
++#ifdef BN_MP_CNT_LSB_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++static const int lnz[16] = { 
++   4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
++};
++
++/* Counts the number of lsbs which are zero before the first zero bit */
++int mp_cnt_lsb(mp_int *a)
++{
++   int x;
++   mp_digit q, qq;
++
++   /* easy out */
++   if (mp_iszero(a) == 1) {
++      return 0;
++   }
++
++   /* scan lower digits until non-zero */
++   for (x = 0; x < a->used && a->dp[x] == 0; x++);
++   q = a->dp[x];
++   x *= DIGIT_BIT;
++
++   /* now scan this digit until a 1 is found */
++   if ((q & 1) == 0) {
++      do {
++         qq  = q & 15;
++         x  += lnz[qq];
++         q >>= 4;
++      } while (qq == 0);
++   }
++   return x;
 +}
 +
 +#endif
 +
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_free.c,v $ */
-+/* $Revision: 1.10 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_import.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_import.c
++/* $Source: /cvs/libtom/libtommath/bn_mp_cnt_lsb.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_copy.c b/crypto/userspace/libtommath/bn_mp_copy.c
 new file mode 100644
-index 0000000..8bd8c47
+index 0000000..b0de16d
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_import.c
-@@ -0,0 +1,128 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++++ b/crypto/userspace/libtommath/bn_mp_copy.c
+@@ -0,0 +1,68 @@
++#include <tommath.h>
++#ifdef BN_MP_COPY_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
 + */
-+#include "tomcrypt.h"
-+#include <linux/slab.h>
 +
-+/**
-+  @file rsa_import.c
-+  Import a LTC_PKCS RSA key, Tom St Denis
-+*/  
-+
-+#ifdef LTC_MRSA
-+
-+/**
-+  Import an RSAPublicKey or RSAPrivateKey [two-prime only, only support >= 1024-bit keys, defined in LTC_PKCS #1 v2.1]
-+  @param in      The packet to import from
-+  @param inlen   It's length (octets)
-+  @param key     [out] Destination for newly imported key
-+  @return CRYPT_OK if successful, upon error allocated memory is freed
-+*/
-+int rsa_import(const unsigned char *in, unsigned long inlen, rsa_key *key)
++/* copy, b = a */
++int
++mp_copy (mp_int * a, mp_int * b)
 +{
-+   int           err;
-+   mp_int        zero;
-+   unsigned char *tmpbuf=NULL;
-+   unsigned long tmpbuf_len;
++  int     res, n;
 +
-+   LTC_ARGCHK(in          != NULL);
-+   LTC_ARGCHK(key         != NULL);
++  /* if dst == src do nothing */
++  if (a == b) {
++    return MP_OKAY;
++  }
 +
-+   /* init key */
-+   if ((err = mp_init_multi(&key->e, &key->d, &key->N, &key->dQ, 
-+                            &key->dP, &key->qP, &key->p, &key->q, NULL)) != CRYPT_OK) {
-+      return err;
-+   }
++  /* grow dest */
++  if (b->alloc < a->used) {
++     if ((res = mp_grow (b, a->used)) != MP_OKAY) {
++        return res;
++     }
++  }
 +
-+   /* see if the OpenSSL DER format RSA public key will work */
-+   tmpbuf_len = MAX_RSA_SIZE * 8;
-+   tmpbuf = XCALLOC(1, tmpbuf_len);
-+   if (tmpbuf == NULL) {
-+       err = CRYPT_MEM;
-+       goto LBL_ERR;
-+   }
++  /* zero b and copy the parameters over */
++  {
++    register mp_digit *tmpa, *tmpb;
 +
-+   err = der_decode_subject_public_key_info(in, inlen,
-+        PKA_RSA, tmpbuf, &tmpbuf_len,
-+        LTC_ASN1_NULL, NULL, 0);
++    /* pointer aliases */
 +
-+   if (err == CRYPT_OK) { /* SubjectPublicKeyInfo format */
++    /* source */
++    tmpa = a->dp;
 +
-+      /* now it should be SEQUENCE { INTEGER, INTEGER } */
-+      if ((err = der_decode_sequence_multi(tmpbuf, tmpbuf_len,
-+                                           LTC_ASN1_INTEGER, 1UL, &key->N, 
-+                                           LTC_ASN1_INTEGER, 1UL, &key->e, 
-+                                           LTC_ASN1_EOL,     0UL, NULL)) != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
++    /* destination */
++    tmpb = b->dp;
 +
-+      XFREE(tmpbuf);
++    /* copy all the digits */
++    for (n = 0; n < a->used; n++) {
++      *tmpb++ = *tmpa++;
++    }
 +
-+      key->type = PK_PUBLIC;
-+      return CRYPT_OK;
-+   }
++    /* clear high digits */
++    for (; n < b->used; n++) {
++      *tmpb++ = 0;
++    }
++  }
 +
-+   XFREE(tmpbuf);
++  /* copy used count and sign */
++  b->used = a->used;
++  b->sign = a->sign;
++  return MP_OKAY;
++}
++#endif
 +
-+   /* not SSL public key, try to match against LTC_PKCS #1 standards */
-+   if ((err = der_decode_sequence_multi(in, inlen, 
-+                                  LTC_ASN1_INTEGER, 1UL, &key->N, 
-+                                  LTC_ASN1_EOL,     0UL, NULL)) != CRYPT_OK) {
++/* $Source: /cvs/libtom/libtommath/bn_mp_copy.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_count_bits.c b/crypto/userspace/libtommath/bn_mp_count_bits.c
+new file mode 100644
+index 0000000..8bc5657
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_count_bits.c
+@@ -0,0 +1,45 @@
++#include <tommath.h>
++#ifdef BN_MP_COUNT_BITS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* returns the number of bits in an int */
++int
++mp_count_bits (mp_int * a)
++{
++  int     r;
++  mp_digit q;
++
++  /* shortcut */
++  if (a->used == 0) {
++    return 0;
++  }
++
++  /* get number of digits and add that */
++  r = (a->used - 1) * DIGIT_BIT;
++  
++  /* take the last digit and count the bits in it */
++  q = a->dp[a->used - 1];
++  while (q > ((mp_digit) 0)) {
++    ++r;
++    q >>= ((mp_digit) 1);
++  }
++  return r;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_count_bits.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_div.c b/crypto/userspace/libtommath/bn_mp_div.c
+new file mode 100644
+index 0000000..aee9c94
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_div.c
+@@ -0,0 +1,292 @@
++#include <tommath.h>
++#ifdef BN_MP_DIV_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++#ifdef BN_MP_DIV_SMALL
++
++/* slower bit-bang division... also smaller */
++int mp_div(mp_int * a, mp_int * b, mp_int * c, mp_int * d)
++{
++   mp_int ta, tb, tq, q;
++   int    res, n, n2;
++
++  /* is divisor zero ? */
++  if (mp_iszero (b) == 1) {
++    return MP_VAL;
++  }
++
++  /* if a < b then q=0, r = a */
++  if (mp_cmp_mag (a, b) == MP_LT) {
++    if (d != NULL) {
++      res = mp_copy (a, d);
++    } else {
++      res = MP_OKAY;
++    }
++    if (c != NULL) {
++      mp_zero (c);
++    }
++    return res;
++  }
++	
++  /* init our temps */
++  if ((res = mp_init_multi(&ta, &tb, &tq, &q, NULL) != MP_OKAY)) {
++     return res;
++  }
++
++
++  mp_set(&tq, 1);
++  n = mp_count_bits(a) - mp_count_bits(b);
++  if (((res = mp_abs(a, &ta)) != MP_OKAY) ||
++      ((res = mp_abs(b, &tb)) != MP_OKAY) || 
++      ((res = mp_mul_2d(&tb, n, &tb)) != MP_OKAY) ||
++      ((res = mp_mul_2d(&tq, n, &tq)) != MP_OKAY)) {
 +      goto LBL_ERR;
-+   }
++  }
 +
-+   if (mp_cmp_d(&key->N, 0) == LTC_MP_EQ) {
-+      if ((err = mp_init(&zero)) != CRYPT_OK) { 
-+         goto LBL_ERR;
-+      }
-+      /* it's a private key */
-+      if ((err = der_decode_sequence_multi(in, inlen, 
-+                          LTC_ASN1_INTEGER, 1UL, zero, 
-+                          LTC_ASN1_INTEGER, 1UL, &key->N, 
-+                          LTC_ASN1_INTEGER, 1UL, &key->e,
-+                          LTC_ASN1_INTEGER, 1UL, &key->d, 
-+                          LTC_ASN1_INTEGER, 1UL, &key->p, 
-+                          LTC_ASN1_INTEGER, 1UL, &key->q, 
-+                          LTC_ASN1_INTEGER, 1UL, &key->dP,
-+                          LTC_ASN1_INTEGER, 1UL, &key->dQ, 
-+                          LTC_ASN1_INTEGER, 1UL, &key->qP, 
-+                          LTC_ASN1_EOL,     0UL, NULL)) != CRYPT_OK) {
-+         mp_clear(&zero);
-+         goto LBL_ERR;
-+      }
-+      mp_clear(&zero);
-+      key->type = PK_PRIVATE;
-+   } else if (mp_cmp_d(&key->N, 1) == LTC_MP_EQ) {
-+      /* we don't support multi-prime RSA */
-+      err = CRYPT_PK_INVALID_TYPE;
-+      goto LBL_ERR;
-+   } else {
-+      /* it's a public key and we lack e */
-+      if ((err = der_decode_sequence_multi(in, inlen, 
-+                                     LTC_ASN1_INTEGER, 1UL, &key->N, 
-+                                     LTC_ASN1_INTEGER, 1UL, &key->e, 
-+                                     LTC_ASN1_EOL,     0UL, NULL)) != CRYPT_OK) {
-+         goto LBL_ERR;
-+      }
-+      key->type = PK_PUBLIC;
-+   }
-+   return CRYPT_OK;
++  while (n-- >= 0) {
++     if (mp_cmp(&tb, &ta) != MP_GT) {
++        if (((res = mp_sub(&ta, &tb, &ta)) != MP_OKAY) ||
++            ((res = mp_add(&q, &tq, &q)) != MP_OKAY)) {
++           goto LBL_ERR;
++        }
++     }
++     if (((res = mp_div_2d(&tb, 1, &tb, NULL)) != MP_OKAY) ||
++         ((res = mp_div_2d(&tq, 1, &tq, NULL)) != MP_OKAY)) {
++           goto LBL_ERR;
++     }
++  }
++
++  /* now q == quotient and ta == remainder */
++  n  = a->sign;
++  n2 = (a->sign == b->sign ? MP_ZPOS : MP_NEG);
++  if (c != NULL) {
++     mp_exch(c, &q);
++     c->sign  = (mp_iszero(c) == MP_YES) ? MP_ZPOS : n2;
++  }
++  if (d != NULL) {
++     mp_exch(d, &ta);
++     d->sign = (mp_iszero(d) == MP_YES) ? MP_ZPOS : n;
++  }
 +LBL_ERR:
-+   XFREE(tmpbuf);
-+   mp_clear_multi(&key->d,  &key->e, &key->N, &key->dQ, &key->dP, &key->qP, &key->p, &key->q, NULL);
-+   return err;
++   mp_clear_multi(&ta, &tb, &tq, &q, NULL);
++   return res;
 +}
 +
-+#endif /* LTC_MRSA */
++#else
 +
-+
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_import.c,v $ */
-+/* $Revision: 1.23 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_make_key.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_make_key.c
-new file mode 100644
-index 0000000..6718f09
---- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_make_key.c
-@@ -0,0 +1,105 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++/* integer signed division. 
++ * c*b + d == a [e.g. a/b, c=quotient, d=remainder]
++ * HAC pp.598 Algorithm 14.20
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * Note that the description in HAC is horribly 
++ * incomplete.  For example, it doesn't consider 
++ * the case where digits are removed from 'x' in 
++ * the inner loop.  It also doesn't consider the 
++ * case that y has fewer than three digits, etc..
 + *
-+ * The library is free for all purposes without any express
-+ * guarantee it works.
-+ *
-+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
-+ */
-+#include "tomcrypt.h"
-+
-+/**
-+  @file rsa_make_key.c
-+  RSA key generation, Tom St Denis
-+*/  
-+
-+#ifdef LTC_MRSA
-+
-+/** 
-+   Create an RSA key
-+   @param size     The size of the modulus (key size) desired (octets)
-+   @param e        The "e" value (public key).  e==65537 is a good choice
-+   @param key      [out] Destination of a newly created private key pair
-+   @return CRYPT_OK if successful, upon error all allocated ram is freed
++ * The overall algorithm is as described as 
++ * 14.20 from HAC but fixed to treat these cases.
 +*/
-+int rsa_make_key(int size, long e, rsa_key *key)
++int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
 +{
-+   mp_int p, q, tmp1, tmp2, tmp3;
-+   int    err;
++  mp_int  q, x, y, t1, t2;
++  int     res, n, t, i, norm, neg;
 +
-+   LTC_ARGCHK(key         != NULL);
++  /* is divisor zero ? */
++  if (mp_iszero (b) == 1) {
++    return MP_VAL;
++  }
 +
-+   if ((size < (MIN_RSA_SIZE/8)) || (size > (MAX_RSA_SIZE/8))) {
-+      return CRYPT_INVALID_KEYSIZE;
-+   }
++  /* if a < b then q=0, r = a */
++  if (mp_cmp_mag (a, b) == MP_LT) {
++    if (d != NULL) {
++      res = mp_copy (a, d);
++    } else {
++      res = MP_OKAY;
++    }
++    if (c != NULL) {
++      mp_zero (c);
++    }
++    return res;
++  }
 +
-+   if ((e < 3) || ((e & 1) == 0)) {
-+      return CRYPT_INVALID_ARG;
-+   }
++  if ((res = mp_init_size (&q, a->used + 2)) != MP_OKAY) {
++    return res;
++  }
++  q.used = a->used + 2;
 +
-+   if ((err = mp_init_multi(&p, &q, &tmp1, &tmp2, &tmp3, NULL)) != CRYPT_OK) {
-+      return err;
-+   }
++  if ((res = mp_init (&t1)) != MP_OKAY) {
++    goto LBL_Q;
++  }
 +
-+   /* make primes p and q (optimization provided by Wayne Scott) */
-+   if ((err = mp_set_int(&tmp3, e)) != CRYPT_OK)                      { goto cleanup; }  /* tmp3 = e */
++  if ((res = mp_init (&t2)) != MP_OKAY) {
++    goto LBL_T1;
++  }
 +
-+   /* make prime "p" */
-+   do {
-+       if ((err = rand_prime( &p, size/2)) != CRYPT_OK)  { goto cleanup; }
-+       if ((err = mp_sub_d( &p, 1,  &tmp1)) != CRYPT_OK)               { goto cleanup; }  /* tmp1 = p-1 */
-+       if ((err = mp_gcd( &tmp1,  &tmp3,  &tmp2)) != CRYPT_OK)          { goto cleanup; }  /* tmp2 = gcd(p-1, e) */
-+   } while (mp_cmp_d( &tmp2, 1) != 0);                                                  /* while e divides p-1 */
++  if ((res = mp_init_copy (&x, a)) != MP_OKAY) {
++    goto LBL_T2;
++  }
 +
-+   /* make prime "q" */
-+   do {
-+       if ((err = rand_prime( &q, size/2)) != CRYPT_OK)  { goto cleanup; }
-+       if ((err = mp_sub_d( &q, 1,  &tmp1)) != CRYPT_OK)               { goto cleanup; } /* tmp1 = q-1 */
-+       if ((err = mp_gcd( &tmp1,  &tmp3,  &tmp2)) != CRYPT_OK)          { goto cleanup; } /* tmp2 = gcd(q-1, e) */
-+   } while (mp_cmp_d( &tmp2, 1) != 0);                                                 /* while e divides q-1 */
++  if ((res = mp_init_copy (&y, b)) != MP_OKAY) {
++    goto LBL_X;
++  }
 +
-+   /* tmp1 = lcm(p-1, q-1) */
-+   if ((err = mp_sub_d( &p, 1,  &tmp2)) != CRYPT_OK)                   { goto cleanup; } /* tmp2 = p-1 */
-+                                                                                      /* tmp1 = q-1 (previous do/while loop) */
-+   if ((err = mp_lcm( &tmp1,  &tmp2,  &tmp1)) != CRYPT_OK)              { goto cleanup; } /* tmp1 = lcm(p-1, q-1) */
++  /* fix the sign */
++  neg = (a->sign == b->sign) ? MP_ZPOS : MP_NEG;
++  x.sign = y.sign = MP_ZPOS;
 +
-+   /* make key */
-+   if ((err = mp_init_multi(&key->e, &key->d, &key->N, &key->dQ, &key->dP, &key->qP, &key->p, &key->q, NULL)) != CRYPT_OK) {
-+      goto cleanup;
-+   }
++  /* normalize both x and y, ensure that y >= b/2, [b == 2**DIGIT_BIT] */
++  norm = mp_count_bits(&y) % DIGIT_BIT;
++  if (norm < (int)(DIGIT_BIT-1)) {
++     norm = (DIGIT_BIT-1) - norm;
++     if ((res = mp_mul_2d (&x, norm, &x)) != MP_OKAY) {
++       goto LBL_Y;
++     }
++     if ((res = mp_mul_2d (&y, norm, &y)) != MP_OKAY) {
++       goto LBL_Y;
++     }
++  } else {
++     norm = 0;
++  }
 +
-+   if ((err = mp_set_int( &key->e, e)) != CRYPT_OK)                     { goto errkey; } /* key->e =  e */
-+   if ((err = mp_invmod( &key->e,  &tmp1,  &key->d)) != CRYPT_OK)         { goto errkey; } /* key->d = 1/e mod lcm(p-1,q-1) */
-+   if ((err = mp_mul( &p,  &q,  &key->N)) != CRYPT_OK)                    { goto errkey; } /* key->N = pq */
++  /* note hac does 0 based, so if used==5 then its 0,1,2,3,4, e.g. use 4 */
++  n = x.used - 1;
++  t = y.used - 1;
 +
-+   /* optimize for CRT now */
-+   /* find d mod q-1 and d mod p-1 */
-+   if ((err = mp_sub_d( &p, 1,  &tmp1)) != CRYPT_OK)                     { goto errkey; } /* tmp1 = q-1 */
-+   if ((err = mp_sub_d( &q, 1,  &tmp2)) != CRYPT_OK)                     { goto errkey; } /* tmp2 = p-1 */
-+   if ((err = mp_mod( &key->d,  &tmp1,  &key->dP)) != CRYPT_OK)           { goto errkey; } /* dP = d mod p-1 */
-+   if ((err = mp_mod( &key->d,  &tmp2,  &key->dQ)) != CRYPT_OK)           { goto errkey; } /* dQ = d mod q-1 */
-+   if ((err = mp_invmod( &q,  &p,  &key->qP)) != CRYPT_OK)                { goto errkey; } /* qP = 1/q mod p */
++  /* while (x >= y*b**n-t) do { q[n-t] += 1; x -= y*b**{n-t} } */
++  if ((res = mp_lshd (&y, n - t)) != MP_OKAY) { /* y = y*b**{n-t} */
++    goto LBL_Y;
++  }
 +
-+   if ((err = mp_copy( &p,  &key->p)) != CRYPT_OK)                       { goto errkey; }
-+   if ((err = mp_copy( &q,  &key->q)) != CRYPT_OK)                       { goto errkey; }
++  while (mp_cmp (&x, &y) != MP_LT) {
++    ++(q.dp[n - t]);
++    if ((res = mp_sub (&x, &y, &x)) != MP_OKAY) {
++      goto LBL_Y;
++    }
++  }
 +
-+   /* set key type (in this case it's CRT optimized) */
-+   key->type = PK_PRIVATE;
++  /* reset y by shifting it back down */
++  mp_rshd (&y, n - t);
 +
-+   /* return ok and free temps */
-+   err       = CRYPT_OK;
-+   goto cleanup;
-+errkey:
-+   mp_clear_multi(&key->d, &key->e, &key->N, &key->dQ, &key->dP, &key->qP, &key->p, &key->q, NULL);
-+cleanup:
-+   mp_clear_multi(&tmp3, &tmp2, &tmp1, &p, &q, NULL);
-+   return err;
++  /* step 3. for i from n down to (t + 1) */
++  for (i = n; i >= (t + 1); i--) {
++    if (i > x.used) {
++      continue;
++    }
++
++    /* step 3.1 if xi == yt then set q{i-t-1} to b-1, 
++     * otherwise set q{i-t-1} to (xi*b + x{i-1})/yt */
++    if (x.dp[i] == y.dp[t]) {
++      q.dp[i - t - 1] = ((((mp_digit)1) << DIGIT_BIT) - 1);
++    } else {
++      mp_word tmp;
++      tmp = ((mp_word) x.dp[i]) << ((mp_word) DIGIT_BIT);
++      tmp |= ((mp_word) x.dp[i - 1]);
++      tmp /= ((mp_word) y.dp[t]);
++      if (tmp > (mp_word) MP_MASK)
++        tmp = MP_MASK;
++      q.dp[i - t - 1] = (mp_digit) (tmp & (mp_word) (MP_MASK));
++    }
++
++    /* while (q{i-t-1} * (yt * b + y{t-1})) > 
++             xi * b**2 + xi-1 * b + xi-2 
++     
++       do q{i-t-1} -= 1; 
++    */
++    q.dp[i - t - 1] = (q.dp[i - t - 1] + 1) & MP_MASK;
++    do {
++      q.dp[i - t - 1] = (q.dp[i - t - 1] - 1) & MP_MASK;
++
++      /* find left hand */
++      mp_zero (&t1);
++      t1.dp[0] = (t - 1 < 0) ? 0 : y.dp[t - 1];
++      t1.dp[1] = y.dp[t];
++      t1.used = 2;
++      if ((res = mp_mul_d (&t1, q.dp[i - t - 1], &t1)) != MP_OKAY) {
++        goto LBL_Y;
++      }
++
++      /* find right hand */
++      t2.dp[0] = (i - 2 < 0) ? 0 : x.dp[i - 2];
++      t2.dp[1] = (i - 1 < 0) ? 0 : x.dp[i - 1];
++      t2.dp[2] = x.dp[i];
++      t2.used = 3;
++    } while (mp_cmp_mag(&t1, &t2) == MP_GT);
++
++    /* step 3.3 x = x - q{i-t-1} * y * b**{i-t-1} */
++    if ((res = mp_mul_d (&y, q.dp[i - t - 1], &t1)) != MP_OKAY) {
++      goto LBL_Y;
++    }
++
++    if ((res = mp_lshd (&t1, i - t - 1)) != MP_OKAY) {
++      goto LBL_Y;
++    }
++
++    if ((res = mp_sub (&x, &t1, &x)) != MP_OKAY) {
++      goto LBL_Y;
++    }
++
++    /* if x < 0 then { x = x + y*b**{i-t-1}; q{i-t-1} -= 1; } */
++    if (x.sign == MP_NEG) {
++      if ((res = mp_copy (&y, &t1)) != MP_OKAY) {
++        goto LBL_Y;
++      }
++      if ((res = mp_lshd (&t1, i - t - 1)) != MP_OKAY) {
++        goto LBL_Y;
++      }
++      if ((res = mp_add (&x, &t1, &x)) != MP_OKAY) {
++        goto LBL_Y;
++      }
++
++      q.dp[i - t - 1] = (q.dp[i - t - 1] - 1UL) & MP_MASK;
++    }
++  }
++
++  /* now q is the quotient and x is the remainder 
++   * [which we have to normalize] 
++   */
++  
++  /* get sign before writing to c */
++  x.sign = x.used == 0 ? MP_ZPOS : a->sign;
++
++  if (c != NULL) {
++    mp_clamp (&q);
++    mp_exch (&q, c);
++    c->sign = neg;
++  }
++
++  if (d != NULL) {
++    mp_div_2d (&x, norm, &x, NULL);
++    mp_exch (&x, d);
++  }
++
++  res = MP_OKAY;
++
++LBL_Y:mp_clear (&y);
++LBL_X:mp_clear (&x);
++LBL_T2:mp_clear (&t2);
++LBL_T1:mp_clear (&t1);
++LBL_Q:mp_clear (&q);
++  return res;
 +}
 +
 +#endif
 +
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_make_key.c,v $ */
-+/* $Revision: 1.16 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_sign_hash.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_sign_hash.c
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_div.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_div_2.c b/crypto/userspace/libtommath/bn_mp_div_2.c
 new file mode 100644
-index 0000000..b3c2f5b
+index 0000000..7ee3e5b
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_sign_hash.c
-@@ -0,0 +1,130 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++++ b/crypto/userspace/libtommath/bn_mp_div_2.c
+@@ -0,0 +1,68 @@
++#include <tommath.h>
++#ifdef BN_MP_DIV_2_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
 + */
-+#include "tomcrypt.h"
-+#include "ncr-int.h"
-+#include <linux/slab.h>
 +
-+/**
-+  @file rsa_sign_hash.c
-+  RSA LTC_PKCS #1 v1.5 and v2 PSS sign hash, Tom St Denis and Andreas Lange
-+*/
-+
-+#ifdef LTC_MRSA
-+
-+/**
-+  LTC_PKCS #1 pad then sign
-+  @param in        The hash to sign
-+  @param inlen     The length of the hash to sign (octets)
-+  @param out       [out] The signature
-+  @param outlen    [in/out] The max size and resulting size of the signature
-+  @param padding   Type of padding (LTC_LTC_PKCS_1_PSS or LTC_LTC_PKCS_1_V1_5)
-+  @param hash      The desired hash
-+  @param saltlen   The length of the salt desired (octets)
-+  @param key       The private RSA key to use
-+  @return CRYPT_OK if successful
-+*/
-+int rsa_sign_hash_ex(const unsigned char *in,       unsigned long  inlen,
-+                           unsigned char *out,      unsigned long *outlen,
-+                           int            padding,
-+                     const struct algo_properties_st *hash, unsigned long saltlen,
-+                           rsa_key *key)
++/* b = a/2 */
++int mp_div_2(mp_int * a, mp_int * b)
 +{
-+   unsigned long modulus_bitlen, modulus_bytelen, x, y;
-+   int           err;
++  int     x, res, oldused;
 +
-+   LTC_ARGCHK(in       != NULL);
-+   LTC_ARGCHK(out      != NULL);
-+   LTC_ARGCHK(outlen   != NULL);
-+   LTC_ARGCHK(key      != NULL);
++  /* copy */
++  if (b->alloc < a->used) {
++    if ((res = mp_grow (b, a->used)) != MP_OKAY) {
++      return res;
++    }
++  }
 +
-+   /* valid padding? */
-+   if ((padding != LTC_LTC_PKCS_1_V1_5) && (padding != LTC_LTC_PKCS_1_PSS)) {
-+     return CRYPT_PK_INVALID_PADDING;
++  oldused = b->used;
++  b->used = a->used;
++  {
++    register mp_digit r, rr, *tmpa, *tmpb;
++
++    /* source alias */
++    tmpa = a->dp + b->used - 1;
++
++    /* dest alias */
++    tmpb = b->dp + b->used - 1;
++
++    /* carry */
++    r = 0;
++    for (x = b->used - 1; x >= 0; x--) {
++      /* get the carry for the next iteration */
++      rr = *tmpa & 1;
++
++      /* shift the current digit, add in carry and store */
++      *tmpb-- = (*tmpa-- >> 1) | (r << (DIGIT_BIT - 1));
++
++      /* forward carry to next iteration */
++      r = rr;
++    }
++
++    /* zero excess digits */
++    tmpb = b->dp + b->used;
++    for (x = b->used; x < oldused; x++) {
++      *tmpb++ = 0;
++    }
++  }
++  b->sign = a->sign;
++  mp_clamp (b);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_div_2.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_div_2d.c b/crypto/userspace/libtommath/bn_mp_div_2d.c
+new file mode 100644
+index 0000000..4f7fa59
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_div_2d.c
+@@ -0,0 +1,97 @@
++#include <tommath.h>
++#ifdef BN_MP_DIV_2D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* shift right by a certain bit count (store quotient in c, optional remainder in d) */
++int mp_div_2d (mp_int * a, int b, mp_int * c, mp_int * d)
++{
++  mp_digit D, r, rr;
++  int     x, res;
++  mp_int  t;
++
++
++  /* if the shift count is <= 0 then we do no work */
++  if (b <= 0) {
++    res = mp_copy (a, c);
++    if (d != NULL) {
++      mp_zero (d);
++    }
++    return res;
++  }
++
++  if ((res = mp_init (&t)) != MP_OKAY) {
++    return res;
++  }
++
++  /* get the remainder */
++  if (d != NULL) {
++    if ((res = mp_mod_2d (a, b, &t)) != MP_OKAY) {
++      mp_clear (&t);
++      return res;
++    }
++  }
++
++  /* copy */
++  if ((res = mp_copy (a, c)) != MP_OKAY) {
++    mp_clear (&t);
++    return res;
++  }
++
++  /* shift by as many digits in the bit count */
++  if (b >= (int)DIGIT_BIT) {
++    mp_rshd (c, b / DIGIT_BIT);
++  }
++
++  /* shift any bit count < DIGIT_BIT */
++  D = (mp_digit) (b % DIGIT_BIT);
++  if (D != 0) {
++    register mp_digit *tmpc, mask, shift;
++
++    /* mask */
++    mask = (((mp_digit)1) << D) - 1;
++
++    /* shift for lsb */
++    shift = DIGIT_BIT - D;
++
++    /* alias */
++    tmpc = c->dp + (c->used - 1);
++
++    /* carry */
++    r = 0;
++    for (x = c->used - 1; x >= 0; x--) {
++      /* get the lower  bits of this word in a temp */
++      rr = *tmpc & mask;
++
++      /* shift the current word and mix in the carry bits from the previous word */
++      *tmpc = (*tmpc >> D) | (r << shift);
++      --tmpc;
++
++      /* set the carry to the carry bits of the current word found above */
++      r = rr;
++    }
++  }
++  mp_clamp (c);
++  if (d != NULL) {
++    mp_exch (&t, d);
++  }
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_div_2d.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_div_3.c b/crypto/userspace/libtommath/bn_mp_div_3.c
+new file mode 100644
+index 0000000..3c60269
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_div_3.c
+@@ -0,0 +1,79 @@
++#include <tommath.h>
++#ifdef BN_MP_DIV_3_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* divide by three (based on routine from MPI and the GMP manual) */
++int
++mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
++{
++  mp_int   q;
++  mp_word  w, t;
++  mp_digit b;
++  int      res, ix;
++  
++  /* b = 2**DIGIT_BIT / 3 */
++  b = (((mp_word)1) << ((mp_word)DIGIT_BIT)) / ((mp_word)3);
++
++  if ((res = mp_init_size(&q, a->used)) != MP_OKAY) {
++     return res;
++  }
++  
++  q.used = a->used;
++  q.sign = a->sign;
++  w = 0;
++  for (ix = a->used - 1; ix >= 0; ix--) {
++     w = (w << ((mp_word)DIGIT_BIT)) | ((mp_word)a->dp[ix]);
++
++     if (w >= 3) {
++        /* multiply w by [1/3] */
++        t = (w * ((mp_word)b)) >> ((mp_word)DIGIT_BIT);
++
++        /* now subtract 3 * [w/3] from w, to get the remainder */
++        w -= t+t+t;
++
++        /* fixup the remainder as required since
++         * the optimization is not exact.
++         */
++        while (w >= 3) {
++           t += 1;
++           w -= 3;
++        }
++      } else {
++        t = 0;
++      }
++      q.dp[ix] = (mp_digit)t;
++  }
++
++  /* [optional] store the remainder */
++  if (d != NULL) {
++     *d = (mp_digit)w;
++  }
++
++  /* [optional] store the quotient */
++  if (c != NULL) {
++     mp_clamp(&q);
++     mp_exch(&q, c);
++  }
++  mp_clear(&q);
++  
++  return res;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_div_3.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_div_d.c b/crypto/userspace/libtommath/bn_mp_div_d.c
+new file mode 100644
+index 0000000..6a26d4f
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_div_d.c
+@@ -0,0 +1,115 @@
++#include <tommath.h>
++#ifdef BN_MP_DIV_D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++static int s_is_power_of_two(mp_digit b, int *p)
++{
++   int x;
++
++   /* fast return if no power of two */
++   if ((b==0) || (b & (b-1))) {
++      return 0;
 +   }
 +
-+   if (padding == LTC_LTC_PKCS_1_PSS) {
-+     if ((err = hash_is_valid(hash)) != CRYPT_OK) {
++   for (x = 0; x < DIGIT_BIT; x++) {
++      if (b == (((mp_digit)1)<<x)) {
++         *p = x;
++         return 1;
++      }
++   }
++   return 0;
++}
++
++/* single digit division (based on routine from MPI) */
++int mp_div_d (mp_int * a, mp_digit b, mp_int * c, mp_digit * d)
++{
++  mp_int  q;
++  mp_word w;
++  mp_digit t;
++  int     res, ix;
++
++  /* cannot divide by zero */
++  if (b == 0) {
++     return MP_VAL;
++  }
++
++  /* quick outs */
++  if (b == 1 || mp_iszero(a) == 1) {
++     if (d != NULL) {
++        *d = 0;
++     }
++     if (c != NULL) {
++        return mp_copy(a, c);
++     }
++     return MP_OKAY;
++  }
++
++  /* power of two ? */
++  if (s_is_power_of_two(b, &ix) == 1) {
++     if (d != NULL) {
++        *d = a->dp[0] & ((((mp_digit)1)<<ix) - 1);
++     }
++     if (c != NULL) {
++        return mp_div_2d(a, ix, c, NULL);
++     }
++     return MP_OKAY;
++  }
++
++#ifdef BN_MP_DIV_3_C
++  /* three? */
++  if (b == 3) {
++     return mp_div_3(a, c, d);
++  }
++#endif
++
++  /* no easy answer [c'est la vie].  Just division */
++  if ((res = mp_init_size(&q, a->used)) != MP_OKAY) {
++     return res;
++  }
++  
++  q.used = a->used;
++  q.sign = a->sign;
++  w = 0;
++  for (ix = a->used - 1; ix >= 0; ix--) {
++     w = (w << ((mp_word)DIGIT_BIT)) | ((mp_word)a->dp[ix]);
++     
++     if (w >= b) {
++        t = (mp_digit)(w / b);
++        w -= ((mp_word)t) * ((mp_word)b);
++      } else {
++        t = 0;
++      }
++      q.dp[ix] = (mp_digit)t;
++  }
++  
++  if (d != NULL) {
++     *d = (mp_digit)w;
++  }
++  
++  if (c != NULL) {
++     mp_clamp(&q);
++     mp_exch(&q, c);
++  }
++  mp_clear(&q);
++  
++  return res;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_div_d.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2007/01/09 04:44:32 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_dr_is_modulus.c b/crypto/userspace/libtommath/bn_mp_dr_is_modulus.c
+new file mode 100644
+index 0000000..5237344
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_dr_is_modulus.c
+@@ -0,0 +1,43 @@
++#include <tommath.h>
++#ifdef BN_MP_DR_IS_MODULUS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* determines if a number is a valid DR modulus */
++int mp_dr_is_modulus(mp_int *a)
++{
++   int ix;
++
++   /* must be at least two digits */
++   if (a->used < 2) {
++      return 0;
++   }
++
++   /* must be of the form b**k - a [a <= b] so all
++    * but the first digit must be equal to -1 (mod b).
++    */
++   for (ix = 1; ix < a->used; ix++) {
++       if (a->dp[ix] != MP_MASK) {
++          return 0;
++       }
++   }
++   return 1;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_dr_is_modulus.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_dr_reduce.c b/crypto/userspace/libtommath/bn_mp_dr_reduce.c
+new file mode 100644
+index 0000000..e60b578
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_dr_reduce.c
+@@ -0,0 +1,94 @@
++#include <tommath.h>
++#ifdef BN_MP_DR_REDUCE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* reduce "x" in place modulo "n" using the Diminished Radix algorithm.
++ *
++ * Based on algorithm from the paper
++ *
++ * "Generating Efficient Primes for Discrete Log Cryptosystems"
++ *                 Chae Hoon Lim, Pil Joong Lee,
++ *          POSTECH Information Research Laboratories
++ *
++ * The modulus must be of a special format [see manual]
++ *
++ * Has been modified to use algorithm 7.10 from the LTM book instead
++ *
++ * Input x must be in the range 0 <= x <= (n-1)**2
++ */
++int
++mp_dr_reduce (mp_int * x, mp_int * n, mp_digit k)
++{
++  int      err, i, m;
++  mp_word  r;
++  mp_digit mu, *tmpx1, *tmpx2;
++
++  /* m = digits in modulus */
++  m = n->used;
++
++  /* ensure that "x" has at least 2m digits */
++  if (x->alloc < m + m) {
++    if ((err = mp_grow (x, m + m)) != MP_OKAY) {
++      return err;
++    }
++  }
++
++/* top of loop, this is where the code resumes if
++ * another reduction pass is required.
++ */
++top:
++  /* aliases for digits */
++  /* alias for lower half of x */
++  tmpx1 = x->dp;
++
++  /* alias for upper half of x, or x/B**m */
++  tmpx2 = x->dp + m;
++
++  /* set carry to zero */
++  mu = 0;
++
++  /* compute (x mod B**m) + k * [x/B**m] inline and inplace */
++  for (i = 0; i < m; i++) {
++      r         = ((mp_word)*tmpx2++) * ((mp_word)k) + *tmpx1 + mu;
++      *tmpx1++  = (mp_digit)(r & MP_MASK);
++      mu        = (mp_digit)(r >> ((mp_word)DIGIT_BIT));
++  }
++
++  /* set final carry */
++  *tmpx1++ = mu;
++
++  /* zero words above m */
++  for (i = m + 1; i < x->used; i++) {
++      *tmpx1++ = 0;
++  }
++
++  /* clamp, sub and return */
++  mp_clamp (x);
++
++  /* if x >= n then subtract and reduce again
++   * Each successive "recursion" makes the input smaller and smaller.
++   */
++  if (mp_cmp_mag (x, n) != MP_LT) {
++    s_mp_sub(x, n, x);
++    goto top;
++  }
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_dr_reduce.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_dr_setup.c b/crypto/userspace/libtommath/bn_mp_dr_setup.c
+new file mode 100644
+index 0000000..1d7d856
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_dr_setup.c
+@@ -0,0 +1,32 @@
++#include <tommath.h>
++#ifdef BN_MP_DR_SETUP_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* determines the setup value */
++void mp_dr_setup(mp_int *a, mp_digit *d)
++{
++   /* the casts are required if DIGIT_BIT is one less than
++    * the number of bits in a mp_digit [e.g. DIGIT_BIT==31]
++    */
++   *d = (mp_digit)((((mp_word)1) << ((mp_word)DIGIT_BIT)) - 
++        ((mp_word)a->dp[0]));
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_dr_setup.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_exch.c b/crypto/userspace/libtommath/bn_mp_exch.c
+new file mode 100644
+index 0000000..38574e0
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_exch.c
+@@ -0,0 +1,34 @@
++#include <tommath.h>
++#ifdef BN_MP_EXCH_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* swap the elements of two integers, for cases where you can't simply swap the 
++ * mp_int pointers around
++ */
++void
++mp_exch (mp_int * a, mp_int * b)
++{
++  mp_int  t;
++
++  t  = *a;
++  *a = *b;
++  *b = t;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_exch.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_expt_d.c b/crypto/userspace/libtommath/bn_mp_expt_d.c
+new file mode 100644
+index 0000000..4bdc2d1
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_expt_d.c
+@@ -0,0 +1,57 @@
++#include <tommath.h>
++#ifdef BN_MP_EXPT_D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* calculate c = a**b  using a square-multiply algorithm */
++int mp_expt_d (mp_int * a, mp_digit b, mp_int * c)
++{
++  int     res, x;
++  mp_int  g;
++
++  if ((res = mp_init_copy (&g, a)) != MP_OKAY) {
++    return res;
++  }
++
++  /* set initial result */
++  mp_set (c, 1);
++
++  for (x = 0; x < (int) DIGIT_BIT; x++) {
++    /* square */
++    if ((res = mp_sqr (c, c)) != MP_OKAY) {
++      mp_clear (&g);
++      return res;
++    }
++
++    /* if the bit is set multiply */
++    if ((b & (mp_digit) (((mp_digit)1) << (DIGIT_BIT - 1))) != 0) {
++      if ((res = mp_mul (c, &g, c)) != MP_OKAY) {
++         mp_clear (&g);
++         return res;
++      }
++    }
++
++    /* shift to next bit */
++    b <<= 1;
++  }
++
++  mp_clear (&g);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_expt_d.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_exptmod.c b/crypto/userspace/libtommath/bn_mp_exptmod.c
+new file mode 100644
+index 0000000..0231916
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_exptmod.c
+@@ -0,0 +1,112 @@
++#include <tommath.h>
++#ifdef BN_MP_EXPTMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++
++/* this is a shell function that calls either the normal or Montgomery
++ * exptmod functions.  Originally the call to the montgomery code was
++ * embedded in the normal function but that wasted alot of stack space
++ * for nothing (since 99% of the time the Montgomery code would be called)
++ */
++int mp_exptmod (mp_int * G, mp_int * X, mp_int * P, mp_int * Y)
++{
++  int dr;
++
++  /* modulus P must be positive */
++  if (P->sign == MP_NEG) {
++     return MP_VAL;
++  }
++
++  /* if exponent X is negative we have to recurse */
++  if (X->sign == MP_NEG) {
++#ifdef BN_MP_INVMOD_C
++     mp_int tmpG, tmpX;
++     int err;
++
++     /* first compute 1/G mod P */
++     if ((err = mp_init(&tmpG)) != MP_OKAY) {
 +        return err;
 +     }
-+   }
++     if ((err = mp_invmod(G, P, &tmpG)) != MP_OKAY) {
++        mp_clear(&tmpG);
++        return err;
++     }
 +
-+   /* get modulus len in bits */
-+   modulus_bitlen = mp_count_bits((&key->N));
++     /* now get |X| */
++     if ((err = mp_init(&tmpX)) != MP_OKAY) {
++        mp_clear(&tmpG);
++        return err;
++     }
++     if ((err = mp_abs(X, &tmpX)) != MP_OKAY) {
++        mp_clear_multi(&tmpG, &tmpX, NULL);
++        return err;
++     }
 +
-+  /* outlen must be at least the size of the modulus */
-+  modulus_bytelen = mp_unsigned_bin_size((&key->N));
-+  if (modulus_bytelen > *outlen) {
-+     *outlen = modulus_bytelen;
-+     return CRYPT_BUFFER_OVERFLOW;
++     /* and now compute (1/G)**|X| instead of G**X [X < 0] */
++     err = mp_exptmod(&tmpG, &tmpX, P, Y);
++     mp_clear_multi(&tmpG, &tmpX, NULL);
++     return err;
++#else 
++     /* no invmod */
++     return MP_VAL;
++#endif
 +  }
 +
-+  if (padding == LTC_LTC_PKCS_1_PSS) {
-+    /* PSS pad the key */
-+    x = *outlen;
-+    if ((err = pkcs_1_pss_encode(in, inlen, saltlen, 
-+                                 hash, modulus_bitlen, out, &x)) != CRYPT_OK) {
-+       return err;
-+    }
++/* modified diminished radix reduction */
++#if defined(BN_MP_REDUCE_IS_2K_L_C) && defined(BN_MP_REDUCE_2K_L_C) && defined(BN_S_MP_EXPTMOD_C)
++  if (mp_reduce_is_2k_l(P) == MP_YES) {
++     return s_mp_exptmod(G, X, P, Y, 1);
++  }
++#endif
++
++#ifdef BN_MP_DR_IS_MODULUS_C
++  /* is it a DR modulus? */
++  dr = mp_dr_is_modulus(P);
++#else
++  /* default to no */
++  dr = 0;
++#endif
++
++#ifdef BN_MP_REDUCE_IS_2K_C
++  /* if not, is it a unrestricted DR modulus? */
++  if (dr == 0) {
++     dr = mp_reduce_is_2k(P) << 1;
++  }
++#endif
++    
++  /* if the modulus is odd or dr != 0 use the montgomery method */
++#ifdef BN_MP_EXPTMOD_FAST_C
++  if (mp_isodd (P) == 1 || dr !=  0) {
++    return mp_exptmod_fast (G, X, P, Y, dr);
 +  } else {
-+    /* LTC_PKCS #1 v1.5 pad the hash */
-+    unsigned char *tmpin;
-+    ltc_asn1_list digestinfo[2], siginfo[2];
-+    oid_st st;
-+
-+    /* not all hashes have OIDs... so sad */
-+    if (hash_get_oid(hash, &st) != CRYPT_OK) {
-+       return CRYPT_INVALID_ARG;
-+    }
-+
-+    /* construct the SEQUENCE 
-+      SEQUENCE {
-+         SEQUENCE {hashoid OID
-+                   blah    NULL
-+         }
-+         hash    OCTET STRING 
-+      }
-+   */
-+    LTC_SET_ASN1(digestinfo, 0, LTC_ASN1_OBJECT_IDENTIFIER, st.OID, st.OIDlen);
-+    LTC_SET_ASN1(digestinfo, 1, LTC_ASN1_NULL,              NULL,                          0);
-+    LTC_SET_ASN1(siginfo,    0, LTC_ASN1_SEQUENCE,          digestinfo,                    2);
-+    LTC_SET_ASN1(siginfo,    1, LTC_ASN1_OCTET_STRING,      in,                            inlen);
-+
-+    /* allocate memory for the encoding */
-+    y = mp_unsigned_bin_size(&key->N);
-+    tmpin = XMALLOC(y);
-+    if (tmpin == NULL) {
-+       return CRYPT_MEM;
-+    }
-+
-+    if ((err = der_encode_sequence(siginfo, 2, tmpin, &y)) != CRYPT_OK) {
-+       XFREE(tmpin);
-+       return err;
-+    }
-+
-+    x = *outlen;
-+    if ((err = pkcs_1_v1_5_encode(tmpin, y, LTC_LTC_PKCS_1_EMSA,
-+                                  modulus_bitlen,
-+                                  out, &x)) != CRYPT_OK) {
-+      XFREE(tmpin);
-+      return err;
-+    }
-+    XFREE(tmpin);
++#endif
++#ifdef BN_S_MP_EXPTMOD_C
++    /* otherwise use the generic Barrett reduction technique */
++    return s_mp_exptmod (G, X, P, Y, 0);
++#else
++    /* no exptmod for evens */
++    return MP_VAL;
++#endif
++#ifdef BN_MP_EXPTMOD_FAST_C
 +  }
-+
-+  /* RSA encode it */
-+  return rsa_exptmod(out, x, out, outlen, PK_PRIVATE, key);
++#endif
 +}
 +
-+#endif /* LTC_MRSA */
++#endif
 +
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_sign_hash.c,v $ */
-+/* $Revision: 1.11 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
-diff --git a/crypto/userspace/libtomcrypt/pk/rsa/rsa_verify_hash.c b/crypto/userspace/libtomcrypt/pk/rsa/rsa_verify_hash.c
++/* $Source: /cvs/libtom/libtommath/bn_mp_exptmod.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_exptmod_fast.c b/crypto/userspace/libtommath/bn_mp_exptmod_fast.c
 new file mode 100644
-index 0000000..b9ef89f
+index 0000000..2a3b3c9
 --- /dev/null
-+++ b/crypto/userspace/libtomcrypt/pk/rsa/rsa_verify_hash.c
-@@ -0,0 +1,170 @@
-+/* LibTomCrypt, modular cryptographic library -- Tom St Denis
++++ b/crypto/userspace/libtommath/bn_mp_exptmod_fast.c
+@@ -0,0 +1,321 @@
++#include <tommath.h>
++#ifdef BN_MP_EXPTMOD_FAST_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
 + *
-+ * LibTomCrypt is a library that provides various cryptographic
-+ * algorithms in a highly modular and flexible manner.
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
 + *
 + * The library is free for all purposes without any express
 + * guarantee it works.
 + *
 + * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
 + */
-+#include "tomcrypt.h"
-+#include "ncr-int.h"
-+#include <linux/slab.h>
 +
-+/**
-+  @file rsa_verify_hash.c
-+  RSA LTC_PKCS #1 v1.5 or v2 PSS signature verification, Tom St Denis and Andreas Lange
-+*/
++/* computes Y == G**X mod P, HAC pp.616, Algorithm 14.85
++ *
++ * Uses a left-to-right k-ary sliding window to compute the modular exponentiation.
++ * The value of k changes based on the size of the exponent.
++ *
++ * Uses Montgomery or Diminished Radix reduction [whichever appropriate]
++ */
 +
-+#ifdef LTC_MRSA
++#ifdef MP_LOW_MEM
++   #define TAB_SIZE 32
++#else
++   #define TAB_SIZE 256
++#endif
 +
-+/**
-+  LTC_PKCS #1 de-sign then v1.5 or PSS depad
-+  @param sig              The signature data
-+  @param siglen           The length of the signature data (octets)
-+  @param hash             The hash of the message that was signed
-+  @param hashlen          The length of the hash of the message that was signed (octets)
-+  @param padding          Type of padding (LTC_LTC_PKCS_1_PSS or LTC_LTC_PKCS_1_V1_5)
-+  @param hash_algo        The desired hash
-+  @param saltlen          The length of the salt used during signature
-+  @param stat             [out] The result of the signature comparison, 1==valid, 0==invalid
-+  @param key              The public RSA key corresponding to the key that performed the signature
-+  @return CRYPT_OK on success (even if the signature is invalid)
-+*/
-+int rsa_verify_hash_ex(const unsigned char *sig,      unsigned long siglen,
-+                       const unsigned char *hash,     unsigned long hashlen,
-+                             int            padding,
-+                       const struct algo_properties_st *hash_algo, unsigned long saltlen,
-+                             int           *stat,     rsa_key      *key)
++int mp_exptmod_fast (mp_int * G, mp_int * X, mp_int * P, mp_int * Y, int redmode)
 +{
-+  unsigned long modulus_bitlen, modulus_bytelen, x;
-+  int           err;
-+  unsigned char *tmpbuf;
++  mp_int  M[TAB_SIZE], res;
++  mp_digit buf, mp;
++  int     err, bitbuf, bitcpy, bitcnt, mode, digidx, x, y, winsize;
 +
-+  LTC_ARGCHK(hash  != NULL);
-+  LTC_ARGCHK(sig   != NULL);
-+  LTC_ARGCHK(stat  != NULL);
-+  LTC_ARGCHK(key   != NULL);
++  /* use a pointer to the reduction algorithm.  This allows us to use
++   * one of many reduction algorithms without modding the guts of
++   * the code with if statements everywhere.
++   */
++  int     (*redux)(mp_int*,mp_int*,mp_digit);
 +
-+  /* default to invalid */
-+  *stat = 0;
-+
-+  /* valid padding? */
-+
-+  if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-+      (padding != LTC_LTC_PKCS_1_PSS)) {
-+    return CRYPT_PK_INVALID_PADDING;
++  /* find window size */
++  x = mp_count_bits (X);
++  if (x <= 7) {
++    winsize = 2;
++  } else if (x <= 36) {
++    winsize = 3;
++  } else if (x <= 140) {
++    winsize = 4;
++  } else if (x <= 450) {
++    winsize = 5;
++  } else if (x <= 1303) {
++    winsize = 6;
++  } else if (x <= 3529) {
++    winsize = 7;
++  } else {
++    winsize = 8;
 +  }
 +
-+  if (padding == LTC_LTC_PKCS_1_PSS) {
-+    /* valid hash ? */
-+    if ((err = hash_is_valid(hash_algo)) != CRYPT_OK) {
-+       return err;
-+    }
++#ifdef MP_LOW_MEM
++  if (winsize > 5) {
++     winsize = 5;
 +  }
++#endif
 +
-+  /* get modulus len in bits */
-+  modulus_bitlen = mp_count_bits( (&key->N));
-+
-+  /* outlen must be at least the size of the modulus */
-+  modulus_bytelen = mp_unsigned_bin_size( (&key->N));
-+  if (modulus_bytelen != siglen) {
-+     return CRYPT_INVALID_PACKET;
-+  }
-+
-+  /* allocate temp buffer for decoded sig */
-+  tmpbuf = XMALLOC(siglen);
-+  if (tmpbuf == NULL) {
-+     return CRYPT_MEM;
-+  }
-+
-+  /* RSA decode it  */
-+  x = siglen;
-+  if ((err = rsa_exptmod(sig, siglen, tmpbuf, &x, PK_PUBLIC, key)) != CRYPT_OK) {
-+     XFREE(tmpbuf);
++  /* init M array */
++  /* init first cell */
++  if ((err = mp_init(&M[1])) != MP_OKAY) {
 +     return err;
 +  }
 +
-+  /* make sure the output is the right size */
-+  if (x != siglen) {
-+     XFREE(tmpbuf);
-+     return CRYPT_INVALID_PACKET;
-+  }
-+
-+  if (padding == LTC_LTC_PKCS_1_PSS) {
-+    /* PSS decode and verify it */
-+    err = pkcs_1_pss_decode(hash, hashlen, tmpbuf, x, saltlen, hash_algo, modulus_bitlen, stat);
-+  } else {
-+    /* LTC_PKCS #1 v1.5 decode it */
-+    unsigned char *out;
-+    unsigned long outlen, loid[16];
-+    int           decoded;
-+    ltc_asn1_list digestinfo[2], siginfo[2];
-+    oid_st st;
-+
-+    /* not all hashes have OIDs... so sad */
-+    if (hash_get_oid(hash_algo, &st) != CRYPT_OK) {
-+       err = CRYPT_INVALID_ARG;
-+       goto bail_2;
-+    }
-+
-+    /* allocate temp buffer for decoded hash */
-+    outlen = ((modulus_bitlen >> 3) + (modulus_bitlen & 7 ? 1 : 0)) - 3;
-+    out    = XMALLOC(outlen);
-+    if (out == NULL) {
-+      err = CRYPT_MEM;
-+      goto bail_2;
-+    }
-+
-+    if ((err = pkcs_1_v1_5_decode(tmpbuf, x, LTC_LTC_PKCS_1_EMSA, modulus_bitlen, out, &outlen, &decoded)) != CRYPT_OK) {
-+      XFREE(out);       
-+      goto bail_2;
-+    }
-+
-+    /* now we must decode out[0...outlen-1] using ASN.1, test the OID and then test the hash */
-+    /* construct the SEQUENCE 
-+      SEQUENCE {
-+         SEQUENCE {hashoid OID
-+                   blah    NULL
-+         }
-+         hash    OCTET STRING 
++  /* now init the second half of the array */
++  for (x = 1<<(winsize-1); x < (1 << winsize); x++) {
++    if ((err = mp_init(&M[x])) != MP_OKAY) {
++      for (y = 1<<(winsize-1); y < x; y++) {
++        mp_clear (&M[y]);
 +      }
-+   */
-+    LTC_SET_ASN1(digestinfo, 0, LTC_ASN1_OBJECT_IDENTIFIER, loid, sizeof(loid)/sizeof(loid[0]));
-+    LTC_SET_ASN1(digestinfo, 1, LTC_ASN1_NULL,              NULL,                          0);
-+    LTC_SET_ASN1(siginfo,    0, LTC_ASN1_SEQUENCE,          digestinfo,                    2);
-+    LTC_SET_ASN1(siginfo,    1, LTC_ASN1_OCTET_STRING,      tmpbuf,                        siglen);
-+   
-+    if ((err = der_decode_sequence(out, outlen, siginfo, 2)) != CRYPT_OK) {
-+       XFREE(out);
-+       goto bail_2;
++      mp_clear(&M[1]);
++      return err;
 +    }
-+
-+    /* test OID */
-+    if ((digestinfo[0].size == st.OIDlen) &&
-+        (XMEMCMP(digestinfo[0].data, st.OID, sizeof(unsigned long) * st.OIDlen) == 0) &&
-+        (siginfo[1].size == hashlen) &&
-+        (XMEMCMP(siginfo[1].data, hash, hashlen) == 0)) {
-+       *stat = 1;
-+    }
-+
-+#ifdef LTC_CLEAN_STACK
-+    zeromem(out, outlen);
-+#endif
-+    XFREE(out);
 +  }
 +
-+bail_2:
-+#ifdef LTC_CLEAN_STACK
-+  zeromem(tmpbuf, siglen);
++  /* determine and setup reduction code */
++  if (redmode == 0) {
++#ifdef BN_MP_MONTGOMERY_SETUP_C     
++     /* now setup montgomery  */
++     if ((err = mp_montgomery_setup (P, &mp)) != MP_OKAY) {
++        goto LBL_M;
++     }
++#else
++     err = MP_VAL;
++     goto LBL_M;
 +#endif
-+  XFREE(tmpbuf);
++
++     /* automatically pick the comba one if available (saves quite a few calls/ifs) */
++#ifdef BN_FAST_MP_MONTGOMERY_REDUCE_C
++     if (((P->used * 2 + 1) < MP_WARRAY) &&
++          P->used < (1 << ((CHAR_BIT * sizeof (mp_word)) - (2 * DIGIT_BIT)))) {
++        redux = fast_mp_montgomery_reduce;
++     } else 
++#endif
++     {
++#ifdef BN_MP_MONTGOMERY_REDUCE_C
++        /* use slower baseline Montgomery method */
++        redux = mp_montgomery_reduce;
++#else
++        err = MP_VAL;
++        goto LBL_M;
++#endif
++     }
++  } else if (redmode == 1) {
++#if defined(BN_MP_DR_SETUP_C) && defined(BN_MP_DR_REDUCE_C)
++     /* setup DR reduction for moduli of the form B**k - b */
++     mp_dr_setup(P, &mp);
++     redux = mp_dr_reduce;
++#else
++     err = MP_VAL;
++     goto LBL_M;
++#endif
++  } else {
++#if defined(BN_MP_REDUCE_2K_SETUP_C) && defined(BN_MP_REDUCE_2K_C)
++     /* setup DR reduction for moduli of the form 2**k - b */
++     if ((err = mp_reduce_2k_setup(P, &mp)) != MP_OKAY) {
++        goto LBL_M;
++     }
++     redux = mp_reduce_2k;
++#else
++     err = MP_VAL;
++     goto LBL_M;
++#endif
++  }
++
++  /* setup result */
++  if ((err = mp_init (&res)) != MP_OKAY) {
++    goto LBL_M;
++  }
++
++  /* create M table
++   *
++
++   *
++   * The first half of the table is not computed though accept for M[0] and M[1]
++   */
++
++  if (redmode == 0) {
++#ifdef BN_MP_MONTGOMERY_CALC_NORMALIZATION_C
++     /* now we need R mod m */
++     if ((err = mp_montgomery_calc_normalization (&res, P)) != MP_OKAY) {
++       goto LBL_RES;
++     }
++#else 
++     err = MP_VAL;
++     goto LBL_RES;
++#endif
++
++     /* now set M[1] to G * R mod m */
++     if ((err = mp_mulmod (G, &res, P, &M[1])) != MP_OKAY) {
++       goto LBL_RES;
++     }
++  } else {
++     mp_set(&res, 1);
++     if ((err = mp_mod(G, P, &M[1])) != MP_OKAY) {
++        goto LBL_RES;
++     }
++  }
++
++  /* compute the value at M[1<<(winsize-1)] by squaring M[1] (winsize-1) times */
++  if ((err = mp_copy (&M[1], &M[1 << (winsize - 1)])) != MP_OKAY) {
++    goto LBL_RES;
++  }
++
++  for (x = 0; x < (winsize - 1); x++) {
++    if ((err = mp_sqr (&M[1 << (winsize - 1)], &M[1 << (winsize - 1)])) != MP_OKAY) {
++      goto LBL_RES;
++    }
++    if ((err = redux (&M[1 << (winsize - 1)], P, mp)) != MP_OKAY) {
++      goto LBL_RES;
++    }
++  }
++
++  /* create upper table */
++  for (x = (1 << (winsize - 1)) + 1; x < (1 << winsize); x++) {
++    if ((err = mp_mul (&M[x - 1], &M[1], &M[x])) != MP_OKAY) {
++      goto LBL_RES;
++    }
++    if ((err = redux (&M[x], P, mp)) != MP_OKAY) {
++      goto LBL_RES;
++    }
++  }
++
++  /* set initial mode and bit cnt */
++  mode   = 0;
++  bitcnt = 1;
++  buf    = 0;
++  digidx = X->used - 1;
++  bitcpy = 0;
++  bitbuf = 0;
++
++  for (;;) {
++    /* grab next digit as required */
++    if (--bitcnt == 0) {
++      /* if digidx == -1 we are out of digits so break */
++      if (digidx == -1) {
++        break;
++      }
++      /* read next digit and reset bitcnt */
++      buf    = X->dp[digidx--];
++      bitcnt = (int)DIGIT_BIT;
++    }
++
++    /* grab the next msb from the exponent */
++    y     = (mp_digit)(buf >> (DIGIT_BIT - 1)) & 1;
++    buf <<= (mp_digit)1;
++
++    /* if the bit is zero and mode == 0 then we ignore it
++     * These represent the leading zero bits before the first 1 bit
++     * in the exponent.  Technically this opt is not required but it
++     * does lower the # of trivial squaring/reductions used
++     */
++    if (mode == 0 && y == 0) {
++      continue;
++    }
++
++    /* if the bit is zero and mode == 1 then we square */
++    if (mode == 1 && y == 0) {
++      if ((err = mp_sqr (&res, &res)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      if ((err = redux (&res, P, mp)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      continue;
++    }
++
++    /* else we add it to the window */
++    bitbuf |= (y << (winsize - ++bitcpy));
++    mode    = 2;
++
++    if (bitcpy == winsize) {
++      /* ok window is filled so square as required and multiply  */
++      /* square first */
++      for (x = 0; x < winsize; x++) {
++        if ((err = mp_sqr (&res, &res)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++        if ((err = redux (&res, P, mp)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++      }
++
++      /* then multiply */
++      if ((err = mp_mul (&res, &M[bitbuf], &res)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      if ((err = redux (&res, P, mp)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++
++      /* empty window and reset */
++      bitcpy = 0;
++      bitbuf = 0;
++      mode   = 1;
++    }
++  }
++
++  /* if bits remain then square/multiply */
++  if (mode == 2 && bitcpy > 0) {
++    /* square then multiply if the bit is set */
++    for (x = 0; x < bitcpy; x++) {
++      if ((err = mp_sqr (&res, &res)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      if ((err = redux (&res, P, mp)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++
++      /* get next bit of the window */
++      bitbuf <<= 1;
++      if ((bitbuf & (1 << winsize)) != 0) {
++        /* then multiply */
++        if ((err = mp_mul (&res, &M[1], &res)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++        if ((err = redux (&res, P, mp)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++      }
++    }
++  }
++
++  if (redmode == 0) {
++     /* fixup result if Montgomery reduction is used
++      * recall that any value in a Montgomery system is
++      * actually multiplied by R mod n.  So we have
++      * to reduce one more time to cancel out the factor
++      * of R.
++      */
++     if ((err = redux(&res, P, mp)) != MP_OKAY) {
++       goto LBL_RES;
++     }
++  }
++
++  /* swap res with Y */
++  mp_exch (&res, Y);
++  err = MP_OKAY;
++LBL_RES:mp_clear (&res);
++LBL_M:
++  mp_clear(&M[1]);
++  for (x = 1<<(winsize-1); x < (1 << winsize); x++) {
++    mp_clear (&M[x]);
++  }
 +  return err;
 +}
++#endif
 +
-+#endif /* LTC_MRSA */
 +
-+/* $Source: /cvs/libtom/libtomcrypt/src/pk/rsa/rsa_verify_hash.c,v $ */
-+/* $Revision: 1.13 $ */
-+/* $Date: 2007/05/12 14:32:35 $ */
++/* $Source: /cvs/libtom/libtommath/bn_mp_exptmod_fast.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_exteuclid.c b/crypto/userspace/libtommath/bn_mp_exteuclid.c
+new file mode 100644
+index 0000000..e6c4ce2
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_exteuclid.c
+@@ -0,0 +1,82 @@
++#include <tommath.h>
++#ifdef BN_MP_EXTEUCLID_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* Extended euclidean algorithm of (a, b) produces 
++   a*u1 + b*u2 = u3
++ */
++int mp_exteuclid(mp_int *a, mp_int *b, mp_int *U1, mp_int *U2, mp_int *U3)
++{
++   mp_int u1,u2,u3,v1,v2,v3,t1,t2,t3,q,tmp;
++   int err;
++
++   if ((err = mp_init_multi(&u1, &u2, &u3, &v1, &v2, &v3, &t1, &t2, &t3, &q, &tmp, NULL)) != MP_OKAY) {
++      return err;
++   }
++
++   /* initialize, (u1,u2,u3) = (1,0,a) */
++   mp_set(&u1, 1);
++   if ((err = mp_copy(a, &u3)) != MP_OKAY)                                        { goto _ERR; }
++
++   /* initialize, (v1,v2,v3) = (0,1,b) */
++   mp_set(&v2, 1);
++   if ((err = mp_copy(b, &v3)) != MP_OKAY)                                        { goto _ERR; }
++
++   /* loop while v3 != 0 */
++   while (mp_iszero(&v3) == MP_NO) {
++       /* q = u3/v3 */
++       if ((err = mp_div(&u3, &v3, &q, NULL)) != MP_OKAY)                         { goto _ERR; }
++
++       /* (t1,t2,t3) = (u1,u2,u3) - (v1,v2,v3)q */
++       if ((err = mp_mul(&v1, &q, &tmp)) != MP_OKAY)                              { goto _ERR; }
++       if ((err = mp_sub(&u1, &tmp, &t1)) != MP_OKAY)                             { goto _ERR; }
++       if ((err = mp_mul(&v2, &q, &tmp)) != MP_OKAY)                              { goto _ERR; }
++       if ((err = mp_sub(&u2, &tmp, &t2)) != MP_OKAY)                             { goto _ERR; }
++       if ((err = mp_mul(&v3, &q, &tmp)) != MP_OKAY)                              { goto _ERR; }
++       if ((err = mp_sub(&u3, &tmp, &t3)) != MP_OKAY)                             { goto _ERR; }
++
++       /* (u1,u2,u3) = (v1,v2,v3) */
++       if ((err = mp_copy(&v1, &u1)) != MP_OKAY)                                  { goto _ERR; }
++       if ((err = mp_copy(&v2, &u2)) != MP_OKAY)                                  { goto _ERR; }
++       if ((err = mp_copy(&v3, &u3)) != MP_OKAY)                                  { goto _ERR; }
++
++       /* (v1,v2,v3) = (t1,t2,t3) */
++       if ((err = mp_copy(&t1, &v1)) != MP_OKAY)                                  { goto _ERR; }
++       if ((err = mp_copy(&t2, &v2)) != MP_OKAY)                                  { goto _ERR; }
++       if ((err = mp_copy(&t3, &v3)) != MP_OKAY)                                  { goto _ERR; }
++   }
++
++   /* make sure U3 >= 0 */
++   if (u3.sign == MP_NEG) {
++      mp_neg(&u1, &u1);
++      mp_neg(&u2, &u2);
++      mp_neg(&u3, &u3);
++   }
++
++   /* copy result out */
++   if (U1 != NULL) { mp_exch(U1, &u1); }
++   if (U2 != NULL) { mp_exch(U2, &u2); }
++   if (U3 != NULL) { mp_exch(U3, &u3); }
++
++   err = MP_OKAY;
++_ERR: mp_clear_multi(&u1, &u2, &u3, &v1, &v2, &v3, &t1, &t2, &t3, &q, &tmp, NULL);
++   return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_exteuclid.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_gcd.c b/crypto/userspace/libtommath/bn_mp_gcd.c
+new file mode 100644
+index 0000000..b39ba90
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_gcd.c
+@@ -0,0 +1,105 @@
++#include <tommath.h>
++#ifdef BN_MP_GCD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* Greatest Common Divisor using the binary method */
++int mp_gcd (mp_int * a, mp_int * b, mp_int * c)
++{
++  mp_int  u, v;
++  int     k, u_lsb, v_lsb, res;
++
++  /* either zero than gcd is the largest */
++  if (mp_iszero (a) == MP_YES) {
++    return mp_abs (b, c);
++  }
++  if (mp_iszero (b) == MP_YES) {
++    return mp_abs (a, c);
++  }
++
++  /* get copies of a and b we can modify */
++  if ((res = mp_init_copy (&u, a)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_init_copy (&v, b)) != MP_OKAY) {
++    goto LBL_U;
++  }
++
++  /* must be positive for the remainder of the algorithm */
++  u.sign = v.sign = MP_ZPOS;
++
++  /* B1.  Find the common power of two for u and v */
++  u_lsb = mp_cnt_lsb(&u);
++  v_lsb = mp_cnt_lsb(&v);
++  k     = MIN(u_lsb, v_lsb);
++
++  if (k > 0) {
++     /* divide the power of two out */
++     if ((res = mp_div_2d(&u, k, &u, NULL)) != MP_OKAY) {
++        goto LBL_V;
++     }
++
++     if ((res = mp_div_2d(&v, k, &v, NULL)) != MP_OKAY) {
++        goto LBL_V;
++     }
++  }
++
++  /* divide any remaining factors of two out */
++  if (u_lsb != k) {
++     if ((res = mp_div_2d(&u, u_lsb - k, &u, NULL)) != MP_OKAY) {
++        goto LBL_V;
++     }
++  }
++
++  if (v_lsb != k) {
++     if ((res = mp_div_2d(&v, v_lsb - k, &v, NULL)) != MP_OKAY) {
++        goto LBL_V;
++     }
++  }
++
++  while (mp_iszero(&v) == 0) {
++     /* make sure v is the largest */
++     if (mp_cmp_mag(&u, &v) == MP_GT) {
++        /* swap u and v to make sure v is >= u */
++        mp_exch(&u, &v);
++     }
++     
++     /* subtract smallest from largest */
++     if ((res = s_mp_sub(&v, &u, &v)) != MP_OKAY) {
++        goto LBL_V;
++     }
++     
++     /* Divide out all factors of two */
++     if ((res = mp_div_2d(&v, mp_cnt_lsb(&v), &v, NULL)) != MP_OKAY) {
++        goto LBL_V;
++     } 
++  } 
++
++  /* multiply by 2**k which we divided out at the beginning */
++  if ((res = mp_mul_2d (&u, k, c)) != MP_OKAY) {
++     goto LBL_V;
++  }
++  c->sign = MP_ZPOS;
++  res = MP_OKAY;
++LBL_V:mp_clear (&u);
++LBL_U:mp_clear (&v);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_gcd.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_get_int.c b/crypto/userspace/libtommath/bn_mp_get_int.c
+new file mode 100644
+index 0000000..17162e2
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_get_int.c
+@@ -0,0 +1,45 @@
++#include <tommath.h>
++#ifdef BN_MP_GET_INT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* get the lower 32-bits of an mp_int */
++unsigned long mp_get_int(mp_int * a) 
++{
++  int i;
++  unsigned long res;
++
++  if (a->used == 0) {
++     return 0;
++  }
++
++  /* get number of digits of the lsb we have to read */
++  i = MIN(a->used,(int)((sizeof(unsigned long)*CHAR_BIT+DIGIT_BIT-1)/DIGIT_BIT))-1;
++
++  /* get most significant digit of result */
++  res = DIGIT(a,i);
++   
++  while (--i >= 0) {
++    res = (res << DIGIT_BIT) | DIGIT(a,i);
++  }
++
++  /* force result to 32-bits always so it is consistent on non 32-bit platforms */
++  return res & 0xFFFFFFFFUL;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_get_int.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_grow.c b/crypto/userspace/libtommath/bn_mp_grow.c
+new file mode 100644
+index 0000000..3646c6c
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_grow.c
+@@ -0,0 +1,58 @@
++#include <tommath.h>
++#include <linux/slab.h>
++#ifdef BN_MP_GROW_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* grow as required */
++int mp_grow (mp_int * a, int size)
++{
++  int     i;
++  mp_digit *tmp;
++
++  /* if the alloc size is smaller alloc more ram */
++  if (a->alloc < size) {
++    /* ensure there are always at least MP_PREC digits extra on top */
++    size += (MP_PREC * 2) - (size % MP_PREC);
++
++    /* reallocate the array a->dp
++     *
++     * We store the return in a temporary variable
++     * in case the operation failed we don't want
++     * to overwrite the dp member of a.
++     */
++    tmp = OPT_CAST(mp_digit) XREALLOC (a->dp, sizeof (mp_digit) * size);
++    if (tmp == NULL) {
++      /* reallocation failed but "a" is still valid [can be freed] */
++      return MP_MEM;
++    }
++
++    /* reallocation succeeded so set a->dp */
++    a->dp = tmp;
++
++    /* zero excess digits */
++    i        = a->alloc;
++    a->alloc = size;
++    for (; i < a->alloc; i++) {
++      a->dp[i] = 0;
++    }
++  }
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_grow.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_init.c b/crypto/userspace/libtommath/bn_mp_init.c
+new file mode 100644
+index 0000000..990500b
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_init.c
+@@ -0,0 +1,47 @@
++#include <tommath.h>
++#include <linux/slab.h>
++#ifdef BN_MP_INIT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* init a new mp_int */
++int mp_init (mp_int * a)
++{
++  int i;
++
++  /* allocate memory required and clear it */
++  a->dp = OPT_CAST(mp_digit) XMALLOC (sizeof (mp_digit) * MP_PREC);
++  if (a->dp == NULL) {
++    return MP_MEM;
++  }
++
++  /* set the digits to zero */
++  for (i = 0; i < MP_PREC; i++) {
++      a->dp[i] = 0;
++  }
++
++  /* set the used to zero, allocated digits to the default precision
++   * and sign to positive */
++  a->used  = 0;
++  a->alloc = MP_PREC;
++  a->sign  = MP_ZPOS;
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_init.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_init_copy.c b/crypto/userspace/libtommath/bn_mp_init_copy.c
+new file mode 100644
+index 0000000..0160811
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_init_copy.c
+@@ -0,0 +1,32 @@
++#include <tommath.h>
++#ifdef BN_MP_INIT_COPY_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* creates "a" then copies b into it */
++int mp_init_copy (mp_int * a, mp_int * b)
++{
++  int     res;
++
++  if ((res = mp_init (a)) != MP_OKAY) {
++    return res;
++  }
++  return mp_copy (b, a);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_init_copy.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_init_multi.c b/crypto/userspace/libtommath/bn_mp_init_multi.c
+new file mode 100644
+index 0000000..59dc3a9
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_init_multi.c
+@@ -0,0 +1,59 @@
++#include <tommath.h>
++#ifdef BN_MP_INIT_MULTI_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++#include <stdarg.h>
++
++int mp_init_multi(mp_int *mp, ...) 
++{
++    mp_err res = MP_OKAY;      /* Assume ok until proven otherwise */
++    int n = 0;                 /* Number of ok inits */
++    mp_int* cur_arg = mp;
++    va_list args;
++
++    va_start(args, mp);        /* init args to next argument from caller */
++    while (cur_arg != NULL) {
++        if (mp_init(cur_arg) != MP_OKAY) {
++            /* Oops - error! Back-track and mp_clear what we already
++               succeeded in init-ing, then return error.
++            */
++            va_list clean_args;
++            
++            /* end the current list */
++            va_end(args);
++            
++            /* now start cleaning up */            
++            cur_arg = mp;
++            va_start(clean_args, mp);
++            while (n--) {
++                mp_clear(cur_arg);
++                cur_arg = va_arg(clean_args, mp_int*);
++            }
++            va_end(clean_args);
++            res = MP_MEM;
++            break;
++        }
++        n++;
++        cur_arg = va_arg(args, mp_int*);
++    }
++    va_end(args);
++    return res;                /* Assumed ok, if error flagged above. */
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_init_multi.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_init_set.c b/crypto/userspace/libtommath/bn_mp_init_set.c
+new file mode 100644
+index 0000000..34edad9
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_init_set.c
+@@ -0,0 +1,32 @@
++#include <tommath.h>
++#ifdef BN_MP_INIT_SET_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* initialize and set a digit */
++int mp_init_set (mp_int * a, mp_digit b)
++{
++  int err;
++  if ((err = mp_init(a)) != MP_OKAY) {
++     return err;
++  }
++  mp_set(a, b);
++  return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_init_set.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_init_set_int.c b/crypto/userspace/libtommath/bn_mp_init_set_int.c
+new file mode 100644
+index 0000000..5c55993
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_init_set_int.c
+@@ -0,0 +1,31 @@
++#include <tommath.h>
++#ifdef BN_MP_INIT_SET_INT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* initialize and set a digit */
++int mp_init_set_int (mp_int * a, unsigned long b)
++{
++  int err;
++  if ((err = mp_init(a)) != MP_OKAY) {
++     return err;
++  }
++  return mp_set_int(a, b);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_init_set_int.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_init_size.c b/crypto/userspace/libtommath/bn_mp_init_size.c
+new file mode 100644
+index 0000000..ba46d3a
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_init_size.c
+@@ -0,0 +1,49 @@
++#include <tommath.h>
++#include <linux/slab.h>
++#ifdef BN_MP_INIT_SIZE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* init an mp_init for a given size */
++int mp_init_size (mp_int * a, int size)
++{
++  int x;
++
++  /* pad size so there are always extra digits */
++  size += (MP_PREC * 2) - (size % MP_PREC);	
++  
++  /* alloc mem */
++  a->dp = OPT_CAST(mp_digit) XMALLOC (sizeof (mp_digit) * size);
++  if (a->dp == NULL) {
++    return MP_MEM;
++  }
++
++  /* set the members */
++  a->used  = 0;
++  a->alloc = size;
++  a->sign  = MP_ZPOS;
++
++  /* zero the digits */
++  for (x = 0; x < size; x++) {
++      a->dp[x] = 0;
++  }
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_init_size.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_invmod.c b/crypto/userspace/libtommath/bn_mp_invmod.c
+new file mode 100644
+index 0000000..1546514
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_invmod.c
+@@ -0,0 +1,43 @@
++#include <tommath.h>
++#ifdef BN_MP_INVMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* hac 14.61, pp608 */
++int mp_invmod (mp_int * a, mp_int * b, mp_int * c)
++{
++  /* b cannot be negative */
++  if (b->sign == MP_NEG || mp_iszero(b) == 1) {
++    return MP_VAL;
++  }
++
++#ifdef BN_FAST_MP_INVMOD_C
++  /* if the modulus is odd we can use a faster routine instead */
++  if (mp_isodd (b) == 1) {
++    return fast_mp_invmod (a, b, c);
++  }
++#endif
++
++#ifdef BN_MP_INVMOD_SLOW_C
++  return mp_invmod_slow(a, b, c);
++#endif
++
++  return MP_VAL;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_invmod.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_invmod_slow.c b/crypto/userspace/libtommath/bn_mp_invmod_slow.c
+new file mode 100644
+index 0000000..eedd47d
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_invmod_slow.c
+@@ -0,0 +1,175 @@
++#include <tommath.h>
++#ifdef BN_MP_INVMOD_SLOW_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* hac 14.61, pp608 */
++int mp_invmod_slow (mp_int * a, mp_int * b, mp_int * c)
++{
++  mp_int  x, y, u, v, A, B, C, D;
++  int     res;
++
++  /* b cannot be negative */
++  if (b->sign == MP_NEG || mp_iszero(b) == 1) {
++    return MP_VAL;
++  }
++
++  /* init temps */
++  if ((res = mp_init_multi(&x, &y, &u, &v, 
++                           &A, &B, &C, &D, NULL)) != MP_OKAY) {
++     return res;
++  }
++
++  /* x = a, y = b */
++  if ((res = mp_mod(a, b, &x)) != MP_OKAY) {
++      goto LBL_ERR;
++  }
++  if ((res = mp_copy (b, &y)) != MP_OKAY) {
++    goto LBL_ERR;
++  }
++
++  /* 2. [modified] if x,y are both even then return an error! */
++  if (mp_iseven (&x) == 1 && mp_iseven (&y) == 1) {
++    res = MP_VAL;
++    goto LBL_ERR;
++  }
++
++  /* 3. u=x, v=y, A=1, B=0, C=0,D=1 */
++  if ((res = mp_copy (&x, &u)) != MP_OKAY) {
++    goto LBL_ERR;
++  }
++  if ((res = mp_copy (&y, &v)) != MP_OKAY) {
++    goto LBL_ERR;
++  }
++  mp_set (&A, 1);
++  mp_set (&D, 1);
++
++top:
++  /* 4.  while u is even do */
++  while (mp_iseven (&u) == 1) {
++    /* 4.1 u = u/2 */
++    if ((res = mp_div_2 (&u, &u)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++    /* 4.2 if A or B is odd then */
++    if (mp_isodd (&A) == 1 || mp_isodd (&B) == 1) {
++      /* A = (A+y)/2, B = (B-x)/2 */
++      if ((res = mp_add (&A, &y, &A)) != MP_OKAY) {
++         goto LBL_ERR;
++      }
++      if ((res = mp_sub (&B, &x, &B)) != MP_OKAY) {
++         goto LBL_ERR;
++      }
++    }
++    /* A = A/2, B = B/2 */
++    if ((res = mp_div_2 (&A, &A)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++    if ((res = mp_div_2 (&B, &B)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++  }
++
++  /* 5.  while v is even do */
++  while (mp_iseven (&v) == 1) {
++    /* 5.1 v = v/2 */
++    if ((res = mp_div_2 (&v, &v)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++    /* 5.2 if C or D is odd then */
++    if (mp_isodd (&C) == 1 || mp_isodd (&D) == 1) {
++      /* C = (C+y)/2, D = (D-x)/2 */
++      if ((res = mp_add (&C, &y, &C)) != MP_OKAY) {
++         goto LBL_ERR;
++      }
++      if ((res = mp_sub (&D, &x, &D)) != MP_OKAY) {
++         goto LBL_ERR;
++      }
++    }
++    /* C = C/2, D = D/2 */
++    if ((res = mp_div_2 (&C, &C)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++    if ((res = mp_div_2 (&D, &D)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++  }
++
++  /* 6.  if u >= v then */
++  if (mp_cmp (&u, &v) != MP_LT) {
++    /* u = u - v, A = A - C, B = B - D */
++    if ((res = mp_sub (&u, &v, &u)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++
++    if ((res = mp_sub (&A, &C, &A)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++
++    if ((res = mp_sub (&B, &D, &B)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++  } else {
++    /* v - v - u, C = C - A, D = D - B */
++    if ((res = mp_sub (&v, &u, &v)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++
++    if ((res = mp_sub (&C, &A, &C)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++
++    if ((res = mp_sub (&D, &B, &D)) != MP_OKAY) {
++      goto LBL_ERR;
++    }
++  }
++
++  /* if not zero goto step 4 */
++  if (mp_iszero (&u) == 0)
++    goto top;
++
++  /* now a = C, b = D, gcd == g*v */
++
++  /* if v != 1 then there is no inverse */
++  if (mp_cmp_d (&v, 1) != MP_EQ) {
++    res = MP_VAL;
++    goto LBL_ERR;
++  }
++
++  /* if its too low */
++  while (mp_cmp_d(&C, 0) == MP_LT) {
++      if ((res = mp_add(&C, b, &C)) != MP_OKAY) {
++         goto LBL_ERR;
++      }
++  }
++  
++  /* too big */
++  while (mp_cmp_mag(&C, b) != MP_LT) {
++      if ((res = mp_sub(&C, b, &C)) != MP_OKAY) {
++         goto LBL_ERR;
++      }
++  }
++  
++  /* C is now the inverse */
++  mp_exch (&C, c);
++  res = MP_OKAY;
++LBL_ERR:mp_clear_multi (&x, &y, &u, &v, &A, &B, &C, &D, NULL);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_invmod_slow.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_is_square.c b/crypto/userspace/libtommath/bn_mp_is_square.c
+new file mode 100644
+index 0000000..50c5244
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_is_square.c
+@@ -0,0 +1,109 @@
++#include <tommath.h>
++#ifdef BN_MP_IS_SQUARE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* Check if remainders are possible squares - fast exclude non-squares */
++static const char rem_128[128] = {
++ 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
++ 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
++ 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
++ 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
++ 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
++ 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
++ 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
++ 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1
++};
++
++static const char rem_105[105] = {
++ 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
++ 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1,
++ 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1,
++ 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
++ 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1,
++ 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1,
++ 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1
++};
++
++/* Store non-zero to ret if arg is square, and zero if not */
++int mp_is_square(mp_int *arg,int *ret) 
++{
++  int           res;
++  mp_digit      c;
++  mp_int        t;
++  unsigned long r;
++
++  /* Default to Non-square :) */
++  *ret = MP_NO; 
++
++  if (arg->sign == MP_NEG) {
++    return MP_VAL;
++  }
++
++  /* digits used?  (TSD) */
++  if (arg->used == 0) {
++     return MP_OKAY;
++  }
++
++  /* First check mod 128 (suppose that DIGIT_BIT is at least 7) */
++  if (rem_128[127 & DIGIT(arg,0)] == 1) {
++     return MP_OKAY;
++  }
++
++  /* Next check mod 105 (3*5*7) */
++  if ((res = mp_mod_d(arg,105,&c)) != MP_OKAY) {
++     return res;
++  }
++  if (rem_105[c] == 1) {
++     return MP_OKAY;
++  }
++
++
++  if ((res = mp_init_set_int(&t,11L*13L*17L*19L*23L*29L*31L)) != MP_OKAY) {
++     return res;
++  }
++  if ((res = mp_mod(arg,&t,&t)) != MP_OKAY) {
++     goto ERR;
++  }
++  r = mp_get_int(&t);
++  /* Check for other prime modules, note it's not an ERROR but we must
++   * free "t" so the easiest way is to goto ERR.  We know that res
++   * is already equal to MP_OKAY from the mp_mod call 
++   */ 
++  if ( (1L<<(r%11)) & 0x5C4L )             goto ERR;
++  if ( (1L<<(r%13)) & 0x9E4L )             goto ERR;
++  if ( (1L<<(r%17)) & 0x5CE8L )            goto ERR;
++  if ( (1L<<(r%19)) & 0x4F50CL )           goto ERR;
++  if ( (1L<<(r%23)) & 0x7ACCA0L )          goto ERR;
++  if ( (1L<<(r%29)) & 0xC2EDD0CL )         goto ERR;
++  if ( (1L<<(r%31)) & 0x6DE2B848L )        goto ERR;
++
++  /* Final check - is sqr(sqrt(arg)) == arg ? */
++  if ((res = mp_sqrt(arg,&t)) != MP_OKAY) {
++     goto ERR;
++  }
++  if ((res = mp_sqr(&t,&t)) != MP_OKAY) {
++     goto ERR;
++  }
++
++  *ret = (mp_cmp_mag(&t,arg) == MP_EQ) ? MP_YES : MP_NO;
++ERR:mp_clear(&t);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_is_square.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_jacobi.c b/crypto/userspace/libtommath/bn_mp_jacobi.c
+new file mode 100644
+index 0000000..91cfeea
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_jacobi.c
+@@ -0,0 +1,105 @@
++#include <tommath.h>
++#ifdef BN_MP_JACOBI_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* computes the jacobi c = (a | n) (or Legendre if n is prime)
++ * HAC pp. 73 Algorithm 2.149
++ */
++int mp_jacobi (mp_int * a, mp_int * p, int *c)
++{
++  mp_int  a1, p1;
++  int     k, s, r, res;
++  mp_digit residue;
++
++  /* if p <= 0 return MP_VAL */
++  if (mp_cmp_d(p, 0) != MP_GT) {
++     return MP_VAL;
++  }
++
++  /* step 1.  if a == 0, return 0 */
++  if (mp_iszero (a) == 1) {
++    *c = 0;
++    return MP_OKAY;
++  }
++
++  /* step 2.  if a == 1, return 1 */
++  if (mp_cmp_d (a, 1) == MP_EQ) {
++    *c = 1;
++    return MP_OKAY;
++  }
++
++  /* default */
++  s = 0;
++
++  /* step 3.  write a = a1 * 2**k  */
++  if ((res = mp_init_copy (&a1, a)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_init (&p1)) != MP_OKAY) {
++    goto LBL_A1;
++  }
++
++  /* divide out larger power of two */
++  k = mp_cnt_lsb(&a1);
++  if ((res = mp_div_2d(&a1, k, &a1, NULL)) != MP_OKAY) {
++     goto LBL_P1;
++  }
++
++  /* step 4.  if e is even set s=1 */
++  if ((k & 1) == 0) {
++    s = 1;
++  } else {
++    /* else set s=1 if p = 1/7 (mod 8) or s=-1 if p = 3/5 (mod 8) */
++    residue = p->dp[0] & 7;
++
++    if (residue == 1 || residue == 7) {
++      s = 1;
++    } else if (residue == 3 || residue == 5) {
++      s = -1;
++    }
++  }
++
++  /* step 5.  if p == 3 (mod 4) *and* a1 == 3 (mod 4) then s = -s */
++  if ( ((p->dp[0] & 3) == 3) && ((a1.dp[0] & 3) == 3)) {
++    s = -s;
++  }
++
++  /* if a1 == 1 we're done */
++  if (mp_cmp_d (&a1, 1) == MP_EQ) {
++    *c = s;
++  } else {
++    /* n1 = n mod a1 */
++    if ((res = mp_mod (p, &a1, &p1)) != MP_OKAY) {
++      goto LBL_P1;
++    }
++    if ((res = mp_jacobi (&p1, &a1, &r)) != MP_OKAY) {
++      goto LBL_P1;
++    }
++    *c = s * r;
++  }
++
++  /* done */
++  res = MP_OKAY;
++LBL_P1:mp_clear (&p1);
++LBL_A1:mp_clear (&a1);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_jacobi.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_karatsuba_mul.c b/crypto/userspace/libtommath/bn_mp_karatsuba_mul.c
+new file mode 100644
+index 0000000..8ea2c27
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_karatsuba_mul.c
+@@ -0,0 +1,167 @@
++#include <tommath.h>
++#ifdef BN_MP_KARATSUBA_MUL_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* c = |a| * |b| using Karatsuba Multiplication using 
++ * three half size multiplications
++ *
++ * Let B represent the radix [e.g. 2**DIGIT_BIT] and 
++ * let n represent half of the number of digits in 
++ * the min(a,b)
++ *
++ * a = a1 * B**n + a0
++ * b = b1 * B**n + b0
++ *
++ * Then, a * b => 
++   a1b1 * B**2n + ((a1 + a0)(b1 + b0) - (a0b0 + a1b1)) * B + a0b0
++ *
++ * Note that a1b1 and a0b0 are used twice and only need to be 
++ * computed once.  So in total three half size (half # of 
++ * digit) multiplications are performed, a0b0, a1b1 and 
++ * (a1+b1)(a0+b0)
++ *
++ * Note that a multiplication of half the digits requires
++ * 1/4th the number of single precision multiplications so in 
++ * total after one call 25% of the single precision multiplications 
++ * are saved.  Note also that the call to mp_mul can end up back 
++ * in this function if the a0, a1, b0, or b1 are above the threshold.  
++ * This is known as divide-and-conquer and leads to the famous 
++ * O(N**lg(3)) or O(N**1.584) work which is asymptopically lower than 
++ * the standard O(N**2) that the baseline/comba methods use.  
++ * Generally though the overhead of this method doesn't pay off 
++ * until a certain size (N ~ 80) is reached.
++ */
++int mp_karatsuba_mul (mp_int * a, mp_int * b, mp_int * c)
++{
++  mp_int  x0, x1, y0, y1, t1, x0y0, x1y1;
++  int     B, err;
++
++  /* default the return code to an error */
++  err = MP_MEM;
++
++  /* min # of digits */
++  B = MIN (a->used, b->used);
++
++  /* now divide in two */
++  B = B >> 1;
++
++  /* init copy all the temps */
++  if (mp_init_size (&x0, B) != MP_OKAY)
++    goto ERR;
++  if (mp_init_size (&x1, a->used - B) != MP_OKAY)
++    goto X0;
++  if (mp_init_size (&y0, B) != MP_OKAY)
++    goto X1;
++  if (mp_init_size (&y1, b->used - B) != MP_OKAY)
++    goto Y0;
++
++  /* init temps */
++  if (mp_init_size (&t1, B * 2) != MP_OKAY)
++    goto Y1;
++  if (mp_init_size (&x0y0, B * 2) != MP_OKAY)
++    goto T1;
++  if (mp_init_size (&x1y1, B * 2) != MP_OKAY)
++    goto X0Y0;
++
++  /* now shift the digits */
++  x0.used = y0.used = B;
++  x1.used = a->used - B;
++  y1.used = b->used - B;
++
++  {
++    register int x;
++    register mp_digit *tmpa, *tmpb, *tmpx, *tmpy;
++
++    /* we copy the digits directly instead of using higher level functions
++     * since we also need to shift the digits
++     */
++    tmpa = a->dp;
++    tmpb = b->dp;
++
++    tmpx = x0.dp;
++    tmpy = y0.dp;
++    for (x = 0; x < B; x++) {
++      *tmpx++ = *tmpa++;
++      *tmpy++ = *tmpb++;
++    }
++
++    tmpx = x1.dp;
++    for (x = B; x < a->used; x++) {
++      *tmpx++ = *tmpa++;
++    }
++
++    tmpy = y1.dp;
++    for (x = B; x < b->used; x++) {
++      *tmpy++ = *tmpb++;
++    }
++  }
++
++  /* only need to clamp the lower words since by definition the 
++   * upper words x1/y1 must have a known number of digits
++   */
++  mp_clamp (&x0);
++  mp_clamp (&y0);
++
++  /* now calc the products x0y0 and x1y1 */
++  /* after this x0 is no longer required, free temp [x0==t2]! */
++  if (mp_mul (&x0, &y0, &x0y0) != MP_OKAY)  
++    goto X1Y1;          /* x0y0 = x0*y0 */
++  if (mp_mul (&x1, &y1, &x1y1) != MP_OKAY)
++    goto X1Y1;          /* x1y1 = x1*y1 */
++
++  /* now calc x1+x0 and y1+y0 */
++  if (s_mp_add (&x1, &x0, &t1) != MP_OKAY)
++    goto X1Y1;          /* t1 = x1 - x0 */
++  if (s_mp_add (&y1, &y0, &x0) != MP_OKAY)
++    goto X1Y1;          /* t2 = y1 - y0 */
++  if (mp_mul (&t1, &x0, &t1) != MP_OKAY)
++    goto X1Y1;          /* t1 = (x1 + x0) * (y1 + y0) */
++
++  /* add x0y0 */
++  if (mp_add (&x0y0, &x1y1, &x0) != MP_OKAY)
++    goto X1Y1;          /* t2 = x0y0 + x1y1 */
++  if (s_mp_sub (&t1, &x0, &t1) != MP_OKAY)
++    goto X1Y1;          /* t1 = (x1+x0)*(y1+y0) - (x1y1 + x0y0) */
++
++  /* shift by B */
++  if (mp_lshd (&t1, B) != MP_OKAY)
++    goto X1Y1;          /* t1 = (x0y0 + x1y1 - (x1-x0)*(y1-y0))<<B */
++  if (mp_lshd (&x1y1, B * 2) != MP_OKAY)
++    goto X1Y1;          /* x1y1 = x1y1 << 2*B */
++
++  if (mp_add (&x0y0, &t1, &t1) != MP_OKAY)
++    goto X1Y1;          /* t1 = x0y0 + t1 */
++  if (mp_add (&t1, &x1y1, c) != MP_OKAY)
++    goto X1Y1;          /* t1 = x0y0 + t1 + x1y1 */
++
++  /* Algorithm succeeded set the return code to MP_OKAY */
++  err = MP_OKAY;
++
++X1Y1:mp_clear (&x1y1);
++X0Y0:mp_clear (&x0y0);
++T1:mp_clear (&t1);
++Y1:mp_clear (&y1);
++Y0:mp_clear (&y0);
++X1:mp_clear (&x1);
++X0:mp_clear (&x0);
++ERR:
++  return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_karatsuba_mul.c,v $ */
++/* $Revision: 1.6 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_karatsuba_sqr.c b/crypto/userspace/libtommath/bn_mp_karatsuba_sqr.c
+new file mode 100644
+index 0000000..a5e198b
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_karatsuba_sqr.c
+@@ -0,0 +1,121 @@
++#include <tommath.h>
++#ifdef BN_MP_KARATSUBA_SQR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* Karatsuba squaring, computes b = a*a using three 
++ * half size squarings
++ *
++ * See comments of karatsuba_mul for details.  It 
++ * is essentially the same algorithm but merely 
++ * tuned to perform recursive squarings.
++ */
++int mp_karatsuba_sqr (mp_int * a, mp_int * b)
++{
++  mp_int  x0, x1, t1, t2, x0x0, x1x1;
++  int     B, err;
++
++  err = MP_MEM;
++
++  /* min # of digits */
++  B = a->used;
++
++  /* now divide in two */
++  B = B >> 1;
++
++  /* init copy all the temps */
++  if (mp_init_size (&x0, B) != MP_OKAY)
++    goto ERR;
++  if (mp_init_size (&x1, a->used - B) != MP_OKAY)
++    goto X0;
++
++  /* init temps */
++  if (mp_init_size (&t1, a->used * 2) != MP_OKAY)
++    goto X1;
++  if (mp_init_size (&t2, a->used * 2) != MP_OKAY)
++    goto T1;
++  if (mp_init_size (&x0x0, B * 2) != MP_OKAY)
++    goto T2;
++  if (mp_init_size (&x1x1, (a->used - B) * 2) != MP_OKAY)
++    goto X0X0;
++
++  {
++    register int x;
++    register mp_digit *dst, *src;
++
++    src = a->dp;
++
++    /* now shift the digits */
++    dst = x0.dp;
++    for (x = 0; x < B; x++) {
++      *dst++ = *src++;
++    }
++
++    dst = x1.dp;
++    for (x = B; x < a->used; x++) {
++      *dst++ = *src++;
++    }
++  }
++
++  x0.used = B;
++  x1.used = a->used - B;
++
++  mp_clamp (&x0);
++
++  /* now calc the products x0*x0 and x1*x1 */
++  if (mp_sqr (&x0, &x0x0) != MP_OKAY)
++    goto X1X1;           /* x0x0 = x0*x0 */
++  if (mp_sqr (&x1, &x1x1) != MP_OKAY)
++    goto X1X1;           /* x1x1 = x1*x1 */
++
++  /* now calc (x1+x0)**2 */
++  if (s_mp_add (&x1, &x0, &t1) != MP_OKAY)
++    goto X1X1;           /* t1 = x1 - x0 */
++  if (mp_sqr (&t1, &t1) != MP_OKAY)
++    goto X1X1;           /* t1 = (x1 - x0) * (x1 - x0) */
++
++  /* add x0y0 */
++  if (s_mp_add (&x0x0, &x1x1, &t2) != MP_OKAY)
++    goto X1X1;           /* t2 = x0x0 + x1x1 */
++  if (s_mp_sub (&t1, &t2, &t1) != MP_OKAY)
++    goto X1X1;           /* t1 = (x1+x0)**2 - (x0x0 + x1x1) */
++
++  /* shift by B */
++  if (mp_lshd (&t1, B) != MP_OKAY)
++    goto X1X1;           /* t1 = (x0x0 + x1x1 - (x1-x0)*(x1-x0))<<B */
++  if (mp_lshd (&x1x1, B * 2) != MP_OKAY)
++    goto X1X1;           /* x1x1 = x1x1 << 2*B */
++
++  if (mp_add (&x0x0, &t1, &t1) != MP_OKAY)
++    goto X1X1;           /* t1 = x0x0 + t1 */
++  if (mp_add (&t1, &x1x1, b) != MP_OKAY)
++    goto X1X1;           /* t1 = x0x0 + t1 + x1x1 */
++
++  err = MP_OKAY;
++
++X1X1:mp_clear (&x1x1);
++X0X0:mp_clear (&x0x0);
++T2:mp_clear (&t2);
++T1:mp_clear (&t1);
++X1:mp_clear (&x1);
++X0:mp_clear (&x0);
++ERR:
++  return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_karatsuba_sqr.c,v $ */
++/* $Revision: 1.6 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_lcm.c b/crypto/userspace/libtommath/bn_mp_lcm.c
+new file mode 100644
+index 0000000..781eef5
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_lcm.c
+@@ -0,0 +1,60 @@
++#include <tommath.h>
++#ifdef BN_MP_LCM_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* computes least common multiple as |a*b|/(a, b) */
++int mp_lcm (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     res;
++  mp_int  t1, t2;
++
++
++  if ((res = mp_init_multi (&t1, &t2, NULL)) != MP_OKAY) {
++    return res;
++  }
++
++  /* t1 = get the GCD of the two inputs */
++  if ((res = mp_gcd (a, b, &t1)) != MP_OKAY) {
++    goto LBL_T;
++  }
++
++  /* divide the smallest by the GCD */
++  if (mp_cmp_mag(a, b) == MP_LT) {
++     /* store quotient in t2 such that t2 * b is the LCM */
++     if ((res = mp_div(a, &t1, &t2, NULL)) != MP_OKAY) {
++        goto LBL_T;
++     }
++     res = mp_mul(b, &t2, c);
++  } else {
++     /* store quotient in t2 such that t2 * a is the LCM */
++     if ((res = mp_div(b, &t1, &t2, NULL)) != MP_OKAY) {
++        goto LBL_T;
++     }
++     res = mp_mul(a, &t2, c);
++  }
++
++  /* fix the sign to positive */
++  c->sign = MP_ZPOS;
++
++LBL_T:
++  mp_clear_multi (&t1, &t2, NULL);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_lcm.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_lshd.c b/crypto/userspace/libtommath/bn_mp_lshd.c
+new file mode 100644
+index 0000000..f118cf1
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_lshd.c
+@@ -0,0 +1,67 @@
++#include <tommath.h>
++#ifdef BN_MP_LSHD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* shift left a certain amount of digits */
++int mp_lshd (mp_int * a, int b)
++{
++  int     x, res;
++
++  /* if its less than zero return */
++  if (b <= 0) {
++    return MP_OKAY;
++  }
++
++  /* grow to fit the new digits */
++  if (a->alloc < a->used + b) {
++     if ((res = mp_grow (a, a->used + b)) != MP_OKAY) {
++       return res;
++     }
++  }
++
++  {
++    register mp_digit *top, *bottom;
++
++    /* increment the used by the shift amount then copy upwards */
++    a->used += b;
++
++    /* top */
++    top = a->dp + a->used - 1;
++
++    /* base */
++    bottom = a->dp + a->used - 1 - b;
++
++    /* much like mp_rshd this is implemented using a sliding window
++     * except the window goes the otherway around.  Copying from
++     * the bottom to the top.  see bn_mp_rshd.c for more info.
++     */
++    for (x = a->used - 1; x >= b; x--) {
++      *top-- = *bottom--;
++    }
++
++    /* zero the lower digits */
++    top = a->dp;
++    for (x = 0; x < b; x++) {
++      *top++ = 0;
++    }
++  }
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_lshd.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mod.c b/crypto/userspace/libtommath/bn_mp_mod.c
+new file mode 100644
+index 0000000..f5cf8d0
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mod.c
+@@ -0,0 +1,48 @@
++#include <tommath.h>
++#ifdef BN_MP_MOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* c = a mod b, 0 <= c < b */
++int
++mp_mod (mp_int * a, mp_int * b, mp_int * c)
++{
++  mp_int  t;
++  int     res;
++
++  if ((res = mp_init (&t)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_div (a, b, NULL, &t)) != MP_OKAY) {
++    mp_clear (&t);
++    return res;
++  }
++
++  if (t.sign != b->sign) {
++    res = mp_add (b, &t, c);
++  } else {
++    res = MP_OKAY;
++    mp_exch (&t, c);
++  }
++
++  mp_clear (&t);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mod.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mod_2d.c b/crypto/userspace/libtommath/bn_mp_mod_2d.c
+new file mode 100644
+index 0000000..e194a06
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mod_2d.c
+@@ -0,0 +1,55 @@
++#include <tommath.h>
++#ifdef BN_MP_MOD_2D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* calc a value mod 2**b */
++int
++mp_mod_2d (mp_int * a, int b, mp_int * c)
++{
++  int     x, res;
++
++  /* if b is <= 0 then zero the int */
++  if (b <= 0) {
++    mp_zero (c);
++    return MP_OKAY;
++  }
++
++  /* if the modulus is larger than the value than return */
++  if (b >= (int) (a->used * DIGIT_BIT)) {
++    res = mp_copy (a, c);
++    return res;
++  }
++
++  /* copy */
++  if ((res = mp_copy (a, c)) != MP_OKAY) {
++    return res;
++  }
++
++  /* zero digits above the last digit of the modulus */
++  for (x = (b / DIGIT_BIT) + ((b % DIGIT_BIT) == 0 ? 0 : 1); x < c->used; x++) {
++    c->dp[x] = 0;
++  }
++  /* clear the digit that is not completely outside/inside the modulus */
++  c->dp[b / DIGIT_BIT] &=
++    (mp_digit) ((((mp_digit) 1) << (((mp_digit) b) % DIGIT_BIT)) - ((mp_digit) 1));
++  mp_clamp (c);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mod_2d.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mod_d.c b/crypto/userspace/libtommath/bn_mp_mod_d.c
+new file mode 100644
+index 0000000..9ca37e6
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mod_d.c
+@@ -0,0 +1,27 @@
++#include <tommath.h>
++#ifdef BN_MP_MOD_D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++int
++mp_mod_d (mp_int * a, mp_digit b, mp_digit * c)
++{
++  return mp_div_d(a, b, NULL, c);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mod_d.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_montgomery_calc_normalization.c b/crypto/userspace/libtommath/bn_mp_montgomery_calc_normalization.c
+new file mode 100644
+index 0000000..c669fe0
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_montgomery_calc_normalization.c
+@@ -0,0 +1,59 @@
++#include <tommath.h>
++#ifdef BN_MP_MONTGOMERY_CALC_NORMALIZATION_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/*
++ * shifts with subtractions when the result is greater than b.
++ *
++ * The method is slightly modified to shift B unconditionally upto just under
++ * the leading bit of b.  This saves alot of multiple precision shifting.
++ */
++int mp_montgomery_calc_normalization (mp_int * a, mp_int * b)
++{
++  int     x, bits, res;
++
++  /* how many bits of last digit does b use */
++  bits = mp_count_bits (b) % DIGIT_BIT;
++
++  if (b->used > 1) {
++     if ((res = mp_2expt (a, (b->used - 1) * DIGIT_BIT + bits - 1)) != MP_OKAY) {
++        return res;
++     }
++  } else {
++     mp_set(a, 1);
++     bits = 1;
++  }
++
++
++  /* now compute C = A * B mod b */
++  for (x = bits - 1; x < (int)DIGIT_BIT; x++) {
++    if ((res = mp_mul_2 (a, a)) != MP_OKAY) {
++      return res;
++    }
++    if (mp_cmp_mag (a, b) != MP_LT) {
++      if ((res = s_mp_sub (a, b, a)) != MP_OKAY) {
++        return res;
++      }
++    }
++  }
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_montgomery_calc_normalization.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_montgomery_reduce.c b/crypto/userspace/libtommath/bn_mp_montgomery_reduce.c
+new file mode 100644
+index 0000000..b765090
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_montgomery_reduce.c
+@@ -0,0 +1,118 @@
++#include <tommath.h>
++#ifdef BN_MP_MONTGOMERY_REDUCE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* computes xR**-1 == x (mod N) via Montgomery Reduction */
++int
++mp_montgomery_reduce (mp_int * x, mp_int * n, mp_digit rho)
++{
++  int     ix, res, digs;
++  mp_digit mu;
++
++  /* can the fast reduction [comba] method be used?
++   *
++   * Note that unlike in mul you're safely allowed *less*
++   * than the available columns [255 per default] since carries
++   * are fixed up in the inner loop.
++   */
++  digs = n->used * 2 + 1;
++  if ((digs < MP_WARRAY) &&
++      n->used <
++      (1 << ((CHAR_BIT * sizeof (mp_word)) - (2 * DIGIT_BIT)))) {
++    return fast_mp_montgomery_reduce (x, n, rho);
++  }
++
++  /* grow the input as required */
++  if (x->alloc < digs) {
++    if ((res = mp_grow (x, digs)) != MP_OKAY) {
++      return res;
++    }
++  }
++  x->used = digs;
++
++  for (ix = 0; ix < n->used; ix++) {
++    /* mu = ai * rho mod b
++     *
++     * The value of rho must be precalculated via
++     * montgomery_setup() such that
++     * it equals -1/n0 mod b this allows the
++     * following inner loop to reduce the
++     * input one digit at a time
++     */
++    mu = (mp_digit) (((mp_word)x->dp[ix]) * ((mp_word)rho) & MP_MASK);
++
++    /* a = a + mu * m * b**i */
++    {
++      register int iy;
++      register mp_digit *tmpn, *tmpx, u;
++      register mp_word r;
++
++      /* alias for digits of the modulus */
++      tmpn = n->dp;
++
++      /* alias for the digits of x [the input] */
++      tmpx = x->dp + ix;
++
++      /* set the carry to zero */
++      u = 0;
++
++      /* Multiply and add in place */
++      for (iy = 0; iy < n->used; iy++) {
++        /* compute product and sum */
++        r       = ((mp_word)mu) * ((mp_word)*tmpn++) +
++                  ((mp_word) u) + ((mp_word) * tmpx);
++
++        /* get carry */
++        u       = (mp_digit)(r >> ((mp_word) DIGIT_BIT));
++
++        /* fix digit */
++        *tmpx++ = (mp_digit)(r & ((mp_word) MP_MASK));
++      }
++      /* At this point the ix'th digit of x should be zero */
++
++
++      /* propagate carries upwards as required*/
++      while (u) {
++        *tmpx   += u;
++        u        = *tmpx >> DIGIT_BIT;
++        *tmpx++ &= MP_MASK;
++      }
++    }
++  }
++
++  /* at this point the n.used'th least
++   * significant digits of x are all zero
++   * which means we can shift x to the
++   * right by n.used digits and the
++   * residue is unchanged.
++   */
++
++  /* x = x/b**n.used */
++  mp_clamp(x);
++  mp_rshd (x, n->used);
++
++  /* if x >= n then x = x - n */
++  if (mp_cmp_mag (x, n) != MP_LT) {
++    return s_mp_sub (x, n, x);
++  }
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_montgomery_reduce.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_montgomery_setup.c b/crypto/userspace/libtommath/bn_mp_montgomery_setup.c
+new file mode 100644
+index 0000000..f082749
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_montgomery_setup.c
+@@ -0,0 +1,59 @@
++#include <tommath.h>
++#ifdef BN_MP_MONTGOMERY_SETUP_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* setups the montgomery reduction stuff */
++int
++mp_montgomery_setup (mp_int * n, mp_digit * rho)
++{
++  mp_digit x, b;
++
++/* fast inversion mod 2**k
++ *
++ * Based on the fact that
++ *
++ * XA = 1 (mod 2**n)  =>  (X(2-XA)) A = 1 (mod 2**2n)
++ *                    =>  2*X*A - X*X*A*A = 1
++ *                    =>  2*(1) - (1)     = 1
++ */
++  b = n->dp[0];
++
++  if ((b & 1) == 0) {
++    return MP_VAL;
++  }
++
++  x = (((b + 2) & 4) << 1) + b; /* here x*a==1 mod 2**4 */
++  x *= 2 - b * x;               /* here x*a==1 mod 2**8 */
++#if !defined(MP_8BIT)
++  x *= 2 - b * x;               /* here x*a==1 mod 2**16 */
++#endif
++#if defined(MP_64BIT) || !(defined(MP_8BIT) || defined(MP_16BIT))
++  x *= 2 - b * x;               /* here x*a==1 mod 2**32 */
++#endif
++#ifdef MP_64BIT
++  x *= 2 - b * x;               /* here x*a==1 mod 2**64 */
++#endif
++
++  /* rho = -1/m mod b */
++  *rho = (unsigned long)(((mp_word)1 << ((mp_word) DIGIT_BIT)) - x) & MP_MASK;
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_montgomery_setup.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mul.c b/crypto/userspace/libtommath/bn_mp_mul.c
+new file mode 100644
+index 0000000..8b1117a
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mul.c
+@@ -0,0 +1,66 @@
++#include <tommath.h>
++#ifdef BN_MP_MUL_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* high level multiplication (handles sign) */
++int mp_mul (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     res, neg;
++  neg = (a->sign == b->sign) ? MP_ZPOS : MP_NEG;
++
++  /* use Toom-Cook? */
++#ifdef BN_MP_TOOM_MUL_C
++  if (MIN (a->used, b->used) >= TOOM_MUL_CUTOFF) {
++    res = mp_toom_mul(a, b, c);
++  } else 
++#endif
++#ifdef BN_MP_KARATSUBA_MUL_C
++  /* use Karatsuba? */
++  if (MIN (a->used, b->used) >= KARATSUBA_MUL_CUTOFF) {
++    res = mp_karatsuba_mul (a, b, c);
++  } else 
++#endif
++  {
++    /* can we use the fast multiplier?
++     *
++     * The fast multiplier can be used if the output will 
++     * have less than MP_WARRAY digits and the number of 
++     * digits won't affect carry propagation
++     */
++    int     digs = a->used + b->used + 1;
++
++#ifdef BN_FAST_S_MP_MUL_DIGS_C
++    if ((digs < MP_WARRAY) &&
++        MIN(a->used, b->used) <= 
++        (1 << ((CHAR_BIT * sizeof (mp_word)) - (2 * DIGIT_BIT)))) {
++      res = fast_s_mp_mul_digs (a, b, c, digs);
++    } else 
++#endif
++#ifdef BN_S_MP_MUL_DIGS_C
++      res = s_mp_mul (a, b, c); /* uses s_mp_mul_digs */
++#else
++      res = MP_VAL;
++#endif
++
++  }
++  c->sign = (c->used > 0) ? neg : MP_ZPOS;
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mul.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mul_2.c b/crypto/userspace/libtommath/bn_mp_mul_2.c
+new file mode 100644
+index 0000000..02455fc
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mul_2.c
+@@ -0,0 +1,82 @@
++#include <tommath.h>
++#ifdef BN_MP_MUL_2_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* b = a*2 */
++int mp_mul_2(mp_int * a, mp_int * b)
++{
++  int     x, res, oldused;
++
++  /* grow to accomodate result */
++  if (b->alloc < a->used + 1) {
++    if ((res = mp_grow (b, a->used + 1)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  oldused = b->used;
++  b->used = a->used;
++
++  {
++    register mp_digit r, rr, *tmpa, *tmpb;
++
++    /* alias for source */
++    tmpa = a->dp;
++    
++    /* alias for dest */
++    tmpb = b->dp;
++
++    /* carry */
++    r = 0;
++    for (x = 0; x < a->used; x++) {
++    
++      /* get what will be the *next* carry bit from the 
++       * MSB of the current digit 
++       */
++      rr = *tmpa >> ((mp_digit)(DIGIT_BIT - 1));
++      
++      /* now shift up this digit, add in the carry [from the previous] */
++      *tmpb++ = ((*tmpa++ << ((mp_digit)1)) | r) & MP_MASK;
++      
++      /* copy the carry that would be from the source 
++       * digit into the next iteration 
++       */
++      r = rr;
++    }
++
++    /* new leading digit? */
++    if (r != 0) {
++      /* add a MSB which is always 1 at this point */
++      *tmpb = 1;
++      ++(b->used);
++    }
++
++    /* now zero any excess digits on the destination 
++     * that we didn't write to 
++     */
++    tmpb = b->dp + b->used;
++    for (x = b->used; x < oldused; x++) {
++      *tmpb++ = 0;
++    }
++  }
++  b->sign = a->sign;
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mul_2.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mul_2d.c b/crypto/userspace/libtommath/bn_mp_mul_2d.c
+new file mode 100644
+index 0000000..efeff2e
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mul_2d.c
+@@ -0,0 +1,85 @@
++#include <tommath.h>
++#ifdef BN_MP_MUL_2D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* shift left by a certain bit count */
++int mp_mul_2d (mp_int * a, int b, mp_int * c)
++{
++  mp_digit d;
++  int      res;
++
++  /* copy */
++  if (a != c) {
++     if ((res = mp_copy (a, c)) != MP_OKAY) {
++       return res;
++     }
++  }
++
++  if (c->alloc < (int)(c->used + b/DIGIT_BIT + 1)) {
++     if ((res = mp_grow (c, c->used + b / DIGIT_BIT + 1)) != MP_OKAY) {
++       return res;
++     }
++  }
++
++  /* shift by as many digits in the bit count */
++  if (b >= (int)DIGIT_BIT) {
++    if ((res = mp_lshd (c, b / DIGIT_BIT)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  /* shift any bit count < DIGIT_BIT */
++  d = (mp_digit) (b % DIGIT_BIT);
++  if (d != 0) {
++    register mp_digit *tmpc, shift, mask, r, rr;
++    register int x;
++
++    /* bitmask for carries */
++    mask = (((mp_digit)1) << d) - 1;
++
++    /* shift for msbs */
++    shift = DIGIT_BIT - d;
++
++    /* alias */
++    tmpc = c->dp;
++
++    /* carry */
++    r    = 0;
++    for (x = 0; x < c->used; x++) {
++      /* get the higher bits of the current word */
++      rr = (*tmpc >> shift) & mask;
++
++      /* shift the current word and OR in the carry */
++      *tmpc = ((*tmpc << d) | r) & MP_MASK;
++      ++tmpc;
++
++      /* set the carry to the carry bits of the current word */
++      r = rr;
++    }
++    
++    /* set final carry */
++    if (r != 0) {
++       c->dp[(c->used)++] = r;
++    }
++  }
++  mp_clamp (c);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mul_2d.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mul_d.c b/crypto/userspace/libtommath/bn_mp_mul_d.c
+new file mode 100644
+index 0000000..00f9a89
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mul_d.c
+@@ -0,0 +1,79 @@
++#include <tommath.h>
++#ifdef BN_MP_MUL_D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* multiply by a digit */
++int
++mp_mul_d (mp_int * a, mp_digit b, mp_int * c)
++{
++  mp_digit u, *tmpa, *tmpc;
++  mp_word  r;
++  int      ix, res, olduse;
++
++  /* make sure c is big enough to hold a*b */
++  if (c->alloc < a->used + 1) {
++    if ((res = mp_grow (c, a->used + 1)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  /* get the original destinations used count */
++  olduse = c->used;
++
++  /* set the sign */
++  c->sign = a->sign;
++
++  /* alias for a->dp [source] */
++  tmpa = a->dp;
++
++  /* alias for c->dp [dest] */
++  tmpc = c->dp;
++
++  /* zero carry */
++  u = 0;
++
++  /* compute columns */
++  for (ix = 0; ix < a->used; ix++) {
++    /* compute product and carry sum for this term */
++    r       = ((mp_word) u) + ((mp_word)*tmpa++) * ((mp_word)b);
++
++    /* mask off higher bits to get a single digit */
++    *tmpc++ = (mp_digit) (r & ((mp_word) MP_MASK));
++
++    /* send carry into next iteration */
++    u       = (mp_digit) (r >> ((mp_word) DIGIT_BIT));
++  }
++
++  /* store final carry [if any] and increment ix offset  */
++  *tmpc++ = u;
++  ++ix;
++
++  /* now zero digits above the top */
++  while (ix++ < olduse) {
++     *tmpc++ = 0;
++  }
++
++  /* set used count */
++  c->used = a->used + 1;
++  mp_clamp(c);
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mul_d.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_mulmod.c b/crypto/userspace/libtommath/bn_mp_mulmod.c
+new file mode 100644
+index 0000000..003ceb9
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_mulmod.c
+@@ -0,0 +1,40 @@
++#include <tommath.h>
++#ifdef BN_MP_MULMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* d = a * b (mod c) */
++int mp_mulmod (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
++{
++  int     res;
++  mp_int  t;
++
++  if ((res = mp_init (&t)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_mul (a, b, &t)) != MP_OKAY) {
++    mp_clear (&t);
++    return res;
++  }
++  res = mp_mod (&t, c, d);
++  mp_clear (&t);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_mulmod.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_n_root.c b/crypto/userspace/libtommath/bn_mp_n_root.c
+new file mode 100644
+index 0000000..0e7bedc
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_n_root.c
+@@ -0,0 +1,132 @@
++#include <tommath.h>
++#ifdef BN_MP_N_ROOT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* find the n'th root of an integer 
++ *
++ * Result found such that (c)**b <= a and (c+1)**b > a 
++ *
++ * This algorithm uses Newton's approximation 
++ * x[i+1] = x[i] - f(x[i])/f'(x[i]) 
++ * which will find the root in log(N) time where 
++ * each step involves a fair bit.  This is not meant to 
++ * find huge roots [square and cube, etc].
++ */
++int mp_n_root (mp_int * a, mp_digit b, mp_int * c)
++{
++  mp_int  t1, t2, t3;
++  int     res, neg;
++
++  /* input must be positive if b is even */
++  if ((b & 1) == 0 && a->sign == MP_NEG) {
++    return MP_VAL;
++  }
++
++  if ((res = mp_init (&t1)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_init (&t2)) != MP_OKAY) {
++    goto LBL_T1;
++  }
++
++  if ((res = mp_init (&t3)) != MP_OKAY) {
++    goto LBL_T2;
++  }
++
++  /* if a is negative fudge the sign but keep track */
++  neg     = a->sign;
++  a->sign = MP_ZPOS;
++
++  /* t2 = 2 */
++  mp_set (&t2, 2);
++
++  do {
++    /* t1 = t2 */
++    if ((res = mp_copy (&t2, &t1)) != MP_OKAY) {
++      goto LBL_T3;
++    }
++
++    /* t2 = t1 - ((t1**b - a) / (b * t1**(b-1))) */
++    
++    /* t3 = t1**(b-1) */
++    if ((res = mp_expt_d (&t1, b - 1, &t3)) != MP_OKAY) {   
++      goto LBL_T3;
++    }
++
++    /* numerator */
++    /* t2 = t1**b */
++    if ((res = mp_mul (&t3, &t1, &t2)) != MP_OKAY) {    
++      goto LBL_T3;
++    }
++
++    /* t2 = t1**b - a */
++    if ((res = mp_sub (&t2, a, &t2)) != MP_OKAY) {  
++      goto LBL_T3;
++    }
++
++    /* denominator */
++    /* t3 = t1**(b-1) * b  */
++    if ((res = mp_mul_d (&t3, b, &t3)) != MP_OKAY) {    
++      goto LBL_T3;
++    }
++
++    /* t3 = (t1**b - a)/(b * t1**(b-1)) */
++    if ((res = mp_div (&t2, &t3, &t3, NULL)) != MP_OKAY) {  
++      goto LBL_T3;
++    }
++
++    if ((res = mp_sub (&t1, &t3, &t2)) != MP_OKAY) {
++      goto LBL_T3;
++    }
++  }  while (mp_cmp (&t1, &t2) != MP_EQ);
++
++  /* result can be off by a few so check */
++  for (;;) {
++    if ((res = mp_expt_d (&t1, b, &t2)) != MP_OKAY) {
++      goto LBL_T3;
++    }
++
++    if (mp_cmp (&t2, a) == MP_GT) {
++      if ((res = mp_sub_d (&t1, 1, &t1)) != MP_OKAY) {
++         goto LBL_T3;
++      }
++    } else {
++      break;
++    }
++  }
++
++  /* reset the sign of a first */
++  a->sign = neg;
++
++  /* set the result */
++  mp_exch (&t1, c);
++
++  /* set the sign of the result */
++  c->sign = neg;
++
++  res = MP_OKAY;
++
++LBL_T3:mp_clear (&t3);
++LBL_T2:mp_clear (&t2);
++LBL_T1:mp_clear (&t1);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_n_root.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_neg.c b/crypto/userspace/libtommath/bn_mp_neg.c
+new file mode 100644
+index 0000000..a7d035a
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_neg.c
+@@ -0,0 +1,40 @@
++#include <tommath.h>
++#ifdef BN_MP_NEG_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* b = -a */
++int mp_neg (mp_int * a, mp_int * b)
++{
++  int     res;
++  if (a != b) {
++     if ((res = mp_copy (a, b)) != MP_OKAY) {
++        return res;
++     }
++  }
++
++  if (mp_iszero(b) != MP_YES) {
++     b->sign = (a->sign == MP_ZPOS) ? MP_NEG : MP_ZPOS;
++  } else {
++     b->sign = MP_ZPOS;
++  }
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_neg.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_or.c b/crypto/userspace/libtommath/bn_mp_or.c
+new file mode 100644
+index 0000000..bff4995
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_or.c
+@@ -0,0 +1,50 @@
++#include <tommath.h>
++#ifdef BN_MP_OR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* OR two ints together */
++int mp_or (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     res, ix, px;
++  mp_int  t, *x;
++
++  if (a->used > b->used) {
++    if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
++      return res;
++    }
++    px = b->used;
++    x = b;
++  } else {
++    if ((res = mp_init_copy (&t, b)) != MP_OKAY) {
++      return res;
++    }
++    px = a->used;
++    x = a;
++  }
++
++  for (ix = 0; ix < px; ix++) {
++    t.dp[ix] |= x->dp[ix];
++  }
++  mp_clamp (&t);
++  mp_exch (c, &t);
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_or.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_prime_fermat.c b/crypto/userspace/libtommath/bn_mp_prime_fermat.c
+new file mode 100644
+index 0000000..c23d77f
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_prime_fermat.c
+@@ -0,0 +1,62 @@
++#include <tommath.h>
++#ifdef BN_MP_PRIME_FERMAT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* performs one Fermat test.
++ * 
++ * If "a" were prime then b**a == b (mod a) since the order of
++ * the multiplicative sub-group would be phi(a) = a-1.  That means
++ * it would be the same as b**(a mod (a-1)) == b**1 == b (mod a).
++ *
++ * Sets result to 1 if the congruence holds, or zero otherwise.
++ */
++int mp_prime_fermat (mp_int * a, mp_int * b, int *result)
++{
++  mp_int  t;
++  int     err;
++
++  /* default to composite  */
++  *result = MP_NO;
++
++  /* ensure b > 1 */
++  if (mp_cmp_d(b, 1) != MP_GT) {
++     return MP_VAL;
++  }
++
++  /* init t */
++  if ((err = mp_init (&t)) != MP_OKAY) {
++    return err;
++  }
++
++  /* compute t = b**a mod a */
++  if ((err = mp_exptmod (b, a, a, &t)) != MP_OKAY) {
++    goto LBL_T;
++  }
++
++  /* is it equal to b? */
++  if (mp_cmp (&t, b) == MP_EQ) {
++    *result = MP_YES;
++  }
++
++  err = MP_OKAY;
++LBL_T:mp_clear (&t);
++  return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_prime_fermat.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_prime_is_divisible.c b/crypto/userspace/libtommath/bn_mp_prime_is_divisible.c
+new file mode 100644
+index 0000000..8e7871c
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_prime_is_divisible.c
+@@ -0,0 +1,50 @@
++#include <tommath.h>
++#ifdef BN_MP_PRIME_IS_DIVISIBLE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* determines if an integers is divisible by one 
++ * of the first PRIME_SIZE primes or not
++ *
++ * sets result to 0 if not, 1 if yes
++ */
++int mp_prime_is_divisible (mp_int * a, int *result)
++{
++  int     err, ix;
++  mp_digit res;
++
++  /* default to not */
++  *result = MP_NO;
++
++  for (ix = 0; ix < PRIME_SIZE; ix++) {
++    /* what is a mod LBL_prime_tab[ix] */
++    if ((err = mp_mod_d (a, ltm_prime_tab[ix], &res)) != MP_OKAY) {
++      return err;
++    }
++
++    /* is the residue zero? */
++    if (res == 0) {
++      *result = MP_YES;
++      return MP_OKAY;
++    }
++  }
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_prime_is_divisible.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_prime_is_prime.c b/crypto/userspace/libtommath/bn_mp_prime_is_prime.c
+new file mode 100644
+index 0000000..c316d62
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_prime_is_prime.c
+@@ -0,0 +1,83 @@
++#include <tommath.h>
++#ifdef BN_MP_PRIME_IS_PRIME_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* performs a variable number of rounds of Miller-Rabin
++ *
++ * Probability of error after t rounds is no more than
++
++ *
++ * Sets result to 1 if probably prime, 0 otherwise
++ */
++int mp_prime_is_prime (mp_int * a, int t, int *result)
++{
++  mp_int  b;
++  int     ix, err, res;
++
++  /* default to no */
++  *result = MP_NO;
++
++  /* valid value of t? */
++  if (t <= 0 || t > PRIME_SIZE) {
++    return MP_VAL;
++  }
++
++  /* is the input equal to one of the primes in the table? */
++  for (ix = 0; ix < PRIME_SIZE; ix++) {
++      if (mp_cmp_d(a, ltm_prime_tab[ix]) == MP_EQ) {
++         *result = 1;
++         return MP_OKAY;
++      }
++  }
++
++  /* first perform trial division */
++  if ((err = mp_prime_is_divisible (a, &res)) != MP_OKAY) {
++    return err;
++  }
++
++  /* return if it was trivially divisible */
++  if (res == MP_YES) {
++    return MP_OKAY;
++  }
++
++  /* now perform the miller-rabin rounds */
++  if ((err = mp_init (&b)) != MP_OKAY) {
++    return err;
++  }
++
++  for (ix = 0; ix < t; ix++) {
++    /* set the prime */
++    mp_set (&b, ltm_prime_tab[ix]);
++
++    if ((err = mp_prime_miller_rabin (a, &b, &res)) != MP_OKAY) {
++      goto LBL_B;
++    }
++
++    if (res == MP_NO) {
++      goto LBL_B;
++    }
++  }
++
++  /* passed the test */
++  *result = MP_YES;
++LBL_B:mp_clear (&b);
++  return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_prime_is_prime.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_prime_miller_rabin.c b/crypto/userspace/libtommath/bn_mp_prime_miller_rabin.c
+new file mode 100644
+index 0000000..ddf0358
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_prime_miller_rabin.c
+@@ -0,0 +1,103 @@
++#include <tommath.h>
++#ifdef BN_MP_PRIME_MILLER_RABIN_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* Miller-Rabin test of "a" to the base of "b" as described in 
++ * HAC pp. 139 Algorithm 4.24
++ *
++ * Sets result to 0 if definitely composite or 1 if probably prime.
++ * Randomly the chance of error is no more than 1/4 and often 
++ * very much lower.
++ */
++int mp_prime_miller_rabin (mp_int * a, mp_int * b, int *result)
++{
++  mp_int  n1, y, r;
++  int     s, j, err;
++
++  /* default */
++  *result = MP_NO;
++
++  /* ensure b > 1 */
++  if (mp_cmp_d(b, 1) != MP_GT) {
++     return MP_VAL;
++  }     
++
++  /* get n1 = a - 1 */
++  if ((err = mp_init_copy (&n1, a)) != MP_OKAY) {
++    return err;
++  }
++  if ((err = mp_sub_d (&n1, 1, &n1)) != MP_OKAY) {
++    goto LBL_N1;
++  }
++
++  /* set 2**s * r = n1 */
++  if ((err = mp_init_copy (&r, &n1)) != MP_OKAY) {
++    goto LBL_N1;
++  }
++
++  /* count the number of least significant bits
++   * which are zero
++   */
++  s = mp_cnt_lsb(&r);
++
++  /* now divide n - 1 by 2**s */
++  if ((err = mp_div_2d (&r, s, &r, NULL)) != MP_OKAY) {
++    goto LBL_R;
++  }
++
++  /* compute y = b**r mod a */
++  if ((err = mp_init (&y)) != MP_OKAY) {
++    goto LBL_R;
++  }
++  if ((err = mp_exptmod (b, &r, a, &y)) != MP_OKAY) {
++    goto LBL_Y;
++  }
++
++  /* if y != 1 and y != n1 do */
++  if (mp_cmp_d (&y, 1) != MP_EQ && mp_cmp (&y, &n1) != MP_EQ) {
++    j = 1;
++    /* while j <= s-1 and y != n1 */
++    while ((j <= (s - 1)) && mp_cmp (&y, &n1) != MP_EQ) {
++      if ((err = mp_sqrmod (&y, a, &y)) != MP_OKAY) {
++         goto LBL_Y;
++      }
++
++      /* if y == 1 then composite */
++      if (mp_cmp_d (&y, 1) == MP_EQ) {
++         goto LBL_Y;
++      }
++
++      ++j;
++    }
++
++    /* if y != n1 then composite */
++    if (mp_cmp (&y, &n1) != MP_EQ) {
++      goto LBL_Y;
++    }
++  }
++
++  /* probably prime now */
++  *result = MP_YES;
++LBL_Y:mp_clear (&y);
++LBL_R:mp_clear (&r);
++LBL_N1:mp_clear (&n1);
++  return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_prime_miller_rabin.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_prime_next_prime.c b/crypto/userspace/libtommath/bn_mp_prime_next_prime.c
+new file mode 100644
+index 0000000..bc31cc7
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_prime_next_prime.c
+@@ -0,0 +1,170 @@
++#include <tommath.h>
++#ifdef BN_MP_PRIME_NEXT_PRIME_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* finds the next prime after the number "a" using "t" trials
++ * of Miller-Rabin.
++ *
++ * bbs_style = 1 means the prime must be congruent to 3 mod 4
++ */
++int mp_prime_next_prime(mp_int *a, int t, int bbs_style)
++{
++   int      err, res, x, y;
++   mp_digit res_tab[PRIME_SIZE], step, kstep;
++   mp_int   b;
++
++   /* ensure t is valid */
++   if (t <= 0 || t > PRIME_SIZE) {
++      return MP_VAL;
++   }
++
++   /* force positive */
++   a->sign = MP_ZPOS;
++
++   /* simple algo if a is less than the largest prime in the table */
++   if (mp_cmp_d(a, ltm_prime_tab[PRIME_SIZE-1]) == MP_LT) {
++      /* find which prime it is bigger than */
++      for (x = PRIME_SIZE - 2; x >= 0; x--) {
++          if (mp_cmp_d(a, ltm_prime_tab[x]) != MP_LT) {
++             if (bbs_style == 1) {
++                /* ok we found a prime smaller or
++                 * equal [so the next is larger]
++                 *
++                 * however, the prime must be
++                 * congruent to 3 mod 4
++                 */
++                if ((ltm_prime_tab[x + 1] & 3) != 3) {
++                   /* scan upwards for a prime congruent to 3 mod 4 */
++                   for (y = x + 1; y < PRIME_SIZE; y++) {
++                       if ((ltm_prime_tab[y] & 3) == 3) {
++                          mp_set(a, ltm_prime_tab[y]);
++                          return MP_OKAY;
++                       }
++                   }
++                }
++             } else {
++                mp_set(a, ltm_prime_tab[x + 1]);
++                return MP_OKAY;
++             }
++          }
++      }
++      /* at this point a maybe 1 */
++      if (mp_cmp_d(a, 1) == MP_EQ) {
++         mp_set(a, 2);
++         return MP_OKAY;
++      }
++      /* fall through to the sieve */
++   }
++
++   /* generate a prime congruent to 3 mod 4 or 1/3 mod 4? */
++   if (bbs_style == 1) {
++      kstep   = 4;
++   } else {
++      kstep   = 2;
++   }
++
++   /* at this point we will use a combination of a sieve and Miller-Rabin */
++
++   if (bbs_style == 1) {
++      /* if a mod 4 != 3 subtract the correct value to make it so */
++      if ((a->dp[0] & 3) != 3) {
++         if ((err = mp_sub_d(a, (a->dp[0] & 3) + 1, a)) != MP_OKAY) { return err; };
++      }
++   } else {
++      if (mp_iseven(a) == 1) {
++         /* force odd */
++         if ((err = mp_sub_d(a, 1, a)) != MP_OKAY) {
++            return err;
++         }
++      }
++   }
++
++   /* generate the restable */
++   for (x = 1; x < PRIME_SIZE; x++) {
++      if ((err = mp_mod_d(a, ltm_prime_tab[x], res_tab + x)) != MP_OKAY) {
++         return err;
++      }
++   }
++
++   /* init temp used for Miller-Rabin Testing */
++   if ((err = mp_init(&b)) != MP_OKAY) {
++      return err;
++   }
++
++   for (;;) {
++      /* skip to the next non-trivially divisible candidate */
++      step = 0;
++      do {
++         /* y == 1 if any residue was zero [e.g. cannot be prime] */
++         y     =  0;
++
++         /* increase step to next candidate */
++         step += kstep;
++
++         /* compute the new residue without using division */
++         for (x = 1; x < PRIME_SIZE; x++) {
++             /* add the step to each residue */
++             res_tab[x] += kstep;
++
++             /* subtract the modulus [instead of using division] */
++             if (res_tab[x] >= ltm_prime_tab[x]) {
++                res_tab[x]  -= ltm_prime_tab[x];
++             }
++
++             /* set flag if zero */
++             if (res_tab[x] == 0) {
++                y = 1;
++             }
++         }
++      } while (y == 1 && step < ((((mp_digit)1)<<DIGIT_BIT) - kstep));
++
++      /* add the step */
++      if ((err = mp_add_d(a, step, a)) != MP_OKAY) {
++         goto LBL_ERR;
++      }
++
++      /* if didn't pass sieve and step == MAX then skip test */
++      if (y == 1 && step >= ((((mp_digit)1)<<DIGIT_BIT) - kstep)) {
++         continue;
++      }
++
++      /* is this prime? */
++      for (x = 0; x < t; x++) {
++          mp_set(&b, ltm_prime_tab[x]);
++          if ((err = mp_prime_miller_rabin(a, &b, &res)) != MP_OKAY) {
++             goto LBL_ERR;
++          }
++          if (res == MP_NO) {
++             break;
++          }
++      }
++
++      if (res == MP_YES) {
++         break;
++      }
++   }
++
++   err = MP_OKAY;
++LBL_ERR:
++   mp_clear(&b);
++   return err;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_prime_next_prime.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_prime_rabin_miller_trials.c b/crypto/userspace/libtommath/bn_mp_prime_rabin_miller_trials.c
+new file mode 100644
+index 0000000..248c2fd
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_prime_rabin_miller_trials.c
+@@ -0,0 +1,52 @@
++#include <tommath.h>
++#ifdef BN_MP_PRIME_RABIN_MILLER_TRIALS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++
++static const struct {
++   int k, t;
++} sizes[] = {
++{   128,    28 },
++{   256,    16 },
++{   384,    10 },
++{   512,     7 },
++{   640,     6 },
++{   768,     5 },
++{   896,     4 },
++{  1024,     4 }
++};
++
++/* returns # of RM trials required for a given bit size */
++int mp_prime_rabin_miller_trials(int size)
++{
++   int x;
++
++   for (x = 0; x < (int)(sizeof(sizes)/(sizeof(sizes[0]))); x++) {
++       if (sizes[x].k == size) {
++          return sizes[x].t;
++       } else if (sizes[x].k > size) {
++          return (x == 0) ? sizes[0].t : sizes[x - 1].t;
++       }
++   }
++   return sizes[x-1].t + 1;
++}
++
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_prime_rabin_miller_trials.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_prime_random_ex.c b/crypto/userspace/libtommath/bn_mp_prime_random_ex.c
+new file mode 100644
+index 0000000..741bfd1
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_prime_random_ex.c
+@@ -0,0 +1,126 @@
++#include <tommath.h>
++#include <linux/slab.h>
++#ifdef BN_MP_PRIME_RANDOM_EX_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* makes a truly random prime of a given size (bits),
++ *
++ * Flags are as follows:
++ * 
++ *   LTM_PRIME_BBS      - make prime congruent to 3 mod 4
++ *   LTM_PRIME_SAFE     - make sure (p-1)/2 is prime as well (implies LTM_PRIME_BBS)
++ *   LTM_PRIME_2MSB_OFF - make the 2nd highest bit zero
++ *   LTM_PRIME_2MSB_ON  - make the 2nd highest bit one
++ *
++ * You have to supply a callback which fills in a buffer with random bytes.  "dat" is a parameter you can
++ * have passed to the callback (e.g. a state or something).  This function doesn't use "dat" itself
++ * so it can be NULL
++ *
++ */
++
++/* This is possibly the mother of all prime generation functions, muahahahahaha! */
++int mp_prime_random_ex(mp_int *a, int t, int size, int flags, ltm_prime_callback cb, void *dat)
++{
++   unsigned char *tmp, maskAND, maskOR_msb, maskOR_lsb;
++   int res, err, bsize, maskOR_msb_offset;
++
++   /* sanity check the input */
++   if (size <= 1 || t <= 0) {
++      return MP_VAL;
++   }
++
++   /* LTM_PRIME_SAFE implies LTM_PRIME_BBS */
++   if (flags & LTM_PRIME_SAFE) {
++      flags |= LTM_PRIME_BBS;
++   }
++
++   /* calc the byte size */
++   bsize = (size>>3) + ((size&7)?1:0);
++
++   /* we need a buffer of bsize bytes */
++   tmp = OPT_CAST(unsigned char) XMALLOC(bsize);
++   if (tmp == NULL) {
++      return MP_MEM;
++   }
++
++   /* calc the maskAND value for the MSbyte*/
++   maskAND = ((size&7) == 0) ? 0xFF : (0xFF >> (8 - (size & 7)));
++
++   /* calc the maskOR_msb */
++   maskOR_msb        = 0;
++   maskOR_msb_offset = ((size & 7) == 1) ? 1 : 0;
++   if (flags & LTM_PRIME_2MSB_ON) {
++      maskOR_msb       |= 0x80 >> ((9 - size) & 7);
++   }  
++
++   /* get the maskOR_lsb */
++   maskOR_lsb         = 1;
++   if (flags & LTM_PRIME_BBS) {
++      maskOR_lsb     |= 3;
++   }
++
++   do {
++      /* read the bytes */
++      if (cb(tmp, bsize, dat) != bsize) {
++         err = MP_VAL;
++         goto error;
++      }
++ 
++      /* work over the MSbyte */
++      tmp[0]    &= maskAND;
++      tmp[0]    |= 1 << ((size - 1) & 7);
++
++      /* mix in the maskORs */
++      tmp[maskOR_msb_offset]   |= maskOR_msb;
++      tmp[bsize-1]             |= maskOR_lsb;
++
++      /* read it in */
++      if ((err = mp_read_unsigned_bin(a, tmp, bsize)) != MP_OKAY)     { goto error; }
++
++      /* is it prime? */
++      if ((err = mp_prime_is_prime(a, t, &res)) != MP_OKAY)           { goto error; }
++      if (res == MP_NO) {  
++         continue;
++      }
++
++      if (flags & LTM_PRIME_SAFE) {
++         /* see if (a-1)/2 is prime */
++         if ((err = mp_sub_d(a, 1, a)) != MP_OKAY)                    { goto error; }
++         if ((err = mp_div_2(a, a)) != MP_OKAY)                       { goto error; }
++ 
++         /* is it prime? */
++         if ((err = mp_prime_is_prime(a, t, &res)) != MP_OKAY)        { goto error; }
++      }
++   } while (res == MP_NO);
++
++   if (flags & LTM_PRIME_SAFE) {
++      /* restore a to the original value */
++      if ((err = mp_mul_2(a, a)) != MP_OKAY)                          { goto error; }
++      if ((err = mp_add_d(a, 1, a)) != MP_OKAY)                       { goto error; }
++   }
++
++   err = MP_OKAY;
++error:
++   XFREE(tmp);
++   return err;
++}
++
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_prime_random_ex.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_radix_size.c b/crypto/userspace/libtommath/bn_mp_radix_size.c
+new file mode 100644
+index 0000000..1b61e3a
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_radix_size.c
+@@ -0,0 +1,78 @@
++#include <tommath.h>
++#ifdef BN_MP_RADIX_SIZE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* returns size of ASCII reprensentation */
++int mp_radix_size (mp_int * a, int radix, int *size)
++{
++  int     res, digs;
++  mp_int  t;
++  mp_digit d;
++
++  *size = 0;
++
++  /* special case for binary */
++  if (radix == 2) {
++    *size = mp_count_bits (a) + (a->sign == MP_NEG ? 1 : 0) + 1;
++    return MP_OKAY;
++  }
++
++  /* make sure the radix is in range */
++  if (radix < 2 || radix > 64) {
++    return MP_VAL;
++  }
++
++  if (mp_iszero(a) == MP_YES) {
++    *size = 2;
++    return MP_OKAY;
++  }
++
++  /* digs is the digit count */
++  digs = 0;
++
++  /* if it's negative add one for the sign */
++  if (a->sign == MP_NEG) {
++    ++digs;
++  }
++
++  /* init a copy of the input */
++  if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
++    return res;
++  }
++
++  /* force temp to positive */
++  t.sign = MP_ZPOS; 
++
++  /* fetch out all of the digits */
++  while (mp_iszero (&t) == MP_NO) {
++    if ((res = mp_div_d (&t, (mp_digit) radix, &t, &d)) != MP_OKAY) {
++      mp_clear (&t);
++      return res;
++    }
++    ++digs;
++  }
++  mp_clear (&t);
++
++  /* return digs + 1, the 1 is for the NULL byte that would be required. */
++  *size = digs + 1;
++  return MP_OKAY;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_radix_size.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_radix_smap.c b/crypto/userspace/libtommath/bn_mp_radix_smap.c
+new file mode 100644
+index 0000000..7d72feb
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_radix_smap.c
+@@ -0,0 +1,24 @@
++#include <tommath.h>
++#ifdef BN_MP_RADIX_SMAP_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* chars used in radix conversions */
++const char *mp_s_rmap = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/";
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_radix_smap.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_rand.c b/crypto/userspace/libtommath/bn_mp_rand.c
+new file mode 100644
+index 0000000..af66a67
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_rand.c
+@@ -0,0 +1,55 @@
++#include <tommath.h>
++#ifdef BN_MP_RAND_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* makes a pseudo-random int of a given size */
++int
++mp_rand (mp_int * a, int digits)
++{
++  int     res;
++  mp_digit d;
++
++  mp_zero (a);
++  if (digits <= 0) {
++    return MP_OKAY;
++  }
++
++  /* first place a random non-zero digit */
++  do {
++    d = ((mp_digit) abs (rand ())) & MP_MASK;
++  } while (d == 0);
++
++  if ((res = mp_add_d (a, d, a)) != MP_OKAY) {
++    return res;
++  }
++
++  while (--digits > 0) {
++    if ((res = mp_lshd (a, 1)) != MP_OKAY) {
++      return res;
++    }
++
++    if ((res = mp_add_d (a, ((mp_digit) abs (rand ())), a)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_rand.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_read_radix.c b/crypto/userspace/libtommath/bn_mp_read_radix.c
+new file mode 100644
+index 0000000..91c46c2
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_read_radix.c
+@@ -0,0 +1,85 @@
++#include <tommath.h>
++#ifdef BN_MP_READ_RADIX_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* read a string [ASCII] in a given radix */
++int mp_read_radix (mp_int * a, const char *str, int radix)
++{
++  int     y, res, neg;
++  char    ch;
++
++  /* zero the digit bignum */
++  mp_zero(a);
++
++  /* make sure the radix is ok */
++  if (radix < 2 || radix > 64) {
++    return MP_VAL;
++  }
++
++  /* if the leading digit is a 
++   * minus set the sign to negative. 
++   */
++  if (*str == '-') {
++    ++str;
++    neg = MP_NEG;
++  } else {
++    neg = MP_ZPOS;
++  }
++
++  /* set the integer to the default of zero */
++  mp_zero (a);
++  
++  /* process each digit of the string */
++  while (*str) {
++    /* if the radix < 36 the conversion is case insensitive
++     * this allows numbers like 1AB and 1ab to represent the same  value
++     * [e.g. in hex]
++     */
++    ch = (char) ((radix < 36) ? toupper (*str) : *str);
++    for (y = 0; y < 64; y++) {
++      if (ch == mp_s_rmap[y]) {
++         break;
++      }
++    }
++
++    /* if the char was found in the map 
++     * and is less than the given radix add it
++     * to the number, otherwise exit the loop. 
++     */
++    if (y < radix) {
++      if ((res = mp_mul_d (a, (mp_digit) radix, a)) != MP_OKAY) {
++         return res;
++      }
++      if ((res = mp_add_d (a, (mp_digit) y, a)) != MP_OKAY) {
++         return res;
++      }
++    } else {
++      break;
++    }
++    ++str;
++  }
++  
++  /* set the sign only if a != 0 */
++  if (mp_iszero(a) != 1) {
++     a->sign = neg;
++  }
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_read_radix.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_read_signed_bin.c b/crypto/userspace/libtommath/bn_mp_read_signed_bin.c
+new file mode 100644
+index 0000000..8da651c
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_read_signed_bin.c
+@@ -0,0 +1,41 @@
++#include <tommath.h>
++#ifdef BN_MP_READ_SIGNED_BIN_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* read signed bin, big endian, first byte is 0==positive or 1==negative */
++int mp_read_signed_bin (mp_int * a, const unsigned char *b, int c)
++{
++  int     res;
++
++  /* read magnitude */
++  if ((res = mp_read_unsigned_bin (a, b + 1, c - 1)) != MP_OKAY) {
++    return res;
++  }
++
++  /* first byte is 0 for positive, non-zero for negative */
++  if (b[0] == 0) {
++     a->sign = MP_ZPOS;
++  } else {
++     a->sign = MP_NEG;
++  }
++
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_read_signed_bin.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_read_unsigned_bin.c b/crypto/userspace/libtommath/bn_mp_read_unsigned_bin.c
+new file mode 100644
+index 0000000..1ebba13
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_read_unsigned_bin.c
+@@ -0,0 +1,55 @@
++#include <tommath.h>
++#ifdef BN_MP_READ_UNSIGNED_BIN_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* reads a unsigned char array, assumes the msb is stored first [big endian] */
++int mp_read_unsigned_bin (mp_int * a, const unsigned char *b, int c)
++{
++  int     res;
++
++  /* make sure there are at least two digits */
++  if (a->alloc < 2) {
++     if ((res = mp_grow(a, 2)) != MP_OKAY) {
++        return res;
++     }
++  }
++
++  /* zero the int */
++  mp_zero (a);
++
++  /* read the bytes in */
++  while (c-- > 0) {
++    if ((res = mp_mul_2d (a, 8, a)) != MP_OKAY) {
++      return res;
++    }
++
++#ifndef MP_8BIT
++      a->dp[0] |= *b++;
++      a->used += 1;
++#else
++      a->dp[0] = (*b & MP_MASK);
++      a->dp[1] |= ((*b++ >> 7U) & 1);
++      a->used += 2;
++#endif
++  }
++  mp_clamp (a);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_read_unsigned_bin.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce.c b/crypto/userspace/libtommath/bn_mp_reduce.c
+new file mode 100644
+index 0000000..21d0730
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce.c
+@@ -0,0 +1,100 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* reduces x mod m, assumes 0 < x < m**2, mu is 
++ * precomputed via mp_reduce_setup.
++ * From HAC pp.604 Algorithm 14.42
++ */
++int mp_reduce (mp_int * x, mp_int * m, mp_int * mu)
++{
++  mp_int  q;
++  int     res, um = m->used;
++
++  /* q = x */
++  if ((res = mp_init_copy (&q, x)) != MP_OKAY) {
++    return res;
++  }
++
++  /* q1 = x / b**(k-1)  */
++  mp_rshd (&q, um - 1);         
++
++  /* according to HAC this optimization is ok */
++  if (((unsigned long) um) > (((mp_digit)1) << (DIGIT_BIT - 1))) {
++    if ((res = mp_mul (&q, mu, &q)) != MP_OKAY) {
++      goto CLEANUP;
++    }
++  } else {
++#ifdef BN_S_MP_MUL_HIGH_DIGS_C
++    if ((res = s_mp_mul_high_digs (&q, mu, &q, um)) != MP_OKAY) {
++      goto CLEANUP;
++    }
++#elif defined(BN_FAST_S_MP_MUL_HIGH_DIGS_C)
++    if ((res = fast_s_mp_mul_high_digs (&q, mu, &q, um)) != MP_OKAY) {
++      goto CLEANUP;
++    }
++#else 
++    { 
++      res = MP_VAL;
++      goto CLEANUP;
++    }
++#endif
++  }
++
++  /* q3 = q2 / b**(k+1) */
++  mp_rshd (&q, um + 1);         
++
++  /* x = x mod b**(k+1), quick (no division) */
++  if ((res = mp_mod_2d (x, DIGIT_BIT * (um + 1), x)) != MP_OKAY) {
++    goto CLEANUP;
++  }
++
++  /* q = q * m mod b**(k+1), quick (no division) */
++  if ((res = s_mp_mul_digs (&q, m, &q, um + 1)) != MP_OKAY) {
++    goto CLEANUP;
++  }
++
++  /* x = x - q */
++  if ((res = mp_sub (x, &q, x)) != MP_OKAY) {
++    goto CLEANUP;
++  }
++
++  /* If x < 0, add b**(k+1) to it */
++  if (mp_cmp_d (x, 0) == MP_LT) {
++    mp_set (&q, 1);
++    if ((res = mp_lshd (&q, um + 1)) != MP_OKAY)
++      goto CLEANUP;
++    if ((res = mp_add (x, &q, x)) != MP_OKAY)
++      goto CLEANUP;
++  }
++
++  /* Back off if it's too big */
++  while (mp_cmp (x, m) != MP_LT) {
++    if ((res = s_mp_sub (x, m, x)) != MP_OKAY) {
++      goto CLEANUP;
++    }
++  }
++  
++CLEANUP:
++  mp_clear (&q);
++
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce_2k.c b/crypto/userspace/libtommath/bn_mp_reduce_2k.c
+new file mode 100644
+index 0000000..d9620c2
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce_2k.c
+@@ -0,0 +1,61 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_2K_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* reduces a modulo n where n is of the form 2**p - d */
++int mp_reduce_2k(mp_int *a, mp_int *n, mp_digit d)
++{
++   mp_int q;
++   int    p, res;
++   
++   if ((res = mp_init(&q)) != MP_OKAY) {
++      return res;
++   }
++   
++   p = mp_count_bits(n);    
++top:
++   /* q = a/2**p, a = a mod 2**p */
++   if ((res = mp_div_2d(a, p, &q, a)) != MP_OKAY) {
++      goto ERR;
++   }
++   
++   if (d != 1) {
++      /* q = q * d */
++      if ((res = mp_mul_d(&q, d, &q)) != MP_OKAY) { 
++         goto ERR;
++      }
++   }
++   
++   /* a = a + q */
++   if ((res = s_mp_add(a, &q, a)) != MP_OKAY) {
++      goto ERR;
++   }
++   
++   if (mp_cmp_mag(a, n) != MP_LT) {
++      s_mp_sub(a, n, a);
++      goto top;
++   }
++   
++ERR:
++   mp_clear(&q);
++   return res;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_2k.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce_2k_l.c b/crypto/userspace/libtommath/bn_mp_reduce_2k_l.c
+new file mode 100644
+index 0000000..f06103d
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce_2k_l.c
+@@ -0,0 +1,62 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_2K_L_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* reduces a modulo n where n is of the form 2**p - d 
++   This differs from reduce_2k since "d" can be larger
++   than a single digit.
++*/
++int mp_reduce_2k_l(mp_int *a, mp_int *n, mp_int *d)
++{
++   mp_int q;
++   int    p, res;
++   
++   if ((res = mp_init(&q)) != MP_OKAY) {
++      return res;
++   }
++   
++   p = mp_count_bits(n);    
++top:
++   /* q = a/2**p, a = a mod 2**p */
++   if ((res = mp_div_2d(a, p, &q, a)) != MP_OKAY) {
++      goto ERR;
++   }
++   
++   /* q = q * d */
++   if ((res = mp_mul(&q, d, &q)) != MP_OKAY) { 
++      goto ERR;
++   }
++   
++   /* a = a + q */
++   if ((res = s_mp_add(a, &q, a)) != MP_OKAY) {
++      goto ERR;
++   }
++   
++   if (mp_cmp_mag(a, n) != MP_LT) {
++      s_mp_sub(a, n, a);
++      goto top;
++   }
++   
++ERR:
++   mp_clear(&q);
++   return res;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_2k_l.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce_2k_setup.c b/crypto/userspace/libtommath/bn_mp_reduce_2k_setup.c
+new file mode 100644
+index 0000000..a80e7a2
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce_2k_setup.c
+@@ -0,0 +1,47 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_2K_SETUP_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* determines the setup value */
++int mp_reduce_2k_setup(mp_int *a, mp_digit *d)
++{
++   int res, p;
++   mp_int tmp;
++   
++   if ((res = mp_init(&tmp)) != MP_OKAY) {
++      return res;
++   }
++   
++   p = mp_count_bits(a);
++   if ((res = mp_2expt(&tmp, p)) != MP_OKAY) {
++      mp_clear(&tmp);
++      return res;
++   }
++   
++   if ((res = s_mp_sub(&tmp, a, &tmp)) != MP_OKAY) {
++      mp_clear(&tmp);
++      return res;
++   }
++   
++   *d = tmp.dp[0];
++   mp_clear(&tmp);
++   return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_2k_setup.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce_2k_setup_l.c b/crypto/userspace/libtommath/bn_mp_reduce_2k_setup_l.c
+new file mode 100644
+index 0000000..7cf002e
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce_2k_setup_l.c
+@@ -0,0 +1,44 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_2K_SETUP_L_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* determines the setup value */
++int mp_reduce_2k_setup_l(mp_int *a, mp_int *d)
++{
++   int    res;
++   mp_int tmp;
++   
++   if ((res = mp_init(&tmp)) != MP_OKAY) {
++      return res;
++   }
++   
++   if ((res = mp_2expt(&tmp, mp_count_bits(a))) != MP_OKAY) {
++      goto ERR;
++   }
++   
++   if ((res = s_mp_sub(&tmp, a, d)) != MP_OKAY) {
++      goto ERR;
++   }
++   
++ERR:
++   mp_clear(&tmp);
++   return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_2k_setup_l.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce_is_2k.c b/crypto/userspace/libtommath/bn_mp_reduce_is_2k.c
+new file mode 100644
+index 0000000..7308be7
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce_is_2k.c
+@@ -0,0 +1,52 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_IS_2K_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* determines if mp_reduce_2k can be used */
++int mp_reduce_is_2k(mp_int *a)
++{
++   int ix, iy, iw;
++   mp_digit iz;
++   
++   if (a->used == 0) {
++      return MP_NO;
++   } else if (a->used == 1) {
++      return MP_YES;
++   } else if (a->used > 1) {
++      iy = mp_count_bits(a);
++      iz = 1;
++      iw = 1;
++    
++      /* Test every bit from the second digit up, must be 1 */
++      for (ix = DIGIT_BIT; ix < iy; ix++) {
++          if ((a->dp[iw] & iz) == 0) {
++             return MP_NO;
++          }
++          iz <<= 1;
++          if (iz > (mp_digit)MP_MASK) {
++             ++iw;
++             iz = 1;
++          }
++      }
++   }
++   return MP_YES;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_is_2k.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce_is_2k_l.c b/crypto/userspace/libtommath/bn_mp_reduce_is_2k_l.c
+new file mode 100644
+index 0000000..14a4d21
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce_is_2k_l.c
+@@ -0,0 +1,44 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_IS_2K_L_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* determines if reduce_2k_l can be used */
++int mp_reduce_is_2k_l(mp_int *a)
++{
++   int ix, iy;
++   
++   if (a->used == 0) {
++      return MP_NO;
++   } else if (a->used == 1) {
++      return MP_YES;
++   } else if (a->used > 1) {
++      /* if more than half of the digits are -1 we're sold */
++      for (iy = ix = 0; ix < a->used; ix++) {
++          if (a->dp[ix] == MP_MASK) {
++              ++iy;
++          }
++      }
++      return (iy >= (a->used/2)) ? MP_YES : MP_NO;
++      
++   }
++   return MP_NO;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_is_2k_l.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_reduce_setup.c b/crypto/userspace/libtommath/bn_mp_reduce_setup.c
+new file mode 100644
+index 0000000..370f20b
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_reduce_setup.c
+@@ -0,0 +1,34 @@
++#include <tommath.h>
++#ifdef BN_MP_REDUCE_SETUP_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* pre-calculate the value required for Barrett reduction
++ * For a given modulus "b" it calulates the value required in "a"
++ */
++int mp_reduce_setup (mp_int * a, mp_int * b)
++{
++  int     res;
++  
++  if ((res = mp_2expt (a, b->used * 2 * DIGIT_BIT)) != MP_OKAY) {
++    return res;
++  }
++  return mp_div (a, b, a, NULL);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_setup.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_rshd.c b/crypto/userspace/libtommath/bn_mp_rshd.c
+new file mode 100644
+index 0000000..2a693c5
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_rshd.c
+@@ -0,0 +1,72 @@
++#include <tommath.h>
++#ifdef BN_MP_RSHD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* shift right a certain amount of digits */
++void mp_rshd (mp_int * a, int b)
++{
++  int     x;
++
++  /* if b <= 0 then ignore it */
++  if (b <= 0) {
++    return;
++  }
++
++  /* if b > used then simply zero it and return */
++  if (a->used <= b) {
++    mp_zero (a);
++    return;
++  }
++
++  {
++    register mp_digit *bottom, *top;
++
++    /* shift the digits down */
++
++    /* bottom */
++    bottom = a->dp;
++
++    /* top [offset into digits] */
++    top = a->dp + b;
++
++    /* this is implemented as a sliding window where 
++     * the window is b-digits long and digits from 
++     * the top of the window are copied to the bottom
++     *
++     * e.g.
++
++     b-2 | b-1 | b0 | b1 | b2 | ... | bb |   ---->
++                 /\                   |      ---->
++                  \-------------------/      ---->
++     */
++    for (x = 0; x < (a->used - b); x++) {
++      *bottom++ = *top++;
++    }
++
++    /* zero the top digits */
++    for (; x < a->used; x++) {
++      *bottom++ = 0;
++    }
++  }
++  
++  /* remove excess digits */
++  a->used -= b;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_rshd.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_set.c b/crypto/userspace/libtommath/bn_mp_set.c
+new file mode 100644
+index 0000000..174adcb
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_set.c
+@@ -0,0 +1,29 @@
++#include <tommath.h>
++#ifdef BN_MP_SET_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* set to a digit */
++void mp_set (mp_int * a, mp_digit b)
++{
++  mp_zero (a);
++  a->dp[0] = b & MP_MASK;
++  a->used  = (a->dp[0] != 0) ? 1 : 0;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_set.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_set_int.c b/crypto/userspace/libtommath/bn_mp_set_int.c
+new file mode 100644
+index 0000000..cf10ea1
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_set_int.c
+@@ -0,0 +1,48 @@
++#include <tommath.h>
++#ifdef BN_MP_SET_INT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* set a 32-bit const */
++int mp_set_int (mp_int * a, unsigned long b)
++{
++  int     x, res;
++
++  mp_zero (a);
++  
++  /* set four bits at a time */
++  for (x = 0; x < 8; x++) {
++    /* shift the number up four bits */
++    if ((res = mp_mul_2d (a, 4, a)) != MP_OKAY) {
++      return res;
++    }
++
++    /* OR in the top four bits of the source */
++    a->dp[0] |= (b >> 28) & 15;
++
++    /* shift the source up to the next four bits */
++    b <<= 4;
++
++    /* ensure that digits are not clamped off */
++    a->used += 1;
++  }
++  mp_clamp (a);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_set_int.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_shrink.c b/crypto/userspace/libtommath/bn_mp_shrink.c
+new file mode 100644
+index 0000000..3e38556
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_shrink.c
+@@ -0,0 +1,36 @@
++#include <tommath.h>
++#include <linux/slab.h>
++#ifdef BN_MP_SHRINK_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* shrink a bignum */
++int mp_shrink (mp_int * a)
++{
++  mp_digit *tmp;
++  if (a->alloc != a->used && a->used > 0) {
++    if ((tmp = OPT_CAST(mp_digit) XREALLOC (a->dp, sizeof (mp_digit) * a->used)) == NULL) {
++      return MP_MEM;
++    }
++    a->dp    = tmp;
++    a->alloc = a->used;
++  }
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_shrink.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_signed_bin_size.c b/crypto/userspace/libtommath/bn_mp_signed_bin_size.c
+new file mode 100644
+index 0000000..6739d19
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_signed_bin_size.c
+@@ -0,0 +1,27 @@
++#include <tommath.h>
++#ifdef BN_MP_SIGNED_BIN_SIZE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* get the size for an signed equivalent */
++int mp_signed_bin_size (mp_int * a)
++{
++  return 1 + mp_unsigned_bin_size (a);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_signed_bin_size.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_sqr.c b/crypto/userspace/libtommath/bn_mp_sqr.c
+new file mode 100644
+index 0000000..868ccbb
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_sqr.c
+@@ -0,0 +1,58 @@
++#include <tommath.h>
++#ifdef BN_MP_SQR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* computes b = a*a */
++int
++mp_sqr (mp_int * a, mp_int * b)
++{
++  int     res;
++
++#ifdef BN_MP_TOOM_SQR_C
++  /* use Toom-Cook? */
++  if (a->used >= TOOM_SQR_CUTOFF) {
++    res = mp_toom_sqr(a, b);
++  /* Karatsuba? */
++  } else 
++#endif
++#ifdef BN_MP_KARATSUBA_SQR_C
++if (a->used >= KARATSUBA_SQR_CUTOFF) {
++    res = mp_karatsuba_sqr (a, b);
++  } else 
++#endif
++  {
++#ifdef BN_FAST_S_MP_SQR_C
++    /* can we use the fast comba multiplier? */
++    if ((a->used * 2 + 1) < MP_WARRAY && 
++         a->used < 
++         (1 << (sizeof(mp_word) * CHAR_BIT - 2*DIGIT_BIT - 1))) {
++      res = fast_s_mp_sqr (a, b);
++    } else
++#endif
++#ifdef BN_S_MP_SQR_C
++      res = s_mp_sqr (a, b);
++#else
++      res = MP_VAL;
++#endif
++  }
++  b->sign = MP_ZPOS;
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_sqr.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_sqrmod.c b/crypto/userspace/libtommath/bn_mp_sqrmod.c
+new file mode 100644
+index 0000000..161cbbb
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_sqrmod.c
+@@ -0,0 +1,41 @@
++#include <tommath.h>
++#ifdef BN_MP_SQRMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* c = a * a (mod b) */
++int
++mp_sqrmod (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     res;
++  mp_int  t;
++
++  if ((res = mp_init (&t)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_sqr (a, &t)) != MP_OKAY) {
++    mp_clear (&t);
++    return res;
++  }
++  res = mp_mod (&t, b, c);
++  mp_clear (&t);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_sqrmod.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_sqrt.c b/crypto/userspace/libtommath/bn_mp_sqrt.c
+new file mode 100644
+index 0000000..8fd057c
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_sqrt.c
+@@ -0,0 +1,81 @@
++#include <tommath.h>
++#ifdef BN_MP_SQRT_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* this function is less generic than mp_n_root, simpler and faster */
++int mp_sqrt(mp_int *arg, mp_int *ret) 
++{
++  int res;
++  mp_int t1,t2;
++
++  /* must be positive */
++  if (arg->sign == MP_NEG) {
++    return MP_VAL;
++  }
++
++  /* easy out */
++  if (mp_iszero(arg) == MP_YES) {
++    mp_zero(ret);
++    return MP_OKAY;
++  }
++
++  if ((res = mp_init_copy(&t1, arg)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_init(&t2)) != MP_OKAY) {
++    goto E2;
++  }
++
++  /* First approx. (not very bad for large arg) */
++  mp_rshd (&t1,t1.used/2);
++
++  /* t1 > 0  */ 
++  if ((res = mp_div(arg,&t1,&t2,NULL)) != MP_OKAY) {
++    goto E1;
++  }
++  if ((res = mp_add(&t1,&t2,&t1)) != MP_OKAY) {
++    goto E1;
++  }
++  if ((res = mp_div_2(&t1,&t1)) != MP_OKAY) {
++    goto E1;
++  }
++  /* And now t1 > sqrt(arg) */
++  do { 
++    if ((res = mp_div(arg,&t1,&t2,NULL)) != MP_OKAY) {
++      goto E1;
++    }
++    if ((res = mp_add(&t1,&t2,&t1)) != MP_OKAY) {
++      goto E1;
++    }
++    if ((res = mp_div_2(&t1,&t1)) != MP_OKAY) {
++      goto E1;
++    }
++    /* t1 >= sqrt(arg) >= t2 at this point */
++  } while (mp_cmp_mag(&t1,&t2) == MP_GT);
++
++  mp_exch(&t1,ret);
++
++E1: mp_clear(&t2);
++E2: mp_clear(&t1);
++  return res;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_sqrt.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_sub.c b/crypto/userspace/libtommath/bn_mp_sub.c
+new file mode 100644
+index 0000000..f5015cc
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_sub.c
+@@ -0,0 +1,59 @@
++#include <tommath.h>
++#ifdef BN_MP_SUB_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* high level subtraction (handles signs) */
++int
++mp_sub (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     sa, sb, res;
++
++  sa = a->sign;
++  sb = b->sign;
++
++  if (sa != sb) {
++    /* subtract a negative from a positive, OR */
++    /* subtract a positive from a negative. */
++    /* In either case, ADD their magnitudes, */
++    /* and use the sign of the first number. */
++    c->sign = sa;
++    res = s_mp_add (a, b, c);
++  } else {
++    /* subtract a positive from a positive, OR */
++    /* subtract a negative from a negative. */
++    /* First, take the difference between their */
++    /* magnitudes, then... */
++    if (mp_cmp_mag (a, b) != MP_LT) {
++      /* Copy the sign from the first */
++      c->sign = sa;
++      /* The first has a larger or equal magnitude */
++      res = s_mp_sub (a, b, c);
++    } else {
++      /* The result has the *opposite* sign from */
++      /* the first number. */
++      c->sign = (sa == MP_ZPOS) ? MP_NEG : MP_ZPOS;
++      /* The second has a larger magnitude */
++      res = s_mp_sub (b, a, c);
++    }
++  }
++  return res;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_sub.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_sub_d.c b/crypto/userspace/libtommath/bn_mp_sub_d.c
+new file mode 100644
+index 0000000..06cdca6
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_sub_d.c
+@@ -0,0 +1,93 @@
++#include <tommath.h>
++#ifdef BN_MP_SUB_D_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* single digit subtraction */
++int
++mp_sub_d (mp_int * a, mp_digit b, mp_int * c)
++{
++  mp_digit *tmpa, *tmpc, mu;
++  int       res, ix, oldused;
++
++  /* grow c as required */
++  if (c->alloc < a->used + 1) {
++     if ((res = mp_grow(c, a->used + 1)) != MP_OKAY) {
++        return res;
++     }
++  }
++
++  /* if a is negative just do an unsigned
++   * addition [with fudged signs]
++   */
++  if (a->sign == MP_NEG) {
++     a->sign = MP_ZPOS;
++     res     = mp_add_d(a, b, c);
++     a->sign = c->sign = MP_NEG;
++
++     /* clamp */
++     mp_clamp(c);
++
++     return res;
++  }
++
++  /* setup regs */
++  oldused = c->used;
++  tmpa    = a->dp;
++  tmpc    = c->dp;
++
++  /* if a <= b simply fix the single digit */
++  if ((a->used == 1 && a->dp[0] <= b) || a->used == 0) {
++     if (a->used == 1) {
++        *tmpc++ = b - *tmpa;
++     } else {
++        *tmpc++ = b;
++     }
++     ix      = 1;
++
++     /* negative/1digit */
++     c->sign = MP_NEG;
++     c->used = 1;
++  } else {
++     /* positive/size */
++     c->sign = MP_ZPOS;
++     c->used = a->used;
++
++     /* subtract first digit */
++     *tmpc    = *tmpa++ - b;
++     mu       = *tmpc >> (sizeof(mp_digit) * CHAR_BIT - 1);
++     *tmpc++ &= MP_MASK;
++
++     /* handle rest of the digits */
++     for (ix = 1; ix < a->used; ix++) {
++        *tmpc    = *tmpa++ - mu;
++        mu       = *tmpc >> (sizeof(mp_digit) * CHAR_BIT - 1);
++        *tmpc++ &= MP_MASK;
++     }
++  }
++
++  /* zero excess digits */
++  while (ix++ < oldused) {
++     *tmpc++ = 0;
++  }
++  mp_clamp(c);
++  return MP_OKAY;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_sub_d.c,v $ */
++/* $Revision: 1.6 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_submod.c b/crypto/userspace/libtommath/bn_mp_submod.c
+new file mode 100644
+index 0000000..869e23c
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_submod.c
+@@ -0,0 +1,42 @@
++#include <tommath.h>
++#ifdef BN_MP_SUBMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* d = a - b (mod c) */
++int
++mp_submod (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
++{
++  int     res;
++  mp_int  t;
++
++
++  if ((res = mp_init (&t)) != MP_OKAY) {
++    return res;
++  }
++
++  if ((res = mp_sub (a, b, &t)) != MP_OKAY) {
++    mp_clear (&t);
++    return res;
++  }
++  res = mp_mod (&t, c, d);
++  mp_clear (&t);
++  return res;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_submod.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_to_signed_bin.c b/crypto/userspace/libtommath/bn_mp_to_signed_bin.c
+new file mode 100644
+index 0000000..9df83ca
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_to_signed_bin.c
+@@ -0,0 +1,33 @@
++#include <tommath.h>
++#ifdef BN_MP_TO_SIGNED_BIN_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* store in signed [big endian] format */
++int mp_to_signed_bin (mp_int * a, unsigned char *b)
++{
++  int     res;
++
++  if ((res = mp_to_unsigned_bin (a, b + 1)) != MP_OKAY) {
++    return res;
++  }
++  b[0] = (unsigned char) ((a->sign == MP_ZPOS) ? 0 : 1);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_to_signed_bin.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_to_signed_bin_n.c b/crypto/userspace/libtommath/bn_mp_to_signed_bin_n.c
+new file mode 100644
+index 0000000..677f827
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_to_signed_bin_n.c
+@@ -0,0 +1,31 @@
++#include <tommath.h>
++#ifdef BN_MP_TO_SIGNED_BIN_N_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* store in signed [big endian] format */
++int mp_to_signed_bin_n (mp_int * a, unsigned char *b, unsigned long *outlen)
++{
++   if (*outlen < (unsigned long)mp_signed_bin_size(a)) {
++      return MP_VAL;
++   }
++   *outlen = mp_signed_bin_size(a);
++   return mp_to_signed_bin(a, b);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_to_signed_bin_n.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_to_unsigned_bin.c b/crypto/userspace/libtommath/bn_mp_to_unsigned_bin.c
+new file mode 100644
+index 0000000..c137f10
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_to_unsigned_bin.c
+@@ -0,0 +1,48 @@
++#include <tommath.h>
++#ifdef BN_MP_TO_UNSIGNED_BIN_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* store in unsigned [big endian] format */
++int mp_to_unsigned_bin (mp_int * a, unsigned char *b)
++{
++  int     x, res;
++  mp_int  t;
++
++  if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
++    return res;
++  }
++
++  x = 0;
++  while (mp_iszero (&t) == 0) {
++#ifndef MP_8BIT
++      b[x++] = (unsigned char) (t.dp[0] & 255);
++#else
++      b[x++] = (unsigned char) (t.dp[0] | ((t.dp[1] & 0x01) << 7));
++#endif
++    if ((res = mp_div_2d (&t, 8, &t, NULL)) != MP_OKAY) {
++      mp_clear (&t);
++      return res;
++    }
++  }
++  bn_reverse (b, x);
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_to_unsigned_bin.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_to_unsigned_bin_n.c b/crypto/userspace/libtommath/bn_mp_to_unsigned_bin_n.c
+new file mode 100644
+index 0000000..0dc00c6
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_to_unsigned_bin_n.c
+@@ -0,0 +1,31 @@
++#include <tommath.h>
++#ifdef BN_MP_TO_UNSIGNED_BIN_N_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* store in unsigned [big endian] format */
++int mp_to_unsigned_bin_n (mp_int * a, unsigned char *b, unsigned long *outlen)
++{
++   if (*outlen < (unsigned long)mp_unsigned_bin_size(a)) {
++      return MP_VAL;
++   }
++   *outlen = mp_unsigned_bin_size(a);
++   return mp_to_unsigned_bin(a, b);
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_to_unsigned_bin_n.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_toom_mul.c b/crypto/userspace/libtommath/bn_mp_toom_mul.c
+new file mode 100644
+index 0000000..ad5d9e9
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_toom_mul.c
+@@ -0,0 +1,284 @@
++#include <tommath.h>
++#ifdef BN_MP_TOOM_MUL_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* multiplication using the Toom-Cook 3-way algorithm 
++ *
++ * Much more complicated than Karatsuba but has a lower 
++ * asymptotic running time of O(N**1.464).  This algorithm is 
++ * only particularly useful on VERY large inputs 
++ * (we're talking 1000s of digits here...).
++*/
++int mp_toom_mul(mp_int *a, mp_int *b, mp_int *c)
++{
++    mp_int w0, w1, w2, w3, w4, tmp1, tmp2, a0, a1, a2, b0, b1, b2;
++    int res, B;
++        
++    /* init temps */
++    if ((res = mp_init_multi(&w0, &w1, &w2, &w3, &w4, 
++                             &a0, &a1, &a2, &b0, &b1, 
++                             &b2, &tmp1, &tmp2, NULL)) != MP_OKAY) {
++       return res;
++    }
++    
++    /* B */
++    B = MIN(a->used, b->used) / 3;
++    
++    /* a = a2 * B**2 + a1 * B + a0 */
++    if ((res = mp_mod_2d(a, DIGIT_BIT * B, &a0)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    if ((res = mp_copy(a, &a1)) != MP_OKAY) {
++       goto ERR;
++    }
++    mp_rshd(&a1, B);
++    mp_mod_2d(&a1, DIGIT_BIT * B, &a1);
++
++    if ((res = mp_copy(a, &a2)) != MP_OKAY) {
++       goto ERR;
++    }
++    mp_rshd(&a2, B*2);
++    
++    /* b = b2 * B**2 + b1 * B + b0 */
++    if ((res = mp_mod_2d(b, DIGIT_BIT * B, &b0)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    if ((res = mp_copy(b, &b1)) != MP_OKAY) {
++       goto ERR;
++    }
++    mp_rshd(&b1, B);
++    mp_mod_2d(&b1, DIGIT_BIT * B, &b1);
++
++    if ((res = mp_copy(b, &b2)) != MP_OKAY) {
++       goto ERR;
++    }
++    mp_rshd(&b2, B*2);
++    
++    /* w0 = a0*b0 */
++    if ((res = mp_mul(&a0, &b0, &w0)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    /* w4 = a2 * b2 */
++    if ((res = mp_mul(&a2, &b2, &w4)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    /* w1 = (a2 + 2(a1 + 2a0))(b2 + 2(b1 + 2b0)) */
++    if ((res = mp_mul_2(&a0, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_mul_2(&tmp1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a2, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    if ((res = mp_mul_2(&b0, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp2, &b1, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_mul_2(&tmp2, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp2, &b2, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    if ((res = mp_mul(&tmp1, &tmp2, &w1)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    /* w3 = (a0 + 2(a1 + 2a2))(b0 + 2(b1 + 2b2)) */
++    if ((res = mp_mul_2(&a2, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_mul_2(&tmp1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a0, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    if ((res = mp_mul_2(&b2, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp2, &b1, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_mul_2(&tmp2, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp2, &b0, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    if ((res = mp_mul(&tmp1, &tmp2, &w3)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++
++    /* w2 = (a2 + a1 + a0)(b2 + b1 + b0) */
++    if ((res = mp_add(&a2, &a1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a0, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&b2, &b1, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp2, &b0, &tmp2)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_mul(&tmp1, &tmp2, &w2)) != MP_OKAY) {
++       goto ERR;
++    }
++    
++    /* now solve the matrix 
++    
++       0  0  0  0  1
++       1  2  4  8  16
++       1  1  1  1  1
++       16 8  4  2  1
++       1  0  0  0  0
++       
++       using 12 subtractions, 4 shifts, 
++              2 small divisions and 1 small multiplication 
++     */
++     
++     /* r1 - r4 */
++     if ((res = mp_sub(&w1, &w4, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - r0 */
++     if ((res = mp_sub(&w3, &w0, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1/2 */
++     if ((res = mp_div_2(&w1, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3/2 */
++     if ((res = mp_div_2(&w3, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r2 - r0 - r4 */
++     if ((res = mp_sub(&w2, &w0, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w2, &w4, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1 - r2 */
++     if ((res = mp_sub(&w1, &w2, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - r2 */
++     if ((res = mp_sub(&w3, &w2, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1 - 8r0 */
++     if ((res = mp_mul_2d(&w0, 3, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w1, &tmp1, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - 8r4 */
++     if ((res = mp_mul_2d(&w4, 3, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w3, &tmp1, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* 3r2 - r1 - r3 */
++     if ((res = mp_mul_d(&w2, 3, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w2, &w1, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w2, &w3, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1 - r2 */
++     if ((res = mp_sub(&w1, &w2, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - r2 */
++     if ((res = mp_sub(&w3, &w2, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1/3 */
++     if ((res = mp_div_3(&w1, &w1, NULL)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3/3 */
++     if ((res = mp_div_3(&w3, &w3, NULL)) != MP_OKAY) {
++        goto ERR;
++     }
++     
++     /* at this point shift W[n] by B*n */
++     if ((res = mp_lshd(&w1, 1*B)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_lshd(&w2, 2*B)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_lshd(&w3, 3*B)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_lshd(&w4, 4*B)) != MP_OKAY) {
++        goto ERR;
++     }     
++     
++     if ((res = mp_add(&w0, &w1, c)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_add(&w2, &w3, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_add(&w4, &tmp1, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_add(&tmp1, c, c)) != MP_OKAY) {
++        goto ERR;
++     }     
++     
++ERR:
++     mp_clear_multi(&w0, &w1, &w2, &w3, &w4, 
++                    &a0, &a1, &a2, &b0, &b1, 
++                    &b2, &tmp1, &tmp2, NULL);
++     return res;
++}     
++     
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_toom_mul.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_toom_sqr.c b/crypto/userspace/libtommath/bn_mp_toom_sqr.c
+new file mode 100644
+index 0000000..48880d0
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_toom_sqr.c
+@@ -0,0 +1,226 @@
++#include <tommath.h>
++#ifdef BN_MP_TOOM_SQR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* squaring using Toom-Cook 3-way algorithm */
++int
++mp_toom_sqr(mp_int *a, mp_int *b)
++{
++    mp_int w0, w1, w2, w3, w4, tmp1, a0, a1, a2;
++    int res, B;
++
++    /* init temps */
++    if ((res = mp_init_multi(&w0, &w1, &w2, &w3, &w4, &a0, &a1, &a2, &tmp1, NULL)) != MP_OKAY) {
++       return res;
++    }
++
++    /* B */
++    B = a->used / 3;
++
++    /* a = a2 * B**2 + a1 * B + a0 */
++    if ((res = mp_mod_2d(a, DIGIT_BIT * B, &a0)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    if ((res = mp_copy(a, &a1)) != MP_OKAY) {
++       goto ERR;
++    }
++    mp_rshd(&a1, B);
++    mp_mod_2d(&a1, DIGIT_BIT * B, &a1);
++
++    if ((res = mp_copy(a, &a2)) != MP_OKAY) {
++       goto ERR;
++    }
++    mp_rshd(&a2, B*2);
++
++    /* w0 = a0*a0 */
++    if ((res = mp_sqr(&a0, &w0)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    /* w4 = a2 * a2 */
++    if ((res = mp_sqr(&a2, &w4)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    /* w1 = (a2 + 2(a1 + 2a0))**2 */
++    if ((res = mp_mul_2(&a0, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_mul_2(&tmp1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a2, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    if ((res = mp_sqr(&tmp1, &w1)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    /* w3 = (a0 + 2(a1 + 2a2))**2 */
++    if ((res = mp_mul_2(&a2, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_mul_2(&tmp1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a0, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    if ((res = mp_sqr(&tmp1, &w3)) != MP_OKAY) {
++       goto ERR;
++    }
++
++
++    /* w2 = (a2 + a1 + a0)**2 */
++    if ((res = mp_add(&a2, &a1, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_add(&tmp1, &a0, &tmp1)) != MP_OKAY) {
++       goto ERR;
++    }
++    if ((res = mp_sqr(&tmp1, &w2)) != MP_OKAY) {
++       goto ERR;
++    }
++
++    /* now solve the matrix
++
++       0  0  0  0  1
++       1  2  4  8  16
++       1  1  1  1  1
++       16 8  4  2  1
++       1  0  0  0  0
++
++       using 12 subtractions, 4 shifts, 2 small divisions and 1 small multiplication.
++     */
++
++     /* r1 - r4 */
++     if ((res = mp_sub(&w1, &w4, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - r0 */
++     if ((res = mp_sub(&w3, &w0, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1/2 */
++     if ((res = mp_div_2(&w1, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3/2 */
++     if ((res = mp_div_2(&w3, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r2 - r0 - r4 */
++     if ((res = mp_sub(&w2, &w0, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w2, &w4, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1 - r2 */
++     if ((res = mp_sub(&w1, &w2, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - r2 */
++     if ((res = mp_sub(&w3, &w2, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1 - 8r0 */
++     if ((res = mp_mul_2d(&w0, 3, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w1, &tmp1, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - 8r4 */
++     if ((res = mp_mul_2d(&w4, 3, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w3, &tmp1, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* 3r2 - r1 - r3 */
++     if ((res = mp_mul_d(&w2, 3, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w2, &w1, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_sub(&w2, &w3, &w2)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1 - r2 */
++     if ((res = mp_sub(&w1, &w2, &w1)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3 - r2 */
++     if ((res = mp_sub(&w3, &w2, &w3)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r1/3 */
++     if ((res = mp_div_3(&w1, &w1, NULL)) != MP_OKAY) {
++        goto ERR;
++     }
++     /* r3/3 */
++     if ((res = mp_div_3(&w3, &w3, NULL)) != MP_OKAY) {
++        goto ERR;
++     }
++
++     /* at this point shift W[n] by B*n */
++     if ((res = mp_lshd(&w1, 1*B)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_lshd(&w2, 2*B)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_lshd(&w3, 3*B)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_lshd(&w4, 4*B)) != MP_OKAY) {
++        goto ERR;
++     }
++
++     if ((res = mp_add(&w0, &w1, b)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_add(&w2, &w3, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_add(&w4, &tmp1, &tmp1)) != MP_OKAY) {
++        goto ERR;
++     }
++     if ((res = mp_add(&tmp1, b, b)) != MP_OKAY) {
++        goto ERR;
++     }
++
++ERR:
++     mp_clear_multi(&w0, &w1, &w2, &w3, &w4, &a0, &a1, &a2, &tmp1, NULL);
++     return res;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_toom_sqr.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_toradix.c b/crypto/userspace/libtommath/bn_mp_toradix.c
+new file mode 100644
+index 0000000..0adc28d
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_toradix.c
+@@ -0,0 +1,75 @@
++#include <tommath.h>
++#ifdef BN_MP_TORADIX_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* stores a bignum as a ASCII string in a given radix (2..64) */
++int mp_toradix (mp_int * a, char *str, int radix)
++{
++  int     res, digs;
++  mp_int  t;
++  mp_digit d;
++  char   *_s = str;
++
++  /* check range of the radix */
++  if (radix < 2 || radix > 64) {
++    return MP_VAL;
++  }
++
++  /* quick out if its zero */
++  if (mp_iszero(a) == 1) {
++     *str++ = '0';
++     *str = '\0';
++     return MP_OKAY;
++  }
++
++  if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
++    return res;
++  }
++
++  /* if it is negative output a - */
++  if (t.sign == MP_NEG) {
++    ++_s;
++    *str++ = '-';
++    t.sign = MP_ZPOS;
++  }
++
++  digs = 0;
++  while (mp_iszero (&t) == 0) {
++    if ((res = mp_div_d (&t, (mp_digit) radix, &t, &d)) != MP_OKAY) {
++      mp_clear (&t);
++      return res;
++    }
++    *str++ = mp_s_rmap[d];
++    ++digs;
++  }
++
++  /* reverse the digits of the string.  In this case _s points
++   * to the first digit [exluding the sign] of the number]
++   */
++  bn_reverse ((unsigned char *)_s, digs);
++
++  /* append a NULL so the string is properly terminated */
++  *str = '\0';
++
++  mp_clear (&t);
++  return MP_OKAY;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_toradix.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_toradix_n.c b/crypto/userspace/libtommath/bn_mp_toradix_n.c
+new file mode 100644
+index 0000000..796ed55
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_toradix_n.c
+@@ -0,0 +1,88 @@
++#include <tommath.h>
++#ifdef BN_MP_TORADIX_N_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* stores a bignum as a ASCII string in a given radix (2..64) 
++ *
++ * Stores upto maxlen-1 chars and always a NULL byte 
++ */
++int mp_toradix_n(mp_int * a, char *str, int radix, int maxlen)
++{
++  int     res, digs;
++  mp_int  t;
++  mp_digit d;
++  char   *_s = str;
++
++  /* check range of the maxlen, radix */
++  if (maxlen < 2 || radix < 2 || radix > 64) {
++    return MP_VAL;
++  }
++
++  /* quick out if its zero */
++  if (mp_iszero(a) == MP_YES) {
++     *str++ = '0';
++     *str = '\0';
++     return MP_OKAY;
++  }
++
++  if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
++    return res;
++  }
++
++  /* if it is negative output a - */
++  if (t.sign == MP_NEG) {
++    /* we have to reverse our digits later... but not the - sign!! */
++    ++_s;
++
++    /* store the flag and mark the number as positive */
++    *str++ = '-';
++    t.sign = MP_ZPOS;
++ 
++    /* subtract a char */
++    --maxlen;
++  }
++
++  digs = 0;
++  while (mp_iszero (&t) == 0) {
++    if (--maxlen < 1) {
++       /* no more room */
++       break;
++    }
++    if ((res = mp_div_d (&t, (mp_digit) radix, &t, &d)) != MP_OKAY) {
++      mp_clear (&t);
++      return res;
++    }
++    *str++ = mp_s_rmap[d];
++    ++digs;
++  }
++
++  /* reverse the digits of the string.  In this case _s points
++   * to the first digit [exluding the sign] of the number
++   */
++  bn_reverse ((unsigned char *)_s, digs);
++
++  /* append a NULL so the string is properly terminated */
++  *str = '\0';
++
++  mp_clear (&t);
++  return MP_OKAY;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_toradix_n.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_unsigned_bin_size.c b/crypto/userspace/libtommath/bn_mp_unsigned_bin_size.c
+new file mode 100644
+index 0000000..6dc3bd5
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_unsigned_bin_size.c
+@@ -0,0 +1,28 @@
++#include <tommath.h>
++#ifdef BN_MP_UNSIGNED_BIN_SIZE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* get the size for an unsigned equivalent */
++int mp_unsigned_bin_size (mp_int * a)
++{
++  int     size = mp_count_bits (a);
++  return (size / 8 + ((size & 7) != 0 ? 1 : 0));
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_unsigned_bin_size.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_xor.c b/crypto/userspace/libtommath/bn_mp_xor.c
+new file mode 100644
+index 0000000..59ff2e1
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_xor.c
+@@ -0,0 +1,51 @@
++#include <tommath.h>
++#ifdef BN_MP_XOR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* XOR two ints together */
++int
++mp_xor (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     res, ix, px;
++  mp_int  t, *x;
++
++  if (a->used > b->used) {
++    if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
++      return res;
++    }
++    px = b->used;
++    x = b;
++  } else {
++    if ((res = mp_init_copy (&t, b)) != MP_OKAY) {
++      return res;
++    }
++    px = a->used;
++    x = a;
++  }
++
++  for (ix = 0; ix < px; ix++) {
++     t.dp[ix] ^= x->dp[ix];
++  }
++  mp_clamp (&t);
++  mp_exch (c, &t);
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_xor.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_mp_zero.c b/crypto/userspace/libtommath/bn_mp_zero.c
+new file mode 100644
+index 0000000..b0977d4
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_mp_zero.c
+@@ -0,0 +1,36 @@
++#include <tommath.h>
++#ifdef BN_MP_ZERO_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* set to zero */
++void mp_zero (mp_int * a)
++{
++  int       n;
++  mp_digit *tmp;
++
++  a->sign = MP_ZPOS;
++  a->used = 0;
++
++  tmp = a->dp;
++  for (n = 0; n < a->alloc; n++) {
++     *tmp++ = 0;
++  }
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_mp_zero.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_prime_tab.c b/crypto/userspace/libtommath/bn_prime_tab.c
+new file mode 100644
+index 0000000..bd25247
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_prime_tab.c
+@@ -0,0 +1,61 @@
++#include <tommath.h>
++#ifdef BN_PRIME_TAB_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++const mp_digit ltm_prime_tab[] = {
++  0x0002, 0x0003, 0x0005, 0x0007, 0x000B, 0x000D, 0x0011, 0x0013,
++  0x0017, 0x001D, 0x001F, 0x0025, 0x0029, 0x002B, 0x002F, 0x0035,
++  0x003B, 0x003D, 0x0043, 0x0047, 0x0049, 0x004F, 0x0053, 0x0059,
++  0x0061, 0x0065, 0x0067, 0x006B, 0x006D, 0x0071, 0x007F,
++#ifndef MP_8BIT
++  0x0083,
++  0x0089, 0x008B, 0x0095, 0x0097, 0x009D, 0x00A3, 0x00A7, 0x00AD,
++  0x00B3, 0x00B5, 0x00BF, 0x00C1, 0x00C5, 0x00C7, 0x00D3, 0x00DF,
++  0x00E3, 0x00E5, 0x00E9, 0x00EF, 0x00F1, 0x00FB, 0x0101, 0x0107,
++  0x010D, 0x010F, 0x0115, 0x0119, 0x011B, 0x0125, 0x0133, 0x0137,
++
++  0x0139, 0x013D, 0x014B, 0x0151, 0x015B, 0x015D, 0x0161, 0x0167,
++  0x016F, 0x0175, 0x017B, 0x017F, 0x0185, 0x018D, 0x0191, 0x0199,
++  0x01A3, 0x01A5, 0x01AF, 0x01B1, 0x01B7, 0x01BB, 0x01C1, 0x01C9,
++  0x01CD, 0x01CF, 0x01D3, 0x01DF, 0x01E7, 0x01EB, 0x01F3, 0x01F7,
++  0x01FD, 0x0209, 0x020B, 0x021D, 0x0223, 0x022D, 0x0233, 0x0239,
++  0x023B, 0x0241, 0x024B, 0x0251, 0x0257, 0x0259, 0x025F, 0x0265,
++  0x0269, 0x026B, 0x0277, 0x0281, 0x0283, 0x0287, 0x028D, 0x0293,
++  0x0295, 0x02A1, 0x02A5, 0x02AB, 0x02B3, 0x02BD, 0x02C5, 0x02CF,
++
++  0x02D7, 0x02DD, 0x02E3, 0x02E7, 0x02EF, 0x02F5, 0x02F9, 0x0301,
++  0x0305, 0x0313, 0x031D, 0x0329, 0x032B, 0x0335, 0x0337, 0x033B,
++  0x033D, 0x0347, 0x0355, 0x0359, 0x035B, 0x035F, 0x036D, 0x0371,
++  0x0373, 0x0377, 0x038B, 0x038F, 0x0397, 0x03A1, 0x03A9, 0x03AD,
++  0x03B3, 0x03B9, 0x03C7, 0x03CB, 0x03D1, 0x03D7, 0x03DF, 0x03E5,
++  0x03F1, 0x03F5, 0x03FB, 0x03FD, 0x0407, 0x0409, 0x040F, 0x0419,
++  0x041B, 0x0425, 0x0427, 0x042D, 0x043F, 0x0443, 0x0445, 0x0449,
++  0x044F, 0x0455, 0x045D, 0x0463, 0x0469, 0x047F, 0x0481, 0x048B,
++
++  0x0493, 0x049D, 0x04A3, 0x04A9, 0x04B1, 0x04BD, 0x04C1, 0x04C7,
++  0x04CD, 0x04CF, 0x04D5, 0x04E1, 0x04EB, 0x04FD, 0x04FF, 0x0503,
++  0x0509, 0x050B, 0x0511, 0x0515, 0x0517, 0x051B, 0x0527, 0x0529,
++  0x052F, 0x0551, 0x0557, 0x055D, 0x0565, 0x0577, 0x0581, 0x058F,
++  0x0593, 0x0595, 0x0599, 0x059F, 0x05A7, 0x05AB, 0x05AD, 0x05B3,
++  0x05BF, 0x05C9, 0x05CB, 0x05CF, 0x05D1, 0x05D5, 0x05DB, 0x05E7,
++  0x05F3, 0x05FB, 0x0607, 0x060D, 0x0611, 0x0617, 0x061F, 0x0623,
++  0x062B, 0x062F, 0x063D, 0x0641, 0x0647, 0x0649, 0x064D, 0x0653
++#endif
++};
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_prime_tab.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_reverse.c b/crypto/userspace/libtommath/bn_reverse.c
+new file mode 100644
+index 0000000..ddfa827
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_reverse.c
+@@ -0,0 +1,39 @@
++#include <tommath.h>
++#ifdef BN_REVERSE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* reverse an array, used for radix code */
++void
++bn_reverse (unsigned char *s, int len)
++{
++  int     ix, iy;
++  unsigned char t;
++
++  ix = 0;
++  iy = len - 1;
++  while (ix < iy) {
++    t     = s[ix];
++    s[ix] = s[iy];
++    s[iy] = t;
++    ++ix;
++    --iy;
++  }
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_reverse.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_s_mp_add.c b/crypto/userspace/libtommath/bn_s_mp_add.c
+new file mode 100644
+index 0000000..f034ae6
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_s_mp_add.c
+@@ -0,0 +1,109 @@
++#include <tommath.h>
++#ifdef BN_S_MP_ADD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* low level addition, based on HAC pp.594, Algorithm 14.7 */
++int
++s_mp_add (mp_int * a, mp_int * b, mp_int * c)
++{
++  mp_int *x;
++  int     olduse, res, min, max;
++
++  /* find sizes, we let |a| <= |b| which means we have to sort
++   * them.  "x" will point to the input with the most digits
++   */
++  if (a->used > b->used) {
++    min = b->used;
++    max = a->used;
++    x = a;
++  } else {
++    min = a->used;
++    max = b->used;
++    x = b;
++  }
++
++  /* init result */
++  if (c->alloc < max + 1) {
++    if ((res = mp_grow (c, max + 1)) != MP_OKAY) {
++      return res;
++    }
++  }
++
++  /* get old used digit count and set new one */
++  olduse = c->used;
++  c->used = max + 1;
++
++  {
++    register mp_digit u, *tmpa, *tmpb, *tmpc;
++    register int i;
++
++    /* alias for digit pointers */
++
++    /* first input */
++    tmpa = a->dp;
++
++    /* second input */
++    tmpb = b->dp;
++
++    /* destination */
++    tmpc = c->dp;
++
++    /* zero the carry */
++    u = 0;
++    for (i = 0; i < min; i++) {
++      /* Compute the sum at one digit, T[i] = A[i] + B[i] + U */
++      *tmpc = *tmpa++ + *tmpb++ + u;
++
++      /* U = carry bit of T[i] */
++      u = *tmpc >> ((mp_digit)DIGIT_BIT);
++
++      /* take away carry bit from T[i] */
++      *tmpc++ &= MP_MASK;
++    }
++
++    /* now copy higher words if any, that is in A+B 
++     * if A or B has more digits add those in 
++     */
++    if (min != max) {
++      for (; i < max; i++) {
++        /* T[i] = X[i] + U */
++        *tmpc = x->dp[i] + u;
++
++        /* U = carry bit of T[i] */
++        u = *tmpc >> ((mp_digit)DIGIT_BIT);
++
++        /* take away carry bit from T[i] */
++        *tmpc++ &= MP_MASK;
++      }
++    }
++
++    /* add carry */
++    *tmpc++ = u;
++
++    /* clear digits above oldused */
++    for (i = c->used; i < olduse; i++) {
++      *tmpc++ = 0;
++    }
++  }
++
++  mp_clamp (c);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_s_mp_add.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_s_mp_exptmod.c b/crypto/userspace/libtommath/bn_s_mp_exptmod.c
+new file mode 100644
+index 0000000..097d894
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_s_mp_exptmod.c
+@@ -0,0 +1,252 @@
++#include <tommath.h>
++#ifdef BN_S_MP_EXPTMOD_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++#ifdef MP_LOW_MEM
++   #define TAB_SIZE 32
++#else
++   #define TAB_SIZE 256
++#endif
++
++int s_mp_exptmod (mp_int * G, mp_int * X, mp_int * P, mp_int * Y, int redmode)
++{
++  mp_int  M[TAB_SIZE], res, mu;
++  mp_digit buf;
++  int     err, bitbuf, bitcpy, bitcnt, mode, digidx, x, y, winsize;
++  int (*redux)(mp_int*,mp_int*,mp_int*);
++
++  /* find window size */
++  x = mp_count_bits (X);
++  if (x <= 7) {
++    winsize = 2;
++  } else if (x <= 36) {
++    winsize = 3;
++  } else if (x <= 140) {
++    winsize = 4;
++  } else if (x <= 450) {
++    winsize = 5;
++  } else if (x <= 1303) {
++    winsize = 6;
++  } else if (x <= 3529) {
++    winsize = 7;
++  } else {
++    winsize = 8;
++  }
++
++#ifdef MP_LOW_MEM
++    if (winsize > 5) {
++       winsize = 5;
++    }
++#endif
++
++  /* init M array */
++  /* init first cell */
++  if ((err = mp_init(&M[1])) != MP_OKAY) {
++     return err; 
++  }
++
++  /* now init the second half of the array */
++  for (x = 1<<(winsize-1); x < (1 << winsize); x++) {
++    if ((err = mp_init(&M[x])) != MP_OKAY) {
++      for (y = 1<<(winsize-1); y < x; y++) {
++        mp_clear (&M[y]);
++      }
++      mp_clear(&M[1]);
++      return err;
++    }
++  }
++
++  /* create mu, used for Barrett reduction */
++  if ((err = mp_init (&mu)) != MP_OKAY) {
++    goto LBL_M;
++  }
++  
++  if (redmode == 0) {
++     if ((err = mp_reduce_setup (&mu, P)) != MP_OKAY) {
++        goto LBL_MU;
++     }
++     redux = mp_reduce;
++  } else {
++     if ((err = mp_reduce_2k_setup_l (P, &mu)) != MP_OKAY) {
++        goto LBL_MU;
++     }
++     redux = mp_reduce_2k_l;
++  }    
++
++  /* create M table
++   *
++   * The M table contains powers of the base, 
++   * e.g. M[x] = G**x mod P
++   *
++   * The first half of the table is not 
++   * computed though accept for M[0] and M[1]
++   */
++  if ((err = mp_mod (G, P, &M[1])) != MP_OKAY) {
++    goto LBL_MU;
++  }
++
++  /* compute the value at M[1<<(winsize-1)] by squaring 
++   * M[1] (winsize-1) times 
++   */
++  if ((err = mp_copy (&M[1], &M[1 << (winsize - 1)])) != MP_OKAY) {
++    goto LBL_MU;
++  }
++
++  for (x = 0; x < (winsize - 1); x++) {
++    /* square it */
++    if ((err = mp_sqr (&M[1 << (winsize - 1)], 
++                       &M[1 << (winsize - 1)])) != MP_OKAY) {
++      goto LBL_MU;
++    }
++
++    /* reduce modulo P */
++    if ((err = redux (&M[1 << (winsize - 1)], P, &mu)) != MP_OKAY) {
++      goto LBL_MU;
++    }
++  }
++
++  /* create upper table, that is M[x] = M[x-1] * M[1] (mod P)
++   * for x = (2**(winsize - 1) + 1) to (2**winsize - 1)
++   */
++  for (x = (1 << (winsize - 1)) + 1; x < (1 << winsize); x++) {
++    if ((err = mp_mul (&M[x - 1], &M[1], &M[x])) != MP_OKAY) {
++      goto LBL_MU;
++    }
++    if ((err = redux (&M[x], P, &mu)) != MP_OKAY) {
++      goto LBL_MU;
++    }
++  }
++
++  /* setup result */
++  if ((err = mp_init (&res)) != MP_OKAY) {
++    goto LBL_MU;
++  }
++  mp_set (&res, 1);
++
++  /* set initial mode and bit cnt */
++  mode   = 0;
++  bitcnt = 1;
++  buf    = 0;
++  digidx = X->used - 1;
++  bitcpy = 0;
++  bitbuf = 0;
++
++  for (;;) {
++    /* grab next digit as required */
++    if (--bitcnt == 0) {
++      /* if digidx == -1 we are out of digits */
++      if (digidx == -1) {
++        break;
++      }
++      /* read next digit and reset the bitcnt */
++      buf    = X->dp[digidx--];
++      bitcnt = (int) DIGIT_BIT;
++    }
++
++    /* grab the next msb from the exponent */
++    y     = (buf >> (mp_digit)(DIGIT_BIT - 1)) & 1;
++    buf <<= (mp_digit)1;
++
++    /* if the bit is zero and mode == 0 then we ignore it
++     * These represent the leading zero bits before the first 1 bit
++     * in the exponent.  Technically this opt is not required but it
++     * does lower the # of trivial squaring/reductions used
++     */
++    if (mode == 0 && y == 0) {
++      continue;
++    }
++
++    /* if the bit is zero and mode == 1 then we square */
++    if (mode == 1 && y == 0) {
++      if ((err = mp_sqr (&res, &res)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      if ((err = redux (&res, P, &mu)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      continue;
++    }
++
++    /* else we add it to the window */
++    bitbuf |= (y << (winsize - ++bitcpy));
++    mode    = 2;
++
++    if (bitcpy == winsize) {
++      /* ok window is filled so square as required and multiply  */
++      /* square first */
++      for (x = 0; x < winsize; x++) {
++        if ((err = mp_sqr (&res, &res)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++        if ((err = redux (&res, P, &mu)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++      }
++
++      /* then multiply */
++      if ((err = mp_mul (&res, &M[bitbuf], &res)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      if ((err = redux (&res, P, &mu)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++
++      /* empty window and reset */
++      bitcpy = 0;
++      bitbuf = 0;
++      mode   = 1;
++    }
++  }
++
++  /* if bits remain then square/multiply */
++  if (mode == 2 && bitcpy > 0) {
++    /* square then multiply if the bit is set */
++    for (x = 0; x < bitcpy; x++) {
++      if ((err = mp_sqr (&res, &res)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++      if ((err = redux (&res, P, &mu)) != MP_OKAY) {
++        goto LBL_RES;
++      }
++
++      bitbuf <<= 1;
++      if ((bitbuf & (1 << winsize)) != 0) {
++        /* then multiply */
++        if ((err = mp_mul (&res, &M[1], &res)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++        if ((err = redux (&res, P, &mu)) != MP_OKAY) {
++          goto LBL_RES;
++        }
++      }
++    }
++  }
++
++  mp_exch (&res, Y);
++  err = MP_OKAY;
++LBL_RES:mp_clear (&res);
++LBL_MU:mp_clear (&mu);
++LBL_M:
++  mp_clear(&M[1]);
++  for (x = 1<<(winsize-1); x < (1 << winsize); x++) {
++    mp_clear (&M[x]);
++  }
++  return err;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_s_mp_exptmod.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_s_mp_mul_digs.c b/crypto/userspace/libtommath/bn_s_mp_mul_digs.c
+new file mode 100644
+index 0000000..f5bbf39
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_s_mp_mul_digs.c
+@@ -0,0 +1,90 @@
++#include <tommath.h>
++#ifdef BN_S_MP_MUL_DIGS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* multiplies |a| * |b| and only computes upto digs digits of result
++ * HAC pp. 595, Algorithm 14.12  Modified so you can control how 
++ * many digits of output are created.
++ */
++int s_mp_mul_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
++{
++  mp_int  t;
++  int     res, pa, pb, ix, iy;
++  mp_digit u;
++  mp_word r;
++  mp_digit tmpx, *tmpt, *tmpy;
++
++  /* can we use the fast multiplier? */
++  if (((digs) < MP_WARRAY) &&
++      MIN (a->used, b->used) < 
++          (1 << ((CHAR_BIT * sizeof (mp_word)) - (2 * DIGIT_BIT)))) {
++    return fast_s_mp_mul_digs (a, b, c, digs);
++  }
++
++  if ((res = mp_init_size (&t, digs)) != MP_OKAY) {
++    return res;
++  }
++  t.used = digs;
++
++  /* compute the digits of the product directly */
++  pa = a->used;
++  for (ix = 0; ix < pa; ix++) {
++    /* set the carry to zero */
++    u = 0;
++
++    /* limit ourselves to making digs digits of output */
++    pb = MIN (b->used, digs - ix);
++
++    /* setup some aliases */
++    /* copy of the digit from a used within the nested loop */
++    tmpx = a->dp[ix];
++    
++    /* an alias for the destination shifted ix places */
++    tmpt = t.dp + ix;
++    
++    /* an alias for the digits of b */
++    tmpy = b->dp;
++
++    /* compute the columns of the output and propagate the carry */
++    for (iy = 0; iy < pb; iy++) {
++      /* compute the column as a mp_word */
++      r       = ((mp_word)*tmpt) +
++                ((mp_word)tmpx) * ((mp_word)*tmpy++) +
++                ((mp_word) u);
++
++      /* the new column is the lower part of the result */
++      *tmpt++ = (mp_digit) (r & ((mp_word) MP_MASK));
++
++      /* get the carry word from the result */
++      u       = (mp_digit) (r >> ((mp_word) DIGIT_BIT));
++    }
++    /* set carry if it is placed below digs */
++    if (ix + iy < digs) {
++      *tmpt = u;
++    }
++  }
++
++  mp_clamp (&t);
++  mp_exch (&t, c);
++
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_s_mp_mul_digs.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_s_mp_mul_high_digs.c b/crypto/userspace/libtommath/bn_s_mp_mul_high_digs.c
+new file mode 100644
+index 0000000..2b718f2
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_s_mp_mul_high_digs.c
+@@ -0,0 +1,81 @@
++#include <tommath.h>
++#ifdef BN_S_MP_MUL_HIGH_DIGS_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* multiplies |a| * |b| and does not compute the lower digs digits
++ * [meant to get the higher part of the product]
++ */
++int
++s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
++{
++  mp_int  t;
++  int     res, pa, pb, ix, iy;
++  mp_digit u;
++  mp_word r;
++  mp_digit tmpx, *tmpt, *tmpy;
++
++  /* can we use the fast multiplier? */
++#ifdef BN_FAST_S_MP_MUL_HIGH_DIGS_C
++  if (((a->used + b->used + 1) < MP_WARRAY)
++      && MIN (a->used, b->used) < (1 << ((CHAR_BIT * sizeof (mp_word)) - (2 * DIGIT_BIT)))) {
++    return fast_s_mp_mul_high_digs (a, b, c, digs);
++  }
++#endif
++
++  if ((res = mp_init_size (&t, a->used + b->used + 1)) != MP_OKAY) {
++    return res;
++  }
++  t.used = a->used + b->used + 1;
++
++  pa = a->used;
++  pb = b->used;
++  for (ix = 0; ix < pa; ix++) {
++    /* clear the carry */
++    u = 0;
++
++    /* left hand side of A[ix] * B[iy] */
++    tmpx = a->dp[ix];
++
++    /* alias to the address of where the digits will be stored */
++    tmpt = &(t.dp[digs]);
++
++    /* alias for where to read the right hand side from */
++    tmpy = b->dp + (digs - ix);
++
++    for (iy = digs - ix; iy < pb; iy++) {
++      /* calculate the double precision result */
++      r       = ((mp_word)*tmpt) +
++                ((mp_word)tmpx) * ((mp_word)*tmpy++) +
++                ((mp_word) u);
++
++      /* get the lower part */
++      *tmpt++ = (mp_digit) (r & ((mp_word) MP_MASK));
++
++      /* carry the carry */
++      u       = (mp_digit) (r >> ((mp_word) DIGIT_BIT));
++    }
++    *tmpt = u;
++  }
++  mp_clamp (&t);
++  mp_exch (&t, c);
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_s_mp_mul_high_digs.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_s_mp_sqr.c b/crypto/userspace/libtommath/bn_s_mp_sqr.c
+new file mode 100644
+index 0000000..d2531c2
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_s_mp_sqr.c
+@@ -0,0 +1,84 @@
++#include <tommath.h>
++#ifdef BN_S_MP_SQR_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* low level squaring, b = a*a, HAC pp.596-597, Algorithm 14.16 */
++int s_mp_sqr (mp_int * a, mp_int * b)
++{
++  mp_int  t;
++  int     res, ix, iy, pa;
++  mp_word r;
++  mp_digit u, tmpx, *tmpt;
++
++  pa = a->used;
++  if ((res = mp_init_size (&t, 2*pa + 1)) != MP_OKAY) {
++    return res;
++  }
++
++  /* default used is maximum possible size */
++  t.used = 2*pa + 1;
++
++  for (ix = 0; ix < pa; ix++) {
++    /* first calculate the digit at 2*ix */
++    /* calculate double precision result */
++    r = ((mp_word) t.dp[2*ix]) +
++        ((mp_word)a->dp[ix])*((mp_word)a->dp[ix]);
++
++    /* store lower part in result */
++    t.dp[ix+ix] = (mp_digit) (r & ((mp_word) MP_MASK));
++
++    /* get the carry */
++    u           = (mp_digit)(r >> ((mp_word) DIGIT_BIT));
++
++    /* left hand side of A[ix] * A[iy] */
++    tmpx        = a->dp[ix];
++
++    /* alias for where to store the results */
++    tmpt        = t.dp + (2*ix + 1);
++    
++    for (iy = ix + 1; iy < pa; iy++) {
++      /* first calculate the product */
++      r       = ((mp_word)tmpx) * ((mp_word)a->dp[iy]);
++
++      /* now calculate the double precision result, note we use
++       * addition instead of *2 since it's easier to optimize
++       */
++      r       = ((mp_word) *tmpt) + r + r + ((mp_word) u);
++
++      /* store lower part */
++      *tmpt++ = (mp_digit) (r & ((mp_word) MP_MASK));
++
++      /* get carry */
++      u       = (mp_digit)(r >> ((mp_word) DIGIT_BIT));
++    }
++    /* propagate upwards */
++    while (u != ((mp_digit) 0)) {
++      r       = ((mp_word) *tmpt) + ((mp_word) u);
++      *tmpt++ = (mp_digit) (r & ((mp_word) MP_MASK));
++      u       = (mp_digit)(r >> ((mp_word) DIGIT_BIT));
++    }
++  }
++
++  mp_clamp (&t);
++  mp_exch (&t, b);
++  mp_clear (&t);
++  return MP_OKAY;
++}
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_s_mp_sqr.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bn_s_mp_sub.c b/crypto/userspace/libtommath/bn_s_mp_sub.c
+new file mode 100644
+index 0000000..6a60c39
+--- /dev/null
++++ b/crypto/userspace/libtommath/bn_s_mp_sub.c
+@@ -0,0 +1,89 @@
++#include <tommath.h>
++#ifdef BN_S_MP_SUB_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* low level subtraction (assumes |a| > |b|), HAC pp.595 Algorithm 14.9 */
++int
++s_mp_sub (mp_int * a, mp_int * b, mp_int * c)
++{
++  int     olduse, res, min, max;
++
++  /* find sizes */
++  min = b->used;
++  max = a->used;
++
++  /* init result */
++  if (c->alloc < max) {
++    if ((res = mp_grow (c, max)) != MP_OKAY) {
++      return res;
++    }
++  }
++  olduse = c->used;
++  c->used = max;
++
++  {
++    register mp_digit u, *tmpa, *tmpb, *tmpc;
++    register int i;
++
++    /* alias for digit pointers */
++    tmpa = a->dp;
++    tmpb = b->dp;
++    tmpc = c->dp;
++
++    /* set carry to zero */
++    u = 0;
++    for (i = 0; i < min; i++) {
++      /* T[i] = A[i] - B[i] - U */
++      *tmpc = *tmpa++ - *tmpb++ - u;
++
++      /* U = carry bit of T[i]
++       * Note this saves performing an AND operation since
++       * if a carry does occur it will propagate all the way to the
++       * MSB.  As a result a single shift is enough to get the carry
++       */
++      u = *tmpc >> ((mp_digit)(CHAR_BIT * sizeof (mp_digit) - 1));
++
++      /* Clear carry from T[i] */
++      *tmpc++ &= MP_MASK;
++    }
++
++    /* now copy higher words if any, e.g. if A has more digits than B  */
++    for (; i < max; i++) {
++      /* T[i] = A[i] - U */
++      *tmpc = *tmpa++ - u;
++
++      /* U = carry bit of T[i] */
++      u = *tmpc >> ((mp_digit)(CHAR_BIT * sizeof (mp_digit) - 1));
++
++      /* Clear carry from T[i] */
++      *tmpc++ &= MP_MASK;
++    }
++
++    /* clear digits above used (since we may not have grown result above) */
++    for (i = c->used; i < olduse; i++) {
++      *tmpc++ = 0;
++    }
++  }
++
++  mp_clamp (c);
++  return MP_OKAY;
++}
++
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bn_s_mp_sub.c,v $ */
++/* $Revision: 1.4 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/bncore.c b/crypto/userspace/libtommath/bncore.c
+new file mode 100644
+index 0000000..8fb1824
+--- /dev/null
++++ b/crypto/userspace/libtommath/bncore.c
+@@ -0,0 +1,36 @@
++#include <tommath.h>
++#ifdef BNCORE_C
++/* LibTomMath, multiple-precision integer library -- Tom St Denis
++ *
++ * LibTomMath is a library that provides multiple-precision
++ * integer arithmetic as well as number theoretic functionality.
++ *
++ * The library was designed directly after the MPI library by
++ * Michael Fromberger but has been written from scratch with
++ * additional optimizations in place.
++ *
++ * The library is free for all purposes without any express
++ * guarantee it works.
++ *
++ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
++ */
++
++/* Known optimal configurations
++
++ CPU                    /Compiler     /MUL CUTOFF/SQR CUTOFF
++-------------------------------------------------------------
++ Intel P4 Northwood     /GCC v3.4.1   /        88/       128/LTM 0.32 ;-)
++ AMD Athlon64           /GCC v3.4.4   /        80/       120/LTM 0.35
++ 
++*/
++
++int     KARATSUBA_MUL_CUTOFF = 80,      /* Min. number of digits before Karatsuba multiplication is used. */
++        KARATSUBA_SQR_CUTOFF = 120,     /* Min. number of digits before Karatsuba squaring is used. */
++        
++        TOOM_MUL_CUTOFF      = 350,      /* no optimal values of these are known yet so set em high */
++        TOOM_SQR_CUTOFF      = 400; 
++#endif
++
++/* $Source: /cvs/libtom/libtommath/bncore.c,v $ */
++/* $Revision: 1.5 $ */
++/* $Date: 2006/12/28 01:25:13 $ */
+diff --git a/crypto/userspace/libtommath/changes.txt b/crypto/userspace/libtommath/changes.txt
+new file mode 100644
+index 0000000..b0da4da
+--- /dev/null
++++ b/crypto/userspace/libtommath/changes.txt
+@@ -0,0 +1,397 @@
++March 10th, 2007
++v0.41  -- Wolfgang Ehrhardt suggested a quick fix to mp_div_d() which makes the detection of powers of two quicker. 
++       -- [CRI] Added libtommath.dsp for Visual C++ users.
++
++December 24th, 2006
++v0.40  -- Updated makefile to properly support LIBNAME
++       -- Fixed bug in fast_s_mp_mul_high_digs() which overflowed (line 83), thanks Valgrind!
++
++April 4th, 2006
++v0.39  -- Jim Wigginton pointed out my Montgomery examples in figures 6.4 and 6.6 were off by one, k should be 9 not 8
++       -- Bruce Guenter suggested I use --tag=CC for libtool builds where the compiler may think it's C++.
++       -- "mm" from sci.crypt pointed out that my mp_gcd was sub-optimal (I also updated and corrected the book)
++       -- updated some of the @@ tags in tommath.src to reflect source changes.
++       -- updated email and url info in all source files
++
++Jan 26th, 2006
++v0.38  -- broken makefile.shared fixed
++       -- removed some carry stores that were not required [updated text]
++       
++November 18th, 2005
++v0.37  -- [Don Porter] reported on a TCL list [HEY SEND ME BUGREPORTS ALREADY!!!] that mp_add_d() would compute -0 with some inputs.  Fixed.
++       -- [rinick@gmail.com] reported the makefile.bcc was messed up.  Fixed.
++       -- [Kevin Kenny] reported some issues with mp_toradix_n().  Now it doesn't require a min of 3 chars of output.  
++       -- Made the make command renamable.  Wee
++
++August 1st, 2005
++v0.36  -- LTM_PRIME_2MSB_ON was fixed and the "OFF" flag was removed.
++       -- [Peter LaDow] found a typo in the XREALLOC macro
++       -- [Peter LaDow] pointed out that mp_read_(un)signed_bin should have "const" on the input
++       -- Ported LTC patch to fix the prime_random_ex() function to get the bitsize correct [and the maskOR flags]
++       -- Kevin Kenny pointed out a stray //
++       -- David Hulton pointed out a typo in the textbook [mp_montgomery_setup() pseudo-code]
++       -- Neal Hamilton (Elliptic Semiconductor) pointed out that my Karatsuba notation was backwards and that I could use 
++          unsigned operations in the routine.  
++       -- Paul Schmidt pointed out a linking error in mp_exptmod() when BN_S_MP_EXPTMOD_C is undefined (and another for read_radix)
++       -- Updated makefiles to be way more flexible
++
++March 12th, 2005
++v0.35  -- Stupid XOR function missing line again... oops.
++       -- Fixed bug in invmod not handling negative inputs correctly [Wolfgang Ehrhardt]
++       -- Made exteuclid always give positive u3 output...[ Wolfgang Ehrhardt ]
++       -- [Wolfgang Ehrhardt] Suggested a fix for mp_reduce() which avoided underruns.  ;-)
++       -- mp_rand() would emit one too many digits and it was possible to get a 0 out of it ... oops
++       -- Added montgomery to the testing to make sure it handles 1..10 digit moduli correctly
++       -- Fixed bug in comba that would lead to possible erroneous outputs when "pa < digs" 
++       -- Fixed bug in mp_toradix_size for "0" [Kevin Kenny]
++       -- Updated chapters 1-5 of the textbook ;-) It now talks about the new comba code!
++
++February 12th, 2005
++v0.34  -- Fixed two more small errors in mp_prime_random_ex()
++       -- Fixed overflow in mp_mul_d() [Kevin Kenny]
++       -- Added mp_to_(un)signed_bin_n() functions which do bounds checking for ya [and report the size]
++       -- Added "large" diminished radix support.  Speeds up things like DSA where the moduli is of the form 2^k - P for some P < 2^(k/2) or so
++          Actually is faster than Montgomery on my AMD64 (and probably much faster on a P4)
++       -- Updated the manual a bit
++       -- Ok so I haven't done the textbook work yet... My current freelance gig has landed me in France till the 
++          end of Feb/05.  Once I get back I'll have tons of free time and I plan to go to town on the book.
++          As of this release the API will freeze.  At least until the book catches up with all the changes.  I welcome
++          bug reports but new algorithms will have to wait.
++
++December 23rd, 2004
++v0.33  -- Fixed "small" variant for mp_div() which would munge with negative dividends...
++       -- Fixed bug in mp_prime_random_ex() which would set the most significant byte to zero when
++          no special flags were set
++       -- Fixed overflow [minor] bug in fast_s_mp_sqr()
++       -- Made the makefiles easier to configure the group/user that ltm will install as
++       -- Fixed "final carry" bug in comba multipliers. (Volkan Ceylan)
++       -- Matt Johnston pointed out a missing semi-colon in mp_exptmod
++
++October 29th, 2004
++v0.32  -- Added "makefile.shared" for shared object support
++       -- Added more to the build options/configs in the manual
++       -- Started the Depends framework, wrote dep.pl to scan deps and 
++          produce "callgraph.txt" ;-)
++       -- Wrote SC_RSA_1 which will enable close to the minimum required to perform
++          RSA on 32-bit [or 64-bit] platforms with LibTomCrypt
++       -- Merged in the small/slower mp_div replacement.  You can now toggle which
++          you want to use as your mp_div() at build time.  Saves roughly 8KB or so.
++       -- Renamed a few files and changed some comments to make depends system work better.
++          (No changes to function names)
++       -- Merged in new Combas that perform 2 reads per inner loop instead of the older 
++          3reads/2writes per inner loop of the old code.  Really though if you want speed
++          learn to use TomsFastMath ;-)
++
++August 9th, 2004
++v0.31  -- "profiled" builds now :-) new timings for Intel Northwoods
++       -- Added "pretty" build target
++       -- Update mp_init() to actually assign 0's instead of relying on calloc()
++       -- "Wolfgang Ehrhardt" <Wolfgang.Ehrhardt@munich.netsurf.de> found a bug in mp_mul() where if
++          you multiply a negative by zero you get negative zero as the result.  Oops.
++       -- J Harper from PeerSec let me toy with his AMD64 and I got 60-bit digits working properly
++          [this also means that I fixed a bug where if sizeof(int) < sizeof(mp_digit) it would bug]
++
++April 11th, 2004
++v0.30  -- Added "mp_toradix_n" which stores upto "n-1" least significant digits of an mp_int
++       -- Johan Lindh sent a patch so MSVC wouldn't whine about redefining malloc [in weird dll modes]
++       -- Henrik Goldman spotted a missing OPT_CAST in mp_fwrite()
++       -- Tuned tommath.h so that when MP_LOW_MEM is defined MP_PREC shall be reduced.
++          [I also allow MP_PREC to be externally defined now]
++       -- Sped up mp_cnt_lsb() by using a 4x4 table [e.g. 4x speedup]
++       -- Added mp_prime_random_ex() which is a more versatile prime generator accurate to
++          exact bit lengths (unlike the deprecated but still available mp_prime_random() which
++          is only accurate to byte lengths).  See the new LTM_PRIME_* flags ;-)
++       -- Alex Polushin contributed an optimized mp_sqrt() as well as mp_get_int() and mp_is_square().
++          I've cleaned them all up to be a little more consistent [along with one bug fix] for this release.
++       -- Added mp_init_set and mp_init_set_int to initialize and set small constants with one function
++          call.
++       -- Removed /etclib directory [um LibTomPoly deprecates this].
++       -- Fixed mp_mod() so the sign of the result agrees with the sign of the modulus.
++       ++ N.B.  My semester is almost up so expect updates to the textbook to be posted to the libtomcrypt.org 
++          website.  
++
++Jan 25th, 2004
++v0.29  ++ Note: "Henrik" from the v0.28 changelog refers to Henrik Goldman ;-)
++       -- Added fix to mp_shrink to prevent a realloc when used == 0 [e.g. realloc zero bytes???]
++       -- Made the mp_prime_rabin_miller_trials() function internal table smaller and also
++          set the minimum number of tests to two (sounds a bit safer).
++       -- Added a mp_exteuclid() which computes the extended euclidean algorithm.
++       -- Fixed a memory leak in s_mp_exptmod() [called when Barrett reduction is to be used] which would arise
++          if a multiplication or subsequent reduction failed [would not free the temp result].
++       -- Made an API change to mp_radix_size().  It now returns an error code and stores the required size
++          through an "int star" passed to it.
++
++Dec 24th, 2003
++v0.28  -- Henrik Goldman suggested I add casts to the montomgery code [stores into mu...] so compilers wouldn't
++          spew [erroneous] diagnostics... fixed.
++       -- Henrik Goldman also spotted two typos.  One in mp_radix_size() and another in mp_toradix().
++       -- Added fix to mp_shrink() to avoid a memory leak.
++       -- Added mp_prime_random() which requires a callback to make truly random primes of a given nature
++          (idea from chat with Niels Ferguson at Crypto'03)
++       -- Picked up a second wind.  I'm filled with Gooo.  Mission Gooo!
++       -- Removed divisions from mp_reduce_is_2k()
++       -- Sped up mp_div_d() [general case] to use only one division per digit instead of two.
++       -- Added the heap macros from LTC to LTM.  Now you can easily [by editing four lines of tommath.h]
++          change the name of the heap functions used in LTM [also compatible with LTC via MPI mode]
++       -- Added bn_prime_rabin_miller_trials() which gives the number of Rabin-Miller trials to achieve
++          a failure rate of less than 2^-96
++       -- fixed bug in fast_mp_invmod().  The initial testing logic was wrong.  An invalid input is not when
++          "a" and "b" are even it's when "b" is even [the algo is for odd moduli only].
++       -- Started a new manual [finally].  It is incomplete and will be finished as time goes on.  I had to stop
++          adding full demos around half way in chapter three so I could at least get a good portion of the
++          manual done.   If you really need help using the library you can always email me!
++       -- My Textbook is now included as part of the package [all Public Domain]
++
++Sept 19th, 2003
++v0.27  -- Removed changes.txt~ which was made by accident since "kate" decided it was
++          a good time to re-enable backups... [kde is fun!]
++       -- In mp_grow() "a->dp" is not overwritten by realloc call [re: memory leak]
++          Now if mp_grow() fails the mp_int is still valid and can be cleared via
++          mp_clear() to reclaim the memory.
++       -- Henrik Goldman found a buffer overflow bug in mp_add_d().  Fixed.
++       -- Cleaned up mp_mul_d() to be much easier to read and follow.
++
++Aug 29th, 2003
++v0.26  -- Fixed typo that caused warning with GCC 3.2
++       -- Martin Marcel noticed a bug in mp_neg() that allowed negative zeroes.
++          Also, Martin is the fellow who noted the bugs in mp_gcd() of 0.24/0.25.
++       -- Martin Marcel noticed an optimization [and slight bug] in mp_lcm().
++       -- Added fix to mp_read_unsigned_bin to prevent a buffer overflow.
++       -- Beefed up the comments in the baseline multipliers [and montgomery]
++       -- Added "mont" demo to the makefile.msvc in etc/
++       -- Optimized sign compares in mp_cmp from 4 to 2 cases.
++
++Aug 4th, 2003
++v0.25  -- Fix to mp_gcd again... oops (0,-a) == (-a, 0) == a
++       -- Fix to mp_clear which didn't reset the sign  [Greg Rose]
++       -- Added mp_error_to_string() to convert return codes to strings.  [Greg Rose]
++       -- Optimized fast_mp_invmod() to do the test for invalid inputs [both even]
++          first so temps don't have to be initialized if it's going to fail.
++       -- Optimized mp_gcd() by removing mp_div_2d calls for when one of the inputs
++          is odd.
++       -- Tons of new comments, some indentation fixups, etc.
++       -- mp_jacobi() returns MP_VAL if the modulus is less than or equal to zero.
++       -- fixed two typos in the header of each file :-)
++       -- LibTomMath is officially Public Domain [see LICENSE]
++
++July 15th, 2003
++v0.24  -- Optimized mp_add_d and mp_sub_d to not allocate temporary variables
++       -- Fixed mp_gcd() so the gcd of 0,0 is 0.  Allows the gcd operation to be chained
++          e.g. (0,0,a) == a [instead of 1]
++       -- Should be one of the last release for a while.  Working on LibTomMath book now.
++       -- optimized the pprime demo [/etc/pprime.c] to first make a huge table of single
++          digit primes then it reads them randomly instead of randomly choosing/testing single
++          digit primes.
++
++July 12th, 2003
++v0.23  -- Optimized mp_prime_next_prime() to not use mp_mod [via is_divisible()] in each
++          iteration.  Instead now a smaller table is kept of the residues which can be updated
++          without division.
++       -- Fixed a bug in next_prime() where an input of zero would be treated as odd and
++          have two added to it [to move to the next odd].
++       -- fixed a bug in prime_fermat() and prime_miller_rabin() which allowed the base
++          to be negative, zero or one.  Normally the test is only valid if the base is
++          greater than one.
++       -- changed the next_prime() prototype to accept a new parameter "bbs_style" which
++          will find the next prime congruent to 3 mod 4.  The default [bbs_style==0] will
++          make primes which are either congruent to 1 or 3 mod 4.
++       -- fixed mp_read_unsigned_bin() so that it doesn't include both code for
++          the case DIGIT_BIT < 8 and >= 8
++       -- optimized div_d() to easy out on division by 1 [or if a == 0] and use
++          logical shifts if the divisor is a power of two.
++       -- the default DIGIT_BIT type was not int for non-default builds.  Fixed.
++
++July 2nd, 2003
++v0.22  -- Fixed up mp_invmod so the result is properly in range now [was always congruent to the inverse...]
++       -- Fixed up s_mp_exptmod and mp_exptmod_fast so the lower half of the pre-computed table isn't allocated
++          which makes the algorithm use half as much ram.
++       -- Fixed the install script not to make the book :-) [which isn't included anyways]
++       -- added mp_cnt_lsb() which counts how many of the lsbs are zero
++       -- optimized mp_gcd() to use the new mp_cnt_lsb() to replace multiple divisions by two by a single division.
++       -- applied similar optimization to mp_prime_miller_rabin().
++       -- Fixed a bug in both mp_invmod() and fast_mp_invmod() which tested for odd
++          via "mp_iseven() == 0" which is not valid [since zero is not even either].
++
++June 19th, 2003
++v0.21  -- Fixed bug in mp_mul_d which would not handle sign correctly [would not always forward it]
++       -- Removed the #line lines from gen.pl [was in violation of ISO C]
++
++June 8th, 2003
++v0.20  -- Removed the book from the package.  Added the TDCAL license document.
++       -- This release is officially pure-bred TDCAL again [last officially TDCAL based release was v0.16]
++
++June 6th, 2003
++v0.19  -- Fixed a bug in mp_montgomery_reduce() which was introduced when I tweaked mp_rshd() in the previous release.
++          Essentially the digits were not trimmed before the compare which cause a subtraction to occur all the time.
++       -- Fixed up etc/tune.c a bit to stop testing new cutoffs after 16 failures [to find more optimal points].
++          Brute force ho!
++
++
++May 29th, 2003
++v0.18  -- Fixed a bug in s_mp_sqr which would handle carries properly just not very elegantly.
++          (e.g. correct result, just bad looking code)
++       -- Fixed bug in mp_sqr which still had a 512 constant instead of MP_WARRAY
++       -- Added Toom-Cook multipliers [needs tuning!]
++       -- Added efficient divide by 3 algorithm mp_div_3
++       -- Re-wrote mp_div_d to be faster than calling mp_div
++       -- Added in a donated BCC makefile and a single page LTM poster (ahalhabsi@sbcglobal.net)
++       -- Added mp_reduce_2k which reduces an input modulo n = 2**p - k for any single digit k
++       -- Made the exptmod system be aware of the 2k reduction algorithms.
++       -- Rewrote mp_dr_reduce to be smaller, simpler and easier to understand.
++
++May 17th, 2003
++v0.17  -- Benjamin Goldberg submitted optimized mp_add and mp_sub routines.  A new gen.pl as well
++          as several smaller suggestions.  Thanks!
++       -- removed call to mp_cmp in inner loop of mp_div and put mp_cmp_mag in its place :-)
++       -- Fixed bug in mp_exptmod that would cause it to fail for odd moduli when DIGIT_BIT != 28
++       -- mp_exptmod now also returns errors if the modulus is negative and will handle negative exponents
++       -- mp_prime_is_prime will now return true if the input is one of the primes in the prime table
++       -- Damian M Gryski (dgryski@uwaterloo.ca) found a index out of bounds error in the
++          mp_fast_s_mp_mul_high_digs function which didn't come up before.  (fixed)
++       -- Refactored the DR reduction code so there is only one function per file.
++       -- Fixed bug in the mp_mul() which would erroneously avoid the faster multiplier [comba] when it was
++          allowed.  The bug would not cause the incorrect value to be produced just less efficient (fixed)
++       -- Fixed similar bug in the Montgomery reduction code.
++       -- Added tons of (mp_digit) casts so the 7/15/28/31 bit digit code will work flawlessly out of the box.
++          Also added limited support for 64-bit machines with a 60-bit digit.  Both thanks to Tom Wu (tom@arcot.com)
++       -- Added new comments here and there, cleaned up some code [style stuff]
++       -- Fixed a lingering typo in mp_exptmod* that would set bitcnt to zero then one.  Very silly stuff :-)
++       -- Fixed up mp_exptmod_fast so it would set "redux" to the comba Montgomery reduction if allowed.  This
++          saves quite a few calls and if statements.
++       -- Added etc/mont.c a test of the Montgomery reduction [assuming all else works :-| ]
++       -- Fixed up etc/tune.c to use a wider test range [more appropriate] also added a x86 based addition which
++          uses RDTSC for high precision timing.
++       -- Updated demo/demo.c to remove MPI stuff [won't work anyways], made the tests run for 2 seconds each so its
++          not so insanely slow.  Also made the output space delimited [and fixed up various errors]
++       -- Added logs directory, logs/graph.dem which will use gnuplot to make a series of PNG files
++          that go with the pre-made index.html.  You have to build [via make timing] and run ltmtest first in the
++          root of the package.
++       -- Fixed a bug in mp_sub and mp_add where "-a - -a" or "-a + a" would produce -0 as the result [obviously invalid].
++       -- Fixed a bug in mp_rshd.  If the count == a.used it should zero/return [instead of shifting]
++       -- Fixed a "off-by-one" bug in mp_mul2d.  The initial size check on alloc would be off by one if the residue
++          shifting caused a carry.
++       -- Fixed a bug where s_mp_mul_digs() would not call the Comba based routine if allowed.  This made Barrett reduction
++          slower than it had to be.
++
++Mar 29th, 2003
++v0.16  -- Sped up mp_div by making normalization one shift call
++       -- Sped up mp_mul_2d/mp_div_2d by aliasing pointers :-)
++       -- Cleaned up mp_gcd to use the macros for odd/even detection
++       -- Added comments here and there, mostly there but occasionally here too.
++
++Mar 22nd, 2003
++v0.15  -- Added series of prime testing routines to lib
++       -- Fixed up etc/tune.c
++       -- Added DR reduction algorithm
++       -- Beefed up the manual more.
++       -- Fixed up demo/demo.c so it doesn't have so many warnings and it does the full series of
++          tests
++       -- Added "pre-gen" directory which will hold a "gen.pl"'ed copy of the entire lib [done at
++          zipup time so its always the latest]
++       -- Added conditional casts for C++ users [boo!]
++
++Mar 15th, 2003
++v0.14  -- Tons of manual updates
++       -- cleaned up the directory
++       -- added MSVC makefiles
++       -- source changes [that I don't recall]
++       -- Fixed up the lshd/rshd code to use pointer aliasing
++       -- Fixed up the mul_2d and div_2d to not call rshd/lshd unless needed
++       -- Fixed up etc/tune.c a tad
++       -- fixed up demo/demo.c to output comma-delimited results of timing
++          also fixed up timing demo to use a finer granularity for various functions
++       -- fixed up demo/demo.c testing to pause during testing so my Duron won't catch on fire
++          [stays around 31-35C during testing :-)]
++
++Feb 13th, 2003
++v0.13  -- tons of minor speed-ups in low level add, sub, mul_2 and div_2 which propagate
++          to other functions like mp_invmod, mp_div, etc...
++       -- Sped up mp_exptmod_fast by using new code to find R mod m [e.g. B^n mod m]
++       -- minor fixes
++
++Jan 17th, 2003
++v0.12  -- re-wrote the majority of the makefile so its more portable and will
++          install via "make install" on most *nix platforms
++       -- Re-packaged all the source as seperate files.  Means the library a single
++          file packagage any more.  Instead of just adding "bn.c" you have to add
++          libtommath.a
++       -- Renamed "bn.h" to "tommath.h"
++       -- Changes to the manual to reflect all of this
++       -- Used GNU Indent to clean up the source
++
++Jan 15th, 2003
++v0.11  -- More subtle fixes
++       -- Moved to gentoo linux [hurrah!] so made *nix specific fixes to the make process
++       -- Sped up the montgomery reduction code quite a bit
++       -- fixed up demo so when building timing for the x86 it assumes ELF format now
++
++Jan 9th, 2003
++v0.10  -- Pekka Riikonen suggested fixes to the radix conversion code.
++       -- Added baseline montgomery and comba montgomery reductions, sped up exptmods
++          [to a point, see bn.h for MONTGOMERY_EXPT_CUTOFF]
++
++Jan 6th, 2003
++v0.09  -- Updated the manual to reflect recent changes.  :-)
++       -- Added Jacobi function (mp_jacobi) to supplement the number theory side of the lib
++       -- Added a Mersenne prime finder demo in ./etc/mersenne.c
++
++Jan 2nd, 2003
++v0.08  -- Sped up the multipliers by moving the inner loop variables into a smaller scope
++       -- Corrected a bunch of small "warnings"
++       -- Added more comments
++       -- Made "mtest" be able to use /dev/random, /dev/urandom or stdin for RNG data
++       -- Corrected some bugs where error messages were potentially ignored
++       -- add etc/pprime.c program which makes numbers which are provably prime.
++
++Jan 1st, 2003
++v0.07  -- Removed alot of heap operations from core functions to speed them up
++       -- Added a root finding function [and mp_sqrt macro like from MPI]
++       -- Added more to manual
++
++Dec 31st, 2002
++v0.06  -- Sped up the s_mp_add, s_mp_sub which inturn sped up mp_invmod, mp_exptmod, etc...
++       -- Cleaned up the header a bit more
++
++Dec 30th, 2002
++v0.05  -- Builds with MSVC out of the box
++       -- Fixed a bug in mp_invmod w.r.t. even moduli
++       -- Made mp_toradix and mp_read_radix use char instead of unsigned char arrays
++       -- Fixed up exptmod to use fewer multiplications
++       -- Fixed up mp_init_size to use only one heap operation
++          -- Note there is a slight "off-by-one" bug in the library somewhere
++             without the padding (see the source for comment) the library
++             crashes in libtomcrypt.  Anyways a reasonable workaround is to pad the
++             numbers which will always correct it since as the numbers grow the padding
++             will still be beyond the end of the number
++       -- Added more to the manual
++
++Dec 29th, 2002
++v0.04  -- Fixed a memory leak in mp_to_unsigned_bin
++       -- optimized invmod code
++       -- Fixed bug in mp_div
++       -- use exchange instead of copy for results
++       -- added a bit more to the manual
++
++Dec 27th, 2002
++v0.03  -- Sped up s_mp_mul_high_digs by not computing the carries of the lower digits
++       -- Fixed a bug where mp_set_int wouldn't zero the value first and set the used member.
++       -- fixed a bug in s_mp_mul_high_digs where the limit placed on the result digits was not calculated properly
++       -- fixed bugs in add/sub/mul/sqr_mod functions where if the modulus and dest were the same it wouldn't work
++       -- fixed a bug in mp_mod and mp_mod_d concerning negative inputs
++       -- mp_mul_d didn't preserve sign
++       -- Many many many many fixes
++       -- Works in LibTomCrypt now :-)
++       -- Added iterations to the timing demos... more accurate.
++       -- Tom needs a job.
++
++Dec 26th, 2002
++v0.02  -- Fixed a few "slips" in the manual.  This is "LibTomMath" afterall :-)
++       -- Added mp_cmp_mag, mp_neg, mp_abs and mp_radix_size that were missing.
++       -- Sped up the fast [comba] multipliers more [yahoo!]
++
++Dec 25th,2002
++v0.01  -- Initial release.  Gimme a break.
++       -- Todo list,
++           add details to manual [e.g. algorithms]
++           more comments in code
++           example programs
+diff --git a/crypto/userspace/libtommath/pretty.build b/crypto/userspace/libtommath/pretty.build
+new file mode 100644
+index 0000000..a708b8a
+--- /dev/null
++++ b/crypto/userspace/libtommath/pretty.build
+@@ -0,0 +1,66 @@
++#!/bin/perl -w
++#
++# Cute little builder for perl 
++# Total waste of development time...
++#
++# This will build all the object files and then the archive .a file
++# requires GCC, GNU make and a sense of humour.
++#
++# Tom St Denis
++use strict;
++
++my $count = 0;
++my $starttime = time;
++my $rate  = 0;
++print "Scanning for source files...\n";
++foreach my $filename (glob "*.c") {
++       ++$count;
++}
++print "Source files to build: $count\nBuilding...\n";
++my $i = 0;
++my $lines = 0;
++my $filesbuilt = 0;
++foreach my $filename (glob "*.c") {
++       printf("Building %3.2f%%, ", (++$i/$count)*100.0);
++       if ($i % 4 == 0) { print "/, "; }
++       if ($i % 4 == 1) { print "-, "; }
++       if ($i % 4 == 2) { print "\\, "; }
++       if ($i % 4 == 3) { print "|, "; }
++       if ($rate > 0) {
++           my $tleft = ($count - $i) / $rate;
++           my $tsec  = $tleft%60;
++           my $tmin  = ($tleft/60)%60;
++           my $thour = ($tleft/3600)%60;
++           printf("%2d:%02d:%02d left, ", $thour, $tmin, $tsec);
++       }
++       my $cnt = ($i/$count)*30.0;
++       my $x   = 0;
++       print "[";
++       for (; $x < $cnt; $x++) { print "#"; }
++       for (; $x < 30; $x++)   { print " "; }
++       print "]\r";
++       my $tmp = $filename;
++       $tmp =~ s/\.c/".o"/ge;
++       if (open(SRC, "<$tmp")) {
++          close SRC;
++       } else {
++          !system("make $tmp > /dev/null 2>/dev/null") or die "\nERROR: Failed to make $tmp!!!\n";
++          open( SRC, "<$filename" ) or die "Couldn't open $filename for reading: $!";
++          ++$lines while (<SRC>);
++          close SRC or die "Error closing $filename after reading: $!";
++          ++$filesbuilt;
++       }      
++
++       # update timer 
++       if (time != $starttime) {
++          my $delay = time - $starttime;
++          $rate = $i/$delay;
++       }
++}
++
++# finish building the library 
++printf("\nFinished building source (%d seconds, %3.2f files per second).\n", time - $starttime, $rate);
++print "Compiled approximately $filesbuilt files and $lines lines of code.\n";
++print "Doing final make (building archive...)\n";
++!system("make > /dev/null 2>/dev/null") or die "\nERROR: Failed to perform last make command!!!\n";
++print "done.\n";
+\ No newline at end of file
 -- 
 1.7.2.1
 
