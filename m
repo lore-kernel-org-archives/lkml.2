@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab0HTBLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 21:11:14 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:58946 "EHLO e9.ny.us.ibm.com"
+	id S1751751Ab0HTBL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 21:11:26 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:53659 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab0HTBLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 21:11:13 -0400
+	id S1751626Ab0HTBLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 21:11:23 -0400
 From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
-Date: Thu, 19 Aug 2010 18:11:05 -0700
+Date: Thu, 19 Aug 2010 18:11:14 -0700
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: [PATCH 1/4 v2] kvm: abstract kvm x86 mmu->n_free_mmu_pages
-Message-ID: <20100820011104.GB11297@tpepper-t61p.dolavim.us>
+Subject: [PATCH 2/4 v2] kvm: rename x86 kvm->arch.n_alloc_mmu_pages
+Message-ID: <20100820011113.GC11297@tpepper-t61p.dolavim.us>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,91 +24,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-[PATCH 1/4 v2] kvm: abstract kvm x86 mmu->n_free_mmu_pages
+[PATCH 2/4 v2] kvm: rename x86 kvm->arch.n_alloc_mmu_pages
 
-First of all, I think "free" is a poor name for this value.  In
-this context, it means, "the number of mmu pages which this kvm
-instance should be able to allocate."  To me, "free" implies
-much more that the objects are there and ready for use.  I think
-"available" is a much better description, especially when you
-see how it is calculated.
+Again, I think this is a poor choice of names.  This value truly
+means, "the number of pages which _may_ be allocated".  But,
+reading the value, "n_alloc_mmu_pages", I'm unable to think of
+anything it should mean other than "the number of allocated mmu
+pages", which is dead wrong.
 
-In this patch, we abstract its use into a function.  We'll soon
-replace the function's contents by calculating the value in a
-different way.
-
-All of the reads of n_free_mmu_pages are taken care of in this
-patch.  The modification sites will be handled in a patch
-later in the series.
+It's really the high watermark, so let's give it a name to match:
+nr_max_mmu_pages.  This change will make the next few patches
+much more obvious and easy to read.
 
 Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Signed-off-by: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
 
-  arch/x86/kvm/mmu.c              |   11 ++++-------
-  arch/x86/kvm/mmu.h              |    7 ++++++-
-  2 files changed, 10 insertions(+), 8 deletions(-)
+  arch/x86/include/asm/kvm_host.h |    2 +-
+  arch/x86/kvm/mmu.c              |    8 ++++----
+  arch/x86/kvm/x86.c              |    2 +-
+  3 files changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 502e53f..f0f02cf 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -369,7 +369,7 @@ struct kvm_vcpu_arch {
+ struct kvm_arch {
+ 	unsigned int n_free_mmu_pages;
+ 	unsigned int n_requested_mmu_pages;
+-	unsigned int n_alloc_mmu_pages;
++	unsigned int n_max_mmu_pages;
+ 	atomic_t invlpg_counter;
+ 	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+ 	/*
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 311f6da..3c15d10 100644
+index 3c15d10..02e414d 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
 @@ -1672,7 +1672,7 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages)
  	int used_pages;
  	LIST_HEAD(invalid_list);
  
--	used_pages = kvm->arch.n_alloc_mmu_pages - kvm->arch.n_free_mmu_pages;
-+	used_pages = kvm->arch.n_alloc_mmu_pages - kvm_mmu_available_pages(kvm);
+-	used_pages = kvm->arch.n_alloc_mmu_pages - kvm_mmu_available_pages(kvm);
++	used_pages = kvm->arch.n_max_mmu_pages - kvm_mmu_available_pages(kvm);
  	used_pages = max(0, used_pages);
  
  	/*
-@@ -2937,18 +2937,15 @@ EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page_virt);
- 
- void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- {
--	int free_pages;
- 	LIST_HEAD(invalid_list);
- 
--	free_pages = vcpu->kvm->arch.n_free_mmu_pages;
--	while (free_pages < KVM_REFILL_PAGES &&
-+	while (kvm_mmu_available_pages(vcpu->kvm) < KVM_REFILL_PAGES &&
- 	       !list_empty(&vcpu->kvm->arch.active_mmu_pages)) {
- 		struct kvm_mmu_page *sp;
- 
- 		sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
- 				  struct kvm_mmu_page, link);
--		free_pages += kvm_mmu_prepare_zap_page(vcpu->kvm, sp,
--						       &invalid_list);
-+		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
- 		++vcpu->kvm->stat.mmu_recycled;
+@@ -1697,9 +1697,9 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages)
  	}
- 	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
-@@ -3123,7 +3120,7 @@ static int mmu_shrink(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
- 		idx = srcu_read_lock(&kvm->srcu);
- 		spin_lock(&kvm->mmu_lock);
- 		npages = kvm->arch.n_alloc_mmu_pages -
--			 kvm->arch.n_free_mmu_pages;
-+			 kvm_mmu_available_pages(kvm);
- 		cache_count += npages;
- 		if (!kvm_freed && nr_to_scan > 0 && npages > 0) {
- 			freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm,
-diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-index be66759..c3a689a 100644
---- a/arch/x86/kvm/mmu.h
-+++ b/arch/x86/kvm/mmu.h
-@@ -50,9 +50,14 @@
+ 	else
+ 		kvm->arch.n_free_mmu_pages += kvm_nr_mmu_pages
+-					 - kvm->arch.n_alloc_mmu_pages;
++					 - kvm->arch.n_max_mmu_pages;
  
- int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
- 
-+static inline unsigned int kvm_mmu_available_pages(struct kvm *kvm)
-+{
-+	return kvm->arch.n_free_mmu_pages;
-+}
-+
- static inline void kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- {
--	if (unlikely(vcpu->kvm->arch.n_free_mmu_pages < KVM_MIN_FREE_MMU_PAGES))
-+	if (unlikely(kvm_mmu_available_pages(vcpu->kvm)< KVM_MIN_FREE_MMU_PAGES))
- 		__kvm_mmu_free_some_pages(vcpu);
+-	kvm->arch.n_alloc_mmu_pages = kvm_nr_mmu_pages;
++	kvm->arch.n_max_mmu_pages = kvm_nr_mmu_pages;
  }
  
+ static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+@@ -3119,7 +3119,7 @@ static int mmu_shrink(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+ 
+ 		idx = srcu_read_lock(&kvm->srcu);
+ 		spin_lock(&kvm->mmu_lock);
+-		npages = kvm->arch.n_alloc_mmu_pages -
++		npages = kvm->arch.n_max_mmu_pages -
+ 			 kvm_mmu_available_pages(kvm);
+ 		cache_count += npages;
+ 		if (!kvm_freed && nr_to_scan > 0 && npages > 0) {
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 25f1907..9a1266d 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2759,7 +2759,7 @@ static int kvm_vm_ioctl_set_nr_mmu_pages(struct kvm *kvm,
+ 
+ static int kvm_vm_ioctl_get_nr_mmu_pages(struct kvm *kvm)
+ {
+-	return kvm->arch.n_alloc_mmu_pages;
++	return kvm->arch.n_max_mmu_pages;
+ }
+ 
+ static int kvm_vm_ioctl_get_irqchip(struct kvm *kvm, struct kvm_irqchip *chip)
