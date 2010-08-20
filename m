@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab0HTXsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 19:48:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34006 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab0HTXsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 19:48:16 -0400
-Date: Sat, 21 Aug 2010 09:47:59 +1000
-From: Neil Brown <neilb@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-        npiggin@suse.de, hooanon05@yahoo.co.jp, bfields@fieldses.org,
-        miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-Message-ID: <20100821094759.24a6dc37@notabene>
-In-Reply-To: <1282310729.2605.989.camel@laptop>
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<20100820083057.GA10039@infradead.org>
-	<20100820195303.20b17210@notabene>
-	<1282310729.2605.989.camel@laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751763Ab0HTXwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 19:52:05 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14406 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab0HTXwD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 19:52:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=ZYV91acHR4oBA225dOfhvrWYn0rtF8IDI7KFDQwGm0uvmRbcjddrjbvj6oAiTaL5R
+	codoXrXmD+T7Wu055fP7A==
+MIME-Version: 1.0
+In-Reply-To: <20100820100855.GC8440@localhost>
+References: <1282296689-25618-1-git-send-email-mrubin@google.com>
+ <1282296689-25618-4-git-send-email-mrubin@google.com> <20100820100855.GC8440@localhost>
+From: Michael Rubin <mrubin@google.com>
+Date: Fri, 20 Aug 2010 16:51:38 -0700
+Message-ID: <AANLkTi=+uNFq5=5gmjfAOhngXqR8RS3dX3E2uEWG33Ot@mail.gmail.com>
+Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_entered_writeback in /proc/vmstat
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 15:25:29 +0200
-Peter Dijkstra <peter@infradead.org> wrote:
+On Fri, Aug 20, 2010 at 3:08 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> How about the names nr_dirty_accumulated and nr_writeback_accumulated?
+> It seems more consistent, for both the interface and code (see below).
+> I'm not really sure though.
 
-> On Fri, 2010-08-20 at 19:53 +1000, Neil Brown wrote:
-> > With futexes we suddenly get a file descriptor for something we could never
-> > get a file descriptor on before and that doesn't seem to be a problem. 
-> 
-> FWIW
-> 
-> commit 82af7aca56c67061420d618cc5a30f0fd4106b80
-> Author: Eric Sesterhenn <snakebyte@gmx.de>
-> Date:   Fri Jan 25 10:40:46 2008 +0100
-> 
->     Removal of FUTEX_FD
+Those names don't seem to right to me.
+I admit I like "nr_dirtied" and "nr_cleaned" that seems most
+understood. These numbers also get very big pretty fast so I don't
+think it's hard to infer.
 
-Interesting - thanks.
+>> In order to track the "cleaned" and "dirtied" counts we added two
+>> vm_stat_items.  Per memory node stats have been added also. So we can
+>> see per node granularity:
+>>
+>>    # cat /sys/devices/system/node/node20/writebackstat
+>>    Node 20 pages_writeback: 0 times
+>>    Node 20 pages_dirtied: 0 times
+>
+> I'd prefer the name "vmstat" over "writebackstat", and propose to
+> migrate items from /proc/zoneinfo over time. zoneinfo is a terrible
+> interface for scripting.
 
-OK, adjust my argument to reference signalfd, timerfs and pollfd.
+I like vmstat also. I can do that.
 
-I haven't looked at that code before - "anon_inode_getfd" gives you an fd on
-an inode for which 
-    (stat.st_mode & S_IFMT) == 0
-Cool!  They have no format at all :-)
+> Also, are there meaningful usage of per-node writeback stats?
 
-NeilBrown
+For us yes. We use fake numa nodes to implement cgroup memory isolation.
+This allows us to see what the writeback behaviour is like per cgroup.
+
+> The numbers are naturally per-bdi ones instead. But if we plan to
+> expose them for each bdi, this patch will need to be implemented
+> vastly differently.
+
+Currently I have no plans to do that.
+
+mrubin
