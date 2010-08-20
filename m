@@ -1,163 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab0HTHBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 03:01:24 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52976 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab0HTHBW (ORCPT
+	id S1751641Ab0HTHKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 03:10:21 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48240 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab0HTHKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 03:01:22 -0400
-Message-ID: <4C6E2833.6080407@canonical.com>
-Date: Fri, 20 Aug 2010 15:01:07 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	Fri, 20 Aug 2010 03:10:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xOxgpuVYt50n1plIw3Twp2ST3kbTnz2dJ/PvDIX9f5SMRYJMKVEDmtVZvAZfeYlngQ
+         2beJPUb1mEFQ6Qn7viK7R+pg5NtRch+LRakMjCHeHi0laJpy7qp487nUm9qpxj16PSxn
+         KsVkEilknsHqcNNvIiB595SDkrzS+xdhotNF4=
+Date: Fri, 20 Aug 2010 10:10:51 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: BUG: unable to handle kernel paging request at ffffffffffffffff
+Message-ID: <20100820071051.GA5209@swordfish.minsk.epam.com>
+References: <20100813134947.GB5235@swordfish.minsk.epam.com>
+ <20100818120630.b258e128.akpm@linux-foundation.org>
+ <20100819081208.GA5637@swordfish.minsk.epam.com>
+ <20100819173251.88d7c0a9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control rf/camera
- power
-References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com> <1282127719.2747.211.camel@localhost> <20100818155128.GA24363@darkside.kls.lan> <4C6CA31D.6030407@canonical.com> <20100819193146.GB32665@darkside.kls.lan>
-In-Reply-To: <20100819193146.GB32665@darkside.kls.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+Content-Disposition: inline
+In-Reply-To: <20100819173251.88d7c0a9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mario,
 
-Could you attach or upload the DSDT of S12 somewhere I can reach?
-I check DSDT for S10-3 and B550, return value of _CFG is fixed.
+--wac7ysb48OaltWcw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[Ref: http://people.ubuntu.com/~ikepanhc/DSDTs]
+On (08/19/10 17:32), Andrew Morton wrote:
+> > Hello,
+> >=20
+> > On (08/18/10 12:06), Andrew Morton wrote:
+> > > > Hello,
+> > > >=20
+> > > > yet another trace:
+> > > >=20
+> > > > [ 5845.374558] CPU 1 is now offline
+> > > > [ 5845.376169] INFO: trying to register non-static key.
+> > > > [ 5845.376251] the code is fine but needs lockdep annotation.
+> > > > [ 5845.376327] turning off the locking correctness validator.
+> > > > [ 5845.376405] Pid: 6754, comm: bash Not tainted 2.6.36-rc0-git12-0=
+7921-g60bf26a-dirty #122
+> > > > [ 5845.376521] Call Trace:
+> > > > [ 5845.376570]  [<ffffffff81063e89>] __lock_acquire+0x2d1/0x17fd
+> > > > [ 5845.376657]  [<ffffffff81132b2a>] ? sysfs_deactivate+0x3e/0xec
+> > > > [ 5845.376747]  [<ffffffff81062ddd>] ? mark_held_locks+0x50/0x72
+> > > > [ 5845.376834]  [<ffffffff81065893>] lock_acquire+0x97/0xb6
+> > > > [ 5845.376917]  [<ffffffff8137145b>] ? percpu_counter_hotcpu_callba=
+ck+0x3e/0x93
+> > > > [ 5845.377021]  [<ffffffff81374321>] ? mutex_lock_nested+0x2f3/0x31b
+> > > > [ 5845.377113]  [<ffffffff81371446>] ? percpu_counter_hotcpu_callba=
+ck+0x29/0x93
+> > > > [ 5845.377218]  [<ffffffff8137568d>] _raw_spin_lock_irqsave+0x4e/0x=
+60
+> > > > [ 5845.377312]  [<ffffffff8137145b>] ? percpu_counter_hotcpu_callba=
+ck+0x3e/0x93
+> > > > [ 5845.377409]  [<ffffffff8137145b>] percpu_counter_hotcpu_callback=
++0x3e/0x93
+> > > > [ 5845.377475]  [<ffffffff81057344>] notifier_call_chain+0x32/0x5e
+> > > > [ 5845.377529]  [<ffffffff8105738f>] __raw_notifier_call_chain+0x9/=
+0xb
+> > > > [ 5845.377587]  [<ffffffff8103c6e3>] __cpu_notify+0x1b/0x2d
+> > > > [ 5845.377638]  [<ffffffff8103c703>] cpu_notify+0xe/0x10
+> > > > [ 5845.377684]  [<ffffffff8103c70e>] cpu_notify_nofail+0x9/0x11
+> > > > [ 5845.377738]  [<ffffffff81362d82>] _cpu_down+0x151/0x206
+> > > > [ 5845.377786]  [<ffffffff81362ea8>] cpu_down+0x28/0x35
+> > > > [ 5845.377833]  [<ffffffff8136430d>] store_online+0x27/0x6e
+> > > > [ 5845.377884]  [<ffffffff812923ab>] sysdev_store+0x1b/0x1d
+> > > > [ 5845.377933]  [<ffffffff811321b2>] sysfs_write_file+0x103/0x13f
+> > > > [ 5845.377990]  [<ffffffff810daf92>] vfs_write+0xb0/0x14f
+> > > > [ 5845.378038]  [<ffffffff810db22e>] sys_write+0x45/0x6c
+> > > > [ 5845.378088]  [<ffffffff81002002>] system_call_fastpath+0x16/0x1b
+> > > > [ 5845.378166] BUG: unable to handle kernel paging request at fffff=
+fffffffffff
+> > > > [ 5845.378236] IP: [<ffffffff81371487>] percpu_counter_hotcpu_callb=
+ack+0x6a/0x93
+> > >=20
+> > > It appears that one of the counters on the global list has been
+> > > trashed: lockdep doesn't recognise its spinlock and its internal
+> > > pointers are all-ones.
+> > >=20
+> > > We need to identify that counter and then go take a look at whichever
+> > > subsystem ownes it.
+> > >=20
+> > > A crude approach is:
+> > >=20
+> > > --- a/lib/percpu_counter.c~a
+> > > +++ a/lib/percpu_counter.c
+> > > @@ -69,6 +69,8 @@ EXPORT_SYMBOL(__percpu_counter_sum);
+> > >  int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+> > >  			  struct lock_class_key *key)
+> > >  {
+> > > +	printk("__percpu_counter_init(%p)\n", fbc);
+> > > +	dump_stack();
+> > >  	spin_lock_init(&fbc->lock);
+> > >  	lockdep_set_class(&fbc->lock, key);
+> > >  	fbc->count =3D amount;
+> > > @@ -126,6 +128,7 @@ static int __cpuinit percpu_counter_hotc
+> > >  		s32 *pcount;
+> > >  		unsigned long flags;
+> > > =20
+> > > +		printk("percpu_counter_hotcpu_callback(%p)\n", fbc);
+> > >  		spin_lock_irqsave(&fbc->lock, flags);
+> > >  		pcount =3D per_cpu_ptr(fbc->counters, cpu);
+> > >  		fbc->count +=3D *pcount;
+> > > _
+> > >=20
+> > > If you can please apply that patch and then make it crash?  We can use
+> > > the address from the percpu_counter_hotcpu_callback() printk to look =
+up
+> > > the stack trace from __percpu_counter_init() which will lead us to the
+> > > code which owns that counter.
+> > >=20
+> >=20
+> > Sure, I'll try.
+>=20
+> I suspect this was fixed by
+>=20
+> commit 602586a83b719df0fbd94196a1359ed35aeb2df3
+> Author:     Hugh Dickins <hughd@google.com>
+> AuthorDate: Tue Aug 17 15:23:56 2010 -0700
+> Commit:     Linus Torvalds <torvalds@linux-foundation.org>
+> CommitDate: Tue Aug 17 18:33:11 2010 -0700
+>=20
+>     shmem: put_super must percpu_counter_destroy
+>=20
 
-you may use "sudo cp /sys/firmware/acpi/tables/DSDT ." and
-"sudo iasl -d /sys/firmware/acpi/tables/DSDT" to decode it.
+I'm not very lucky at reproducing crash at the moment.
 
-On 08/20/2010 03:31 AM, Mario 'BitKoenig' Holbe wrote:
-> On Thu, Aug 19, 2010 at 11:21:01AM +0800, Ike Panhc wrote:
->> On 08/18/2010 11:51 PM, Mario 'BitKoenig' Holbe wrote:
->>> 2nd: both Bluetooth killswitches reproducibly disappear when I block
->>> ideapad_bluetooth either via Gnome bluetooth-applet or via rfkill block
->>> 1 and subsequently reboot.
-> 
-> All right, I did some more testing...
-> 
-> I was not able to reproduce this with Windows somewhere in the game -
-> neither via switching BT off in Windows and rebooting to Windows nor via
-> switching BT off in Linux and rebooting to Windows nor via switching BT
-> off in Windows and rebooting to Linux.
-> 
->> This is interesting. looks like the cfgbit will change on S12 if BIOS
->> remember it has to shutdown when booting. I will try if the same problem
->> happen on my ideapads.
-> 
-> Yes, the cfgbit changes. It's normally 0xd0000 and it's 0xc0000 when the
-> bluetooth switch is not detected.
-> 
-> It's not that reproducible as it first appeared to be. Sometimes it does
-> not happen, i.e. sometimes after rfkill block 1 and reboot the
-> bluetooth killswitch is available again.
-> 
-> If the bluetooth killswitch is not available, a second reboot usually
-> makes it available again.
-> 
-> Once the cfgbit is 0xc0000 it's stable, i.e. modprobe -r ideapad-laptop;
-> modprobe ideapad-laptop doesn't change anything.
-sounds like we need an exception handle for detecting camera
 
-> 
-> I tried to enforce the existence of the bluetooth killswitch (the
-> attached diff is not for inclusion but to show what I did) with some
-> kind of success:
-> 
-> [  682.260288] ideapad_acpi_add(): cfg=0xc0000
-As I know the cfgbit for lower 16bit shall not be all zero.
+	Sergey
 
-> [  682.260293] ideapad_acpi_add(): found: ideapad_camera
-> [  682.260297] ideapad_acpi_add(): found: ideapad_wlan
-> [  682.260301] ideapad_acpi_add(): forced: ideapad_bluetooth
-> [  682.856049] usb 4-1: new full speed USB device using uhci_hcd and address 2
-> [  683.028220] usb 4-1: New USB device found, idVendor=0a5c, idProduct=2150
-> [  683.028234] usb 4-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-> [  683.028244] usb 4-1: Product: BCM2046 Bluetooth Device
-> 
-> So, forcing the existence of the killswitch enables the bluetooth
-> device. I'm also able to switch if off again - the bluetooth device
-> disappears. Trying to switch it back on then fails - the bluetooth
-> device does not appear again. But this case doesn't work all that well
-> anyways even with cfgbit 0xd0000:
-bluetooth device shall disappear after disable from EC. But if can not be enabled
-again, ahh.....
+--wac7ysb48OaltWcw
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-> 
-> $ rfkill block 1
-> [  124.648059] usb 4-1: USB disconnect, address 2
-> [  124.648512] btusb_intr_complete: hci0 urb f6825700 failed to resubmit (19)
-> [  124.648531] btusb_bulk_complete: hci0 urb f697ee80 failed to resubmit (19)
-> [  124.649510] btusb_bulk_complete: hci0 urb f6872400 failed to resubmit (19)
-> [  124.650114] btusb_send_frame: hci0 urb f67acf00 submission failed
-> $ rfkill unblock 1
-> [  133.148059] usb 4-1: new full speed USB device using uhci_hcd and address 3
-> [  148.260042] usb 4-1: device descriptor read/64, error -110
-> $ rfkill block 1
-> [  151.092060] hub 4-0:1.0: unable to enumerate USB device on port 1
-> $ rfkill unblock 1
-> [  155.628052] usb 4-1: new full speed USB device using uhci_hcd and address 4
-> [  170.740049] usb 4-1: device descriptor read/64, error -110
-> [  185.956033] usb 4-1: device descriptor read/64, error -110
-This looks like the device is power up, but usb host unable to recognize..
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-> 
-> Sometimes it doesn't even come back at all on unblock. Seems like the
-> bluetooth device doesn't really like to be powered off and on that way.
-> Btw.: once I messed up the bluetooth device that way not even Windows
-> sees it anymore when I reboot to it.
-did you see any kernel message said timeout when it does not come back at all?
+iJwEAQECAAYFAkxuKnsACgkQfKHnntdSXjSzAgQA0P8+sKj3SPqrdf4Q8YT//7P1
+3UPJbkxRYb28XOtiO3rotHTEk52pok8YnLnnMbWp5AEN9Bfbq0hxpFipVN9pNqMe
+LNJ86dsPawxWRpsPhuged8SqBthY8hAl/cY7COUSFUm4cUNox9cMujLqfsJZ00sN
+wZcAtWo9Ly0dZAhw/sE=
+=6vFB
+-----END PGP SIGNATURE-----
 
-> 
-> From all this I'm inclined to assume it has more to do with the
-> bluetooth device's USB interface than with the killswitch handling
-> itself. I believe the S12 BIOS just probes the device(s) on it's own and
-> sets the cfgbit accordingly and sometimes it just doesn't find the
-> bluetooth device - why ever.
-I guess so. so I need DSDT for digging more.
-
-> 
-> This all does btw. not happen when I use the hci0 killswitch instead.
-> The device doesn't disappear then, has no issues with re-initialization,
-> etc. Looks way more stable that way.
-when you use rfkill of hci0, it only disable PHY. The driver and MAC is still
-there. The rfkill of ideapad-laptop will power down all the module. I believe
-its normal.
-
-> I'm not absolutely sure about the different implications of using the
-> one or the other killswitch - maybe using the ACPI killswitches saves
-> more power than using the device-specific killswitches because it powers
-> the device(s) down completely, but that's just a wild guess - maybe it's
-> absolutely wrong, though.
-I think it shall be correct.
-
-If the rfkill for the whole bluetooth module makes trouble, I prefer not to
-do it. User will feel confused if the device does not come back and the
-rfkill of hci0 offers the function user need.
-
-> However, it would probably be worth thinking about not offering the
-> additional RF killswitches at all but just doing the initialization
-> stuff to make sure the devices power up and are thus able to be handled
-> via their own killswitches subsequently.
-> 
-> Please let me know if I can provide more testing - and what kind of :)
-> 
-> 
-> Mario
-
+--wac7ysb48OaltWcw--
