@@ -1,85 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab0HTIh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:37:27 -0400
-Received: from shutemov.name ([188.40.19.243]:34493 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab0HTIhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:37:24 -0400
-Date: Fri, 20 Aug 2010 11:37:23 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Greg KH <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        John Kacur <jkacur@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFCv2] notify userspace about time changes
-Message-ID: <20100820083723.GA18616@shutemov.name>
-References: <1282139739-23832-1-git-send-email-virtuoso@slind.org>
- <20100818155702.bc62b2a6.akpm@linux-foundation.org>
- <4C6C7034.4050501@zytor.com>
- <20100818165303.dd52695a.akpm@linux-foundation.org>
- <20100819040937.GA8646@suse.de>
- <20100819083612.GA13293@shutemov.name>
- <20100819153127.GC2985@suse.de>
+	id S1752841Ab0HTIiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:38:05 -0400
+Received: from web82806.mail.mud.yahoo.com ([68.142.201.99]:20658 "HELO
+	web82806.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751557Ab0HTIiC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:38:02 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 04:38:02 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
+  b=ifUOrGxFNE6il7RSD79+JdsxlAx59qfaL3BBWKcc5i7pCgDwBcMi9LlftllMkyrmO0P4D+FRD7NLSxnCEsRTw2srlkuFmZCn8+2IHnz4qdfwM+es4sxH1LDni9cgjK7IB+Ro27j6RNRRVXA2j3tTQQD0ZluZJpra6MBOcVY7K3Q=;
+Message-ID: <279867.72733.qm@web82806.mail.mud.yahoo.com>
+X-YMail-OSG: u_unEQwVM1lP6M_G8F1PNQ7G.u.dlV6WGMB42oGQ1nF0L_h
+ DUEDQRgdZ.D2B.CEJb1Nm5bHogpIXTQ4XmKKzd49own12J4nX5xTA2.hq3rV
+ weG2ozCaSg3Rzirm0pXtOhQsXxcrCwCZEbJ1OTl0y5QiROjB7ByJpWwrklV7
+ vp0PEahrxGKXZ_KB9JpHKBk8r1vShg8fsrq7Cn72PSMDnPLm8v2vfR82gTcd
+ 2AoR7M6THaRIAKokFMOXcSoAOnHHmu77jNNgvkA--
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Fri, 20 Aug 2010 01:31:20 -0700 (PDT)
+From: Euro-millions Promo <jean-rinehart@sbcglobal.net>
+To: undisclosed recipients:;
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819153127.GC2985@suse.de>
-User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 08:31:27AM -0700, Greg KH wrote:
-> On Thu, Aug 19, 2010 at 11:36:12AM +0300, Kirill A. Shutemov wrote:
-> > On Wed, Aug 18, 2010 at 09:09:37PM -0700, Greg KH wrote:
-> > > On Wed, Aug 18, 2010 at 04:53:03PM -0700, Andrew Morton wrote:
-> > > > Is sysfs the right interface for this thing?  Bear in mind that
-> > > > CONFIG_SYSFS does exist.  
-> > > > 
-> > > > > +		     fd = open("/sys/kernel/time_notify", O_WRONLY);
-> > > > > +		     fdprintf(fd, "%d 1 0 1 1", efd);
-> > > > 
-> > > > why not
-> > > > 
-> > > > 		sys_time_notify(efd, 1, 0, 1, 1);
-> > > 
-> > > Yeah, that would be much better than a sysfs file, this is abusing the
-> > > sysfs interface quite a lot.
-> > 
-> > Do you really think, that increasing number of syscalls is better then
-> > fs-based interfaces?
-> 
-> As you are pretty much creating a new syscall here anyway, there is no
-> problem with making it a real one, right?
 
-I think Linux has too many syscalls. Significant part these interfaces
-would be better to map to a filesystem[s].
-
-> That way you can properly
-> handle the user/kernel documentation and persistance over time (i.e. you
-> can't change it.)
-
-On the other, hand properly designed fs-based interface requires less
-modification of userspeace to use it. Acctually, you can use most of
-fs-based intefaces directly from shell. No need in libc modifications and
-utilities to use it from shell or other script language.
-See cgroup, for example.
-
-> So yes, a syscall would be better, especially as this does not exactly
-> fit into the model of sysfs, right?
-
-Yes, sysfs is not the best place for it, but...
-
--- 
- Kirill A. Shutemov
+Your email id has won 2,500,000.00 Pounds
+Name...
+Country...
+Age...
