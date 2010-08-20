@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab0HTIJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:09:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62613 "EHLO mx1.redhat.com"
+	id S1752406Ab0HTIJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:09:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31902 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab0HTIJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:09:30 -0400
+	id S1752357Ab0HTIJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:09:15 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: kvm@vger.kernel.org
 Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
@@ -13,112 +13,108 @@ Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
         Glauber Costa <glommer@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [KVM timekeeping 35/35] Add some debug stuff
-Date: Thu, 19 Aug 2010 22:07:49 -1000
-Message-Id: <1282291669-25709-36-git-send-email-zamsden@redhat.com>
+Subject: [KVM timekeeping 30/35] IOCTL for setting TSC rate
+Date: Thu, 19 Aug 2010 22:07:44 -1000
+Message-Id: <1282291669-25709-31-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
 References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very useful, debug-only output
+Add an IOCTL for setting the TSC rate for a VM, intended to
+be used to migrate non-kvmclock based VMs which rely on TSC
+rate staying stable across host migration.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/kvm/x86.c |   33 +++++++++++++++++++++++++++++++--
- 1 files changed, 31 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c  |   36 ++++++++++++++++++++++++++++++++++++
+ include/linux/kvm.h |    4 ++++
+ 2 files changed, 40 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 23d5138..c74a087 100644
+index 887e30f..e618265 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -967,6 +967,9 @@ static void bump_guest_tsc(struct kvm_vcpu *vcpu, s64 bump, s64 kernel_ns)
- 	pr_debug("kvm: vcpu%d bumped TSC by %lld\n", vcpu->vcpu_id, bump);
- }
+@@ -1017,6 +1017,10 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+ 			kvm_x86_ops->adjust_tsc_offset(v, tsc-tsc_timestamp);
+ 		local_irq_restore(flags);
  
-+static int tsc_read_log;
-+static int tsc_read_cpu = -1;
++		/* hw_tsc_khz unknown at creation time, check for overrun */
++		if (this_tsc_khz > v->kvm->arch.virtual_tsc_khz)
++			vcpu->tsc_overrun = 1;
 +
- void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- {
- 	struct kvm *kvm = vcpu->kvm;
-@@ -983,6 +986,12 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 	if (sdiff < 0)
- 		sdiff = -sdiff;
- 
-+#ifdef DEBUG
-+	pr_debug("kvm: tsc%d write %llu (ofs %llu)\n", vcpu->vcpu_id, data,
-+		 offset);
-+	tsc_read_log += 2;
-+#endif
-+
- 	/*
- 	 * Special case: TSC write with a small delta of virtual
- 	 * cycle time against real time is interpreted as an attempt
-@@ -999,7 +1008,8 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 	if (sdiff < nsec_to_cycles(kvm, NSEC_PER_SEC) ) {
- 		if (!check_tsc_unstable()) {
- 			offset = kvm->arch.last_tsc_offset;
--			pr_debug("kvm: matched tsc offset for %llu\n", data);
-+			pr_debug("kvm: matched tsc%d offset for %llu\n", 
-+				 vcpu->vcpu_id, data);
- 		} else {
- 			/* Unstable write; allow offset, preserve last write */
- 			pr_debug("kvm: matched write on unstable tsc\n");
-@@ -1029,6 +1039,16 @@ void kvm_read_tsc(struct kvm_vcpu *vcpu)
- 	kvm_register_write(vcpu, VCPU_REGS_RDX, tsc >> 32);
- 	vcpu->arch.last_guest_tsc = tsc;
- 	kvm_x86_ops->skip_emulated_instruction(vcpu);
-+
-+#ifdef DEBUG
-+	if (tsc_read_log > 0 && vcpu->vcpu_id != tsc_read_cpu) {
-+		--tsc_read_log;
-+		tsc_read_cpu = vcpu->vcpu_id;
-+		pr_debug("kvm_read_tsc: cpu%d [TRAP] %llu\n",vcpu->vcpu_id,tsc);
-+		kvm_get_msr(vcpu, MSR_IA32_TSC, &tsc);
-+		pr_debug("kvm_read_tsc: cpu%d [PASS] %llu\n",vcpu->vcpu_id,tsc);
-+	}
-+#endif
- }
- EXPORT_SYMBOL_GPL(kvm_read_tsc);
- 
-@@ -1070,11 +1090,16 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 		 */
- 		if (unlikely(vcpu->tsc_overrun)) {
- 			vcpu->tsc_overrun = 0;
--			if (vcpu->last_guest_tsc)
-+			if (vcpu->last_guest_tsc) {
-+				pr_debug("kvm: corrected TSC overrun of %llu\n",
-+					vcpu->last_guest_tsc - tsc_timestamp);
- 				kvm_x86_ops->adjust_tsc_offset(v,
- 					vcpu->last_guest_tsc - tsc_timestamp);
-+			}
- 		}
- 		kvm_x86_ops->set_tsc_trap(v, 0);
-+		pr_debug("kvm: passing TSC vcpu%d tsc_mode: %d time_page %p\n",
-+			 v->vcpu_id, vcpu->tsc_mode, vcpu->time_page);
- 	}
- 
- 	if (catchup) {
-@@ -1105,6 +1130,7 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 				bump_guest_tsc(v, vcpu->last_guest_tsc - tsc,
- 					       kernel_ns);
+ 		/* Now, see if we need to switch into trap mode */
+ 		if (vcpu->tsc_overrun && !vcpu->tsc_trapping)
  			kvm_x86_ops->set_tsc_trap(v, 1);
-+			pr_debug("kvm: trapping TSC on vcpu%d\n", v->vcpu_id);
- 		}
- 
- 		/* If we're falling behind and not trapping, re-trigger */
-@@ -1214,6 +1240,9 @@ static void kvm_update_tsc_trapping(struct kvm *kvm)
- 	kvm_for_each_vcpu(i, vcpu, kvm) {
- 		vcpu->arch.tsc_mode = best_tsc_mode(vcpu);
- 		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-+		pr_debug("kvm: vcpu%d tsc_mode: %d time_page %p\n",
-+			 vcpu->vcpu_id, vcpu->arch.tsc_mode,
-+			 vcpu->arch.time_page);
+@@ -1846,6 +1850,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 	case KVM_CAP_DEBUGREGS:
+ 	case KVM_CAP_X86_ROBUST_SINGLESTEP:
+ 	case KVM_CAP_XSAVE:
++	case KVM_CAP_SET_TSC_RATE:
+ 		r = 1;
+ 		break;
+ 	case KVM_CAP_COALESCED_MMIO:
+@@ -3413,6 +3418,37 @@ long kvm_arch_vm_ioctl(struct file *filp,
+ 		r = 0;
+ 		break;
  	}
- }
++	case KVM_X86_GET_TSC_RATE: {
++		u32 rate = kvm->arch.virtual_tsc_khz;
++		r = -EFAULT;
++		if (copy_to_user(argp, &rate, sizeof(rate)))
++			goto out;
++		r = 0;
++		break;
++	}
++	case KVM_X86_SET_TSC_RATE: {
++		u32 rate;
++		int i;
++		struct kvm_vcpu *vcpu;
++		r = -EFAULT;
++		if (copy_from_user(&rate, argp, sizeof rate))
++			goto out;
++		if (rate == 0 || rate > (1ULL << 40)) {
++			r = -EINVAL;
++			break;
++		}
++		/*
++		 * This is intended to be called once, during VM creation.
++		 * Calling this with running VCPUs to dynamically change
++		 * speed is risky; there is no synchronization with the
++		 * compensation loop, so computations using virtual_tsc_khz
++		 * conversions may go haywire.  Use at your own risk.
++		 */
++		kvm_arch_set_tsc_khz(kvm, rate);
++		kvm_for_each_vcpu(i, vcpu, kvm)
++			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
++		break;
++	}
  
+ 	default:
+ 		;
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index 3707704..22d27f2 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -539,6 +539,7 @@ struct kvm_ppc_pvinfo {
+ #define KVM_CAP_XCRS 56
+ #endif
+ #define KVM_CAP_PPC_GET_PVINFO 57
++#define KVM_CAP_SET_TSC_RATE 58
+ 
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+@@ -675,6 +676,9 @@ struct kvm_clock_data {
+ #define KVM_SET_PIT2              _IOW(KVMIO,  0xa0, struct kvm_pit_state2)
+ /* Available with KVM_CAP_PPC_GET_PVINFO */
+ #define KVM_PPC_GET_PVINFO	  _IOW(KVMIO,  0xa1, struct kvm_ppc_pvinfo)
++/* Available with KVM_CAP_SET_TSC_RATE */
++#define KVM_X86_GET_TSC_RATE      _IOR(KVMIO,  0xa2, __u32)
++#define KVM_X86_SET_TSC_RATE      _IOW(KVMIO,  0xa3, __u32)
+ 
+ /*
+  * ioctls for vcpu fds
 -- 
 1.7.1
 
