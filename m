@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab0HTImT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:42:19 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:17571 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab0HTImR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:42:17 -0400
-Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
-From: Ameya Palande <ameya.palande@nokia.com>
-To: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
-	<ext-heikki.krogerus@nokia.com>
-Cc: ext Anton Vorontsov <cbouatmailru@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
-        "Lehtonen Markus (Nokia-MS/Helsinki)" <markus.lehtonen@nokia.com>,
-        "Quadros Roger (Nokia-MS/Helsinki)" <roger.quadros@nokia.com>,
-        Tony Lindgren <tony@atomide.com>
-In-Reply-To: <20100819130937.GC4363@esdhcp041123.research.nokia.com>
-References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
-	 <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
-	 <20100819124042.GA15837@oksana.dev.rtsoft.ru>
-	 <20100819130937.GC4363@esdhcp041123.research.nokia.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia Oyj
-Date: Fri, 20 Aug 2010 11:41:51 +0300
-Message-ID: <1282293711.1925.32.camel@chotu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Aug 2010 08:42:00.0123 (UTC) FILETIME=[8E19C0B0:01CB4043]
-X-Nokia-AV: Clean
+	id S1752832Ab0HTInM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:43:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20535 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235Ab0HTInK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:43:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,238,1280732400"; 
+   d="scan'208";a="598535188"
+Date: Fri, 20 Aug 2010 16:43:04 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Michael Rubin <mrubin@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "npiggin@suse.de" <npiggin@suse.de>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [PATCH 2/3] writeback: Adding pages_dirtied and
+ pages_entered_writeback
+Message-ID: <20100820084304.GA6051@localhost>
+References: <1282251447-16937-1-git-send-email-mrubin@google.com>
+ <1282251447-16937-3-git-send-email-mrubin@google.com>
+ <20100820025111.GB5502@localhost>
+ <AANLkTimKn5BZiCAyr-3XAZuu66Q+ASZgBZ7LDU2Jom1p@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimKn5BZiCAyr-3XAZuu66Q+ASZgBZ7LDU2Jom1p@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heikki,
-
-On Thu, 2010-08-19 at 15:09 +0200, Krogerus Heikki (EXT-Teleca/Helsinki)
-wrote:
-> On Thu, Aug 19, 2010 at 02:40:42PM +0200, ext Anton Vorontsov wrote:
-> > On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
-> >> @@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
-> >>  	spi_register_board_info(rx51_peripherals_spi_board_info,
-> >>  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
-> >>  	omap2_hsmmc_init(mmc);
-> >> +	platform_device_register(&rx51_charger_device);
-> > 
-> > Maybe
-> > 
-> >   platform_device_register_simple("isp1704_charger", -1, NULL, 0);
+On Fri, Aug 20, 2010 at 04:16:09PM +0800, Michael Rubin wrote:
+> On Thu, Aug 19, 2010 at 7:51 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > As Rik said, /proc/sys is not a suitable place.
 > 
-> I guess it's enough in this case. Ameya, Roger, any objections?
+> OK I'm convinced.
+> 
+> > Frankly speaking I've worked on writeback for years and never felt
+> > the need to add these counters. What I often do is:
+> >
+> > $ vmmon -d 1 nr_writeback nr_dirty nr_unstable
+> >
+> >     nr_writeback         nr_dirty      nr_unstable
+> >            68738                0            39568
+> >            66051                0            42255
+> >            63406                0            44900
+> >            60643                0            47663
+> >            57954                0            50352
+> >            55264                0            53042
+> >            52592                0            55715
+> >            49922                0            58385
+> > That is what I get when copying /dev/zero to NFS.
+> >
+> > I'm very interested in Google's use case for this patch, and why
+> > the simple /proc/vmstat based vmmon tool is not enough.
+> 
+> So as I understand it from looking at the code vmmon is sampling
+> nr_writeback, nr_dirty which are exported versions of
+> global_page_state for NR_FILE_DIRTY and NR_WRITEBACK. These states are
+> a snapshot of the state of the kernel's pages. Namely how many dpages
+> ar ein writeback or dirty at the moment vmmon's acquire routine is
+> called.
+> 
+> vmmon is sampling /proc/vstat and then displaying the difference from
+> the last time they sampled.  If I am misunderstanding let me know.
 
-Yes, I would have preferred "platform_device_register_simple" instead of
-"platform_device_register", but doesn't matter now ;)
+Maybe Andrew's vmmon does that. My vmmon always display the raw values
+:) It could be improved to do raw values for nr_dirty and differences
+for pgpgin by default.
 
-Cheers,
-Ameya.
+> This is good for the state of the system but as we compare
+> application, mm and io performance over long periods of time we are
+> interested in the surges and fluctuations of the rates of the
+> producing and consuming of dirty pages also. It can help isolate where
+> the problem is and also to compare performance between kernels and/or
+> applications.
 
+Yeah the accumulated dirty and writeback page counts could be useful.
+For example, for inspecting the dirty and writeback speed over time.
+That's not possible for nr_dirty/nr_writeback.
+
+Thanks,
+Fengguang
