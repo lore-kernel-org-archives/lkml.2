@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab0HTIyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:54:06 -0400
-Received: from avexcashub1.qlogic.com ([198.70.193.61]:53831 "EHLO
-	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab0HTIyD convert rfc822-to-8bit (ORCPT
+	id S1751876Ab0HTIzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:55:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44940 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab0HTIzS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:54:03 -0400
-From: Amit Salecha <amit.salecha@qlogic.com>
-To: Cong Wang <amwang@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dhananjay Phadke <dhananjay.phadke@qlogic.com>,
-        Narender Kumar <narender.kumar@qlogic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Fri, 20 Aug 2010 03:53:58 -0500
-Subject: RE: [RFC Patch] netxen: remove firmware exports
-Thread-Topic: [RFC Patch] netxen: remove firmware exports
-Thread-Index: ActARGcgcp0s5/sCRpq04nEaxv1kuwAAJJTg
-Message-ID: <99737F4847ED0A48AECC9F4A1974A4B80F86E692CC@MNEXMB2.qlogic.org>
-References: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
- <99737F4847ED0A48AECC9F4A1974A4B80F86E69208@MNEXMB2.qlogic.org>
- <4C6E423E.5080804@redhat.com>
-In-Reply-To: <4C6E423E.5080804@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 20 Aug 2010 04:55:18 -0400
+Subject: Re: [patch 1/3] sched: init rt_avg stat whenever rq comes online
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chris@frostnet.net" <chris@frostnet.net>,
+        "debian00@aliceadsl.fr" <debian00@aliceadsl.fr>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jonathan.protzenko@gmail.com" <jonathan.protzenko@gmail.com>,
+        "mans@mansr.com" <mans@mansr.com>,
+        "psastudio@mail.ru" <psastudio@mail.ru>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "stephan.eicher@web.de" <stephan.eicher@web.de>,
+        "sxxe@gmx.de" <sxxe@gmx.de>,
+        "thomas@archlinux.org" <thomas@archlinux.org>,
+        "venki@google.com" <venki@google.com>,
+        "wonghow@gmail.com" <wonghow@gmail.com>,
+        "stable@kernel.org" <stable@kernel.org>, tglx <tglx@linutronix.de>
+In-Reply-To: <1282262618.2675.24.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
+	 <20100813193911.827207098@sbsiddha-MOBL3.sc.intel.com>
+	 <1281944854.1926.948.camel@laptop>
+	 <1281980179.2676.22.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <1281986708.1926.1877.camel@laptop>  <1282035085.1926.2164.camel@laptop>
+	 <1282177213.7801.17.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <1282208006.1926.4517.camel@laptop>
+	 <1282262618.2675.24.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Date: Fri, 20 Aug 2010 10:54:36 +0200
+Message-ID: <1282294476.2605.670.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Okay. David, do you want me to submit an updated patch?
+On Thu, 2010-08-19 at 17:03 -0700, Suresh Siddha wrote:
+> Thomas/Peter/Ingo: can you please pick this up if you have no other
+> objections. Thanks. 
 
-You have to submit updated patch.
-
--Amit
-
-> -----Original Message-----
-> From: Cong Wang [mailto:amwang@redhat.com]
-> Sent: Friday, August 20, 2010 2:22 PM
-> To: Amit Salecha
-> Cc: linux-kernel@vger.kernel.org; David S. Miller; Dhananjay Phadke;
-> Narender Kumar; netdev@vger.kernel.org
-> Subject: Re: [RFC Patch] netxen: remove firmware exports
-> 
-> On 08/19/10 17:12, Amit Salecha wrote:
-> >> netxen_nic driver can store firmwares on flash, and get them
-> porperly and
-> >> dynamically, so the firmwares may not appear in /lib/firmware/.
-> However, netxen_nic
-> >> still exports these firmwares via modinfo, this makes our script
-> which parses
-> >> modinfo output fail.
-> >
-> > NX_UNIFIED_ROMIMAGE_NAME(phanfw.bin) is already submitted and we
-> won't submit any other fw files.
-> >
-> >> -MODULE_FIRMWARE(NX_P2_MN_ROMIMAGE_NAME);
-> >> -MODULE_FIRMWARE(NX_P3_CT_ROMIMAGE_NAME);
-> >> -MODULE_FIRMWARE(NX_P3_MN_ROMIMAGE_NAME);
-> >
-> > It's not compulsory to submit firmware files which are exported
-> (MODULE_FIRMWARE).
-> > I am leaving this upto David to decide about this patch.
-> >
-> 
-> Okay. David, do you want me to submit an updated patch?
-> 
-> Thanks!
-> 
-> --
-> The opposite of love is not hate, it's indifference.
->   - Elie Wiesel
-
+Looks good, will queue. Thanks Suresh!
