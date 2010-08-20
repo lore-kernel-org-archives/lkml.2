@@ -1,75 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab0HTI1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:27:55 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:58177 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab0HTI1t (ORCPT
+	id S1751682Ab0HTIbO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:31:14 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59408 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab0HTIbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:27:49 -0400
-Message-ID: <4C6E3C1A.50205@ct.jp.nec.com>
-Date: Fri, 20 Aug 2010 17:26:02 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Fri, 20 Aug 2010 04:31:11 -0400
+Date: Fri, 20 Aug 2010 04:30:57 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
+        bfields@fieldses.org, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+Message-ID: <20100820083057.GA10039@infradead.org>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de>
-In-Reply-To: <20100817165929.GB13800@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun, Christoph,
+Suddenly getting an file pointer for a symlink which could never happen
+before is a really bad idea.  Just add a proper readlink_by_handle
+system call, similar to what's done in the XFS interface.
 
-On Tue, Aug 17, 2010 at 06:41:47PM +0200, Tejun Heo wrote:
->>> I wasn't sure about that part.  You removed store_flush_error(), but
->>> DM_ENDIO_REQUEUE should still have higher priority than other
->>> failures, no?
->>
->> Which priority?
->
-> IIUC, when any of flushes get DM_ENDIO_REQUEUE (which tells the dm
-> core layer to retry the whole bio later), it trumps all other failures
-> and the bio is retried later.  That was why DM_ENDIO_REQUEUE was
-> prioritized over other error codes, which actually is sort of
-> incorrect in that once a FLUSH fails, it _MUST_ be reported to upper
-> layers as FLUSH failure implies data already lost.  So,
-> DM_ENDIO_REQUEUE actually should have lower priority than other
-> failures.  But, then again, the error codes still need to be
-> prioritized.
-
-I think that's correct and changing the priority of DM_ENDIO_REQUEUE
-for REQ_FLUSH down to the lowest should be fine.
-(I didn't know that FLUSH failure implies data loss possibility.)
-
-But the patch is not enough, you have to change target drivers, too.
-E.g. As for multipath, you need to change
-     drivers/md/dm-mpath.c:do_end_io() to return error for REQ_FLUSH
-     like the REQ_DISCARD support included in 2.6.36-rc1.
-
-
-By the way, if these patch-set with the change above are included,
-even one path failure for REQ_FLUSH on multipath configuration will
-be reported to upper layer as error, although it's retried using
-other paths currently.
-Then, if an upper layer won't take correct recovery action for the error,
-it would be seen as a regression for users. (e.g. Frequent EXT3-error
-resulting in read-only mount on multipath configuration.)
-
-Although I think the explicit error is fine rather than implicit data
-corruption, please check upper layers carefully so that users won't see
-such errors as much as possible.
-
-Thanks,
-Kiyoshi Ueda
