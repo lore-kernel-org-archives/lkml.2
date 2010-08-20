@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab0HTIwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:52:18 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51398 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab0HTIwQ (ORCPT
+	id S1751793Ab0HTIyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:54:06 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:53831 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab0HTIyD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:52:16 -0400
-Message-ID: <4C6E4229.4050702@linux.vnet.ibm.com>
-Date: Fri, 20 Aug 2010 14:21:53 +0530
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Fri, 20 Aug 2010 04:54:03 -0400
+From: Amit Salecha <amit.salecha@qlogic.com>
+To: Cong Wang <amwang@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dhananjay Phadke <dhananjay.phadke@qlogic.com>,
+        Narender Kumar <narender.kumar@qlogic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Fri, 20 Aug 2010 03:53:58 -0500
+Subject: RE: [RFC Patch] netxen: remove firmware exports
+Thread-Topic: [RFC Patch] netxen: remove firmware exports
+Thread-Index: ActARGcgcp0s5/sCRpq04nEaxv1kuwAAJJTg
+Message-ID: <99737F4847ED0A48AECC9F4A1974A4B80F86E692CC@MNEXMB2.qlogic.org>
+References: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
+ <99737F4847ED0A48AECC9F4A1974A4B80F86E69208@MNEXMB2.qlogic.org>
+ <4C6E423E.5080804@redhat.com>
+In-Reply-To: <4C6E423E.5080804@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Jens Axobe <jaxboe@fusionio.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>
-CC: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>, Ryo Tsuruta <ryov@valinux.co.jp>,
-        taka@valinux.co.jp, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Righi <righi.andrea@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Subject: [PATCH]Fix return code for mkdir calls
-Content-Type: multipart/mixed;
- boundary="------------010904080608000603050104"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010904080608000603050104
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+> Okay. David, do you want me to submit an updated patch?
 
-Hi,
+You have to submit updated patch.
 
-This patch fixes the return value when the cgroup hierarchy for blkio 
-control groups is deeper than two levels. Right now EINVAL is returned. 
-This patch replaces EINVAL with more appropriate EPERM to align with 
-mkdir system call return values. This was discussed between Vivek and 
-Daniel sometime back. Please consider this patch for inclusion in 2.6.36.
+-Amit
 
-Thanks
-Ciju
+> -----Original Message-----
+> From: Cong Wang [mailto:amwang@redhat.com]
+> Sent: Friday, August 20, 2010 2:22 PM
+> To: Amit Salecha
+> Cc: linux-kernel@vger.kernel.org; David S. Miller; Dhananjay Phadke;
+> Narender Kumar; netdev@vger.kernel.org
+> Subject: Re: [RFC Patch] netxen: remove firmware exports
+> 
+> On 08/19/10 17:12, Amit Salecha wrote:
+> >> netxen_nic driver can store firmwares on flash, and get them
+> porperly and
+> >> dynamically, so the firmwares may not appear in /lib/firmware/.
+> However, netxen_nic
+> >> still exports these firmwares via modinfo, this makes our script
+> which parses
+> >> modinfo output fail.
+> >
+> > NX_UNIFIED_ROMIMAGE_NAME(phanfw.bin) is already submitted and we
+> won't submit any other fw files.
+> >
+> >> -MODULE_FIRMWARE(NX_P2_MN_ROMIMAGE_NAME);
+> >> -MODULE_FIRMWARE(NX_P3_CT_ROMIMAGE_NAME);
+> >> -MODULE_FIRMWARE(NX_P3_MN_ROMIMAGE_NAME);
+> >
+> > It's not compulsory to submit firmware files which are exported
+> (MODULE_FIRMWARE).
+> > I am leaving this upto David to decide about this patch.
+> >
+> 
+> Okay. David, do you want me to submit an updated patch?
+> 
+> Thanks!
+> 
+> --
+> The opposite of love is not hate, it's indifference.
+>   - Elie Wiesel
 
-
---------------010904080608000603050104
-Content-Type: text/plain;
- name="blkio-Fix-the-return-code.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="blkio-Fix-the-return-code.patch"
-
->From bd2b65775a5b187f7c15c2b6d88f47cd24fb9c4e Mon Sep 17 00:00:00 2001
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Date: Fri, 20 Aug 2010 12:02:45 +0530
-Subject: blkio: Fix return code for mkdir calls
-
-If the cgroup hierarchy for blkio control groups is deeper than two
-levels, kernel should not allow the creation of further levels. mkdir
-system call does not except EINVAL as a return value. This patch
-replaces EINVAL with more appropriate EPERM
-
-Signed-off-by: Ciju Rajan K <ciju@linux.vnet.ibm.com>
----
- block/blk-cgroup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index a680964..2fef1ef 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -966,7 +966,7 @@ blkiocg_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
- 
- 	/* Currently we do not support hierarchy deeper than two level (0,1) */
- 	if (parent != cgroup->top_cgroup)
--		return ERR_PTR(-EINVAL);
-+		return ERR_PTR(-EPERM);
- 
- 	blkcg = kzalloc(sizeof(*blkcg), GFP_KERNEL);
- 	if (!blkcg)
--- 
-1.6.0.6
-
-
-
---------------010904080608000603050104--
