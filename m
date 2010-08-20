@@ -1,54 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab0HTXBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 19:01:17 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41690 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab0HTXBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 19:01:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=N1gUwE38gpDD2CmSBixlWqpa5Sey2Ido2XYeBLrmgbfcR2yu/OJC/Q0abmijNdH/cp
-         uycQGm/J9jRKWxeOv2eC0duCTAZs15n/bUijR/igE6/DUfh6HjsvY3u6QbU7kc25N6nr
-         HmQkHr8oeOH0moPAafD4RGe8NllK8FrkxUxZA=
+	id S1751273Ab0HTXKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 19:10:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab0HTXJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 19:09:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <4C6E9A0A.6060205@arndnet.de>
-References: <4C4555DA.40203@renesas.com>
-	<4C6E9A0A.6060205@arndnet.de>
-Date: Sat, 21 Aug 2010 08:01:11 +0900
-Message-ID: <AANLkTi=SziDSARkgJikGMtfTvyY+K8g+o=QykZGfwmsv@mail.gmail.com>
-Subject: Re: [PATCH] tmio_mmc: Allow 2 byte requests in 4-bit mode
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Arnd Hannemann <arnd@arndnet.de>
-Cc: Yusuke Goda <yusuke.goda.sx@renesas.com>, ian@mnementh.co.uk,
-        damm@opensource.se, sameo@linux.intel.com,
-        Paul Mundt <lethal@linux-sh.org>, g.liakhovetski@gmx.de,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Jeff Dike <jdike@addtoit.com>
+Cc: Alexander Viro <aviro@redhat.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] uml: fix CONFIG_STATIC_LINK=y build failure with newer glibc
+X-Fcc: ~/Mail/linus
+X-Shopping-List: (1) Terrific chains
+   (2) Organic cancer
+   (3) Flammable emissions
+Message-Id: <20100820230938.16A5D402A4@magilla.sf.frob.com>
+Date: Fri, 20 Aug 2010 16:09:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 12:06 AM, Arnd Hannemann <arnd@arndnet.de> wrote:
-> Am 20.07.2010 09:52, schrieb Yusuke Goda:
->> Adjust the tmio_mmc block size check to accept 2-byte requests in
->> 4-bit mode. Tested with the SDHI hardware block included in sh7724.
->>
->> Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
->
-> Tested on AP4EVB (sh7372) with SDHC and MMC cards - no regression.
->
-> Tested-by: Arnd Hannemann <arnd@arndnet.de>
+The following changes since commit 36423a5ed5e4ea95ceedb68fad52965033e11639:
 
-Hi Arnd,
+  Merge branch 'x86-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-08-20 14:25:08 -0700)
 
-With both you, Goda-san and me testing it certainly looks like this
-one also is ok on platforms with SDHI.
+are available in the git repository at:
 
-Thanks a lot!
+  git://git.kernel.org/pub/scm/linux/kernel/git/frob/linux-2.6-roland.git uml/ld-irel
 
-/ magnus
+Roland McGrath (1):
+      uml: fix CONFIG_STATIC_LINK=y build failure with newer glibc
+
+ arch/um/kernel/dyn.lds.S |   14 ++++++++++++--
+ arch/um/kernel/uml.lds.S |   17 +++++++++++++++++
+ 2 files changed, 29 insertions(+), 2 deletions(-)
+
+Thanks,
+Roland
+---
+[PATCH] uml: fix CONFIG_STATIC_LINK=y build failure with newer glibc
+
+With glibc 2.11 or later that was built with --enable-multi-arch,
+the UML link fails with undefined references to __rel_iplt_start and
+similar symbols.  In recent binutils, the default linker script
+defines these symbols (see ld --verbose).  Fix the UML linker
+scripts to match the new defaults for these sections.
+
+Signed-off-by: Roland McGrath <roland@redhat.com>
+---
+ arch/um/kernel/dyn.lds.S |   14 ++++++++++++--
+ arch/um/kernel/uml.lds.S |   17 +++++++++++++++++
+ 2 files changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/arch/um/kernel/dyn.lds.S b/arch/um/kernel/dyn.lds.S
+index 6926801..a3cab6d 100644
+--- a/arch/um/kernel/dyn.lds.S
++++ b/arch/um/kernel/dyn.lds.S
+@@ -50,8 +50,18 @@ SECTIONS
+   .rela.got       : { *(.rela.got) }
+   .rel.bss        : { *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*) }
+   .rela.bss       : { *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*) }
+-  .rel.plt        : { *(.rel.plt) }
+-  .rela.plt       : { *(.rela.plt) }
++  .rel.plt : {
++	*(.rel.plt)
++	PROVIDE_HIDDEN(__rel_iplt_start = .);
++	*(.rel.iplt)
++	PROVIDE_HIDDEN(__rel_iplt_end = .);
++  }
++  .rela.plt : {
++	*(.rela.plt)
++	PROVIDE_HIDDEN(__rela_iplt_start = .);
++	*(.rela.iplt)
++	PROVIDE_HIDDEN(__rela_iplt_end = .);
++  }
+   .init           : {
+     KEEP (*(.init))
+   } =0x90909090
+diff --git a/arch/um/kernel/uml.lds.S b/arch/um/kernel/uml.lds.S
+index ec63785..a7cbffb 100644
+--- a/arch/um/kernel/uml.lds.S
++++ b/arch/um/kernel/uml.lds.S
+@@ -43,6 +43,23 @@ SECTIONS
+ 	__syscall_stub_end = .;
+   }
+ 
++  /*
++   * These are needed even in a static link, even if they wind up being empty.
++   * Newer glibc needs these __rel{,a}_iplt_{start,end} symbols.
++   */
++  .rel.plt : {
++	*(.rel.plt)
++	PROVIDE_HIDDEN(__rel_iplt_start = .);
++	*(.rel.iplt)
++	PROVIDE_HIDDEN(__rel_iplt_end = .);
++  }
++  .rela.plt : {
++	*(.rela.plt)
++	PROVIDE_HIDDEN(__rela_iplt_start = .);
++	*(.rela.iplt)
++	PROVIDE_HIDDEN(__rela_iplt_end = .);
++  }
++
+   #include "asm/common.lds.S"
+ 
+   init.data : { INIT_DATA }
