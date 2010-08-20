@@ -1,135 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab0HTVT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:19:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59672 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab0HTVSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:18:34 -0400
-Message-Id: <20100820211538.656306204@suse.com>
-User-Agent: quilt/0.47-15.10
-Date: Fri, 20 Aug 2010 17:14:06 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [patch 05/10] ioctl: Use asm-generic/ioctls.h on h8300 (enables termiox)
-References: <20100820211401.651509182@suse.com>
-Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-h8300
+	id S1751606Ab0HTVYx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:24:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53375 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038Ab0HTVYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:24:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimmo2Z174ZG9o0X8HSvzgnc8NTVmkJ6C33BMCda@mail.gmail.com>
+References: <20100818203143.735033743@clark.site> <1282308887.3170.5439.camel@zakaz.uk.xensource.com>
+ <AANLkTin7L=v1GR2=U-mvESyrP2vySYLRa4U-fh9-L38F@mail.gmail.com>
+ <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com>
+ <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com>
+ <1282326182.29609.789.camel@localhost.localdomain> <AANLkTi=racCPiDmbL0pEfH3Ew2_gJzJwmR3B1Vt=AZuz@mail.gmail.com>
+ <AANLkTimTZKzXfBJCbzCyq3LwKvn3aCqyHjd5VXhnejfV@mail.gmail.com>
+ <1282336944.2605.1395.camel@laptop> <AANLkTimmo2Z174ZG9o0X8HSvzgnc8NTVmkJ6C33BMCda@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 Aug 2010 14:24:30 -0700
+Message-ID: <AANLkTinGnUaWJbrV7Jcy+Uiu682uE6_2eHr0T3km+ihf@mail.gmail.com>
+Subject: Re: [2/3] mm: fix up some user-visible effects of the stack guard page
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts h8300 to use asm-generic/ioctls.h instead of its
-own version.
+On Fri, Aug 20, 2010 at 2:17 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Appended is that much smaller patch.
 
-The differences between the arch-specific version and the generic
-version are as follows:
+Note that the "real" patch is actually even smaller than implied by
+this thing. The diffstat
 
-- H8300 defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
-- The generic version adds TIOCSRS485 and TIOGSRS485, but are unused
-  by any driver available on this architecture.
-- The generic version adds support for termiox
+ include/linux/mm_types.h |    2 +-
+ kernel/fork.c            |    7 +++++--
+ mm/mmap.c                |   37 +++++++++++++++++++++++++++++++++----
+ mm/nommu.c               |    7 +++++--
+ 4 files changed, 44 insertions(+), 9 deletions(-)
 
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
+implies that it adds a lot more than it removes, but of the 35 new
+lines it adds, about half of it - 16 lines - is just the vma list
+verification hack. So it really adds less than 20 lines of code.
+Hopefully those 20 lines would then buy themselves back with cleanups.
 
- arch/h8300/include/asm/ioctls.h |   81 ----------------------------------------
- 1 file changed, 1 insertion(+), 80 deletions(-)
+Still. A doubly-linked list is totally trivial, and I just bet I have
+a bug in there somewhere. But looking at your 2007 patch and mine
+side-by-side, I do think mine is still less scary.
 
---- a/arch/h8300/include/asm/ioctls.h
-+++ b/arch/h8300/include/asm/ioctls.h
-@@ -1,87 +1,8 @@
- #ifndef __ARCH_H8300_IOCTLS_H__
- #define __ARCH_H8300_IOCTLS_H__
- 
--#include <asm/ioctl.h>
--
--/* 0x54 is just a magic number to make these relatively unique ('T') */
--
--#define TCGETS		0x5401
--#define TCSETS		0x5402
--#define TCSETSW		0x5403
--#define TCSETSF		0x5404
--#define TCGETA		0x5405
--#define TCSETA		0x5406
--#define TCSETAW		0x5407
--#define TCSETAF		0x5408
--#define TCSBRK		0x5409
--#define TCXONC		0x540A
--#define TCFLSH		0x540B
--#define TIOCEXCL	0x540C
--#define TIOCNXCL	0x540D
--#define TIOCSCTTY	0x540E
--#define TIOCGPGRP	0x540F
--#define TIOCSPGRP	0x5410
--#define TIOCOUTQ	0x5411
--#define TIOCSTI		0x5412
--#define TIOCGWINSZ	0x5413
--#define TIOCSWINSZ	0x5414
--#define TIOCMGET	0x5415
--#define TIOCMBIS	0x5416
--#define TIOCMBIC	0x5417
--#define TIOCMSET	0x5418
--#define TIOCGSOFTCAR	0x5419
--#define TIOCSSOFTCAR	0x541A
--#define FIONREAD	0x541B
--#define TIOCINQ		FIONREAD
--#define TIOCLINUX	0x541C
--#define TIOCCONS	0x541D
--#define TIOCGSERIAL	0x541E
--#define TIOCSSERIAL	0x541F
--#define TIOCPKT		0x5420
--#define FIONBIO		0x5421
--#define TIOCNOTTY	0x5422
--#define TIOCSETD	0x5423
--#define TIOCGETD	0x5424
--#define TCSBRKP		0x5425	/* Needed for POSIX tcsendbreak() */
--#define TIOCTTYGSTRUCT	0x5426  /* For debugging only */
--#define TIOCSBRK	0x5427  /* BSD compatibility */
--#define TIOCCBRK	0x5428  /* BSD compatibility */
--#define TIOCGSID	0x5429  /* Return the session ID of FD */
--#define TCGETS2		_IOR('T',0x2A, struct termios2)
--#define TCSETS2		_IOW('T',0x2B, struct termios2)
--#define TCSETSW2	_IOW('T',0x2C, struct termios2)
--#define TCSETSF2	_IOW('T',0x2D, struct termios2)
--#define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
--#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
--#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
--
--#define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
--#define FIOCLEX		0x5451
--#define FIOASYNC	0x5452
--#define TIOCSERCONFIG	0x5453
--#define TIOCSERGWILD	0x5454
--#define TIOCSERSWILD	0x5455
--#define TIOCGLCKTRMIOS	0x5456
--#define TIOCSLCKTRMIOS	0x5457
--#define TIOCSERGSTRUCT	0x5458 /* For debugging only */
--#define TIOCSERGETLSR   0x5459 /* Get line status register */
--#define TIOCSERGETMULTI 0x545A /* Get multiport config  */
--#define TIOCSERSETMULTI 0x545B /* Set multiport config */
--
--#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
--#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
- #define FIOQSIZE	0x545E
- 
--/* Used for packet mode */
--#define TIOCPKT_DATA		 0
--#define TIOCPKT_FLUSHREAD	 1
--#define TIOCPKT_FLUSHWRITE	 2
--#define TIOCPKT_STOP		 4
--#define TIOCPKT_START		 8
--#define TIOCPKT_NOSTOP		16
--#define TIOCPKT_DOSTOP		32
--#define TIOCPKT_IOCTL		64
--
--#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
-+#include <asm-generic/ioctls.h>
- 
- #endif /* __ARCH_H8300_IOCTLS_H__ */
-
-
+                     Linus
