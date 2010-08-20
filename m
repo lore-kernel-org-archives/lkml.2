@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750891Ab0HTMAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 08:00:19 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50909 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab0HTMAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 08:00:16 -0400
-Date: Fri, 20 Aug 2010 13:00:02 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Namhyung Kim <namhyung@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] initramfs: remove sparse warnings
-Message-ID: <20100820120001.GR31363@ZenIV.linux.org.uk>
-References: <1282189064-3904-1-git-send-email-namhyung@gmail.com>
- <201008191638.23248.arnd@arndb.de>
+	id S1751117Ab0HTMAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 08:00:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50718 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab0HTMAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 08:00:33 -0400
+Message-ID: <4C6E6DB7.8000403@suse.cz>
+Date: Fri, 20 Aug 2010 13:57:43 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008191638.23248.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Brice Goglin <Brice.Goglin@inria.fr>,
+        akpm@linux-foundation.org, linux-kbuild@vger.kernel.org
+Subject: Re: [Patch] makefile: not need to regenerate kernel.release file
+ when make kernelrelease
+References: <20100820094028.6321.95741.sendpatchset@localhost.localdomain>
+In-Reply-To: <20100820094028.6321.95741.sendpatchset@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 04:38:23PM +0200, Arnd Bergmann wrote:
-> On Thursday 19 August 2010, Namhyung Kim wrote:
-> > This patchset removes most of sparse warnings in init/initramfs.c.
-> > Current implementation of initramfs relies on syscall service rountins heavily
-> > so it requires many of arguments to be __user address space pointers but, in
-> > most cases, were missing proper markups. This patchset tries to fix those at
-> > a minimum change.
-> 
-> I'm skeptical about this, you are adding obviously incorrect annotations
-> to the code to make something work that was written without the awareness
-> for address spaces.
-> 
-> A better way would be to call path_lookup or kern_path to look up the
-> path and pass that to a lower-level file I/O function.
+On 20.8.2010 11:36, Amerigo Wang wrote:
+> Brice reported that 'kernelrelease' has a dependence on include/config/kernel.release,
+> causes this file to be regenerated every time when invoke it. It doesn't have to.
+>
+> Reported-by: Brice Goglin<Brice.Goglin@inria.fr>
+> Tested-by: Brice Goglin<Brice.Goglin@inria.fr>
+> Signed-off-by: WANG Cong<amwang@redhat.com>
 
-No.  This code should *NOT* use the VFS guts, TYVM.  The whole fscking point
-is that this puppy is a sequence of plain vanilla syscalls, ideally run
-simply in userland thread.  We used to have a magical mystery shite in there
-and it had been a huge PITA.
+Thanks, applied. And sorry for breaking your previous patch.
+
+Michal
