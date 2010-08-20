@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab0HTJec (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 05:34:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59182 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab0HTJea convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 05:34:30 -0400
-Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
-From: Peter Zijlstra <peterz@infradead.org>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: "Lin, Ming M" <ming.m.lin@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "acme@redhat.com" <acme@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-In-Reply-To: <1282268675.5181.1608.camel@rui>
-References: <1282118350.5181.115.camel@rui>
-	 <1282134329.1926.3918.camel@laptop>
-	 <20100818124116.GA17957@console-pimps.org>
-	 <1282188497.11858.94.camel@minggr.sh.intel.com>
-	 <1282208521.1926.4535.camel@laptop>  <1282268675.5181.1608.camel@rui>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 20 Aug 2010 11:34:15 +0200
-Message-ID: <1282296855.2605.724.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752761Ab0HTJga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 05:36:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751397Ab0HTJg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 05:36:26 -0400
+Message-ID: <4C6E4C66.6070202@redhat.com>
+Date: Fri, 20 Aug 2010 17:35:34 +0800
+From: Xiaotian Feng <dfeng@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.6
+MIME-Version: 1.0
+To: linux-fsdevel@vger.kernel.org
+CC: Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Roland McGrath <roland@redhat.com>
+Subject: Re: [RFC PATCH v3] core_pattern: fix long parameters was truncated
+ by core_pattern handler
+References: <20100803105941.GA2996@hmsreliant.think-freely.org> <1282296167-2263-1-git-send-email-dfeng@redhat.com>
+In-Reply-To: <1282296167-2263-1-git-send-email-dfeng@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 09:44 +0800, Zhang Rui wrote:
-> On Thu, 2010-08-19 at 17:02 +0800, Peter Zijlstra wrote:
+On 08/20/2010 05:22 PM, Xiaotian Feng wrote:
+> We met a parameter truncated issue, consider following:
+>> echo "|/root/core_pattern_pipe_test %p /usr/libexec/blah-blah-blah \
+> %s %c %p %u %g 11 12345678901234567890123456789012345678 %t">  \
+> /proc/sys/kernel/core_pattern
+>
+> This is okay because the strings is less than CORENAME_MAX_SIZE.
+> "cat /proc/sys/kernel/core_pattern" shows the whole string. but
+> after we run core_pattern_pipe_test in man page, we found last
+> parameter was truncated like below:
+>          argc[10]=<12807486>
+>
+> The root cause is core_pattern allows % specifiers, which need to be
+> replaced during parse time, but the replace may expand the strings
+> to larger than CORENAME_MAX_SIZE. So if the last parameter is %
+> specifiers, the replace code is using snprintf(out_ptr, out_end - out_ptr, ...),
+> this will write out of corename array.
+>
+> Changes since v2:
+> Introduced generic function cn_printf and make format_corename remember the time
+> has been expanded.
+>
+> Changes since v1:
+> This patch allocates corename at runtime, if the replace doesn't have enough
+> memory, expand the corename dynamically.
+>
+> Signed-off-by: Xiaotian Feng<dfeng@redhat.com>
+> Cc: Alexander Viro<viro@zeniv.linux.org.uk>
+> Cc: Andrew Morton<akpm@linux-foundation.org>
+> Cc: Oleg Nesterov<oleg@redhat.com>
+> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> Cc: Neil Horman<nhorman@tuxdriver.com>
+> Cc: Roland McGrath<roland@redhat.com>
+> ---
+>   fs/exec.c |  181 +++++++++++++++++++++++++++++++++++++++++--------------------
+>   1 files changed, 121 insertions(+), 60 deletions(-)
+>
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 2d94552..e2fe568 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -65,6 +65,12 @@ char core_pattern[CORENAME_MAX_SIZE] = "core";
+>   unsigned int core_pipe_limit;
+>   int suid_dumpable = 0;
+>
+> +struct core_name {
+> +	char *corename;
+> +	int used, size;
+> +};
+> +static atomic_t call_count = ATOMIC_INIT(1);
+> +
+>   /* The maximal length of core_pattern is also specified in sysctl.c */
+>
+>   static LIST_HEAD(formats);
+> @@ -1440,106 +1446,147 @@ void set_binfmt(struct linux_binfmt *new)
+>
+>   EXPORT_SYMBOL(set_binfmt);
+>
+> +static int expand_corename(struct core_name *cn)
+> +{
+> +	char *old_corename = cn->corename;
+> +
+> +	cn->size = CORENAME_MAX_SIZE * atomic_inc_return(&call_count);
+> +	cn->corename = krealloc(old_corename, cn->size, GFP_KERNEL);
+> +
+> +	if (!cn->corename) {
+> +		kfree(old_corename);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int cn_printf(struct core_name *cn, const char *fmt, ...)
+> +{
+> +	char *cur;
+> +	int need;
+> +	int ret;
+> +	va_list arg;
+> +
+> +	cur = cn->corename + cn->used;
+> +
+> +	va_start(arg, fmt);
+> +	need = vsnprintf(NULL, 0, fmt, arg);
+> +	va_end(arg);
+> +
+> +	if (likely(need<  cn->size - cn->used))
+> +		goto out_printf;
+> +
+> +	ret = expand_corename(cn);
+> +	if (ret)
+> +		goto expand_fail;
+> +
+> +out_printf:
+> +	va_start(arg, fmt);
+> +	vsnprintf(cur, need + 1, fmt, arg);
+> +	va_end(arg);
+> +	cn->used += need;
+> +	return 0;
+> +
+> +expand_fail:
+> +	va_end(arg);
 
-> > its some obscure perf feature:
-> > 
-> >  leader = sys_perf_event_open(&hrtimer_attr, pid, cpu, 0, 0);
-> >  sibling = sys_perf_event_open(&rapl_attr, pid, cpu, leader, 0);
-> > 
-> > will create an even group (which means that both events require to be
-> > co-scheduled). If you then provided:
-> > 
-> > hrtimer_attr.read_format |= PERF_FORMAT_GROUP;
-> > hrtimer_attr.sample_type |= PERF_SAMPLE_READ;
-> > 
-> hrtimer_attr is only shared in an event group, and rapl needs its owen
-> event group, right?
+oops, this line should be removed, please ignore this mail, I'll send an 
+updated patch.
 
-Uhm, no. The idea is to group the hrtimer and rapl event in order to
-obtain rapl 'samples'.
-
-That is, you get hrtimer samples which include the rapl count. For this
-we use the grouping construct where group siblings are always
-co-scheduled and can report on each others count.
-
-> so what do you think the rapl counter should look like in userspace?
-> showing it in perf-stat looks nice, right? :)
-
-Right, so the userspace interface would be using Lin's sysfs bits, which
-I still need to read up on. But the general idea is that each PMU gets a
-sysfs representation somewhere in the system topology reflecting its
-actual site (RAPL would be CPU local), this sysfs representation would
-then also allow you to discover all events it provides.
-
-perf list will then use sysfs to discover all available events, and you
-can still use perf stat -e $foo to select it, where foo is some to be
-determined string that identifies the thing, maybe something like:
-rapl:watts or somesuch (with rapl identifying the pmu and watts the
-actual event for that pmu).
-
-
-
+Thanks
+Xiaotian
