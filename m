@@ -1,98 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab0HTPQD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 11:16:03 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:1795 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab0HTPQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 11:16:01 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4C6E9C23.6060703@broadcom.com>
-Date: Fri, 20 Aug 2010 08:15:47 -0700
-From: "Brian Norris" <norris@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
- Gecko/20100713 Thunderbird/3.0.6
+	id S1753213Ab0HTPRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 11:17:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33180 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab0HTPRj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 11:17:39 -0400
 MIME-Version: 1.0
-To: "Shinya Kuribayashi" <shinya.kuribayashi.px@renesas.com>
-cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Sneha Narnakaje" <nsnehaprabha@ti.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "Linux Kernel" <linux-kernel@vger.kernel.org>,
-        "Artem Bityutskiy" <dedekind1@gmail.com>,
-        "Brian Norris" <norris@broadcom.com>
-Subject: Re: [PATCH v2 0/2] Deprecate ECCGETLAYOUT
-References: <4C5CA4A1.1040000@broadcom.com>
- <1282154806-9420-1-git-send-email-norris@broadcom.com>
- <4C6DD170.1060807@renesas.com>
-In-Reply-To: <4C6DD170.1060807@renesas.com>
-X-WSS-ID: 607043A137O68268237-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <66336896-4396-458f-b8a5-51282a925816@default>
+Date: Fri, 20 Aug 2010 08:14:59 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, ngupta@vflare.org,
+        akpm@linux-foundation.org, Chris Mason <chris.mason@oracle.com>,
+        viro@zeniv.linux.org.uk, Andreas Dilger <andreas.dilger@oracle.com>,
+        tytso@mit.edu, mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>,
+        matthew@wil.cx, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+        linux-mm@kvack.org, jeremy@goop.org, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@suse.de,
+        Dave Mccracken <dave.mccracken@oracle.com>, riel@redhat.com,
+        Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>
+Subject: cleancache followup from LSF10/MM summit
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
+ 12.0.6535.5005]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Christophe (and others interested in cleancache progress) --
 
-Sorry for the problems. I will try to explain.
+Thanks for taking some time to talk with me about cleancache
+at LSF summit!  You had some interesting thoughts and suggestions
+that I said I would investigate.  They are:
 
-On 08/19/2010 05:50 PM, Shinya Kuribayashi wrote:
-> [PATCH v3 1/2] mtd: Expand nand_ecc_layout, deprecate ioctl	ECCGETLAYOUT
-> [PATCH v3 2/2] (I can't find this in my inbox, by the way)
+1) use inode kva as key instead of i_ino
+2) eliminate cleancache shim and call zcache directly
+3) fs's requiring key > inode_t (e.g. 64-bit-fs on 32-bit-kernel)
+4) eliminate fs-specific code entirely (e.g. "opt-in")
+5) eliminate global variable
 
-There was no PATCH v3 2/2. See below.
+Here's my conclusions:
 
-> I'd like to see the info about what's updated in v2, v3 when revised.
+1) You suggested using the inode kva as a "key" for cleancache.
+   I think your goal was to make it more fs-independent and also
+   to eliminate the need for using a per-fs enabler and "pool id".
+   I looked at this but it will not work because cleancache
+   retains page cache data pages persistently even when the
+   inode has been pruned from the inode_unused_list and only
+   flushes the data pages if the file gets removed/truncated.  If
+   cleancache used the inode kva, there would be coherency issues
+   when the inode kva is reused.  Alternately, if cleancache
+   flushed the pages when the inode kva was freed, much of
+   the value of cleancache would be lost because the cache
+   of pages in cleancache is potentially much larger than
+   the page cache and is most useful if the pages survive
+   inode cache removal.
 
-The only difference is that I actually sent the correct patch :) Again, 
-I explain below.
+   If I misunderstood your proposal or if you disagree, please
+   let me know.
 
-> By the way.
->
-> On 8/19/2010 3:06 AM, Brian Norris wrote:
->> Brian Norris (2):
->>    mtd: nand: Expand nand_ecc_layout, deprecate ioctl ECCGETLAYOUT
->>    mtd: nand: Expand nand_ecc_layout, deprecate ioctl ECCGETLAYOUT
->
-> Two patches with the same title.  Similar symptom can be seen in your
-> latest v3 post (we can't find [PATCH v3 2/2]). Perhaps something weird
-> is in your repository (or git settings).
+2) You suggested eliminating the cleancache shim layer and just
+   directly calling zcache, effectively eliminating Xen as
+   a user.  During and after LSF summit, I talked to developers
+   from Google who are interested in investigating the cleancache
+   interface for use with cgroups, an IBM developer who was
+   interested in cleancache for optimizing NUMA, and soon I
+   will be talking to HP Labs about using it as an interface
+   for "memory blades".  I also think Rik van Riel and Mel Gorman
+   were intrigued about its use for collecting better memory
+   utilization statistics to drive guest/host memory "rightsizing".
+   While it is true that none of these are current users yet, even
+   if you prefer to ignore Xen tmem as a user, it seems silly to
+   throw away the cleanly-layered generic cleancache interface now,
+   only to add it back later when more users are added.
 
-No problem with git, just my inability to express my "2 independent 
-patch" problem properly.
+3) You re-emphasized the problem where cleancache's use of
+   the inode number as a key will cause problems on many 64-bit
+   filesystems especially running on a 32-bit kernel.  With
+   help from Andreas Dilger, I'm trying to work out a generic
+   solution for this using s_export_op->encode_fh which would
+   be used for any fs that provides it to guarantee a unique
+   multi-word key for a file, while preserving the
+   shorter i_ino as a key for fs's for which i_ino is unique.
 
-First, I sent my original patch 08/06/2010:
-[PATCH] mtd: Expand nand_ecc_layout, deprecate ioctl ECCGETLAYOUT
+4) Though you were out of the room during the cleancache
+   lightning talk, other filesystem developers seemed OK
+   with the "opt-in" approach (as documented in lwn.net)...
+   one even asked "can't you just add a bit to the superblock?"
+   to which I answered "that's essentially what the one
+   line opt-in addition does".  Not sure if you are still
+   objecting to that, but especially given that the 64-bit-fs-on
+   32-bit-kernel issue above only affects some filesystems,
+   I'm still thinking it is necessary.
 
-Realizing this may not necessarily have been the *best* way to 
-accomplish my goal, I sent v2:
-[PATCH v2 1/2] mtd: nand: Expand...
-[PATCH v2 2/2] mtd: nand: Expand...
+5) You commented (before LSF) that the global variable should
+   be avoided which is certainly valid, and I will try Nitin's
+   suggestion to add a registration interface.
 
-These two patches were supposed to be two different, independent 
-approaches to the same task; with discussion over how best to do this, 
-we should settle on one of the two patches. I decided (for good or for 
-bad) that they didn't need a new title - they were essentially the same 
-code with a slight twist. However, instead of sending two different 
-patches, I sent the same one twice (my mistake).
+Did I miss anything?
 
-Finally, I sent v3 to include just the missing patch:
-[PATCH v3 1/2] mtd: Expand...
-
-I only included the missing patch and called it v3.
-
-So this leaves the important patch set as the following two independent, 
-slightly different approaches to the same problem; we should choose 
-between them:
-[PATCH v3 1/2] mtd: Expand...
-[PATCH v2 2/2] mtd: nand: Expand...
-
-Sorry if my naming, numbering, and failure of intelligence in sending 
-e-mail confused anyone. I can resend with distinct names and correct 
-numbering if requested.
+I plan to submit a V4 for cleancache soon, and hope you will
+be inclined to ack this time.
 
 Thanks,
-Brian
-
+Dan
