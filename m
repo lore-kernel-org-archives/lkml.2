@@ -1,59 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab0HTORY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 10:17:24 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34240 "EHLO mx3.mail.elte.hu"
+	id S1752922Ab0HTORx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 10:17:53 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55711 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab0HTORV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 10:17:21 -0400
-Date: Fri, 20 Aug 2010 16:17:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100820141703.GA29697@elte.hu>
+	id S1752625Ab0HTORu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 10:17:50 -0400
+Date: Fri, 20 Aug 2010 14:17:25 GMT
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, robert.richter@amd.com, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, robert.richter@amd.com, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <20100817152225.GQ26154@erda.amd.com>
 References: <20100817152225.GQ26154@erda.amd.com>
- <1282214753.1926.4669.camel@laptop>
- <20100819141240.GO4879@redhat.com>
- <1282228033.2605.204.camel@laptop>
- <20100820015017.GA4879@redhat.com>
- <20100820081605.GD17551@elte.hu>
- <1282298651.2605.769.camel@laptop>
- <20100820123901.GE4879@redhat.com>
- <20100820132737.GD3321@elte.hu>
- <20100820135118.GI4879@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf, x86: Try to handle unknown nmis with an enabled PMU
+Message-ID: <tip-8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce@git.kernel.org>
+Git-Commit-ID: 8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100820135118.GI4879@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4019]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 14:17:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce
+Gitweb:     http://git.kernel.org/tip/8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Tue, 17 Aug 2010 16:42:03 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 20 Aug 2010 15:00:05 +0200
 
-it's not working so well, i'm getting:
+perf, x86: Try to handle unknown nmis with an enabled PMU
 
- Uhhuh. NMI received for unknown reason 00 on CPU 9.
- Do you have a strange power saving mode enabled?
- Dazed and confused, but trying to continue
+When the PMU is enabled it is valid to have unhandled nmis, two
+events could trigger 'simultaneously' raising two back-to-back
+NMIs. If the first NMI handles both, the latter will be empty and daze
+the CPU.
 
-on a nehalem box, after a perf top and perf stat run.
+The solution to avoid an 'unknown nmi' massage in this case was simply
+to stop the nmi handler chain when the PMU is enabled by stating
+the nmi was handled. This has the drawback that a) we can not detect
+unknown nmis anymore, and b) subsequent nmi handlers are not called.
 
-Thanks,
+This patch addresses this. Now, we check this unknown NMI if it could
+be a PMU back-to-back NMI. Otherwise we pass it and let the kernel
+handle the unknown nmi.
 
-	Ingo
+This is a debug log:
+
+cpu #6, nmi #32333, skip_nmi #32330, handled = 1, time = 1934364430
+cpu #6, nmi #32334, skip_nmi #32330, handled = 1, time = 1934704616
+cpu #6, nmi #32335, skip_nmi #32336, handled = 2, time = 1936032320
+cpu #6, nmi #32336, skip_nmi #32336, handled = 0, time = 1936034139
+cpu #6, nmi #32337, skip_nmi #32336, handled = 1, time = 1936120100
+cpu #6, nmi #32338, skip_nmi #32336, handled = 1, time = 1936404607
+cpu #6, nmi #32339, skip_nmi #32336, handled = 1, time = 1937983416
+cpu #6, nmi #32340, skip_nmi #32341, handled = 2, time = 1938201032
+cpu #6, nmi #32341, skip_nmi #32341, handled = 0, time = 1938202830
+cpu #6, nmi #32342, skip_nmi #32341, handled = 1, time = 1938443743
+cpu #6, nmi #32343, skip_nmi #32341, handled = 1, time = 1939956552
+cpu #6, nmi #32344, skip_nmi #32341, handled = 1, time = 1940073224
+cpu #6, nmi #32345, skip_nmi #32341, handled = 1, time = 1940485677
+cpu #6, nmi #32346, skip_nmi #32347, handled = 2, time = 1941947772
+cpu #6, nmi #32347, skip_nmi #32347, handled = 1, time = 1941949818
+cpu #6, nmi #32348, skip_nmi #32347, handled = 0, time = 1941951591
+Uhhuh. NMI received for unknown reason 00 on CPU 6.
+Do you have a strange power saving mode enabled?
+Dazed and confused, but trying to continue
+
+Deltas:
+
+nmi #32334 340186
+nmi #32335 1327704
+nmi #32336 1819      <<<< back-to-back nmi [1]
+nmi #32337 85961
+nmi #32338 284507
+nmi #32339 1578809
+nmi #32340 217616
+nmi #32341 1798      <<<< back-to-back nmi [2]
+nmi #32342 240913
+nmi #32343 1512809
+nmi #32344 116672
+nmi #32345 412453
+nmi #32346 1462095   <<<< 1st nmi (standard) handling 2 counters
+nmi #32347 2046      <<<< 2nd nmi (back-to-back) handling one counter
+nmi #32348 1773      <<<< 3rd nmi (back-to-back) handling no counter! [3]
+
+For  back-to-back nmi detection there are the following rules:
+
+The PMU nmi handler was handling more than one counter and no
+counter was handled in the subsequent nmi (see [1] and [2] above).
+
+There is another case if there are two subsequent back-to-back nmis
+[3]. The 2nd is detected as back-to-back because the first handled
+more than one counter. If the second handles one counter and the 3rd
+handles nothing, we drop the 3rd nmi because it could be a
+back-to-back nmi.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Tested-by: Don Zickus <dzickus@redhat.com>
+LKML-Reference: <20100817152225.GQ26154@erda.amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event.c |   59 +++++++++++++++++++++++++++++--------
+ 1 files changed, 46 insertions(+), 13 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index f2da20f..dd2fceb 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1154,7 +1154,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+ 		/*
+ 		 * event overflow
+ 		 */
+-		handled		= 1;
++		handled++;
+ 		data.period	= event->hw.last_period;
+ 
+ 		if (!x86_perf_event_set_period(event))
+@@ -1200,12 +1200,20 @@ void perf_events_lapic_init(void)
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ }
+ 
++struct pmu_nmi_state {
++	unsigned int	marked;
++	int		handled;
++};
++
++static DEFINE_PER_CPU(struct pmu_nmi_state, nmi);
++
+ static int __kprobes
+ perf_event_nmi_handler(struct notifier_block *self,
+ 			 unsigned long cmd, void *__args)
+ {
+ 	struct die_args *args = __args;
+-	struct pt_regs *regs;
++	unsigned int this_nmi;
++	int handled;
+ 
+ 	if (!atomic_read(&active_events))
+ 		return NOTIFY_DONE;
+@@ -1214,22 +1222,47 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	case DIE_NMI:
+ 	case DIE_NMI_IPI:
+ 		break;
+-
++	case DIE_NMIUNKNOWN:
++		this_nmi = percpu_read(irq_stat.__nmi_count);
++		if (this_nmi != __get_cpu_var(nmi).marked)
++			/* let the kernel handle the unknown nmi */
++			return NOTIFY_DONE;
++		/*
++		 * This one is a PMU back-to-back nmi. Two events
++		 * trigger 'simultaneously' raising two back-to-back
++		 * NMIs. If the first NMI handles both, the latter
++		 * will be empty and daze the CPU. So, we drop it to
++		 * avoid false-positive 'unknown nmi' messages.
++		 */
++		return NOTIFY_STOP;
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
+ 
+-	regs = args->regs;
+-
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-	/*
+-	 * Can't rely on the handled return value to say it was our NMI, two
+-	 * events could trigger 'simultaneously' raising two back-to-back NMIs.
+-	 *
+-	 * If the first NMI handles both, the latter will be empty and daze
+-	 * the CPU.
+-	 */
+-	x86_pmu.handle_irq(regs);
++
++	handled = x86_pmu.handle_irq(args->regs);
++	if (!handled)
++		return NOTIFY_DONE;
++
++	this_nmi = percpu_read(irq_stat.__nmi_count);
++	if ((handled > 1) ||
++		/* the next nmi could be a back-to-back nmi */
++	    ((__get_cpu_var(nmi).marked == this_nmi) &&
++	     (__get_cpu_var(nmi).handled > 1))) {
++		/*
++		 * We could have two subsequent back-to-back nmis: The
++		 * first handles more than one counter, the 2nd
++		 * handles only one counter and the 3rd handles no
++		 * counter.
++		 *
++		 * This is the 2nd nmi because the previous was
++		 * handling more than one counter. We will mark the
++		 * next (3rd) and then drop it if unhandled.
++		 */
++		__get_cpu_var(nmi).marked	= this_nmi + 1;
++		__get_cpu_var(nmi).handled	= handled;
++	}
+ 
+ 	return NOTIFY_STOP;
+ }
