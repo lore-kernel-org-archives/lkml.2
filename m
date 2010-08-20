@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab0HTJg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 05:36:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23459 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562Ab0HTJgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 05:36:52 -0400
-Date: Fri, 20 Aug 2010 05:36:06 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Brice Goglin <Brice.Goglin@inria.fr>, akpm@linux-foundation.org,
-        linux-kbuild@vger.kernel.org, Amerigo Wang <amwang@redhat.com>,
-        Michal Marek <mmarek@suse.cz>
-Message-Id: <20100820094028.6321.95741.sendpatchset@localhost.localdomain>
-Subject: [Patch] makefile: not need to regenerate kernel.release file when make kernelrelease
+	id S1753060Ab0HTJhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 05:37:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57536 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752959Ab0HTJhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 05:37:04 -0400
+Date: Fri, 20 Aug 2010 10:37:01 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ian Molton <ian@mnementh.co.uk>, Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH] ASoC: e740_wm9705 - free gpio in e740_exit()
+Message-ID: <20100820093701.GA13668@rakim.wolfsonmicro.main>
+References: <1282200025.9347.1.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282200025.9347.1.camel@mola>
+X-Cookie: No guts, no glory.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 19, 2010 at 02:40:25PM +0800, Axel Lin wrote:
+> In e740_init(), we call gpio_request() for
+> GPIO_E740_MIC_ON, GPIO_E740_AMP_ON and GPIO_E740_WM9705_nAVDD2.
+> We should free the these gpio accordingly in e740_exit().
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Brice reported that 'kernelrelease' has a dependence on include/config/kernel.release,
-causes this file to be regenerated every time when invoke it. It doesn't have to.
-
-Reported-by: Brice Goglin <Brice.Goglin@inria.fr>
-Tested-by: Brice Goglin <Brice.Goglin@inria.fr>
-Signed-off-by: WANG Cong <amwang@redhat.com>
-
----
-diff --git a/Makefile b/Makefile
-index f3bdff8..25da252 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1408,8 +1408,8 @@ checkstack:
- 	$(OBJDUMP) -d vmlinux $$(find . -name '*.ko') | \
- 	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
- 
--kernelrelease: include/config/kernel.release
--	@echo $(KERNELRELEASE)
-+kernelrelease:
-+	@echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))"
- 
- kernelversion:
- 	@echo $(KERNELVERSION)
+Applied, thanks.
