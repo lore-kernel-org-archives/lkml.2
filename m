@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab0HTKEy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 06:04:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50732 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab0HTKEv convert rfc822-to-8bit (ORCPT
+	id S1751580Ab0HTKFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 06:05:44 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50695 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab0HTKFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 06:04:51 -0400
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Don Zickus <dzickus@redhat.com>, Robert Richter <robert.richter@amd.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100820081605.GD17551@elte.hu>
-References: <20100804184806.GL26154@erda.amd.com>
-	 <20100804192634.GG5130@lenovo> <20100806065203.GR26154@erda.amd.com>
-	 <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com>
-	 <20100817152225.GQ26154@erda.amd.com> <1282214753.1926.4669.camel@laptop>
-	 <20100819141240.GO4879@redhat.com> <1282228033.2605.204.camel@laptop>
-	 <20100820015017.GA4879@redhat.com>  <20100820081605.GD17551@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 20 Aug 2010 12:04:11 +0200
-Message-ID: <1282298651.2605.769.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 20 Aug 2010 06:05:43 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Michael Rubin <mrubin@google.com>
+Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_entered_writeback in /proc/vmstat
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        fengguang.wu@intel.com, jack@suse.cz, riel@redhat.com,
+        akpm@linux-foundation.org, david@fromorbit.com, npiggin@kernel.dk,
+        hch@lst.de, axboe@kernel.dk
+In-Reply-To: <1282296689-25618-4-git-send-email-mrubin@google.com>
+References: <1282296689-25618-1-git-send-email-mrubin@google.com> <1282296689-25618-4-git-send-email-mrubin@google.com>
+Message-Id: <20100820190329.6000.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 20 Aug 2010 19:05:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 10:16 +0200, Ingo Molnar wrote:
-> 
-> 
-> Please someone send the final version with a changelog, with all the acks and 
-> tested-by's added, so that i can send it Linuswards. 
+> diff --git a/mm/vmstat.c b/mm/vmstat.c
+> index f389168..073a496 100644
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -732,6 +732,9 @@ static const char * const vmstat_text[] = {
+>  	"nr_isolated_anon",
+>  	"nr_isolated_file",
+>  	"nr_shmem",
+> +	"nr_dirtied",
+> +	"nr_entered_writeback",
+> +
+>  #ifdef CONFIG_NUMA
+>  	"numa_hit",
+>  	"numa_miss",
 
-I've got two patches queued, one from Robert (with a slight
-modification, which removes a goto) and one from myself converting the
-intel and p4 irq handler.
+'nr_entered_writeback' seems ok. but nr_dirtied seems a bit easy confusable
+with 'nr_dirty'. Can you please choice more clear meaningful name?
 
-They're available at:
+Otherwise looks good to me.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-  programming.kicks-ass.net/sekrit/patches.tar.bz2
 
-I did add Tested-by tags, although I suspect its not the exact same bits
-Don tested..
+
+
