@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab0HTFpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 01:45:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47348 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab0HTFph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 01:45:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,237,1280732400"; 
-   d="scan'208";a="598499060"
-Date: Fri, 20 Aug 2010 13:45:33 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Ram Pai <ram.n.pai@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] VM: kswapd should not do blocking memory allocations
-Message-ID: <20100820054533.GB11847@localhost>
-References: <1282158241.8540.85.camel@heimdal.trondhjem.org>
- <AANLkTi=WkoxjwZbt6Vd0VhbuA7_k2WM-NUXZnrmzOOPy@mail.gmail.com>
- <1282159872.8540.96.camel@heimdal.trondhjem.org>
+	id S1751494Ab0HTFvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 01:51:42 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:41695 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750839Ab0HTFvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 01:51:39 -0400
+From: Con Kolivas <kernel@kolivas.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] writeback: remove the internal 5% low bound on dirty_ratio
+Date: Fri, 20 Aug 2010 15:50:54 +1000
+User-Agent: KMail/1.9.9
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, riel@redhat.com, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk
+References: <20100820032506.GA6662@localhost> <20100820131249.5FF4.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100820131249.5FF4.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282159872.8540.96.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201008201550.54164.kernel@kolivas.org>
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Ram,
-> 
-> I was seeing it on NFS until I put in the following kswapd-specific hack
-> into nfs_release_page():
-> 
-> 	/* Only do I/O if gfp is a superset of GFP_KERNEL */
-> 	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
-> 		int how = FLUSH_SYNC;
-> 
-> 		/* Don't let kswapd deadlock waiting for OOM RPC calls */
-> 		if (current_is_kswapd())
-> 			how = 0;
+On Fri, 20 Aug 2010 02:13:25 pm KOSAKI Motohiro wrote:
+> > The dirty_ratio was silently limited to >= 5%. This is not a user
+> > expected behavior. Let's rip it.
+> >
+> > It's not likely the user space will depend on the old behavior.
+> > So the risk of breaking user space is very low.
+> >
+> > CC: Jan Kara <jack@suse.cz>
+> > CC: Neil Brown <neilb@suse.de>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+>
+> Thank you.
+> 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-So the patch can remove the above workaround together, and add comment
-that NFS exploits the gfp mask to avoid complex operations involving
-recursive memory allocation and hence deadlock?
+I have tried to do this in the past, and setting this value to 0 on some 
+machines caused the machine to come to a complete standstill with small 
+writes to disk. It seemed there was some kind of "minimum" amount of data 
+required by the VM before anything would make it to the disk and I never 
+quite found out where that blockade occurred. This was some time ago (3 years 
+ago) so I'm not sure if the problem has since been fixed in the VM since 
+then. I suggest you do some testing with this value set to zero before 
+approving this change.
 
-Thanks,
-Fengguang
-
-> 		nfs_commit_inode(mapping->host, how);
-> 	}
-> 
-> Remove the 'if (current_is_kswapd())' line, and run an mmap() write
-> intensive workload, and it should hang pretty much every time.
-> 
-> Cheers
->   Trond
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Regards,
+--
+-ck
