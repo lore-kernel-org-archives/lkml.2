@@ -1,147 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab0HTPCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 11:02:45 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41695 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab0HTPCl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 11:02:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=chg/uCoWFJQhIlGp5+pSygc+x2cbs3NFec5WaJ1I5D41guPimUmDf8csm+FaAK8Cc0
-         sPsb046iqNOeQ9p/TvLeh64rzrsdK1dC+XT7BMPOTqmGvz5eNGo4YDdlvqkTDcla+eb4
-         hmgRZothUEzN7FDjRv0iHQaXQgdl21zhkiz8I=
-Date: Fri, 20 Aug 2010 23:02:31 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Andy Grover <andy.grover@oracle.com>
-Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
- and touch_softlockup_watchdog
-Message-ID: <20100820150231.GA8628@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
- <20100817083945.GA12022@swordfish.minsk.epam.com>
- <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
- <20100817092407.GB12022@swordfish.minsk.epam.com>
- <AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
- <20100817103948.GA5352@swordfish.minsk.epam.com>
- <20100817131320.GX4879@redhat.com>
- <20100818024802.GA24748@nowhere>
- <20100818130156.43a183d9.akpm@linux-foundation.org>
- <20100820025749.GB4879@redhat.com>
+	id S1753152Ab0HTPDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 11:03:23 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:38687 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753113Ab0HTPDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 11:03:20 -0400
+Date: Fri, 20 Aug 2010 10:03:19 -0500
+From: Robin Holt <holt@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Robin Holt <holt@sgi.com>, Jack Steiner <steiner@sgi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Stable Maintainers <stable@kernel.org>
+Subject: Re: [Patch] numa:x86_64: Cacheline aliasing makes
+ for_each_populated_zone extremely expensive -V2.
+Message-ID: <20100820150319.GB3220@sgi.com>
+References: <20100818183024.GZ3043@sgi.com>
+ <4C6DB62C.9040105@zytor.com>
+ <20100820135822.GA3220@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100820025749.GB4879@redhat.com>
+In-Reply-To: <20100820135822.GA3220@sgi.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 10:57:49PM -0400, Don Zickus wrote:
-> On Wed, Aug 18, 2010 at 01:01:56PM -0700, Andrew Morton wrote:
-> > The surprise new requirement that touch_nmi_watchdog() be called from
-> > non-preemptible code does seem to make sense IMO.  It's hard to see why
-> > anyone would be touching the watchdog unless he's spinning in irqs-off
-> > code.  Except, of course, when we have a utility function which can be
-> > called from wither irqs-on or irqs-off: acpi_os_stall().
+On Fri, Aug 20, 2010 at 08:58:22AM -0500, Robin Holt wrote:
+> On Thu, Aug 19, 2010 at 03:54:36PM -0700, H. Peter Anvin wrote:
+> > On 08/18/2010 11:30 AM, Robin Holt wrote:
+> > >  
+> > > -	node_data[nodeid] = early_node_mem(nodeid, start, end, pgdat_size,
+> > > +	/*
+> > > +	 * Allocate an extra cacheline per node to reduce cacheline
+> > > +	 * aliasing when scanning all node's node_data.
+> > > +	 */
+> > > +	cache_alias_offset = nodeid * SMP_CACHE_BYTES;
+> > > +	node_data[nodeid] = cache_alias_offset +
+> > > +			    early_node_mem(nodeid, start, end,
+> > > +					   pgdat_size + cache_alias_offset,
+> > >  					   SMP_CACHE_BYTES);
+> > > -	if (node_data[nodeid] == NULL)
+> > > +	if (node_data[nodeid] == (void *)cache_alias_offset)
+> > >  		return;
+> > >  	nodedata_phys = __pa(node_data[nodeid]);
+> > >  	reserve_early(nodedata_phys, nodedata_phys + pgdat_size, "NODE_DATA");
 > > 
-> > That being said, it's not good to introduce new API requirements by
-> > accident!  An audit of all callers should first be performed, at least.
+> > I'm concerned about this, because it really seems to rely on subtleties
+> > in the behavior of early_node_mem, as well as the direction of
+> > find_e820_area -- which is pretty much intended to change anyway.  It's
+> > the "action at a distance" effect.
 > > 
-> > 
-> > The surprise new requirement that touch_softlockup_watchdog() be called
-> > from non-preemptible code doesn't make sense IMO.  If I have a piece of
-> > code in the kernel which I expect to sit in TASK_UNINTERRUPTIBLE state
-> > for three minutes waiting for my egg to boil, I should be able to do
-> > that and I should be able to touch the softlockup detector without
-> > needing to go non-preemptible.
+> > What we really want, I think, is to push the offsetting into
+> > find_early_area().  Right now we have an alignment parameter, but what
+> > we need is an alignment and a color parameter (this is just a classic
+> > case of cache coloring, after all) which indicates the desirable offset
+> > from the alignment base.
 > 
-> Ok, so here is my patch that syncs the touch_*_watchdog back in line with
-> the old semantics.  Hopefully this will undo any harm I caused.
-> 
-> ------------cut -->---------------------------
-> 
-> >From b372e821c804982438db090db6b4a2f753c78091 Mon Sep 17 00:00:00 2001
-> From: Don Zickus <dzickus@redhat.com>
-> Date: Thu, 19 Aug 2010 22:48:26 -0400
-> Subject: [PATCH] [lockup detector] sync touch_*_watchdog back to old semantics
-> 
-> During my rewrite, the semantics of touch_nmi_watchdog and
-> touch_softlockup_watchdog changed enough to break some drivers
-> (mostly over preemptable regions).
-> 
-> This change brings those touch_*_watchdog functions back in line
-> to how they used to work.
+> That sounds reasonable.  Are there other examples you can think of which
+> I can build upon?
 
-This one looks good to me.
-Thank you Don.
+I think this is more difficult than I would like.  The difficulty comes
+in with determining "alignment base".  I decided to look at a machine
+and see how I would manually determine color.  The first question I
+ran into was "What is the color with respect to?"  Is it an L3 color, an
+L2, L1?  I then decided to punt and assume it was L3 (as that is what I am
+personally concerned with here).  I looked at cpu0's L3 and noticed I had
+12,288 possible colors for the first line of my allocation.  I thought,
+splendid, I now have both my alignment base and alignment offset.
 
--Yong
+Then, I looked around the machine.  This particular machine was not the
+same as the one on which I had recorded the first statistics.  This one
+has 1024 cpus (in its current configuration).  Some sockets have an 18MB
+cache, others have a 24MB cache.  Likewise, some have 12,288 colors
+while others have 16,384 colors.  In this case, which do I use for my
+base and alignment calculation?
 
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
->  kernel/watchdog.c |   17 ++++++++++++-----
->  1 files changed, 12 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 613bc1f..99e35a2 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -122,7 +122,7 @@ static void __touch_watchdog(void)
->  
->  void touch_softlockup_watchdog(void)
->  {
-> -	__get_cpu_var(watchdog_touch_ts) = 0;
-> +	__raw_get_cpu_var(watchdog_touch_ts) = 0;
->  }
->  EXPORT_SYMBOL(touch_softlockup_watchdog);
->  
-> @@ -142,7 +142,14 @@ void touch_all_softlockup_watchdogs(void)
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  void touch_nmi_watchdog(void)
->  {
-> -	__get_cpu_var(watchdog_nmi_touch) = true;
-> +	if (watchdog_enabled) {
-> +		unsigned cpu;
-> +
-> +		for_each_present_cpu(cpu) {
-> +			if (per_cpu(watchdog_nmi_touch, cpu) != true)
-> +				per_cpu(watchdog_nmi_touch, cpu) = true;
-> +		}
-> +	}
->  	touch_softlockup_watchdog();
->  }
->  EXPORT_SYMBOL(touch_nmi_watchdog);
-> @@ -430,6 +437,9 @@ static int watchdog_enable(int cpu)
->  		wake_up_process(p);
->  	}
->  
-> +	/* if any cpu succeeds, watchdog is considered enabled for the system */
-> +	watchdog_enabled = 1;
-> +
->  	return 0;
->  }
->  
-> @@ -452,9 +462,6 @@ static void watchdog_disable(int cpu)
->  		per_cpu(softlockup_watchdog, cpu) = NULL;
->  		kthread_stop(p);
->  	}
-> -
-> -	/* if any cpu succeeds, watchdog is considered enabled for the system */
-> -	watchdog_enabled = 1;
->  }
->  
->  static void watchdog_enable_all_cpus(void)
-> -- 
-> 1.7.2.1
+Lastly, If I were to use the L3 number_of_sets, I would need to hold off
+on these allocation until after the init_intel() call is done which is
+well after the point where we have done these allocations.  Alternatively,
+I could use the cpuid() to calculate the L3 size, but that means putting
+cpu specific knowledge into the e820 allocator.
+
+In short, without the cpu information, I think we are heading back to
+as much of a kludge as I had originally submitted.  We could assume
+the number of sets will always be less than some large value like 16MB,
+but that runs the risk of wasting a large amount of memory.
+
+Alternatively, we could base the color value upon something very concrete.
+For this particular allocation, we have an array of structures whose
+elements are 1792 bytes long (28 cache lines).  If I specify an offset
+of 29, it merely means the first element of my newly allocated array
+is now going to collide with the first allocation's second element.
+I really see no advantage to further allocating space.  The advantage
+to this method is it entirely removes the processor configuration from
+the question.  It allows me to keep the offset calculation from polluting
+the e820 allocator as well.  Basically, the change remains localized.
+
+Thanks,
+Robin
