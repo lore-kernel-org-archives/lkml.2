@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477Ab0HTVfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:35:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62270 "EHLO mx1.redhat.com"
+	id S1751897Ab0HTVf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:35:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38894 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143Ab0HTVfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:35:39 -0400
-Date: Fri, 20 Aug 2010 18:34:48 -0300
-From: "acme@redhat.com" <acme@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>,
-        "Lin, Ming M" <ming.m.lin@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
-Message-ID: <20100820213447.GD2973@ghostprotocols.net>
-References: <1282118350.5181.115.camel@rui> <1282134329.1926.3918.camel@laptop> <20100818124116.GA17957@console-pimps.org> <1282188497.11858.94.camel@minggr.sh.intel.com> <1282208521.1926.4535.camel@laptop> <1282268675.5181.1608.camel@rui> <1282296855.2605.724.camel@laptop> <20100820123159.GA3321@elte.hu>
+	id S1751195Ab0HTVf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:35:57 -0400
+Message-ID: <4C6EF4EA.30603@redhat.com>
+Date: Fri, 20 Aug 2010 17:34:34 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100820123159.GA3321@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 2/6] mm: stack based kmap_atomic
+References: <20100819201317.673172547@chello.nl> <20100819202753.656285068@chello.nl>
+In-Reply-To: <20100819202753.656285068@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Aug 20, 2010 at 02:31:59PM +0200, Ingo Molnar escreveu:
-> Btw., some 'perf list' thoughts. We could do a:
-> 
->    perf list --help rapl:watts
-> 
-> Which gives the user some idea what an event does. Also, short descriptive 
-> line in perf list output would be nice:
-> 
-> $ perf list
-> 
-> List of pre-defined events (to be used in -e):
-> 
->   cpu-cycles OR cycles                       [Hardware event]   # CPU cycles
->   instructions                               [Hardware event]   # instructions executed
-> 
->   ...
-> 
->   rapl:watts                                 [Tracepoint]       # watts usage
-> 
-> or something like that. Perhaps even a TUI for perf list, to browse between 
-> event types? (in that case it would probably be useful to make them collapse 
-> along natural grouping)
-> 
-> We want users/developers to discover new events, see and understand their 
-> purpose and combine them in not-seen-before ways.
+On 08/19/2010 04:13 PM, Peter Zijlstra wrote:
+> Keep the current interface but ignore the KM_type and use a stack
+> based approach.
+>
+> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
 
-Right, record, list, probe, top are on the UI (not just T-UI, see latest
-efforts on decoupling from newt/slang) hit-list :)
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Moving from one to the other seamlessly like today is possible for
-report and annotate is the goal.
-
-Now that the UI browser code is more robust and generic that should
-happen faster, I think.
-
-- Arnaldo
+-- 
+All rights reversed
