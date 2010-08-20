@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab0HTIul (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:50:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752351Ab0HTIuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:50:25 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100820084820.5FDB.A69D9226@jp.fujitsu.com>
-References: <20100820084820.5FDB.A69D9226@jp.fujitsu.com> <20100819220338.5FD5.A69D9226@jp.fujitsu.com> <7682.1282230394@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: dhowells@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: oom: __task_cred() need rcu_read_lock()
-Date: Fri, 20 Aug 2010 09:50:02 +0100
-Message-ID: <30014.1282294202@redhat.com>
+	id S1753279Ab0HTIuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:50:46 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49329 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab0HTIuf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:50:35 -0400
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100819215803.GZ4879@redhat.com>
+References: <20100804163930.GE5130@lenovo>
+	 <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo>
+	 <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com>
+	 <20100809194829.GB26154@erda.amd.com> <20100817152225.GQ26154@erda.amd.com>
+	 <1282214753.1926.4669.camel@laptop> <20100819141240.GO4879@redhat.com>
+	 <1282228033.2605.204.camel@laptop>  <20100819215803.GZ4879@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 20 Aug 2010 10:50:16 +0200
+Message-ID: <1282294216.2605.664.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-
-> > KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> > 
-> > > dump_tasks() can call __task_cred() safely because we are holding
-> > > tasklist_lock. but rcu lock validator don't have enough knowledge and
-> > > it makes following annoying warning.
-> > 
-> > No, it can't.  The tasklist_lock is not protection against the creds
-> > changing on another CPU.
+On Thu, 2010-08-19 at 17:58 -0400, Don Zickus wrote:
+> On Thu, Aug 19, 2010 at 04:27:13PM +0200, Peter Zijlstra wrote:
+> >  		x86_pmu.drain_pebs(regs);
+> > +	}
+> >  
+> >  	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+> >  		struct perf_event *event = cpuc->events[bit];
+> >  
+> > +		handled++;
+> > +
+> >  		if (!test_bit(bit, cpuc->active_mask))
+> >  			continue;
 > 
-> Thank you for correction.
-> 
-> I suppose you mean I missed CONFIG_TREE_PREEMPT_RCU, right?
-> As far as my grepping, other rcu implementation and spinlock use 
-> preempt_disable(). In other word, Can I assume usual distro user 
-> don't hit this issue?
+> Sorry I didn't notice this earlier, but I think you want that handled++
+> after the if(..) continue pieces.  Otherwise you will always have a number
+> >1. :-)
 
-No.  The paths by which a process changes its credentials don't normally take
-tasklist_lock, so holding tasklist_lock doesn't prevent the process you're
-looking at from replacing its cred and discarding the ones you're looking at.
+Only if there's any remaining set bits in the overflow status reg,
+right?
 
-Further, unless you're holding the RCU read lock, there's nothing theoretically
-stopping the system from deleting the discarded credentials.
-
-David
+But if we want to be paranoid, we should also check if the event that
+generated the overflow actually had the INT flag enabled, I guess ;-)
