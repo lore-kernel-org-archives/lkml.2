@@ -1,100 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab0HTBla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 21:41:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22417 "EHLO mga01.intel.com"
+	id S1751302Ab0HTBum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 21:50:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58774 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103Ab0HTBl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 21:41:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,236,1280732400"; 
-   d="scan'208";a="829973910"
-Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
-From: Zhang Rui <rui.zhang@intel.com>
+	id S1750849Ab0HTBuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 21:50:40 -0400
+Date: Thu, 19 Aug 2010 21:50:17 -0400
+From: Don Zickus <dzickus@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Lin, Ming M" <ming.m.lin@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "acme@redhat.com" <acme@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-In-Reply-To: <1282208521.1926.4535.camel@laptop>
-References: <1282118350.5181.115.camel@rui>
-	 <1282134329.1926.3918.camel@laptop>
-	 <20100818124116.GA17957@console-pimps.org>
-	 <1282188497.11858.94.camel@minggr.sh.intel.com>
-	 <1282208521.1926.4535.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Aug 2010 09:44:35 +0800
-Message-ID: <1282268675.5181.1608.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Cc: Robert Richter <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100820015017.GA4879@redhat.com>
+References: <20100804163930.GE5130@lenovo>
+ <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+ <20100817152225.GQ26154@erda.amd.com>
+ <1282214753.1926.4669.camel@laptop>
+ <20100819141240.GO4879@redhat.com>
+ <1282228033.2605.204.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282228033.2605.204.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 17:02 +0800, Peter Zijlstra wrote:
-> > > > 
-> > > >  - if it is a pure read-only counter without sampling support,
-> > > >    expose it as such, don't fudge in the hrtimer stuff. Simply
-> > > >    fail to create a sampling event.
-> > > > 
-> > > >    SH has the same problem for its 'normal' PMU, the solution is
-> > > >    to use event groups, Matt was looking at adding support to
-> > > >    perf-record for that, if creating a sampling event fails, fall
-> > > >    back to {hrtimer, $event} groups.
+On Thu, Aug 19, 2010 at 04:27:13PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-08-19 at 10:12 -0400, Don Zickus wrote:
+> > On Thu, Aug 19, 2010 at 12:45:53PM +0200, Peter Zijlstra wrote:
 > > > 
-> > > I had a quick look over the patches and Peter is right - the group
-> > > events stuff would probably fit quite well here. Unfortunately, due to
-> > > holidays and things, I haven't been able to get them finished
-> > > yet. I'll get on that ASAP.
+> > > I queued it with that part changed to:
 > > 
-> > Hi, Matt
+> > I realized the other day this change doesn't cover the nehalem, core and p4
+> > cases which use
 > > 
-> > What's the "group events stuff"?
-> > Is there some discussion on LKML or elsewhere I can have a look at?
+> > intel_pmu_handle_irq
+> > p4_pmu_handle_irq
+> > 
+> > as their handlers.  Though that patch can go on top of Robert's.
 > 
-> its some obscure perf feature:
-> 
->  leader = sys_perf_event_open(&hrtimer_attr, pid, cpu, 0, 0);
->  sibling = sys_perf_event_open(&rapl_attr, pid, cpu, leader, 0);
-> 
-> will create an even group (which means that both events require to be
-> co-scheduled). If you then provided:
-> 
-> hrtimer_attr.read_format |= PERF_FORMAT_GROUP;
-> hrtimer_attr.sample_type |= PERF_SAMPLE_READ;
-> 
-hrtimer_attr is only shared in an event group, and rapl needs its owen
-event group, right?
+> Something like this?
 
-> the samples from the hrtimer will contain a field like:
-> 
->  *      { u64           nr;
->  *        { u64         time_enabled; } && PERF_FORMAT_ENABLED
->  *        { u64         time_running; } && PERF_FORMAT_RUNNING
->  *        { u64         value;
->  *          { u64       id;           } && PERF_FORMAT_ID
->  *        }             cntr[nr];
->  *      } && PERF_FORMAT_GROUP
-> 
-> Which contains both the hrtimer count (ns) and the RAPL count (watts).
-> 
-> Using that you can compute the RAPL delta between consecutive samples
-> and use that to weight the sample.
-> 
-> 
-> For perf-stat non of this is needed, since it doesn't use sampling
-> counters anyway ;-).
+I tested this patch and Robert's on an AMD box and Nehalem box.  Both
+worked as intended.  However I did notice that whenever the AMD box
+detected handled >1, it was shortly followed by an unknown_nmi that was
+properly eaten with Robert's logic.  Whereas on the Nehalem box I saw a
+lot of 'handled > 1' messages but very very few of them were followed by
+an unknown_nmi message (and those messages that did come were properly
+eaten).
 
-so what do you think the rapl counter should look like in userspace?
-showing it in perf-stat looks nice, right? :)
+Maybe that is just the differences in the cpu designs.
 
-thanks,
-rui
+Of course I had to make the one change I mentioned previously for the
+perf_event_intel.c file (moving the handled++ logic down a few lines).
 
+I didn't run the test on a P4 box.
+
+Looks great, thanks guys!
+
+Cheers,
+Don
+
+> 
+> ---
+> Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -713,6 +713,7 @@ static int intel_pmu_handle_irq(struct p
+>  	struct cpu_hw_events *cpuc;
+>  	int bit, loops;
+>  	u64 ack, status;
+> +	int handled = 0;
+>  
+>  	perf_sample_data_init(&data, 0);
+>  
+> @@ -743,12 +744,16 @@ again:
+>  	/*
+>  	 * PEBS overflow sets bit 62 in the global status register
+>  	 */
+> -	if (__test_and_clear_bit(62, (unsigned long *)&status))
+> +	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+> +		handled++;
+>  		x86_pmu.drain_pebs(regs);
+> +	}
+>  
+>  	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+>  		struct perf_event *event = cpuc->events[bit];
+>  
+> +		handled++;
+> +
+>  		if (!test_bit(bit, cpuc->active_mask))
+>  			continue;
+>  
+> @@ -772,7 +777,7 @@ again:
+>  
+>  done:
+>  	intel_pmu_enable_all(0);
+> -	return 1;
+> +	return handled;
+>  }
+>  
+>  static struct event_constraint *
+> Index: linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_p4.c
+> +++ linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
+> @@ -673,7 +673,7 @@ static int p4_pmu_handle_irq(struct pt_r
+>  		if (!overflow && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
+>  			continue;
+>  
+> -		handled += overflow;
+> +		handled += !!overflow;
+>  
+>  		/* event overflow for sure */
+>  		data.period = event->hw.last_period;
+> @@ -690,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_r
+>  		inc_irq_stat(apic_perf_irqs);
+>  	}
+>  
+> -	return handled > 0;
+> +	return handled;
+>  }
+>  
+>  /*
+> 
