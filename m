@@ -1,55 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab0HTVYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:24:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53375 "EHLO
+	id S1751807Ab0HTVZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:25:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51235 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751038Ab0HTVYv (ORCPT
+	by vger.kernel.org with ESMTP id S1751038Ab0HTVZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:24:51 -0400
+	Fri, 20 Aug 2010 17:25:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimmo2Z174ZG9o0X8HSvzgnc8NTVmkJ6C33BMCda@mail.gmail.com>
+In-Reply-To: <1282336944.2605.1395.camel@laptop>
 References: <20100818203143.735033743@clark.site> <1282308887.3170.5439.camel@zakaz.uk.xensource.com>
  <AANLkTin7L=v1GR2=U-mvESyrP2vySYLRa4U-fh9-L38F@mail.gmail.com>
  <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com>
  <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com>
  <1282326182.29609.789.camel@localhost.localdomain> <AANLkTi=racCPiDmbL0pEfH3Ew2_gJzJwmR3B1Vt=AZuz@mail.gmail.com>
- <AANLkTimTZKzXfBJCbzCyq3LwKvn3aCqyHjd5VXhnejfV@mail.gmail.com>
- <1282336944.2605.1395.camel@laptop> <AANLkTimmo2Z174ZG9o0X8HSvzgnc8NTVmkJ6C33BMCda@mail.gmail.com>
+ <AANLkTimTZKzXfBJCbzCyq3LwKvn3aCqyHjd5VXhnejfV@mail.gmail.com> <1282336944.2605.1395.camel@laptop>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 20 Aug 2010 14:24:30 -0700
-Message-ID: <AANLkTinGnUaWJbrV7Jcy+Uiu682uE6_2eHr0T3km+ihf@mail.gmail.com>
+Date: Fri, 20 Aug 2010 14:17:38 -0700
+Message-ID: <AANLkTimmo2Z174ZG9o0X8HSvzgnc8NTVmkJ6C33BMCda@mail.gmail.com>
 Subject: Re: [2/3] mm: fix up some user-visible effects of the stack guard page
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
         stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary=0050450160335a454d048e47d5e8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 2:17 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+--0050450160335a454d048e47d5e8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Aug 20, 2010 at 1:42 PM, Peter Zijlstra <peterz@infradead.org> wrot=
+e:
 >
-> Appended is that much smaller patch.
+> You mean something like the below?
 
-Note that the "real" patch is actually even smaller than implied by
-this thing. The diffstat
+Yeah. I looked at exactly something like that. With the same name for
+vma_next() - except I just passed down 'mm' to it too. Your patch
+takes it from vma->mm and then you have a few places do the whole
+__vma_next() by hand.
 
- include/linux/mm_types.h |    2 +-
- kernel/fork.c            |    7 +++++--
- mm/mmap.c                |   37 +++++++++++++++++++++++++++++++++----
- mm/nommu.c               |    7 +++++--
- 4 files changed, 44 insertions(+), 9 deletions(-)
+> Should I look at refreshing that thing (yes, that's a 2007 patch)?
 
-implies that it adds a lot more than it removes, but of the 35 new
-lines it adds, about half of it - 16 lines - is just the vma list
-verification hack. So it really adds less than 20 lines of code.
-Hopefully those 20 lines would then buy themselves back with cleanups.
+Interesting. I generated about half the patch, and then decided that
+it's not worth it. But the fact that apparently you did the same thing
+in 2007 means that maybe there really _is_ a pent-up demand for doing
+this dang thing.
 
-Still. A doubly-linked list is totally trivial, and I just bet I have
-a bug in there somewhere. But looking at your 2007 patch and mine
-side-by-side, I do think mine is still less scary.
+I do note that I also did a patch that just added "vm_prev", and it's
+a lot smaller. It doesn't allow for the cleanups of using the generic
+list iterators, though. And it has the usual problem with the
+straightforward doubly-linked lists: you end up with those ugly
+conditional assignments like
 
-                     Linus
+  if (prev)
+     prev->vm_next =3D vma;
+  if (next)
+     next->vm_prev =3D vma;
+
+which the list_head approach avoids.
+
+Appended is that much smaller patch. It has an ugly and partial
+"validate_vma()" hack there in find_vma() to catch the worst bugs, but
+it's really not tested. I did try booting it, and it's not spewing out
+errors, but who the heck knows. It doesn't look too horrid, but...
+
+What do you think?
+
+NOTE! I've done _zero_ cleanups. And one of the thing I noticed is
+that "find_vma_prev()" is sometimes used to find a "prev" even when
+there is no "vma" (ie growing a grow-up stack at the end of the VM, or
+adding a new mapping at the end), so my hope that we could get rid of
+it entirely was na=EFve. But there should be other things we should be
+able to simplify when we can get at the prev pointer (all the
+mprotect/mlock splitting code should work fine without having that
+'prev' thing passed around etc).
+
+                            Linus
+
+--0050450160335a454d048e47d5e8
+Content-Type: text/plain; charset=US-ASCII; name="diff.txt"
+Content-Disposition: attachment; filename="diff.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gd3jji970
+
+IGluY2x1ZGUvbGludXgvbW1fdHlwZXMuaCB8ICAgIDIgKy0KIGtlcm5lbC9mb3JrLmMgICAgICAg
+ICAgICB8ICAgIDcgKysrKystLQogbW0vbW1hcC5jICAgICAgICAgICAgICAgIHwgICAzNyArKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tCiBtbS9ub21tdS5jICAgICAgICAgICAg
+ICAgfCAgICA3ICsrKysrLS0KIDQgZmlsZXMgY2hhbmdlZCwgNDQgaW5zZXJ0aW9ucygrKSwgOSBk
+ZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L21tX3R5cGVzLmggYi9pbmNs
+dWRlL2xpbnV4L21tX3R5cGVzLmgKaW5kZXggYjhiYjlhNi4uZWU3ZTI1OCAxMDA2NDQKLS0tIGEv
+aW5jbHVkZS9saW51eC9tbV90eXBlcy5oCisrKyBiL2luY2x1ZGUvbGludXgvbW1fdHlwZXMuaApA
+QCAtMTM0LDcgKzEzNCw3IEBAIHN0cnVjdCB2bV9hcmVhX3N0cnVjdCB7CiAJCQkJCSAgIHdpdGhp
+biB2bV9tbS4gKi8KIAogCS8qIGxpbmtlZCBsaXN0IG9mIFZNIGFyZWFzIHBlciB0YXNrLCBzb3J0
+ZWQgYnkgYWRkcmVzcyAqLwotCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1fbmV4dDsKKwlzdHJ1
+Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtX25leHQsICp2bV9wcmV2OwogCiAJcGdwcm90X3Qgdm1fcGFn
+ZV9wcm90OwkJLyogQWNjZXNzIHBlcm1pc3Npb25zIG9mIHRoaXMgVk1BLiAqLwogCXVuc2lnbmVk
+IGxvbmcgdm1fZmxhZ3M7CQkvKiBGbGFncywgc2VlIG1tLmguICovCmRpZmYgLS1naXQgYS9rZXJu
+ZWwvZm9yay5jIGIva2VybmVsL2ZvcmsuYwppbmRleCA4NTZlYWMzLi5iN2U5ZDYwIDEwMDY0NAot
+LS0gYS9rZXJuZWwvZm9yay5jCisrKyBiL2tlcm5lbC9mb3JrLmMKQEAgLTMwMCw3ICszMDAsNyBA
+QCBvdXQ6CiAjaWZkZWYgQ09ORklHX01NVQogc3RhdGljIGludCBkdXBfbW1hcChzdHJ1Y3QgbW1f
+c3RydWN0ICptbSwgc3RydWN0IG1tX3N0cnVjdCAqb2xkbW0pCiB7Ci0Jc3RydWN0IHZtX2FyZWFf
+c3RydWN0ICptcG50LCAqdG1wLCAqKnBwcmV2OworCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqbXBu
+dCwgKnRtcCwgKnByZXYsICoqcHByZXY7CiAJc3RydWN0IHJiX25vZGUgKipyYl9saW5rLCAqcmJf
+cGFyZW50OwogCWludCByZXR2YWw7CiAJdW5zaWduZWQgbG9uZyBjaGFyZ2U7CkBAIC0zMjgsNiAr
+MzI4LDcgQEAgc3RhdGljIGludCBkdXBfbW1hcChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0
+IG1tX3N0cnVjdCAqb2xkbW0pCiAJaWYgKHJldHZhbCkKIAkJZ290byBvdXQ7CiAKKwlwcmV2ID0g
+TlVMTDsKIAlmb3IgKG1wbnQgPSBvbGRtbS0+bW1hcDsgbXBudDsgbXBudCA9IG1wbnQtPnZtX25l
+eHQpIHsKIAkJc3RydWN0IGZpbGUgKmZpbGU7CiAKQEAgLTM1OSw3ICszNjAsNyBAQCBzdGF0aWMg
+aW50IGR1cF9tbWFwKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3QgbW1fc3RydWN0ICpvbGRt
+bSkKIAkJCWdvdG8gZmFpbF9ub21lbV9hbm9uX3ZtYV9mb3JrOwogCQl0bXAtPnZtX2ZsYWdzICY9
+IH5WTV9MT0NLRUQ7CiAJCXRtcC0+dm1fbW0gPSBtbTsKLQkJdG1wLT52bV9uZXh0ID0gTlVMTDsK
+KwkJdG1wLT52bV9uZXh0ID0gdG1wLT52bV9wcmV2ID0gTlVMTDsKIAkJZmlsZSA9IHRtcC0+dm1f
+ZmlsZTsKIAkJaWYgKGZpbGUpIHsKIAkJCXN0cnVjdCBpbm9kZSAqaW5vZGUgPSBmaWxlLT5mX3Bh
+dGguZGVudHJ5LT5kX2lub2RlOwpAQCAtMzkyLDYgKzM5Myw4IEBAIHN0YXRpYyBpbnQgZHVwX21t
+YXAoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCBtbV9zdHJ1Y3QgKm9sZG1tKQogCQkgKi8K
+IAkJKnBwcmV2ID0gdG1wOwogCQlwcHJldiA9ICZ0bXAtPnZtX25leHQ7CisJCXRtcC0+dm1fcHJl
+diA9IHByZXY7CisJCXByZXYgPSB0bXA7CiAKIAkJX192bWFfbGlua19yYihtbSwgdG1wLCByYl9s
+aW5rLCByYl9wYXJlbnQpOwogCQlyYl9saW5rID0gJnRtcC0+dm1fcmIucmJfcmlnaHQ7CmRpZmYg
+LS1naXQgYS9tbS9tbWFwLmMgYi9tbS9tbWFwLmMKaW5kZXggMzEwMDMzMy4uYjYyMTJjMiAxMDA2
+NDQKLS0tIGEvbW0vbW1hcC5jCisrKyBiL21tL21tYXAuYwpAQCAtMzg4LDE3ICszODgsMjMgQEAg
+c3RhdGljIGlubGluZSB2b2lkCiBfX3ZtYV9saW5rX2xpc3Qoc3RydWN0IG1tX3N0cnVjdCAqbW0s
+IHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAogCQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnBy
+ZXYsIHN0cnVjdCByYl9ub2RlICpyYl9wYXJlbnQpCiB7CisJc3RydWN0IHZtX2FyZWFfc3RydWN0
+ICpuZXh0OworCisJdm1hLT52bV9wcmV2ID0gcHJldjsKIAlpZiAocHJldikgewotCQl2bWEtPnZt
+X25leHQgPSBwcmV2LT52bV9uZXh0OworCQluZXh0ID0gcHJldi0+dm1fbmV4dDsKIAkJcHJldi0+
+dm1fbmV4dCA9IHZtYTsKIAl9IGVsc2UgewogCQltbS0+bW1hcCA9IHZtYTsKIAkJaWYgKHJiX3Bh
+cmVudCkKLQkJCXZtYS0+dm1fbmV4dCA9IHJiX2VudHJ5KHJiX3BhcmVudCwKKwkJCW5leHQgPSBy
+Yl9lbnRyeShyYl9wYXJlbnQsCiAJCQkJCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCwgdm1fcmIpOwog
+CQllbHNlCi0JCQl2bWEtPnZtX25leHQgPSBOVUxMOworCQkJbmV4dCA9IE5VTEw7CiAJfQorCXZt
+YS0+dm1fbmV4dCA9IG5leHQ7CisJaWYgKG5leHQpCisJCW5leHQtPnZtX3ByZXYgPSB2bWE7CiB9
+CiAKIHZvaWQgX192bWFfbGlua19yYihzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2Fy
+ZWFfc3RydWN0ICp2bWEsCkBAIC00ODMsNyArNDg5LDExIEBAIHN0YXRpYyBpbmxpbmUgdm9pZAog
+X192bWFfdW5saW5rKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3Qg
+KnZtYSwKIAkJc3RydWN0IHZtX2FyZWFfc3RydWN0ICpwcmV2KQogewotCXByZXYtPnZtX25leHQg
+PSB2bWEtPnZtX25leHQ7CisJc3RydWN0IHZtX2FyZWFfc3RydWN0ICpuZXh0ID0gdm1hLT52bV9u
+ZXh0OworCisJcHJldi0+dm1fbmV4dCA9IG5leHQ7CisJaWYgKG5leHQpCisJCW5leHQtPnZtX3By
+ZXYgPSBwcmV2OwogCXJiX2VyYXNlKCZ2bWEtPnZtX3JiLCAmbW0tPm1tX3JiKTsKIAlpZiAobW0t
+Pm1tYXBfY2FjaGUgPT0gdm1hKQogCQltbS0+bW1hcF9jYWNoZSA9IHByZXY7CkBAIC0xNTc3LDYg
+KzE1ODcsMjEgQEAgZ2V0X3VubWFwcGVkX2FyZWEoc3RydWN0IGZpbGUgKmZpbGUsIHVuc2lnbmVk
+IGxvbmcgYWRkciwgdW5zaWduZWQgbG9uZyBsZW4sCiAKIEVYUE9SVF9TWU1CT0woZ2V0X3VubWFw
+cGVkX2FyZWEpOwogCitzdGF0aWMgdm9pZCB2YWxpZGF0ZV92bWFfbGlzdChzdHJ1Y3Qgdm1fYXJl
+YV9zdHJ1Y3QgKnZtYSkKK3sKKwlzdGF0aWMgaW50IGNvdW50OworCisJaWYgKCgodm1hLT52bV9u
+ZXh0ICYmIHZtYS0+dm1fbmV4dC0+dm1fcHJldiAhPSB2bWEpIHx8CisJICAgICAodm1hLT52bV9w
+cmV2ICYmIHZtYS0+dm1fcHJldi0+dm1fbmV4dCAhPSB2bWEpKSAmJgorCSAgICAgIGNvdW50IDwg
+MTAwKSB7CisJCXByaW50aygiQmFkbmVzcyAlcFslcF0gLT4gJXAgLT4gWyVwXSVwXG4iLAorCQkJ
+dm1hLT52bV9wcmV2LCB2bWEtPnZtX3ByZXYgPyB2bWEtPnZtX3ByZXYtPnZtX25leHQgOiBOVUxM
+LAorCQkJdm1hLAorCQkJdm1hLT52bV9uZXh0ID8gdm1hLT52bV9uZXh0LT52bV9wcmV2IDogTlVM
+TCwgdm1hLT52bV9uZXh0KTsKKwkJY291bnQrKzsKKwl9Cit9CisKIC8qIExvb2sgdXAgdGhlIGZp
+cnN0IFZNQSB3aGljaCBzYXRpc2ZpZXMgIGFkZHIgPCB2bV9lbmQsICBOVUxMIGlmIG5vbmUuICov
+CiBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKmZpbmRfdm1hKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCB1
+bnNpZ25lZCBsb25nIGFkZHIpCiB7CkBAIC0xNjEwLDYgKzE2MzUsNyBAQCBzdHJ1Y3Qgdm1fYXJl
+YV9zdHJ1Y3QgKmZpbmRfdm1hKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCB1bnNpZ25lZCBsb25nIGFk
+ZHIpCiAJCQkJbW0tPm1tYXBfY2FjaGUgPSB2bWE7CiAJCX0KIAl9CitpZiAodm1hKSB2YWxpZGF0
+ZV92bWFfbGlzdCh2bWEpOwogCXJldHVybiB2bWE7CiB9CiAKQEAgLTE5MTUsNiArMTk0MSw3IEBA
+IGRldGFjaF92bWFzX3RvX2JlX3VubWFwcGVkKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3Qg
+dm1fYXJlYV9zdHJ1Y3QgKnZtYSwKIAl1bnNpZ25lZCBsb25nIGFkZHI7CiAKIAlpbnNlcnRpb25f
+cG9pbnQgPSAocHJldiA/ICZwcmV2LT52bV9uZXh0IDogJm1tLT5tbWFwKTsKKwl2bWEtPnZtX3By
+ZXYgPSBOVUxMOwogCWRvIHsKIAkJcmJfZXJhc2UoJnZtYS0+dm1fcmIsICZtbS0+bW1fcmIpOwog
+CQltbS0+bWFwX2NvdW50LS07CkBAIC0xOTIyLDYgKzE5NDksOCBAQCBkZXRhY2hfdm1hc190b19i
+ZV91bm1hcHBlZChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2
+bWEsCiAJCXZtYSA9IHZtYS0+dm1fbmV4dDsKIAl9IHdoaWxlICh2bWEgJiYgdm1hLT52bV9zdGFy
+dCA8IGVuZCk7CiAJKmluc2VydGlvbl9wb2ludCA9IHZtYTsKKwlpZiAodm1hKQorCQl2bWEtPnZt
+X3ByZXYgPSBwcmV2OwogCXRhaWxfdm1hLT52bV9uZXh0ID0gTlVMTDsKIAlpZiAobW0tPnVubWFw
+X2FyZWEgPT0gYXJjaF91bm1hcF9hcmVhKQogCQlhZGRyID0gcHJldiA/IHByZXYtPnZtX2VuZCA6
+IG1tLT5tbWFwX2Jhc2U7CmRpZmYgLS1naXQgYS9tbS9ub21tdS5jIGIvbW0vbm9tbXUuYwppbmRl
+eCBlZmE5YTM4Li44OGZmMDkxIDEwMDY0NAotLS0gYS9tbS9ub21tdS5jCisrKyBiL21tL25vbW11
+LmMKQEAgLTYwNCw3ICs2MDQsNyBAQCBzdGF0aWMgdm9pZCBwcm90ZWN0X3ZtYShzdHJ1Y3Qgdm1f
+YXJlYV9zdHJ1Y3QgKnZtYSwgdW5zaWduZWQgbG9uZyBmbGFncykKICAqLwogc3RhdGljIHZvaWQg
+YWRkX3ZtYV90b19tbShzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0
+ICp2bWEpCiB7Ci0Jc3RydWN0IHZtX2FyZWFfc3RydWN0ICpwdm1hLCAqKnBwOworCXN0cnVjdCB2
+bV9hcmVhX3N0cnVjdCAqcHZtYSwgKipwcCwgKm5leHQ7CiAJc3RydWN0IGFkZHJlc3Nfc3BhY2Ug
+Km1hcHBpbmc7CiAJc3RydWN0IHJiX25vZGUgKipwLCAqcGFyZW50OwogCkBAIC02NjQsOCArNjY0
+LDExIEBAIHN0YXRpYyB2b2lkIGFkZF92bWFfdG9fbW0oc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0
+cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hKQogCQkJYnJlYWs7CiAJfQogCi0Jdm1hLT52bV9uZXh0
+ID0gKnBwOworCW5leHQgPSAqcHA7CiAJKnBwID0gdm1hOworCXZtYS0+dm1fbmV4dCA9IG5leHQ7
+CisJaWYgKG5leHQpCisJCW5leHQtPnZtX3ByZXYgPSB2bWE7CiB9CiAKIC8qCg==
+--0050450160335a454d048e47d5e8--
