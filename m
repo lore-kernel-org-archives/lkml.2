@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab0HTKDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 06:03:16 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:33536 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab0HTKDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 06:03:14 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 Aug 2010 18:58:16 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kamezawa.hiroyuki@gmail.com, "menage@google.com" <menage@google.com>,
-        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
-Subject: [PATCH 1/5] cgroup: ID notification call back
-Message-Id: <20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1751681Ab0HTKET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 06:04:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39554 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751050Ab0HTKEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 06:04:15 -0400
+Date: Fri, 20 Aug 2010 20:04:01 +1000
+From: Neil Brown <neilb@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
+        npiggin@suse.de, hooanon05@yahoo.co.jp, bfields@fieldses.org,
+        miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V18 05/13] vfs: Support null pathname in readlink
+Message-ID: <20100820200401.1b824be5@notabene>
+In-Reply-To: <20100820083213.GB10039@infradead.org>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1282269097-26166-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100820083213.GB10039@infradead.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -32,91 +28,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ed to Paul Menage and Li Zefan.
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Fri, 20 Aug 2010 04:32:13 -0400
+Christoph Hellwig <hch@infradead.org> wrote:
 
-When cgroup subsystem use ID (ss->use_id==1), each css's ID is assigned
-after successful call of ->create(). css_ID is tightly coupled with
-css struct itself but it is allocated by ->create() call, IOW,
-per-subsystem special allocations.
+> Changing the interfaces of existing system calls to accept a NULL name
+> which previously wasn't acceptable is not valid.  Even for new system
+> calls I think it's a bad idea.  utimensat already has the most ugly
+> code of all fs related system calls because of that.
 
-To know css_id before creation, this patch adds id_attached() callback.
-after css_ID allocation. This will be used by memory cgroup's quick lookup
-routine.
+Again, you have made an assertion without justifying it.
+I disagree, I think it is perfectly valid.
 
-Maybe you can think of other implementations as
-	- pass ID to ->create()
-	or
-	- add post_create()
-	etc...
-But when considering dirtiness of codes, this straightforward patch seems
-good to me. If someone wants post_create(), this patch can be replaced.
+The function would still return an error in every case that it previously
+returned an error, because in every previous case the fd would not have
+referred to a symlink so the new version will have nothing to perform a
+readlink on when NULL is passed.  The error would probably be EINVAL rather
+than EFAULT but even that difference could be avoided if it was really
+important (I doubt it is).
 
-Changelog: 20100820
- - new approarch.
+You only get different behaviour if the path name is NULL and the fd refers
+to a symlink.  This is a completely new situation for which there is no
+precedent for how the syscall should behave.  We are free to create whatever
+behaviour is most consistent.  I believe the proposed behaviour is the
+correct one.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- Documentation/cgroups/cgroups.txt |   10 ++++++++++
- include/linux/cgroup.h            |    1 +
- kernel/cgroup.c                   |    5 ++++-
- 3 files changed, 15 insertions(+), 1 deletion(-)
+The code may be ugly, but I'm sure it can be tidied up, particularly if
+several system-calls adopted the same calling convention.
 
-Index: mmotm-0811/Documentation/cgroups/cgroups.txt
-===================================================================
---- mmotm-0811.orig/Documentation/cgroups/cgroups.txt
-+++ mmotm-0811/Documentation/cgroups/cgroups.txt
-@@ -621,6 +621,16 @@ and root cgroup. Currently this will onl
- the default hierarchy (which never has sub-cgroups) and a hierarchy
- that is being created/destroyed (and hence has no sub-cgroups).
- 
-+void id_attached(struct cgroup_subsys *ss, struct cgroup *root)
-+(cgroup_mutex and ss->hierarchy_mutex held by caller)
-+(called only when ss->use_id=1)
-+
-+Called when css_id is attached to css. Because css_id is assigned
-+against "css", css_id is not available until ->create() is called.
-+If subsystem wants to make use of ID at createtion time, use
-+this handler. This handler will be called after css_id is assigned
-+to css. Not necessary to be implemented in usual(see memcontrol.c)
-+
- 4. Questions
- ============
- 
-Index: mmotm-0811/include/linux/cgroup.h
-===================================================================
---- mmotm-0811.orig/include/linux/cgroup.h
-+++ mmotm-0811/include/linux/cgroup.h
-@@ -475,6 +475,7 @@ struct cgroup_subsys {
- 			struct cgroup *cgrp);
- 	void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
- 	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
-+	void (*id_attached)(struct cgroup_subsys *ss, struct cgroup *cgrp);
- 
- 	int subsys_id;
- 	int active;
-Index: mmotm-0811/kernel/cgroup.c
-===================================================================
---- mmotm-0811.orig/kernel/cgroup.c
-+++ mmotm-0811/kernel/cgroup.c
-@@ -4618,6 +4618,8 @@ static int __init_or_module cgroup_init_
- 	newid->stack[0] = newid->id;
- 	newid->css = rootcss;
- 	rootcss->id = newid;
-+	if (ss->id_attached)
-+		ss->id_attached(ss, dummytop);
- 	return 0;
- }
- 
-@@ -4646,7 +4648,8 @@ static int alloc_css_id(struct cgroup_su
- 	 * see cgroup_populate_dir()
- 	 */
- 	rcu_assign_pointer(child_css->id, child_id);
--
-+	if (ss->id_attached)
-+		ss->id_attached(ss, child);
- 	return 0;
- }
- 
-
+NeilBrown
