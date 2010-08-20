@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab0HTIJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:09:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56711 "EHLO mx1.redhat.com"
+	id S1752521Ab0HTIJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:09:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48312 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab0HTIJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:09:23 -0400
+	id S1752211Ab0HTIJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:09:26 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: kvm@vger.kernel.org
 Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
@@ -13,59 +13,87 @@ Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
         Glauber Costa <glommer@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [KVM timekeeping 33/35] Indicate reliable TSC in kvmclock
-Date: Thu, 19 Aug 2010 22:07:47 -1000
-Message-Id: <1282291669-25709-34-git-send-email-zamsden@redhat.com>
+Subject: [KVM timekeeping 34/35] Remove dead code
+Date: Thu, 19 Aug 2010 22:07:48 -1000
+Message-Id: <1282291669-25709-35-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
 References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When no platform bugs have been detected, no TSC warps have been
-detected, and the hardware guarantees to us TSC does not change
-rate or stop with P-state or C-state changes, we can consider it reliable.
+This function is basically almost completely totally useless.
+
+N.B.  The hardware_enable code is not redundant; we could have an old
+VCPU thread hanging around that was not rescheduled during a
+CPU hotremove / hotadd event.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/kvm/x86.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ arch/x86/kvm/x86.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 86f182a..a7fa24e 100644
+index a7fa24e..23d5138 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -55,6 +55,7 @@
- #include <asm/mce.h>
- #include <asm/i387.h>
- #include <asm/xcr.h>
-+#include <asm/pvclock-abi.h>
+@@ -1179,11 +1179,6 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+ 	return 0;
+ }
  
- #define MAX_IO_MSRS 256
- #define CR0_RESERVED_BITS						\
-@@ -900,6 +901,13 @@ static void kvm_get_time_scale(uint32_t scaled_khz, uint32_t base_khz,
- static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
- unsigned long max_tsc_khz;
- 
-+static inline int kvm_tsc_reliable(void)
-+{
-+	return (boot_cpu_has(X86_FEATURE_CONSTANT_TSC) &&
-+		boot_cpu_has(X86_FEATURE_NONSTOP_TSC) &&
-+		!check_tsc_unstable());
-+}
-+
- static inline u64 nsec_to_cycles(struct kvm *kvm, u64 nsec)
+-static void kvm_request_clock_update(struct kvm_vcpu *v)
+-{
+-	kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
+-}
+-
+ static inline bool kvm_unstable_smp_clock(struct kvm *kvm)
  {
- 	return pvclock_scale_delta(nsec, kvm->arch.virtual_tsc_mult,
-@@ -1151,7 +1159,7 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 	vcpu->hv_clock.tsc_timestamp = tsc_timestamp;
- 	vcpu->hv_clock.system_time = kernel_ns + v->kvm->arch.kvmclock_offset;
- 	vcpu->last_kernel_ns = kernel_ns;
--	vcpu->hv_clock.flags = 0;
-+	vcpu->hv_clock.flags = kvm_tsc_reliable() ? PVCLOCK_TSC_STABLE_BIT : 0;
+ 	return check_tsc_unstable() && atomic_read(&kvm->online_vcpus) > 1;
+@@ -1218,7 +1213,7 @@ static void kvm_update_tsc_trapping(struct kvm *kvm)
+ 	 */
+ 	kvm_for_each_vcpu(i, vcpu, kvm) {
+ 		vcpu->arch.tsc_mode = best_tsc_mode(vcpu);
+-		kvm_request_clock_update(vcpu);
++		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 	}
+ }
  
- 	/*
- 	 * The interface expects us to write an even number signaling that the
+@@ -1559,7 +1554,7 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 
+ 		/* Disable / enable trapping for kvmclock */
+ 		vcpu->arch.tsc_mode = best_tsc_mode(vcpu);
+-		kvm_request_clock_update(vcpu);
++		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 		break;
+ 	}
+ 	case MSR_IA32_MCG_CTL:
+@@ -4499,7 +4494,7 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
+ 				continue;
+ 			if (freq->new > kvm->arch.virtual_tsc_khz)
+ 				vcpu->arch.tsc_overrun = 1;
+-			kvm_request_clock_update(vcpu);
++			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 			if (vcpu->cpu != smp_processor_id())
+ 				send_ipi = 1;
+ 		}
+@@ -5197,7 +5192,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+ 
+ 	/* Running on slower TSC without kvmclock, we must bump TSC */
+ 	if (vcpu->arch.tsc_rebase)
+-		kvm_request_clock_update(vcpu);
++		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 
+ 	preempt_enable();
+ 
+@@ -5791,7 +5786,7 @@ int kvm_arch_hardware_enable(void *garbage)
+ 	list_for_each_entry(kvm, &vm_list, vm_list)
+ 		kvm_for_each_vcpu(i, vcpu, kvm)
+ 			if (vcpu->cpu == smp_processor_id())
+-				kvm_request_clock_update(vcpu);
++				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 	return kvm_x86_ops->hardware_enable(garbage);
+ }
+ 
 -- 
 1.7.1
 
