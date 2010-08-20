@@ -1,208 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab0HTORx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 10:17:53 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55711 "EHLO hera.kernel.org"
+	id S1752992Ab0HTOSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 10:18:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55724 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752625Ab0HTORu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 10:17:50 -0400
-Date: Fri, 20 Aug 2010 14:17:25 GMT
-From: tip-bot for Robert Richter <robert.richter@amd.com>
+	id S1752958Ab0HTOSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 10:18:04 -0400
+Date: Fri, 20 Aug 2010 14:17:46 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, robert.richter@amd.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, dzickus@redhat.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, robert.richter@amd.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <20100817152225.GQ26154@erda.amd.com>
-References: <20100817152225.GQ26154@erda.amd.com>
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <1282228033.2605.204.camel@laptop>
+References: <1282228033.2605.204.camel@laptop>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: Try to handle unknown nmis with an enabled PMU
-Message-ID: <tip-8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce@git.kernel.org>
-Git-Commit-ID: 8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce
+Subject: [tip:perf/urgent] perf, x86: Fix handle_irq return values
+Message-ID: <tip-4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76@git.kernel.org>
+Git-Commit-ID: 4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 14:17:25 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 14:17:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce
-Gitweb:     http://git.kernel.org/tip/8e3e42b4f88602bb6e1f0b74afd80ff4703f79ce
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Tue, 17 Aug 2010 16:42:03 +0200
+Commit-ID:  4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
+Gitweb:     http://git.kernel.org/tip/4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 19 Aug 2010 16:28:00 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 20 Aug 2010 15:00:05 +0200
+CommitDate: Fri, 20 Aug 2010 15:00:06 +0200
 
-perf, x86: Try to handle unknown nmis with an enabled PMU
+perf, x86: Fix handle_irq return values
 
-When the PMU is enabled it is valid to have unhandled nmis, two
-events could trigger 'simultaneously' raising two back-to-back
-NMIs. If the first NMI handles both, the latter will be empty and daze
-the CPU.
+Now that we rely on the number of handled overflows, ensure all handle_irq
+implementations actually return the right number.
 
-The solution to avoid an 'unknown nmi' massage in this case was simply
-to stop the nmi handler chain when the PMU is enabled by stating
-the nmi was handled. This has the drawback that a) we can not detect
-unknown nmis anymore, and b) subsequent nmi handlers are not called.
-
-This patch addresses this. Now, we check this unknown NMI if it could
-be a PMU back-to-back NMI. Otherwise we pass it and let the kernel
-handle the unknown nmi.
-
-This is a debug log:
-
-cpu #6, nmi #32333, skip_nmi #32330, handled = 1, time = 1934364430
-cpu #6, nmi #32334, skip_nmi #32330, handled = 1, time = 1934704616
-cpu #6, nmi #32335, skip_nmi #32336, handled = 2, time = 1936032320
-cpu #6, nmi #32336, skip_nmi #32336, handled = 0, time = 1936034139
-cpu #6, nmi #32337, skip_nmi #32336, handled = 1, time = 1936120100
-cpu #6, nmi #32338, skip_nmi #32336, handled = 1, time = 1936404607
-cpu #6, nmi #32339, skip_nmi #32336, handled = 1, time = 1937983416
-cpu #6, nmi #32340, skip_nmi #32341, handled = 2, time = 1938201032
-cpu #6, nmi #32341, skip_nmi #32341, handled = 0, time = 1938202830
-cpu #6, nmi #32342, skip_nmi #32341, handled = 1, time = 1938443743
-cpu #6, nmi #32343, skip_nmi #32341, handled = 1, time = 1939956552
-cpu #6, nmi #32344, skip_nmi #32341, handled = 1, time = 1940073224
-cpu #6, nmi #32345, skip_nmi #32341, handled = 1, time = 1940485677
-cpu #6, nmi #32346, skip_nmi #32347, handled = 2, time = 1941947772
-cpu #6, nmi #32347, skip_nmi #32347, handled = 1, time = 1941949818
-cpu #6, nmi #32348, skip_nmi #32347, handled = 0, time = 1941951591
-Uhhuh. NMI received for unknown reason 00 on CPU 6.
-Do you have a strange power saving mode enabled?
-Dazed and confused, but trying to continue
-
-Deltas:
-
-nmi #32334 340186
-nmi #32335 1327704
-nmi #32336 1819      <<<< back-to-back nmi [1]
-nmi #32337 85961
-nmi #32338 284507
-nmi #32339 1578809
-nmi #32340 217616
-nmi #32341 1798      <<<< back-to-back nmi [2]
-nmi #32342 240913
-nmi #32343 1512809
-nmi #32344 116672
-nmi #32345 412453
-nmi #32346 1462095   <<<< 1st nmi (standard) handling 2 counters
-nmi #32347 2046      <<<< 2nd nmi (back-to-back) handling one counter
-nmi #32348 1773      <<<< 3rd nmi (back-to-back) handling no counter! [3]
-
-For  back-to-back nmi detection there are the following rules:
-
-The PMU nmi handler was handling more than one counter and no
-counter was handled in the subsequent nmi (see [1] and [2] above).
-
-There is another case if there are two subsequent back-to-back nmis
-[3]. The 2nd is detected as back-to-back because the first handled
-more than one counter. If the second handles one counter and the 3rd
-handles nothing, we drop the 3rd nmi because it could be a
-back-to-back nmi.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Tested-by: Don Zickus <dzickus@redhat.com>
-LKML-Reference: <20100817152225.GQ26154@erda.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <1282228033.2605.204.camel@laptop>
 ---
- arch/x86/kernel/cpu/perf_event.c |   59 +++++++++++++++++++++++++++++--------
- 1 files changed, 46 insertions(+), 13 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |    9 +++++++--
+ arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f2da20f..dd2fceb 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1154,7 +1154,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
- 		/*
- 		 * event overflow
- 		 */
--		handled		= 1;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index d8d86d0..4539b4b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -713,6 +713,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+ 	u64 ack, status;
++	int handled = 0;
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+@@ -743,12 +744,16 @@ again:
+ 	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+-	if (__test_and_clear_bit(62, (unsigned long *)&status))
++	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
 +		handled++;
- 		data.period	= event->hw.last_period;
- 
- 		if (!x86_perf_event_set_period(event))
-@@ -1200,12 +1200,20 @@ void perf_events_lapic_init(void)
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
- }
- 
-+struct pmu_nmi_state {
-+	unsigned int	marked;
-+	int		handled;
-+};
-+
-+static DEFINE_PER_CPU(struct pmu_nmi_state, nmi);
-+
- static int __kprobes
- perf_event_nmi_handler(struct notifier_block *self,
- 			 unsigned long cmd, void *__args)
- {
- 	struct die_args *args = __args;
--	struct pt_regs *regs;
-+	unsigned int this_nmi;
-+	int handled;
- 
- 	if (!atomic_read(&active_events))
- 		return NOTIFY_DONE;
-@@ -1214,22 +1222,47 @@ perf_event_nmi_handler(struct notifier_block *self,
- 	case DIE_NMI:
- 	case DIE_NMI_IPI:
- 		break;
--
-+	case DIE_NMIUNKNOWN:
-+		this_nmi = percpu_read(irq_stat.__nmi_count);
-+		if (this_nmi != __get_cpu_var(nmi).marked)
-+			/* let the kernel handle the unknown nmi */
-+			return NOTIFY_DONE;
-+		/*
-+		 * This one is a PMU back-to-back nmi. Two events
-+		 * trigger 'simultaneously' raising two back-to-back
-+		 * NMIs. If the first NMI handles both, the latter
-+		 * will be empty and daze the CPU. So, we drop it to
-+		 * avoid false-positive 'unknown nmi' messages.
-+		 */
-+		return NOTIFY_STOP;
- 	default:
- 		return NOTIFY_DONE;
- 	}
- 
--	regs = args->regs;
--
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
--	/*
--	 * Can't rely on the handled return value to say it was our NMI, two
--	 * events could trigger 'simultaneously' raising two back-to-back NMIs.
--	 *
--	 * If the first NMI handles both, the latter will be empty and daze
--	 * the CPU.
--	 */
--	x86_pmu.handle_irq(regs);
-+
-+	handled = x86_pmu.handle_irq(args->regs);
-+	if (!handled)
-+		return NOTIFY_DONE;
-+
-+	this_nmi = percpu_read(irq_stat.__nmi_count);
-+	if ((handled > 1) ||
-+		/* the next nmi could be a back-to-back nmi */
-+	    ((__get_cpu_var(nmi).marked == this_nmi) &&
-+	     (__get_cpu_var(nmi).handled > 1))) {
-+		/*
-+		 * We could have two subsequent back-to-back nmis: The
-+		 * first handles more than one counter, the 2nd
-+		 * handles only one counter and the 3rd handles no
-+		 * counter.
-+		 *
-+		 * This is the 2nd nmi because the previous was
-+		 * handling more than one counter. We will mark the
-+		 * next (3rd) and then drop it if unhandled.
-+		 */
-+		__get_cpu_var(nmi).marked	= this_nmi + 1;
-+		__get_cpu_var(nmi).handled	= handled;
+ 		x86_pmu.drain_pebs(regs);
 +	}
  
- 	return NOTIFY_STOP;
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
++		handled++;
++
+ 		if (!test_bit(bit, cpuc->active_mask))
+ 			continue;
+ 
+@@ -772,7 +777,7 @@ again:
+ 
+ done:
+ 	intel_pmu_enable_all(0);
+-	return 1;
++	return handled;
  }
+ 
+ static struct event_constraint *
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index febb12c..d470c91 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -690,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		inc_irq_stat(apic_perf_irqs);
+ 	}
+ 
+-	return handled > 0;
++	return handled;
+ }
+ 
+ /*
