@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab0HTLvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 07:51:31 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:57965 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab0HTLv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 07:51:29 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Date: Fri, 20 Aug 2010 14:50:12 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.36-rc1; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-References: <201008191818.36068.mitov@issp.bas.bg> <201008201113.46036.mitov@issp.bas.bg> <20100820173349E.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100820173349E.fujita.tomonori@lab.ntt.co.jp>
+	id S1752963Ab0HTLwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 07:52:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35583 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab0HTLv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 07:51:58 -0400
+Date: Fri, 20 Aug 2010 12:51:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Neil Brown <neilb@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, adilger@sun.com,
+        corbet@lwn.net, npiggin@suse.de, hooanon05@yahoo.co.jp,
+        bfields@fieldses.org, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+Message-ID: <20100820115135.GQ31363@ZenIV.linux.org.uk>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20100820083057.GA10039@infradead.org>
+ <20100820195303.20b17210@notabene>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008201450.12585.mitov@issp.bas.bg>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100820195303.20b17210@notabene>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> On Fri, 20 Aug 2010 11:13:45 +0300
-> Marin Mitov <mitov@issp.bas.bg> wrote:
+On Fri, Aug 20, 2010 at 07:53:03PM +1000, Neil Brown wrote:
+> On Fri, 20 Aug 2010 04:30:57 -0400
+> Christoph Hellwig <hch@infradead.org> wrote:
 > 
-> > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > 
-> > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > Helps for videobuf-dma-contig framework.
-> > > 
-> > > What you guys exactly want to do? If you just want to pre-allocate
-> > > coherent memory for latter usage,
-> > 
-> > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > We use coherent memory because it turns out to be contiguous.
+> > Suddenly getting an file pointer for a symlink which could never happen
+> > before is a really bad idea.  Just add a proper readlink_by_handle
+> > system call, similar to what's done in the XFS interface.
 > 
-> Hmm, you don't care about coherency? You just need contiguous memory?
-
-Yes. We just need contiguous memory. Coherency is important as far as when dma
-transfer finishes user land is able to see the new data. Could be done by something like
-dma_{,un}map_single()
-
+> Why is that?
+> With futexes we suddenly get a file descriptor for something we could never
+> get a file descriptor on before and that doesn't seem to be a problem.
 > 
-> Then, I prefer to invent the API to allocate contiguous
-> memory. Coherent memory is precious on some arches.
+> Why should symlinks be special as the only thing that you cannot have a file
+> descriptor for?  Uniformity of interface is a very valuable property.
 
-Sure, but in any case videobuf-dma-contig framework in drivers/media/video
-is already built around dma-coherent (nevertheless it is precious), so the two new
-functions are just a helpful extension to the existing use of dma-coherent memory.
+You are welcome to review the codepaths around pathname resolution for
+assumptions of presense of ->follow_link() and friends; there _are_
+subtle cases and dumping your "opened symlinks" in there is far from
+a trivial change.  Note that it affects more than just the starting
+points of lookups; /proc/*/fd/* stuff is also involved.
 
-In any case, as far as these two functions will be mainly used by media/video folks
-they could be added not to the drivers/base/dma-coherent.c (where I see their place),
-but to drivers/media/video/videobuf-dma-contig.c. In that case the disadvantage will be
-that if someone out of the media tree will need this functionality he(she) will need to
-compile media/videobuf-dma-contig.c
-> 
-> 
-> > > why dma_pool API (mm/dmapool.c) doesn't work?
-> > 
-> > I do not know why dma_pool API doesn't work for frame grabber buffers.
-> > May be they are too big ~400KB. I have tried dma_pool APIs without success 
-> > some time ago, so I had to find some other way to solve my problem leading to 
-> > the proposed dma_reserve_coherent_memory()/dma_free_reserved_memory().
-> 
-> I think that dma_pool API is for small coherent memory (smaller than
-> PAGE_SIZE) 
-
-Yes.
-
-> so it might not work for you. However, the purpose of
-> dma_pool API is exactly for what you want to do, creating a pool for
-> coherent memory per device for drivers.
-> 
-> I don't see any reason why we can't extend the dma_pool API for your
-> case. And it looks better to me rather than inventing the new API.
-
-That will help. I will be happy if someone can do it. I am inpaciently waiting for 
-alloc_huhepages()/free_hugepages() API - (transparent hugepages patches, may be)
-That also could be a solution for media/video folks with hardware that cannot do 
-scatter/gatter. Another solution will be an IOMMU that could present a scattered
-user land buffer as contiguous dma address range (I have played in the past with 
-AGP-GART without great success).
-
-Thanks.
-
-Marin Mitov
-
- 
+BTW, speaking of NULL pathname, linkat() variant that allows creating a link
+to an opened file is also a very dubious thing; at the very least, you get
+non-trivial security implications, since now a process that got an opened
+descriptor passed to it by somebody else may create hardlinks to the sucker.
