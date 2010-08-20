@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab0HTVcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:32:14 -0400
-Received: from fieldses.org ([174.143.236.118]:42076 "EHLO fieldses.org"
+	id S1751477Ab0HTVfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:35:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62270 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab0HTVcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:32:13 -0400
-Date: Fri, 20 Aug 2010 17:29:58 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Neil Brown <neilb@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfsd: fix NULL dereference in nfsd_statfs()
-Message-ID: <20100820212958.GC26698@fieldses.org>
-References: <s5h4oeywrde.wl%tiwai@suse.de>
- <20100814130235.GA28304@fieldses.org>
+	id S1751143Ab0HTVfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:35:39 -0400
+Date: Fri, 20 Aug 2010 18:34:48 -0300
+From: "acme@redhat.com" <acme@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>,
+        "Lin, Ming M" <ming.m.lin@intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
+Message-ID: <20100820213447.GD2973@ghostprotocols.net>
+References: <1282118350.5181.115.camel@rui> <1282134329.1926.3918.camel@laptop> <20100818124116.GA17957@console-pimps.org> <1282188497.11858.94.camel@minggr.sh.intel.com> <1282208521.1926.4535.camel@laptop> <1282268675.5181.1608.camel@rui> <1282296855.2605.724.camel@laptop> <20100820123159.GA3321@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100814130235.GA28304@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100820123159.GA3321@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 09:02:35AM -0400, J. Bruce Fields wrote:
-> On Fri, Aug 13, 2010 at 03:53:49PM +0200, Takashi Iwai wrote:
-> > The commit ebabe9a9001af0af56c0c2780ca1576246e7a74b
-> >     pass a struct path to vfs_statfs
-> > introduced the struct path initialization, and this seems to trigger
-> > an Oops on my machine.
-> > 
-> > fh_dentry field may be NULL and set later in fh_verify(), thus the
-> > initialization of path must be after fh_verify().
-> > 
-> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Em Fri, Aug 20, 2010 at 02:31:59PM +0200, Ingo Molnar escreveu:
+> Btw., some 'perf list' thoughts. We could do a:
 > 
-> I'm travelling, but, looks good:
+>    perf list --help rapl:watts
 > 
-> 	Acked-by: J. Bruce Fields <bfields@redhat.com>
+> Which gives the user some idea what an event does. Also, short descriptive 
+> line in perf list output would be nice:
+> 
+> $ perf list
+> 
+> List of pre-defined events (to be used in -e):
+> 
+>   cpu-cycles OR cycles                       [Hardware event]   # CPU cycles
+>   instructions                               [Hardware event]   # instructions executed
+> 
+>   ...
+> 
+>   rapl:watts                                 [Tracepoint]       # watts usage
+> 
+> or something like that. Perhaps even a TUI for perf list, to browse between 
+> event types? (in that case it would probably be useful to make them collapse 
+> along natural grouping)
+> 
+> We want users/developers to discover new events, see and understand their 
+> purpose and combine them in not-seen-before ways.
 
-Sorry for the delay, queued up to send to Linus for 2.6.36 soon.
+Right, record, list, probe, top are on the UI (not just T-UI, see latest
+efforts on decoupling from newt/slang) hit-list :)
 
---b.
+Moving from one to the other seamlessly like today is possible for
+report and annotate is the goal.
 
-> 
-> --b.
-> 
-> > ---
-> >  fs/nfsd/vfs.c |   14 ++++++++------
-> >  1 files changed, 8 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-> > index 96360a8..661a6cf 100644
-> > --- a/fs/nfsd/vfs.c
-> > +++ b/fs/nfsd/vfs.c
-> > @@ -2033,15 +2033,17 @@ out:
-> >  __be32
-> >  nfsd_statfs(struct svc_rqst *rqstp, struct svc_fh *fhp, struct kstatfs *stat, int access)
-> >  {
-> > -	struct path path = {
-> > -		.mnt	= fhp->fh_export->ex_path.mnt,
-> > -		.dentry	= fhp->fh_dentry,
-> > -	};
-> >  	__be32 err;
-> >  
-> >  	err = fh_verify(rqstp, fhp, 0, NFSD_MAY_NOP | access);
-> > -	if (!err && vfs_statfs(&path, stat))
-> > -		err = nfserr_io;
-> > +	if (!err) {
-> > +		struct path path = {
-> > +			.mnt	= fhp->fh_export->ex_path.mnt,
-> > +			.dentry	= fhp->fh_dentry,
-> > +		};
-> > +		if (vfs_statfs(&path, stat))
-> > +			err = nfserr_io;
-> > +	}
-> >  	return err;
-> >  }
-> >  
-> > -- 
-> > 1.7.2.1
-> > 
+Now that the UI browser code is more robust and generic that should
+happen faster, I think.
+
+- Arnaldo
