@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab0HTNTm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:19:42 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41224 "EHLO mx2.mail.elte.hu"
+	id S1752121Ab0HTNWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:22:49 -0400
+Received: from verein.lst.de ([213.95.11.210]:44387 "EHLO verein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab0HTNTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:19:40 -0400
-Date: Fri, 20 Aug 2010 15:19:20 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        peterz@infradead.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH  1/1] mutex: prevent optimistic spinning from spinning
- longer than neccessary (Repost)
-Message-ID: <20100820131920.GC3321@elte.hu>
-References: <1282168827.9542.72.camel@schen9-DESK>
- <20100819110511.GA16264@elte.hu>
- <1877.10.21.68.23.1282256686.squirrel@linux.intel.com>
-MIME-Version: 1.0
+	id S1751249Ab0HTNWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 09:22:47 -0400
+Date: Fri, 20 Aug 2010 15:22:14 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
+Message-ID: <20100820132214.GA6184@lst.de>
+References: <1281616891-5691-1-git-send-email-tj@kernel.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1877.10.21.68.23.1282256686.squirrel@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4540]
+In-Reply-To: <1281616891-5691-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0.001 () BAYES_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+FYI: here's a little writeup to document the new cache flushing scheme,
+intended to replace Documentation/block/barriers.txt.  Any good
+suggestion for a filename in the kernel tree?
 
-* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+---
 
-> > Ingo wrote:
-> >
-> > These are some rather impressive speedups!
-> >
-> > Have you tried to see what performance effects this change has on
-> smaller
-> > boxes? Just to see what flip side (if any) this change has.
-> >
-> 
-> I've done similar experiments with 2.6.35 kernel on smaller boxes.  One is
-> on a dual-socket Westmere box (12 cores total, with HT). Another
-> experiment is on an old dual-socket Core 2 box (4 cores total, no HT)
-> 
-> On the 12-core Westmere box, I see a 250% increase for Ingo's mutex-test
-> program with my mutex patch but no significant difference in aim7's
-> fserver workload.
-> 
-> On the 4-core Core 2 box, I see the difference with the patch for both
-> mutex-test and aim7 fserver are negligible.
+Explicit volatile write cache control
+=====================================
 
-Great!
+Introduction
+------------
 
-> So far, it seems like the patch has not caused regression on smaller 
-> systems.  We'll put it through more workloads to check.
+Many storage devices, especially in the consumer market, come with volatile
+write back caches.  That means the devices signal I/O completion to the
+operating system before data actually has hit the physical medium.  This
+behavior obviously speeds up various workloads, but it means the operating
+system needs to force data out to the physical medium when it performs
+a data integrity operation like fsync, sync or an unmount.
 
-Thanks! The performance results you've posted so far IMO more than justifies 
-its inclusion.
+The Linux block layer provides a two simple mechanism that lets filesystems
+control the caching behavior of the storage device.  These mechanisms are
+a forced cache flush, and the Force Unit Access (FUA) flag for requests.
 
-	Ingo
+
+Explicit cache flushes
+----------------------
+
+The REQ_FLUSH flag can be OR ed into the r/w flags of a bio submitted from the
+filesystem and will make sure the volatile cache of the storage device
+has been flushed before the actual I/O operation is started.  The explicit
+guarantees write requests that have completed before the bio was submitted
+actually are on the physical medium before this request has started.
+In addition the REQ_FLUSH flag can be set on an otherwise empty bio
+structure, which causes only an explicit cache flush without any dependent
+I/O.  It is recommend to use the blkdev_issue_flush() helper for a pure
+cache flush.
+
+
+Forced Unit Access
+-----------------
+
+The REQ_FUA flag can be OR ed into the r/w flags of a bio submitted from the
+filesystem and will make sure that I/O completion for this requests is not
+signaled before the data has made it to non-volatile storage on the
+physical medium.
+
+
+Implementation details for filesystems
+--------------------------------------
+
+Filesystem can simply set the REQ_FLUSH and REQ_FUA bits and do not have to
+worry if the underlying devices need any explicit cache flushing and how
+the Forced Unit Access is implemented.  The REQ_FLUSH and REQ_FUA flags
+may both be set on a single bio.
+
+
+Implementation details for make_request_fn based block drivers
+--------------------------------------------------------------
+
+These drivers will always see the REQ_FLUSH and REQ_FUA bits as they sit
+directly below the submit_bio interface.  For remapping drivers the REQ_FUA
+bits needs to be propagate to underlying devices, and a global flush needs
+to be implemented for bios with the REQ_FLUSH bit set.  For real device
+drivers that do not have a volatile cache the REQ_FLUSH and REQ_FUA bits
+on non-empty bios can simply be ignored, and REQ_FLUSH requests without
+data can be completed successfully without doing any work.  Drivers for
+devices with volatile caches need to implement the support for these
+flags themselves without any help from the block layer.
+
+
+Implementation details for request_fn based block drivers
+--------------------------------------------------------------
+
+For devices that do not support volatile write caches there is no driver
+support required, the block layer completes empty REQ_FLUSH requests before
+entering the driver and strips off the REQ_FLUSH and REQ_FUA bits from
+requests that have a payload.  For device with volatile write caches the
+driver needs to tell the block layer that it supports flushing caches by
+doing:
+
+	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH);
+
+and handle empty REQ_FLUSH requests in it's prep_fn/request_fn.  Note that
+REQ_FLUSH requests with a payload are automatically turned into a sequence
+of empty REQ_FLUSH and the actual write by the block layer.  For devices
+that also support the FUA bit the block layer needs to be told to pass
+through that bit using:
+
+	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH | REQ_FUA);
+
+and handle write requests that have the REQ_FUA bit set properly in it's
+prep_fn/request_fn.  If the FUA bit is not natively supported the block
+layer turns it into an empty REQ_FLUSH requests after the actual write.
