@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab0HTInM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:43:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20535 "EHLO mga01.intel.com"
+	id S1751527Ab0HTIq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:46:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28276 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752235Ab0HTInK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:43:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,238,1280732400"; 
-   d="scan'208";a="598535188"
-Date: Fri, 20 Aug 2010 16:43:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "npiggin@suse.de" <npiggin@suse.de>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH 2/3] writeback: Adding pages_dirtied and
- pages_entered_writeback
-Message-ID: <20100820084304.GA6051@localhost>
-References: <1282251447-16937-1-git-send-email-mrubin@google.com>
- <1282251447-16937-3-git-send-email-mrubin@google.com>
- <20100820025111.GB5502@localhost>
- <AANLkTimKn5BZiCAyr-3XAZuu66Q+ASZgBZ7LDU2Jom1p@mail.gmail.com>
+	id S1751028Ab0HTIqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:46:21 -0400
+From: =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
+Subject: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
+Date: Fri, 20 Aug 2010 10:45:43 +0200
+Message-Id: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimKn5BZiCAyr-3XAZuu66Q+ASZgBZ7LDU2Jom1p@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 04:16:09PM +0800, Michael Rubin wrote:
-> On Thu, Aug 19, 2010 at 7:51 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > As Rik said, /proc/sys is not a suitable place.
-> 
-> OK I'm convinced.
-> 
-> > Frankly speaking I've worked on writeback for years and never felt
-> > the need to add these counters. What I often do is:
-> >
-> > $ vmmon -d 1 nr_writeback nr_dirty nr_unstable
-> >
-> >     nr_writeback         nr_dirty      nr_unstable
-> >            68738                0            39568
-> >            66051                0            42255
-> >            63406                0            44900
-> >            60643                0            47663
-> >            57954                0            50352
-> >            55264                0            53042
-> >            52592                0            55715
-> >            49922                0            58385
-> > That is what I get when copying /dev/zero to NFS.
-> >
-> > I'm very interested in Google's use case for this patch, and why
-> > the simple /proc/vmstat based vmmon tool is not enough.
-> 
-> So as I understand it from looking at the code vmmon is sampling
-> nr_writeback, nr_dirty which are exported versions of
-> global_page_state for NR_FILE_DIRTY and NR_WRITEBACK. These states are
-> a snapshot of the state of the kernel's pages. Namely how many dpages
-> ar ein writeback or dirty at the moment vmmon's acquire routine is
-> called.
-> 
-> vmmon is sampling /proc/vstat and then displaying the difference from
-> the last time they sampled.  If I am misunderstanding let me know.
+Hello,
+following is a patchset providing an user-space interface to the kernel crypto
+API.  It is based on the older, BSD-compatible, implementation, but the
+user-space interface is different.
 
-Maybe Andrew's vmmon does that. My vmmon always display the raw values
-:) It could be improved to do raw values for nr_dirty and differences
-for pgpgin by default.
+Major changes since the previous post:
+* "struct nlattr"-based extensible attributes used for extensibility
+  of most operations, both for input and output attributes
+* algorithms (ciphers, key wrapping, key derivation) are identified using
+  strings in the userspace API
+* Full compat_ioctl implementation
+* Version number added to the data format used when wrapping keys for storage
+* Patch set split into smaller parts, reordered to keep the tree buildable.
+  (If you want to review primarily the user-space API, see patches
+  1,14,15,17,18.)
 
-> This is good for the state of the system but as we compare
-> application, mm and io performance over long periods of time we are
-> interested in the surges and fluctuations of the rates of the
-> producing and consuming of dirty pages also. It can help isolate where
-> the problem is and also to compare performance between kernels and/or
-> applications.
+  The libtom* patches will probably still be too large for the mailing list;
+  the whole patch set is also available at
+  http://people.redhat.com/mitr/cryptodev-ncr/v2/ .
 
-Yeah the accumulated dirty and writeback page counts could be useful.
-For example, for inspecting the dirty and writeback speed over time.
-That's not possible for nr_dirty/nr_writeback.
+Original patch set description follows.
 
-Thanks,
-Fengguang
+These are the major differences compared to the BSD-like interface:
+
+* The API supports key storage and management inside the kernel.
+  An application can thus ask the kernel to generate a key; the key is
+  then referenced via an integer identifier, and the application can be
+  prevented from accessing the raw key data.  Such a key can, if so configured,
+  still be wrapped for key transport to the recipient of the message, and
+  unwrapped by the recipient.
+
+  The kernel key storage does not span system reboots, but applications can
+  also wrap the keys for persistent storage, receiving an encrypted blob that
+  does not reveal the raw key data, but can be later loaded back into the
+  kernel.
+
+* More algorithms and mechanisms are supported by the API, including public key
+  algorithms (RSA/DSA encryption and signing, D-H key derivation, key wrapping).
+
+Motivations for the extensions: governments are asking for more security
+features in the operating systems they procure, which make user-space
+implementations impractical.  A few examples:
+
+* Advanced crypto module for OSPP for Common Criteria requires OS services
+  implementing several low-level crypto algorithms (e.g. AES, RSA).  This
+  requires the separation of crypto services from the consumer of those
+  services. (The threat model is that apps tend to have more vulnerabilities
+  than libraries and compromise of the app will lead to the ability to access
+  key material.) An user-space library is not separated, options are a) root
+  running daemon that does crypto, but this would be slow due to context
+  switches, scheduler mismatching and all the IPC overhead and b) use crypto
+  that is in the kernel.
+
+* FIPS-140-3 calls out for cryptographic functions to be non-debuggable (ptrace)
+  meaning that you cannot get to the key material. The solution is the same as
+  above.
+
+* GPOSPP requires auditing for crypto events (so does FIPS-140 level 2 cert).
+  To do this you need any crypto to have CAP_AUDIT_WRITE permissions which
+  means making everything that links to openssl, libgcrypt, or nss setuid
+  root. Making firefox and 400 other applications setuid root is a non-starter.
+  So, the solution is again to use crypto in the kernel where auditing needs no
+  special permissions.
+
+Other advantages to having kernel crypto available to user space:
+
+* User space will be able to take advantage of kernel drivers for hardware
+  crypto accelerators.
+
+* glibc, which in some configurations links to libfreebl3.so for hashes
+  necessary for crypt(), will be able to use the kernel implementation; this
+  means one less library to load and dynamically link for each such process.
+
+The code is derived from the original cryptodev-linux patch set; most of the
+new implementation was written by Nikos Mavrogiannopoulos
+<n.mavrogiannopoulos@gmail.com>.  Attributions are included in the respective
+source files.
