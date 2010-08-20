@@ -1,103 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285Ab0HTX7P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 19:59:15 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:22878 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750970Ab0HTX7M (ORCPT
+	id S1751337Ab0HUAAm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 20:00:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48311 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750857Ab0HUAAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 19:59:12 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: DPkEFjQVM1lwHlycQQxxg4wBh3jUqsQFHPolel65.9ZBFBa
- vYtBXSvj8JvpENYYw_MMpdE.K9m9MV2jjLR_jpXi6pm1cctN7OU0SrNNvmAp
- hN56MaetI3CjN5rPRgcZM40d52o2mjbdST6fJUJ6H62aNFuvTGRG7ohd8qgO
- 6u2gTStd7CnsZvrEl9AFQakTB0YWFtDIbwCOurzpGmIwfN866OZ_wsomEzLj
- Ic6.6sC3YGI9IVueFtrIqkqYC90_wq.Z0w1g84Z5Y8e72EdyM9OX1D45LjCJ
- bfCbc3njw8vsFd2jBOefkjSknO6rrAa6Mf.rNOk07njapVxR5gOpLkXRU86I
- S8Wnpz9ZrhDbrFkYGLw--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, hare@suse.de
-In-Reply-To: <4C6EF67E.2060908@cs.wisc.edu>
-References: <1282257947.30453.296.camel@haakon2.linux-iscsi.org>
-	 <20100820163058P.fujita.tomonori@lab.ntt.co.jp>
-	 <4C6EF67E.2060908@cs.wisc.edu>
-Content-Type: text/plain
-Date: Fri, 20 Aug 2010 16:55:28 -0700
-Message-Id: <1282348528.30453.450.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Aug 2010 20:00:40 -0400
+MIME-Version: 1.0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 Aug 2010 16:59:55 -0700
+Message-ID: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+Subject: [RFC] mlock/stack guard interaction fixup
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@suse.de>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: multipart/mixed; boundary=0016e6469b0c9ee6e4048e4a19f7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 16:41 -0500, Mike Christie wrote:
-> On 08/20/2010 02:32 AM, FUJITA Tomonori wrote:
-> > On Thu, 19 Aug 2010 15:45:47 -0700
-> > "Nicholas A. Bellinger"<nab@linux-iscsi.org>  wrote:
-> >
-> >> So, assuming that the conversion of all struct iscsi_init_* and struct
-> >> iscsi_target* to use include/scsi/iscsi_proto.h defs just involves
-> >> checking structure size and renaming the member use in
-> >> drivers/target/lio-target, would it be acceptable to do something like:
-> >>
-> >> /* iSCSI PDU Header */
-> >> struct iscsi_cmd {
-> >>          uint8_t opcode;
-> >>          uint8_t flags;
-> >>          __be16 rsvd2;
-> >>          uint8_t hlength;
-> >>          uint8_t dlength[3];
-> >>          uint8_t lun[8];
-> >>          itt_t    itt;   /* Initiator Task Tag */
-> >>          __be32 data_length;
-> >>          __be32 cmdsn;
-> >>          __be32 exp_statsn;
-> >>          uint8_t cdb[ISCSI_CDB_SIZE];    /* SCSI Command Block */
-> >>          /* Additional Data (Command Dependent) */
-> >> #ifdef ISCSI_TARGET_MODE
-> >>          __be32 header_digest;
-> >> #endif
-> >> };
-> >
-> > It's up to Mike but it looks hacky to me. struct iscsi_pdu is defined
-> > in the exact way as the spec does.
-> >
-> > I don't think that iscsi_proto.h conversion is a must for the mainline
-> > inclusion. I prefer to let it alone for now.
-> 
-> For the iscsi target, I think it is. For iscsi initiator drivers like 
-> bnx2i and be2iscsi we have made them convert from their headers to 
-> common linux ones including switching from driver specific defs to 
-> iscsi_proto.h.
+--0016e6469b0c9ee6e4048e4a19f7
+Content-Type: text/plain; charset=ISO-8859-1
 
-This is kinda what I figured myself..  So in that case, I will go ahead
-and plan on using the initial target mode stubs above to get up and
-running, and start doing this sometime after the next (seperate) posting
-of TCM_Core + TCM_Loop for Tomo-san's review. 
+Ian (and others),
+ here's a three-patch series that uses the doubly linked list to do
+your mlock() case hopefully correctly.
 
-> 
-> For the merging of any target core stuff though, I do not think it is 
-> critical. The core target stuff does not need to be merged with a 
-> software iscsi target. They can do in at different times.
+NOTE! It's untested. The first patch (which is the slightly scary one)
+is tested to some degree, the two other ones I checked that they
+compile, but that's it.
 
-I think in order to merge the software iSCSI target fabric bits for
-v2.6.37, it would sense to do it initially with something similar to
-these stubs.  From there I can have a more time to make necessary
-modifications to LIO-Target and plan removing the header_digest target
-stubs from iscsi_proto.h in for the .38 timeframe.
+I'm not going to apply them to my main tree unless they get testing
+and acks. And as mentioned, I've not done any of the changes that
+having a vm_prev pointer can allow in other places.
 
-But really, since you so kindly volunteered to review the
-drivers/target/lio-target code to start with, this decision is most
-certainly yours to me made as the LIO-Target conversion to iscsi_proto.h
-starts rolling..  8-)
+Comments? Fixes? Braindamage?
 
-Thanks for your comments Mike!
+                               Linus
 
---nab
+--0016e6469b0c9ee6e4048e4a19f7
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-mm-make-the-vma-list-be-doubly-linked.patch"
+Content-Disposition: attachment; 
+	filename="0001-mm-make-the-vma-list-be-doubly-linked.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gd3p5ty21
 
+RnJvbSA2NmZkZjAwYWFkMmNmNTM5YTY2OTE2OTQ2ZWE2ZmM0MTNjMzBjODA1IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
+dGlvbi5vcmc+CkRhdGU6IEZyaSwgMjAgQXVnIDIwMTAgMTY6MjQ6NTUgLTA3MDAKU3ViamVjdDog
+W1BBVENIIDEvM10gbW06IG1ha2UgdGhlIHZtYSBsaXN0IGJlIGRvdWJseSBsaW5rZWQKCkl0J3Mg
+YSByZWFsbHkgc2ltcGxlIGxpc3QsIGFuZCBzZXZlcmFsIG9mIHRoZSB1c2VycyB3YW50IHRvIGdv
+IGJhY2t3YXJkcwppbiBpdCB0byBmaW5kIHRoZSBwcmV2aW91cyB2bWEuICBTbyByYXRoZXIgdGhh
+biBoYXZlIHRvIGxvb2sgdXAgdGhlCnByZXZpb3VzIGVudHJ5IHdpdGggJ2ZpbmRfdm1hX3ByZXYo
+KScgb3Igc29tZXRoaW5nIHNpbWlsYXIsIGp1c3QgbWFrZSBpdApkb3VibHkgbGlua2VkIGluc3Rl
+YWQuCgpTaWduZWQtb2ZmLWJ5OiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
+dGlvbi5vcmc+Ci0tLQogaW5jbHVkZS9saW51eC9tbV90eXBlcy5oIHwgICAgMiArLQoga2VybmVs
+L2ZvcmsuYyAgICAgICAgICAgIHwgICAgNyArKysrKy0tCiBtbS9tbWFwLmMgICAgICAgICAgICAg
+ICAgfCAgIDIxICsrKysrKysrKysrKysrKysrLS0tLQogbW0vbm9tbXUuYyAgICAgICAgICAgICAg
+IHwgICAgNyArKysrKy0tCiA0IGZpbGVzIGNoYW5nZWQsIDI4IGluc2VydGlvbnMoKyksIDkgZGVs
+ZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tbV90eXBlcy5oIGIvaW5jbHVk
+ZS9saW51eC9tbV90eXBlcy5oCmluZGV4IGI4YmI5YTYuLmVlN2UyNTggMTAwNjQ0Ci0tLSBhL2lu
+Y2x1ZGUvbGludXgvbW1fdHlwZXMuaAorKysgYi9pbmNsdWRlL2xpbnV4L21tX3R5cGVzLmgKQEAg
+LTEzNCw3ICsxMzQsNyBAQCBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgewogCQkJCQkgICB3aXRoaW4g
+dm1fbW0uICovCiAKIAkvKiBsaW5rZWQgbGlzdCBvZiBWTSBhcmVhcyBwZXIgdGFzaywgc29ydGVk
+IGJ5IGFkZHJlc3MgKi8KLQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtX25leHQ7CisJc3RydWN0
+IHZtX2FyZWFfc3RydWN0ICp2bV9uZXh0LCAqdm1fcHJldjsKIAogCXBncHJvdF90IHZtX3BhZ2Vf
+cHJvdDsJCS8qIEFjY2VzcyBwZXJtaXNzaW9ucyBvZiB0aGlzIFZNQS4gKi8KIAl1bnNpZ25lZCBs
+b25nIHZtX2ZsYWdzOwkJLyogRmxhZ3MsIHNlZSBtbS5oLiAqLwpkaWZmIC0tZ2l0IGEva2VybmVs
+L2ZvcmsuYyBiL2tlcm5lbC9mb3JrLmMKaW5kZXggODU2ZWFjMy4uYjdlOWQ2MCAxMDA2NDQKLS0t
+IGEva2VybmVsL2ZvcmsuYworKysgYi9rZXJuZWwvZm9yay5jCkBAIC0zMDAsNyArMzAwLDcgQEAg
+b3V0OgogI2lmZGVmIENPTkZJR19NTVUKIHN0YXRpYyBpbnQgZHVwX21tYXAoc3RydWN0IG1tX3N0
+cnVjdCAqbW0sIHN0cnVjdCBtbV9zdHJ1Y3QgKm9sZG1tKQogewotCXN0cnVjdCB2bV9hcmVhX3N0
+cnVjdCAqbXBudCwgKnRtcCwgKipwcHJldjsKKwlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKm1wbnQs
+ICp0bXAsICpwcmV2LCAqKnBwcmV2OwogCXN0cnVjdCByYl9ub2RlICoqcmJfbGluaywgKnJiX3Bh
+cmVudDsKIAlpbnQgcmV0dmFsOwogCXVuc2lnbmVkIGxvbmcgY2hhcmdlOwpAQCAtMzI4LDYgKzMy
+OCw3IEBAIHN0YXRpYyBpbnQgZHVwX21tYXAoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCBt
+bV9zdHJ1Y3QgKm9sZG1tKQogCWlmIChyZXR2YWwpCiAJCWdvdG8gb3V0OwogCisJcHJldiA9IE5V
+TEw7CiAJZm9yIChtcG50ID0gb2xkbW0tPm1tYXA7IG1wbnQ7IG1wbnQgPSBtcG50LT52bV9uZXh0
+KSB7CiAJCXN0cnVjdCBmaWxlICpmaWxlOwogCkBAIC0zNTksNyArMzYwLDcgQEAgc3RhdGljIGlu
+dCBkdXBfbW1hcChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IG1tX3N0cnVjdCAqb2xkbW0p
+CiAJCQlnb3RvIGZhaWxfbm9tZW1fYW5vbl92bWFfZm9yazsKIAkJdG1wLT52bV9mbGFncyAmPSB+
+Vk1fTE9DS0VEOwogCQl0bXAtPnZtX21tID0gbW07Ci0JCXRtcC0+dm1fbmV4dCA9IE5VTEw7CisJ
+CXRtcC0+dm1fbmV4dCA9IHRtcC0+dm1fcHJldiA9IE5VTEw7CiAJCWZpbGUgPSB0bXAtPnZtX2Zp
+bGU7CiAJCWlmIChmaWxlKSB7CiAJCQlzdHJ1Y3QgaW5vZGUgKmlub2RlID0gZmlsZS0+Zl9wYXRo
+LmRlbnRyeS0+ZF9pbm9kZTsKQEAgLTM5Miw2ICszOTMsOCBAQCBzdGF0aWMgaW50IGR1cF9tbWFw
+KHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3QgbW1fc3RydWN0ICpvbGRtbSkKIAkJICovCiAJ
+CSpwcHJldiA9IHRtcDsKIAkJcHByZXYgPSAmdG1wLT52bV9uZXh0OworCQl0bXAtPnZtX3ByZXYg
+PSBwcmV2OworCQlwcmV2ID0gdG1wOwogCiAJCV9fdm1hX2xpbmtfcmIobW0sIHRtcCwgcmJfbGlu
+aywgcmJfcGFyZW50KTsKIAkJcmJfbGluayA9ICZ0bXAtPnZtX3JiLnJiX3JpZ2h0OwpkaWZmIC0t
+Z2l0IGEvbW0vbW1hcC5jIGIvbW0vbW1hcC5jCmluZGV4IDMxMDAzMzMuLjMzMWU1MWEgMTAwNjQ0
+Ci0tLSBhL21tL21tYXAuYworKysgYi9tbS9tbWFwLmMKQEAgLTM4OCwxNyArMzg4LDIzIEBAIHN0
+YXRpYyBpbmxpbmUgdm9pZAogX192bWFfbGlua19saXN0KHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBz
+dHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwKIAkJc3RydWN0IHZtX2FyZWFfc3RydWN0ICpwcmV2
+LCBzdHJ1Y3QgcmJfbm9kZSAqcmJfcGFyZW50KQogeworCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAq
+bmV4dDsKKworCXZtYS0+dm1fcHJldiA9IHByZXY7CiAJaWYgKHByZXYpIHsKLQkJdm1hLT52bV9u
+ZXh0ID0gcHJldi0+dm1fbmV4dDsKKwkJbmV4dCA9IHByZXYtPnZtX25leHQ7CiAJCXByZXYtPnZt
+X25leHQgPSB2bWE7CiAJfSBlbHNlIHsKIAkJbW0tPm1tYXAgPSB2bWE7CiAJCWlmIChyYl9wYXJl
+bnQpCi0JCQl2bWEtPnZtX25leHQgPSByYl9lbnRyeShyYl9wYXJlbnQsCisJCQluZXh0ID0gcmJf
+ZW50cnkocmJfcGFyZW50LAogCQkJCQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QsIHZtX3JiKTsKIAkJ
+ZWxzZQotCQkJdm1hLT52bV9uZXh0ID0gTlVMTDsKKwkJCW5leHQgPSBOVUxMOwogCX0KKwl2bWEt
+PnZtX25leHQgPSBuZXh0OworCWlmIChuZXh0KQorCQluZXh0LT52bV9wcmV2ID0gdm1hOwogfQog
+CiB2b2lkIF9fdm1hX2xpbmtfcmIoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCB2bV9hcmVh
+X3N0cnVjdCAqdm1hLApAQCAtNDgzLDcgKzQ4OSwxMSBAQCBzdGF0aWMgaW5saW5lIHZvaWQKIF9f
+dm1hX3VubGluayhzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2
+bWEsCiAJCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqcHJldikKIHsKLQlwcmV2LT52bV9uZXh0ID0g
+dm1hLT52bV9uZXh0OworCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqbmV4dCA9IHZtYS0+dm1fbmV4
+dDsKKworCXByZXYtPnZtX25leHQgPSBuZXh0OworCWlmIChuZXh0KQorCQluZXh0LT52bV9wcmV2
+ID0gcHJldjsKIAlyYl9lcmFzZSgmdm1hLT52bV9yYiwgJm1tLT5tbV9yYik7CiAJaWYgKG1tLT5t
+bWFwX2NhY2hlID09IHZtYSkKIAkJbW0tPm1tYXBfY2FjaGUgPSBwcmV2OwpAQCAtMTkxNSw2ICsx
+OTI1LDcgQEAgZGV0YWNoX3ZtYXNfdG9fYmVfdW5tYXBwZWQoc3RydWN0IG1tX3N0cnVjdCAqbW0s
+IHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAogCXVuc2lnbmVkIGxvbmcgYWRkcjsKIAogCWlu
+c2VydGlvbl9wb2ludCA9IChwcmV2ID8gJnByZXYtPnZtX25leHQgOiAmbW0tPm1tYXApOworCXZt
+YS0+dm1fcHJldiA9IE5VTEw7CiAJZG8gewogCQlyYl9lcmFzZSgmdm1hLT52bV9yYiwgJm1tLT5t
+bV9yYik7CiAJCW1tLT5tYXBfY291bnQtLTsKQEAgLTE5MjIsNiArMTkzMyw4IEBAIGRldGFjaF92
+bWFzX3RvX2JlX3VubWFwcGVkKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3Qgdm1fYXJlYV9z
+dHJ1Y3QgKnZtYSwKIAkJdm1hID0gdm1hLT52bV9uZXh0OwogCX0gd2hpbGUgKHZtYSAmJiB2bWEt
+PnZtX3N0YXJ0IDwgZW5kKTsKIAkqaW5zZXJ0aW9uX3BvaW50ID0gdm1hOworCWlmICh2bWEpCisJ
+CXZtYS0+dm1fcHJldiA9IHByZXY7CiAJdGFpbF92bWEtPnZtX25leHQgPSBOVUxMOwogCWlmICht
+bS0+dW5tYXBfYXJlYSA9PSBhcmNoX3VubWFwX2FyZWEpCiAJCWFkZHIgPSBwcmV2ID8gcHJldi0+
+dm1fZW5kIDogbW0tPm1tYXBfYmFzZTsKZGlmZiAtLWdpdCBhL21tL25vbW11LmMgYi9tbS9ub21t
+dS5jCmluZGV4IGVmYTlhMzguLjg4ZmYwOTEgMTAwNjQ0Ci0tLSBhL21tL25vbW11LmMKKysrIGIv
+bW0vbm9tbXUuYwpAQCAtNjA0LDcgKzYwNCw3IEBAIHN0YXRpYyB2b2lkIHByb3RlY3Rfdm1hKHN0
+cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLCB1bnNpZ25lZCBsb25nIGZsYWdzKQogICovCiBzdGF0
+aWMgdm9pZCBhZGRfdm1hX3RvX21tKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3Qgdm1fYXJl
+YV9zdHJ1Y3QgKnZtYSkKIHsKLQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnB2bWEsICoqcHA7CisJ
+c3RydWN0IHZtX2FyZWFfc3RydWN0ICpwdm1hLCAqKnBwLCAqbmV4dDsKIAlzdHJ1Y3QgYWRkcmVz
+c19zcGFjZSAqbWFwcGluZzsKIAlzdHJ1Y3QgcmJfbm9kZSAqKnAsICpwYXJlbnQ7CiAKQEAgLTY2
+NCw4ICs2NjQsMTEgQEAgc3RhdGljIHZvaWQgYWRkX3ZtYV90b19tbShzdHJ1Y3QgbW1fc3RydWN0
+ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEpCiAJCQlicmVhazsKIAl9CiAKLQl2bWEt
+PnZtX25leHQgPSAqcHA7CisJbmV4dCA9ICpwcDsKIAkqcHAgPSB2bWE7CisJdm1hLT52bV9uZXh0
+ID0gbmV4dDsKKwlpZiAobmV4dCkKKwkJbmV4dC0+dm1fcHJldiA9IHZtYTsKIH0KIAogLyoKLS0g
+CjEuNy4yLjEuOTcuZzMyMzViCgo=
+--0016e6469b0c9ee6e4048e4a19f7
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0002-mm-make-the-mlock-stack-guard-page-checks-stricter.patch"
+Content-Disposition: attachment; 
+	filename="0002-mm-make-the-mlock-stack-guard-page-checks-stricter.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gd3p6gk82
+
+RnJvbSBlZmVkN2EyNGExNjI1ODlmN2NhZTQyOTVlZTNlYjQwNGQyY2MwMDJjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
+dGlvbi5vcmc+CkRhdGU6IEZyaSwgMjAgQXVnIDIwMTAgMTY6Mzk6MjUgLTA3MDAKU3ViamVjdDog
+W1BBVENIIDIvM10gbW06IG1ha2UgdGhlIG1sb2NrKCkgc3RhY2sgZ3VhcmQgcGFnZSBjaGVja3Mg
+c3RyaWN0ZXIKCklmIHdlJ3ZlIHNwbGl0IHRoZSBzdGFjayB2bWEsIG9ubHkgdGhlIGxvd2VzdCBv
+bmUgaGFzIHRoZSBndWFyZCBwYWdlLgpOb3cgdGhhdCB3ZSBoYXZlIGEgZG91Ymx5IGxpbmtlZCBs
+aXN0IG9mIHZtYSdzLCBjaGVja2luZyB0aGlzIGlzIHRyaXZpYWwuCgpTaWduZWQtb2ZmLWJ5OiBM
+aW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+Ci0tLQogbW0vbWxv
+Y2suYyB8ICAgMjEgKysrKysrKysrKysrKysrKy0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDE2IGlu
+c2VydGlvbnMoKyksIDUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbW0vbWxvY2suYyBiL21t
+L21sb2NrLmMKaW5kZXggNDllNWU0Yy4uY2JhZTdjNSAxMDA2NDQKLS0tIGEvbW0vbWxvY2suYwor
+KysgYi9tbS9tbG9jay5jCkBAIC0xMzUsNiArMTM1LDE5IEBAIHZvaWQgbXVubG9ja192bWFfcGFn
+ZShzdHJ1Y3QgcGFnZSAqcGFnZSkKIAl9CiB9CiAKKy8qIElzIHRoZSB2bWEgYSBjb250aW51YXRp
+b24gb2YgdGhlIHN0YWNrIHZtYSBhYm92ZSBpdD8gKi8KK3N0YXRpYyBpbmxpbmUgaW50IHZtYV9z
+dGFja19jb250aW51ZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgdW5zaWduZWQgbG9uZyBh
+ZGRyKQoreworCXJldHVybiB2bWEgJiYgKHZtYS0+dm1fZW5kID09IGFkZHIpICYmICh2bWEtPnZt
+X2ZsYWdzICYgVk1fR1JPV1NET1dOKTsKK30KKworc3RhdGljIGlubGluZSBpbnQgc3RhY2tfZ3Vh
+cmRfcGFnZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgdW5zaWduZWQgbG9uZyBhZGRyKQor
+eworCXJldHVybiAodm1hLT52bV9mbGFncyAmIFZNX0dST1dTRE9XTikgJiYKKwkJKHZtYS0+dm1f
+c3RhcnQgPT0gYWRkcikgJiYKKwkJIXZtYV9zdGFja19jb250aW51ZSh2bWEtPnZtX3ByZXYsIGFk
+ZHIpOworfQorCiAvKioKICAqIF9fbWxvY2tfdm1hX3BhZ2VzX3JhbmdlKCkgLSAgbWxvY2sgYSBy
+YW5nZSBvZiBwYWdlcyBpbiB0aGUgdm1hLgogICogQHZtYTogICB0YXJnZXQgdm1hCkBAIC0xNjgs
+MTEgKzE4MSw5IEBAIHN0YXRpYyBsb25nIF9fbWxvY2tfdm1hX3BhZ2VzX3JhbmdlKHN0cnVjdCB2
+bV9hcmVhX3N0cnVjdCAqdm1hLAogCQlndXBfZmxhZ3MgfD0gRk9MTF9XUklURTsKIAogCS8qIFdl
+IGRvbid0IHRyeSB0byBhY2Nlc3MgdGhlIGd1YXJkIHBhZ2Ugb2YgYSBzdGFjayB2bWEgKi8KLQlp
+ZiAodm1hLT52bV9mbGFncyAmIFZNX0dST1dTRE9XTikgewotCQlpZiAoc3RhcnQgPT0gdm1hLT52
+bV9zdGFydCkgewotCQkJc3RhcnQgKz0gUEFHRV9TSVpFOwotCQkJbnJfcGFnZXMtLTsKLQkJfQor
+CWlmIChzdGFja19ndWFyZF9wYWdlKHZtYSwgc3RhcnQpKSB7CisJCWFkZHIgKz0gUEFHRV9TSVpF
+OworCQlucl9wYWdlcy0tOwogCX0KIAogCXdoaWxlIChucl9wYWdlcyA+IDApIHsKLS0gCjEuNy4y
+LjEuOTcuZzMyMzViCgo=
+--0016e6469b0c9ee6e4048e4a19f7
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0003-mm-make-stack-guard-page-logic-use-vm_prev-pointer.patch"
+Content-Disposition: attachment; 
+	filename="0003-mm-make-stack-guard-page-logic-use-vm_prev-pointer.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gd3p6psm3
+
+RnJvbSAzYzMzZTA0ZDIyNWVjMjk1ZWVlNGY4ZmI0ZTdiNzhiMzA5YzNjMGM4IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
+dGlvbi5vcmc+CkRhdGU6IEZyaSwgMjAgQXVnIDIwMTAgMTY6NDk6NDAgLTA3MDAKU3ViamVjdDog
+W1BBVENIIDMvM10gbW06IG1ha2Ugc3RhY2sgZ3VhcmQgcGFnZSBsb2dpYyB1c2Ugdm1fcHJldiBw
+b2ludGVyCgpMaWtlIHRoZSBtbG9jaygpIGNoYW5nZSBwcmV2aW91c2x5LCB0aGlzIG1ha2VzIHRo
+ZSBzdGFjayBndWFyZCBjaGVjawpjb2RlIHVzZSB2bWEtPnZtX3ByZXYgdG8gc2VlIHdoYXQgdGhl
+IG1hcHBpbmcgYmVsb3cgdGhlIGN1cnJlbnQgc3RhY2sKaXMsIHJhdGhlciB0aGFuIGhhdmUgdG8g
+bG9vayBpdCB1cCB3aXRoIGZpbmRfdm1hKCkuCgpBbHNvLCBhY2NlcHQgYW4gYWJ1dHRpbmcgc3Rh
+Y2sgc2VnbWVudCwgc2luY2UgdGhhdCBoYXBwZW5zIG5hdHVyYWxseSBpZgp5b3Ugc3BsaXQgdGhl
+IHN0YWNrIHdpdGggbWxvY2sgb3IgbXByb3RlY3QuCgpTaWduZWQtb2ZmLWJ5OiBMaW51cyBUb3J2
+YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+Ci0tLQogbW0vbWVtb3J5LmMgfCAg
+IDE1ICsrKysrKysrKysrLS0tLQogMSBmaWxlcyBjaGFuZ2VkLCAxMSBpbnNlcnRpb25zKCspLCA0
+IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL21tL21lbW9yeS5jIGIvbW0vbWVtb3J5LmMKaW5k
+ZXggYjZlNWZkMi4uMmVkMjI2NyAxMDA2NDQKLS0tIGEvbW0vbWVtb3J5LmMKKysrIGIvbW0vbWVt
+b3J5LmMKQEAgLTI3NzAsMTEgKzI3NzAsMTggQEAgc3RhdGljIGlubGluZSBpbnQgY2hlY2tfc3Rh
+Y2tfZ3VhcmRfcGFnZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgdW5zaWduZWQgbG8KIHsK
+IAlhZGRyZXNzICY9IFBBR0VfTUFTSzsKIAlpZiAoKHZtYS0+dm1fZmxhZ3MgJiBWTV9HUk9XU0RP
+V04pICYmIGFkZHJlc3MgPT0gdm1hLT52bV9zdGFydCkgewotCQlhZGRyZXNzIC09IFBBR0VfU0la
+RTsKLQkJaWYgKGZpbmRfdm1hKHZtYS0+dm1fbW0sIGFkZHJlc3MpICE9IHZtYSkKLQkJCXJldHVy
+biAtRU5PTUVNOworCQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnByZXYgPSB2bWEtPnZtX3ByZXY7
+CisKKwkJLyoKKwkJICogSXMgdGhlcmUgYSBtYXBwaW5nIGFidXR0aW5nIHRoaXMgb25lIGJlbG93
+PworCQkgKgorCQkgKiBUaGF0J3Mgb25seSBvayBpZiBpdCdzIHRoZSBzYW1lIHN0YWNrIG1hcHBp
+bmcKKwkJICogdGhhdCBoYXMgZ290dGVuIHNwbGl0Li4KKwkJICovCisJCWlmIChwcmV2ICYmIHBy
+ZXYtPnZtX2VuZCA9PSBhZGRyZXNzKQorCQkJcmV0dXJuIHByZXYtPnZtX2ZsYWdzICYgVk1fR1JP
+V1NET1dOID8gMCA6IC1FTk9NRU07CiAKLQkJZXhwYW5kX3N0YWNrKHZtYSwgYWRkcmVzcyk7CisJ
+CWV4cGFuZF9zdGFjayh2bWEsIGFkZHJlc3MgLSBQQUdFX1NJWkUpOwogCX0KIAlyZXR1cm4gMDsK
+IH0KLS0gCjEuNy4yLjEuOTcuZzMyMzViCgo=
+--0016e6469b0c9ee6e4048e4a19f7--
