@@ -1,148 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab0HTPSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 11:18:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54880 "EHLO mx1.redhat.com"
+	id S1753211Ab0HTPTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 11:19:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19644 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751421Ab0HTPS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 11:18:27 -0400
-Message-ID: <4C6E9CAF.5010202@redhat.com>
-Date: Fri, 20 Aug 2010 11:18:07 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
-        jack@suse.cz, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100820132214.GA6184@lst.de>
-In-Reply-To: <20100820132214.GA6184@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751097Ab0HTPTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 11:19:38 -0400
+Subject: Re: struct fanotify_event_metadata
+From: Eric Paris <eparis@redhat.com>
+To: Andreas Schwab <schwab@redhat.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Andreas Gruenbacher <agruen@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <m339u976sx.fsf@hase.home>
+References: <m21va1ozqx.fsf@igel.home>
+	 <201008191644.29299.tvrtko.ursulin@sophos.com>
+	 <1282240426.21419.1716.camel@acb20005.ipt.aol.com>
+	 <201008201002.16235.tvrtko.ursulin@sophos.com> <m3pqxd7ift.fsf@hase.home>
+	 <1282310016.21419.2161.camel@acb20005.ipt.aol.com>
+	 <m339u976sx.fsf@hase.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Aug 2010 11:19:30 -0400
+Message-ID: <1282317570.15124.20.camel@dhcp231-77.rdu.redhat.com>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2010 09:22 AM, Christoph Hellwig wrote:
-> FYI: here's a little writeup to document the new cache flushing scheme,
-> intended to replace Documentation/block/barriers.txt.  Any good
-> suggestion for a filename in the kernel tree?
->
-> ---
+On Fri, 2010-08-20 at 15:27 +0200, Andreas Schwab wrote:
+> Eric Paris <eparis@redhat.com> writes:
+> 
+> > Can you help me understand the packed attribute and why it hurts in this
+> > case?
+> 
+> It changes the alignment of all applicable objects to 1 which means that
+> the compiler cannot assume _any_ aligment.  Thus on STRICT_ALIGNMENT
+> targets it has to use more expensive access methods to avoid generating
+> unaligned loads and stores (unless it can infer proper alignment from
+> the context).
 
-I was thinking that we might be better off using the "durable writes" term more 
-since it is well documented (at least in the database world, where it is the "D" 
-in ACID properties).  Maybe "durable_writes_support.txt" ?
+Andreas suggested (I accidentally dropped the list when I ask him) I use
+natural alignment and explicit padding rather than ((packed))
 
+I'm open to the idea but I want to make it idiot proof (aka I won't
+screw it up later)  My best offhand idea would be to do something like
+so:
 
->
-> Explicit volatile write cache control
-> =====================================
->
-> Introduction
-> ------------
->
-> Many storage devices, especially in the consumer market, come with volatile
-> write back caches.  That means the devices signal I/O completion to the
-> operating system before data actually has hit the physical medium.  This
-> behavior obviously speeds up various workloads, but it means the operating
-> system needs to force data out to the physical medium when it performs
-> a data integrity operation like fsync, sync or an unmount.
->
-> The Linux block layer provides a two simple mechanism that lets filesystems
-> control the caching behavior of the storage device.  These mechanisms are
-> a forced cache flush, and the Force Unit Access (FUA) flag for requests.
->
+Expose this to userspace:
+struct fanotify_event_metadata {
+        __u32 event_len;
+        __u32 vers;
+        __s32 fd;
+        __u64 mask;
+        __s64 pid;
+};
 
-Should we mention that users can also disable the write cache on the target device?
+Wrap this in #ifdef KERNEL
+struct fanotify_event_metadata_packed {
+        __u32 event_len;
+        __u32 vers;
+        __s32 fd;
+        __u64 mask;
+        __s64 pid;
+} __attribute__ ((packed));
 
-It might also be worth mentioning that storage needs to be properly configured - 
-i.e., an internal hardware RAID card with battery backing needs can expose 
-itself as a writethrough cache *only if* it actually has control over all of the 
-backend disks and can flush/disable their write caches.
+Then add:
+BUILD_BUG_ON(sizeof(struct fanotify_event_metadata) != 
+             sizeof(struct fanotify_event_metadata_packed);
 
-Maybe that is too much detail, but I know that people have lost data with some 
-of these setups.
+Is that a good way to make the actual object non-packed but keep myself
+from ever letting it fail alignment and padding requirements?
 
-The rest of the write up below sounds good, thanks for pulling this together!
-
-Ric
-
-
->
-> Explicit cache flushes
-> ----------------------
->
-> The REQ_FLUSH flag can be OR ed into the r/w flags of a bio submitted from the
-> filesystem and will make sure the volatile cache of the storage device
-> has been flushed before the actual I/O operation is started.  The explicit
-> guarantees write requests that have completed before the bio was submitted
-> actually are on the physical medium before this request has started.
-> In addition the REQ_FLUSH flag can be set on an otherwise empty bio
-> structure, which causes only an explicit cache flush without any dependent
-> I/O.  It is recommend to use the blkdev_issue_flush() helper for a pure
-> cache flush.
->
->
-> Forced Unit Access
-> -----------------
->
-> The REQ_FUA flag can be OR ed into the r/w flags of a bio submitted from the
-> filesystem and will make sure that I/O completion for this requests is not
-> signaled before the data has made it to non-volatile storage on the
-> physical medium.
->
->
-> Implementation details for filesystems
-> --------------------------------------
->
-> Filesystem can simply set the REQ_FLUSH and REQ_FUA bits and do not have to
-> worry if the underlying devices need any explicit cache flushing and how
-> the Forced Unit Access is implemented.  The REQ_FLUSH and REQ_FUA flags
-> may both be set on a single bio.
->
->
-> Implementation details for make_request_fn based block drivers
-> --------------------------------------------------------------
->
-> These drivers will always see the REQ_FLUSH and REQ_FUA bits as they sit
-> directly below the submit_bio interface.  For remapping drivers the REQ_FUA
-> bits needs to be propagate to underlying devices, and a global flush needs
-> to be implemented for bios with the REQ_FLUSH bit set.  For real device
-> drivers that do not have a volatile cache the REQ_FLUSH and REQ_FUA bits
-> on non-empty bios can simply be ignored, and REQ_FLUSH requests without
-> data can be completed successfully without doing any work.  Drivers for
-> devices with volatile caches need to implement the support for these
-> flags themselves without any help from the block layer.
->
->
-> Implementation details for request_fn based block drivers
-> --------------------------------------------------------------
->
-> For devices that do not support volatile write caches there is no driver
-> support required, the block layer completes empty REQ_FLUSH requests before
-> entering the driver and strips off the REQ_FLUSH and REQ_FUA bits from
-> requests that have a payload.  For device with volatile write caches the
-> driver needs to tell the block layer that it supports flushing caches by
-> doing:
->
-> 	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH);
->
-> and handle empty REQ_FLUSH requests in it's prep_fn/request_fn.  Note that
-> REQ_FLUSH requests with a payload are automatically turned into a sequence
-> of empty REQ_FLUSH and the actual write by the block layer.  For devices
-> that also support the FUA bit the block layer needs to be told to pass
-> through that bit using:
->
-> 	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH | REQ_FUA);
->
-> and handle write requests that have the REQ_FUA bit set properly in it's
-> prep_fn/request_fn.  If the FUA bit is not natively supported the block
-> layer turns it into an empty REQ_FLUSH requests after the actual write.
+-Eric
 
