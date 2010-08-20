@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab0HTDzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 23:55:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56835 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427Ab0HTDzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 23:55:45 -0400
-Date: Thu, 19 Aug 2010 20:56:32 -0700
-From: Greg KH <gregkh@suse.de>
-To: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
-Cc: Marek Vasut <marek.vasut@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, maxinbjohn@gmail.com,
-        orest.bond@outpostembedded.com, vijaykumar@zilogic.com
-Subject: Re: Regarding USB-Serial Device driver
-Message-ID: <20100820035632.GA7349@suse.de>
-References: <20100819055329.M29689@admin-gateway.ncra.tifr.res.in> <20100819061525.M24093@admin-gateway.ncra.tifr.res.in> <201008190938.44532.marek.vasut@gmail.com> <20100819141812.GA12375@suse.de> <20100820033259.M54157@admin-gateway.ncra.tifr.res.in>
+	id S1751151Ab0HTENd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 00:13:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35004 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab0HTENa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 00:13:30 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] writeback: remove the internal 5% low bound on dirty_ratio
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, riel@redhat.com, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk, Michael Rubin <mrubin@google.com>,
+        Jan Kara <jack@suse.cz>, Neil Brown <neilb@suse.de>
+In-Reply-To: <20100820032506.GA6662@localhost>
+References: <20100820032506.GA6662@localhost>
+Message-Id: <20100820131249.5FF4.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100820033259.M54157@admin-gateway.ncra.tifr.res.in>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 20 Aug 2010 13:13:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> The dirty_ratio was silently limited to >= 5%. This is not a user
+> expected behavior. Let's rip it.
+> 
+> It's not likely the user space will depend on the old behavior.
+> So the risk of breaking user space is very low.
+> 
+> CC: Jan Kara <jack@suse.cz>
+> CC: Neil Brown <neilb@suse.de>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 
-A: No.
-Q: Should I include quotations after my reply?
+Thank you.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-http://daringfireball.net/2007/07/on_top
 
-On Fri, Aug 20, 2010 at 09:12:56AM +0530, Raju Rameshwar Uprade wrote:
-> Hello Greg,
->               
->              No the driver is not working properly for me.I have connected RS-485
-> interface card to the USB-Serial adaptor through which I am controlling six MCM card(
-> Control & Monitor unit). When I send command to MCM 2 , command also goes to MCM 10 & 0.
-> When I checked on the oscilloscope, I found out that instead of going some ten bytes,
-> large number of bytes are going out.
 
-Is the data going to the usb device properly?  You can use usbmon to see
-this.
-
-> Current kernel version have that RTS support, but for 2.6.25 it doesn't have. 
-
-2.6.25 is many years old and not supported by any community member.
-Please use something more recent like 2.6.35.
-
-> I am having confusion that form where so many bytes are going out.
-> If you can help me out,I would be very thankful to you.
-
-I don't know the changes you made, can you please show them in diff
-format?
-
-thanks,
-
-greg k-h
