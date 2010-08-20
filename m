@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0HTLOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 07:14:40 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34166 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab0HTLOj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 07:14:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Kv5PYZtAa38C3Dcic7OS/ZDeWGs9o2NvayDAgzIMG+/nUUmyjOiqNZGGF5TZiaNVAw
-         3bSIsO/0NPDxS1swfn3D0oCpA7seFKJ8iv9DXaERyAxnaVB7DR+BaKtBttAJKvexp1k5
-         7PUfBj5HIZTFUPYoQhI9Kwl/YnFMvwKuHv47Y=
+	id S1752170Ab0HTLZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 07:25:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42135 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210Ab0HTLZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 07:25:22 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [GIT PULL] notification tree: directory events
+Date: Fri, 20 Aug 2010 13:25:03 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>,
+        linux-fsdevel@vger.kernel.org
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <201008200141.10068.agruen@suse.de> <1282275497.21419.2073.camel@acb20005.ipt.aol.com>
+In-Reply-To: <1282275497.21419.2073.camel@acb20005.ipt.aol.com>
 MIME-Version: 1.0
-In-Reply-To: <20100818055716.GA32429@verge.net.au>
-References: <20100817070036.GB742@verge.net.au>
-	<Pine.LNX.4.58.1008171143500.2771@u.domain.uli>
-	<20100818002149.GA18114@verge.net.au>
-	<20100817.172602.193696444.davem@davemloft.net>
-	<AANLkTimW6UszuFspN+S3m8WdS1dPcwTmy+m2kT4X+7MR@mail.gmail.com>
-	<20100818055716.GA32429@verge.net.au>
-Date: Fri, 20 Aug 2010 19:14:38 +0800
-Message-ID: <AANLkTi=tVieTnz1R=9Jh45LweUwJ=mtszM1U9XAEVrK7@mail.gmail.com>
-Subject: Re: [patch nf-next] IPVS: ICMPv6 checksum calculation
-From: xiaoyu Du <tingsrain@gmail.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: David Miller <davem@davemloft.net>, ja@ssi.bg,
-        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, kaber@trash.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008201325.04218.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just replied to thank for his idea then, as he gived me some ideas
-on how to manipulate
-checksum. I tested the code today, but it doesn't seem to work. (I just wrote a
-netfilter module and hooked the code on local_out , then ping6 the
-address on another PC,
-It failed.). I'll find out why.
+On Friday 20 August 2010 05:38:17 Eric Paris wrote:
+> So the actual bugs you have reported, I see two.
+> 
+> The (nearly) unbounded number of potential outstanding notifications
+> events is a known situation, pointed out in previous discussions well
+> before this commit and is one of the (numerous) reasons why fanotify is
+> at this time CAP_SYS_ADMIN only.  It is something that is difficult to
+> address while still making fanotify useful for permissions gating.  But
+> the issue is clearly noted.
 
-2010/8/18 Simon Horman <horms@verge.net.au>:
-> On Wed, Aug 18, 2010 at 12:20:14PM +0800, xiaoyu Du wrote:
->> 2010/8/18 David Miller <davem@davemloft.net>:
->> > From: Simon Horman <horms@verge.net.au>
->> > Date: Wed, 18 Aug 2010 09:21:49 +0900
->> >
->> >> [ CCing netdev for comment ]
->> >>
->> >> On Tue, Aug 17, 2010 at 12:25:56PM +0300, Julian Anastasov wrote:
->> >  ...
->> >>>      May be ip_vs_checksum_complete() is not needed here?
->> >>> Also, skb->csum is not valid for every ip_summed value.
->> >>> May be we need to apply CHECKSUM_PARTIAL kind of setup for the IPv6.
->> >>> Such example is net/ipv6/udp.c:udp6_ufo_send_check().
->> >>> Later dev_queue_xmit() and skb_checksum_help() should take care
->> >>> for the next steps. Something like this can be tested:
->> >>>
->> >>>      icmph->icmp6_cksum = csum_ipv6_magic(&iph->saddr,
->> >>>              &iph->daddr,
->> >>>              skb->len - icmp_offset, IPPROTO_ICMPV6,
->> >>>              0);
->> >>>      skb->csum_start = skb_network_header(skb) - skb->head +
->> >>>                        icmp_offset;
->> >>>      skb->csum_offset = offsetof(struct icmp6hdr, icmp6_cksum);
->> >>>      skb->ip_summed = CHECKSUM_PARTIAL;
->> >>>
->> >
->> > Yes, using CHECKSUM_PARTIAL unconditionally would work.
->> >
->> Thanks, I learned this. You gave me a big cake.
->
-> [ please don't top-post ]
->
-> Xiaoyu, are you in a position to test the code proposed by Julian?
->
+Clearly noting and blissfully ignoring the problem is not enough
+unfortunately; this needs to be addressed now.  I have already pointed out 
+(quoted below) that permission gating is not the worst problem here; the worst 
+problem are listeners whose fanotify event queue just grows and grows.  There 
+is no throttling, and no guarantee that even a listener which simply reads and 
+completely ignores all events will manage to keep up.  The system will run out 
+of memory eventually.
+
+Here is a quote from a previous message about this problem that only went to 
+linux-kernel:
+
+On Tuesday 17 August 2010 05:39:47 Eric Paris wrote:
+> On Mon, 2010-08-16 at 22:32 +0200, Andreas Gruenbacher wrote:
+> > Q: What prevents the system from going out of memory when a listener
+> > decides to stop reading events or simply can't keep up?  There doesn't
+> > seem to be a limit on the queue depth.  Listeners currently need
+> > CAP_SYS_ADMIN, but somehow limiting the queue depth and throttling when
+> > things start to go bad still sounds like a reasonable thing to do,
+> > right?
+> 
+> It's an interesting question and obviously one that I've thought about.
+> You remember when we talked previously I said the hardest part left was
+> allowing non-root users to use the interface.  It gets especially
+> difficult when thinking about perm-events.  I was specifically told not
+> to timeout or drop those.  But when dealing with non-root users using
+> perm events?   As for pure notification we can do something like inotify
+> does quite easily.
+> 
+> I'm not certain exactly what the best semantics are for non trusted
+> users, so I didn't push any patches that way.  Suggestions welcome   :)
+
+The system will happily go OOM for trusted users and non-perm events if the 
+listener doesn't keep up, so some throttling, dropping, or both needs to 
+happen for non-perm events.  This is the critical case.  Doing what inotify 
+does (queue an overflow event and drop further events) seems to make sense 
+here.
+
+The situation with perm-events is less severe because the number of 
+outstanding perm events is bounded by the number of running processes.  This 
+may be enough of a limit.
+
+I don't think we need to worry about perm-events for untrusted users.  We can 
+start supporting some kinds of non-perm-events for untrusted users later; this 
+won't change the existing interface.
+
+Andreas
