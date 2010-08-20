@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab0HTVSk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:18:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39329 "EHLO mx1.suse.de"
+	id S1751838Ab0HTVSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:18:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59669 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab0HTVSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:18:38 -0400
-Message-Id: <20100820211538.937409471@suse.com>
+	id S1751324Ab0HTVSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:18:34 -0400
+Message-Id: <20100820211538.797351834@suse.com>
 User-Agent: quilt/0.47-15.10
-Date: Fri, 20 Aug 2010 17:14:08 -0400
+Date: Fri, 20 Aug 2010 17:14:07 -0400
 From: Jeff Mahoney <jeffm@suse.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [patch 07/10] ioctl: Use asm-generic/ioctls.h on m32r (enables termiox)
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [patch 06/10] ioctl: Use asm-generic/ioctls.h on ia64 (enables termiox)
 References: <20100820211401.651509182@suse.com>
-Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-m32r
+Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-ia64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts m32r to use asm-generic/ioctls.h instead of its
+This patch converts ia64 to use asm-generic/ioctls.h instead of its
 own version.
 
 The differences between the arch-specific version and the generic
 version are as follows:
 
-- The generic version adds TIOCGRS485 and TIOCGRS485, which are unused by
-  any driver available on this architecture.
+- The generic version adds TIOCSRS485 and TIOCGRS485, which are unused
+  by any driver available on this architecture.
 - The generic version adds support for termiox
 
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 ---
 
- arch/m32r/include/asm/ioctls.h |   83 -----------------------------------------
- 1 file changed, 1 insertion(+), 82 deletions(-)
+ arch/ia64/include/asm/ioctls.h |   89 -----------------------------------------
+ 1 file changed, 1 insertion(+), 88 deletions(-)
 
---- a/arch/m32r/include/asm/ioctls.h
-+++ b/arch/m32r/include/asm/ioctls.h
-@@ -1,87 +1,6 @@
- #ifndef __ARCH_M32R_IOCTLS_H__
- #define __ARCH_M32R_IOCTLS_H__
+--- a/arch/ia64/include/asm/ioctls.h
++++ b/arch/ia64/include/asm/ioctls.h
+@@ -1,93 +1,6 @@
+ #ifndef _ASM_IA64_IOCTLS_H
+ #define _ASM_IA64_IOCTLS_H
  
+-/*
+- * Based on <asm-i386/ioctls.h>
+- *
+- * Modified 1998, 1999, 2002
+- *	David Mosberger-Tang <davidm@hpl.hp.com>, Hewlett-Packard Co
+- */
+-
 -#include <asm/ioctl.h>
 -
 -/* 0x54 is just a magic number to make these relatively unique ('T') */
 -
 -#define TCGETS		0x5401
--#define TCSETS		0x5402 /* Clashes with SNDCTL_TMR_START sound ioctl */
+-#define TCSETS		0x5402	/* Clashes with SNDCTL_TMR_START sound ioctl */
 -#define TCSETSW		0x5403
 -#define TCSETSF		0x5404
 -#define TCGETA		0x5405
@@ -87,7 +93,6 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSETD	0x5423
 -#define TIOCGETD	0x5424
 -#define TCSBRKP		0x5425	/* Needed for POSIX tcsendbreak() */
--/* #define TIOCTTYGSTRUCT 0x5426 - Former debugging-only ioctl */
 -#define TIOCSBRK	0x5427  /* BSD compatibility */
 -#define TIOCCBRK	0x5428  /* BSD compatibility */
 -#define TIOCGSID	0x5429  /* Return the session ID of FD */
@@ -99,7 +104,7 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
 -#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
 -
--#define FIONCLEX	0x5450
+-#define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
 -#define FIOCLEX		0x5451
 -#define FIOASYNC	0x5452
 -#define TIOCSERCONFIG	0x5453
@@ -129,6 +134,6 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
 +#include <asm-generic/ioctls.h>
  
- #endif /* __ARCH_M32R_IOCTLS_H__ */
+ #endif /* _ASM_IA64_IOCTLS_H */
 
 
