@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab0HTOSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 10:18:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55724 "EHLO hera.kernel.org"
+	id S1753031Ab0HTOSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 10:18:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55785 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752958Ab0HTOSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 10:18:04 -0400
-Date: Fri, 20 Aug 2010 14:17:46 GMT
+	id S1752790Ab0HTOSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 10:18:39 -0400
+Date: Fri, 20 Aug 2010 14:18:08 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <1282228033.2605.204.camel@laptop>
-References: <1282228033.2605.204.camel@laptop>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu,
+        dzickus@redhat.com
+In-Reply-To: <1282215916.1926.4696.camel@laptop>
+References: <1282215916.1926.4696.camel@laptop>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: Fix handle_irq return values
-Message-ID: <tip-4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76@git.kernel.org>
-Git-Commit-ID: 4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
+Subject: [tip:perf/urgent] watchdog: Don't throttle the watchdog
+Message-ID: <tip-b847b94fe2caff0f28a99af6353e9a27282e771a@git.kernel.org>
+Git-Commit-ID: b847b94fe2caff0f28a99af6353e9a27282e771a
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 14:17:47 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 14:18:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
-Gitweb:     http://git.kernel.org/tip/4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
+Commit-ID:  b847b94fe2caff0f28a99af6353e9a27282e771a
+Gitweb:     http://git.kernel.org/tip/b847b94fe2caff0f28a99af6353e9a27282e771a
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 19 Aug 2010 16:28:00 +0200
+AuthorDate: Fri, 20 Aug 2010 11:49:15 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Fri, 20 Aug 2010 15:00:06 +0200
 
-perf, x86: Fix handle_irq return values
+watchdog: Don't throttle the watchdog
 
-Now that we rely on the number of handled overflows, ensure all handle_irq
-implementations actually return the right number.
+Stephane reported that when the machine locks up, the regular ticks,
+which are responsible to resetting the throttle count, stop too.
 
+Hence the NMI watchdog can end up being throttled before it reports on
+the locked up state, and we end up being sad..
+
+Cure this by having the watchdog overflow reset its own throttle count.
+
+Reported-by: Stephane Eranian <eranian@google.com>
+Tested-by: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Tested-by: Don Zickus <dzickus@redhat.com>
-LKML-Reference: <1282228033.2605.204.camel@laptop>
+LKML-Reference: <1282215916.1926.4696.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |    9 +++++++--
- arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ kernel/watchdog.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index d8d86d0..4539b4b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -713,6 +713,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 	struct cpu_hw_events *cpuc;
- 	int bit, loops;
- 	u64 ack, status;
-+	int handled = 0;
- 
- 	perf_sample_data_init(&data, 0);
- 
-@@ -743,12 +744,16 @@ again:
- 	/*
- 	 * PEBS overflow sets bit 62 in the global status register
- 	 */
--	if (__test_and_clear_bit(62, (unsigned long *)&status))
-+	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
-+		handled++;
- 		x86_pmu.drain_pebs(regs);
-+	}
- 
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-+		handled++;
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 613bc1f..0d53c8e 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -206,6 +206,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 		 struct perf_sample_data *data,
+ 		 struct pt_regs *regs)
+ {
++	/* Ensure the watchdog never gets throttled */
++	event->hw.interrupts = 0;
 +
- 		if (!test_bit(bit, cpuc->active_mask))
- 			continue;
- 
-@@ -772,7 +777,7 @@ again:
- 
- done:
- 	intel_pmu_enable_all(0);
--	return 1;
-+	return handled;
- }
- 
- static struct event_constraint *
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index febb12c..d470c91 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -690,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 		inc_irq_stat(apic_perf_irqs);
- 	}
- 
--	return handled > 0;
-+	return handled;
- }
- 
- /*
+ 	if (__get_cpu_var(watchdog_nmi_touch) == true) {
+ 		__get_cpu_var(watchdog_nmi_touch) = false;
+ 		return;
