@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab0HTBxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 21:53:51 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:43420 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab0HTBwN (ORCPT
+	id S1752023Ab0HTBwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 21:52:11 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49364 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab0HTBwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 21:52:13 -0400
+	Thu, 19 Aug 2010 21:52:05 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V18 06/13] vfs: Support null pathname in faccessat
-Date: Fri, 20 Aug 2010 07:21:30 +0530
-Message-Id: <1282269097-26166-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+Date: Fri, 20 Aug 2010 07:21:28 +0530
+Message-Id: <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,83 +24,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables to use faccessat to get the access check details
-from a file descriptor pointing to the file. This can be used
-with open_by_handle syscall that returns a file descriptor.
+The patch update may_open to allow handle based open on symlinks.
+The file handle based API use file descritor returned from open_by_handle_at
+to do different file system operations. To find the link target name we
+need to get a file descriptor on symlinks.
+
+We should be able to read the link target using file handle. The exact
+usecase is with respect to implementing READLINK operation on a
+userspace NFS server. The request contain the file handle and the
+response include target name.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/open.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
+ fs/namei.c                  |   24 ++++++++++++++++++++++--
+ include/asm-generic/fcntl.h |    1 +
+ include/linux/fs.h          |    1 +
+ 3 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 7abdcba..f907b50 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -288,9 +288,10 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- {
- 	const struct cred *old_cred;
- 	struct cred *override_cred;
--	struct path path;
-+	struct file *file = NULL;
-+	struct path path, *pp;
- 	struct inode *inode;
--	int res;
-+	int res, fput_needed;
+diff --git a/fs/namei.c b/fs/namei.c
+index 1291dfc..2c79363 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1447,7 +1447,20 @@ int may_open(struct path *path, int acc_mode, int flag)
  
- 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
- 		return -EINVAL;
-@@ -312,12 +313,21 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	}
- 
- 	old_cred = override_creds(override_cred);
--
--	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+	if (filename == NULL  && dfd != AT_FDCWD) {
-+		file = fget_light(dfd, &fput_needed);
-+		if (file) {
-+			pp = &file->f_path;
-+			res = 0;
-+		} else
-+			res = -EBADF;
-+	} else {
-+		res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+		pp = &path;
-+	}
- 	if (res)
- 		goto out;
- 
--	inode = path.dentry->d_inode;
-+	inode = pp->dentry->d_inode;
- 
- 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
- 		/*
-@@ -325,7 +335,7 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 		 * with the "noexec" flag.
- 		 */
- 		res = -EACCES;
--		if (path.mnt->mnt_flags & MNT_NOEXEC)
-+		if (pp->mnt->mnt_flags & MNT_NOEXEC)
- 			goto out_path_release;
- 	}
- 
-@@ -343,11 +353,14 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	 * inherently racy and know that the fs may change
- 	 * state before we even see this result.
+ 	switch (inode->i_mode & S_IFMT) {
+ 	case S_IFLNK:
+-		return -ELOOP;
++		/*
++		 * Allow only if acc_mode contain
++		 * open link request.
++		 */
++		if (!(acc_mode & MAY_OPEN_LINK))
++			return -ELOOP;
++		/*
++		 * Allow open on symlink only with
++		 * open flag O_NOACCESS. We don't
++		 * allow read/write on symlinks
++		 */
++		if (flag != O_NOACCESS)
++			return -ELOOP;
++		break;
+ 	case S_IFDIR:
+ 		if (acc_mode & MAY_WRITE)
+ 			return -EISDIR;
+@@ -2038,8 +2051,15 @@ long do_handle_open(int mountdirfd,
  	 */
--	if (__mnt_is_readonly(path.mnt))
-+	if (__mnt_is_readonly(pp->mnt))
- 		res = -EROFS;
- 
- out_path_release:
--	path_put(&path);
-+	if (file)
-+		fput_light(file, fput_needed);
+ 	if (open_flag & __O_SYNC)
+ 		open_flag |= O_DSYNC;
++	/*
++	 * Handle based API allow open on a symlink
++	 */
++	if (S_ISLNK(path->dentry->d_inode->i_mode))
++		acc_mode = MAY_OPEN_LINK;
 +	else
-+		path_put(&path);
- out:
- 	revert_creds(old_cred);
- 	put_cred(override_cred);
++		acc_mode = MAY_OPEN;
+ 
+-	acc_mode = MAY_OPEN | ACC_MODE(open_flag);
++	acc_mode |= ACC_MODE(open_flag);
+ 
+ 	/* O_TRUNC implies we need access checks for write permissions */
+ 	if (open_flag & O_TRUNC)
+diff --git a/include/asm-generic/fcntl.h b/include/asm-generic/fcntl.h
+index a70b2d2..9d8f455 100644
+--- a/include/asm-generic/fcntl.h
++++ b/include/asm-generic/fcntl.h
+@@ -19,6 +19,7 @@
+ #define O_RDONLY	00000000
+ #define O_WRONLY	00000001
+ #define O_RDWR		00000002
++#define O_NOACCESS	00000003	/* No read/write access */
+ #ifndef O_CREAT
+ #define O_CREAT		00000100	/* not fcntl */
+ #endif
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e9471c7..3eb3571 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -55,6 +55,7 @@ struct inodes_stat_t {
+ #define MAY_ACCESS 16
+ #define MAY_OPEN 32
+ #define MAY_CHDIR 64
++#define MAY_OPEN_LINK 128
+ 
+ /*
+  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
 -- 
 1.7.0.4
 
