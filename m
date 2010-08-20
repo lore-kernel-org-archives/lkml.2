@@ -1,197 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab0HTFAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 01:00:55 -0400
+	id S1751194Ab0HTFAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 01:00:52 -0400
 Received: from leo.clearchain.com ([199.73.29.74]:53352 "EHLO
 	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab0HTFAv (ORCPT
+	with ESMTP id S1750926Ab0HTFAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 01:00:51 -0400
+	Fri, 20 Aug 2010 01:00:50 -0400
 X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 01:00:49 EDT
 From: Peter Hutterer <peter.hutterer@who-t.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pinglinux@gmail.com, rydberg@euromail.se
 Cc: Peter Hutterer <peter.hutterer@who-t.net>
-Subject: [PATCH 3/3] input: add multitouch slot support to w8001.
-Date: Fri, 20 Aug 2010 14:55:35 +1000
-Message-Id: <1282280135-15942-4-git-send-email-peter.hutterer@who-t.net>
+Subject: =?UTF-8?q?=5BPATCH=201/3=5D=20input=3A=20send=20BTN=5FTOOL=5FPEN/RUBBER=20and=20BTN=5FSTYLUS=20for=20the=20w8001=2E?=
+Date: Fri, 20 Aug 2010 14:55:33 +1000
+Message-Id: <1282280135-15942-2-git-send-email-peter.hutterer@who-t.net>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1282280135-15942-1-git-send-email-peter.hutterer@who-t.net>
 References: <1282280135-15942-1-git-send-email-peter.hutterer@who-t.net>
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Fri, 20 Aug 2010 14:25:05 +0930 (CST)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Fri, 20 Aug 2010 14:25:01 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some serial wacom devices support two-finger touch. Test for this during
-init and parse the touch packets accordingly. Touch packets are
-processed using Protocol B (MT Slots).
+The protocol used by the w8001 supports status fields for tip, side
+switch and eraser as well as a RDY field for proximity.
 
-Note: there are several wacom versions that do touch but not two-finger
-touch. These are not catered for here, touch events for these are simply
-discarded.
+The protocol has a double usage for the f2 bit in the packet. If set,
+the data is either pen + side2 button or eraser. Assume eraser if the
+device comes into proximity with the f2 bit set, otherwise trigger the
+side2 button.
+If the device comes into proximity with the f2 bit and that bit
+disappears afterwards, fake proximity out for the eraser and proximity
+in for the pen.
 
 Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
-CC: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/input/touchscreen/wacom_w8001.c |   99 ++++++++++++++++++++++++++++++-
- 1 files changed, 96 insertions(+), 3 deletions(-)
+ drivers/input/touchscreen/wacom_w8001.c |   51 +++++++++++++++++++++++++++----
+ 1 files changed, 45 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/input/touchscreen/wacom_w8001.c b/drivers/input/touchscreen/wacom_w8001.c
-index c302cc3..a38a3aa 100644
+index 56dc35c..0e14ae1 100644
 --- a/drivers/input/touchscreen/wacom_w8001.c
 +++ b/drivers/input/touchscreen/wacom_w8001.c
-@@ -60,6 +60,17 @@ struct w8001_coord {
- 	u8 tilt_y;
- };
- 
-+/* touch data packet */
-+struct w8001_touch {
-+	u8 f1_status;
-+	u16 f1_x;
-+	u16 f1_y;
-+	/* only some tablets have 2FG info */
-+	u8 f2_status;
-+	u16 f2_x;
-+	u16 f2_y;
-+};
-+
- /* touch query reply packet */
- struct w8001_touch_query {
- 	u8 panel_res;
-@@ -85,8 +96,18 @@ struct w8001 {
+@@ -62,6 +62,7 @@ struct w8001 {
+ 	unsigned char response[W8001_MAX_LENGTH];
+ 	unsigned char data[W8001_MAX_LENGTH];
  	char phys[32];
- 	int type;
- 	unsigned int pktlen;
-+	unsigned char tracking_id[2];
++	int type;
  };
  
-+static int get_next_tracking_id(void)
-+{
-+	static unsigned char next_tracking_id;
-+	next_tracking_id = (next_tracking_id + 1) % 256;
-+	if (next_tracking_id == 0)
-+		next_tracking_id = 1;
-+	return next_tracking_id;
-+}
-+
  static void parse_data(u8 *data, struct w8001_coord *coord)
- {
- 	memset(coord, 0, sizeof(*coord));
-@@ -111,6 +132,26 @@ static void parse_data(u8 *data, struct w8001_coord *coord)
+@@ -88,11 +89,49 @@ static void parse_data(u8 *data, struct w8001_coord *coord)
  	coord->tilt_y = data[8] & 0x7F;
  }
  
-+static void parse_touch(u8 *data,
-+			unsigned int pktlen, struct w8001_touch *touch)
-+{
-+	memset(touch, 0, sizeof(*touch));
-+
-+	touch->f1_status = data[0] & 0x1;
-+	touch->f1_x = data[1] << 7;
-+	touch->f1_x |= data[2];
-+	touch->f1_y = data[3] << 7;
-+	touch->f1_y |= data[4];
-+
-+	if (pktlen >= W8001_PKTLEN_TOUCH2FG) {
-+		touch->f2_status = (data[0] & 0x2) >> 1;
-+		touch->f2_x = data[7] << 7;
-+		touch->f2_x |= data[8];
-+		touch->f2_y = data[9] << 7;
-+		touch->f2_y |= data[10];
-+	}
-+}
-+
- static void parse_touchquery(u8 *data, struct w8001_touch_query *query)
- {
- 	memset(query, 0, sizeof(*query));
-@@ -128,6 +169,46 @@ static void parse_touchquery(u8 *data, struct w8001_touch_query *query)
- 	query->y |= (data[2] >> 3) & 0x3;
- }
- 
-+static void w8001_mt_event(struct input_dev *dev,
-+			   int slot, int tid, int x, int y)
-+{
-+	input_mt_slot(dev, slot);
-+	if (tid != 0) {
-+		input_report_abs(dev, ABS_MT_POSITION_X, x);
-+		input_report_abs(dev, ABS_MT_POSITION_Y, y);
-+	}
-+	input_report_abs(dev, ABS_MT_TRACKING_ID, tid);
-+	input_report_abs(dev, ABS_MT_TOOL_TYPE, MT_TOOL_FINGER);
-+	input_mt_sync(dev);
-+}
-+
-+static void w8001_track_fingers(struct w8001 *w8001, struct w8001_touch *touch)
++static void report_pen_events(struct w8001 *w8001, struct w8001_coord *coord)
 +{
 +	struct input_dev *dev = w8001->dev;
 +
-+	if (touch->f1_status) {
-+		if (!w8001->tracking_id[0])
-+			w8001->tracking_id[0] = get_next_tracking_id();
-+		w8001_mt_event(dev, 0, w8001->tracking_id[0],
-+			       touch->f1_x, touch->f1_y);
-+	} else if (w8001->tracking_id[0]) {
-+		w8001->tracking_id[0] = 0;
-+		w8001_mt_event(dev, 0, 0, touch->f1_x, touch->f1_y);
-+	}
++	/* We have 1 bit for proximity (rdy) and 3 bits for tip, side,
++	 * side2/eraser. If rdy && f2 are set, this can be either pen + side2,
++	 * or eraser. assume
++	 * - if dev is already in proximity and f2 is toggled → pen + side2
++	 * - if dev comes into proximity with f2 set → eraser
++	 * If f2 disappears after assuming eraser, fake proximity out for
++	 * eraser and in for pen.
++	 */
 +
-+	if (touch->f2_status) {
-+		if (!w8001->tracking_id[1])
-+			w8001->tracking_id[1] = get_next_tracking_id();
-+		w8001_mt_event(dev, 1, w8001->tracking_id[1],
-+			       touch->f2_x, touch->f2_y);
-+	} else if (w8001->tracking_id[1]) {
-+		w8001->tracking_id[1] = 0;
-+		w8001_mt_event(dev, 1, 0, touch->f2_x, touch->f2_y);
-+	}
++	if (!w8001->type) {
++		w8001->type = coord->f2 ? BTN_TOOL_RUBBER : BTN_TOOL_PEN;
++	} else if (w8001->type == BTN_TOOL_RUBBER) {
++		if (!coord->f2) {
++			input_report_abs(dev, ABS_PRESSURE, 0);
++			input_report_key(dev, BTN_TOUCH, 0);
++			input_report_key(dev, BTN_STYLUS, 0);
++			input_report_key(dev, BTN_STYLUS2, 0);
++			input_report_key(dev, BTN_TOOL_RUBBER, 0);
++			input_sync(dev);
++			w8001->type = BTN_TOOL_PEN;
++		}
++	} else
++		input_report_key(dev, BTN_STYLUS2, coord->f2);
 +
++	input_report_abs(dev, ABS_X, coord->x);
++	input_report_abs(dev, ABS_Y, coord->y);
++	input_report_abs(dev, ABS_PRESSURE, coord->pen_pressure);
++	input_report_key(dev, BTN_TOUCH, coord->tsw);
++	input_report_key(dev, BTN_STYLUS, coord->f1);
++	input_report_key(dev, w8001->type, coord->rdy);
 +	input_sync(dev);
++	if (!coord->rdy)
++		w8001->type = 0;
 +}
 +
- static void report_pen_events(struct w8001 *w8001, struct w8001_coord *coord)
- {
- 	struct input_dev *dev = w8001->dev;
-@@ -172,6 +253,7 @@ static irqreturn_t w8001_interrupt(struct serio *serio,
+ static irqreturn_t w8001_interrupt(struct serio *serio,
+ 				   unsigned char data, unsigned int flags)
  {
  	struct w8001 *w8001 = serio_get_drvdata(serio);
+-	struct input_dev *dev = w8001->dev;
  	struct w8001_coord coord;
-+	struct w8001_touch touch;
  	unsigned char tmp;
  
- 	w8001->data[w8001->idx] = data;
-@@ -217,10 +299,11 @@ static irqreturn_t w8001_interrupt(struct serio *serio,
- 		complete(&w8001->cmd_done);
+@@ -112,11 +151,7 @@ static irqreturn_t w8001_interrupt(struct serio *serio,
+ 
+ 		w8001->idx = 0;
+ 		parse_data(w8001->data, &coord);
+-		input_report_abs(dev, ABS_X, coord.x);
+-		input_report_abs(dev, ABS_Y, coord.y);
+-		input_report_abs(dev, ABS_PRESSURE, coord.pen_pressure);
+-		input_report_key(dev, BTN_TOUCH, coord.tsw);
+-		input_sync(dev);
++		report_pen_events(w8001, &coord);
  		break;
  
-+	/* 2 finger touch packet */
- 	case W8001_PKTLEN_TOUCH2FG - 1:
--		/* ignore two-finger touch packet. */
--		if (w8001->pktlen == w8001->idx)
--			w8001->idx = 0;
-+		w8001->idx = 0;
-+		parse_touch(w8001->data, w8001->pktlen, &touch);
-+		w8001_track_fingers(w8001, &touch);
- 		break;
- 	}
+ 	case 10:
+@@ -221,6 +256,10 @@ static int w8001_connect(struct serio *serio, struct serio_driver *drv)
  
-@@ -282,6 +365,16 @@ static int w8001_setup(struct w8001 *w8001)
- 			break;
- 		case 5:
- 			w8001->pktlen = W8001_PKTLEN_TOUCH2FG;
-+
-+			input_mt_create_slots(dev, 2);
-+			input_set_abs_params(dev, ABS_MT_TRACKING_ID,
-+						0, 255, 0, 0);
-+			input_set_abs_params(dev, ABS_MT_POSITION_X,
-+						0, touch.x, 0, 0);
-+			input_set_abs_params(dev, ABS_MT_POSITION_Y,
-+						0, touch.y, 0, 0);
-+			input_set_abs_params(dev, ABS_MT_TOOL_TYPE,
-+						0, 0, 0, 0);
- 			break;
- 		}
- 	}
+ 	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+ 	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
++	input_dev->keybit[BIT_WORD(BTN_TOOL_PEN)] |= BIT_MASK(BTN_TOOL_PEN);
++	input_dev->keybit[BIT_WORD(BTN_TOOL_RUBBER)] |= BIT_MASK(BTN_TOOL_RUBBER);
++	input_dev->keybit[BIT_WORD(BTN_STYLUS)] |= BIT_MASK(BTN_STYLUS);
++	input_dev->keybit[BIT_WORD(BTN_STYLUS2)] |= BIT_MASK(BTN_STYLUS2);
+ 
+ 	serio_set_drvdata(serio, w8001);
+ 	err = serio_open(serio, drv);
 -- 
 1.7.2.1
 
