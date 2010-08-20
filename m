@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab0HTUfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 16:35:53 -0400
-Received: from 1wt.eu ([62.212.114.60]:41766 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab0HTUfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 16:35:51 -0400
-Date: Fri, 20 Aug 2010 22:34:56 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ian Campbell <ijc@hellion.org.uk>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [2/3] mm: fix up some user-visible effects of the stack guard page
-Message-ID: <20100820203456.GC32620@1wt.eu>
-References: <20100818203143.735033743@clark.site> <1282308887.3170.5439.camel@zakaz.uk.xensource.com> <AANLkTin7L=v1GR2=U-mvESyrP2vySYLRa4U-fh9-L38F@mail.gmail.com> <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com> <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com> <1282326182.29609.789.camel@localhost.localdomain> <AANLkTi=racCPiDmbL0pEfH3Ew2_gJzJwmR3B1Vt=AZuz@mail.gmail.com> <AANLkTimTZKzXfBJCbzCyq3LwKvn3aCqyHjd5VXhnejfV@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimTZKzXfBJCbzCyq3LwKvn3aCqyHjd5VXhnejfV@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1752755Ab0HTUjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 16:39:44 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:28077 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab0HTUjk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 16:39:40 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=37qdrPIVUooonMxFi2BWZ8DhoCRe+hJcgJuumZcJ4K8= c=1 sm=1
+ a=_3D-azteyJAA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=X5HIPg_mzqVYZtpeRpsA:9
+ a=OH-q9ySdR_-1iJLrJ0MA:7 a=UQwoFyk4C-9aBLAsZT81XgRkcdEA:4 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [GIT PULL] notification tree: directory events
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <201008201729.09535.agruen@suse.de>
+Date: Fri, 20 Aug 2010 14:39:39 -0600
+Cc: Christoph Hellwig <hch@infradead.org>, Eric Paris <eparis@redhat.com>,
+        Matt Helsley <matthltc@us.ibm.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, Michael Kerrisk <michael.kerrisk@gmail.com>,
+        linux-fsdevel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5FBC3180-1402-4C44-802C-31ADAE5DB50D@dilger.ca>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <5FB2A21F-95D3-4B99-A521-74346EEEAF5B@dilger.ca> <20100820092127.GC20138@infradead.org> <201008201729.09535.agruen@suse.de>
+To: Andreas Gruenbacher <agruen@suse.de>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 12:43:28PM -0700, Linus Torvalds wrote:
-> So switching it to the "<linux/list.h>" kind of accessors would be a major pain.
+On 2010-08-20, at 09:29, Andreas Gruenbacher wrote:
+> On Friday 20 August 2010 11:21:27 Christoph Hellwig wrote:
+>> On Thu, Aug 19, 2010 at 11:19:07PM -0600, Andreas Dilger wrote:
+>>> What about unifying the file identification here with the file handle
+>>> used for open_by_handle()?  That keeps a consistent identifier for the
+>>> inode between multiple system calls (always a good thing), and allows
+>>> the inode to be opened again via open_by_handle() if needed.
+>> 
+>> That's what the dmapi callouts that are intended to do just about the
+>> same as fanotify always did.  I'm pretty sure I brought this up earlier
+>> in the discussion.
 > 
-> There's also lots of really ugly code that is all about the "we can't
-> easily get to the 'prev' entry in the list". Stuff that would be
-> cleaned up if we just had a vm_prev, but where the cleanups is just
-> pretty painful.
+> I remember you bringing this up.
 > 
-> > And it would be trivial to change the loops like
-> >
-> >    for (vma = mm->mmap; vma; vma = vma->vm_next)
-> >
-> > into basically just
-> >
-> >   list_for_each_entry(vma, &mm->mmap, vm_list)
+> The persistent handles require CAP_DAC_READ_SEARCH for using open_by_handle() 
+> to prevent an unprivileged process from forging handles and bypassing 
+> directory permission checks.  This would be okay for users of fanotify which 
+> can listen to all events in their namespace (and which requires CAP_SYS_ADMIN 
+> anyway).
 > 
-> Yeah, no. It looks like adding a "vm_prev" and doing a regular doubly
-> linked list thing wouldn't be too bad. But switching over to the
-> list.h version looks like a nightmare.
-> 
-> Too bad.
+> I don't see how open_by_handle() could be made safe to use by arbitrary 
+> processes; I don't think we can make the handles cryptographically strong, for 
+> example.  But I may be overlooking something here.
 
-I've had to convert normal linked lists to a dual linked list for a project
-of mine in the past, and for the same reason I could not use the lists how
-we use them in Linux. However I found an interesting tradeoff which consists
-in having only the ->prev list circular but keep the ->next one null-
-terminated.
+If the file handles only need to have a limited lifetime for unprivileged processes, then they can contain a random salt that is kept on the in-core inode.  For me and my intended HPC use case this would be a useful addition for open_by_handle() to allow unprivileged process access.  At worst, if the inode is evicted from memory the process would redo the name_to_handle(), or do the slower open-by-path().
 
-In the end, the API is not much different. A few tests just on the ->next
-pointer at some places, but you can still use ->prev everywhere to find
-the list tail, for inserting and removing. And overall that was pretty
-convenient. It was a lot better than the simple linked list and almost
-as easy to use as the circular ones.
+I suspect it would also be possible to have an array of per-superblock (or global) crypto keys that are hashed with the file handle data.  That avoids the per-inode memory, and allows a well-defined lifetime for the handle (minutes, hours, days) only as a function of how quickly the crypto key needs to rotate (based on key length and attack speed) and the size of the array that is kept.
 
-Just my 2 cents,
-Willy
+> In the future it will make sense to extend fanotify to allow unprivileged 
+> processes to listen to "their own" events, for example, like inotify does 
+> today.  (You know that providing a better inotify replacement was one of the 
+> goals of fanotify before it got merged anyway.)  Unprivileged processes 
+> wouldn't be allowed to use open_by_handle() anymore though, and so file 
+> handles still look like a better choice for fanotify to me.
+
+
+Cheers, Andreas
+
+
+
+
 
