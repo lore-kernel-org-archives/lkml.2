@@ -1,151 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab0HTORG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 10:17:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55653 "EHLO hera.kernel.org"
+	id S1752894Ab0HTORY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 10:17:24 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34240 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787Ab0HTORE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 10:17:04 -0400
-Date: Fri, 20 Aug 2010 14:16:39 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, flo@xssn.at, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, flo@xssn.at,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1282262618.2675.24.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <1282262618.2675.24.camel@sbsiddha-MOBL3.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] x86, tsc, sched: Recompute cyc2ns_offset's during resume from sleep states
-Message-ID: <tip-cd7240c0b900eb6d690ccee088a6c9b46dae815a@git.kernel.org>
-Git-Commit-ID: cd7240c0b900eb6d690ccee088a6c9b46dae815a
-X-Mailer: tip-git-log-daemon
+	id S1752774Ab0HTORV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 10:17:21 -0400
+Date: Fri, 20 Aug 2010 16:17:03 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100820141703.GA29697@elte.hu>
+References: <20100817152225.GQ26154@erda.amd.com>
+ <1282214753.1926.4669.camel@laptop>
+ <20100819141240.GO4879@redhat.com>
+ <1282228033.2605.204.camel@laptop>
+ <20100820015017.GA4879@redhat.com>
+ <20100820081605.GD17551@elte.hu>
+ <1282298651.2605.769.camel@laptop>
+ <20100820123901.GE4879@redhat.com>
+ <20100820132737.GD3321@elte.hu>
+ <20100820135118.GI4879@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 14:16:40 +0000 (UTC)
+In-Reply-To: <20100820135118.GI4879@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4019]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cd7240c0b900eb6d690ccee088a6c9b46dae815a
-Gitweb:     http://git.kernel.org/tip/cd7240c0b900eb6d690ccee088a6c9b46dae815a
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Thu, 19 Aug 2010 17:03:38 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 20 Aug 2010 14:59:02 +0200
 
-x86, tsc, sched: Recompute cyc2ns_offset's during resume from sleep states
+it's not working so well, i'm getting:
 
-TSC's get reset after suspend/resume (even on cpu's with invariant TSC
-which runs at a constant rate across ACPI P-, C- and T-states). And in
-some systems BIOS seem to reinit TSC to arbitrary large value (still
-sync'd across cpu's) during resume.
+ Uhhuh. NMI received for unknown reason 00 on CPU 9.
+ Do you have a strange power saving mode enabled?
+ Dazed and confused, but trying to continue
 
-This leads to a scenario of scheduler rq->clock (sched_clock_cpu()) less
-than rq->age_stamp (introduced in 2.6.32). This leads to a big value
-returned by scale_rt_power() and the resulting big group power set by the
-update_group_power() is causing improper load balancing between busy and
-idle cpu's after suspend/resume.
+on a nehalem box, after a perf top and perf stat run.
 
-This resulted in multi-threaded workloads (like kernel-compilation) go
-slower after suspend/resume cycle on core i5 laptops.
+Thanks,
 
-Fix this by recomputing cyc2ns_offset's during resume, so that
-sched_clock() continues from the point where it was left off during
-suspend.
-
-Reported-by: Florian Pritz <flo@xssn.at>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: <stable@kernel.org> # [v2.6.32+]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1282262618.2675.24.camel@sbsiddha-MOBL3.sc.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/tsc.h |    2 ++
- arch/x86/kernel/tsc.c      |   38 ++++++++++++++++++++++++++++++++++++++
- arch/x86/power/cpu.c       |    2 ++
- 3 files changed, 42 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
-index c042729..1ca132f 100644
---- a/arch/x86/include/asm/tsc.h
-+++ b/arch/x86/include/asm/tsc.h
-@@ -59,5 +59,7 @@ extern void check_tsc_sync_source(int cpu);
- extern void check_tsc_sync_target(void);
- 
- extern int notsc_setup(char *);
-+extern void save_sched_clock_state(void);
-+extern void restore_sched_clock_state(void);
- 
- #endif /* _ASM_X86_TSC_H */
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index ce8e502..d632934 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -626,6 +626,44 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
- 	local_irq_restore(flags);
- }
- 
-+static unsigned long long cyc2ns_suspend;
-+
-+void save_sched_clock_state(void)
-+{
-+	if (!sched_clock_stable)
-+		return;
-+
-+	cyc2ns_suspend = sched_clock();
-+}
-+
-+/*
-+ * Even on processors with invariant TSC, TSC gets reset in some the
-+ * ACPI system sleep states. And in some systems BIOS seem to reinit TSC to
-+ * arbitrary value (still sync'd across cpu's) during resume from such sleep
-+ * states. To cope up with this, recompute the cyc2ns_offset for each cpu so
-+ * that sched_clock() continues from the point where it was left off during
-+ * suspend.
-+ */
-+void restore_sched_clock_state(void)
-+{
-+	unsigned long long offset;
-+	unsigned long flags;
-+	int cpu;
-+
-+	if (!sched_clock_stable)
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	get_cpu_var(cyc2ns_offset) = 0;
-+	offset = cyc2ns_suspend - sched_clock();
-+
-+	for_each_possible_cpu(cpu)
-+		per_cpu(cyc2ns_offset, cpu) = offset;
-+
-+	local_irq_restore(flags);
-+}
-+
- #ifdef CONFIG_CPU_FREQ
- 
- /* Frequency scaling support. Adjust the TSC based timer when the cpu frequency
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index e7e8c5f..87bb35e 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -113,6 +113,7 @@ static void __save_processor_state(struct saved_context *ctxt)
- void save_processor_state(void)
- {
- 	__save_processor_state(&saved_context);
-+	save_sched_clock_state();
- }
- #ifdef CONFIG_X86_32
- EXPORT_SYMBOL(save_processor_state);
-@@ -229,6 +230,7 @@ static void __restore_processor_state(struct saved_context *ctxt)
- void restore_processor_state(void)
- {
- 	__restore_processor_state(&saved_context);
-+	restore_sched_clock_state();
- }
- #ifdef CONFIG_X86_32
- EXPORT_SYMBOL(restore_processor_state);
+	Ingo
