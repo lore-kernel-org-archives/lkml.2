@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab0HTTQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 15:16:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:43761 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab0HTTQ4 (ORCPT
+	id S1753601Ab0HTTYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 15:24:24 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62105 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab0HTTYV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 15:16:56 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6080"; a="51700537"
-Message-ID: <4C6ED4A6.8060208@codeaurora.org>
-Date: Fri, 20 Aug 2010 15:16:54 -0400
-From: Neil Leeder <nleeder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Fri, 20 Aug 2010 15:24:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=WpaK1uWel1tUQ1vKfboeItDuNQ72HmH8sbJJz8p8owZ/Uua+uC9O2NN+FgPjUiJnWL
+         UX1Wx0DlnE6dg6ivMJgLriMQWCap6YsFpejuu0gSce7kUr7ysL92MxQ5a4uYF0gdn4x3
+         tzcyUzSZMokLt2erxF5jay9rkPXw3eC9MifmM=
 MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Horace Fu <horace.fu@quantatw.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Trilok Soni <tsoni@codeaurora.org>
-Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
-References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <20100813024912.GA2661@core.coreip.homeip.net> <4C65BF99.9030601@codeaurora.org> <201008131754.49488.dmitry.torokhov@gmail.com> <4C6AC393.8000109@codeaurora.org> <BC741E3E-377E-45BF-80E1-A60F4E0FDFC9@gmail.com> <4C6C52DE.4040700@codeaurora.org> <20100819053311.GE5832@core.coreip.homeip.net> <4C6DADDE.7030107@codeaurora.org> <20100819233532.GB21662@srcf.ucam.org>
-In-Reply-To: <20100819233532.GB21662@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org>
+References: <20100819224616.GB9967@router-fw-old.local.net-space.pl>
+	<tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org>
+Date: Fri, 20 Aug 2010 12:24:20 -0700
+X-Google-Sender-Auth: sngFZwhWa5bHm0W63we4PRxxhMc
+Message-ID: <AANLkTim9kjBp68LqieU3MDLbkRDiWLNQjtUvjEbc9Hca@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, apic: Fix apic=debug boot crash
+From: Yinghai Lu <yinghai@kernel.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, dkiper@net-space.pl, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/19/2010 7:35 PM, Matthew Garrett wrote:
-> By any incredible stroke of luck, does it have a unique PNPID?
-> /sys/bus/pnp/devices/*/id should give you some insight.
+On Fri, Aug 20, 2010 at 5:41 AM, tip-bot for Daniel Kiper
+<dkiper@net-space.pl> wrote:
+> Commit-ID:  05e407603e527f9d808dd3866d3a17c2ce4dfcc5
+> Gitweb:     http://git.kernel.org/tip/05e407603e527f9d808dd3866d3a17c2ce4dfcc5
+> Author:     Daniel Kiper <dkiper@net-space.pl>
+> AuthorDate: Fri, 20 Aug 2010 00:46:16 +0200
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Fri, 20 Aug 2010 10:18:28 +0200
 >
+> x86, apic: Fix apic=debug boot crash
+>
+> Fix a boot crash when apic=debug is used and the APIC is
+> not properly initialized.
+>
+> This issue appears during Xen Dom0 kernel boot but the
+> fix is generic and the crash could occur on real hardware
+> as well.
 
-Thanks but I'm running this on an ARM netbook which doesn't have 
-/sys/bus/pnp.
+Do you have any report on real hardware?
 
---
-Neil
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+that could not happen on real hardware.
+
+Yinghai
+
+>
+> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+> Cc: xen-devel@lists.xensource.com
+> Cc: konrad.wilk@oracle.com
+> Cc: jeremy@goop.org
+> Cc: <stable@kernel.org> # .35.x, .34.x, .33.x, .32.x
+> LKML-Reference: <20100819224616.GB9967@router-fw-old.local.net-space.pl>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 4dc0084..f1efeba 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -1728,6 +1728,8 @@ __apicdebuginit(void) print_IO_APIC(void)
+>                struct irq_pin_list *entry;
+>
+>                cfg = desc->chip_data;
+> +               if (!cfg)
+> +                       continue;
+>                entry = cfg->irq_2_pin;
+>                if (!entry)
+>                        continue;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
