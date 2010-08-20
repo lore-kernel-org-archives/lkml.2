@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab0HTRDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 13:03:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40067 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab0HTRDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 13:03:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,239,1280732400"; 
-   d="scan'208";a="547218446"
-Subject: Re: [PATCH  1/1] mutex: prevent optimistic spinning from spinning
- longer than neccessary (Repost)
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        peterz@infradead.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>
-In-Reply-To: <20100820131920.GC3321@elte.hu>
-References: <1282168827.9542.72.camel@schen9-DESK>
-	 <20100819110511.GA16264@elte.hu>
-	 <1877.10.21.68.23.1282256686.squirrel@linux.intel.com>
-	 <20100820131920.GC3321@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Aug 2010 09:54:35 -0700
-Message-ID: <1282323276.9675.6.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1751442Ab0HTRDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 13:03:12 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:24976 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab0HTRDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 13:03:09 -0400
+X-Greylist: delayed 6282 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 13:03:08 EDT
+Message-ID: <4C6E9CAC.4000404@atmel.com>
+Date: Fri, 20 Aug 2010 17:18:04 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.11) Gecko/20100711 Lightning/1.0b1 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: siccegge@cs.fau.de
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, avictor.za@gmail.com,
+        costa.antonior@gmail.com, linux-kernel@vger.kernel.org,
+        vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH] AT91: Correct configuration define value
+References: <4c6fe9a4c298214223ff89d06401ac7b66f81c98.1277911346.git.siccegge@cs.fau.de> <1277974545-30331-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1277974545-30331-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 15:19 +0200, Ingo Molnar wrote:
-
+Le 01/07/2010 10:55, Nicolas Ferre :
+> The MTD nand driver for Atmel chips is atmel_nand and not at91_nand anymore.
+> Change wrong configuration variables that were remaining.
 > 
-> Thanks! The performance results you've posted so far IMO more than justifies 
-> its inclusion.
+> Reported-by: Christoph Egger <siccegge@cs.fau.de>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+We can add:
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+
+> ---
+> Christoph,
+
+Christoph,
+
+Is this patch handled by you as part of your patch series or should I
+include it in "Trivial" or "AT91" patch series?
+
+Bye,
+
+> Thank you for highlighting this. But please consider this
+> patch instead of yours.
 > 
-> 	Ingo
+>  arch/arm/mach-at91/board-at572d940hf_ek.c |    2 +-
+>  arch/arm/mach-at91/board-sam9m10g45ek.c   |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/board-at572d940hf_ek.c b/arch/arm/mach-at91/board-at572d940hf_ek.c
+> index 5daff27..4665162 100644
+> --- a/arch/arm/mach-at91/board-at572d940hf_ek.c
+> +++ b/arch/arm/mach-at91/board-at572d940hf_ek.c
+> @@ -216,7 +216,7 @@ static struct atmel_nand_data __initdata eb_nand_data = {
+>  /*	.rdy_pin	= AT91_PIN_PC16, */
+>  	.enable_pin	= AT91_PIN_PA15,
+>  	.partition_info	= nand_partitions,
+> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
+> +#if defined(CONFIG_MTD_NAND_ATMEL_BUSWIDTH_16)
+>  	.bus_width_16	= 1,
+>  #else
+>  	.bus_width_16	= 0,
+> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+> index ee80059..37af9b1 100644
+> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
+> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+> @@ -135,7 +135,7 @@ static struct atmel_nand_data __initdata ek_nand_data = {
+>  	.rdy_pin	= AT91_PIN_PC8,
+>  	.enable_pin	= AT91_PIN_PC14,
+>  	.partition_info	= nand_partitions,
+> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
+> +#if defined(CONFIG_MTD_NAND_ATMEL_BUSWIDTH_16)
+>  	.bus_width_16	= 1,
+>  #else
+>  	.bus_width_16	= 0,
 
-Thanks to everyone for your review.  I've updated the patch to add
-comments explaining the change per suggestion from Andrew.
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 41541d7..3747d04 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3865,8 +3865,15 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
- 		/*
- 		 * Owner changed, break to re-assess state.
- 		 */
--		if (lock->owner != owner)
-+		if (lock->owner != owner) {
-+			/* if lock has switched to a different owner,
-+			 * we have heavy contention. Return 0 to
-+			 * quit optimistic spinning and not contend further.
-+			 */
-+			if (lock->owner)
-+				return 0;
- 			break;
-+		}
- 
- 		/*
- 		 * Is that owner really running on that cpu?
-
+-- 
+Nicolas Ferre
 
