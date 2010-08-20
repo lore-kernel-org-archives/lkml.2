@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab0HTNsb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:48:31 -0400
-Received: from tomts40.bellnexxia.net ([209.226.175.97]:42370 "EHLO
-	tomts40-srv.bellnexxia.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751642Ab0HTNs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:48:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAO0gbkxGGN19/2dsb2JhbACgS3K7H4U3BA
-Date: Fri, 20 Aug 2010 09:43:14 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] netfilter: save the hash of the tuple in the
-	original direction for latter use
-Message-ID: <20100820134314.GA3283@Krystal>
-References: <1282228389-3029-1-git-send-email-xiaosuo@gmail.com> <20100819152149.GA19744@Krystal> <AANLkTim5wn0Y-+081gvm7FkWx3NioRvtRMWy2uF4nji2@mail.gmail.com> <1282232786.2549.60.camel@edumazet-laptop> <20100819161112.GA24357@Krystal> <AANLkTinA3-KMPKJa-66QCMUpbDFwey2mjE=VN=9=zg=6@mail.gmail.com>
-Mime-Version: 1.0
+	id S1752473Ab0HTNvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:51:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751642Ab0HTNvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 09:51:41 -0400
+Date: Fri, 20 Aug 2010 09:51:18 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100820135118.GI4879@redhat.com>
+References: <20100809194829.GB26154@erda.amd.com>
+ <20100817152225.GQ26154@erda.amd.com>
+ <1282214753.1926.4669.camel@laptop>
+ <20100819141240.GO4879@redhat.com>
+ <1282228033.2605.204.camel@laptop>
+ <20100820015017.GA4879@redhat.com>
+ <20100820081605.GD17551@elte.hu>
+ <1282298651.2605.769.camel@laptop>
+ <20100820123901.GE4879@redhat.com>
+ <20100820132737.GD3321@elte.hu>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <AANLkTinA3-KMPKJa-66QCMUpbDFwey2mjE=VN=9=zg=6@mail.gmail.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 09:33:44 up 134 days, 23:25,  4 users,  load average: 0.52, 0.28,
-	0.22
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100820132737.GD3321@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ executive summary: trying to explain why static variable declarations
-  within the body of functions is bad in kernel code. ]
-
-* Changli Gao (xiaosuo@gmail.com) wrote:
-> On Fri, Aug 20, 2010 at 12:11 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@polymtl.ca> wrote:
-> >
-> > Ah, I see. But I think the static variable should stay declared outside
-> > of the function scope, with a nice comment explaining why it's not
-> > initialized at init-time.
-> >
-> > Hiding global state in function code is usually frowned upon.
-> >
+On Fri, Aug 20, 2010 at 03:27:37PM +0200, Ingo Molnar wrote:
 > 
-> I don't agree with you. We'd better not expose the variable which
-> isn't expected to be used by others. If not, maybe someone will misuse
-> it.
-
-We are talking about a static variable usable only within a single file,
-where is the problem ? A nice comment can have this effect.
-
-> The user should only reply on the interface, but not the internal
-> implementation.
-
-I'm talking about good practice to help code review. This is way more
-important than the potential "encapsulation" benefit of hiding global
-state (a static variable) within the body of a function.
-
-I remember that Andrew Morton has strong opinions about this, and I
-remember being in complete agreement with him on the topic.
-
-Thanks,
-
-Mathieu
-
+> * Don Zickus <dzickus@redhat.com> wrote:
 > 
-> Thanks.
+> > On Fri, Aug 20, 2010 at 12:04:11PM +0200, Peter Zijlstra wrote:
+> > > On Fri, 2010-08-20 at 10:16 +0200, Ingo Molnar wrote:
+> > > > 
+> > > > 
+> > > > Please someone send the final version with a changelog, with all the acks and 
+> > > > tested-by's added, so that i can send it Linuswards. 
+> > > 
+> > > I've got two patches queued, one from Robert (with a slight
+> > > modification, which removes a goto) and one from myself converting the
+> > > intel and p4 irq handler.
+> > > 
+> > > They're available at:
+> > > 
+> > >   programming.kicks-ass.net/sekrit/patches.tar.bz2
+> > > 
+> > > I did add Tested-by tags, although I suspect its not the exact same bits
+> > > Don tested..
+> > 
+> > I can re-test those exact patches later today if needed.
 > 
-> -- 
-> Regards,
-> Changli Gao(xiaosuo@gmail.com)
+> Please pick up -tip in an hour or two and holler if something looks wrong.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Easy enough.
+
+Cheers,
+Don
