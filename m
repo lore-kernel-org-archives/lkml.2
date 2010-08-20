@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab0HTUqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 16:46:15 -0400
-Received: from kroah.org ([198.145.64.141]:46808 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752719Ab0HTUqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 16:46:11 -0400
-Date: Fri, 20 Aug 2010 13:46:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.20
-Message-ID: <20100820204638.GD14579@kroah.com>
-References: <20100820204625.GC14579@kroah.com>
+	id S1753462Ab0HTUqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 16:46:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47118 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab0HTUqG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 16:46:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bIuIemp0Gxhx2GCVDhMf7isYTHaO0sv7IqKnIgZxq6zej+8ptZnnhfxVD5ZQ+X7pxu
+         cMidML1/BkwH5OrSdJA5LZnRvpyozOrSCDzf6lVBQ79bvxyjtd6m//tKz0TgYQ3s26iZ
+         DXTRIzICSH/03OxcZI5Rxm6z6IYdYm+aFTL8M=
+Date: Sat, 21 Aug 2010 00:45:58 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+	perfctrs
+Message-ID: <20100820204558.GA15530@lenovo>
+References: <1282214753.1926.4669.camel@laptop> <20100819141240.GO4879@redhat.com> <1282228033.2605.204.camel@laptop> <20100820015017.GA4879@redhat.com> <20100820081605.GD17551@elte.hu> <1282298651.2605.769.camel@laptop> <20100820123901.GE4879@redhat.com> <20100820132737.GD3321@elte.hu> <20100820135118.GI4879@redhat.com> <20100820141703.GA29697@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100820204625.GC14579@kroah.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100820141703.GA29697@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 64e538c..ad4d191 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .19
-+EXTRAVERSION = .20
- NAME = Man-Eating Seals of Antiquity
- 
- # *DOCUMENTATION*
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 366b101..899145d 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -206,6 +206,7 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- 	int flags = vma->vm_flags;
- 	unsigned long ino = 0;
- 	unsigned long long pgoff = 0;
-+	unsigned long start;
- 	dev_t dev = 0;
- 	int len;
- 
-@@ -216,8 +217,13 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- 		pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
- 	}
- 
-+	/* We don't show the stack guard page in /proc/maps */
-+	start = vma->vm_start;
-+	if (vma->vm_flags & VM_GROWSDOWN)
-+		start += PAGE_SIZE;
-+
- 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
--			vma->vm_start,
-+			start,
- 			vma->vm_end,
- 			flags & VM_READ ? 'r' : '-',
- 			flags & VM_WRITE ? 'w' : '-',
-diff --git a/mm/memory.c b/mm/memory.c
-index 76d1b21..babb991 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2662,24 +2662,23 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	spinlock_t *ptl;
- 	pte_t entry;
- 
--	if (check_stack_guard_page(vma, address) < 0) {
--		pte_unmap(page_table);
-+	pte_unmap(page_table);
-+
-+	/* Check if we need to add a guard page to the stack */
-+	if (check_stack_guard_page(vma, address) < 0)
- 		return VM_FAULT_SIGBUS;
--	}
- 
-+	/* Use the zero-page for reads */
- 	if (!(flags & FAULT_FLAG_WRITE)) {
- 		entry = pte_mkspecial(pfn_pte(my_zero_pfn(address),
- 						vma->vm_page_prot));
--		ptl = pte_lockptr(mm, pmd);
--		spin_lock(ptl);
-+		page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
- 		if (!pte_none(*page_table))
- 			goto unlock;
- 		goto setpte;
- 	}
- 
- 	/* Allocate our own private page. */
--	pte_unmap(page_table);
--
- 	if (unlikely(anon_vma_prepare(vma)))
- 		goto oom;
- 	page = alloc_zeroed_user_highpage_movable(vma, address);
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 2e05c97..524d2a4 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -170,6 +170,14 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 	if (vma->vm_flags & VM_WRITE)
- 		gup_flags |= FOLL_WRITE;
- 
-+	/* We don't try to access the guard page of a stack vma */
-+	if (vma->vm_flags & VM_GROWSDOWN) {
-+		if (start == vma->vm_start) {
-+			start += PAGE_SIZE;
-+			nr_pages--;
-+		}
-+	}
-+
- 	while (nr_pages > 0) {
- 		int i;
- 
+On Fri, Aug 20, 2010 at 04:17:03PM +0200, Ingo Molnar wrote:
+> 
+> it's not working so well, i'm getting:
+> 
+>  Uhhuh. NMI received for unknown reason 00 on CPU 9.
+>  Do you have a strange power saving mode enabled?
+>  Dazed and confused, but trying to continue
+> 
+> on a nehalem box, after a perf top and perf stat run.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+
+Might not this be the case of AAN93 erratum, which says the following
+
+ | The processor can be configured to issue a PMI (performance monitor interrupt)
+ | upon overflow of the IA32_FIXED_CTR0 MSR (309H). A single PMI should be observed on
+ | overflow of IA32_FIXED_CTR0, however multiple PMIs are observed when this
+ | erratum occurs.
+
+Just a thought.
+
+	-- Cyrill
