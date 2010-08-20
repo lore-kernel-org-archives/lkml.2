@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab0HTHvf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 03:51:35 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:48443 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab0HTHvd (ORCPT
+	id S1751452Ab0HTIAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:00:45 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:48629 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750849Ab0HTIAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 03:51:33 -0400
-Date: Fri, 20 Aug 2010 09:51:25 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: Regression in 2.6.36-rc1 bisected to commit 9d8888c
-Message-ID: <20100820075125.GA23650@aftab>
-References: <4C6DE7E3.4030702@lwfinger.net>
+	Fri, 20 Aug 2010 04:00:42 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAEvQbUx5Ld90/2dsb2JhbACgWnK6eIU3BA
+Date: Fri, 20 Aug 2010 18:00:39 +1000
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, jack@suse.cz,
+        npiggin@kernel.dk
+Subject: Re: [PATCH 1/2] radix-tree: clear all tags in
+ radix_tree_node_rcu_free
+Message-ID: <20100820080039.GB3777@amd>
+References: <1282281727-15088-1-git-send-email-david@fromorbit.com>
+ <1282281727-15088-2-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C6DE7E3.4030702@lwfinger.net>
+In-Reply-To: <1282281727-15088-2-git-send-email-david@fromorbit.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
-Date: Thu, Aug 19, 2010 at 09:26:43PM -0500
-
-> With 2.6.36-rc1 from the mainline git tree, my x86_64 system running on an AMD
-> Turion 64 x2 TL-60 has required pressing keys to get booting to advance. This
-> behavior begins as soon as the kernel is loaded. I bisected the problem to:
+On Fri, Aug 20, 2010 at 03:22:06PM +1000, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> commit 9d8888c2a214aece2494a49e699a097c2ba9498b
-> Author: Hans Rosenfeld <hans.rosenfeld@amd.com>
-> Date:   Wed Jul 28 19:09:31 2010 +0200
+> Commit f446daaea9d4a420d16c606f755f3689dcb2d0ce ("mm: implement
+> writeback livelock avoidance using page tagging") introduced a new
+> radix tree tag, increasing the number of tags in each node from 2 to
+> 3. It did not, however, fix up the code in
+> radix_tree_node_rcu_free() that cleans up after radix_tree_shrink()
+> and hence could leave stray tags set in the new tag array.
 > 
->     x86, cpu: Clean up AMD erratum 400 workaround
+> The result is that the livelock avoidance code added in the the
+> above commit would hit stale tags when doing tag based lookups,
+> resulting in livelocks when trying to traverse the tree.
 > 
->     Remove check_c1e_idle() and use the new AMD errata checking framework
->     instead.
+> Fix this problem in radix_tree_node_rcu_free() so it doesn't happen
+> again in the future by using a loop to walk all the tags up to
+> RADIX_TREE_MAX_TAGS to clear the stray tags radix_tree_shrink()
+> leaves behind.
 > 
->     Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
->     LKML-Reference: <1280336972-865982-2-git-send-email-hans.rosenfeld@amd.com>
->     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+
+Acked-by: Nick Piggin <npiggin@kernel.dk>
+
+> ---
+>  lib/radix-tree.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> Reverting this patch allows the current 2.6.36-rc1+ to boot normally.
-> 
-> This problem is entered into the Kernel Bugzilla as Bug #16636.
-
-Fix is already upstream: http://git.kernel.org/tip/07a7795ca2e6e66d00b184efb46bd0e23d90d3fe
-
-Can you verify it fixes your issue too please?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+> index e907858..1014171 100644
+> --- a/lib/radix-tree.c
+> +++ b/lib/radix-tree.c
+> @@ -174,14 +174,16 @@ static void radix_tree_node_rcu_free(struct rcu_head *head)
+>  {
+>  	struct radix_tree_node *node =
+>  			container_of(head, struct radix_tree_node, rcu_head);
+> +	int i;
+>  
+>  	/*
+>  	 * must only free zeroed nodes into the slab. radix_tree_shrink
+>  	 * can leave us with a non-NULL entry in the first slot, so clear
+>  	 * that here to make sure.
+>  	 */
+> -	tag_clear(node, 0, 0);
+> -	tag_clear(node, 1, 0);
+> +	for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
+> +		tag_clear(node, i, 0);
+> +
+>  	node->slots[0] = NULL;
+>  	node->count = 0;
+>  
+> -- 
+> 1.7.1
