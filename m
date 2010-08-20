@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab0HTVSj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:18:39 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39314 "EHLO mx1.suse.de"
+	id S1752106Ab0HTVSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:18:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39329 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751373Ab0HTVSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:18:34 -0400
-Message-Id: <20100820211538.515791797@suse.com>
+	id S1751840Ab0HTVSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:18:38 -0400
+Message-Id: <20100820211538.937409471@suse.com>
 User-Agent: quilt/0.47-15.10
-Date: Fri, 20 Aug 2010 17:14:05 -0400
+Date: Fri, 20 Aug 2010 17:14:08 -0400
 From: Jeff Mahoney <jeffm@suse.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [patch 04/10] ioctl: Use asm-generic/ioctls.h on frv (enables termiox)
+Subject: [patch 07/10] ioctl: Use asm-generic/ioctls.h on m32r (enables termiox)
 References: <20100820211401.651509182@suse.com>
-Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-frv
+Content-Disposition: inline; filename=ioctl-use-asm-generic-ioctls-h-on-m32r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts frv to use asm-generic/ioctls.h instead of its
+This patch converts m32r to use asm-generic/ioctls.h instead of its
 own version.
 
 The differences between the arch-specific version and the generic
 version are as follows:
 
-- FRV defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
-- FRV defines TIOCTTYGSTRUCT, kept in arch-specific version
-- The generic version provides TIOCGRS485 and TIOCSRS485 but they
-  are unused by any driver available for this architecture.
+- The generic version adds TIOCGRS485 and TIOCGRS485, which are unused by
+  any driver available on this architecture.
 - The generic version adds support for termiox
 
-Cc: David Howells <dhowells@redhat.com>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 ---
 
- arch/frv/include/asm/ioctls.h |   80 ------------------------------------------
- 1 file changed, 1 insertion(+), 79 deletions(-)
+ arch/m32r/include/asm/ioctls.h |   83 -----------------------------------------
+ 1 file changed, 1 insertion(+), 82 deletions(-)
 
---- a/arch/frv/include/asm/ioctls.h
-+++ b/arch/frv/include/asm/ioctls.h
-@@ -1,88 +1,10 @@
- #ifndef __ASM_IOCTLS_H__
- #define __ASM_IOCTLS_H__
+--- a/arch/m32r/include/asm/ioctls.h
++++ b/arch/m32r/include/asm/ioctls.h
+@@ -1,87 +1,6 @@
+ #ifndef __ARCH_M32R_IOCTLS_H__
+ #define __ARCH_M32R_IOCTLS_H__
  
 -#include <asm/ioctl.h>
 -
 -/* 0x54 is just a magic number to make these relatively unique ('T') */
 -
 -#define TCGETS		0x5401
--#define TCSETS		0x5402
+-#define TCSETS		0x5402 /* Clashes with SNDCTL_TMR_START sound ioctl */
 -#define TCSETSW		0x5403
 -#define TCSETSF		0x5404
 -#define TCGETA		0x5405
@@ -89,7 +87,7 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSETD	0x5423
 -#define TIOCGETD	0x5424
 -#define TCSBRKP		0x5425	/* Needed for POSIX tcsendbreak() */
- #define TIOCTTYGSTRUCT	0x5426  /* For debugging only */
+-/* #define TIOCTTYGSTRUCT 0x5426 - Former debugging-only ioctl */
 -#define TIOCSBRK	0x5427  /* BSD compatibility */
 -#define TIOCCBRK	0x5428  /* BSD compatibility */
 -#define TIOCGSID	0x5429  /* Return the session ID of FD */
@@ -101,7 +99,7 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
 -#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
 -
--#define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+-#define FIONCLEX	0x5450
 -#define FIOCLEX		0x5451
 -#define FIOASYNC	0x5452
 -#define TIOCSERCONFIG	0x5453
@@ -116,8 +114,8 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -
 -#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
 -#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
- #define FIOQSIZE	0x545E
- 
+-#define FIOQSIZE	0x5460
+-
 -/* Used for packet mode */
 -#define TIOCPKT_DATA		 0
 -#define TIOCPKT_FLUSHREAD	 1
@@ -131,7 +129,6 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 -#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
 +#include <asm-generic/ioctls.h>
  
- #endif /* __ASM_IOCTLS_H__ */
- 
+ #endif /* __ARCH_M32R_IOCTLS_H__ */
 
 
