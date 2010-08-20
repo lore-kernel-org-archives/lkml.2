@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab0HTWup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 18:50:45 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42960 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab0HTWum (ORCPT
+	id S1752075Ab0HTWzm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 18:55:42 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52659 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab0HTWzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 18:50:42 -0400
+	Fri, 20 Aug 2010 18:55:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UCr4E61ugUe4+uRLQaLWYGThWkqgiOWzIQwl/9hU5Y301QYvyyavHRbmhJw+APVhxX
-         tVz2h6odK4SXzPKx5FCSoVX4Fm6FWcuUYTOJI4oA2LAKFNnpicA2ES5M8VFR6UbXYeee
-         8HpjF36fw4XDqJ7tfRbm3AG+4eIqyu3vqt9Zs=
-Subject: Re: sys_init_module system call
-From: runcoderen <runcoderzhcn@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100820153254.3a87be2f.randy.dunlap@oracle.com>
-References: <20100818041333.GA14149@lixom.net>
-	 <20100818171636.0625b668.akpm@linux-foundation.org>
-	 <20100819032230.GA21980@lixom.net> <20100820010242.GA29588@lixom.net>
-	 <20100820221323.GC8535@lixom.net>
-	 <1282342684.1631.4.camel@bencharluo-laptop>
-	 <20100820153254.3a87be2f.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 Aug 2010 06:50:37 +0800
-Message-ID: <1282344637.1631.13.camel@bencharluo-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=re6rxNJhN7Jivdw2EXaq2dI5JM6fUrj6utugmbbEZYQ3KmKcEfYTLF5oEfLhJwxcZ9
+         oKJhpv2eSyG7VkIQYFuzTxsTEWNrgHV/k3IlUsSSsHF/WrADc+W2nAc63Z7rRbe5nILf
+         HYRwMgf7KLTT/pjgrIp3dlDiyahmyIBAmOWWI=
+MIME-Version: 1.0
+In-Reply-To: <4C6E9B75.8030004@arndnet.de>
+References: <4C455597.2020200@renesas.com>
+	<4C6E9B75.8030004@arndnet.de>
+Date: Sat, 21 Aug 2010 07:55:38 +0900
+Message-ID: <AANLkTik9nnHiOL61ioT-1Eti9-DfKnDYY=qKespaOKje@mail.gmail.com>
+Subject: Re: [PATCH] tmio_mmc: Make ack_mmc_irqs() write-only
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Arnd Hannemann <arnd@arndnet.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Yusuke Goda <yusuke.goda.sx@renesas.com>, ian@mnementh.co.uk,
+        damm@opensource.se, sameo@linux.intel.com,
+        Paul Mundt <lethal@linux-sh.org>, g.liakhovetski@gmx.de,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Randy:
-yes, it does!
-Thanks a lot!
-	runcoderen
+On Sat, Aug 21, 2010 at 12:12 AM, Arnd Hannemann <arnd@arndnet.de> wrote:
+> Am 20.07.2010 09:51, schrieb Yusuke Goda:
+>> This patch updates ack_mmc_irqs() to acknowledge using write instead
+>> of read-modify-write. Without this fix the old read-modify-write
+>> implementation may acknowledge interrupt sources by mistake. The
+>> driver may if so lock-up waiting forever for an interrupt that will
+>> never come. Observed with the TMIO_STAT_RXRDY bit together with
+>> CMD53 on AR6002 and BCM4318 SDIO cards in polled mode.
+>>
+>> Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
+>
+> Tested on AP4EVB (sh7372) with SDHC and MMC cards - no regression.
+>
+> Tested-by: Arnd Hannemann <arnd@arndnet.de>
 
-在 2010-08-20五的 15:32 -0700，Randy Dunlap写道：
-> On Sat, 21 Aug 2010 06:18:04 +0800 runcoderen wrote:
-> 
-> > hi all
-> > I find sys_init_module system call in kernel/module.c file.
-> > but it did not find any.
-> > the source code version is linux-2.6.35
-> > 
-> > does the kernel have changed?
-> > 
-> > the book I am reading is LDD 3rd edition
-> 
-> You won't find a function in kernel/module.c that looks like it has
-> the name "sys_init_module".  Instead, the function is defined by using
-> a macro, and it looks like this:
-> 
-> /* This is where the real work happens */
-> SYSCALL_DEFINE3(init_module, void __user *, umod,
-> 		unsigned long, len, const char __user *, uargs)
-> {
-> 
-> 
-> 
-> The use of SYSCALL_DEFINEx(func_name, args) is a fairly recent change
-> (well, January, 2009) that may be the reason why you think that there
-> has been a change.  See
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=1a94bc34768e463a93cb3751819709ab0ea80a01
-> 
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks, Arnd!
 
--- 
+Andrew, is there anything you need to (re)pick-up this patch?
 
-/****************************************
-http://runcoderen.wordpress.com/
-****************************************/
+At the current point this patch has:
+Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
+Acked-by: Magnus Damm <damm@opensource.se>
+Tested-by: Arnd Hannemann <arnd@arndnet.de>
 
+Ian Molton also gave his "Acked-by" in a different email thread,
+please see below:
+On Tue, Jul 27, 2010 at 5:11 PM, Ian Molton <ian@mnementh.co.uk> wrote:
+> Right now, the docs in question are on my dead fileserver.
+>
+> Given that, I'll say two things:
+>
+> 1) Its safe to assume anywhere that does a RMW does it because my
+> original docs said so. I dont recall having ever "just done it because
+> I had to" when I wrote this.
+> 2) The code as is is clearly broken.
+>
+> I'm not really sure what to do about this. It got made 'doubly broken'
+> when we added asic3 support because it was the first platform added
+> where you couldnt just do a 32 bit RMW on the pair of registers.
+>
+> I'm inclined to say "Go Go Go" and see if anything breaks on this one.
+> I cant see why the docs want it to be RMW as theres nothing stopping
+> the hardware asserting an IRQ even if the CPU disables IRQs / did the
+> RMW as an atomic op.
+>
+> This one therefore,
+>
+> Acked-by: Ian Molton <ian@mnementh.co.uk>
+
+Thanks for the help everyone and sorry about the confused state of things.
+
+/ magnus
