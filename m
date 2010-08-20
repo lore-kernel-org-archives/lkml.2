@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab0HTHUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 03:20:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37094 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751102Ab0HTHUv (ORCPT
+	id S1751585Ab0HTHZb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 03:25:31 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:60189 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab0HTHZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 03:20:51 -0400
-Date: Fri, 20 Aug 2010 00:23:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: make dev_to_mmc_card() macro public
-Message-Id: <20100820002332.93b0c44d.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTi=ktmW4d1VQ2RBnVyJAQkpfRRXzrObkpAY0V0yw@mail.gmail.com>
-References: <1282138278-22304-1-git-send-email-ext-andriy.shevchenko@nokia.com>
-	<20100819144921.40d6765f.akpm@linux-foundation.org>
-	<AANLkTi=ktmW4d1VQ2RBnVyJAQkpfRRXzrObkpAY0V0yw@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Aug 2010 03:25:29 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+gQQHHhENsAJoBNyeKG+8U
+Date: Fri, 20 Aug 2010 10:25:26 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
+	<ext-heikki.krogerus@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
+        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
+        "Lehtonen Markus (Nokia-MS/Helsinki)" <markus.lehtonen@nokia.com>,
+        Roger Quadros <roger.quadros@nokia.com>
+Subject: Re: [PATCHv2 2/2] omap: rx51: add support for USB chargers
+Message-ID: <20100820072525.GJ25742@atomide.com>
+References: <1282219777-17657-1-git-send-email-ext-heikki.krogerus@nokia.com>
+ <1282219777-17657-3-git-send-email-ext-heikki.krogerus@nokia.com>
+ <20100819124042.GA15837@oksana.dev.rtsoft.ru>
+ <20100819130937.GC4363@esdhcp041123.research.nokia.com>
+ <4C6D3EED.7040703@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6D3EED.7040703@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 10:17:20 +0300 Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+Hi,
 
-> On Fri, Aug 20, 2010 at 12:49 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > nit: generally, subsystem-specific identifiers should use their
-> > subsystem's identifier as a prefix. __So a better name for
-> > dev_to_mmc_card() would be mmc_dev_to_card().
-> Sounds reasonable.
-> Would you like to get new version of patch or fix against patch?
+* Roger Quadros <roger.quadros@nokia.com> [100819 17:17]:
+> On 08/19/2010 04:09 PM, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
+> >On Thu, Aug 19, 2010 at 02:40:42PM +0200, ext Anton Vorontsov wrote:
+> >>On Thu, Aug 19, 2010 at 03:09:37PM +0300, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
+> >>>@@ -909,5 +913,6 @@ void __init rx51_peripherals_init(void)
+> >>>  	spi_register_board_info(rx51_peripherals_spi_board_info,
+> >>>  				ARRAY_SIZE(rx51_peripherals_spi_board_info));
+> >>>  	omap2_hsmmc_init(mmc);
+> >>>+	platform_device_register(&rx51_charger_device);
+> >>
+> >>Maybe
+> >>
+> >>   platform_device_register_simple("isp1704_charger", -1, NULL, 0);
+> >
+> >I guess it's enough in this case. Ameya, Roger, any objections?
+> >
+> I'm fine with the current approach. No need to re-spin.
 
-Either is OK for me.  I'll turn a replacement patch into a delta so I
-can see what changed, but that takes just a few seconds.
+Just checking.. Anton, can you please queue up this 2/2 patch too to
+keep them together? Here's my ack:
 
+Acked-by: Tony Lindgren <tony@atomide.com>
