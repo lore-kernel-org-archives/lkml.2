@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab0HTFkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 01:40:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23111 "EHLO mga02.intel.com"
+	id S1751324Ab0HTFpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 01:45:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47348 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab0HTFkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 01:40:20 -0400
+	id S1751083Ab0HTFph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 01:45:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,237,1280732400"; 
-   d="scan'208";a="547056820"
-Date: Fri, 20 Aug 2010 13:40:16 +0800
+   d="scan'208";a="598499060"
+Date: Fri, 20 Aug 2010 13:45:33 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
+Cc: Ram Pai <ram.n.pai@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
 Subject: Re: [PATCH] VM: kswapd should not do blocking memory allocations
-Message-ID: <20100820054016.GA11847@localhost>
+Message-ID: <20100820054533.GB11847@localhost>
 References: <1282158241.8540.85.camel@heimdal.trondhjem.org>
+ <AANLkTi=WkoxjwZbt6Vd0VhbuA7_k2WM-NUXZnrmzOOPy@mail.gmail.com>
+ <1282159872.8540.96.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282158241.8540.85.camel@heimdal.trondhjem.org>
+In-Reply-To: <1282159872.8540.96.camel@heimdal.trondhjem.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 03:04:01PM -0400, Trond Myklebust wrote:
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Hi Ram,
 > 
-> Allowing kswapd to do GFP_KERNEL memory allocations (or any blocking memory
-> allocations) is wrong and can cause deadlocks in try_to_release_page(), as
-> the filesystem believes it is safe to allocate new memory and block,
-> whereas kswapd is there specifically to clear a low-memory situation...
+> I was seeing it on NFS until I put in the following kswapd-specific hack
+> into nfs_release_page():
 > 
-> Set the gfp_mask to GFP_IOFS instead.
+> 	/* Only do I/O if gfp is a superset of GFP_KERNEL */
+> 	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
+> 		int how = FLUSH_SYNC;
+> 
+> 		/* Don't let kswapd deadlock waiting for OOM RPC calls */
+> 		if (current_is_kswapd())
+> 			how = 0;
 
-It would be more descriptive to say "remove the __GFP_WAIT bit".
+So the patch can remove the above workaround together, and add comment
+that NFS exploits the gfp mask to avoid complex operations involving
+recursive memory allocation and hence deadlock?
 
-The change looks reasonable _in itself_, since we always prefer to
-avoid unnecessary waits for kswapd. So
+Thanks,
+Fengguang
 
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> ---
+> 		nfs_commit_inode(mapping->host, how);
+> 	}
 > 
->  mm/vmscan.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Remove the 'if (current_is_kswapd())' line, and run an mmap() write
+> intensive workload, and it should hang pretty much every time.
 > 
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index ec5ddcc..716dd16 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2095,7 +2095,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
->  	unsigned long total_scanned;
->  	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	struct scan_control sc = {
-> -		.gfp_mask = GFP_KERNEL,
-> +		.gfp_mask = GFP_IOFS,
->  		.may_unmap = 1,
->  		.may_swap = 1,
->  		/*
-> 
+> Cheers
+>   Trond
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
