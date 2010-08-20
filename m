@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab0HTUw2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 16:52:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752819Ab0HTUw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 16:52:26 -0400
-Message-ID: <4C6EEAB2.1040907@redhat.com>
-Date: Fri, 20 Aug 2010 16:50:58 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1751769Ab0HTVAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:00:11 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:44830 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab0HTVAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:00:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=tI0DHUTMO7L9Kzxy/efEI/Trtp2laOy6f/nBjSG9MYxelAsw2UE3ij60TjLoK3A29i
+         /7jn0l1EbofwIAN/ap8CBmDy5nu5Y+UFQzqs8SewSzo0XMKPWqAKWIJlc3oYkJB8Gulx
+         Q90FLDn1JX23/Vte74CmXn1wY+TMpjE80/4jY=
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 1/6] mm: strictly nested kmap_atomic
-References: <20100819201317.673172547@chello.nl> <20100819202753.595997973@chello.nl>
-In-Reply-To: <20100819202753.595997973@chello.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 20 Aug 2010 17:00:08 -0400
+Message-ID: <AANLkTi=AHHjL-Yk2dqarSpTo7wHBR+NKUkgaYwZDodDL@mail.gmail.com>
+Subject: [PATCH 0/8] Staging: rtl8187se: fixed checkpatch.pl coding style issues
+From: T Dent <tdent48227@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: greg@kroah.com, bzolnier@gmail.com, Larry.Finger@lwfinger.net,
+        joe@perches.com, pshah.mumbai@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2010 04:13 PM, Peter Zijlstra wrote:
-> Ensure kmap_atomic usage is strictly nested
->
-> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+I have fixed numerous Linux kernel coding style issues using
+checkpatch.pl with the help of the video that Greg Kroah-Hartman
+lecture on about writing and sending your first patch.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+I corrected 3260 warnings, 236 errors, and deleted 231 lines of
+unnecessary code which still keeps the code readability.
 
--- 
-All rights reversed
+--
+Tracey Dent
