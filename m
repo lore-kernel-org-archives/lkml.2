@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab0HTJoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 05:44:32 -0400
-Received: from sh.osrg.net ([192.16.179.4]:33369 "EHLO sh.osrg.net"
+	id S1752909Ab0HTJpg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 05:45:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57912 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab0HTJoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 05:44:30 -0400
-Date: Fri, 20 Aug 2010 18:41:46 +0900
-To: nab@linux-iscsi.org
-Cc: fujita.tomonori@lab.ntt.co.jp, michaelc@cs.wisc.edu,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, hare@suse.de
-Subject: Re: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1282295674.30453.337.camel@haakon2.linux-iscsi.org>
-References: <1282257947.30453.296.camel@haakon2.linux-iscsi.org>
-	<20100820163058P.fujita.tomonori@lab.ntt.co.jp>
-	<1282295674.30453.337.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100820184031L.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 20 Aug 2010 18:41:48 +0900 (JST)
+	id S1752181Ab0HTJpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 05:45:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,238,1280732400"; 
+   d="scan'208";a="547111251"
+Date: Fri, 20 Aug 2010 17:45:26 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Michael Rubin <mrubin@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [PATCH 2/4] mm: account_page_writeback added
+Message-ID: <20100820094525.GB8440@localhost>
+References: <1282296689-25618-1-git-send-email-mrubin@google.com>
+ <1282296689-25618-3-git-send-email-mrubin@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282296689-25618-3-git-send-email-mrubin@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 02:14:34 -0700
-"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+I'm not sure this should be an inline function, just a reminder.
+Even with one more inc_zone_page_state() in next patch.
 
-> I am pretty sure there are more important items to focus on inside from
-> this particuarly time-consuming and tedious cleanup, but am happy to
+> +void account_page_writeback(struct page *page)
+> +{
+> +	inc_zone_page_state(page, NR_WRITEBACK);
+> +}
+> +EXPORT_SYMBOL(account_page_writeback);
 
-btw, it would be better to focus on the target core code first rather
-than its iscsi target driver? The mainline supports only ibm vscsi
-target now. So the target core code and its new vscsi driver can be
-merged to replace the current mainline target infrastructure and its
-vscsi driver, I think. the iscsi target driver is a "new" feature,
-which can be added later. No need to merge it with the target core
-code (of course, we can merge it together if possible).
