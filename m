@@ -1,476 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab0HTIrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:47:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4442 "EHLO mx1.redhat.com"
+	id S1752947Ab0HTIrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:47:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64338 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570Ab0HTIqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:46:39 -0400
+	id S1752728Ab0HTIql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:46:41 -0400
 From: =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>
 Cc: linux-crypto@vger.kernel.org,
         Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
         Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
-Subject: =?UTF-8?q?=5BPATCH=2006/19=5D=20Add=20ioctl=28=29=20argument=20and=20attribute=20handling=20utils?=
-Date: Fri, 20 Aug 2010 10:45:49 +0200
-Message-Id: <1282293963-27807-7-git-send-email-mitr@redhat.com>
+Subject: [PATCH 07/19] Add crypto API utilities.
+Date: Fri, 20 Aug 2010 10:45:50 +0200
+Message-Id: <1282293963-27807-8-git-send-email-mitr@redhat.com>
 In-Reply-To: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Main entry points:
+This encapsulates allocation/deallocation of all necessary objects,
+dealing with the asynchronous nature of ablkcipher/ahash.
 
-NCR_GET_INPUT_ARGS:
-	Read a fixed struct and any attached attributes from userspace
-
-NCR_GET_INPUT_ARGS_NO_OUTPUT:
-	Same as above, and inform the users the kernel will attach no
-	additional attributes.
-
-NCR_OUT_INIT/ncr_out_free:
-	Allocate and free a context that allows operation handlers to
-	return attributes to userspace.
-
-ncr_out_finish:
-	Write the attributes from the context to userspace.  Split like
-	this so that only NCR_OUT_INIT (in future "ncr.c") deals with
-	the raw ioctl() argument, but the specific operation can use
-	this call to detect errors and perhaps clean up.
-
-ncr_out_*:
-	Add attributes to the context.
+Long term, I'm not quite sure this layer makes sense; For now, it
+provides a truly simple API for internal callers in libtomcrypt, at
+least.
 ---
- crypto/userspace/Makefile |    5 +
- crypto/userspace/utils.c  |  297 +++++++++++++++++++++++++++++++++++++++++++++
- crypto/userspace/utils.h  |   98 +++++++++++++++
- 3 files changed, 400 insertions(+), 0 deletions(-)
- create mode 100644 crypto/userspace/utils.c
- create mode 100644 crypto/userspace/utils.h
+ crypto/userspace/Makefile           |    2 +-
+ crypto/userspace/cryptodev_cipher.c |  339 +++++++++++++++++++++++++++++++++++
+ crypto/userspace/cryptodev_main.c   |   13 ++
+ 3 files changed, 353 insertions(+), 1 deletions(-)
+ create mode 100644 crypto/userspace/cryptodev_cipher.c
+ create mode 100644 crypto/userspace/cryptodev_main.c
 
 diff --git a/crypto/userspace/Makefile b/crypto/userspace/Makefile
-index b607b90..f7f3ea2 100644
+index f7f3ea2..a37969b 100644
 --- a/crypto/userspace/Makefile
 +++ b/crypto/userspace/Makefile
-@@ -1 +1,6 @@
+@@ -1,6 +1,6 @@
  ccflags-y += -I$(src)/libtommath -I$(src)/libtomcrypt/headers -I$(src) -DLTC_SOURCE
-+
-+cryptodev-objs := utils.o
-+
-+
-+obj-$(CONFIG_CRYPTO_USERSPACE) += cryptodev.o
-diff --git a/crypto/userspace/utils.c b/crypto/userspace/utils.c
+ 
+-cryptodev-objs := utils.o
++cryptodev-objs := cryptodev_main.o cryptodev_cipher.o utils.o
+ 
+ 
+ obj-$(CONFIG_CRYPTO_USERSPACE) += cryptodev.o
+diff --git a/crypto/userspace/cryptodev_cipher.c b/crypto/userspace/cryptodev_cipher.c
 new file mode 100644
-index 0000000..514833c
+index 0000000..4e74fcc
 --- /dev/null
-+++ b/crypto/userspace/utils.c
-@@ -0,0 +1,297 @@
++++ b/crypto/userspace/cryptodev_cipher.c
+@@ -0,0 +1,339 @@
 +/*
-+ * New driver for /dev/crypto device (aka CryptoDev)
++ * Driver for /dev/crypto device (aka CryptoDev)
 + *
-+ * Copyright (c) 2010 Red Hat Inc.
++ * Copyright (c) 2010 Nikos Mavrogiannopoulos <nmav@gnutls.org>
++ * Portions Copyright (c) 2010 Michael Weiser
++ * Portions Copyright (c) 2010 Phil Sutter
++ *
++ * This file is part of linux cryptodev.
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License
 + * as published by the Free Software Foundation; either version 2
 + * of the License, or (at your option) any later version.
-+ *
++ * 
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
-+ *
++ * 
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
-+ * USA.
-+ *
-+ * Red Hat Author: Miloslav Trmač
-+ *
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 + */
 +
-+#include <linux/slab.h>
++#include <linux/crypto.h>
++#include <linux/mm.h>
++#include <linux/highmem.h>
++#include <linux/ioctl.h>
++#include <linux/random.h>
++#include <linux/scatterlist.h>
 +#include <linux/uaccess.h>
-+#include <net/netlink.h>
-+#include "ncr-int.h"
-+#include "utils.h"
++#include <crypto/algapi.h>
++#include <crypto/hash.h>
++#include "cryptodev_int.h"
 +
-+#ifdef CONFIG_COMPAT
-+/* max() is too clever for compile-time constants */
-+#define CONST_MAX(A, B) ((A) > (B) ? (A) : (B))
 +
-+#define MAX_SESSION_INPUT_DATA_SIZE					\
-+	(CONST_MAX(sizeof(struct ncr_session_input_data),		\
-+		   sizeof(struct compat_ncr_session_input_data)))
-+#define MAX_SESSION_OUTPUT_BUFFER_SIZE					\
-+	(CONST_MAX(sizeof(struct ncr_session_output_buffer),		\
-+		   sizeof(struct compat_ncr_session_output_buffer)))
-+
-+#else /* !CONFIG_COMPAT */
-+
-+#define MAX_SESSION_INPUT_DATA_SIZE (sizeof(struct ncr_session_input_data))
-+#define MAX_SESSION_OUTPUT_BUFFER_SIZE			\
-+	(sizeof(struct ncr_session_output_buffer))
-+
-+#endif /* !CONFIG_COMPAT */
-+
-+static const struct nla_policy ncr_attr_policy[NCR_ATTR_MAX + 1] = {
-+	[NCR_ATTR_ALGORITHM] = { NLA_NUL_STRING, 0 },
-+	[NCR_ATTR_DERIVATION_ALGORITHM] = { NLA_NUL_STRING, 0 },
-+	[NCR_ATTR_SIGNATURE_HASH_ALGORITHM] = { NLA_NUL_STRING, 0 },
-+	[NCR_ATTR_WRAPPING_ALGORITHM] = { NLA_NUL_STRING, 0 },
-+	[NCR_ATTR_UPDATE_INPUT_DATA] = {
-+		NLA_BINARY, MAX_SESSION_INPUT_DATA_SIZE
-+	},
-+	[NCR_ATTR_UPDATE_OUTPUT_BUFFER] = {
-+		NLA_BINARY, MAX_SESSION_OUTPUT_BUFFER_SIZE
-+	},
-+	[NCR_ATTR_UPDATE_INPUT_KEY_AS_DATA] = { NLA_U32, 0 },
-+	[NCR_ATTR_FINAL_INPUT_DATA] = {
-+		NLA_BINARY, MAX_SESSION_INPUT_DATA_SIZE
-+	},
-+	[NCR_ATTR_FINAL_OUTPUT_BUFFER] = {
-+		NLA_BINARY, MAX_SESSION_OUTPUT_BUFFER_SIZE
-+	},
-+	[NCR_ATTR_KEY] = { NLA_U32, 0 },
-+	[NCR_ATTR_KEY_FLAGS] = { NLA_U32, 0 },
-+	[NCR_ATTR_KEY_ID] = { NLA_BINARY, 0 },
-+	[NCR_ATTR_KEY_TYPE] = { NLA_U32, 0 },
-+	[NCR_ATTR_IV] = { NLA_BINARY, 0 },
-+	[NCR_ATTR_SECRET_KEY_BITS] = { NLA_U32, 0 },
-+	[NCR_ATTR_RSA_MODULUS_BITS] = { NLA_U32, 0 },
-+	[NCR_ATTR_RSA_E] = { NLA_BINARY, 0 },
-+	[NCR_ATTR_RSA_ENCODING_METHOD] = { NLA_U32, 0 },
-+	[NCR_ATTR_RSA_OAEP_HASH_ALGORITHM] = { NLA_NUL_STRING, 0 },
-+	[NCR_ATTR_RSA_PSS_SALT_LENGTH] = { NLA_U32, 0 },
-+	[NCR_ATTR_DSA_P_BITS] = { NLA_U32, 0 },
-+	[NCR_ATTR_DSA_Q_BITS] = { NLA_U32, 0 },
-+	[NCR_ATTR_DH_PRIME] = { NLA_BINARY, 0 },
-+	[NCR_ATTR_DH_BASE] = { NLA_BINARY, 0 },
-+	[NCR_ATTR_DH_PUBLIC] = { NLA_BINARY, 0 },
-+	[NCR_ATTR_WANTED_ATTRS] = { NLA_BINARY, 0 },
++struct cryptodev_result {
++	struct completion completion;
++	int err;
 +};
 +
-+void *__ncr_get_input_args(void *fixed, struct nlattr *tb[], size_t fixed_size,
-+			   u32 *input_size_ptr, const void __user *arg)
++static void cryptodev_complete(struct crypto_async_request *req, int err)
 +{
-+	size_t input_size, buf_size;
-+	void *buf;
++	struct cryptodev_result *res = req->data;
++
++	if (err == -EINPROGRESS)
++		return;
++
++	res->err = err;
++	complete(&res->completion);
++}
++
++int cryptodev_cipher_init(struct cipher_data* out, const char* alg_name, uint8_t * keyp, size_t keylen)
++{
++	
++	struct ablkcipher_alg* alg;
 +	int ret;
 +
-+	if (unlikely(copy_from_user(fixed, arg, fixed_size))) {
-+		err();
-+		return ERR_PTR(-EFAULT);
-+	}
-+	input_size = *input_size_ptr;
++	memset(out, 0, sizeof(*out));
 +
-+	/* NCR_GET_INPUT_ARGS/NCR_GET_INPUT_ARGS_NO_OUTPUT has verified
-+	   fixed_size is correctly aligned for a struct nlattr. */
-+	if (input_size == 0)
-+		input_size = fixed_size;
-+	else if (unlikely(input_size < fixed_size)) {
-+		err();
-+		return ERR_PTR(-EINVAL);
-+	}
-+	buf_size = input_size - fixed_size;
-+	if (unlikely(buf_size > NCR_MAX_ATTR_SIZE)) {
-+		err();
-+		return ERR_PTR(-EOVERFLOW);
++	out->async.s = crypto_alloc_ablkcipher(alg_name, 0, 0);
++	if (unlikely(IS_ERR(out->async.s))) {
++		dprintk(1,KERN_DEBUG,"%s: Failed to load cipher %s\n", __func__,
++			   alg_name);
++		return -EINVAL;
 +	}
 +
-+	if (buf_size == 0)
-+		buf = NULL;
-+	else {
-+		const char __user *var_arg;
++	alg = crypto_ablkcipher_alg(out->async.s);
 +
-+		buf = kmalloc(buf_size, GFP_KERNEL);
-+		if (unlikely(buf == NULL)) {
-+			err();
-+			return ERR_PTR(-ENOMEM);
-+		}
-+		var_arg = (const char __user *)arg + fixed_size;
-+		if (unlikely(copy_from_user(buf, var_arg, buf_size))) {
-+			err();
-+			ret = -EFAULT;
-+			goto err_buf;
++	if (alg != NULL) {
++		/* Was correct key length supplied? */
++		if (alg->max_keysize > 0 && unlikely((keylen < alg->min_keysize) ||
++			(keylen > alg->max_keysize))) {
++			dprintk(1,KERN_DEBUG,"Wrong keylen '%zu' for algorithm '%s'. Use %u to %u.\n",
++				   keylen, alg_name, alg->min_keysize, 
++				   alg->max_keysize);
++			ret = -EINVAL;
++			goto error;
 +		}
 +	}
 +
-+	ret = nla_parse(tb, NCR_ATTR_MAX, buf, buf_size, ncr_attr_policy);
-+	if (ret != 0) {
-+		err();
-+		goto err_buf;
++	ret = crypto_ablkcipher_setkey(out->async.s, keyp, keylen);
++	if (unlikely(ret)) {
++		dprintk(1,KERN_DEBUG,"Setting key failed for %s-%zu.\n",
++			alg_name, keylen*8);
++		ret = -EINVAL;
++		goto error;
 +	}
 +
-+	return buf;
++	out->blocksize = crypto_ablkcipher_blocksize(out->async.s);
++	out->ivsize = crypto_ablkcipher_ivsize(out->async.s);
 +
-+err_buf:
-+	kfree(buf);
-+	return ERR_PTR(ret);
++	out->async.result = kmalloc(sizeof(*out->async.result), GFP_KERNEL);
++	if (unlikely(!out->async.result)) {
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	memset(out->async.result, 0, sizeof(*out->async.result));
++	init_completion(&out->async.result->completion);
++
++	out->async.request = ablkcipher_request_alloc(out->async.s, GFP_KERNEL);
++	if (unlikely(!out->async.request)) {
++		dprintk(1,KERN_ERR,"error allocating async crypto request\n");
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	ablkcipher_request_set_callback(out->async.request, CRYPTO_TFM_REQ_MAY_BACKLOG,
++					cryptodev_complete, out->async.result);
++
++	out->init = 1;
++	return 0;
++error:
++	if (out->async.request)
++		ablkcipher_request_free(out->async.request);
++	kfree(out->async.result);
++	if (out->async.s)
++		crypto_free_ablkcipher(out->async.s);
++
++	return ret;
 +}
 +
-+static int update_output_size(void __user *arg, size_t output_size_offset,
-+			      u32 old_value, u32 new_value)
++void cryptodev_cipher_deinit(struct cipher_data* cdata)
 +{
-+	if (old_value != 0 && old_value != new_value) {
-+		u32 __user *dest;
++	if (cdata->init) {
++		if (cdata->async.request)
++			ablkcipher_request_free(cdata->async.request);
++		kfree(cdata->async.result);
++		if (cdata->async.s)
++			crypto_free_ablkcipher(cdata->async.s);
 +
-+		dest = (u32 __user *)((char __user *)arg + output_size_offset);
-+		return put_user(new_value, dest);
++		cdata->init = 0;
 +	}
++}
++
++void cryptodev_cipher_set_iv(struct cipher_data* cdata, void *iv, size_t iv_size)
++{
++	memcpy(cdata->async.iv, iv, min(iv_size,sizeof(cdata->async.iv)));
++}
++
++static inline int waitfor (struct cryptodev_result* cr, ssize_t ret)
++{
++	switch (ret) {
++	case 0:
++		break;
++	case -EINPROGRESS:
++	case -EBUSY:
++		wait_for_completion(&cr->completion);
++		/* At this point we known for sure the request has finished,
++		 * because wait_for_completion above was not interruptible.
++		 * This is important because otherwise hardware or driver
++		 * might try to access memory which will be freed or reused for
++		 * another request. */
++
++		if (unlikely(cr->err)) {
++			dprintk(0,KERN_ERR,"error from async request: %d \n", cr->err);
++                        return cr->err; 
++		}
++
++		break;
++	default:
++		return ret;
++	}
++
 +	return 0;
 +}
 +
-+void *__ncr_get_input_args_no_output(void *fixed, struct nlattr *tb[],
-+				     size_t fixed_size, u32 *input_size_ptr,
-+				     size_t output_size_offset,
-+				     void __user *arg)
++
++int _cryptodev_cipher_encrypt(struct cipher_data* cdata, const void* plaintext,
++	size_t plaintext_size, void* ciphertext, size_t ciphertext_size)
 +{
-+	void *attr_buf;
-+	u32 output_size;
++struct scatterlist sg, sg2;
++
++	sg_init_one(&sg, plaintext, plaintext_size);
++	sg_init_one(&sg2, ciphertext, ciphertext_size);
++
++	return cryptodev_cipher_encrypt( cdata, &sg, &sg2, plaintext_size);
++}
++
++int _cryptodev_cipher_decrypt(struct cipher_data* cdata, const void* ciphertext,
++	size_t ciphertext_size, void* plaintext, size_t plaintext_size)
++{
++struct scatterlist sg, sg2;
++
++	sg_init_one(&sg, ciphertext, ciphertext_size);
++	sg_init_one(&sg2, plaintext, plaintext_size);
++
++	return cryptodev_cipher_decrypt( cdata, &sg, &sg2, ciphertext_size);
++}
++
++
++ssize_t cryptodev_cipher_encrypt( struct cipher_data* cdata, const struct scatterlist *sg1, struct scatterlist *sg2, size_t len)
++{
 +	int ret;
 +
-+	attr_buf = __ncr_get_input_args(fixed, tb, fixed_size, input_size_ptr,
-+					arg);
-+	if (IS_ERR(attr_buf))
-+		return attr_buf;
++	INIT_COMPLETION(cdata->async.result->completion);
++	ablkcipher_request_set_crypt(cdata->async.request, (struct scatterlist*)sg1, sg2,
++			len, cdata->async.iv);
++	ret = crypto_ablkcipher_encrypt(cdata->async.request);
 +
-+	output_size = *(const u32 *)((const char *)fixed + output_size_offset);
-+	ret = update_output_size(arg, output_size_offset, output_size,
-+				 fixed_size);
-+	if (ret != 0) {
-+		kfree(attr_buf);
-+		return ERR_PTR(ret);
-+	}
-+	return attr_buf;
++	return waitfor(cdata->async.result,ret);
 +}
 +
-+int __ncr_out_init(struct ncr_out *out, const void *fixed, size_t fixed_size,
-+		   size_t output_size_offset, void __user *arg)
++ssize_t cryptodev_cipher_decrypt( struct cipher_data* cdata, const struct scatterlist *sg1, struct scatterlist *sg2, size_t len)
 +{
-+	u32 output_size;
++	int ret;
 +
-+	/* NCR_OUT_INIT has verified fixed_size is correctly aligned for a
-+	   struct nlattr. */
-+	output_size = *(const u32 *)((const char *)fixed + output_size_offset);
-+	if (output_size == 0)
-+		out->left = 0;
-+	else {
-+		/* NCR_OUT_INIT has verified fixed_size is correctly aligned for
-+		   a struct nlattr. */
-+		if (output_size < fixed_size)
-+			return -EINVAL;
-+		out->left = min_t(size_t, output_size - fixed_size,
-+				  NCR_MAX_ATTR_SIZE);
++	INIT_COMPLETION(cdata->async.result->completion);
++	ablkcipher_request_set_crypt(cdata->async.request, (struct scatterlist*)sg1, sg2,
++			len, cdata->async.iv);
++	ret = crypto_ablkcipher_decrypt(cdata->async.request);
++
++	return waitfor(cdata->async.result, ret);
++}
++
++/* Hash functions */
++
++int cryptodev_hash_init( struct hash_data* hdata, const char* alg_name, int hmac_mode, void * mackey, size_t mackeylen)
++{
++int ret;
++
++	hdata->async.s = crypto_alloc_ahash(alg_name, 0, 0);
++	if (unlikely(IS_ERR(hdata->async.s))) {
++		dprintk(1,KERN_DEBUG,"%s: Failed to load transform for %s\n", __func__,
++				   alg_name);
++		return -EINVAL;
 +	}
-+	out->buf = kmalloc(out->left, GFP_KERNEL);
-+	if (out->buf == NULL)
-+		return -ENOMEM;
-+	out->p = out->buf;
-+	out->arg = arg;
-+	out->output_size_offset = output_size_offset;
-+	out->fixed_size = fixed_size;
-+	out->orig_output_size = output_size;
++
++	/* Copy the key from user and set to TFM. */
++	if (hmac_mode != 0) {
++
++		ret = crypto_ahash_setkey(hdata->async.s, mackey, mackeylen);
++		if (unlikely(ret)) {
++			dprintk(1,KERN_DEBUG,"Setting hmac key failed for %s-%zu.\n",
++				alg_name, mackeylen*8);
++			ret = -EINVAL;
++			goto error;
++		}
++	}
++
++	hdata->digestsize = crypto_ahash_digestsize(hdata->async.s);
++
++	hdata->async.result = kmalloc(sizeof(*hdata->async.result), GFP_KERNEL);
++	if (unlikely(!hdata->async.result)) {
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	memset(hdata->async.result, 0, sizeof(*hdata->async.result));
++	init_completion(&hdata->async.result->completion);
++
++	hdata->async.request = ahash_request_alloc(hdata->async.s, GFP_KERNEL);
++	if (unlikely(!hdata->async.request)) {
++		dprintk(0,KERN_ERR,"error allocating async crypto request\n");
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	ahash_request_set_callback(hdata->async.request, CRYPTO_TFM_REQ_MAY_BACKLOG,
++					cryptodev_complete, hdata->async.result);
++
++	ret = crypto_ahash_init(hdata->async.request);
++	if (unlikely(ret)) {
++		dprintk(0,KERN_ERR,
++			"error in crypto_hash_init()\n");
++		goto error_request;
++	}
++
++	hdata->init = 1;
 +	return 0;
++
++error_request:
++	ahash_request_free(hdata->async.request);
++error:
++	kfree(hdata->async.result);
++	crypto_free_ahash(hdata->async.s);
++	return ret;
 +}
 +
-+int ncr_out_finish(struct ncr_out *out)
++void cryptodev_hash_deinit(struct hash_data* hdata)
 +{
-+	size_t buf_size;
++	if (hdata->init) {
++		if (hdata->async.request)
++			ahash_request_free(hdata->async.request);
++		kfree(hdata->async.result);
++		if (hdata->async.s)
++			crypto_free_ahash(hdata->async.s);
++		hdata->init = 0;
++	}
++}
 +
-+	buf_size = (char *)out->p - (char *)out->buf;
-+	if (buf_size != 0) {
-+		if (unlikely(copy_to_user((char __user *)out->arg
-+					  + out->fixed_size,
-+					  out->buf, buf_size)))
-+			return -EFAULT;
++int cryptodev_hash_reset( struct hash_data* hdata)
++{
++int ret;
++	ret = crypto_ahash_init(hdata->async.request);
++	if (unlikely(ret)) {
++		dprintk(0,KERN_ERR,
++			"error in crypto_hash_init()\n");
++		return ret;
 +	}
 +
-+	return update_output_size(out->arg, out->output_size_offset,
-+				  out->orig_output_size,
-+				  out->fixed_size + buf_size);
-+}
-+
-+void ncr_out_free(struct ncr_out *out)
-+{
-+	kfree(out->buf);
-+}
-+
-+struct nlattr *ncr_out_reserve(struct ncr_out *out, int attrtype, int attrlen)
-+{
-+	size_t needed;
-+	struct nlattr *nla;
-+
-+	needed = nla_total_size(attrlen);
-+	if (out->left < needed)
-+		ERR_PTR(-ERANGE);
-+	nla = out->p;
-+	out->p = (char *)out->p + needed;
-+	out->left -= needed;
-+
-+	nla->nla_len = nla_attr_size(attrlen);
-+	nla->nla_type = attrtype;
-+	memset((unsigned char *)nla + nla->nla_len, 0, nla_padlen(attrlen));
-+	return nla;
-+}
-+
-+int ncr_out_put(struct ncr_out *out, int attrtype, int attrlen, const void *data)
-+{
-+	struct nlattr *nla;
-+
-+	nla = ncr_out_reserve(out, attrtype, attrlen);
-+	if (IS_ERR(nla))
-+		return PTR_ERR(nla);
-+	memcpy(nla_data(nla), data, attrlen);
 +	return 0;
++
 +}
 +
-+/**
-+ * Initialize a nlattr with @attrtype as a buffer of maximum possible size in
-+ * @out.  The buffer must be finalized using ncr_out_commit_buffer.
-+ */
-+struct nlattr *ncr_out_begin_buffer(struct ncr_out *out, int attrtype)
++ssize_t cryptodev_hash_update( struct hash_data* hdata, struct scatterlist *sg, size_t len)
 +{
-+	struct nlattr *nla;
++	int ret;
 +
-+	if (out->left < NLA_HDRLEN)
-+		return ERR_PTR(-ERANGE);
-+	nla = out->p;
++	INIT_COMPLETION(hdata->async.result->completion);
++	ahash_request_set_crypt(hdata->async.request, sg, NULL,
++			len);
 +
-+	/* Ensure the rounding down of out->left does not decrease it below
-+	   NLA_HDRLEN. */
-+	BUILD_BUG_ON(NLA_ALIGN(NLA_HDRLEN) != NLA_HDRLEN);
-+	nla->nla_len = out->left & ~(NLA_ALIGNTO - 1);
-+	nla->nla_type = attrtype;
-+	return nla;
++	ret = crypto_ahash_update(hdata->async.request);
++
++	return waitfor(hdata->async.result,ret);
 +}
 +
-+/**
-+ * Set the length of buffer initialied in @out with ncr_out_begin_buffer() to
-+ * @attrlen and allow adding more attributes.
-+ */
-+void ncr_out_commit_buffer(struct ncr_out *out, int attrlen)
++ssize_t _cryptodev_hash_update( struct hash_data* hdata, const void* data, size_t len)
 +{
-+	struct nlattr *nla;
-+	size_t total;
++struct scatterlist sg;
 +
-+	nla = out->p;
-+	nla->nla_len = nla_attr_size(attrlen);
-+	memset((unsigned char *)nla + nla->nla_len, 0, nla_padlen(attrlen));
-+	total = nla_total_size(attrlen);
++	sg_init_one(&sg, data, len);
 +
-+	out->p = (char *)out->p + total;
-+	out->left -= total;
++	return cryptodev_hash_update( hdata, &sg, len);
 +}
-diff --git a/crypto/userspace/utils.h b/crypto/userspace/utils.h
++
++int cryptodev_hash_final( struct hash_data* hdata, void* output)
++{
++	int ret;
++
++	INIT_COMPLETION(hdata->async.result->completion);
++	ahash_request_set_crypt(hdata->async.request, NULL, output, 0);
++
++	ret = crypto_ahash_final(hdata->async.request);
++
++	return waitfor(hdata->async.result,ret);
++}
+diff --git a/crypto/userspace/cryptodev_main.c b/crypto/userspace/cryptodev_main.c
 new file mode 100644
-index 0000000..2802afa
+index 0000000..c6419f4
 --- /dev/null
-+++ b/crypto/userspace/utils.h
-@@ -0,0 +1,98 @@
-+#ifndef NCR_UTILS_H
-+#define  NCR_UTILS_H
++++ b/crypto/userspace/cryptodev_main.c
+@@ -0,0 +1,13 @@
++#include "cryptodev_int.h"
++#include "ncr-int.h"
++#include <linux/version.h>
 +
-+#include <linux/kernel.h>
-+#include <linux/netlink.h>
++MODULE_AUTHOR("Nikos Mavrogiannopoulos <nmav@gnutls.org>");
++MODULE_DESCRIPTION("CryptoDev driver");
++MODULE_LICENSE("GPL");
 +
-+#define NCR_MAX_ATTR_SIZE 4096
++/* ====== Module parameters ====== */
 +
-+struct nlattr;
-+
-+struct ncr_out {
-+	void *buf, *p;
-+	size_t left;
-+	void __user *arg;
-+	size_t output_size_offset, fixed_size;
-+	u32 orig_output_size;
-+};
-+
-+#define __NCR_VERIFY_FIXED_SIZE(fixed)					\
-+	(BUILD_BUG_ON(sizeof(*(fixed)) != NLA_ALIGN(sizeof(*(fixed)))))
-+#define __NCR_VERIFY_TB(tb) (BUILD_BUG_ON(ARRAY_SIZE(tb) != NCR_ATTR_MAX + 1))
-+
-+extern u32 __ncr_u32_type_check;
-+#define __OUT_SIZE_OFF(fixed)						\
-+	((void)(&(fixed)->output_size == &__ncr_u32_type_check),	\
-+	 (char *)&(fixed)->output_size - (char *)(fixed))
-+
-+
-+/**
-+ * Load *@fixed and a sequence of netlink-like attributes from @arg.  @fixed
-+ * contains "input_size", which is an u32 filled with total input size,
-+ * including the attributes, which are parsed into @tb.
-+ */
-+#define NCR_GET_INPUT_ARGS(fixed, tb, arg)			\
-+	(__NCR_VERIFY_FIXED_SIZE(fixed),			\
-+	 __NCR_VERIFY_TB(tb),					\
-+	 __ncr_get_input_args(fixed, tb, sizeof(*(fixed)),	\
-+			      &(fixed)->input_size, arg))
-+void *__ncr_get_input_args(void *fixed, struct nlattr *tb[], size_t fixed_size,
-+			   u32 *input_size_ptr, const void __user *arg);
-+
-+/**
-+ * Load *@fixed and a sequence of netlink-like attributes from @arg.  @fixed
-+ * contains "input_size", which is an u32 filled with total input size,
-+ * including the attributes, which are parsed into @tb.  In addition, indicate
-+ * to the user through u32 "output_size" that no output attributes will be
-+ * returned.
-+ */
-+#define NCR_GET_INPUT_ARGS_NO_OUTPUT(fixed, tb, arg)			\
-+	(__NCR_VERIFY_FIXED_SIZE(fixed),				\
-+	 __NCR_VERIFY_TB(tb),						\
-+	 __ncr_get_input_args_no_output(fixed, tb, sizeof(*(fixed)),	\
-+					&(fixed)->input_size,		\
-+					__OUT_SIZE_OFF(fixed), arg))
-+void *__ncr_get_input_args_no_output(void *fixed, struct nlattr *tb[],
-+				     size_t fixed_size, u32 *input_size_ptr,
-+				     size_t output_size_offset,
-+				     void __user *arg);
-+
-+/**
-+ * Return a new output attribute context for attributes of *@fixed.  @fixed
-+ * contains "output_size", an u32 containing total output size, including
-+ * @fixed.  Store @arg for later ncr_out_finish().
-+ */
-+#define NCR_OUT_INIT(out, fixed, arg)				\
-+	(__NCR_VERIFY_FIXED_SIZE(fixed),			\
-+	 __ncr_out_init((out), (fixed), sizeof(*(fixed)),	\
-+			__OUT_SIZE_OFF(fixed), (arg)))
-+int __ncr_out_init(struct ncr_out *out, const void *fixed, size_t fixed_size,
-+		   size_t output_size_offset, void __user *arg);
-+
-+/**
-+ * Write attributes from @out to user space and update user-space output_size.
-+ */
-+int ncr_out_finish(struct ncr_out *out);
-+
-+void ncr_out_free(struct ncr_out *out);
-+
-+int ncr_out_put(struct ncr_out *out, int attrtype, int attrlen,
-+		const void *data);
-+
-+static inline int ncr_out_put_u32(struct ncr_out *out, int attrtype, u32 value)
-+{
-+	return ncr_out_put(out, attrtype, sizeof(value), &value);
-+}
-+
-+static inline int ncr_out_put_string(struct ncr_out *out, int attrtype,
-+				     const char *value)
-+{
-+	return ncr_out_put(out, attrtype, strlen(value) + 1, value);
-+}
-+
-+struct nlattr *ncr_out_reserve(struct ncr_out *out, int attrtype, int attrlen);
-+
-+struct nlattr *ncr_out_begin_buffer(struct ncr_out *out, int attrtype);
-+void ncr_out_commit_buffer(struct ncr_out *out, int attrlen);
-+
-+#endif
++int cryptodev_verbosity = 0;
++module_param(cryptodev_verbosity, int, 0644);
++MODULE_PARM_DESC(cryptodev_verbosity, "0: normal, 1: verbose, 2: debug");
 -- 
 1.7.2.1
 
