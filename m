@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab0HTG4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 02:56:42 -0400
-Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:58905 "EHLO
-	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab0HTG4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 02:56:38 -0400
-From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
-To: Greg KH <gregkh@suse.de>, Oliver Neukum <oneukum@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Regarding USB-Serial Device driver
-Date: Fri, 20 Aug 2010 12:26:22 +0530
-Message-Id: <20100820064731.M31524@admin-gateway.ncra.tifr.res.in>
-In-Reply-To: <20100820035632.GA7349@suse.de>
-References: <20100819055329.M29689@admin-gateway.ncra.tifr.res.in> <20100819061525.M24093@admin-gateway.ncra.tifr.res.in> <201008190938.44532.marek.vasut@gmail.com> <20100819141812.GA12375@suse.de> <20100820033259.M54157@admin-gateway.ncra.tifr.res.in> <20100820035632.GA7349@suse.de>
-X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
-X-OriginatingIP: 158.144.12.129
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
+	id S1751704Ab0HTG6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 02:58:35 -0400
+Received: from sh.osrg.net ([192.16.179.4]:55245 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202Ab0HTG6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 02:58:33 -0400
+Date: Fri, 20 Aug 2010 15:57:51 +0900
+To: m.nazarewicz@samsung.com
+Cc: fujita.tomonori@lab.ntt.co.jp, kyungmin.park@samsung.com,
+        linux-mm@kvack.org, dwalker@codeaurora.org, linux@arm.linux.org.uk,
+        corbet@lwn.net, p.osciak@samsung.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        hvaibhav@ti.com, hverkuil@xs4all.nl, kgene.kim@samsung.com,
+        zpfeffer@codeaurora.org, jaeryul.oh@samsung.com,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        m.szyprowski@samsung.com
+Subject: Re: [PATCH/RFCv3 0/6] The Contiguous Memory Allocator framework
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <op.vhp4pws27p4s8u@localhost>
+References: <op.vhppgaxq7p4s8u@localhost>
+	<20100820121124Z.fujita.tomonori@lab.ntt.co.jp>
+	<op.vhp4pws27p4s8u@localhost>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100820155617S.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 20 Aug 2010 15:57:54 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
-      Sorry for including quotations in my email.
+On Fri, 20 Aug 2010 08:38:10 +0200
+**UNKNOWN CHARSET** <m.nazarewicz@samsung.com> wrote:
 
-Oliver,
-          I see the  superfluous data with usbmon also.
-
-I have changed the pl2303_write(), according to my need.I enabled the RTS line before 
-the data transmission and after a delay of 5ms ,disabled the RTS lines for my MCM device
-to respond.
-
-static int pl2303_write(struct usb_serial_port *port, const unsigned char *buf,int count)
-> {
-> 	struct pl2303_private *priv = usb_get_serial_port_data(port);
-> 	unsigned long flags;
->          u8 control;
-> 	dbg("%s - port %d, %d bytes", __func__, port->number, count);
->        
-> 	if (!count)
-> 		return count;
+> On Fri, 20 Aug 2010 05:12:50 +0200, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+> >> 1. Integration on API level meaning that some kind of existing API is used
+> >>     instead of new cma_*() calls.  CMA adds notion of devices and memory
+> >>     types which is new to all the other APIs (coherent has notion of devices
+> >>     but that's not enough).  This basically means that no existing API can be
+> >>     used for CMA.  On the other hand, removing notion of devices and memory
+> >>     types would defeat the whole purpose of CMA thus destroying the solution
+> >>     that CMA provides.
+> >
+> > You can create something similar to the existing API for memory
+> > allocator.
 > 
->      // Following code is included so that We can enable the RTS line to high before
-data transmission
->        //  Tried writing a for loop here to loop the RTS line enable/disable , but
-that also didn't work...
->   
->                   spin_lock_irqsave(&priv->lock, flags);
-> 	          priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
->                  control = priv->line_control;
-> 	          spin_unlock_irqrestore(&priv->lock, flags);
-> 	          set_control_lines(port->serial->dev, control); 
->  
-> 	     spin_lock_irqsave(&priv->lock, flags);
-> 	     count = pl2303_buf_put(priv->buf, buf, count);
-> 	     spin_unlock_irqrestore(&priv->lock, flags);
->    
-> 	       pl2303_send(port);                              // If I comment this , driver
-dosen't work 
->        
-> 	//  Following code is included so that We can disable the RTS line to low after data
-transmission..
->          // mdelay plays an Important role here....
->           mdelay(5);
->          spin_lock_irqsave(&priv->lock, flags);
->        //   priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS); // this doesn't work
-here...
->            priv->line_control   = 0;   // this work here.....
->          control = priv->line_control;
-> 	 spin_unlock_irqrestore(&priv->lock, flags);
-> 	 set_control_lines(port->serial->dev,control); 
->         
->           return count;   // count is also very IMP b'coz it affect the device
-driver's behaviour.....
-> }
+> That may be tricky.  cma_alloc() takes four parameters each of which is
+> required for CMA.  No other existing set of API uses all those arguments.
+> This means, CMA needs it's own, somehow unique API.  I don't quite see
+> how the APIs may be unified or "made similar".  Of course, I'm gladly
+> accepting suggestions.
+
+Have you even tried to search 'blk_kmalloc' on google? I wrote
+"similar to the existing API', not "reuse the existing API".
 
 
-Thanks,
- Raju
+> >> 2. Reuse of memory pools meaning that memory reserved by CMA can then be
+> >>     used by other allocation mechanisms.  This is of course possible.  For
+> >>     instance coherent could easily be implemented as a wrapper to CMA.
+> >>     This is doable and can be done in the future after CMA gets more
+> >>     recognition.
+> >>
+> >> 3. Reuse of algorithms meaning that allocation algorithms used by other
+> >>     allocators will be used with CMA regions.  This is doable as well and
+> >>     can be done in the future.
+> >
+> > Well, why can't we do the above before the inclusion?
+> 
+> Because it's quite a bit of work and instead of diverting my attention I'd
+> prefer to make CMA as good as possible and then integrate it with other
+> subsystems.  Also, adding the integration would change the patch from being
+> 4k lines to being like 40k lines.
+
+4k to 40k? I'm not sure. But If I see something like the following, I
+suspect that there is a better way to integrate this into the existing
+infrastructure.
+
+mm/cma-best-fit.c                   |  407 +++++++++++++++
