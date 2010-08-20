@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab0HTXwF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 19:52:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:14406 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab0HTXwD convert rfc822-to-8bit (ORCPT
+	id S1751285Ab0HTX7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 19:59:15 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:22878 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750970Ab0HTX7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 19:52:03 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=ZYV91acHR4oBA225dOfhvrWYn0rtF8IDI7KFDQwGm0uvmRbcjddrjbvj6oAiTaL5R
-	codoXrXmD+T7Wu055fP7A==
-MIME-Version: 1.0
-In-Reply-To: <20100820100855.GC8440@localhost>
-References: <1282296689-25618-1-git-send-email-mrubin@google.com>
- <1282296689-25618-4-git-send-email-mrubin@google.com> <20100820100855.GC8440@localhost>
-From: Michael Rubin <mrubin@google.com>
-Date: Fri, 20 Aug 2010 16:51:38 -0700
-Message-ID: <AANLkTi=+uNFq5=5gmjfAOhngXqR8RS3dX3E2uEWG33Ot@mail.gmail.com>
-Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_entered_writeback in /proc/vmstat
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 20 Aug 2010 19:59:12 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: DPkEFjQVM1lwHlycQQxxg4wBh3jUqsQFHPolel65.9ZBFBa
+ vYtBXSvj8JvpENYYw_MMpdE.K9m9MV2jjLR_jpXi6pm1cctN7OU0SrNNvmAp
+ hN56MaetI3CjN5rPRgcZM40d52o2mjbdST6fJUJ6H62aNFuvTGRG7ohd8qgO
+ 6u2gTStd7CnsZvrEl9AFQakTB0YWFtDIbwCOurzpGmIwfN866OZ_wsomEzLj
+ Ic6.6sC3YGI9IVueFtrIqkqYC90_wq.Z0w1g84Z5Y8e72EdyM9OX1D45LjCJ
+ bfCbc3njw8vsFd2jBOefkjSknO6rrAa6Mf.rNOk07njapVxR5gOpLkXRU86I
+ S8Wnpz9ZrhDbrFkYGLw--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, hare@suse.de
+In-Reply-To: <4C6EF67E.2060908@cs.wisc.edu>
+References: <1282257947.30453.296.camel@haakon2.linux-iscsi.org>
+	 <20100820163058P.fujita.tomonori@lab.ntt.co.jp>
+	 <4C6EF67E.2060908@cs.wisc.edu>
+Content-Type: text/plain
+Date: Fri, 20 Aug 2010 16:55:28 -0700
+Message-Id: <1282348528.30453.450.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 3:08 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> How about the names nr_dirty_accumulated and nr_writeback_accumulated?
-> It seems more consistent, for both the interface and code (see below).
-> I'm not really sure though.
+On Fri, 2010-08-20 at 16:41 -0500, Mike Christie wrote:
+> On 08/20/2010 02:32 AM, FUJITA Tomonori wrote:
+> > On Thu, 19 Aug 2010 15:45:47 -0700
+> > "Nicholas A. Bellinger"<nab@linux-iscsi.org>  wrote:
+> >
+> >> So, assuming that the conversion of all struct iscsi_init_* and struct
+> >> iscsi_target* to use include/scsi/iscsi_proto.h defs just involves
+> >> checking structure size and renaming the member use in
+> >> drivers/target/lio-target, would it be acceptable to do something like:
+> >>
+> >> /* iSCSI PDU Header */
+> >> struct iscsi_cmd {
+> >>          uint8_t opcode;
+> >>          uint8_t flags;
+> >>          __be16 rsvd2;
+> >>          uint8_t hlength;
+> >>          uint8_t dlength[3];
+> >>          uint8_t lun[8];
+> >>          itt_t    itt;   /* Initiator Task Tag */
+> >>          __be32 data_length;
+> >>          __be32 cmdsn;
+> >>          __be32 exp_statsn;
+> >>          uint8_t cdb[ISCSI_CDB_SIZE];    /* SCSI Command Block */
+> >>          /* Additional Data (Command Dependent) */
+> >> #ifdef ISCSI_TARGET_MODE
+> >>          __be32 header_digest;
+> >> #endif
+> >> };
+> >
+> > It's up to Mike but it looks hacky to me. struct iscsi_pdu is defined
+> > in the exact way as the spec does.
+> >
+> > I don't think that iscsi_proto.h conversion is a must for the mainline
+> > inclusion. I prefer to let it alone for now.
+> 
+> For the iscsi target, I think it is. For iscsi initiator drivers like 
+> bnx2i and be2iscsi we have made them convert from their headers to 
+> common linux ones including switching from driver specific defs to 
+> iscsi_proto.h.
 
-Those names don't seem to right to me.
-I admit I like "nr_dirtied" and "nr_cleaned" that seems most
-understood. These numbers also get very big pretty fast so I don't
-think it's hard to infer.
+This is kinda what I figured myself..  So in that case, I will go ahead
+and plan on using the initial target mode stubs above to get up and
+running, and start doing this sometime after the next (seperate) posting
+of TCM_Core + TCM_Loop for Tomo-san's review. 
 
->> In order to track the "cleaned" and "dirtied" counts we added two
->> vm_stat_items.  Per memory node stats have been added also. So we can
->> see per node granularity:
->>
->>    # cat /sys/devices/system/node/node20/writebackstat
->>    Node 20 pages_writeback: 0 times
->>    Node 20 pages_dirtied: 0 times
->
-> I'd prefer the name "vmstat" over "writebackstat", and propose to
-> migrate items from /proc/zoneinfo over time. zoneinfo is a terrible
-> interface for scripting.
+> 
+> For the merging of any target core stuff though, I do not think it is 
+> critical. The core target stuff does not need to be merged with a 
+> software iscsi target. They can do in at different times.
 
-I like vmstat also. I can do that.
+I think in order to merge the software iSCSI target fabric bits for
+v2.6.37, it would sense to do it initially with something similar to
+these stubs.  From there I can have a more time to make necessary
+modifications to LIO-Target and plan removing the header_digest target
+stubs from iscsi_proto.h in for the .38 timeframe.
 
-> Also, are there meaningful usage of per-node writeback stats?
+But really, since you so kindly volunteered to review the
+drivers/target/lio-target code to start with, this decision is most
+certainly yours to me made as the LIO-Target conversion to iscsi_proto.h
+starts rolling..  8-)
 
-For us yes. We use fake numa nodes to implement cgroup memory isolation.
-This allows us to see what the writeback behaviour is like per cgroup.
+Thanks for your comments Mike!
 
-> The numbers are naturally per-bdi ones instead. But if we plan to
-> expose them for each bdi, this patch will need to be implemented
-> vastly differently.
+--nab
 
-Currently I have no plans to do that.
-
-mrubin
