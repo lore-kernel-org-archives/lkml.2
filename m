@@ -1,80 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab0HTKGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 06:06:24 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:46584 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751254Ab0HTKGW (ORCPT
+	id S1752054Ab0HTKGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 06:06:35 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:33669 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab0HTKGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 06:06:22 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: SwGPWZQVM1kMwSuDzLG.m._FsQ6bZ6ZoppzS0k7F9et8MwJ
- m1WbH8RIJ_BMlUs6WDQVmUDrsrXGK17JcxhwzqHc6jF.Iy3oKpTDXzIMPim4
- SP_exmRqdylnzfF7EpNVTQHQfNYRd3jgvs2_WAg5xT3ZIefuRDtzqNh_AVdG
- PVJtGodYAbPG6khPLeGZPVQBe.7BtyzzeOG5FyqlttaN0a2jwgf4GPVC_Q58
- Reo3VW2z78ZwQGBxv6iLw1p54n2BMsFyXCIW5vvf1tJBe30t9scI7Cjex6r3
- 4vSAx7qykVF8eRrq4ST9PX9ndP6OuhIz83lkQt4GC5iP06C2hMUJEvzfPuxR
- XOzLDMyeeK3WFJi0esg--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: michaelc@cs.wisc.edu, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
-        hare@suse.de
-In-Reply-To: <20100820184031L.fujita.tomonori@lab.ntt.co.jp>
-References: <1282257947.30453.296.camel@haakon2.linux-iscsi.org>
-	 <20100820163058P.fujita.tomonori@lab.ntt.co.jp>
-	 <1282295674.30453.337.camel@haakon2.linux-iscsi.org>
-	 <20100820184031L.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Date: Fri, 20 Aug 2010 03:02:40 -0700
-Message-Id: <1282298560.30453.370.camel@haakon2.linux-iscsi.org>
+	Fri, 20 Aug 2010 06:06:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 Aug 2010 19:01:32 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com
+Subject: [PATCH] memcg: use ID in page_cgroup
+Message-Id: <20100820190132.43684862.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 18:41 +0900, FUJITA Tomonori wrote:
-> On Fri, 20 Aug 2010 02:14:34 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > I am pretty sure there are more important items to focus on inside from
-> > this particuarly time-consuming and tedious cleanup, but am happy to
-> 
-> btw, it would be better to focus on the target core code first rather
-> than its iscsi target driver?
 
-Well, this is what was originally proposed for v2.6.35.  But considering
-the LIO-Target namesake and it's full use of logic from the TCM/ConfigFS
-v4 design, I believe that hch thought it made sense to include it
-together moving forward with TCM Core now that we are moving forward
-together.
+I have an idea to remove page_cgroup->page pointer, 8bytes reduction per page.
+But it will be after this work.
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> The mainline supports only ibm vscsi
-> target now. So the target core code and its new vscsi driver can be
-> merged to replace the current mainline target infrastructure and its
-> vscsi driver, I think. the iscsi target driver is a "new" feature,
-> which can be added later. No need to merge it with the target core
-> code (of course, we can merge it together if possible).
+Now, addresses of memory cgroup can be calculated by their ID without complex.
+This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
+On 64bit architecture, this offers us more 6bytes room per page_cgroup.
+Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
+some light-weight concurrent access.
 
-I can plan to keep the posting of drivers/target/lio-target/ code
-seperate, and after the upcoming public posting to linux-scsi for your
-review of TCM core and TCM_Loop.   But perhaps at this point LIO-Target
-should go in together with TCM Core and TCM_Loop once mnc can review the
-software iSCSI target pieces..?
+We may able to move this id onto flags field but ...go step by step.
 
-I am very happy to continue in the short term improving the LIO-Target
-fabric module together with mnc to use mainline code and convention so
-that we can ensure this piece is included together with TCM Core for
-v2.6.37.  
+Changelog: 20100811
+ - using new rcu APIs, as rcu_dereference_check() etc.
+Changelog: 20100804
+ - added comments to page_cgroup.h
+Changelog: 20100730
+ - fixed some garbage added by debug code in early stage
 
-Comments from other Linux/iSCSI folks is apperciated here..!
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/page_cgroup.h |    6 ++++-
+ mm/memcontrol.c             |   52 +++++++++++++++++++++++++++-----------------
+ mm/page_cgroup.c            |    2 -
+ 3 files changed, 38 insertions(+), 22 deletions(-)
 
-Best,
-
---nab
-
+Index: mmotm-0811/include/linux/page_cgroup.h
+===================================================================
+--- mmotm-0811.orig/include/linux/page_cgroup.h
++++ mmotm-0811/include/linux/page_cgroup.h
+@@ -9,10 +9,14 @@
+  * page_cgroup helps us identify information about the cgroup
+  * All page cgroups are allocated at boot or memory hotplug event,
+  * then the page cgroup for pfn always exists.
++ *
++ * TODO: It seems ID for cgroup can be packed into "flags". But there will
++ * be race between assigning ID <-> set/clear flags. Please be careful.
+  */
+ struct page_cgroup {
+ 	unsigned long flags;
+-	struct mem_cgroup *mem_cgroup;
++	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
++	unsigned short blk_cgroup;	/* Not Used..but will be. */
+ 	struct page *page;
+ 	struct list_head lru;		/* per cgroup LRU list */
+ };
+Index: mmotm-0811/mm/page_cgroup.c
+===================================================================
+--- mmotm-0811.orig/mm/page_cgroup.c
++++ mmotm-0811/mm/page_cgroup.c
+@@ -15,7 +15,7 @@ static void __meminit
+ __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
+ {
+ 	pc->flags = 0;
+-	pc->mem_cgroup = NULL;
++	pc->mem_cgroup = 0;
+ 	pc->page = pfn_to_page(pfn);
+ 	INIT_LIST_HEAD(&pc->lru);
+ }
+Index: mmotm-0811/mm/memcontrol.c
+===================================================================
+--- mmotm-0811.orig/mm/memcontrol.c
++++ mmotm-0811/mm/memcontrol.c
+@@ -300,12 +300,13 @@ static atomic_t mem_cgroup_num;
+ #define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
+ static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
+ 
+-/* Must be called under rcu_read_lock */
+-static struct mem_cgroup *id_to_memcg(unsigned short id)
++/* Must be called under rcu_read_lock, set safe==true if under lock */
++static struct mem_cgroup *id_to_memcg(unsigned short id, bool safe)
+ {
+ 	struct mem_cgroup *ret;
+ 	/* see mem_cgroup_free() */
+-	ret = rcu_dereference_check(mem_cgroups[id], rch_read_lock_held());
++	ret = rcu_dereference_check(mem_cgroups[id],
++				rch_read_lock_held() || safe);
+ 	if (likely(ret && ret->valid))
+ 		return ret;
+ 	return NULL;
+@@ -381,7 +382,12 @@ struct cgroup_subsys_state *mem_cgroup_c
+ static struct mem_cgroup_per_zone *
+ page_cgroup_zoneinfo(struct page_cgroup *pc)
+ {
+-	struct mem_cgroup *mem = pc->mem_cgroup;
++	/*
++	 * The caller should guarantee this "pc" is under lock. In typical
++	 * case, this function is called by lru function with zone->lru_lock.
++	 * It is a safe access.
++	 */
++	struct mem_cgroup *mem = id_to_memcg(pc->mem_cgroup, true);
+ 	int nid = page_cgroup_nid(pc);
+ 	int zid = page_cgroup_zid(pc);
+ 
+@@ -723,6 +729,11 @@ static inline bool mem_cgroup_is_root(st
+ 	return (mem == root_mem_cgroup);
+ }
+ 
++static inline bool mem_cgroup_is_rootid(unsigned short id)
++{
++	return (id == 1);
++}
++
+ /*
+  * Following LRU functions are allowed to be used without PCG_LOCK.
+  * Operations are called by routine of global LRU independently from memcg.
+@@ -755,7 +766,7 @@ void mem_cgroup_del_lru_list(struct page
+ 	 */
+ 	mz = page_cgroup_zoneinfo(pc);
+ 	MEM_CGROUP_ZSTAT(mz, lru) -= 1;
+-	if (mem_cgroup_is_root(pc->mem_cgroup))
++	if (mem_cgroup_is_rootid(pc->mem_cgroup))
+ 		return;
+ 	VM_BUG_ON(list_empty(&pc->lru));
+ 	list_del_init(&pc->lru);
+@@ -782,7 +793,7 @@ void mem_cgroup_rotate_lru_list(struct p
+ 	 */
+ 	smp_rmb();
+ 	/* unused or root page is not rotated. */
+-	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
++	if (!PageCgroupUsed(pc) || mem_cgroup_is_rootid(pc->mem_cgroup))
+ 		return;
+ 	mz = page_cgroup_zoneinfo(pc);
+ 	list_move(&pc->lru, &mz->lists[lru]);
+@@ -808,7 +819,7 @@ void mem_cgroup_add_lru_list(struct page
+ 	mz = page_cgroup_zoneinfo(pc);
+ 	MEM_CGROUP_ZSTAT(mz, lru) += 1;
+ 	SetPageCgroupAcctLRU(pc);
+-	if (mem_cgroup_is_root(pc->mem_cgroup))
++	if (mem_cgroup_is_rootid(pc->mem_cgroup))
+ 		return;
+ 	list_add(&pc->lru, &mz->lists[lru]);
+ }
+@@ -1497,7 +1508,7 @@ void mem_cgroup_update_file_mapped(struc
+ 		return;
+ 
+ 	lock_page_cgroup(pc);
+-	mem = pc->mem_cgroup;
++	mem = id_to_memcg(pc->mem_cgroup, true);
+ 	if (!mem || !PageCgroupUsed(pc))
+ 		goto done;
+ 
+@@ -1885,14 +1896,14 @@ struct mem_cgroup *try_get_mem_cgroup_fr
+ 	pc = lookup_page_cgroup(page);
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+-		mem = pc->mem_cgroup;
++		mem = id_to_memcg(pc->mem_cgroup, true);
+ 		if (mem && !css_tryget(&mem->css))
+ 			mem = NULL;
+ 	} else if (PageSwapCache(page)) {
+ 		ent.val = page_private(page);
+ 		id = lookup_swap_cgroup(ent);
+ 		rcu_read_lock();
+-		mem = id_to_memcg(id);
++		mem = id_to_memcg(id, false);
+ 		if (mem && !css_tryget(&mem->css))
+ 			mem = NULL;
+ 		rcu_read_unlock();
+@@ -1921,7 +1932,7 @@ static void __mem_cgroup_commit_charge(s
+ 		return;
+ 	}
+ 
+-	pc->mem_cgroup = mem;
++	pc->mem_cgroup = css_id(&mem->css);
+ 	/*
+ 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+ 	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+@@ -1979,7 +1990,7 @@ static void __mem_cgroup_move_account(st
+ 	VM_BUG_ON(PageLRU(pc->page));
+ 	VM_BUG_ON(!PageCgroupLocked(pc));
+ 	VM_BUG_ON(!PageCgroupUsed(pc));
+-	VM_BUG_ON(pc->mem_cgroup != from);
++	VM_BUG_ON(id_to_memcg(pc->mem_cgroup, true) != from);
+ 
+ 	if (PageCgroupFileMapped(pc)) {
+ 		/* Update mapped_file data for mem_cgroup */
+@@ -1994,7 +2005,7 @@ static void __mem_cgroup_move_account(st
+ 		mem_cgroup_cancel_charge(from);
+ 
+ 	/* caller should have done css_get */
+-	pc->mem_cgroup = to;
++	pc->mem_cgroup = css_id(&to->css);
+ 	mem_cgroup_charge_statistics(to, pc, true);
+ 	/*
+ 	 * We charges against "to" which may not have any tasks. Then, "to"
+@@ -2014,11 +2025,11 @@ static int mem_cgroup_move_account(struc
+ {
+ 	int ret = -EINVAL;
+ 	lock_page_cgroup(pc);
+-	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
++	if (PageCgroupUsed(pc) && id_to_memcg(pc->mem_cgroup, true) == from) {
+ 		__mem_cgroup_move_account(pc, from, to, uncharge);
+ 		ret = 0;
+ 	}
+-	unlock_page_cgroup(pc);
++	rcu_read_unlock();
+ 	/*
+ 	 * check events
+ 	 */
+@@ -2244,7 +2255,7 @@ __mem_cgroup_commit_charge_swapin(struct
+ 
+ 		id = swap_cgroup_record(ent, 0);
+ 		rcu_read_lock();
+-		memcg = id_to_memcg(id);
++		memcg = id_to_memcg(id, false);
+ 		if (memcg) {
+ 			/*
+ 			 * This recorded memcg can be obsolete one. So, avoid
+@@ -2354,7 +2365,7 @@ __mem_cgroup_uncharge_common(struct page
+ 
+ 	lock_page_cgroup(pc);
+ 
+-	mem = pc->mem_cgroup;
++	mem = id_to_memcg(pc->mem_cgroup, true);
+ 
+ 	if (!PageCgroupUsed(pc))
+ 		goto unlock_out;
+@@ -2509,7 +2520,7 @@ void mem_cgroup_uncharge_swap(swp_entry_
+ 
+ 	id = swap_cgroup_record(ent, 0);
+ 	rcu_read_lock();
+-	memcg = id_to_memcg(id);
++	memcg = id_to_memcg(id, false);
+ 	if (memcg) {
+ 		/*
+ 		 * We uncharge this because swap is freed.
+@@ -2600,7 +2611,7 @@ int mem_cgroup_prepare_migration(struct 
+ 	pc = lookup_page_cgroup(page);
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+-		mem = pc->mem_cgroup;
++		mem = id_to_memcg(pc->mem_cgroup, true);
+ 		css_get(&mem->css);
+ 		/*
+ 		 * At migrating an anonymous page, its mapcount goes down
+@@ -4442,7 +4453,8 @@ static int is_target_pte_for_mc(struct v
+ 		 * mem_cgroup_move_account() checks the pc is valid or not under
+ 		 * the lock.
+ 		 */
+-		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++		if (PageCgroupUsed(pc) &&
++			id_to_memcg(pc->mem_cgroup, true) == mc.from) {
+ 			ret = MC_TARGET_PAGE;
+ 			if (target)
+ 				target->page = page;
 
