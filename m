@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab0HTRDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 13:03:12 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:24976 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab0HTRDJ (ORCPT
+	id S1753526Ab0HTRD1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 13:03:27 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37589 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab0HTRDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 13:03:09 -0400
-X-Greylist: delayed 6282 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 13:03:08 EDT
-Message-ID: <4C6E9CAC.4000404@atmel.com>
-Date: Fri, 20 Aug 2010 17:18:04 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.11) Gecko/20100711 Lightning/1.0b1 Thunderbird/3.0.6
+	Fri, 20 Aug 2010 13:03:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=B/d734/b3H02V/CN2rF0sX178LbwHXr72v2+hfILHdmjaMf/gtZs4/i2skFAT2K2qf
+         Kyqa8TWO2124FtIlwZiWLLEDYI9XvhUf8uXUi7kuFXa+rBVWOLffy+w81+CEg+cUW5O4
+         Y45TycTMDy8ZHLGSNA7YB6bEG1mxuNuhu1isw=
+Message-ID: <4C6EB556.3050608@gmail.com>
+Date: Fri, 20 Aug 2010 19:03:18 +0200
+From: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: siccegge@cs.fau.de
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, avictor.za@gmail.com,
-        costa.antonior@gmail.com, linux-kernel@vger.kernel.org,
-        vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH] AT91: Correct configuration define value
-References: <4c6fe9a4c298214223ff89d06401ac7b66f81c98.1277911346.git.siccegge@cs.fau.de> <1277974545-30331-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1277974545-30331-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "Ted Ts'o" <tytso@mit.edu>,
+        =?UTF-8?B?TWlsb3NsYXYgVHJtYcSN?= <mitr@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
+References: <1282293963-27807-1-git-send-email-mitr@redhat.com> <20100820135612.GC4053@thunk.org>
+In-Reply-To: <20100820135612.GC4053@thunk.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 01/07/2010 10:55, Nicolas Ferre :
-> The MTD nand driver for Atmel chips is atmel_nand and not at91_nand anymore.
-> Change wrong configuration variables that were remaining.
+On 08/20/2010 03:56 PM, Ted Ts'o wrote:
+> On Fri, Aug 20, 2010 at 10:45:43AM +0200, Miloslav Trmač wrote:
+>> Hello, following is a patchset providing an user-space interface to
+>> the kernel crypto API.  It is based on the older, BSD-compatible,
+>> implementation, but the user-space interface is different.
 > 
-> Reported-by: Christoph Egger <siccegge@cs.fau.de>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> What's the goal of exporting the kernel crypto routines to userspace,
+> as opposed to just simply doing the crypto in userspace? 
 
-We can add:
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+This was the goal of the original cryptodev OpenBSD API and the
+subsequent linux port in http://home.gna.org/cryptodev-linux/. In
+typical PCs it might even be slower to use such an accelerator in kernel
+space, but in embedded systems where the hardware version of AES might
+be 100 times faster than the software it might make sense.
 
-> ---
-> Christoph,
+However the design goal of this API is to separate cryptographic
+operations from the applications. That is applications in userspace can
+use keys, but the keys cannot be extracted from them, so for example
+code injection in the web server will not be able to extract the private
+key of the web service. (this approach is also required for
+certification of linux on certain fields as Miloslav described in the
+first post).
 
-Christoph,
+The interface is designed in a way that it can be wrapped by a PKCS #11
+module and used transparently by other crypto libraries
+(openssl/nss/gnutls). TPM is quite limited in this respect and cannot
+fulfill this goal.
 
-Is this patch handled by you as part of your patch series or should I
-include it in "Trivial" or "AT91" patch series?
+> So I'm bit at a list what's the whole point of this patch series.
+> Could you explain that in the documentation, please?  Especially for
+> crypto, explaining when something should be used, what the threat
+> model is, etc., is often very important.
 
-Bye,
-
-> Thank you for highlighting this. But please consider this
-> patch instead of yours.
-> 
->  arch/arm/mach-at91/board-at572d940hf_ek.c |    2 +-
->  arch/arm/mach-at91/board-sam9m10g45ek.c   |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/board-at572d940hf_ek.c b/arch/arm/mach-at91/board-at572d940hf_ek.c
-> index 5daff27..4665162 100644
-> --- a/arch/arm/mach-at91/board-at572d940hf_ek.c
-> +++ b/arch/arm/mach-at91/board-at572d940hf_ek.c
-> @@ -216,7 +216,7 @@ static struct atmel_nand_data __initdata eb_nand_data = {
->  /*	.rdy_pin	= AT91_PIN_PC16, */
->  	.enable_pin	= AT91_PIN_PA15,
->  	.partition_info	= nand_partitions,
-> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
-> +#if defined(CONFIG_MTD_NAND_ATMEL_BUSWIDTH_16)
->  	.bus_width_16	= 1,
->  #else
->  	.bus_width_16	= 0,
-> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> index ee80059..37af9b1 100644
-> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> @@ -135,7 +135,7 @@ static struct atmel_nand_data __initdata ek_nand_data = {
->  	.rdy_pin	= AT91_PIN_PC8,
->  	.enable_pin	= AT91_PIN_PC14,
->  	.partition_info	= nand_partitions,
-> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
-> +#if defined(CONFIG_MTD_NAND_ATMEL_BUSWIDTH_16)
->  	.bus_width_16	= 1,
->  #else
->  	.bus_width_16	= 0,
+A detailed document describing this framework, threats and model is on
+its way.
 
 
--- 
-Nicolas Ferre
-
+best regards,
+Nikos
