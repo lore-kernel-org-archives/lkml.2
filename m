@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab0HTJQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 05:16:28 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:39728 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab0HTJQZ (ORCPT
+	id S1752103Ab0HTJQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 05:16:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47861 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab0HTJQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 05:16:25 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: Eric Paris <eparis@redhat.com>, Andreas Gruenbacher <agruen@suse.de>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: struct fanotify_event_metadata
-References: <m21va1ozqx.fsf@igel.home>
-	<201008191644.29299.tvrtko.ursulin@sophos.com>
-	<1282240426.21419.1716.camel@acb20005.ipt.aol.com>
-	<201008201002.16235.tvrtko.ursulin@sophos.com>
-X-Yow: Should I do my BOBBIE VINTON medley?
-Date: Fri, 20 Aug 2010 11:16:22 +0200
-In-Reply-To: <201008201002.16235.tvrtko.ursulin@sophos.com> (Tvrtko Ursulin's
-	message of "Fri, 20 Aug 2010 10:02:15 +0100")
-Message-ID: <m3pqxd7ift.fsf@hase.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 20 Aug 2010 05:16:46 -0400
+Date: Fri, 20 Aug 2010 05:16:45 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: callchain sampling bug in perf?
+Message-ID: <20100820091645.GA20138@infradead.org>
+References: <20100815225359.GA32152@infradead.org>
+ <20100819005720.GB5324@nowhere>
+ <20100819085700.GB8782@infradead.org>
+ <20100819150422.GA325@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100819150422.GA325@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tvrtko Ursulin <tvrtko.ursulin@sophos.com> writes:
+On Thu, Aug 19, 2010 at 12:04:22PM -0300, Arnaldo Carvalho de Melo wrote:
+> 
+> [acme@doppio tmp]$ perf report
+> 
+> http://vger.kernel.org/~acme/perf/perf-report-tui-callchain-xlog_sync.png
+> 
+> So it seems to work (you tell me if the callchains make sense), and the problem
 
-> Shrink pid field in the fanotify_event_metadata to 32-bit to match
-> the kernel representation. Pull mask field up since it logically
-> comes before event auxiliary data and also makes for a nicer
-> alignment.
+I've rebuilt perf with libnewt to reproduce it, but to get any of the
+callchain data I need to call perf report with a -g argument (which is
+rather expected from the documentation anyway)
 
-That won't buy you much wrt. alignment though, due to the packed
-attribute.
+I still see the same problems as with the TUI perf report with that.
+With the -g {mode},0.0 there is nothing to expand inside the GUI for
+e.g. the pythong process, and with the 0.0 threshold I can only expand
+a few 0.<something> callchains, but I never see the 80% your screenshot
+shows.  What perf version are you running?
 
-Andreas.
+Also the flat mode is rendered incorrectly, it just adds different call
+graphs inside a single process directly after each other instead of
+separating them in the rendering.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+
