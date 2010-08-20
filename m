@@ -1,123 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab0HTR4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 13:56:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6769 "EHLO mx1.redhat.com"
+	id S1752802Ab0HTR4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 13:56:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5563 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab0HTR43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 13:56:29 -0400
-Date: Fri, 20 Aug 2010 14:56:20 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 30/35] IOCTL for setting TSC rate
-Message-ID: <20100820175620.GJ2937@mothafucka.localdomain>
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
- <1282291669-25709-31-git-send-email-zamsden@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282291669-25709-31-git-send-email-zamsden@redhat.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+	id S1752432Ab0HTR4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 13:56:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,240,1280732400"; 
+   d="scan'208";a="649710727"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-ia64@vger.kernel.org, linux-parisc@vger.kernel.org,
+        "Kyle McMartin" <kyle@mcmartin.ca>, "Helge Deller" <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        "Matthew Wilcox" <willy@linux.intel.com>
+Subject: [RFC - PATCH] leave guard page for upwardly growing stacks too
+Date: Fri, 20 Aug 2010 10:56:47 -0700
+Message-Id: <4c6ec1df290705bb68@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 10:07:44PM -1000, Zachary Amsden wrote:
-> Add an IOCTL for setting the TSC rate for a VM, intended to
-> be used to migrate non-kvmclock based VMs which rely on TSC
-> rate staying stable across host migration.
-> 
-> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-> ---
->  arch/x86/kvm/x86.c  |   36 ++++++++++++++++++++++++++++++++++++
->  include/linux/kvm.h |    4 ++++
->  2 files changed, 40 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 887e30f..e618265 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1017,6 +1017,10 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
->  			kvm_x86_ops->adjust_tsc_offset(v, tsc-tsc_timestamp);
->  		local_irq_restore(flags);
->  
-> +		/* hw_tsc_khz unknown at creation time, check for overrun */
-> +		if (this_tsc_khz > v->kvm->arch.virtual_tsc_khz)
-> +			vcpu->tsc_overrun = 1;
-> +
->  		/* Now, see if we need to switch into trap mode */
->  		if (vcpu->tsc_overrun && !vcpu->tsc_trapping)
->  			kvm_x86_ops->set_tsc_trap(v, 1);
-> @@ -1846,6 +1850,7 @@ int kvm_dev_ioctl_check_extension(long ext)
->  	case KVM_CAP_DEBUGREGS:
->  	case KVM_CAP_X86_ROBUST_SINGLESTEP:
->  	case KVM_CAP_XSAVE:
-> +	case KVM_CAP_SET_TSC_RATE:
->  		r = 1;
->  		break;
->  	case KVM_CAP_COALESCED_MMIO:
-> @@ -3413,6 +3418,37 @@ long kvm_arch_vm_ioctl(struct file *filp,
->  		r = 0;
->  		break;
->  	}
-> +	case KVM_X86_GET_TSC_RATE: {
-> +		u32 rate = kvm->arch.virtual_tsc_khz;
-> +		r = -EFAULT;
-> +		if (copy_to_user(argp, &rate, sizeof(rate)))
-> +			goto out;
-> +		r = 0;
-> +		break;
-> +	}
-> +	case KVM_X86_SET_TSC_RATE: {
-> +		u32 rate;
-> +		int i;
-> +		struct kvm_vcpu *vcpu;
-> +		r = -EFAULT;
-> +		if (copy_from_user(&rate, argp, sizeof rate))
-> +			goto out;
-> +		if (rate == 0 || rate > (1ULL << 40)) {
-> +			r = -EINVAL;
-> +			break;
-> +		}
-> +		/*
-> +		 * This is intended to be called once, during VM creation.
-> +		 * Calling this with running VCPUs to dynamically change
-> +		 * speed is risky; there is no synchronization with the
-> +		 * compensation loop, so computations using virtual_tsc_khz
-> +		 * conversions may go haywire.  Use at your own risk.
-> +		 */
-> +		kvm_arch_set_tsc_khz(kvm, rate);
-> +		kvm_for_each_vcpu(i, vcpu, kvm)
-> +			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> +		break;
-> +	}
->  
->  	default:
->  		;
-> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> index 3707704..22d27f2 100644
-> --- a/include/linux/kvm.h
-> +++ b/include/linux/kvm.h
-> @@ -539,6 +539,7 @@ struct kvm_ppc_pvinfo {
->  #define KVM_CAP_XCRS 56
->  #endif
->  #define KVM_CAP_PPC_GET_PVINFO 57
-> +#define KVM_CAP_SET_TSC_RATE 58
->  
->  #ifdef KVM_CAP_IRQ_ROUTING
->  
-> @@ -675,6 +676,9 @@ struct kvm_clock_data {
->  #define KVM_SET_PIT2              _IOW(KVMIO,  0xa0, struct kvm_pit_state2)
->  /* Available with KVM_CAP_PPC_GET_PVINFO */
->  #define KVM_PPC_GET_PVINFO	  _IOW(KVMIO,  0xa1, struct kvm_ppc_pvinfo)
-> +/* Available with KVM_CAP_SET_TSC_RATE */
-> +#define KVM_X86_GET_TSC_RATE      _IOR(KVMIO,  0xa2, __u32)
-> +#define KVM_X86_SET_TSC_RATE      _IOW(KVMIO,  0xa3, __u32)
+In commit 320b2b8de12698082609ebbc1a17165727f4c893
+   mm: keep a guard page below a grow-down stack segment
 
-wrap this into a struct?
+we prevented stacks from growing downwards into other vma areas.
+But some arhictectures (ia64 and pa-risc) have stacks that
+grow upwards. Provide the same protection for them.
 
+Signed-off-by: Tony Luc <tony.luck@intel.com>
+
+---
+
+Pointed out to me by Matthew Wilcox.
+
+DANGER, DANGER - NOT TESTED on pa-risc yet DO NOT APPLY WITHOUT AN ACK FROM PA-RISC LAND!
+
+Are there any other architectures with upward growing stacks?
+
+diff --git a/mm/memory.c b/mm/memory.c
+index b6e5fd2..9dcef72 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2760,21 +2760,35 @@ out_release:
+ }
+ 
+ /*
+- * This is like a special single-page "expand_downwards()",
+- * except we must first make sure that 'address-PAGE_SIZE'
++ * This is like a special single-page "expand_{down|up}wards()",
++ * except we must first make sure that 'address{-|+}PAGE_SIZE'
+  * doesn't hit another vma.
+  *
+  * The "find_vma()" will do the right thing even if we wrap
+  */
+ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned long address)
+ {
+-	address &= PAGE_MASK;
+-	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
+-		address -= PAGE_SIZE;
+-		if (find_vma(vma->vm_mm, address) != vma)
+-			return -ENOMEM;
++	struct vm_area_struct *v;
++
++	if (vma->vm_flags & VM_GROWSDOWN) {
++		address &= PAGE_MASK;
++		if (address == vma->vm_start) {
++			address -= PAGE_SIZE;
++			if (find_vma(vma->vm_mm, address) != vma)
++				return -ENOMEM;
+ 
+-		expand_stack(vma, address);
++			expand_stack(vma, address);
++		}
++	} else if (vma->vm_flags & VM_GROWSUP) {
++		address = PAGE_ALIGN(address + 1);
++		if (address == vma->vm_end) {
++			address += PAGE_SIZE;
++			if ((v = find_vma(vma->vm_mm, address)) &&
++				v->vm_start <= address) {
++				return -ENOMEM;
++			}
++			expand_upwards(vma, address);
++		}
+ 	}
+ 	return 0;
+ }
