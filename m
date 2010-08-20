@@ -1,139 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab0HTIT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:19:59 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:61251 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab0HTIT5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:19:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=i/e5k5K9rD9qb+r6nsNB32JyJ8ulO3GDTn2WfPZhCt4h1jzdddX0i38IduvL0D7YY
-	ivKOZm9W8TFhISf72mUKA==
+	id S1752691Ab0HTIVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:21:19 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52599 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751629Ab0HTIVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:21:15 -0400
+Date: Fri, 20 Aug 2010 10:21:03 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "D. Stussy" <kd6lvw@verizon.net>, linux-tip-commits@vger.kernel.org,
+        mingo@redhat.com, linux-kernel@vger.kernel.org, luca@luca-barbieri.com,
+        tglx@linutronix.de, Greg KH <gregkh@suse.de>
+Subject: Re: [tip:x86/urgent] x86, asm: Refactor atomic64_386_32.S to support
+ old binutils and be cleaner
+Message-ID: <20100820082103.GF17551@elte.hu>
+References: <85878.24188.qm@web84204.mail.re3.yahoo.com>
+ <4C6DA0C0.6020808@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20100820023419.GA5502@localhost>
-References: <1282251447-16937-1-git-send-email-mrubin@google.com>
- <1282251447-16937-2-git-send-email-mrubin@google.com> <20100820023419.GA5502@localhost>
-From: Michael Rubin <mrubin@google.com>
-Date: Fri, 20 Aug 2010 01:19:33 -0700
-Message-ID: <AANLkTinzS5J2PsG4Ftmbjvpi=beyD54A=ZrRw3_DA8jv@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mm: helper functions for dirty and writeback accounting
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com, hch@lst.de,
-        axboe@kernel.dk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6DA0C0.6020808@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0081]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 7:34 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Thu, Aug 19, 2010 at 01:57:25PM -0700, Michael Rubin wrote:
->> Exporting account_pages_dirty and adding a symmetric routine
->> account_pages_writeback.
->
-> s/account_pages_writeback/account_page_writeback/
 
-Got it. thanks.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-> I'd recommend to separate the changes into two patches.
-> It's actually a bug fix to export account_pages_dirty() for ceph,
-> which should be a good candidate for 2.6.36.
+> On 08/19/2010 12:06 PM, D. Stussy wrote:
+> > Has this patch been posted to the 2.6.35 kernel also, or just to 2.6.36?  I don't think it's been posted to 2.6.35 where the problem it corrects was introduced.
+> > 
+> > "Greg KH" <gregkh@suse.de> has made a last call (tomorrow - Aug 20) for chnges for 2.6.35.3 and doesn't seem to have this.  It's not in the prior two updates either.....
+> 
+> It was Cc: <stable@kernel.org>; it's up to Greg to include it or not.
 
-Good idea.
+I think Greg generally includes all upstream commits marked with a -stable tag 
+- except if it wont apply cleanly, in which case he mails for a backport.
 
->> This allows code outside of the mm core to safely manipulate page state
->> and not worry about the other accounting. Not using these routines means
->> that some code will lose track of the accounting and we get bugs. This
->> has happened once already.
->>
->> Signed-off-by: Michael Rubin <mrubin@google.com>
->> ---
->>  fs/ceph/addr.c      |    8 ++------
->>  fs/nilfs2/segment.c |    2 +-
->>  include/linux/mm.h  |    1 +
->>  mm/page-writeback.c |   15 +++++++++++++++
->>  4 files changed, 19 insertions(+), 7 deletions(-)
->>
->> diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
->> index d9c60b8..359aa3a 100644
->> --- a/fs/ceph/addr.c
->> +++ b/fs/ceph/addr.c
->> @@ -106,12 +106,8 @@ static int ceph_set_page_dirty(struct page *page)
->>       if (page->mapping) {    /* Race with truncate? */
->>               WARN_ON_ONCE(!PageUptodate(page));
->>
->> -             if (mapping_cap_account_dirty(mapping)) {
->> -                     __inc_zone_page_state(page, NR_FILE_DIRTY);
->> -                     __inc_bdi_stat(mapping->backing_dev_info,
->> -                                     BDI_RECLAIMABLE);
->> -                     task_io_account_write(PAGE_CACHE_SIZE);
->> -             }
->> +             if (mapping_cap_account_dirty(mapping))
->
-> That 'if' is not necessary. account_page_dirtied() already has one.
-> The extra 'if' is not an optimization either, because the ceph fs is
-> not likely to have un-accountable mappings.
+It of course has to fit in the regular stable release cycle, so the patches 
+dont propagate instantaneously.
 
-Sweet. Thanks.
->
->> +                     account_page_dirtied(page, page->mapping);
->>               radix_tree_tag_set(&mapping->page_tree,
->>                               page_index(page), PAGECACHE_TAG_DIRTY);
->>
->> diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
->> index c920164..967ed7d 100644
->> --- a/fs/nilfs2/segment.c
->> +++ b/fs/nilfs2/segment.c
->> @@ -1599,7 +1599,7 @@ nilfs_copy_replace_page_buffers(struct page *page, struct list_head *out)
->>       kunmap_atomic(kaddr, KM_USER0);
->>
->>       if (!TestSetPageWriteback(clone_page))
->> -             inc_zone_page_state(clone_page, NR_WRITEBACK);
->> +             account_page_writeback(clone_page, page_mapping(clone_page));
->>       unlock_page(clone_page);
->>
->>       return 0;
->> diff --git a/include/linux/mm.h b/include/linux/mm.h
->> index a2b4804..b138392 100644
->> --- a/include/linux/mm.h
->> +++ b/include/linux/mm.h
->> @@ -855,6 +855,7 @@ int __set_page_dirty_no_writeback(struct page *page);
->>  int redirty_page_for_writepage(struct writeback_control *wbc,
->>                               struct page *page);
->>  void account_page_dirtied(struct page *page, struct address_space *mapping);
->> +void account_page_writeback(struct page *page, struct address_space *mapping);
->>  int set_page_dirty(struct page *page);
->>  int set_page_dirty_lock(struct page *page);
->>  int clear_page_dirty_for_io(struct page *page);
->> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->> index 37498ef..b8e7b3b 100644
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -1096,6 +1096,21 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
->>               task_io_account_write(PAGE_CACHE_SIZE);
->>       }
->>  }
->> +EXPORT_SYMBOL(account_page_dirtied);
->> +
->> +/*
->> + * Helper function for set_page_writeback family.
->> + * NOTE: Unlike account_page_dirtied this does not rely on being atomic
->> + * wrt interrupts.
->> + */
->> +
->> +void account_page_writeback(struct page *page, struct address_space *mapping)
->> +{
->> +     if (mapping_cap_account_dirty(mapping))
->
-> The 'if' test and *mapping parameter looks unnecessary at least for
-> now. The only place a mapping has BDI_CAP_NO_ACCT_WB but not
-> BDI_CAP_NO_WRITEBACK is fuse, which does its own accounting.
+Thanks,
 
-Cool.
-Thanks.
+	Ingo
