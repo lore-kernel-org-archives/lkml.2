@@ -1,188 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257Ab0HTKJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 06:09:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28246 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab0HTKJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 06:09:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,238,1280732400"; 
-   d="scan'208";a="830104140"
-Date: Fri, 20 Aug 2010 18:08:56 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_entered_writeback in
- /proc/vmstat
-Message-ID: <20100820100855.GC8440@localhost>
-References: <1282296689-25618-1-git-send-email-mrubin@google.com>
- <1282296689-25618-4-git-send-email-mrubin@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282296689-25618-4-git-send-email-mrubin@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752195Ab0HTKKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 06:10:35 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50911 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab0HTKKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 06:10:33 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 Aug 2010 19:05:40 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: use ID in page_cgroup
+Message-Id: <20100820190540.8acfc2db.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100820190132.43684862.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820190132.43684862.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 05:31:28PM +0800, Michael Rubin wrote:
-> To help developers and applications gain visibility into writeback
-> behaviour adding two entries to /proc/vmstat.
-> 
->    # grep nr_dirtied /proc/vmstat
->    nr_dirtied 3747
->    # grep nr_entered_writeback /proc/vmstat
->    nr_entered_writeback 3618
 
-How about the names nr_dirty_accumulated and nr_writeback_accumulated?
-It seems more consistent, for both the interface and code (see below).
-I'm not really sure though.
+But title....this was [PATCH 3/5].
+Sorry.
+-kame
 
-> In order to track the "cleaned" and "dirtied" counts we added two
-> vm_stat_items.  Per memory node stats have been added also. So we can
-> see per node granularity:
-> 
->    # cat /sys/devices/system/node/node20/writebackstat
->    Node 20 pages_writeback: 0 times
->    Node 20 pages_dirtied: 0 times
-
-I'd prefer the name "vmstat" over "writebackstat", and propose to
-migrate items from /proc/zoneinfo over time. zoneinfo is a terrible
-interface for scripting.
-
-Also, are there meaningful usage of per-node writeback stats?
-The numbers are naturally per-bdi ones instead. But if we plan to
-expose them for each bdi, this patch will need to be implemented
-vastly differently.
-
-> Signed-off-by: Michael Rubin <mrubin@google.com>
-> ---
->  drivers/base/node.c    |   14 ++++++++++++++
->  include/linux/mmzone.h |    2 ++
->  mm/page-writeback.c    |    2 ++
->  mm/vmstat.c            |    3 +++
->  4 files changed, 21 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/base/node.c b/drivers/base/node.c
-> index 2872e86..2d05421 100644
-> --- a/drivers/base/node.c
-> +++ b/drivers/base/node.c
-> @@ -160,6 +160,18 @@ static ssize_t node_read_numastat(struct sys_device * dev,
->  }
->  static SYSDEV_ATTR(numastat, S_IRUGO, node_read_numastat, NULL);
->  
-> +static ssize_t node_read_writebackstat(struct sys_device *dev,
-> +				struct sysdev_attribute *attr, char *buf)
-> +{
-> +	int nid = dev->id;
-> +	return sprintf(buf,
-> +		"Node %d pages_writeback: %lu times\n"
-> +		"Node %d pages_dirtied: %lu times\n",
-> +		nid, node_page_state(nid, NR_PAGES_ENTERED_WRITEBACK),
-> +		nid, node_page_state(nid, NR_FILE_PAGES_DIRTIED));
-
-                nid, node_page_state(nid, NR_WRITEBACK_ACCUMULATED),
-                nid, node_page_state(nid, NR_FILE_DIRTY_ACCUMULATED));
-
-> +}
-> +static SYSDEV_ATTR(writebackstat, S_IRUGO, node_read_writebackstat, NULL);
-> +
-
-s/writebackstat/vmstat/
-
->  static ssize_t node_read_distance(struct sys_device * dev,
->  			struct sysdev_attribute *attr, char * buf)
->  {
-> @@ -243,6 +255,7 @@ int register_node(struct node *node, int num, struct node *parent)
->  		sysdev_create_file(&node->sysdev, &attr_meminfo);
->  		sysdev_create_file(&node->sysdev, &attr_numastat);
->  		sysdev_create_file(&node->sysdev, &attr_distance);
-> +		sysdev_create_file(&node->sysdev, &attr_writebackstat);
-
-ditto
-s/writebackstat/vmstat/
-
->  		scan_unevictable_register_node(node);
->  
-> @@ -267,6 +280,7 @@ void unregister_node(struct node *node)
->  	sysdev_remove_file(&node->sysdev, &attr_meminfo);
->  	sysdev_remove_file(&node->sysdev, &attr_numastat);
->  	sysdev_remove_file(&node->sysdev, &attr_distance);
-> +	sysdev_remove_file(&node->sysdev, &attr_writebackstat);
-  
-ditto
-s/writebackstat/vmstat/
-
->  	scan_unevictable_unregister_node(node);
->  	hugetlb_unregister_node(node);		/* no-op, if memoryless node */
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 6e6e626..fe4e6dd 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -104,6 +104,8 @@ enum zone_stat_item {
->  	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
->  	NR_ISOLATED_FILE,	/* Temporary isolated pages from file lru */
->  	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
-> +	NR_FILE_PAGES_DIRTIED,	/* number of times pages get dirtied */
-> +	NR_PAGES_ENTERED_WRITEBACK, /* number of times pages enter writeback */
-
-   	NR_FILE_DIRTY_ACCUMULATED, /* number of times pages get dirtied */
-   	NR_WRITEBACK_ACCUMULATED,  /* number of times pages enter writeback */
-
->  #ifdef CONFIG_NUMA
->  	NUMA_HIT,		/* allocated in intended node */
->  	NUMA_MISS,		/* allocated in non intended node */
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index ae5f5d5..1b1763c 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1126,6 +1126,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
->  {
->  	if (mapping_cap_account_dirty(mapping)) {
->  		__inc_zone_page_state(page, NR_FILE_DIRTY);
-> +		__inc_zone_page_state(page, NR_FILE_PAGES_DIRTIED);
-
-   		__inc_zone_page_state(page, NR_FILE_DIRTY_ACCUMULATED);
-
->  		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
->  		task_dirty_inc(current);
->  		task_io_account_write(PAGE_CACHE_SIZE);
-> @@ -1141,6 +1142,7 @@ EXPORT_SYMBOL(account_page_dirtied);
->  void account_page_writeback(struct page *page)
->  {
->  	inc_zone_page_state(page, NR_WRITEBACK);
-> +	inc_zone_page_state(page, NR_PAGES_ENTERED_WRITEBACK);
-
-   	inc_zone_page_state(page, NR_WRITEBACK_ACCUMULATED);
-
->  }
->  EXPORT_SYMBOL(account_page_writeback);
->  
-> diff --git a/mm/vmstat.c b/mm/vmstat.c
-> index f389168..073a496 100644
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -732,6 +732,9 @@ static const char * const vmstat_text[] = {
->  	"nr_isolated_anon",
->  	"nr_isolated_file",
->  	"nr_shmem",
-> +	"nr_dirtied",
-> +	"nr_entered_writeback",
-
-   	"nr_dirty_accumulated",
-   	"nr_writeback_accumulated",
-
->  #ifdef CONFIG_NUMA
->  	"numa_hit",
->  	"numa_miss",
-> -- 
-> 1.7.1
