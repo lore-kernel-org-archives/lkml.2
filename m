@@ -1,124 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab0HTNWt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:22:49 -0400
-Received: from verein.lst.de ([213.95.11.210]:44387 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249Ab0HTNWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:22:47 -0400
-Date: Fri, 20 Aug 2010 15:22:14 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
-Message-ID: <20100820132214.GA6184@lst.de>
-References: <1281616891-5691-1-git-send-email-tj@kernel.org>
+	id S1752145Ab0HTNZw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:25:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47589 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab0HTNZu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 09:25:50 -0400
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
+        npiggin@suse.de, hooanon05@yahoo.co.jp, bfields@fieldses.org,
+        miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+In-Reply-To: <20100820195303.20b17210@notabene>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	 <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	 <20100820083057.GA10039@infradead.org>  <20100820195303.20b17210@notabene>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 20 Aug 2010 15:25:29 +0200
+Message-ID: <1282310729.2605.989.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281616891-5691-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0.001 () BAYES_50
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI: here's a little writeup to document the new cache flushing scheme,
-intended to replace Documentation/block/barriers.txt.  Any good
-suggestion for a filename in the kernel tree?
+On Fri, 2010-08-20 at 19:53 +1000, Neil Brown wrote:
+> With futexes we suddenly get a file descriptor for something we could never
+> get a file descriptor on before and that doesn't seem to be a problem. 
 
----
+FWIW
 
-Explicit volatile write cache control
-=====================================
+commit 82af7aca56c67061420d618cc5a30f0fd4106b80
+Author: Eric Sesterhenn <snakebyte@gmx.de>
+Date:   Fri Jan 25 10:40:46 2008 +0100
 
-Introduction
-------------
+    Removal of FUTEX_FD
 
-Many storage devices, especially in the consumer market, come with volatile
-write back caches.  That means the devices signal I/O completion to the
-operating system before data actually has hit the physical medium.  This
-behavior obviously speeds up various workloads, but it means the operating
-system needs to force data out to the physical medium when it performs
-a data integrity operation like fsync, sync or an unmount.
-
-The Linux block layer provides a two simple mechanism that lets filesystems
-control the caching behavior of the storage device.  These mechanisms are
-a forced cache flush, and the Force Unit Access (FUA) flag for requests.
-
-
-Explicit cache flushes
-----------------------
-
-The REQ_FLUSH flag can be OR ed into the r/w flags of a bio submitted from the
-filesystem and will make sure the volatile cache of the storage device
-has been flushed before the actual I/O operation is started.  The explicit
-guarantees write requests that have completed before the bio was submitted
-actually are on the physical medium before this request has started.
-In addition the REQ_FLUSH flag can be set on an otherwise empty bio
-structure, which causes only an explicit cache flush without any dependent
-I/O.  It is recommend to use the blkdev_issue_flush() helper for a pure
-cache flush.
-
-
-Forced Unit Access
------------------
-
-The REQ_FUA flag can be OR ed into the r/w flags of a bio submitted from the
-filesystem and will make sure that I/O completion for this requests is not
-signaled before the data has made it to non-volatile storage on the
-physical medium.
-
-
-Implementation details for filesystems
---------------------------------------
-
-Filesystem can simply set the REQ_FLUSH and REQ_FUA bits and do not have to
-worry if the underlying devices need any explicit cache flushing and how
-the Forced Unit Access is implemented.  The REQ_FLUSH and REQ_FUA flags
-may both be set on a single bio.
-
-
-Implementation details for make_request_fn based block drivers
---------------------------------------------------------------
-
-These drivers will always see the REQ_FLUSH and REQ_FUA bits as they sit
-directly below the submit_bio interface.  For remapping drivers the REQ_FUA
-bits needs to be propagate to underlying devices, and a global flush needs
-to be implemented for bios with the REQ_FLUSH bit set.  For real device
-drivers that do not have a volatile cache the REQ_FLUSH and REQ_FUA bits
-on non-empty bios can simply be ignored, and REQ_FLUSH requests without
-data can be completed successfully without doing any work.  Drivers for
-devices with volatile caches need to implement the support for these
-flags themselves without any help from the block layer.
-
-
-Implementation details for request_fn based block drivers
---------------------------------------------------------------
-
-For devices that do not support volatile write caches there is no driver
-support required, the block layer completes empty REQ_FLUSH requests before
-entering the driver and strips off the REQ_FLUSH and REQ_FUA bits from
-requests that have a payload.  For device with volatile write caches the
-driver needs to tell the block layer that it supports flushing caches by
-doing:
-
-	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH);
-
-and handle empty REQ_FLUSH requests in it's prep_fn/request_fn.  Note that
-REQ_FLUSH requests with a payload are automatically turned into a sequence
-of empty REQ_FLUSH and the actual write by the block layer.  For devices
-that also support the FUA bit the block layer needs to be told to pass
-through that bit using:
-
-	blk_queue_flush(sdkp->disk->queue, REQ_FLUSH | REQ_FUA);
-
-and handle write requests that have the REQ_FUA bit set properly in it's
-prep_fn/request_fn.  If the FUA bit is not natively supported the block
-layer turns it into an empty REQ_FLUSH requests after the actual write.
