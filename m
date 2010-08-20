@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab0HTDnF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 23:43:05 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:63671 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751543Ab0HTDnD (ORCPT
+	id S1752521Ab0HTDnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 23:43:16 -0400
+Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:52514 "EHLO
+	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab0HTDnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 23:43:03 -0400
-Message-ID: <4C6DF8BC.8060803@snapgear.com>
-Date: Fri, 20 Aug 2010 13:38:36 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Thu, 19 Aug 2010 23:43:14 -0400
+From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
+To: Greg KH <gregkh@suse.de>, Marek Vasut <marek.vasut@gmail.com>
+Cc: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        maxinbjohn@gmail.com, orest.bond@outpostembedded.com,
+        vijaykumar@zilogic.com
+Subject: Re: Regarding USB-Serial Device driver
+Date: Fri, 20 Aug 2010 09:12:56 +0530
+Message-Id: <20100820033259.M54157@admin-gateway.ncra.tifr.res.in>
+In-Reply-To: <20100819141812.GA12375@suse.de>
+References: <20100819055329.M29689@admin-gateway.ncra.tifr.res.in> <20100819061525.M24093@admin-gateway.ncra.tifr.res.in> <201008190938.44532.marek.vasut@gmail.com> <20100819141812.GA12375@suse.de>
+X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
+X-OriginatingIP: 158.144.12.129
 MIME-Version: 1.0
-To: uClinux development list <uclinux-dev@uclinux.org>
-CC: Linux/m68k <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [uClinux-dev] [PATCH] m68k, m68knommu: Wire up fanotify_init,
- fanotify_mark, and prlimit64
-References: <alpine.DEB.2.00.1008191804480.16652@ayla.of.borg>
-In-Reply-To: <alpine.DEB.2.00.1008191804480.16652@ayla.of.borg>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Aug 2010 03:42:08.0210 (UTC) FILETIME=[AA15B320:01CB4019]
+Content-Type: text/plain;
+	charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Hello Greg,
+              
+             No the driver is not working properly for me.I have connected RS-485
+interface card to the USB-Serial adaptor through which I am controlling six MCM card(
+Control & Monitor unit). When I send command to MCM 2 , command also goes to MCM 10 & 0.
+When I checked on the oscilloscope, I found out that instead of going some ten bytes,
+large number of bytes are going out.
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
+Current kernel version have that RTS support, but for 2.6.25 it doesn't have. 
+
+I am having confusion that form where so many bytes are going out.
+If you can help me out,I would be very thankful to you.
+
+Thanks,
+Raju.
 
 
-> ---
->  arch/m68k/include/asm/unistd.h       |    5 ++++-
->  arch/m68k/kernel/entry.S             |    3 +++
->  arch/m68knommu/kernel/syscalltable.S |    3 +++
->  3 files changed, 10 insertions(+), 1 deletions(-)
+
+
+
+On Thu, 19 Aug 2010 07:18:12 -0700, Greg KH wrote
+> On Thu, Aug 19, 2010 at 09:38:44AM +0200, Marek Vasut wrote:
+> > Dne ??t 19. srpna 2010 08:17:30 Raju Rameshwar Uprade napsal(a):
+> > > Dear Sir,
+> > >          I am trying to write a Pl2303_mcm.c usb-serial device driver which
+> > > will be able to talk to several devices using RS-485 interface card.I have
+> > > modified the standard pl2303.c by which I am able to enable/disable the
+> > > RTS line.
+> > > I am sending 10 bytes of data to the device, data is going out but instead
+> > > of 10 bytes, device driver is sending a large amount of data as seen on
+> > > Lecroy waverunner oscilloscope. Here I am sending the modified file.
+> > 
+> > Hi, I have no idea why I'm CCed in this, but anyway.
+> > 
+> > 1) could you please update the driver to a more recent kernel (we are 10 kernel 
+> > versions further now)
+> > 2) could you please send a diff instead of a whole file? (git diff <file1> 
+> > <file2> > diff.diff ... see man git-diff)
 > 
-> diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
-> index 60b15d0..b43b36b 100644
-> --- a/arch/m68k/include/asm/unistd.h
-> +++ b/arch/m68k/include/asm/unistd.h
-> @@ -340,10 +340,13 @@
->  #define __NR_set_thread_area	334
->  #define __NR_atomic_cmpxchg_32	335
->  #define __NR_atomic_barrier	336
-> +#define __NR_fanotify_init	337
-> +#define __NR_fanotify_mark	338
-> +#define __NR_prlimit64		339
->  
->  #ifdef __KERNEL__
->  
-> -#define NR_syscalls		337
-> +#define NR_syscalls		340
->  
->  #define __ARCH_WANT_IPC_PARSE_VERSION
->  #define __ARCH_WANT_OLD_READDIR
-> diff --git a/arch/m68k/kernel/entry.S b/arch/m68k/kernel/entry.S
-> index 2391bdf..6360c43 100644
-> --- a/arch/m68k/kernel/entry.S
-> +++ b/arch/m68k/kernel/entry.S
-> @@ -765,4 +765,7 @@ sys_call_table:
->  	.long sys_set_thread_area
->  	.long sys_atomic_cmpxchg_32	/* 335 */
->  	.long sys_atomic_barrier
-> +	.long sys_fanotify_init
-> +	.long sys_fanotify_mark
-> +	.long sys_prlimit64
->  
-> diff --git a/arch/m68knommu/kernel/syscalltable.S b/arch/m68knommu/kernel/syscalltable.S
-> index b30b3eb..79b1ed1 100644
-> --- a/arch/m68knommu/kernel/syscalltable.S
-> +++ b/arch/m68knommu/kernel/syscalltable.S
-> @@ -355,6 +355,9 @@ ENTRY(sys_call_table)
->  	.long sys_set_thread_area
->  	.long sys_atomic_cmpxchg_32	/* 335 */
->  	.long sys_atomic_barrier
-> +	.long sys_fanotify_init
-> +	.long sys_fanotify_mark
-> +	.long sys_prlimit64
->  
->  	.rept NR_syscalls-(.-sys_call_table)/4
->  		.long sys_ni_syscall
+> Yes, Raju, please see the file, Documentation/SubmittingPatches for how
+> to do this properly.
+> 
+> Also, does your updated driver work properly for you?  It would be good
+> to have proper RTS support in the pl2303 driver, but I thought that the
+> driver already supported this?
+> 
+> thanks,
+> 
+> greg k-h
 
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+--
+Open WebMail Project (http://openwebmail.org)
+
