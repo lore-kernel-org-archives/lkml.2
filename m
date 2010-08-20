@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab0HTVf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 17:35:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38894 "EHLO mx1.redhat.com"
+	id S1751853Ab0HTVg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 17:36:59 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:59249 "EHLO sabe.cs.wisc.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab0HTVf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 17:35:57 -0400
-Message-ID: <4C6EF4EA.30603@redhat.com>
-Date: Fri, 20 Aug 2010 17:34:34 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1751178Ab0HTVg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 17:36:58 -0400
+Message-ID: <4C6EF67E.2060908@cs.wisc.edu>
+Date: Fri, 20 Aug 2010 16:41:18 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 2/6] mm: stack based kmap_atomic
-References: <20100819201317.673172547@chello.nl> <20100819202753.656285068@chello.nl>
-In-Reply-To: <20100819202753.656285068@chello.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: nab@linux-iscsi.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
+        hare@suse.de
+Subject: Re: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
+References: <1282257947.30453.296.camel@haakon2.linux-iscsi.org> <20100820163058P.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100820163058P.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2010 04:13 PM, Peter Zijlstra wrote:
-> Keep the current interface but ignore the KM_type and use a stack
-> based approach.
+On 08/20/2010 02:32 AM, FUJITA Tomonori wrote:
+> On Thu, 19 Aug 2010 15:45:47 -0700
+> "Nicholas A. Bellinger"<nab@linux-iscsi.org>  wrote:
 >
-> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+>> So, assuming that the conversion of all struct iscsi_init_* and struct
+>> iscsi_target* to use include/scsi/iscsi_proto.h defs just involves
+>> checking structure size and renaming the member use in
+>> drivers/target/lio-target, would it be acceptable to do something like:
+>>
+>> /* iSCSI PDU Header */
+>> struct iscsi_cmd {
+>>          uint8_t opcode;
+>>          uint8_t flags;
+>>          __be16 rsvd2;
+>>          uint8_t hlength;
+>>          uint8_t dlength[3];
+>>          uint8_t lun[8];
+>>          itt_t    itt;   /* Initiator Task Tag */
+>>          __be32 data_length;
+>>          __be32 cmdsn;
+>>          __be32 exp_statsn;
+>>          uint8_t cdb[ISCSI_CDB_SIZE];    /* SCSI Command Block */
+>>          /* Additional Data (Command Dependent) */
+>> #ifdef ISCSI_TARGET_MODE
+>>          __be32 header_digest;
+>> #endif
+>> };
+>
+> It's up to Mike but it looks hacky to me. struct iscsi_pdu is defined
+> in the exact way as the spec does.
+>
+> I don't think that iscsi_proto.h conversion is a must for the mainline
+> inclusion. I prefer to let it alone for now.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+For the iscsi target, I think it is. For iscsi initiator drivers like 
+bnx2i and be2iscsi we have made them convert from their headers to 
+common linux ones including switching from driver specific defs to 
+iscsi_proto.h.
 
--- 
-All rights reversed
+For the merging of any target core stuff though, I do not think it is 
+critical. The core target stuff does not need to be merged with a 
+software iscsi target. They can do in at different times.
