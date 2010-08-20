@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab0HTUqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 16:46:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51283 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab0HTUqs (ORCPT
+	id S1753730Ab0HTUrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 16:47:01 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38408 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab0HTUrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 16:46:48 -0400
-Date: Fri, 20 Aug 2010 14:46:45 -0600
+	Fri, 20 Aug 2010 16:47:00 -0400
+Date: Fri, 20 Aug 2010 14:46:57 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Jassi Brar <jassi.brar@samsung.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] spi/spi_s3c64xx: Make probe more robust against
- missing board config
-Message-ID: <20100820204645.GA13910@angua.secretlab.ca>
-References: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of: Fix missing includes - ll_temac
+Message-ID: <20100820204657.GB13910@angua.secretlab.ca>
+References: <1282200178-1145-1-git-send-email-monstr@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1282200178-1145-1-git-send-email-monstr@monstr.eu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 05:17:07PM +0100, Mark Brown wrote:
-> The S3C64xx SPI driver requires the machine to call s3c64xx_spi_set_info()
-> to select a few options, including the clock to use for the SPI controller.
-> If this is not done then a NULL will be passed as the clock name for
-> clk_get(), causing an obscure crash. Guard against this and other missing
-> configuration by validating that the clock name has been filled in in
-> the platform data that ets passed in.
+On Thu, Aug 19, 2010 at 08:42:58AM +0200, Michal Simek wrote:
+> It is the next patch which is fixing missing header
+> which were removed from prom.h.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Related patches:
+> "of/address: Clean up function declarations" (sha1 id 22ae782f8)
+> "of: Fix missing includes" (sha1 id f1ca09b2b)
+> 
 
-Both patches applied, thanks.
+Applied.
 
-g.
-
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
 > ---
->  drivers/spi/spi_s3c64xx.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
+>  drivers/net/ll_temac_main.c |    1 +
+>  drivers/net/ll_temac_mdio.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
-> index 9736581..a0b63b7 100644
-> --- a/drivers/spi/spi_s3c64xx.c
-> +++ b/drivers/spi/spi_s3c64xx.c
-> @@ -919,6 +919,13 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
+> diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
+> index c7b6247..a9d216d 100644
+> --- a/drivers/net/ll_temac_main.c
+> +++ b/drivers/net/ll_temac_main.c
+> @@ -38,6 +38,7 @@
+>  #include <linux/of_device.h>
+>  #include <linux/of_mdio.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+>  #include <linux/skbuff.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/tcp.h>      /* needed for sizeof(tcphdr) */
+> diff --git a/drivers/net/ll_temac_mdio.c b/drivers/net/ll_temac_mdio.c
+> index 5ae28c9..8cf9d4f 100644
+> --- a/drivers/net/ll_temac_mdio.c
+> +++ b/drivers/net/ll_temac_mdio.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/phy.h>
+>  #include <linux/of.h>
+>  #include <linux/of_device.h>
+> +#include <linux/of_address.h>
+>  #include <linux/slab.h>
+>  #include <linux/of_mdio.h>
 >  
-> +	sci = pdev->dev.platform_data;
-> +	if (!sci->src_clk_name) {
-> +		dev_err(&pdev->dev,
-> +			"Board init must call s3c64xx_spi_set_info()\n");
-> +		return -EINVAL;
-> +	}
-> +
->  	/* Check for availability of necessary resource */
->  
->  	dmatx_res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-> @@ -946,8 +953,6 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
->  		return -ENOMEM;
->  	}
->  
-> -	sci = pdev->dev.platform_data;
-> -
->  	platform_set_drvdata(pdev, master);
->  
->  	sdd = spi_master_get_devdata(master);
 > -- 
-> 1.7.1
+> 1.5.5.6
 > 
