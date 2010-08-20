@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab0HTS1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 14:27:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49847 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab0HTS1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 14:27:35 -0400
-Date: Fri, 20 Aug 2010 11:27:01 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-Cc: rpurdie@rpsys.net, sameo@linux.intel.com, mjg@redhat.com,
-        error27@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] backlight: 88pm860x_bl: fix build failure
-Message-Id: <20100820112701.3f722b81.randy.dunlap@oracle.com>
-In-Reply-To: <1282327315-5259-1-git-send-email-henne@nachtwindheim.de>
-References: <1282327315-5259-1-git-send-email-henne@nachtwindheim.de>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752836Ab0HTSj5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 14:39:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:45342 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159Ab0HTSjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 14:39:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,240,1280732400"; 
+   d="scan'208";a="315143485"
+Message-ID: <4C6ECBEE.5000301@linux.intel.com>
+Date: Fri, 20 Aug 2010 11:39:42 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Jean Delvare <khali@linux-fr.org>
+CC: Fenghua Yu <fenghua.yu@intel.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Brown, Len" <len.brown@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Wan, Huaxu" <huaxu.wan@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit Notification:
+ pkgtemp doc
+References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com>	<4C485DF1.5050407@linux.intel.com>	<20100722162222.GA22450@linux-os.sc.intel.com>	<20100722172726.GA4914@ericsson.com>	<20100722175225.GB22450@linux-os.sc.intel.com>	<20100722185814.GA5235@ericsson.com>	<20100722212111.GC22450@linux-os.sc.intel.com>	<20100819174632.239aed93@hyperion.delvare>	<20100819162719.GB4160@ericsson.com>	<20100819205120.GA22602@linux-os.sc.intel.com> <20100820103356.01c9907f@hyperion.delvare>
+In-Reply-To: <20100820103356.01c9907f@hyperion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 20:01:55 +0200 Henrik Kretzschmar wrote:
-
-> On x86_64 system this driver fails to build, since theres already a
-
-fails as in an error, not just a warning?
-
-I see this:
-
-drivers/video/backlight/88pm860x_bl.c:24:1: warning: "CURRENT_MASK" redefined
-arch/x86/include/asm/page_64_types.h:6:1: warning: this is the location of the previous definition
-
-
-> macro called CURRENT_MASK in arch/asm/include/page_64_types.h
-> So I renamed this macro to BL_CURRENT_MASK to aviod a collision.
+On 08/20/2010 01:33 AM, Jean Delvare wrote:
 > 
-> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-> ---
-> This patch is against Linux tree and tested.
+> Side question: is it safe to assume a maximum of 2 siblings per core on
+> Intel x86 CPUs?
 > 
->  drivers/video/backlight/88pm860x_bl.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
-> index 38ffc3f..68bd602 100644
-> --- a/drivers/video/backlight/88pm860x_bl.c
-> +++ b/drivers/video/backlight/88pm860x_bl.c
-> @@ -21,7 +21,7 @@
->  #define MAX_BRIGHTNESS		(0xFF)
->  #define MIN_BRIGHTNESS		(0)
->  
-> -#define CURRENT_MASK		(0x1F << 1)
-> +#define BL_CURRENT_MASK		(0x1F << 1)
->  
->  struct pm860x_backlight_data {
->  	struct pm860x_chip *chip;
-> @@ -85,7 +85,7 @@ static int pm860x_backlight_set(struct backlight_device *bl, int brightness)
->  	if ((data->current_brightness == 0) && brightness) {
->  		if (data->iset) {
->  			ret = pm860x_set_bits(data->i2c, wled_idc(data->port),
-> -					      CURRENT_MASK, data->iset);
-> +					      BL_CURRENT_MASK, data->iset);
->  			if (ret < 0)
->  				goto out;
->  		}
-> -- 
 
+That is true for all current CPUs, but is not guaranteed for the future.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	-hpa
