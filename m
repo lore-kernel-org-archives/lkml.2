@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab0HTSvo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 14:51:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51356 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab0HTSvm convert rfc822-to-8bit (ORCPT
+	id S1753205Ab0HTTBE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 15:01:04 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:21890
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751050Ab0HTTBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 14:51:42 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "Moffett\, Kyle D" <Kyle.D.Moffett@boeing.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "magnus.damm\@gmail.com" <magnus.damm@gmail.com>,
-        "gregkh\@suse.de" <gregkh@suse.de>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        Kyle D Moffett <kyle@moffetthome.net>
-Subject: Re: [PATCH 2/2] platform: Facilitate the creation of pseudo-platform buses
-Organization: Deep Root Systems, LLC
-References: <1281484174-32174-1-git-send-email-ppannuto@codeaurora.org>
-	<1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
-	<3F978429-F916-42E5-8B36-6AC02DAC8CA2@boeing.com>
-	<AANLkTi=Pm8BL+Ksq1o7MYpV7mMH10bEPu1=Am9EgT-Kk@mail.gmail.com>
-	<87hbiql89d.fsf@deeprootsystems.com>
-	<AANLkTinaddiPAcokH3fRVYAFf3N-Gz--U5Jd1iyNsi+m@mail.gmail.com>
-Date: Fri, 20 Aug 2010 11:51:38 -0700
-In-Reply-To: <AANLkTinaddiPAcokH3fRVYAFf3N-Gz--U5Jd1iyNsi+m@mail.gmail.com>
-	(Grant Likely's message of "Thu, 19 Aug 2010 16:22:41 -0600")
-Message-ID: <87hbip9kxx.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Fri, 20 Aug 2010 15:01:02 -0400
+X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 15:01:02 EDT
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-SS: 0,
+From: Timur Tabi <timur@freescale.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, kumar.gala@freescale.com,
+        amit.shah@redhat.com
+Subject: [PATCH] hvc_console: fix dropping of characters when output byte channel is full
+Date: Fri, 20 Aug 2010 13:45:21 -0500
+Message-ID: <1282329921-24394-1-git-send-email-timur@freescale.com>
+X-Mailer: git-send-email 1.7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> writes:
+hvc_console_print() calls the HVC client driver's put_chars() callback
+to write some characters to the console.  If the callback returns 0, that
+indicates that no characters were written (perhaps the output buffer is
+full), but hvc_console_print() treats that as an error and discards the
+rest of the buffer.
 
-[...]
+So change hvc_console_print() to just loop and call put_chars() again if it
+returns a 0 return code.
 
->> One of the primary goals of this (at least for me and it seems Magnus also)
->> is to keep drivers ignorant of their bus type, and any bus-type-specific
->> code should be done in the bus_type implementation.
->
-> Heh; which just screams to me that bus_type is the wrong level to be
-> abstracting the behaviour 
+This change makes hvc_console_print() behave more like hvc_push(), which
+does check for a 0 return code and re-schedules itself.
 
-Heh, now I feel like we're going around in circles.  Remember, I never
-wanted to create add a new bus_type.  Someone else [ahem] suggested
-doing the abstraction at the bus_type level.  ;)
+Signed-off-by: Timur Tabi <timur@freescale.com>
+---
+ drivers/char/hvc_console.c |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
 
-> (but I also understand your need for the
-> "omap_device" wrapper around platform_device which also requires some
-> method to sort out when a platform_device really is an omap_device
-> without an unsafe dereference).
-
-Yes, I'm working on the devres approach to that now, as is Magnus for
-the sh-mobile version (proposed for .36-rc1[1])
-
->> Both for SH and OMAP, we've been using the (admiteddly broken)
->> weak-symbol-override approach to getting a custom bus-type based on the
->> platform_bus.  We've been using that in OMAP for a while now and have
->> not seen any need to for the drivers to know if they are on the vanilla
->> platform_bus or the customized one.
->>
->> I'm very curious to hear what type of impact you expect to the drivers.
->
-> My fears on this point may very well be unfounded.  This isn't the
-> hill I'm going to die on either.  Show me an implementation of driver
-> sharing that is clean and prove me wrong!  :-)
-
-IMHO, simply overriding the few dev_pm_ops methods was the cleanest and
-simplest.
-
-Since we seem to be in agreement now that the a new bus may not the
-right abstraction for this (since we want it to be completely
-transparent to the drivers), I'll go back to the original design.  No new
-bus types, keep the platform_bus as is, but simply override the few
-dev_pm_ops methods I care about.  This is what is done on SH,
-SH-Mobile[1] and my original version for OMAP that started this
-conversation.
-
-Yes, the weak-symbol method of overriding is not scalable, but that's a
-separate issue from whether or not to create a new bus.  I have a
-proposed fix for the weak which I'll post shortly.
-
-Kevin
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2010-August/022411.html
-
+diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
+index fa27d16..b4deffd 100644
+--- a/drivers/char/hvc_console.c
++++ b/drivers/char/hvc_console.c
+@@ -3,6 +3,7 @@
+  * Copyright (C) 2001 Paul Mackerras <paulus@au.ibm.com>, IBM
+  * Copyright (C) 2004 Benjamin Herrenschmidt <benh@kernel.crashing.org>, IBM Corp.
+  * Copyright (C) 2004 IBM Corporation
++ * Copyright 2009 Freescale Semiconductor, Inc.
+  *
+  * Additional Author(s):
+  *  Ryan S. Arnold <rsa@us.ibm.com>
+@@ -141,6 +142,7 @@ static void hvc_console_print(struct console *co, const char *b,
+ 	char c[N_OUTBUF] __ALIGNED__;
+ 	unsigned i = 0, n = 0;
+ 	int r, donecr = 0, index = co->index;
++	unsigned int timeout = 1000000; /* Keep trying for up to one second */
+ 
+ 	/* Console access attempt outside of acceptable console range. */
+ 	if (index >= MAX_NR_HVC_CONSOLES)
+@@ -152,6 +154,10 @@ static void hvc_console_print(struct console *co, const char *b,
+ 
+ 	while (count > 0 || i > 0) {
+ 		if (count > 0 && i < sizeof(c)) {
++			/* If the local buffer (c) is not full, then copy some
++			 * bytes from the input buffer to it. We stop when the
++			 * local buffer is full. \n is converted to \r\n.
++			 */
+ 			if (b[n] == '\n' && !donecr) {
+ 				c[i++] = '\r';
+ 				donecr = 1;
+@@ -162,14 +168,25 @@ static void hvc_console_print(struct console *co, const char *b,
+ 			}
+ 		} else {
+ 			r = cons_ops[index]->put_chars(vtermnos[index], c, i);
+-			if (r <= 0) {
++			if (r < 0) {
+ 				/* throw away chars on error */
+ 				i = 0;
+ 			} else if (r > 0) {
+ 				i -= r;
+ 				if (i > 0)
+ 					memmove(c, c+r, i);
++			} else {
++				/* If r == 0, then the client driver didn't do
++				 * anything, so wait 1us and try again.  If we
++				 * time out, then just exit.
++				 */
++				if (!--timeout)
++					return;
++				udelay(1);
++				continue;
+ 			}
++			/* Reset the timeout */
++			timeout = 1000000;
+ 		}
+ 	}
+ }
+-- 
+1.7.0.1
 
 
