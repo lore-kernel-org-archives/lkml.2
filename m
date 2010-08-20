@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab0HTTYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 15:24:24 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62105 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab0HTTYV convert rfc822-to-8bit (ORCPT
+	id S1753156Ab0HTT10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 15:27:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28552 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab0HTT1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 15:24:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=WpaK1uWel1tUQ1vKfboeItDuNQ72HmH8sbJJz8p8owZ/Uua+uC9O2NN+FgPjUiJnWL
-         UX1Wx0DlnE6dg6ivMJgLriMQWCap6YsFpejuu0gSce7kUr7ysL92MxQ5a4uYF0gdn4x3
-         tzcyUzSZMokLt2erxF5jay9rkPXw3eC9MifmM=
-MIME-Version: 1.0
-In-Reply-To: <tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org>
-References: <20100819224616.GB9967@router-fw-old.local.net-space.pl>
-	<tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org>
-Date: Fri, 20 Aug 2010 12:24:20 -0700
-X-Google-Sender-Auth: sngFZwhWa5bHm0W63we4PRxxhMc
-Message-ID: <AANLkTim9kjBp68LqieU3MDLbkRDiWLNQjtUvjEbc9Hca@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86, apic: Fix apic=debug boot crash
+	Fri, 20 Aug 2010 15:27:24 -0400
+Message-ID: <4C6ED6CD.4010002@kernel.org>
+Date: Fri, 20 Aug 2010 12:26:05 -0700
 From: Yinghai Lu <yinghai@kernel.org>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, dkiper@net-space.pl, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>
+CC: Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] [Patch-next] ACPI, APEI, ERST Fix the wrong checking
+ of Serialization Header's length
+References: <4C69DDB5.6060103@np.css.fujitsu.com>	 <1282008836.2744.1490.camel@yhuang-dev>	 <4C69F094.1040607@np.css.fujitsu.com>	 <1282015344.2744.1500.camel@yhuang-dev> <4C6A139D.20507@np.css.fujitsu.com> <1282109696.2744.1553.camel@yhuang-dev>
+In-Reply-To: <1282109696.2744.1553.camel@yhuang-dev>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 5:41 AM, tip-bot for Daniel Kiper
-<dkiper@net-space.pl> wrote:
-> Commit-ID:  05e407603e527f9d808dd3866d3a17c2ce4dfcc5
-> Gitweb:     http://git.kernel.org/tip/05e407603e527f9d808dd3866d3a17c2ce4dfcc5
-> Author:     Daniel Kiper <dkiper@net-space.pl>
-> AuthorDate: Fri, 20 Aug 2010 00:46:16 +0200
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Fri, 20 Aug 2010 10:18:28 +0200
->
-> x86, apic: Fix apic=debug boot crash
->
-> Fix a boot crash when apic=debug is used and the APIC is
-> not properly initialized.
->
-> This issue appears during Xen Dom0 kernel boot but the
-> fix is generic and the crash could occur on real hardware
-> as well.
+On 08/17/2010 10:34 PM, Huang Ying wrote:
+> On Tue, 2010-08-17 at 12:44 +0800, Jin Dongming wrote:
+>> (2010/08/17 12:22), Huang Ying wrote:
+>>> On Tue, 2010-08-17 at 10:14 +0800, Jin Dongming wrote:
+>>>>> I don't think it is necessary to change the header definition, and
+>>>>> seri_header is not a good name for me.
+>>>> Why I added this structure here is that I don't want to do following checking.
+>>>> For example,
+>>>> 	if (header_length != 0x0c) {
+>>>> 		...
+>>>> 	}
+>>>
+>>> This can be:
+>>>
+>>>  static int erst_check_table(struct acpi_table_erst *erst_tab)
+>>>  {
+>>> -       if (erst_tab->header_length != sizeof(struct acpi_table_erst))
+>>> +       if (erst_tab->header_length !=
+>>> +           (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
+>>>
+>>> like Yinghai has been done.
+>>>
+>> Yes. It looks good. And I am sorry I am unaware of Yinghai' patch. 
+> 
+> Maybe you can help push this fix in, it seems that Yinghai is busy on
+> something else?
+> 
+> Hi, Yinghai,
+> 
+> Do you mind for Dongming to push this fix?
+> 
+do you mean this one?
 
-Do you have any report on real hardware?
+[PATCH] acpi: fix apei related table size checking
 
-that could not happen on real hardware.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Yinghai
+---
+ drivers/acpi/apei/einj.c |    3 ++-
+ drivers/acpi/apei/erst.c |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
->
-> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-> Cc: xen-devel@lists.xensource.com
-> Cc: konrad.wilk@oracle.com
-> Cc: jeremy@goop.org
-> Cc: <stable@kernel.org> # .35.x, .34.x, .33.x, .32.x
-> LKML-Reference: <20100819224616.GB9967@router-fw-old.local.net-space.pl>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/kernel/apic/io_apic.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 4dc0084..f1efeba 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -1728,6 +1728,8 @@ __apicdebuginit(void) print_IO_APIC(void)
->                struct irq_pin_list *entry;
->
->                cfg = desc->chip_data;
-> +               if (!cfg)
-> +                       continue;
->                entry = cfg->irq_2_pin;
->                if (!entry)
->                        continue;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Index: linux-2.6/drivers/acpi/apei/einj.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/apei/einj.c
++++ linux-2.6/drivers/acpi/apei/einj.c
+@@ -426,7 +426,8 @@ DEFINE_SIMPLE_ATTRIBUTE(error_inject_fop
+ 
+ static int einj_check_table(struct acpi_table_einj *einj_tab)
+ {
+-	if (einj_tab->header_length != sizeof(struct acpi_table_einj))
++	if (einj_tab->header_length !=
++	    (sizeof(struct acpi_table_einj) - sizeof(einj_tab->header)))
+ 		return -EINVAL;
+ 	if (einj_tab->header.length < sizeof(struct acpi_table_einj))
+ 		return -EINVAL;
+Index: linux-2.6/drivers/acpi/apei/erst.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/apei/erst.c
++++ linux-2.6/drivers/acpi/apei/erst.c
+@@ -750,7 +750,8 @@ __setup("erst_disable", setup_erst_disab
+ 
+ static int erst_check_table(struct acpi_table_erst *erst_tab)
+ {
+-	if (erst_tab->header_length != sizeof(struct acpi_table_erst))
++	if (erst_tab->header_length !=
++	    (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
+ 		return -EINVAL;
+ 	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
+ 		return -EINVAL;
