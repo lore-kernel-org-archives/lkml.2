@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377Ab0HTFUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 01:20:53 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43358 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab0HTFUv (ORCPT
+	id S1751445Ab0HTFWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 01:22:42 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:53782 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751016Ab0HTFWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 01:20:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=YLyrzdTes3p1kR8jS/2+hekCcKc3HuUie1M4/OTdsQrWofzGhxYQlMP2bdC/DqotWC
-         MX0JNcJqMMcbUH2/fG3qxOEJk4ZhQZ17PXSaO2e4PSPAibKMZoUh0b/1SH6kFJxbtfwh
-         UD3PaUsxtfLvYhyO6sGBsmQtxHUlBp82u5iJE=
-Subject: [PATCH] ASoC: multi-component: remove include of pxa2xx-pcm.h in
-	pxa2xx-ac97.c
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nico@cam.org>
-Content-Type: text/plain
-Date: Fri, 20 Aug 2010 13:23:36 +0800
-Message-Id: <1282281816.7214.4.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Aug 2010 01:22:38 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, jack@suse.cz, npiggin@kernel.dk
+Subject: [PATCH 1/2] radix-tree: clear all tags in radix_tree_node_rcu_free
+Date: Fri, 20 Aug 2010 15:22:06 +1000
+Message-Id: <1282281727-15088-2-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282281727-15088-1-git-send-email-david@fromorbit.com>
+References: <1282281727-15088-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix reference to moved header file, which was unused anyway.
-This change fixes below build error:
-  CC      sound/soc/pxa/pxa2xx-ac97.o
-sound/soc/pxa/pxa2xx-ac97.c:27:24: error: pxa2xx-pcm.h: No such file or directory
-make[3]: *** [sound/soc/pxa/pxa2xx-ac97.o] Error 1
-make[2]: *** [sound/soc/pxa] Error 2
-make[1]: *** [sound/soc] Error 2
-make: *** [sound] Error 2
+From: Dave Chinner <dchinner@redhat.com>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Commit f446daaea9d4a420d16c606f755f3689dcb2d0ce ("mm: implement
+writeback livelock avoidance using page tagging") introduced a new
+radix tree tag, increasing the number of tags in each node from 2 to
+3. It did not, however, fix up the code in
+radix_tree_node_rcu_free() that cleans up after radix_tree_shrink()
+and hence could leave stray tags set in the new tag array.
+
+The result is that the livelock avoidance code added in the the
+above commit would hit stale tags when doing tag based lookups,
+resulting in livelocks when trying to traverse the tree.
+
+Fix this problem in radix_tree_node_rcu_free() so it doesn't happen
+again in the future by using a loop to walk all the tags up to
+RADIX_TREE_MAX_TAGS to clear the stray tags radix_tree_shrink()
+leaves behind.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
-I encountered the build error in today's linux-next tree. ( next-20100820 ).
-Looks like this patch can also be applied to multi-component branch.
+ lib/radix-tree.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-Axel
-
- sound/soc/pxa/pxa2xx-ac97.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/sound/soc/pxa/pxa2xx-ac97.c b/sound/soc/pxa/pxa2xx-ac97.c
-index 9c2bafa..ac51c6d 100644
---- a/sound/soc/pxa/pxa2xx-ac97.c
-+++ b/sound/soc/pxa/pxa2xx-ac97.c
-@@ -24,7 +24,6 @@
- #include <mach/dma.h>
- #include <mach/audio.h>
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index e907858..1014171 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -174,14 +174,16 @@ static void radix_tree_node_rcu_free(struct rcu_head *head)
+ {
+ 	struct radix_tree_node *node =
+ 			container_of(head, struct radix_tree_node, rcu_head);
++	int i;
  
--#include "pxa2xx-pcm.h"
- #include "pxa2xx-ac97.h"
+ 	/*
+ 	 * must only free zeroed nodes into the slab. radix_tree_shrink
+ 	 * can leave us with a non-NULL entry in the first slot, so clear
+ 	 * that here to make sure.
+ 	 */
+-	tag_clear(node, 0, 0);
+-	tag_clear(node, 1, 0);
++	for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
++		tag_clear(node, i, 0);
++
+ 	node->slots[0] = NULL;
+ 	node->count = 0;
  
- static void pxa2xx_ac97_warm_reset(struct snd_ac97 *ac97)
 -- 
-1.7.2
-
-
+1.7.1
 
