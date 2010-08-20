@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445Ab0HTFWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 01:22:42 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:53782 "EHLO
+	id S1751499Ab0HTFWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 01:22:47 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:54877 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751016Ab0HTFWi (ORCPT
+	with ESMTP id S1751324Ab0HTFWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 01:22:38 -0400
+	Fri, 20 Aug 2010 01:22:41 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, jack@suse.cz, npiggin@kernel.dk
-Subject: [PATCH 1/2] radix-tree: clear all tags in radix_tree_node_rcu_free
-Date: Fri, 20 Aug 2010 15:22:06 +1000
-Message-Id: <1282281727-15088-2-git-send-email-david@fromorbit.com>
+Subject: [PATCH 0/2] radix-tree: fix writeback livelock avoidance code
+Date: Fri, 20 Aug 2010 15:22:05 +1000
+Message-Id: <1282281727-15088-1-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282281727-15088-1-git-send-email-david@fromorbit.com>
-References: <1282281727-15088-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+The following two patches fix bugs in the new radix tree functionality used to
+implement the writeback livelock avoidance code. Both bugs manifest themselves
+as stray PAGECACHE_TAG_TOWRITE tags in the mapping->page_tree radix tree
+resulting in livelocks during tag lookups. More subtly, they also appear to
+result in writeback tree walks occasionally terminating early and so not
+actually writing all the pages they are supposed to.
 
-Commit f446daaea9d4a420d16c606f755f3689dcb2d0ce ("mm: implement
-writeback livelock avoidance using page tagging") introduced a new
-radix tree tag, increasing the number of tags in each node from 2 to
-3. It did not, however, fix up the code in
-radix_tree_node_rcu_free() that cleans up after radix_tree_shrink()
-and hence could leave stray tags set in the new tag array.
+Please review and test - these are pretty serious problems for the writeback code.
 
-The result is that the livelock avoidance code added in the the
-above commit would hit stale tags when doing tag based lookups,
-resulting in livelocks when trying to traverse the tree.
+I've been reproducing the problems with xfstests test 013 using 2.6.36-rc1 and
+a bunch of new XFS patches that worked just fine on 2.6.35. The XFS tree that
+demonstrates the problem is available here:
 
-Fix this problem in radix_tree_node_rcu_free() so it doesn't happen
-again in the future by using a loop to walk all the tags up to
-RADIX_TREE_MAX_TAGS to clear the stray tags radix_tree_shrink()
-leaves behind.
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git for-oss
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- lib/radix-tree.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+and the two patches following this mail make the problem go away. They are also
+available in this branch here:
 
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index e907858..1014171 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -174,14 +174,16 @@ static void radix_tree_node_rcu_free(struct rcu_head *head)
- {
- 	struct radix_tree_node *node =
- 			container_of(head, struct radix_tree_node, rcu_head);
-+	int i;
- 
- 	/*
- 	 * must only free zeroed nodes into the slab. radix_tree_shrink
- 	 * can leave us with a non-NULL entry in the first slot, so clear
- 	 * that here to make sure.
- 	 */
--	tag_clear(node, 0, 0);
--	tag_clear(node, 1, 0);
-+	for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
-+		tag_clear(node, i, 0);
-+
- 	node->slots[0] = NULL;
- 	node->count = 0;
- 
--- 
-1.7.1
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git radix-tree
+
+Dave Chinner (2):
+      radix-tree: clear all tags in radix_tree_node_rcu_free
+      radix-tree: radix_tree_range_tag_if_tagged() can set incorrect tags
+
+ lib/radix-tree.c |   63 +++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 48 insertions(+), 15 deletions(-)
 
