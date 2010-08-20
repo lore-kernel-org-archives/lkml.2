@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab0HTLBK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 07:01:10 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:25378 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752688Ab0HTLBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 07:01:08 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: ALKeZx0VM1lMlbHNcNs7XdEt8nnMZdck7uA64dkCLjeDb.t
- naRbAVQOTRIF7ZA6n3V20pkR7Fyn8VC3mItzTy485pxIfnR4C_toqRuu1h6_
- hbbb6y55HyWxHorK2WwcrwZlFbD6Fk.NBxlmP3I9IU8ITmUeY2ZNAuAHbpX1
- 8yLu7sXXRtfj2cft3AqF3FkrYKNCAJjf2ifG8v3OTov6SjUJrhVoE1fMapGp
- wSq8ExO12OZZqObkhPi5FIURsx8fmhoAcCvRl6hV4e3mh2uSlHg3t6mBphiW
- rYoFs5bxm8DFBzhE9WYg4kmDbT_mu7JHGZzyEnyyVpP525lzoCC5k9Ixqw0_
- DmPVQsHbhGidXO3LCcQ--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: Conversion of LIO-Target to use include/scsi/iscsi_proto.h defs
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: michaelc@cs.wisc.edu, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
-        hare@suse.de
-In-Reply-To: <20100820194231R.fujita.tomonori@lab.ntt.co.jp>
-References: <1282295674.30453.337.camel@haakon2.linux-iscsi.org>
-	 <20100820184031L.fujita.tomonori@lab.ntt.co.jp>
-	 <1282298560.30453.370.camel@haakon2.linux-iscsi.org>
-	 <20100820194231R.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Date: Fri, 20 Aug 2010 03:57:26 -0700
-Message-Id: <1282301846.30453.383.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1752830Ab0HTLIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 07:08:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41827 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752733Ab0HTLH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 07:07:59 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>, David Howells <dhowells@redhat.com>
+Subject: Re: [GIT PULL] notification tree: directory events
+Date: Fri, 20 Aug 2010 13:07:36 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>,
+        linux-fsdevel@vger.kernel.org
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <201008200141.10068.agruen@suse.de> <1282275497.21419.2073.camel@acb20005.ipt.aol.com>
+In-Reply-To: <1282275497.21419.2073.camel@acb20005.ipt.aol.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008201307.37748.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 19:43 +0900, FUJITA Tomonori wrote:
-> On Fri, 20 Aug 2010 03:02:40 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+On Friday 20 August 2010 05:38:17 Eric Paris wrote:
+> On Fri, 2010-08-20 at 01:41 +0200, Andreas Gruenbacher wrote:
+> > 	(2) Construct a file descriptor that refers to the file that could not be
+> > 	    dentry_open()ed, but which cannot be used for any I/O, and pass the
+> > 	    error condition in a separate field.  The kernel has all the
+> > 	    information needed for doing that, and it shouldn't be hard to
+> > 	    implement.
+> > 	    
+> > 	    That way, the listener always has a file descriptor to poke around
+> > 	    with.
+> > 
+> > Failing to do (2) right now, I think it still makes sense to separate the
+> > file descriptor from the error code in struct fanotify_event_metadata;
+> > this would enable us to do (2) later if we decide to.
 > 
-> > review of TCM core and TCM_Loop.   But perhaps at this point LIO-Target
-> > should go in together with TCM Core and TCM_Loop once mnc can review the
-> > software iSCSI target pieces..?
-> 
-> I think that James meant that we have only one scsi target
-> implementation and we need to replace the current in-kernel target
-> mode driver. So I don't think that we can merge TCM core without its
-> ibm vscsi driver. I might be wrong though.
+> In reference to (2), I don't even understand what an fd is that can't be
+> used for anything.  I'll let Al or Christoph respond if they feel like
+> it, but it sounds crazy to me.  You want to just magic up some struct
+> file and attach a struct path to it even though dentry_open() failed?
+> So you can do what with it?
 
-Ah yes the ibm vscsi driver.   Well for that part I suppose we will need
-a seperate tcm_ibmvscsi fabric module moving forward.  This is where
-that python script I mentioned when tcm_lpfc, tcm_qla2xxx, tcm_mvsas
-where originally posted that would generates a new functioning configfs
-skeleton with NOP I/O path handlers from a handful of user input.
+I've never said the fd can't be used for anything.  The idea would be to
+allow the file to be stat()ed, to poke around in /proc/fd/ in the hope to
+get a somewhat useful pathname out, or to use something like xstat() on the
+fd one day (David Howells is going to be looking into that).
 
-Anyways, something like this would really come in handy for making ibm
-vscsi go, and plus it makes life easier for me too.  I will try to get a
-script along this lines coded up in the next week(s) so that we can
-finally have a pain-free method of generation for new v4 kernel target
-mode modules for new developers.
+It would be a good thing to be able to use the same mechanisms for
+identifying the file that are available for a "normal" file descriptor.
 
-There will be no limit per customer.  ;)
+> On a more realistic note, I'm not opposed to (1), however, your
+> arguments would lead one to reject inotify as the IN_OVERFLOW or oom
+> conditions will result in silently lost events or events which provide
+> no useful information since the notification system has broken down.
 
---nab
+Nonsense.  An overflow event obviously is not associated with any one file,
+so that would be the (only) case where you should get an event that doesn't
+refer to a file.
 
+Andreas
