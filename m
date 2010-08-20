@@ -1,86 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab0HTRpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 13:45:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14815 "EHLO mx1.redhat.com"
+	id S1752193Ab0HTRr4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 13:47:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59891 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab0HTRpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 13:45:36 -0400
-Date: Fri, 20 Aug 2010 14:45:27 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 33/35] Indicate reliable TSC in kvmclock
-Message-ID: <20100820174527.GH2937@mothafucka.localdomain>
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
- <1282291669-25709-34-git-send-email-zamsden@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282291669-25709-34-git-send-email-zamsden@redhat.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+	id S1751734Ab0HTRry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 13:47:54 -0400
+Subject: Re: struct fanotify_event_metadata
+From: Eric Paris <eparis@redhat.com>
+To: Andreas Schwab <schwab@redhat.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Andreas Gruenbacher <agruen@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1282317570.15124.20.camel@dhcp231-77.rdu.redhat.com>
+References: <m21va1ozqx.fsf@igel.home>
+	 <201008191644.29299.tvrtko.ursulin@sophos.com>
+	 <1282240426.21419.1716.camel@acb20005.ipt.aol.com>
+	 <201008201002.16235.tvrtko.ursulin@sophos.com> <m3pqxd7ift.fsf@hase.home>
+	 <1282310016.21419.2161.camel@acb20005.ipt.aol.com>
+	 <m339u976sx.fsf@hase.home>
+	 <1282317570.15124.20.camel@dhcp231-77.rdu.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Aug 2010 13:47:47 -0400
+Message-ID: <1282326467.2652.15.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 10:07:47PM -1000, Zachary Amsden wrote:
-> When no platform bugs have been detected, no TSC warps have been
-> detected, and the hardware guarantees to us TSC does not change
-> rate or stop with P-state or C-state changes, we can consider it reliable.
+On Fri, 2010-08-20 at 11:19 -0400, Eric Paris wrote:
+> On Fri, 2010-08-20 at 15:27 +0200, Andreas Schwab wrote:
+> > Eric Paris <eparis@redhat.com> writes:
+> > 
+> > > Can you help me understand the packed attribute and why it hurts in this
+> > > case?
+> > 
+> > It changes the alignment of all applicable objects to 1 which means that
+> > the compiler cannot assume _any_ aligment.  Thus on STRICT_ALIGNMENT
+> > targets it has to use more expensive access methods to avoid generating
+> > unaligned loads and stores (unless it can infer proper alignment from
+> > the context).
 > 
-> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-> ---
->  arch/x86/kvm/x86.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 86f182a..a7fa24e 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -55,6 +55,7 @@
->  #include <asm/mce.h>
->  #include <asm/i387.h>
->  #include <asm/xcr.h>
-> +#include <asm/pvclock-abi.h>
->  
->  #define MAX_IO_MSRS 256
->  #define CR0_RESERVED_BITS						\
-> @@ -900,6 +901,13 @@ static void kvm_get_time_scale(uint32_t scaled_khz, uint32_t base_khz,
->  static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
->  unsigned long max_tsc_khz;
->  
-> +static inline int kvm_tsc_reliable(void)
-> +{
-> +	return (boot_cpu_has(X86_FEATURE_CONSTANT_TSC) &&
-> +		boot_cpu_has(X86_FEATURE_NONSTOP_TSC) &&
-> +		!check_tsc_unstable());
-> +}
-> +
->  static inline u64 nsec_to_cycles(struct kvm *kvm, u64 nsec)
->  {
->  	return pvclock_scale_delta(nsec, kvm->arch.virtual_tsc_mult,
-> @@ -1151,7 +1159,7 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
->  	vcpu->hv_clock.tsc_timestamp = tsc_timestamp;
->  	vcpu->hv_clock.system_time = kernel_ns + v->kvm->arch.kvmclock_offset;
->  	vcpu->last_kernel_ns = kernel_ns;
-> -	vcpu->hv_clock.flags = 0;
-> +	vcpu->hv_clock.flags = kvm_tsc_reliable() ? PVCLOCK_TSC_STABLE_BIT : 0;
-This is not enough.
+> Andreas suggested (I accidentally dropped the list when I ask him) I use
+> natural alignment and explicit padding rather than ((packed))
 
-We still can have bugs arriving from the difference in resolution between the underlying
-clock and the tsc. What we're doing here, is to pass a reliable flag, to a non-reliable
-guest tsc. We can only trust the guest kvmclock to be tsc-stable if the host is using
-tsc clocksource as well.
+What would anyone think of this patch (which is on top of Tvrtko's
+reordering)?
 
-Since the stable bit have to be read from the guest at every clock read, we can just
-use it, and drop it if the host changes its clocksource.
+>From 9629f0435bdd00b8338ab41bd078b3c625fd8804 Mon Sep 17 00:00:00 2001
+From: Eric Paris <eparis@redhat.com>
+Date: Fri, 20 Aug 2010 13:33:27 -0400
+Subject: [PATCH] fanotify: drops the packed attribute from userspace event metadata
 
-An alternative for the reliable tsc case, would be to just maintain our own parallel
-tsc-based clock. But to be honest, I don't like this solution very much. It adds
-complexity, and I kinda believe that if the sysadmin had the work to go there
-and switch clocksources, he probably has a reason for that.
+The userspace event metadata structure was packed so when sent from a kernel
+with a certain set of alignment rules to a userspace listener with a different
+set of alignment rules the userspace process would be able to use the
+structure.  On some arches just using packed, even if it doesn't do anything
+to the alignment can cause a severe performance hit.  From now on we are
+not going to set the packed attribute and will just need to be very careful
+to make sure the structure is naturally aligned and that explicit padding is
+used when necessary.  To make sure noone gets this wrong in the future, we
+enforce this fact, at build time, using a similar structure that is packed
+and comparing their sizes.
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
+ fs/notify/fanotify/fanotify_user.c |    2 ++
+ include/linux/fanotify.h           |   22 ++++++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index b966b72..c3a5742 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -778,6 +778,8 @@ SYSCALL_ALIAS(sys_fanotify_mark, SyS_fanotify_mark);
+  */
+ static int __init fanotify_user_setup(void)
+ {
++	BUILD_BUG_ON(sizeof(struct fanotify_event_metadata) !=
++		     sizeof(struct fan_event_meta_packed));
+ 	fanotify_mark_cache = KMEM_CACHE(fsnotify_mark, SLAB_PANIC);
+ 	fanotify_response_event_cache = KMEM_CACHE(fanotify_response_event,
+ 						   SLAB_PANIC);
+diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
+index 0535461..3d7a9b5 100644
+--- a/include/linux/fanotify.h
++++ b/include/linux/fanotify.h
+@@ -66,14 +66,21 @@
+ 				 FAN_Q_OVERFLOW)
+ 
+ #define FANOTIFY_METADATA_VERSION	1
+-
++/*
++ * This structue must be naturally aligned so that a 32 bit userspace process
++ * will find the offsets the same as a 64bit process.  If there would be padding
++ * in the structure it must be added explictly by hand.  Please note that
++ * anything added to this structure must also be added to the fan_event_meta_packed
++ * struct, which is used to enforce the alignment and padding rules at build
++ * time.
++ */
+ struct fanotify_event_metadata {
+ 	__u32 event_len;
+ 	__u32 vers;
+ 	__u64 mask;
+ 	__s32 fd;
+ 	__s32 pid;
+-} __attribute__ ((packed));
++};
+ 
+ struct fanotify_response {
+ 	__s32 fd;
+@@ -95,4 +102,15 @@ struct fanotify_response {
+ 				(long)(meta)->event_len >= (long)FAN_EVENT_METADATA_LEN && \
+ 				(long)(meta)->event_len <= (long)(len))
+ 
++#ifdef __KERNEL__
++/* see struct fanotify_event_metadata for the reason this exists */
++struct fan_event_meta_packed {
++	__u32 event_len;
++	__u32 vers;
++	__u64 mask;
++	__s32 fd;
++	__s32 pid;
++} __attribute__ ((packed));
++
++#endif /* __KERNEL__ */
+ #endif /* _LINUX_FANOTIFY_H */
+-- 
+1.6.5.3
+
+
 
