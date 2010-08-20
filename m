@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab0HTQ7v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 12:59:51 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:52333 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab0HTQ7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 12:59:49 -0400
-Date: Fri, 20 Aug 2010 10:00:20 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, ceph-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for August 16 (ceph)
-In-Reply-To: <20100820095213.51bacb36.randy.dunlap@oracle.com>
-Message-ID: <Pine.LNX.4.64.1008200959370.22373@cobra.newdream.net>
-References: <20100816150420.7f3f8cfd.sfr@canb.auug.org.au>
- <20100816100808.ff0fa2b4.randy.dunlap@oracle.com>
- <20100820095213.51bacb36.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752992Ab0HTRDE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 13:03:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40067 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467Ab0HTRDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 13:03:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,239,1280732400"; 
+   d="scan'208";a="547218446"
+Subject: Re: [PATCH  1/1] mutex: prevent optimistic spinning from spinning
+ longer than neccessary (Repost)
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        peterz@infradead.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>
+In-Reply-To: <20100820131920.GC3321@elte.hu>
+References: <1282168827.9542.72.camel@schen9-DESK>
+	 <20100819110511.GA16264@elte.hu>
+	 <1877.10.21.68.23.1282256686.squirrel@linux.intel.com>
+	 <20100820131920.GC3321@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Aug 2010 09:54:35 -0700
+Message-ID: <1282323276.9675.6.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010, Randy Dunlap wrote:
-> On Mon, 16 Aug 2010 10:08:08 -0700 Randy Dunlap wrote:
-> 
-> > On Mon, 16 Aug 2010 15:04:20 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > As the merge window has closed, let the flood commence. :-)
-> > > 
-> > > Changes since 20100813:
-> > 
-> > 
-> > linux-next-20100816/net/ceph/debugfs.c:255: error: conflicting types for 'ceph_debugfs_client_init'
-> > linux-next-20100816/include/linux/ceph/debugfs.h:29: note: previous declaration of 'ceph_debugfs_client_init' was here
-> 
-> 
-> Same error still present in linux-next 20100820.
+On Fri, 2010-08-20 at 15:19 +0200, Ingo Molnar wrote:
 
-Sorry, I hadn't updated my for-next branch.  It's pushed to kernel.org 
-now.
+> 
+> Thanks! The performance results you've posted so far IMO more than justifies 
+> its inclusion.
+> 
+> 	Ingo
 
-Thanks-
-sage
+Thanks to everyone for your review.  I've updated the patch to add
+comments explaining the change per suggestion from Andrew.
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 41541d7..3747d04 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3865,8 +3865,15 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+ 		/*
+ 		 * Owner changed, break to re-assess state.
+ 		 */
+-		if (lock->owner != owner)
++		if (lock->owner != owner) {
++			/* if lock has switched to a different owner,
++			 * we have heavy contention. Return 0 to
++			 * quit optimistic spinning and not contend further.
++			 */
++			if (lock->owner)
++				return 0;
+ 			break;
++		}
+ 
+ 		/*
+ 		 * Is that owner really running on that cpu?
+
+
