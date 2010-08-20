@@ -1,327 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab0HTPGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 11:06:43 -0400
-Received: from fb1.tech.numericable.fr ([82.216.111.51]:35784 "EHLO
-	fb1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab0HTPGk (ORCPT
+	id S1753163Ab0HTPIW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 11:08:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34228 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab0HTPIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 11:06:40 -0400
-Subject: Re: [PATCH 1/4] Smedia Glamo 3362 core/resource driver
-From: Thibaut Girka <thib@sitedethib.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20100818133914.GC2608@sortiz-mobl>
-References: <1278508326-7109-1-git-send-email-thib@sitedethib.com>
-	 <1278508326-7109-2-git-send-email-thib@sitedethib.com>
-	 <20100818133914.GC2608@sortiz-mobl>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-N982bTA/nS7oqUVOqUM6"
-Date: Fri, 20 Aug 2010 17:05:46 +0200
-Message-ID: <1282316746.3093.38.camel@debian-thib>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	Fri, 20 Aug 2010 11:08:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=sMPNiSZzFicnThlYK7YCsSO3TPmiBorHMMwHx4JNGRvAwZQzPGJ9ljKetmoeewFv8X
+         0Wzfc6YuSNinpHS9zmPyqzP39NSq03sqoV36shjIykgq3xYOPpvlfQ+GIX9TlxP38YVN
+         C6DlSpiKXlZA1F3/OCbeDE27KIYulUNYecKag=
+MIME-Version: 1.0
+Date: Fri, 20 Aug 2010 17:08:17 +0200
+Message-ID: <AANLkTim1PXibiY98GUdMj-UZLTav+n7GAnJ0Mjn6_5a3@mail.gmail.com>
+Subject: 2.6.36-rc1 hangs during XFS barrier test for /
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---=-N982bTA/nS7oqUVOqUM6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+after installing 2.6.36-rc1 my system gets stuck during "Mounting root..."
 
-Le mercredi 18 ao=C3=BBt 2010 =C3=A0 15:39 +0200, Samuel Ortiz a =C3=A9crit=
- :=20
-> Hi Thibaut,
+I'm using an initramfs to mount the root fs, because I'm using a
+stacked setup with md (raid1) -> dm-crypt -> xfs.
 
-Hi!
+Strange side effect: sometimes the cursor stops blinking for a few
+seconds, but then resumes blinking. Each of these blinking stalls are
+accompanied by a RCU stall message.
 
-> On Wed, Jul 07, 2010 at 03:12:03PM +0200, Thibaut Girka wrote:
-> > +#define GLAMO_IRQ_HOSTBUS	0
-> > +#define GLAMO_IRQ_JPEG		1
-> > +#define GLAMO_IRQ_MPEG		2
-> > +#define GLAMO_IRQ_MPROC1	3
-> > +#define GLAMO_IRQ_MPROC0	4
-> > +#define GLAMO_IRQ_CMDQUEUE	5
-> > +#define GLAMO_IRQ_2D		6
-> > +#define GLAMO_IRQ_MMC		7
-> > +#define GLAMO_IRQ_RISC		8
-> This is conflicting with enum glamo_irq, please fix your namespaces.
+>From the serial console:
+[    8.039603] Freeing unused kernel memory: 564k freed
+[    8.049070] Write protecting the kernel read-only data: 10240k
+[    8.059173] Freeing unused kernel memory: 604k freed
+[    8.068930] Freeing unused kernel memory: 1732k freed
+[   40.364439] SysRq : Changing Loglevel
+[   40.371605] Loglevel set to 6
+[   56.760017] INFO: rcu_sched_state detected stalls on CPUs/tasks: {
+2} (detected by 0, t=4004 jiffies)
+[   86.780016] INFO: rcu_sched_state detected stalls on CPUs/tasks: {
+2} (detected by 0, t=7006 jiffies)
+[  116.800018] INFO: rcu_sched_state detected stalls on CPUs/tasks: {
+2} (detected by 0, t=10008 jiffies)
+[  146.820018] INFO: rcu_sched_state detected stalls on CPUs/tasks: {
+2} (detected by 0, t=13010 jiffies)
+[  159.135015] SysRq : Show Blocked State
+[  159.142014]  ffff88007f7449f0 0000000000000046 ffff8800071abd10
+ffff880000000000
+[  159.145007]  ffff88007ff4f770 0000000000012740 ffff8800071abfd8
+0000000000012740
+[  159.145007]  ffff8800071abfd8 ffff88007f744c50 ffff8800071abfd8
+ffff88007f744c48
+[  159.145007] Call Trace:
+[  159.145007]  [<ffffffff8143ef40>] ? dm_wq_work+0x0/0x1a0
+[  159.145007]  [<ffffffff8155e7fd>] ? io_schedule+0x3d/0x60
+[  159.145007]  [<ffffffff8143e13a>] ? dm_wait_for_completion+0xba/0x150
+[  159.145007]  [<ffffffff81035870>] ? default_wake_function+0x0/0x20
+[  159.145007]  [<ffffffff8143ef40>] ? dm_wq_work+0x0/0x1a0
+[  159.145007]  [<ffffffff8143ef40>] ? dm_wq_work+0x0/0x1a0
+[  159.230029]  [<ffffffff8143ef82>] ? dm_wq_work+0x42/0x1a0
+[  159.230029]  [<ffffffff8104d21b>] ? process_one_work+0xfb/0x370
+[  159.230029]  [<ffffffff8104ed7c>] ? worker_thread+0x16c/0x360
+[  159.230029]  [<ffffffff8104ec10>] ? worker_thread+0x0/0x360
+[  159.230029]  [<ffffffff8104ec10>] ? worker_thread+0x0/0x360
+[  159.230029]  [<ffffffff81052926>] ? kthread+0x96/0xa0
+[  159.230029]  [<ffffffff81003194>] ? kernel_thread_helper+0x4/0x10
+[  159.230029]  [<ffffffff81052890>] ? kthread+0x0/0xa0
+[  159.230029]  [<ffffffff81003190>] ? kernel_thread_helper+0x0/0x10
+[  159.230029]  ffff88011eda5b00 0000000000000086 0000000000012740
+ffffffff00000000
+[  159.230029]  ffffffff81a0d020 0000000000012740 ffff88011ed33fd8
+0000000000012740
+[  159.230029]  ffff88011ed33fd8 ffff88011eda5d60 ffff88011ed33fd8
+ffff88011eda5d58
+[  159.230029] Call Trace:
+[  159.230029]  [<ffffffff8155eae5>] ? schedule_timeout+0x1c5/0x220
+[  159.230029]  [<ffffffff8102d6c0>] ? __wake_up_common+0x50/0x80
+[  159.230029]  [<ffffffff8155df7d>] ? wait_for_common+0x11d/0x190
+[  159.230029]  [<ffffffff81035870>] ? default_wake_function+0x0/0x20
+[  159.230029]  [<ffffffff811b0e6a>] ? xfs_buf_iowait+0x1a/0x60
+[  159.230029]  [<ffffffff811b97d2>] ? xfs_barrier_test+0x42/0x90
+[  159.230029]  [<ffffffff811b9874>] ? xfs_mountfs_check_barriers+0x54/0x70
+[  159.230029]  [<ffffffff811b9b1d>] ? xfs_fs_fill_super+0x28d/0x2f0
+[  159.230029]  [<ffffffff810c1511>] ? get_sb_bdev+0x1a1/0x1e0
+[  159.230029]  [<ffffffff811b9890>] ? xfs_fs_fill_super+0x0/0x2f0
+[  159.230029]  [<ffffffff810c0b83>] ? vfs_kern_mount+0x83/0x1f0
+[  159.230029]  [<ffffffff810c0d63>] ? do_kern_mount+0x53/0x120
+[  159.230029]  [<ffffffff810d8aba>] ? do_mount+0x28a/0x890
+[  159.230029]  [<ffffffff8109211f>] ? memdup_user+0x3f/0x80
+[  159.230029]  [<ffffffff810d915a>] ? sys_mount+0x9a/0x100
+[  159.230029]  [<ffffffff8100246b>] ? system_call_fastpath+0x16/0x1b
+[  161.529671] SysRq : Emergency Sync
+[  164.016470] SysRq : Emergency Remount R/O
+[  166.492523] SysRq : Emergency Sync
+[  168.415529] SysRq : Resetting
 
-Fixed.=20
-
-> > +
-> > +/*
-> > + * Glamo internal settings
-> > + *
-> > + * We run the memory interface from the faster PLLB on 2.6.28 kernels =
-and
-> > + * above.  Couple of GTA02 users report trouble with memory bus when t=
-hey
-> > + * upgraded from 2.6.24.  So this parameter allows reversion to 2.6.24
-> > + * scheme if their Glamo chip needs it.
-> So you're saying that a couple users reported a bug on a specific kernel
-> revision, with the same HW, but all other users haven't ?
-> Couldnt that be related to a specific HW revision ?=20
-> Also, this code should be scheduled for 2.6.37, and we're not going to
-> carry code to allow it to run on 2.6.28.
-
-Well, OpenMoko, the project behind this driver, has been carrying its
-own linux tree for years, now, and "2.6.28" and "2.6.24" are referring
-to the whole branch, glamo-core included.
-So, it hasn't really something to do with the kernel version, but with
-the version of the driver itself.
-It is not here to allow the driver to run on a specific kernel version.
-
-> > +static const struct reg_range reg_range[] =3D {
-> > +	{ 0x0000, 0x76,		"General",	1 },
-> > +	{ 0x0200, 0x18,		"Host Bus",	1 },
-> > +	{ 0x0300, 0x38,		"Memory",	1 },
-> > +/*	{ 0x0400, 0x100,	"Sensor",	0 }, */
-> > +/*	{ 0x0500, 0x300,	"ISP",		0 }, */
-> > +/*	{ 0x0800, 0x400,	"JPEG",		0 }, */
-> > +/*	{ 0x0c00, 0xcc,		"MPEG",		0 }, */
-> > +	{ 0x1100, 0xb2,		"LCD 1",	0 },
-> > +	{ 0x1200, 0x64,		"LCD 2",	0 },
-> > +	{ 0x1400, 0x42,		"MMC",		0 },
-> > +/*	{ 0x1500, 0x080,	"MPU 0",	0 },
-> > +	{ 0x1580, 0x080,	"MPU 1",	0 },
-> > +	{ 0x1600, 0x080,	"Cmd Queue",	0 },
-> > +	{ 0x1680, 0x080,	"RISC CPU",	0 },*/
-> > +	{ 0x1700, 0x400,	"2D Unit",	0 },
-> > +/*	{ 0x1b00, 0x900,	"3D Unit",	0 }, */
-> > +};
-> Please remove the commented code from this array.
-
-Hm, well, that may be useful, for "documentation" and future work, but
-we can remove it.
-
-> > +static void glamo_irq_demux_handler(unsigned int irq, struct irq_desc =
-*desc)
-> > +{
-> > +	struct glamo_core *glamo =3D get_irq_desc_data(desc);
-> > +	desc->status &=3D ~(IRQ_REPLAY | IRQ_WAITING);
-> > +
-> > +	if (unlikely(desc->status & IRQ_INPROGRESS)) {
-> > +		desc->status |=3D (IRQ_PENDING | IRQ_MASKED);
-> > +		desc->chip->mask(irq);
-> > +		desc->chip->ack(irq);
-> > +		return;
-> > +	}
-> > +	kstat_incr_irqs_this_cpu(irq, desc);
-> > +
-> > +	desc->chip->ack(irq);
-> > +	desc->status |=3D IRQ_INPROGRESS;
-> > +
-> > +	do {
-> > +		uint16_t irqstatus;
-> > +		int i;
-> > +
-> > +		if (unlikely((desc->status &
-> > +				(IRQ_PENDING | IRQ_MASKED | IRQ_DISABLED)) =3D=3D
-> > +				(IRQ_PENDING | IRQ_MASKED))) {
-> > +			/* dealing with pending IRQ, unmasking */
-> > +			desc->chip->unmask(irq);
-> > +			desc->status &=3D ~IRQ_MASKED;
-> > +		}
-> > +
-> > +		desc->status &=3D ~IRQ_PENDING;
-> > +
-> > +		/* read IRQ status register */
-> > +		irqstatus =3D __reg_read(glamo, GLAMO_REG_IRQ_STATUS);
-> > +		for (i =3D 0; i < 9; ++i) {
-> > +			if (irqstatus & BIT(i))
-> > +				generic_handle_irq(glamo->irq_base + i);
-> > +		}
-> > +
-> > +	} while ((desc->status & (IRQ_PENDING | IRQ_DISABLED)) =3D=3D IRQ_PEN=
-DING);
-> So here you're busy looping in an interrupt handler, and that's not
-> recommended.
-
-Hm, ok... Not sure how to do that otherwise, but I'll have a look.
-
-> > +#ifdef CONFIG_DEBUG_FS
-> > [...]
-> > +struct glamo_engine_reg_set {
-> > +	uint16_t reg;
-> > +	uint16_t mask_suspended;
-> > +	uint16_t mask_enabled;
-> > +};
-> I think you want this definition outside of the DEBUGFS if.else.endif
-> scope. Have you tried building this driver without DEBUGFS enabled ?
-
-Yes, indeed, it should be outside of the DEBUGFS scope.
-Fixed.
+The system is stuck at this point, with just the RCU messages
+repeating until I reboot.
+I did not see any OOPS or other error messages in the dmesg before this point.
 
 
-> > +static const struct glamo_engine_reg_set glamo_lcd_regs[] =3D {
-> > +	{ GLAMO_REG_CLOCK_LCD,
-> > +	GLAMO_CLOCK_LCD_EN_M5CLK |
-> > +	GLAMO_CLOCK_LCD_DG_M5CLK |
-> > +	GLAMO_CLOCK_LCD_EN_DMCLK,
-> > +
-> > +	GLAMO_CLOCK_LCD_EN_DHCLK |
-> > +	GLAMO_CLOCK_LCD_EN_DCLK
-> > +	},
-> > +	{ GLAMO_REG_CLOCK_GEN5_1,
-> > +	GLAMO_CLOCK_GEN51_EN_DIV_DMCLK,
-> > +
-> > +	GLAMO_CLOCK_GEN51_EN_DIV_DHCLK |
-> > +	GLAMO_CLOCK_GEN51_EN_DIV_DCLK
-> > +	}
-> > +};
-> Identation could be clearer here:
-> static const struct glamo_engine_reg_set glamo_lcd_regs[] =3D {
-> 	{
-> 		GLAMO_REG_CLOCK_LCD,
->=20
-> 		GLAMO_CLOCK_LCD_EN_M5CLK |
-> 		GLAMO_CLOCK_LCD_DG_M5CLK |
-> 		GLAMO_CLOCK_LCD_EN_DMCLK,
->=20
-> 		GLAMO_CLOCK_LCD_EN_DHCLK |
-> 		GLAMO_CLOCK_LCD_EN_DCLK
-> 	},
-> [...]
+Unrelated additional problem: On bootup with 2.6.36-rc1 I get ~800
+bytes of random binary garbage via early_printk=serial. This does not
+happen with 2.6.35 and earlier kernels.
 
-Done.
+Restart with earlier kernel:
+[ 7816.426238] Restarting system.
+[    0.000000] Linux version 2.6.34-rc7 (root@treogen) (gcc version
+4.4.3 (Gentoo 4.4.3-r2 p1.2) ) #1 SMP Mon May 10 19:45:19 CEST 2010
+[    0.000000] Command line: fastboot earlyprintk=serial,ttyS0,115200
+console=ttyS0,115200 console=tty1 crypt_root=/dev/md3 radeon.modeset=1
+video=1280x1024
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
+[    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+[    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
+[    0.000000]  BIOS-e820: 0000000000100000 - 00000000dffd0000 (usable)
+[    0.000000]  BIOS-e820: 00000000dffd0000 - 00000000dffde000 (ACPI data)
+[    0.000000]  BIOS-e820: 00000000dffde000 - 00000000e0000000 (ACPI NVS)
+[    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec01000 (reserved)
+[    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fef00000 (reserved)
+[    0.000000]  BIOS-e820: 00000000ff700000 - 0000000100000000 (reserved)
+[    0.000000]  BIOS-e820: 0000000100000000 - 0000000120000000 (usable)
+[    0.000000] bootconsole [earlyser0] enabled
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] DMI present.
 
->=20
-> > +/*********************************************************************=
-**
-> > + * script support
-> > + *********************************************************************=
-**/
-> > +
-> > +#define GLAMO_SCRIPT_END	0xffff
-> > +#define GLAMO_SCRIPT_WAIT	0xfffe
-> > +#define GLAMO_SCRIPT_LOCK_PLL	0xfffd
-> > +
-> > +/*
-> > + * couple of people reported artefacts with 2.6.28 changes, this
-> > + * allows reversion to 2.6.24 settings
-> > +*/
-> Same remark as with the module option: This is going to be a 2.6.37
-> driver, and I'd like you to check if you're still seeing those issues
-> before carrying these kind of hacks.
+Restart with 2.6.36-rc1:
+[202944.603598] Restarting system.
+{~800 byte of binary garbage}000100000 - 00000000dffd0000 (usable)
+[    0.000000]  BIOS-e820: 00000000dffd0000 - 00000000dffde000 (ACPI data)
+[    0.000000]  BIOS-e820: 00000000dffde000 - 00000000e0000000 (ACPI NVS)
+[    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec01000 (reserved)
+[    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fef00000 (reserved)
+[    0.000000]  BIOS-e820: 00000000ff700000 - 0000000100000000 (reserved)
+[    0.000000]  BIOS-e820: 0000000100000000 - 0000000120000000 (usable)
+[    0.000000] bootconsole [earlyser0] enabled
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] DMI present.
+[    0.000000] No AGP bridge found
+[    0.000000] last_pfn = 0x120000 max_arch_pfn = 0x400000000
+[    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
 
-As stated before, it hasn't anything to do with kernel version.
-Though, I'm not sure this module parameter is still being used.=20
-I'll either get rid of that, or make it clear in the comments.
-
-> > +static const struct glamo_script glamo_init_script[] =3D {
-> > +	{ GLAMO_REG_CLOCK_HOST,		0x1000 },
-> > +	{ GLAMO_SCRIPT_WAIT,		     2 },
-> > +	{ GLAMO_REG_CLOCK_MEMORY,	0x1000 },
-> > +	{ GLAMO_REG_CLOCK_MEMORY,	0x2000 },
-> > +	{ GLAMO_REG_CLOCK_LCD,		0x1000 },
-> > +	{ GLAMO_REG_CLOCK_MMC,		0x1000 },
-> > +	{ GLAMO_REG_CLOCK_ISP,		0x1000 },
-> > +	{ GLAMO_REG_CLOCK_ISP,		0x3000 },
-> > +	{ GLAMO_REG_CLOCK_JPEG,		0x1000 },
-> > +	{ GLAMO_REG_CLOCK_3D,		0x1000 },
-> > +	{ GLAMO_REG_CLOCK_3D,		0x3000 },
-> > +	{ GLAMO_REG_CLOCK_2D,		0x1000 },
-> > +	{ GLAMO_REG_CLOCK_2D,		0x3000 },
-> > +	{ GLAMO_REG_CLOCK_RISC1,	0x1000 },
-> > +	{ GLAMO_REG_CLOCK_MPEG,		0x1000 },
-> > +	{ GLAMO_REG_CLOCK_MPEG,		0x3000 },
-> > +	{ GLAMO_REG_CLOCK_MPROC,	0x1000 /*0x100f*/ },
-> > +	{ GLAMO_SCRIPT_WAIT,		     2 },
-> > +	{ GLAMO_REG_CLOCK_HOST,		0x0000 },
-> > +	{ GLAMO_REG_CLOCK_MEMORY,	0x0000 },
-> > +	{ GLAMO_REG_CLOCK_LCD,		0x0000 },
-> > +	{ GLAMO_REG_CLOCK_MMC,		0x0000 },
-> > +	{ GLAMO_REG_PLL_GEN1,		0x05db },	/* 48MHz */
-> > +	{ GLAMO_REG_PLL_GEN3,		0x0aba },	/* 90MHz */
-> > +	{ GLAMO_SCRIPT_LOCK_PLL, 0 },
-> > +	/*
-> > +	 * b9 of this register MUST be zero to get any interrupts on INT#
-> > +	 * the other set bits enable all the engine interrupt sources
-> > +	 */
-> > +	{ GLAMO_REG_IRQ_ENABLE,		0x0100 },
-> > +	{ GLAMO_REG_CLOCK_GEN6,		0x2000 },
-> > +	{ GLAMO_REG_CLOCK_GEN7,		0x0101 },
-> > +	{ GLAMO_REG_CLOCK_GEN8,		0x0100 },
-> > +	{ GLAMO_REG_CLOCK_HOST,		0x000d },
-> > +	/*
-> > +	 * b7..b4 =3D 0 =3D no wait states on read or write
-> > +	 * b0 =3D 1 select PLL2 for Host interface, b1 =3D enable it
-> > +	 */
-> > +	{ GLAMO_REG_HOSTBUS(1),		0x0e03 /* this is replaced by script parser =
-*/ },
-> > +	{ GLAMO_REG_HOSTBUS(2),		0x07ff }, /* TODO: Disable all */
-> > +	{ GLAMO_REG_HOSTBUS(10),	0x0000 },
-> > +	{ GLAMO_REG_HOSTBUS(11),	0x4000 },
-> > +	{ GLAMO_REG_HOSTBUS(12),	0xf00e },
-> > +
-> > +	/* S-Media recommended "set tiling mode to 512 mode for memory access
-> > +	 * more efficiency when 640x480" */
-> > +	{ GLAMO_REG_MEM_TYPE,		0x0c74 }, /* 8MB, 16 word pg wr+rd */
-> > +	{ GLAMO_REG_MEM_GEN,		0xafaf }, /* 63 grants min + max */
-> > +
-> > +	{ GLAMO_REG_MEM_TIMING1,	0x0108 },
-> > +	{ GLAMO_REG_MEM_TIMING2,	0x0010 }, /* Taa =3D 3 MCLK */
-> > +	{ GLAMO_REG_MEM_TIMING3,	0x0000 },
-> > +	{ GLAMO_REG_MEM_TIMING4,	0x0000 }, /* CE1# delay fall/rise */
-> > +	{ GLAMO_REG_MEM_TIMING5,	0x0000 }, /* UB# LB# */
-> > +	{ GLAMO_REG_MEM_TIMING6,	0x0000 }, /* OE# */
-> > +	{ GLAMO_REG_MEM_TIMING7,	0x0000 }, /* WE# */
-> > +	{ GLAMO_REG_MEM_TIMING8,	0x1002 }, /* MCLK delay, was 0x1000 */
-> > +	{ GLAMO_REG_MEM_TIMING9,	0x6006 },
-> > +	{ GLAMO_REG_MEM_TIMING10,	0x00ff },
-> > +	{ GLAMO_REG_MEM_TIMING11,	0x0001 },
-> > +	{ GLAMO_REG_MEM_POWER1,		0x0020 },
-> > +	{ GLAMO_REG_MEM_POWER2,		0x0000 },
-> > +	{ GLAMO_REG_MEM_DRAM1,		0x0000 },
-> > +	{ GLAMO_SCRIPT_WAIT,		     1 },
-> > +	{ GLAMO_REG_MEM_DRAM1,		0xc100 },
-> > +	{ GLAMO_SCRIPT_WAIT,		     1 },
-> > +	{ GLAMO_REG_MEM_DRAM1,		0xe100 },
-> > +	{ GLAMO_REG_MEM_DRAM2,		0x01d6 },
-> > +	{ GLAMO_REG_CLOCK_MEMORY,	0x000b },
-> > +};
-> Shouldnt those values be set by your platform bootloader ? They're obviou=
-sly
-> not, but I find it weird.
-
-I'm not sure, I have to check.
-There are at least two bootloader for the FreeRunner, and one of them is
-meant to do as little as possible.
-Furthermore, the code in the default bootloader is mostly based on a
-copy of an old version of this driver.
+The later repeat is OK (even on 2.6.36-rc1), so I suspect some problem
+during the early init of the serial console, not some corruption of
+the dmesg itself:
+[    0.000000] Extended CMOS year: 2000
+[    0.000000] Console: colour VGA+ 80x25
+[    0.000000] console [tty1] enabled, bootconsole disabled
+[    0.000000] Linux version 2.6.36-rc1 (root@treogen) (gcc version
+4.4.4 (Gentoo 4.4.4-r1 p1.0, pie-0.4.5) ) #1 SMP Thu Aug 19 21:58:14
+CEST 2010
+[    0.000000] Command line: fastboot earlyprintk=serial,ttyS0,115200
+console=ttyS0,115200 console=tty1 crypt_root=/dev/md3 radeon.modeset=1
+video=1280x1024
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
+[    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+[    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
+[    0.000000]  BIOS-e820: 0000000000100000 - 00000000dffd0000 (usable)
+[    0.000000]  BIOS-e820: 00000000dffd0000 - 00000000dffde000 (ACPI data)
+[    0.000000]  BIOS-e820: 00000000dffde000 - 00000000e0000000 (ACPI NVS)
+[    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec01000 (reserved)
+[    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fef00000 (reserved)
+[    0.000000]  BIOS-e820: 00000000ff700000 - 0000000100000000 (reserved)
+[    0.000000]  BIOS-e820: 0000000100000000 - 0000000120000000 (usable)
+[    0.000000] bootconsole [earlyser0] enabled
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] DMI present.
+[    0.000000] No AGP bridge found
+[    0.000000] last_pfn = 0x120000 max_arch_pfn = 0x400000000
+[    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
 
 
-> Please remove all #if 0 code from this driver.
+Thanks for looking at this.
 
-Hm, ok, checking that, but again, it can be of help for future work
-(some sort of documentation).
-
-> Cheers,
-> Samuel.
-
-
---=-N982bTA/nS7oqUVOqUM6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAABAgAGBQJMbpnFAAoJEOY0VNOn/l3WAnYP/3eEWSqzJYNHnpFt0mduj6uO
-9C1/ubCzSr3GBaOlBBg/yskbvszvDzjcNKNy1peed6xrn/yYspSAkRTCt8rT2Vnu
-99/AcsmxWpE7hXx16LoRQgREcmRObT5sqjU5qp5xm0piAxZ+DOmKHOxlhchIksxg
-9gLQZAUPDzQ+X5oklldzIW8h/AwY50x6UzVr21Z2XN8VTE/055gKZOaYdUq5KKzW
-wJf98UX+90n2xgK00qGSmHskEdNIro47cwkhUAj7E5iMOPAklLt0VhBbXBIKtBbf
-pFXc1R8vQ9U934injHuWGXL7LJNPD1Se3l+HnY7XICIAuUNbLDAdiy0ulrhrELuO
-3t//cv4S0ru2udwuBDxtiqEd73d+pROGFGYUlO+A2qF8MQnVGSJdoUBlRR1o0NXB
-0PXLaGIAr5yqncU4BthglfKpgz1pNCWm0eXMzL+dFR3YfIUwfdA400sBNEz53xvD
-lXrpGkvhIzys6PJhze17Et4zlSW8pNmB+wK89/rpLfjr4v6s26dazH7bfrfTiIoa
-LPcasgaCgnhY86g3ahqK4FaMZvjt3zImna2KwBrpucAaBp8G0tCViH+UGwy9dd/2
-hUKQJ1xxM8D4MUz+XcH9g1D+12txcHZ9BPkwf3AdLD6xKM8pG9MEArzQU/1XBQ2c
-SPFHlMwui4m+iYjYAKIO
-=51l0
------END PGP SIGNATURE-----
-
---=-N982bTA/nS7oqUVOqUM6--
-
+Torsten
