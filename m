@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342Ab0HTMSK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 08:18:10 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:48371 "EHLO mx2.netapp.com"
+	id S1751408Ab0HTMTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 08:19:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab0HTMSH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 08:18:07 -0400
-X-IronPort-AV: E=Sophos;i="4.56,239,1280732400"; 
-   d="scan'208";a="432886801"
-Subject: Re: [PATCH] VM: kswapd should not do blocking memory allocations
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Ram Pai <ram.n.pai@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-In-Reply-To: <20100820054533.GB11847@localhost>
-References: <1282158241.8540.85.camel@heimdal.trondhjem.org>
-	 <AANLkTi=WkoxjwZbt6Vd0VhbuA7_k2WM-NUXZnrmzOOPy@mail.gmail.com>
-	 <1282159872.8540.96.camel@heimdal.trondhjem.org>
-	 <20100820054533.GB11847@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Fri, 20 Aug 2010 08:17:08 -0400
-Message-ID: <1282306628.3927.0.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 20 Aug 2010 12:17:10.0424 (UTC) FILETIME=[9D3D5980:01CB4061]
+	id S1751065Ab0HTMTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 08:19:21 -0400
+Date: Fri, 20 Aug 2010 08:19:17 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] lockup_detector: Make callback function static
+Message-ID: <20100820121917.GC4879@redhat.com>
+References: <1282273431.16443.32.camel@minggr.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282273431.16443.32.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 13:45 +0800, Wu Fengguang wrote:
-> > Hi Ram,
-> > 
-> > I was seeing it on NFS until I put in the following kswapd-specific hack
-> > into nfs_release_page():
-> > 
-> > 	/* Only do I/O if gfp is a superset of GFP_KERNEL */
-> > 	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
-> > 		int how = FLUSH_SYNC;
-> > 
-> > 		/* Don't let kswapd deadlock waiting for OOM RPC calls */
-> > 		if (current_is_kswapd())
-> > 			how = 0;
+On Fri, Aug 20, 2010 at 11:03:51AM +0800, Lin Ming wrote:
+> watchdog_overflow_callback is only used in kernel/watchdog.c.
+
+Acked-by: Don Zickus <dzickus@redhat.com>
+
 > 
-> So the patch can remove the above workaround together, and add comment
-> that NFS exploits the gfp mask to avoid complex operations involving
-> recursive memory allocation and hence deadlock?
-
-I thought I'd send that as a separate patch, but yes, that is my
-intention next.
-
-Cheers
-  Trond
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  kernel/watchdog.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 613bc1f..b60e2a8 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -202,7 +202,7 @@ static struct perf_event_attr wd_hw_attr = {
+>  };
+>  
+>  /* Callback function for perf event subsystem */
+> -void watchdog_overflow_callback(struct perf_event *event, int nmi,
+> +static void watchdog_overflow_callback(struct perf_event *event, int nmi,
+>  		 struct perf_sample_data *data,
+>  		 struct pt_regs *regs)
+>  {
+> 
+> 
