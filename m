@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab0HTOOE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 10:14:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48754 "EHLO mx2.suse.de"
+	id S1752713Ab0HTOPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 10:15:24 -0400
+Received: from thunk.org ([69.25.196.29]:41103 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab0HTOOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 10:14:03 -0400
-Date: Fri, 20 Aug 2010 16:14:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Make is_mem_section_removable more conformable with
- offlining code
-Message-ID: <20100820141400.GD4636@tiehlicka.suse.cz>
+	id S1751692Ab0HTOPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 10:15:22 -0400
+Date: Fri, 20 Aug 2010 09:56:12 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Miloslav =?utf-8?B?VHJtYcSN?= <mitr@redhat.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
+Message-ID: <20100820135612.GC4053@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Miloslav =?utf-8?B?VHJtYcSN?= <mitr@redhat.com>,
+	Herbert Xu <herbert@gondor.hengli.com.au>,
+	linux-crypto@vger.kernel.org,
+	Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+	Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
+References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-what do you think about the patch below?
+On Fri, Aug 20, 2010 at 10:45:43AM +0200, Miloslav Trmač wrote:
+> Hello, following is a patchset providing an user-space interface to
+> the kernel crypto API.  It is based on the older, BSD-compatible,
+> implementation, but the user-space interface is different.
 
->From b983695b92b5be58f31c719fada1d3245f7b6768 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 20 Aug 2010 15:39:16 +0200
-Subject: [PATCH] Make is_mem_section_removable more conformable with offlining code
+What's the goal of exporting the kernel crypto routines to userspace,
+as opposed to just simply doing the crypto in userspace?  Is it to
+access hardware crypto accelerators?  (1) I wasn't aware the kernel
+crypto routines actually used crypto accelerators, and (2) more often
+than not, by the time you take into account the time to move the
+crypto context as well as the data into kernel space and back out, and
+after you take into account price/performance, most hardware crypto
+accellerators have marginal performance benefits; in fact, more often
+than not, it's a lose.
 
-Currently is_mem_section_removable checks whether each pageblock from
-the given pfn range is of MIGRATE_MOVABLE type or if it is free. If both
-are false then the range is considered non removable.
+If the goal is access to hardware-escrowed keys, don't we have the TPM
+interface for that already?
 
-On the other hand, offlining code (more specifically
-set_migratetype_isolate) doesn't care whether a page is free and instead
-it just checks the migrate type of the page and whether the page's zone
-is movable.
+So I'm bit at a list what's the whole point of this patch series.
+Could you explain that in the documentation, please?  Especially for
+crypto, explaining when something should be used, what the threat
+model is, etc., is often very important.
 
-This can lead into a situation when a node is marked as removable even
-though all pages are neither MIGRATE_MOVABLE nor the zone is
-ZONE_MOVABLE.
+Thanks, regards,
 
-Also we can mark a node as not removable just because a pageblock is
-MIGRATE_RESERVE and not free (and this situation is much more probable).
----
- mm/memory_hotplug.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index a4cfcdc..da20568 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -611,10 +611,10 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
- 		type = get_pageblock_migratetype(page);
- 
- 		/*
--		 * A pageblock containing MOVABLE or free pages is considered
--		 * removable
-+		 * A pageblock containing MOVABLE or page from movable
-+		 * zone are considered removable
- 		 */
--		if (type != MIGRATE_MOVABLE && !pageblock_free(page))
-+		if (type != MIGRATE_MOVABLE && zone_idx(page) != ZONE_MOVABLE)
- 			return 0;
- 
- 		/*
--- 
-1.7.1
+						- Ted
 
 
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
