@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab0HTIJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:09:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31902 "EHLO mx1.redhat.com"
+	id S1752583Ab0HTIKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:10:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36394 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357Ab0HTIJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:09:15 -0400
+	id S1751700Ab0HTIJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:09:22 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: kvm@vger.kernel.org
 Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
@@ -13,108 +13,137 @@ Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
         Glauber Costa <glommer@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [KVM timekeeping 30/35] IOCTL for setting TSC rate
-Date: Thu, 19 Aug 2010 22:07:44 -1000
-Message-Id: <1282291669-25709-31-git-send-email-zamsden@redhat.com>
+Subject: [KVM timekeeping 32/35] Entry conditions for TSC trapping
+Date: Thu, 19 Aug 2010 22:07:46 -1000
+Message-Id: <1282291669-25709-33-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
 References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an IOCTL for setting the TSC rate for a VM, intended to
-be used to migrate non-kvmclock based VMs which rely on TSC
-rate staying stable across host migration.
+We must also handle the reverse condition; TSC can't go backwards
+when trapping, and it's possible that bad hardware offsetting
+makes this problem visible when entering trapping mode.
+
+This is accomodated by adding a 'bump' field to the computed
+TSC; it's not pleasant but it works.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/kvm/x86.c  |   36 ++++++++++++++++++++++++++++++++++++
- include/linux/kvm.h |    4 ++++
- 2 files changed, 40 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +
+ arch/x86/kvm/x86.c              |   58 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 55 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 64569b0..950537c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -413,6 +413,8 @@ struct kvm_arch {
+ 	u32 virtual_tsc_khz;
+ 	u32 virtual_tsc_mult;
+ 	s8 virtual_tsc_shift;
++	s64 tsc_bump;
++	s64 last_tsc_bump_ns;
+ 
+ 	struct kvm_xen_hvm_config xen_hvm_config;
+ 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 887e30f..e618265 100644
+index 33cb0f0..86f182a 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -1017,6 +1017,10 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 			kvm_x86_ops->adjust_tsc_offset(v, tsc-tsc_timestamp);
- 		local_irq_restore(flags);
+@@ -917,13 +917,48 @@ static void kvm_arch_set_tsc_khz(struct kvm *kvm, u32 this_tsc_khz)
  
-+		/* hw_tsc_khz unknown at creation time, check for overrun */
-+		if (this_tsc_khz > v->kvm->arch.virtual_tsc_khz)
-+			vcpu->tsc_overrun = 1;
+ static u64 compute_guest_tsc(struct kvm_vcpu *vcpu, s64 kernel_ns)
+ {
++	struct kvm_arch *arch = &vcpu->kvm->arch;
+ 	u64 tsc = pvclock_scale_delta(kernel_ns-vcpu->arch.last_tsc_nsec,
+-				      vcpu->kvm->arch.virtual_tsc_mult,
+-				      vcpu->kvm->arch.virtual_tsc_shift);
++				      arch->virtual_tsc_mult,
++				      arch->virtual_tsc_shift);
+ 	tsc += vcpu->arch.last_tsc_write;
++	if (unlikely(arch->tsc_bump)) {
++		s64 bump;
 +
- 		/* Now, see if we need to switch into trap mode */
- 		if (vcpu->tsc_overrun && !vcpu->tsc_trapping)
- 			kvm_x86_ops->set_tsc_trap(v, 1);
-@@ -1846,6 +1850,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_DEBUGREGS:
- 	case KVM_CAP_X86_ROBUST_SINGLESTEP:
- 	case KVM_CAP_XSAVE:
-+	case KVM_CAP_SET_TSC_RATE:
- 		r = 1;
- 		break;
- 	case KVM_CAP_COALESCED_MMIO:
-@@ -3413,6 +3418,37 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		r = 0;
- 		break;
- 	}
-+	case KVM_X86_GET_TSC_RATE: {
-+		u32 rate = kvm->arch.virtual_tsc_khz;
-+		r = -EFAULT;
-+		if (copy_to_user(argp, &rate, sizeof(rate)))
-+			goto out;
-+		r = 0;
-+		break;
-+	}
-+	case KVM_X86_SET_TSC_RATE: {
-+		u32 rate;
-+		int i;
-+		struct kvm_vcpu *vcpu;
-+		r = -EFAULT;
-+		if (copy_from_user(&rate, argp, sizeof rate))
-+			goto out;
-+		if (rate == 0 || rate > (1ULL << 40)) {
-+			r = -EINVAL;
-+			break;
-+		}
 +		/*
-+		 * This is intended to be called once, during VM creation.
-+		 * Calling this with running VCPUs to dynamically change
-+		 * speed is risky; there is no synchronization with the
-+		 * compensation loop, so computations using virtual_tsc_khz
-+		 * conversions may go haywire.  Use at your own risk.
++		 * Ugh.  There were a TSC bump.  See how much time elapsed
++		 * in cycles since last read, take it off the bump, but
++		 * ensure TSC advances by at least one.  We're serialized
++		 * by the TSC write lock until the bump is gone.
 +		 */
-+		kvm_arch_set_tsc_khz(kvm, rate);
-+		kvm_for_each_vcpu(i, vcpu, kvm)
-+			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-+		break;
++		spin_lock(&arch->tsc_write_lock);
++		bump = pvclock_scale_delta(kernel_ns - arch->last_tsc_bump_ns,
++					   arch->virtual_tsc_mult,
++					   arch->virtual_tsc_shift);
++		bump = arch->tsc_bump - bump + 1;
++		if (bump < 0) {
++			pr_debug("kvm: vpu%d zeroed TSC bump\n", vcpu->vcpu_id);
++			bump = 0;
++		}
++		arch->tsc_bump = bump;
++		arch->last_tsc_bump_ns = kernel_ns;
++		spin_unlock(&arch->tsc_write_lock);
++
++		tsc += bump;
 +	}
+ 	return tsc;
+ }
  
- 	default:
- 		;
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 3707704..22d27f2 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -539,6 +539,7 @@ struct kvm_ppc_pvinfo {
- #define KVM_CAP_XCRS 56
- #endif
- #define KVM_CAP_PPC_GET_PVINFO 57
-+#define KVM_CAP_SET_TSC_RATE 58
++static void bump_guest_tsc(struct kvm_vcpu *vcpu, s64 bump, s64 kernel_ns)
++{
++	struct kvm *kvm = vcpu->kvm;
++	spin_lock(&kvm->arch.tsc_write_lock);
++	kvm->arch.tsc_bump += bump;
++	kvm->arch.last_tsc_bump_ns = kernel_ns;
++	spin_unlock(&vcpu->kvm->arch.tsc_write_lock);
++	pr_debug("kvm: vcpu%d bumped TSC by %lld\n", vcpu->vcpu_id, bump);
++}
++
+ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+ {
+ 	struct kvm *kvm = vcpu->kvm;
+@@ -996,7 +1031,7 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+ 	void *shared_kaddr;
+ 	unsigned long this_tsc_khz;
+ 	s64 kernel_ns, max_kernel_ns;
+-	u64 tsc_timestamp;
++	u64 tsc_timestamp, tsc;
+ 	bool kvmclock = (vcpu->time_page != NULL);
+ 	bool catchup = !kvmclock;
  
- #ifdef KVM_CAP_IRQ_ROUTING
+@@ -1035,7 +1070,7 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+ 	}
  
-@@ -675,6 +676,9 @@ struct kvm_clock_data {
- #define KVM_SET_PIT2              _IOW(KVMIO,  0xa0, struct kvm_pit_state2)
- /* Available with KVM_CAP_PPC_GET_PVINFO */
- #define KVM_PPC_GET_PVINFO	  _IOW(KVMIO,  0xa1, struct kvm_ppc_pvinfo)
-+/* Available with KVM_CAP_SET_TSC_RATE */
-+#define KVM_X86_GET_TSC_RATE      _IOR(KVMIO,  0xa2, __u32)
-+#define KVM_X86_SET_TSC_RATE      _IOW(KVMIO,  0xa3, __u32)
+ 	if (catchup) {
+-		u64 tsc = compute_guest_tsc(v, kernel_ns);
++		tsc = compute_guest_tsc(v, kernel_ns);
+ 		if (tsc > tsc_timestamp)
+ 			kvm_x86_ops->adjust_tsc_offset(v, tsc-tsc_timestamp);
+ 	}
+@@ -1048,8 +1083,21 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+ 	if (!kvmclock) {
+ 		/* Now, see if we need to switch into trap mode */
+ 		if ((vcpu->tsc_mode == TSC_MODE_TRAP || vcpu->tsc_overrun) &&
+-		    !vcpu->tsc_trapping)
++		    !vcpu->tsc_trapping) {
++			/*
++			 * Check for the (hopefully) unlikely event of the
++			 * computed virtual TSC being before the TSC we were
++			 * passing through in hardware.  This can happen if
++			 * the kernel has miscomputed tsc_khz, we miss an
++			 * overrun condition, or via bad SMP calibration.
++			 * If this is the case, we must add a bump to the
++			 * virtual TSC; this suck.
++			 */
++			if (unlikely(tsc < vcpu->last_guest_tsc))
++				bump_guest_tsc(v, vcpu->last_guest_tsc - tsc,
++					       kernel_ns);
+ 			kvm_x86_ops->set_tsc_trap(v, 1);
++		}
  
- /*
-  * ioctls for vcpu fds
+ 		/* If we're falling behind and not trapping, re-trigger */
+ 		if (!vcpu->tsc_trapping &&
 -- 
 1.7.1
 
