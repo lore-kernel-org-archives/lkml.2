@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab0HTWec (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 18:34:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33608 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab0HTWea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 18:34:30 -0400
-Date: Fri, 20 Aug 2010 15:32:54 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: runcoderen <runcoderzhcn@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sys_init_module system call
-Message-Id: <20100820153254.3a87be2f.randy.dunlap@oracle.com>
-In-Reply-To: <1282342684.1631.4.camel@bencharluo-laptop>
-References: <20100818041333.GA14149@lixom.net>
-	<20100818171636.0625b668.akpm@linux-foundation.org>
-	<20100819032230.GA21980@lixom.net>
-	<20100820010242.GA29588@lixom.net>
-	<20100820221323.GC8535@lixom.net>
-	<1282342684.1631.4.camel@bencharluo-laptop>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752413Ab0HTWpw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 18:45:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40875 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751583Ab0HTWpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 18:45:51 -0400
+Message-ID: <4C6F0596.2030504@suse.com>
+Date: Fri, 20 Aug 2010 18:45:42 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [patch 04/10] ioctl: Use asm-generic/ioctls.h on frv (enables
+ termiox)
+References: <20100820211401.651509182@suse.com> <20100820211538.515791797@suse.com> <201008210024.39539.arnd@arndb.de>
+In-Reply-To: <201008210024.39539.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Aug 2010 06:18:04 +0800 runcoderen wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> hi all
-> I find sys_init_module system call in kernel/module.c file.
-> but it did not find any.
-> the source code version is linux-2.6.35
+On 08/20/2010 06:24 PM, Arnd Bergmann wrote:
+> On Friday 20 August 2010 23:14:05 Jeff Mahoney wrote:
+>> - FRV defines TIOCTTYGSTRUCT, kept in arch-specific version
 > 
-> does the kernel have changed?
-> 
-> the book I am reading is LDD 3rd edition
+> Pointless, this was removed by the other architecture, and the
+> same change should be done here, possibly in a separate patch.
 
-You won't find a function in kernel/module.c that looks like it has
-the name "sys_init_module".  Instead, the function is defined by using
-a macro, and it looks like this:
+Agreed.
 
-/* This is where the real work happens */
-SYSCALL_DEFINE3(init_module, void __user *, umod,
-		unsigned long, len, const char __user *, uargs)
-{
+- -Jeff
 
+- -- 
+Jeff Mahoney
+SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
-
-The use of SYSCALL_DEFINEx(func_name, args) is a fairly recent change
-(well, January, 2009) that may be the reason why you think that there
-has been a change.  See
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=1a94bc34768e463a93cb3751819709ab0ea80a01
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+iEYEARECAAYFAkxvBZYACgkQLPWxlyuTD7I6DwCeP4N3tAiD1VB3S215KzyckOO6
+0NAAoI2qtv6aKz6yDl4dQdBatOLENEwh
+=Cnn1
+-----END PGP SIGNATURE-----
