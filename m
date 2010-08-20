@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0HTTBE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 15:01:04 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:21890
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751050Ab0HTTBC (ORCPT
+	id S1753372Ab0HTTBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 15:01:13 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48359 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753235Ab0HTTBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 15:01:02 -0400
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Aug 2010 15:01:02 EDT
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-SS: 0,
-From: Timur Tabi <timur@freescale.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, kumar.gala@freescale.com,
-        amit.shah@redhat.com
-Subject: [PATCH] hvc_console: fix dropping of characters when output byte channel is full
-Date: Fri, 20 Aug 2010 13:45:21 -0500
-Message-ID: <1282329921-24394-1-git-send-email-timur@freescale.com>
-X-Mailer: git-send-email 1.7.0.1
+	Fri, 20 Aug 2010 15:01:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: az33egw02.freescale.net
+In-Reply-To: <1282326182.29609.789.camel@localhost.localdomain>
+References: <20100818203143.735033743@clark.site> <1282308887.3170.5439.camel@zakaz.uk.xensource.com>
+ <AANLkTin7L=v1GR2=U-mvESyrP2vySYLRa4U-fh9-L38F@mail.gmail.com>
+ <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com>
+ <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com> <1282326182.29609.789.camel@localhost.localdomain>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 Aug 2010 11:59:41 -0700
+Message-ID: <AANLkTi=racCPiDmbL0pEfH3Ew2_gJzJwmR3B1Vt=AZuz@mail.gmail.com>
+Subject: Re: [2/3] mm: fix up some user-visible effects of the stack guard page
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hvc_console_print() calls the HVC client driver's put_chars() callback
-to write some characters to the console.  If the callback returns 0, that
-indicates that no characters were written (perhaps the output buffer is
-full), but hvc_console_print() treats that as an error and discards the
-rest of the buffer.
+On Fri, Aug 20, 2010 at 10:43 AM, Ian Campbell <ijc@hellion.org.uk> wrote:
+>
+> If we could easily get at the previous VMA (instead of just the next
+> one) then we could easily check if we were mlocking a VM_GROWSDOWN
+> region which had another VM_GROWSDOWN region immediately below it and
+> therefore avoid introducing a guard page at the boundary. Doing this
+> check is currently too expensive because of the need to use
+> find_vma_prev. Is that right?
 
-So change hvc_console_print() to just loop and call put_chars() again if it
-returns a 0 return code.
+Exactly.
 
-This change makes hvc_console_print() behave more like hvc_push(), which
-does check for a 0 return code and re-schedules itself.
+> It does look like a big task, but if it seems like the only sane option
+> I'll take a look at it and see if can be broken down into manageable
+> stages.
 
-Signed-off-by: Timur Tabi <timur@freescale.com>
----
- drivers/char/hvc_console.c |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
+It should be a pretty straightforward search-and-replace. And almost
+all of it would be real cleanups.
 
-diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
-index fa27d16..b4deffd 100644
---- a/drivers/char/hvc_console.c
-+++ b/drivers/char/hvc_console.c
-@@ -3,6 +3,7 @@
-  * Copyright (C) 2001 Paul Mackerras <paulus@au.ibm.com>, IBM
-  * Copyright (C) 2004 Benjamin Herrenschmidt <benh@kernel.crashing.org>, IBM Corp.
-  * Copyright (C) 2004 IBM Corporation
-+ * Copyright 2009 Freescale Semiconductor, Inc.
-  *
-  * Additional Author(s):
-  *  Ryan S. Arnold <rsa@us.ibm.com>
-@@ -141,6 +142,7 @@ static void hvc_console_print(struct console *co, const char *b,
- 	char c[N_OUTBUF] __ALIGNED__;
- 	unsigned i = 0, n = 0;
- 	int r, donecr = 0, index = co->index;
-+	unsigned int timeout = 1000000; /* Keep trying for up to one second */
- 
- 	/* Console access attempt outside of acceptable console range. */
- 	if (index >= MAX_NR_HVC_CONSOLES)
-@@ -152,6 +154,10 @@ static void hvc_console_print(struct console *co, const char *b,
- 
- 	while (count > 0 || i > 0) {
- 		if (count > 0 && i < sizeof(c)) {
-+			/* If the local buffer (c) is not full, then copy some
-+			 * bytes from the input buffer to it. We stop when the
-+			 * local buffer is full. \n is converted to \r\n.
-+			 */
- 			if (b[n] == '\n' && !donecr) {
- 				c[i++] = '\r';
- 				donecr = 1;
-@@ -162,14 +168,25 @@ static void hvc_console_print(struct console *co, const char *b,
- 			}
- 		} else {
- 			r = cons_ops[index]->put_chars(vtermnos[index], c, i);
--			if (r <= 0) {
-+			if (r < 0) {
- 				/* throw away chars on error */
- 				i = 0;
- 			} else if (r > 0) {
- 				i -= r;
- 				if (i > 0)
- 					memmove(c, c+r, i);
-+			} else {
-+				/* If r == 0, then the client driver didn't do
-+				 * anything, so wait 1us and try again.  If we
-+				 * time out, then just exit.
-+				 */
-+				if (!--timeout)
-+					return;
-+				udelay(1);
-+				continue;
- 			}
-+			/* Reset the timeout */
-+			timeout = 1000000;
- 		}
- 	}
- }
--- 
-1.7.0.1
+And it would be trivial to change the loops like
 
+    for (vma = mm->mmap; vma; vma = vma->vm_next)
 
+into basically just
+
+   list_for_each_entry(vma, &mm->mmap, vm_list)
+
+etc.
+
+> You mentioned making this a tunable in your original commit message,
+> that would at least help in the short term so I may look into that too.
+> (prctl would be the right interface?)
+
+I'm not convinced a tunable is really the right thing, but in this
+case it might be acceptable, since you really are doing something
+rather specific and odd. Changing the VM to use doubly-linked lists
+would be a lot _cleaner_, though.
+
+> I wonder if there's any way to auto tune, for example automatically
+> disabling the guard page for a process which mlocks only part of its
+> stack VMA. That would obviously target the specific issue I'm seeing
+> pretty directly and would only reopen the hole for applications which
+> were already doing odd things (c.f. your earlier comment about the guard
+> page not being magic or helping with wilfully crazy userspace).
+
+I'd really hate to try to do something subtle that doesn't have
+obvious semantics. Subtle code is buggy code. Maybe not today, but two
+years from now..
+
+                     Linus
