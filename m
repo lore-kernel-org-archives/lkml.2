@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab0HTNQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:16:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37308 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab0HTNQe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:16:34 -0400
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <cover.1282286941.git.m.nazarewicz@samsung.com>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 20 Aug 2010 15:15:10 +0200
-Message-ID: <1282310110.2605.976.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752070Ab0HTNTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:19:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41224 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751724Ab0HTNTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 09:19:40 -0400
+Date: Fri, 20 Aug 2010 15:19:20 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        peterz@infradead.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH  1/1] mutex: prevent optimistic spinning from spinning
+ longer than neccessary (Repost)
+Message-ID: <20100820131920.GC3321@elte.hu>
+References: <1282168827.9542.72.camel@schen9-DESK>
+ <20100819110511.GA16264@elte.hu>
+ <1877.10.21.68.23.1282256686.squirrel@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1877.10.21.68.23.1282256686.squirrel@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4540]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
-> Hello everyone,
+
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> > Ingo wrote:
+> >
+> > These are some rather impressive speedups!
+> >
+> > Have you tried to see what performance effects this change has on
+> smaller
+> > boxes? Just to see what flip side (if any) this change has.
+> >
 > 
-> The following patchset implements a Contiguous Memory Allocator.  For
-> those who have not yet stumbled across CMA an excerpt from
-> documentation:
+> I've done similar experiments with 2.6.35 kernel on smaller boxes.  One is
+> on a dual-socket Westmere box (12 cores total, with HT). Another
+> experiment is on an old dual-socket Core 2 box (4 cores total, no HT)
 > 
->    The Contiguous Memory Allocator (CMA) is a framework, which allows
->    setting up a machine-specific configuration for physically-contiguous
->    memory management. Memory for devices is then allocated according
->    to that configuration.
+> On the 12-core Westmere box, I see a 250% increase for Ingo's mutex-test
+> program with my mutex patch but no significant difference in aim7's
+> fserver workload.
 > 
->    The main role of the framework is not to allocate memory, but to
->    parse and manage memory configurations, as well as to act as an
->    in-between between device drivers and pluggable allocators. It is
->    thus not tied to any memory allocation method or strategy.
-> 
-> For more information please refer to the second patch from the
-> patchset which contains the documentation.
+> On the 4-core Core 2 box, I see the difference with the patch for both
+> mutex-test and aim7 fserver are negligible.
 
-So the idea is to grab a large chunk of memory at boot time and then
-later allow some device to use it?
+Great!
 
-I'd much rather we'd improve the regular page allocator to be smarter
-about this. We recently added a lot of smarts to it like memory
-compaction, which allows large gobs of contiguous memory to be freed for
-things like huge pages.
+> So far, it seems like the patch has not caused regression on smaller 
+> systems.  We'll put it through more workloads to check.
 
-If you want guarantees you can free stuff, why not add constraints to
-the page allocation type and only allow MIGRATE_MOVABLE pages inside a
-certain region, those pages are easily freed/moved aside to satisfy
-large contiguous allocations.
+Thanks! The performance results you've posted so far IMO more than justifies 
+its inclusion.
 
-Also, please remove --chain-reply-to from your git config. You're using
-1.7 which should do the right thing (--no-chain-reply-to) by default.
-
-
+	Ingo
