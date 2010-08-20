@@ -1,107 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab0HTUJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 16:09:12 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62285 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab0HTUJK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 16:09:10 -0400
+	id S1753289Ab0HTULm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 16:11:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753180Ab0HTULl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 16:11:41 -0400
+Message-ID: <4C6EE173.3030204@redhat.com>
+Date: Fri, 20 Aug 2010 15:11:31 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-In-Reply-To: <87hbip9kxx.fsf@deeprootsystems.com>
-References: <1281484174-32174-1-git-send-email-ppannuto@codeaurora.org>
- <1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
- <3F978429-F916-42E5-8B36-6AC02DAC8CA2@boeing.com> <AANLkTi=Pm8BL+Ksq1o7MYpV7mMH10bEPu1=Am9EgT-Kk@mail.gmail.com>
- <87hbiql89d.fsf@deeprootsystems.com> <AANLkTinaddiPAcokH3fRVYAFf3N-Gz--U5Jd1iyNsi+m@mail.gmail.com>
- <87hbip9kxx.fsf@deeprootsystems.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 20 Aug 2010 14:08:49 -0600
-X-Google-Sender-Auth: I0mzWdy5jzpnIEIqY-YLL2FW5jc
-Message-ID: <AANLkTine=VLLm4+ReKeMKBdbV1JsunNagwKxGMDhEe8e@mail.gmail.com>
-Subject: Re: [PATCH 2/2] platform: Facilitate the creation of pseudo-platform buses
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
-        "gregkh@suse.de" <gregkh@suse.de>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Kyle D Moffett <kyle@moffetthome.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+CC: "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext4: remove alignment padding from ext4_inode_info on
+ 64 bit builds
+References: <1282144088.2068.16.camel@castor.rsk>
+In-Reply-To: <1282144088.2068.16.camel@castor.rsk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 12:51 PM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
-> Grant Likely <grant.likely@secretlab.ca> writes:
->
-> [...]
->
->>> One of the primary goals of this (at least for me and it seems Magnus also)
->>> is to keep drivers ignorant of their bus type, and any bus-type-specific
->>> code should be done in the bus_type implementation.
->>
->> Heh; which just screams to me that bus_type is the wrong level to be
->> abstracting the behaviour
->
-> Heh, now I feel like we're going around in circles.  Remember, I never
-> wanted to create add a new bus_type.  Someone else [ahem] suggested
-> doing the abstraction at the bus_type level.  ;)
+Richard Kennedy wrote:
+> Reorder structure ext4_inode_info to remove 16 bytes of alignment
+> padding on 64 bit builds. This shrinks its size from 904 to 888 bytes
+> with (CONFIG_EXT4_S_XATTR=y && CONFIG_QUOTA=n).
+>     
+> This will allow this structure to use one fewer cache lines.
+> 
+> Also change type of i_delalloc_reserved_flag to bool to better reflect
+> its usage.
+> 
+> compiled & tested on x86_64
 
-Hey!  I didn't suggest it either!  I believe that was Greg at ELC.  I
-just... um... kind of took it and ran with it.  :-)
 
->> (but I also understand your need for the
->> "omap_device" wrapper around platform_device which also requires some
->> method to sort out when a platform_device really is an omap_device
->> without an unsafe dereference).
->
-> Yes, I'm working on the devres approach to that now, as is Magnus for
-> the sh-mobile version (proposed for .36-rc1[1])
->
->>> Both for SH and OMAP, we've been using the (admiteddly broken)
->>> weak-symbol-override approach to getting a custom bus-type based on the
->>> platform_bus.  We've been using that in OMAP for a while now and have
->>> not seen any need to for the drivers to know if they are on the vanilla
->>> platform_bus or the customized one.
->>>
->>> I'm very curious to hear what type of impact you expect to the drivers.
->>
->> My fears on this point may very well be unfounded.  This isn't the
->> hill I'm going to die on either.  Show me an implementation of driver
->> sharing that is clean and prove me wrong!  :-)
->
-> IMHO, simply overriding the few dev_pm_ops methods was the cleanest and
-> simplest.
->
-> Since we seem to be in agreement now that the a new bus may not the
-> right abstraction for this (since we want it to be completely
-> transparent to the drivers), I'll go back to the original design.  No new
-> bus types, keep the platform_bus as is, but simply override the few
-> dev_pm_ops methods I care about.  This is what is done on SH,
-> SH-Mobile[1] and my original version for OMAP that started this
-> conversation.
->
-> Yes, the weak-symbol method of overriding is not scalable, but that's a
-> separate issue from whether or not to create a new bus.  I have a
-> proposed fix for the weak which I'll post shortly.
+Looks good to me; there is still a bit of padding at the end:
 
-Okay.
+        qsize_t                    i_reserved_quota;     /*   864     8 */
+        struct list_head           i_completed_io_list;  /*   872    16 */
+        spinlock_t                 i_completed_io_lock;  /*   888     4 */
 
-One constraint remains though:  If you can override the dev_pm_ops on
-a per-device or per-device-parent basis, then you've got my support.
-If the override (even when fixed to work at runtime) applies to every
-device on the platform_bus_type, then I'll nack it.  My concern here
-is that the SoC or platform support code doesn't get to "own" the
-platform_bus_type.  Other drivers/code can register their own set of
-platform_devices, which may also need to perform their own dev_pm_ops
-override.  If the override is global to the platform_bus_type, then
-the model will not scale.
+        /* XXX 4 bytes hole, try to pack */
 
-Cheers,
-g.
+        /* --- cacheline 14 boundary (896 bytes) --- */
+        ext4_io_end_t *            cur_aio_dio;          /*   896     8 */
+        tid_t                      i_sync_tid;           /*   904     4 */
+        tid_t                      i_datasync_tid;       /*   908     4 */
+
+
+but it wouldn't save a cacheline anyway...
+
+-Eric
+
+> Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+> ---
+> patch against 2.6.36-rc1
+> 
+> Early testing shows more consistent results ( i.e. smaller standard
+> deviations) on my AMD X2 setup, but I shall re-run these tests to check
+> if this is repeatable.
+> 
+> regards
+> Richard
+> 
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 889ec9d..b63a8e3 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -750,10 +750,11 @@ struct ext4_inode_info {
+>  	 * near to their parent directory's inode.
+>  	 */
+>  	ext4_group_t	i_block_group;
+> -	unsigned long	i_state_flags;		/* Dynamic state flags */
+> -	unsigned long	i_flags;
+>  
+>  	ext4_lblk_t		i_dir_start_lookup;
+> +
+> +	unsigned long	i_state_flags;		/* Dynamic state flags */
+> +	unsigned long	i_flags;
+>  #ifdef CONFIG_EXT4_FS_XATTR
+>  	/*
+>  	 * Extended attributes can be read independently of the main file
+> @@ -816,13 +817,14 @@ struct ext4_inode_info {
+>  	unsigned int i_reserved_data_blocks;
+>  	unsigned int i_reserved_meta_blocks;
+>  	unsigned int i_allocated_meta_blocks;
+> -	unsigned short i_delalloc_reserved_flag;
+> -	sector_t i_da_metadata_calc_last_lblock;
+> -	int i_da_metadata_calc_len;
+> +	bool i_delalloc_reserved_flag;
+>  
+>  	/* on-disk additional length */
+>  	__u16 i_extra_isize;
+>  
+> +	sector_t i_da_metadata_calc_last_lblock;
+> +	int i_da_metadata_calc_len;
+> +
+>  	spinlock_t i_block_reservation_lock;
+>  #ifdef CONFIG_QUOTA
+>  	/* quota space reservation, managed internally by quota code */
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
