@@ -1,62 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab0HTToU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 15:44:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56699 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751905Ab0HTToS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 15:44:18 -0400
+	id S1751888Ab0HTUFi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 16:05:38 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:41862 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751792Ab0HTUFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 16:05:36 -0400
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX19LXHkoEB1LBNsAM3LPcvbeLAw5LJxElz7T76JeEG
+	rUqnGPs0R4z924
+Date: Fri, 20 Aug 2010 22:05:30 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Marin Mitov <mitov@issp.bas.bg>
+cc: linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Greg KH <greg@kroah.com>, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory()
+ API
+In-Reply-To: <201008191818.36068.mitov@issp.bas.bg>
+Message-ID: <Pine.LNX.4.64.1008202148110.6103@axis700.grange>
+References: <201008191818.36068.mitov@issp.bas.bg>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=racCPiDmbL0pEfH3Ew2_gJzJwmR3B1Vt=AZuz@mail.gmail.com>
-References: <20100818203143.735033743@clark.site> <1282308887.3170.5439.camel@zakaz.uk.xensource.com>
- <AANLkTin7L=v1GR2=U-mvESyrP2vySYLRa4U-fh9-L38F@mail.gmail.com>
- <AANLkTim1ABgiwscmaTZxeO9FxB4FacUNe0ahzUctQkn6@mail.gmail.com>
- <AANLkTinqUa6qwFKCjG0ww7Rq4ath0LtNH5yuMNOai=Z7@mail.gmail.com>
- <1282326182.29609.789.camel@localhost.localdomain> <AANLkTi=racCPiDmbL0pEfH3Ew2_gJzJwmR3B1Vt=AZuz@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 20 Aug 2010 12:43:28 -0700
-Message-ID: <AANLkTimTZKzXfBJCbzCyq3LwKvn3aCqyHjd5VXhnejfV@mail.gmail.com>
-Subject: Re: [2/3] mm: fix up some user-visible effects of the stack guard page
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 11:59 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> It should be a pretty straightforward search-and-replace. And almost
-> all of it would be real cleanups.
+On Thu, 19 Aug 2010, Marin Mitov wrote:
 
-I take that back. Cleanups - probably. Simple search-and-replace? No.
-That vm_next thing is all over the place, and all of the code knows
-that the last vma has a vm_next that is NULL.
+> Hi all,
+> 
+> struct device contains a member: struct dma_coherent_mem *dma_mem;
+> to hold information for a piece of memory declared dma-coherent.
+> Alternatively the same member could also be used to hold preallocated
+> dma-coherent memory for latter per-device use.
+> 
+> This tric is already used in drivers/staging/dt3155v4l.c
+> dt3155_alloc_coherent()/dt3155_free_coherent()
+> 
+> Here proposed for general use by popular demand from video4linux folks.
+> Helps for videobuf-dma-contig framework.
 
-So switching it to the "<linux/list.h>" kind of accessors would be a major pain.
+Ok, so, we've got two solutions to this problem submitted on the same 
+day;) Following this thread:
 
-There's also lots of really ugly code that is all about the "we can't
-easily get to the 'prev' entry in the list". Stuff that would be
-cleaned up if we just had a vm_prev, but where the cleanups is just
-pretty painful.
+http://marc.info/?t=128128236400002&r=1&w=2
 
-> And it would be trivial to change the loops like
->
->    for (vma = mm->mmap; vma; vma = vma->vm_next)
->
-> into basically just
->
->   list_for_each_entry(vma, &mm->mmap, vm_list)
+on the ARM Linux kernel ML, I submitted a patch series
 
-Yeah, no. It looks like adding a "vm_prev" and doing a regular doubly
-linked list thing wouldn't be too bad. But switching over to the
-list.h version looks like a nightmare.
+http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
 
-Too bad.
+with a couple of fixes and improvements, the actual new API and a use 
+example. My approach is slightly different, in that instead of requiring 
+drivers to issue two calls - one to reserve RAM (usually 
+dma_alloc_coherent()) and one to assign it to a device, my patch follows 
+the suggestion from Russell King from the first thread and unites these 
+two operations. So, now we have a choice;) Unfortunately, these two patch 
+series went to orthogonal sets of recepients, I'm trying to fix this by 
+adding a couple of CC entries.
 
-                  Linus
+Thanks
+Guennadi
+
+> 
+> Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+> 
+> ======================================================================
+> --- a/drivers/base/dma-coherent.c	2010-08-19 15:50:42.000000000 +0300
+> +++ b/drivers/base/dma-coherent.c	2010-08-19 17:27:56.000000000 +0300
+> @@ -93,6 +93,83 @@ void *dma_mark_declared_memory_occupied(
+>  EXPORT_SYMBOL(dma_mark_declared_memory_occupied);
+>  
+>  /**
+> + * dma_reserve_coherent_memory() - reserve coherent memory for per-device use
+> + *
+> + * @dev:	device from which we allocate memory
+> + * @size:	size of requested memory area in bytes
+> + * @flags:	same as in dma_declare_coherent_memory()
+> + *
+> + * This function reserves coherent memory allocating it early (during probe())
+> + * to support latter allocations from per-device coherent memory pools.
+> + * For a given device one could use either dma_declare_coherent_memory() or
+> + * dma_reserve_coherent_memory(), but not both, becase the result of these
+> + * functions is stored in a single struct device member - dma_mem
+> + *
+> + * Returns DMA_MEMORY_MAP on success, or 0 if failed.
+> + * (same as dma_declare_coherent_memory()
+> + */
+> +int dma_reserve_coherent_memory(struct device *dev, size_t size, int flags)
+> +{
+> +	struct dma_coherent_mem *mem;
+> +	dma_addr_t dev_base;
+> +	int pages = size >> PAGE_SHIFT;
+> +	int bitmap_size = BITS_TO_LONGS(pages) * sizeof(long);
+> +
+> +	if ((flags & DMA_MEMORY_MAP) == 0)
+> +		goto out;
+> +	if (!size)
+> +		goto out;
+> +	if (dev->dma_mem)
+> +		goto out;
+> +
+> +	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+> +	if (!mem)
+> +		goto out;
+> +	mem->virt_base = dma_alloc_coherent(dev, size, &dev_base,
+> +							DT3155_COH_FLAGS);
+> +	if (!mem->virt_base)
+> +		goto err_alloc_coherent;
+> +	mem->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+> +	if (!mem->bitmap)
+> +		goto err_bitmap;
+> +
+> +	mem->device_base = dev_base;
+> +	mem->size = pages;
+> +	mem->flags = flags;
+> +	dev->dma_mem = mem;
+> +	return DMA_MEMORY_MAP;
+> +
+> +err_bitmap:
+> +	dma_free_coherent(dev, size, mem->virt_base, dev_base);
+> +err_alloc_coherent:
+> +	kfree(mem);
+> +out:
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(dma_reserve_coherent_memory);
+> +
+> +/**
+> + * dma_free_reserved_memory() - free the reserved dma-coherent memoty
+> + *
+> + * @dev:	device for which we free the dma-coherent memory
+> + *
+> + * same as dma_release_declared_memory()
+> + */
+> +void dma_free_reserved_memory(struct device *dev)
+> +{
+> +	struct dma_coherent_mem *mem = dev->dma_mem;
+> +
+> +	if (!mem)
+> +		return;
+> +	dev->dma_mem = NULL;
+> +	dma_free_coherent(dev, mem->size << PAGE_SHIFT,
+> +					mem->virt_base, mem->device_base);
+> +	kfree(mem->bitmap);
+> +	kfree(mem);
+> +}
+> +EXPORT_SYMBOL(dma_free_reserved_memory);
+> +
+> +/**
+>   * dma_alloc_from_coherent() - try to allocate memory from the per-device coherent area
+>   *
+>   * @dev:	device from which we allocate memory
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
