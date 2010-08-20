@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab0HTMk2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 08:40:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40156 "EHLO hera.kernel.org"
+	id S1751920Ab0HTMko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 08:40:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40170 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751504Ab0HTMk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 08:40:26 -0400
-Date: Fri, 20 Aug 2010 12:39:54 GMT
+	id S1751846Ab0HTMkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 08:40:42 -0400
+Date: Fri, 20 Aug 2010 12:40:18 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
         hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
@@ -17,33 +17,30 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui browser: Abstract some more slang operations
-Message-ID: <tip-8f9bbc408b6f704e84d0ae78e6093005ad58d4fe@git.kernel.org>
-Git-Commit-ID: 8f9bbc408b6f704e84d0ae78e6093005ad58d4fe
+Subject: [tip:perf/core] perf ui browser: Return the exit key in all browsers
+Message-ID: <tip-b50e003db13848dd74572ffd221047683313981d@git.kernel.org>
+Git-Commit-ID: b50e003db13848dd74572ffd221047683313981d
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 12:39:55 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 Aug 2010 12:40:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8f9bbc408b6f704e84d0ae78e6093005ad58d4fe
-Gitweb:     http://git.kernel.org/tip/8f9bbc408b6f704e84d0ae78e6093005ad58d4fe
+Commit-ID:  b50e003db13848dd74572ffd221047683313981d
+Gitweb:     http://git.kernel.org/tip/b50e003db13848dd74572ffd221047683313981d
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 11 Aug 2010 14:51:47 -0300
+AuthorDate: Wed, 11 Aug 2010 10:07:43 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 19 Aug 2010 19:33:16 -0300
+CommitDate: Thu, 19 Aug 2010 19:39:52 -0300
 
-perf ui browser: Abstract some more slang operations
+perf ui browser: Return the exit key in all browsers
 
-Browsers don't have to deal with absolute coordinates, just using (row,
-column) and leaving the rest to ui_browser is better and removes one
-more UI backend detail from the browsers.
-
-Also shorten the percent_color setting idiom, removing some more direct
-libslang calls.
+Make all browsers return the exit key uniformly and remove the
+newtExitStruct parameter, removing one more newt specific thing from the
+ui API.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -52,198 +49,462 @@ Cc: Stephane Eranian <eranian@google.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browser.c           |   47 ++++++++++++++++---------------
- tools/perf/util/ui/browser.h           |    5 +++-
- tools/perf/util/ui/browsers/annotate.c |    8 ++---
- tools/perf/util/ui/browsers/hists.c    |   12 ++++----
- tools/perf/util/ui/browsers/map.c      |    3 +-
- 5 files changed, 38 insertions(+), 37 deletions(-)
+ tools/perf/builtin-annotate.c          |   17 ++--
+ tools/perf/util/ui/browser.c           |   16 ++--
+ tools/perf/util/ui/browser.h           |    2 +-
+ tools/perf/util/ui/browsers/annotate.c |   18 ++---
+ tools/perf/util/ui/browsers/hists.c    |  132 ++++++++++++++------------------
+ tools/perf/util/ui/browsers/map.c      |   20 +++--
+ tools/perf/util/util.h                 |   13 ---
+ 7 files changed, 93 insertions(+), 125 deletions(-)
 
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 1478dc6..20ee21d 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -321,7 +321,7 @@ static int hist_entry__tty_annotate(struct hist_entry *he)
+ 
+ static void hists__find_annotations(struct hists *self)
+ {
+-	struct rb_node *first = rb_first(&self->entries), *nd = first;
++	struct rb_node *nd = rb_first(&self->entries), *next;
+ 	int key = KEY_RIGHT;
+ 
+ 	while (nd) {
+@@ -343,20 +343,19 @@ find_next:
+ 
+ 		if (use_browser > 0) {
+ 			key = hist_entry__tui_annotate(he);
+-			if (is_exit_key(key))
+-				break;
+ 			switch (key) {
+ 			case KEY_RIGHT:
+-			case '\t':
+-				nd = rb_next(nd);
++				next = rb_next(nd);
+ 				break;
+ 			case KEY_LEFT:
+-				if (nd == first)
+-					continue;
+-				nd = rb_prev(nd);
+-			default:
++				next = rb_prev(nd);
+ 				break;
++			default:
++				return;
+ 			}
++
++			if (next != NULL)
++				nd = next;
+ 		} else {
+ 			hist_entry__tty_annotate(he);
+ 			nd = rb_next(nd);
 diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
-index 66f2d58..d237410 100644
+index d237410..669a980 100644
 --- a/tools/perf/util/ui/browser.c
 +++ b/tools/perf/util/ui/browser.c
-@@ -1,16 +1,6 @@
--#define _GNU_SOURCE
--#include <stdio.h>
--#undef _GNU_SOURCE
--/*
-- * slang versions <= 2.0.6 have a "#if HAVE_LONG_LONG" that breaks
-- * the build if it isn't defined. Use the equivalent one that glibc
-- * has on features.h.
-- */
--#include <features.h>
--#ifndef HAVE_LONG_LONG
--#define HAVE_LONG_LONG __GLIBC_HAVE_LONG_LONG
--#endif
- #include <slang.h>
-+#include "libslang.h"
-+#include <linux/compiler.h>
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <stdlib.h>
-@@ -19,17 +9,11 @@
- #include "helpline.h"
- #include "../color.h"
- #include "../util.h"
--
--#if SLANG_VERSION < 20104
--#define sltt_set_color(obj, name, fg, bg) \
--	SLtt_set_color(obj,(char *)name, (char *)fg, (char *)bg)
--#else
--#define sltt_set_color SLtt_set_color
--#endif
-+#include <stdio.h>
- 
- newtComponent newt_form__new(void);
- 
--int ui_browser__percent_color(double percent, bool current)
-+static int ui_browser__percent_color(double percent, bool current)
- {
- 	if (current)
- 		return HE_COLORSET_SELECTED;
-@@ -40,6 +24,23 @@ int ui_browser__percent_color(double percent, bool current)
- 	return HE_COLORSET_NORMAL;
+@@ -204,21 +204,21 @@ int ui_browser__refresh(struct ui_browser *self)
+ 	return 0;
  }
  
-+void ui_browser__set_color(struct ui_browser *self __used, int color)
-+{
-+	SLsmg_set_color(color);
-+}
-+
-+void ui_browser__set_percent_color(struct ui_browser *self,
-+				   double percent, bool current)
-+{
-+	 int color = ui_browser__percent_color(percent, current);
-+	 ui_browser__set_color(self, color);
-+}
-+
-+void ui_browser__gotorc(struct ui_browser *self, int y, int x)
-+{
-+	SLsmg_gotorc(self->y + y, self->x + x);
-+}
-+
- void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whence)
+-int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
++int ui_browser__run(struct ui_browser *self)
  {
- 	struct list_head *head = self->entries;
-@@ -111,7 +112,7 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
- 	nd = self->top;
++	struct newtExitStruct es;
++
+ 	if (ui_browser__refresh(self) < 0)
+ 		return -1;
  
- 	while (nd != NULL) {
--		SLsmg_gotorc(self->y + row, self->x);
-+		ui_browser__gotorc(self, row, 0);
- 		self->write(self, nd, row);
- 		if (++row == self->height)
+ 	while (1) {
+ 		off_t offset;
+ 
+-		newtFormRun(self->form, es);
++		newtFormRun(self->form, &es);
+ 
+-		if (es->reason != NEWT_EXIT_HOTKEY)
++		if (es.reason != NEWT_EXIT_HOTKEY)
  			break;
-@@ -196,7 +197,7 @@ int ui_browser__refresh(struct ui_browser *self)
- 
- 	newtScrollbarSet(self->sb, self->index, self->nr_entries - 1);
- 	row = self->refresh(self);
--	SLsmg_set_color(HE_COLORSET_NORMAL);
-+	ui_browser__set_color(self, HE_COLORSET_NORMAL);
- 	SLsmg_fill_region(self->y + row, self->x,
- 			  self->height - row, self->width, ' ');
- 
-@@ -294,7 +295,7 @@ unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
- 	pos = self->top;
- 
- 	list_for_each_from(pos, head) {
--		SLsmg_gotorc(self->y + row, self->x);
-+		ui_browser__gotorc(self, row, 0);
- 		self->write(self, pos, row);
- 		if (++row == self->height)
+-		if (is_exit_key(es->u.key))
+-			return es->u.key;
+-		switch (es->u.key) {
++		switch (es.u.key) {
+ 		case NEWT_KEY_DOWN:
+ 			if (self->index == self->nr_entries - 1)
+ 				break;
+@@ -275,12 +275,12 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ 			self->seek(self, -offset, SEEK_END);
  			break;
+ 		default:
+-			return es->u.key;
++			return es.u.key;
+ 		}
+ 		if (ui_browser__refresh(self) < 0)
+ 			return -1;
+ 	}
+-	return 0;
++	return -1;
+ }
+ 
+ unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
 diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
-index 0b9f829..27c23c2 100644
+index 27c23c2..332a675 100644
 --- a/tools/perf/util/ui/browser.h
 +++ b/tools/perf/util/ui/browser.h
-@@ -25,11 +25,14 @@ struct ui_browser {
- };
- 
- 
--int ui_browser__percent_color(double percent, bool current);
-+void ui_browser__set_color(struct ui_browser *self, int color);
-+void ui_browser__set_percent_color(struct ui_browser *self,
-+				   double percent, bool current);
- bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row);
- void ui_browser__refresh_dimensions(struct ui_browser *self);
- void ui_browser__reset_index(struct ui_browser *self);
- 
-+void ui_browser__gotorc(struct ui_browser *self, int y, int x);
- int ui_browser__show(struct ui_browser *self, const char *title,
+@@ -37,7 +37,7 @@ int ui_browser__show(struct ui_browser *self, const char *title,
  		     const char *helpline, ...);
  void ui_browser__hide(struct ui_browser *self);
+ int ui_browser__refresh(struct ui_browser *self);
+-int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es);
++int ui_browser__run(struct ui_browser *self);
+ 
+ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence);
+ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self);
 diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index a90273e..a00d529 100644
+index a00d529..a8bc2c0 100644
 --- a/tools/perf/util/ui/browsers/annotate.c
 +++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -40,14 +40,12 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+@@ -133,14 +133,14 @@ static void annotate_browser__set_top(struct annotate_browser *self,
+ 	self->curr_hot = nd;
+ }
  
- 	if (ol->offset != -1) {
- 		struct objdump_line_rb_node *olrb = objdump_line__rb(ol);
--		int color = ui_browser__percent_color(olrb->percent, current_entry);
--		SLsmg_set_color(color);
-+		ui_browser__set_percent_color(self, olrb->percent, current_entry);
- 		slsmg_printf(" %7.2f ", olrb->percent);
- 		if (!current_entry)
--			SLsmg_set_color(HE_COLORSET_CODE);
-+			ui_browser__set_color(self, HE_COLORSET_CODE);
- 	} else {
--		int color = ui_browser__percent_color(0, current_entry);
--		SLsmg_set_color(color);
-+		ui_browser__set_percent_color(self, 0, current_entry);
- 		slsmg_write_nstring(" ", 9);
+-static int annotate_browser__run(struct annotate_browser *self,
+-				 struct newtExitStruct *es)
++static int annotate_browser__run(struct annotate_browser *self)
+ {
+ 	struct rb_node *nd;
+ 	struct hist_entry *he = self->b.priv;
++	int key;
+ 
+ 	if (ui_browser__show(&self->b, he->ms.sym->name,
+-			     "<- or ESC: exit, TAB/shift+TAB: cycle thru samples") < 0)
++			     "<-, -> or ESC: exit, TAB/shift+TAB: cycle thru samples") < 0)
+ 		return -1;
+ 
+ 	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+@@ -153,12 +153,9 @@ static int annotate_browser__run(struct annotate_browser *self,
  	}
  
+ 	while (1) {
+-		ui_browser__run(&self->b, es);
++		key = ui_browser__run(&self->b);
+ 
+-		if (es->reason != NEWT_EXIT_HOTKEY)
+-			break;
+-
+-		switch (es->u.key) {
++		switch (key) {
+ 		case NEWT_KEY_TAB:
+ 			nd = rb_prev(nd);
+ 			if (nd == NULL)
+@@ -177,12 +174,11 @@ static int annotate_browser__run(struct annotate_browser *self,
+ 	}
+ out:
+ 	ui_browser__hide(&self->b);
+-	return es->u.key;
++	return key;
+ }
+ 
+ int hist_entry__tui_annotate(struct hist_entry *self)
+ {
+-	struct newtExitStruct es;
+ 	struct objdump_line *pos, *n;
+ 	struct objdump_line_rb_node *rbpos;
+ 	LIST_HEAD(head);
+@@ -230,7 +226,7 @@ int hist_entry__tui_annotate(struct hist_entry *self)
+ 		annotate_browser__set_top(&browser, browser.curr_hot);
+ 
+ 	browser.b.width += 18; /* Percentage */
+-	ret = annotate_browser__run(&browser, &es);
++	ret = annotate_browser__run(&browser);
+ 	list_for_each_entry_safe(pos, n, &head, node) {
+ 		list_del(&pos->node);
+ 		objdump_line__free(pos);
 diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index dafdf67..5723091 100644
+index 5723091..1735c48 100644
 --- a/tools/perf/util/ui/browsers/hists.c
 +++ b/tools/perf/util/ui/browsers/hists.c
-@@ -341,8 +341,8 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
- 				*is_current_entry = true;
- 			}
+@@ -195,9 +195,9 @@ static bool hist_browser__toggle_fold(struct hist_browser *self)
+ 	return false;
+ }
  
--			SLsmg_set_color(color);
--			SLsmg_gotorc(self->b.y + row, self->b.x);
-+			ui_browser__set_color(&self->b, color);
-+			ui_browser__gotorc(&self->b, row, 0);
- 			slsmg_write_nstring(" ", offset + extra_offset);
- 			slsmg_printf("%c ", folded_sign);
- 			slsmg_write_nstring(str, width);
-@@ -405,8 +405,8 @@ static int hist_browser__show_callchain_node(struct hist_browser *self,
+-static int hist_browser__run(struct hist_browser *self, const char *title,
+-			     struct newtExitStruct *es)
++static int hist_browser__run(struct hist_browser *self, const char *title)
+ {
++	int key;
+ 	char str[256], unit;
+ 	unsigned long nr_events = self->hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 
+@@ -227,11 +227,9 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
+ 	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
+ 
+ 	while (1) {
+-		ui_browser__run(&self->b, es);
++		key = ui_browser__run(&self->b);
+ 
+-		if (es->reason != NEWT_EXIT_HOTKEY)
+-			break;
+-		switch (es->u.key) {
++		switch (key) {
+ 		case 'D': { /* Debug */
+ 			static int seq;
+ 			struct hist_entry *h = rb_entry(self->b.top,
+@@ -251,12 +249,12 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
+ 				break;
+ 			/* fall thru */
+ 		default:
+-			return 0;
++			goto out;
+ 		}
+ 	}
+-
++out:
+ 	ui_browser__hide(&self->b);
+-	return 0;
++	return key;
+ }
+ 
+ static char *callchain_list__sym_name(struct callchain_list *self,
+@@ -687,8 +685,6 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
+ 
+ static void hist_browser__delete(struct hist_browser *self)
+ {
+-	newtFormDestroy(self->b.form);
+-	newtPopWindow();
+ 	free(self);
+ }
+ 
+@@ -725,7 +721,6 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
+ 	struct pstack *fstack;
+ 	const struct thread *thread_filter = NULL;
+ 	const struct dso *dso_filter = NULL;
+-	struct newtExitStruct es;
+ 	char msg[160];
+ 	int key = -1;
+ 
+@@ -749,70 +744,63 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
+ 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+ 		    browse_map = -2;
+ 
+-		if (hist_browser__run(browser, msg, &es))
+-			break;
++		key = hist_browser__run(browser, msg);
+ 
+ 		thread = hist_browser__selected_thread(browser);
+ 		dso = browser->selection->map ? browser->selection->map->dso : NULL;
+ 
+-		if (es.reason == NEWT_EXIT_HOTKEY) {
+-			key = es.u.key;
+-
+-			switch (key) {
+-			case NEWT_KEY_F1:
+-				goto do_help;
+-			case NEWT_KEY_TAB:
+-			case NEWT_KEY_UNTAB:
+-				/*
+-				 * Exit the browser, let hists__browser_tree
+-				 * go to the next or previous
+-				 */
+-				goto out_free_stack;
+-			default:;
+-			}
+-
+-			switch (key) {
+-			case 'a':
+-				if (browser->selection->map == NULL &&
+-				    browser->selection->map->dso->annotate_warned)
+-					continue;
+-				goto do_annotate;
+-			case 'd':
+-				goto zoom_dso;
+-			case 't':
+-				goto zoom_thread;
+-			case 'h':
+-			case '?':
+-do_help:
+-				ui__help_window("->        Zoom into DSO/Threads & Annotate current symbol\n"
+-						"<-        Zoom out\n"
+-						"a         Annotate current symbol\n"
+-						"h/?/F1    Show this window\n"
+-						"d         Zoom into current DSO\n"
+-						"t         Zoom into current Thread\n"
+-						"q/CTRL+C  Exit browser");
++		switch (key) {
++		case NEWT_KEY_F1:
++			goto do_help;
++		case NEWT_KEY_TAB:
++		case NEWT_KEY_UNTAB:
++			/*
++			 * Exit the browser, let hists__browser_tree
++			 * go to the next or previous
++			 */
++			goto out_free_stack;
++		case 'a':
++			if (browser->selection->map == NULL &&
++			    browser->selection->map->dso->annotate_warned)
+ 				continue;
+-			default:;
+-			}
+-			if (is_exit_key(key)) {
+-				if (key == NEWT_KEY_ESCAPE &&
+-				    !ui__dialog_yesno("Do you really want to exit?"))
+-					continue;
+-				break;
+-			}
+-
+-			if (es.u.key == NEWT_KEY_LEFT) {
+-				const void *top;
++			goto do_annotate;
++		case 'd':
++			goto zoom_dso;
++		case 't':
++			goto zoom_thread;
++		case 'h':
++		case '?':
++do_help:
++			ui__help_window("->        Zoom into DSO/Threads & Annotate current symbol\n"
++					"<-        Zoom out\n"
++					"a         Annotate current symbol\n"
++					"h/?/F1    Show this window\n"
++					"d         Zoom into current DSO\n"
++					"t         Zoom into current Thread\n"
++					"q/CTRL+C  Exit browser");
++			continue;
++		case NEWT_KEY_ENTER:
++		case NEWT_KEY_RIGHT:
++			/* menu */
++			break;
++		case NEWT_KEY_LEFT: {
++			const void *top;
+ 
+-				if (pstack__empty(fstack))
+-					continue;
+-				top = pstack__pop(fstack);
+-				if (top == &dso_filter)
+-					goto zoom_out_dso;
+-				if (top == &thread_filter)
+-					goto zoom_out_thread;
++			if (pstack__empty(fstack))
+ 				continue;
+-			}
++			top = pstack__pop(fstack);
++			if (top == &dso_filter)
++				goto zoom_out_dso;
++			if (top == &thread_filter)
++				goto zoom_out_thread;
++			continue;
++		}
++		case NEWT_KEY_ESCAPE:
++			if (!ui__dialog_yesno("Do you really want to exit?"))
++				continue;
++			/* Fall thru */
++		default:
++			goto out_free_stack;
  		}
  
- 		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
--		SLsmg_gotorc(self->b.y + row, self->b.x);
--		SLsmg_set_color(color);
-+		ui_browser__gotorc(&self->b, row, 0);
-+		ui_browser__set_color(&self->b, color);
- 		slsmg_write_nstring(" ", offset);
- 		slsmg_printf("%c ", folded_sign);
- 		slsmg_write_nstring(s, width - 2);
-@@ -484,8 +484,8 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 				color = HE_COLORSET_NORMAL;
- 		}
+ 		if (browser->selection->sym != NULL &&
+@@ -925,10 +913,6 @@ int hists__tui_browse_tree(struct rb_root *self, const char *help)
+ 		const char *ev_name = __event_name(hists->type, hists->config);
  
--		SLsmg_set_color(color);
--		SLsmg_gotorc(self->b.y + row, self->b.x);
-+		ui_browser__set_color(&self->b, color);
-+		ui_browser__gotorc(&self->b, row, 0);
- 		if (symbol_conf.use_callchain) {
- 			slsmg_printf("%c ", folded_sign);
- 			width -= 2;
+ 		key = hists__browse(hists, help, ev_name);
+-
+-		if (is_exit_key(key))
+-			break;
+-
+ 		switch (key) {
+ 		case NEWT_KEY_TAB:
+ 			next = rb_next(nd);
+@@ -940,7 +924,7 @@ int hists__tui_browse_tree(struct rb_root *self, const char *help)
+ 				continue;
+ 			nd = rb_prev(nd);
+ 		default:
+-			break;
++			return key;
+ 		}
+ 	}
+ 
 diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
-index 142b825..733daba 100644
+index 733daba..16b7d70 100644
 --- a/tools/perf/util/ui/browsers/map.c
 +++ b/tools/perf/util/ui/browsers/map.c
-@@ -56,9 +56,8 @@ static void map_browser__write(struct ui_browser *self, void *nd, int row)
- 	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
- 	struct map_browser *mb = container_of(self, struct map_browser, b);
- 	bool current_entry = ui_browser__is_current_entry(self, row);
--	int color = ui_browser__percent_color(0, current_entry);
+@@ -97,31 +97,34 @@ static int map_browser__search(struct map_browser *self)
+ 	return 0;
+ }
  
--	SLsmg_set_color(color);
-+	ui_browser__set_percent_color(self, 0, current_entry);
- 	slsmg_printf("%*llx %*llx %c ",
- 		     mb->addrlen, sym->start, mb->addrlen, sym->end,
- 		     sym->binding == STB_GLOBAL ? 'g' :
+-static int map_browser__run(struct map_browser *self, struct newtExitStruct *es)
++static int map_browser__run(struct map_browser *self)
+ {
++	int key;
++
+ 	if (ui_browser__show(&self->b, self->map->dso->long_name,
+ 			     "Press <- or ESC to exit, %s / to search",
+ 			     verbose ? "" : "restart with -v to use") < 0)
+ 		return -1;
+ 
+ 	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
++	newtFormAddHotKey(self->b.form, NEWT_KEY_ESCAPE);
++	newtFormAddHotKey(self->b.form, 'Q');
++	newtFormAddHotKey(self->b.form, 'q');
++	newtFormAddHotKey(self->b.form, CTRL('c'));
+ 	if (verbose)
+ 		newtFormAddHotKey(self->b.form, '/');
+ 
+ 	while (1) {
+-		ui_browser__run(&self->b, es);
++		key = ui_browser__run(&self->b);
+ 
+-		if (es->reason != NEWT_EXIT_HOTKEY)
+-			break;
+-		if (verbose && es->u.key == '/')
++		if (verbose && key == '/')
+ 			map_browser__search(self);
+ 		else
+ 			break;
+ 	}
+ 
+ 	ui_browser__hide(&self->b);
+-	return 0;
++	return key;
+ }
+ 
+ int map__browse(struct map *self)
+@@ -135,7 +138,6 @@ int map__browse(struct map *self)
+ 		},
+ 		.map = self,
+ 	};
+-	struct newtExitStruct es;
+ 	struct rb_node *nd;
+ 	char tmp[BITS_PER_LONG / 4];
+ 	u64 maxaddr = 0;
+@@ -156,5 +158,5 @@ int map__browse(struct map *self)
+ 
+ 	mb.addrlen = snprintf(tmp, sizeof(tmp), "%llx", maxaddr);
+ 	mb.b.width += mb.addrlen * 2 + 4 + mb.namelen;
+-	return map_browser__run(&mb, &es);
++	return map_browser__run(&mb);
+ }
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index f380fed..7562707 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -266,19 +266,6 @@ bool strglobmatch(const char *str, const char *pat);
+ bool strlazymatch(const char *str, const char *pat);
+ unsigned long convert_unit(unsigned long value, char *unit);
+ 
+-#ifndef ESC
+-#define ESC 27
+-#endif
+-
+-static inline bool is_exit_key(int key)
+-{
+-	char up;
+-	if (key == CTRL('c') || key == ESC)
+-		return true;
+-	up = toupper(key);
+-	return up == 'Q';
+-}
+-
+ #define _STR(x) #x
+ #define STR(x) _STR(x)
+ 
