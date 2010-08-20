@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab0HTNN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 09:13:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47401 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab0HTNNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 09:13:55 -0400
-Subject: Re: struct fanotify_event_metadata
-From: Eric Paris <eparis@redhat.com>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
-        Andreas Gruenbacher <agruen@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <m3pqxd7ift.fsf@hase.home>
-References: <m21va1ozqx.fsf@igel.home>
-	 <201008191644.29299.tvrtko.ursulin@sophos.com>
-	 <1282240426.21419.1716.camel@acb20005.ipt.aol.com>
-	 <201008201002.16235.tvrtko.ursulin@sophos.com>  <m3pqxd7ift.fsf@hase.home>
+	id S1752060Ab0HTNQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 09:16:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37308 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab0HTNQe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 09:16:34 -0400
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-mm@kvack.org, Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <cover.1282286941.git.m.nazarewicz@samsung.com>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Aug 2010 09:13:36 -0400
-Message-ID: <1282310016.21419.2161.camel@acb20005.ipt.aol.com>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 20 Aug 2010 15:15:10 +0200
+Message-ID: <1282310110.2605.976.camel@laptop>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 11:16 +0200, Andreas Schwab wrote:
-> Tvrtko Ursulin <tvrtko.ursulin@sophos.com> writes:
+On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
+> Hello everyone,
 > 
-> > Shrink pid field in the fanotify_event_metadata to 32-bit to match
-> > the kernel representation. Pull mask field up since it logically
-> > comes before event auxiliary data and also makes for a nicer
-> > alignment.
+> The following patchset implements a Contiguous Memory Allocator.  For
+> those who have not yet stumbled across CMA an excerpt from
+> documentation:
 > 
-> That won't buy you much wrt. alignment though, due to the packed
-> attribute.
+>    The Contiguous Memory Allocator (CMA) is a framework, which allows
+>    setting up a machine-specific configuration for physically-contiguous
+>    memory management. Memory for devices is then allocated according
+>    to that configuration.
+> 
+>    The main role of the framework is not to allocate memory, but to
+>    parse and manage memory configurations, as well as to act as an
+>    in-between between device drivers and pluggable allocators. It is
+>    thus not tied to any memory allocation method or strategy.
+> 
+> For more information please refer to the second patch from the
+> patchset which contains the documentation.
 
-Can you help me understand the packed attribute and why it hurts in this
-case?  It's not going to change the alignment or placement of anything
-and I saw it as just being needed to make sure everything would continue
-to work in the future.
+So the idea is to grab a large chunk of memory at boot time and then
+later allow some device to use it?
 
-I'm going to compile a couple of test programs (I only have x86 and
-x86_64) to see if I can find what the assembly is doing different but
-maybe you can point me at the information more easily?
+I'd much rather we'd improve the regular page allocator to be smarter
+about this. We recently added a lot of smarts to it like memory
+compaction, which allows large gobs of contiguous memory to be freed for
+things like huge pages.
 
--Eric
+If you want guarantees you can free stuff, why not add constraints to
+the page allocation type and only allow MIGRATE_MOVABLE pages inside a
+certain region, those pages are easily freed/moved aside to satisfy
+large contiguous allocations.
+
+Also, please remove --chain-reply-to from your git config. You're using
+1.7 which should do the right thing (--no-chain-reply-to) by default.
 
 
