@@ -1,750 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab0HTIsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 04:48:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34483 "EHLO mx1.redhat.com"
+	id S1753124Ab0HTItP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 04:49:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752895Ab0HTIq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 04:46:59 -0400
+	id S1752851Ab0HTIq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 04:46:57 -0400
 From: =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>
 Cc: linux-crypto@vger.kernel.org,
         Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
         Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
-Subject: [PATCH 14/19] Add most operations on key objects.
-Date: Fri, 20 Aug 2010 10:45:58 +0200
-Message-Id: <1282293963-27807-16-git-send-email-mitr@redhat.com>
+Subject: [PATCH 13/19] Add /dev/crypto auditing infrastructure
+Date: Fri, 20 Aug 2010 10:45:57 +0200
+Message-Id: <1282293963-27807-15-git-send-email-mitr@redhat.com>
 In-Reply-To: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This includes:
-- ncr_key_init
-- ncr_key_deinit
-- ncr_key_export (as plaintext)
-- ncr_key_import
-- ncr_key_generate
-- ncr_key_generate_pair
-- ncr_key_derive
-- ncr_key_get_info
-and supporting infrastructure.
+Posted separately for review on linux-audit
 ---
- crypto/userspace/Makefile  |    2 +-
- crypto/userspace/ncr-key.c |  689 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 690 insertions(+), 1 deletions(-)
- create mode 100644 crypto/userspace/ncr-key.c
+ include/linux/audit.h |   38 ++++++++++++++
+ kernel/auditfilter.c  |    2 +
+ kernel/auditsc.c      |  136 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 176 insertions(+), 0 deletions(-)
 
-diff --git a/crypto/userspace/Makefile b/crypto/userspace/Makefile
-index fa4168d..454ed9d 100644
---- a/crypto/userspace/Makefile
-+++ b/crypto/userspace/Makefile
-@@ -63,7 +63,7 @@ TOMCRYPT_OBJECTS = libtomcrypt/misc/zeromem.o libtomcrypt/misc/crypt/crypt_argch
- 	libtomcrypt/misc/pk_get_oid.o libtomcrypt/pk/asn1/der/x509/der_encode_subject_public_key_info.o \
- 	libtomcrypt/pk/asn1/der/x509/der_decode_subject_public_key_info.o
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 3c7a358..8faa4e0 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -122,6 +122,9 @@
+ #define AUDIT_MAC_UNLBL_STCADD	1416	/* NetLabel: add a static label */
+ #define AUDIT_MAC_UNLBL_STCDEL	1417	/* NetLabel: del a static label */
  
--cryptodev-objs := cryptodev_main.o cryptodev_cipher.o ncr-limits.o \
-+cryptodev-objs := cryptodev_main.o cryptodev_cipher.o ncr-key.o ncr-limits.o \
- 	ncr-pk.o ncr-sessions.o ncr-dh.o utils.o $(TOMMATH_OBJECTS) \
- 	$(TOMCRYPT_OBJECTS)
- 
-diff --git a/crypto/userspace/ncr-key.c b/crypto/userspace/ncr-key.c
-new file mode 100644
-index 0000000..b90a4fc
---- /dev/null
-+++ b/crypto/userspace/ncr-key.c
-@@ -0,0 +1,689 @@
-+/*
-+ * New driver for /dev/crypto device (aka CryptoDev)
-+ *
-+ * Copyright (c) 2010 Katholieke Universiteit Leuven
-+ *
-+ * Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
-+ *
-+ * This file is part of linux cryptodev.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * 
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ * 
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
++#define AUDIT_CRYPTO_STORAGE_KEY    1600 /* Key storage key configured */
++#define AUDIT_CRYPTO_USERSPACE_OP   1601 /* User-space crypto operation */
 +
-+#include <linux/audit.h>
-+#include <linux/ioctl.h>
-+#include <linux/mm.h>
+ #define AUDIT_FIRST_KERN_ANOM_MSG   1700
+ #define AUDIT_LAST_KERN_ANOM_MSG    1799
+ #define AUDIT_ANOM_PROMISCUOUS      1700 /* Device changed promiscuous mode */
+@@ -207,6 +210,7 @@
+ #define AUDIT_OBJ_TYPE	21
+ #define AUDIT_OBJ_LEV_LOW	22
+ #define AUDIT_OBJ_LEV_HIGH	23
++#define AUDIT_CRYPTO_OP	24
+ 
+ 				/* These are ONLY useful when checking
+ 				 * at syscall exit time (AUDIT_AT_EXIT). */
+@@ -314,6 +318,20 @@ enum {
+ #define AUDIT_PERM_READ		4
+ #define AUDIT_PERM_ATTR		8
+ 
++#define AUDIT_CRYPTO_OP_CONTEXT_NEW	1
++#define AUDIT_CRYPTO_OP_CONTEXT_DEL	2
++#define AUDIT_CRYPTO_OP_SESSION_INIT	3
++#define AUDIT_CRYPTO_OP_SESSION_OP	4
++#define AUDIT_CRYPTO_OP_SESSION_FINAL	5
++#define AUDIT_CRYPTO_OP_KEY_IMPORT	6
++#define AUDIT_CRYPTO_OP_KEY_EXPORT	7
++#define AUDIT_CRYPTO_OP_KEY_WRAP	8
++#define AUDIT_CRYPTO_OP_KEY_UNWRAP	9
++#define AUDIT_CRYPTO_OP_KEY_GEN		10
++#define AUDIT_CRYPTO_OP_KEY_DERIVE	11
++#define AUDIT_CRYPTO_OP_KEY_ZEROIZE	12
++#define AUDIT_CRYPTO_OP_KEY_GET_INFO	13
++
+ struct audit_status {
+ 	__u32		mask;		/* Bit mask for valid entries */
+ 	__u32		enabled;	/* 1 = enabled, 0 = disabled */
+@@ -479,6 +497,10 @@ extern int __audit_log_bprm_fcaps(struct linux_binprm *bprm,
+ 				  const struct cred *new,
+ 				  const struct cred *old);
+ extern void __audit_log_capset(pid_t pid, const struct cred *new, const struct cred *old);
++extern int __audit_log_crypto_op(int op, int context, int session,
++				 const char *operation, const char *algorithm,
++				 int key1, void *key1_id, size_t key1_id_size,
++				 int key2, void *key2_id, size_t key2_id_size);
+ 
+ static inline void audit_ipc_obj(struct kern_ipc_perm *ipcp)
+ {
+@@ -532,6 +554,21 @@ static inline void audit_log_capset(pid_t pid, const struct cred *new,
+ 		__audit_log_capset(pid, new, old);
+ }
+ 
++static inline int audit_log_crypto_op(int op, int context, int session,
++				      const char *operation,
++				      const char *algorithm, int key1,
++				      void *key1_id, size_t key1_id_size,
++				      int key2, void *key2_id,
++				      size_t key2_id_size)
++{
++	if (unlikely(!audit_dummy_context()))
++		return __audit_log_crypto_op(op, context, session, operation,
++					     algorithm, key1, key1_id,
++					     key1_id_size, key2, key2_id,
++					     key2_id_size);
++	return 0;
++}
++
+ extern int audit_n_rules;
+ extern int audit_signals;
+ #else
+@@ -565,6 +602,7 @@ extern int audit_signals;
+ #define audit_mq_getsetattr(d,s) ((void)0)
+ #define audit_log_bprm_fcaps(b, ncr, ocr) ({ 0; })
+ #define audit_log_capset(pid, ncr, ocr) ((void)0)
++#define audit_log_crypto_op(op, context, session, key1, key1_id, key1_id_size, key2, key2_id, key2_id_size) (0)
+ #define audit_ptrace(t) ((void)0)
+ #define audit_n_rules 0
+ #define audit_signals 0
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index a706040..a25a587 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -363,6 +363,7 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
+ 		case AUDIT_DEVMINOR:
+ 		case AUDIT_EXIT:
+ 		case AUDIT_SUCCESS:
++		case AUDIT_CRYPTO_OP:
+ 			/* bit ops are only useful on syscall args */
+ 			if (f->op == Audit_bitmask || f->op == Audit_bittest)
+ 				goto exit_free;
+@@ -457,6 +458,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 		case AUDIT_ARG1:
+ 		case AUDIT_ARG2:
+ 		case AUDIT_ARG3:
++		case AUDIT_CRYPTO_OP:
+ 			break;
+ 		case AUDIT_ARCH:
+ 			entry->rule.arch_f = f;
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index fc0f928..47c1cc4 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -50,6 +50,7 @@
+ #include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/mount.h>
 +#include <linux/ncr.h>
-+#include <linux/slab.h>
-+#include <linux/random.h>
-+#include <linux/uaccess.h>
-+#include <linux/scatterlist.h>
-+#include <net/netlink.h>
-+#include "ncr-int.h"
-+#include "utils.h"
+ #include <linux/socket.h>
+ #include <linux/mqueue.h>
+ #include <linux/audit.h>
+@@ -157,6 +158,21 @@ struct audit_aux_data_capset {
+ 	struct audit_cap_data	cap;
+ };
+ 
++struct audit_crypto_op {
++	struct list_head list;
++	int op;
++	int context;
++	int session;
++	const char *operation;
++	const char *algorithm;
++	int key1;
++	unsigned char key1_id[MAX_KEY_ID_SIZE];
++	size_t key1_id_size;
++	int key2;
++	unsigned char key2_id[MAX_KEY_ID_SIZE];
++	size_t key2_id_size;
++};
 +
-+static void ncr_key_clear(struct key_item_st* item);
+ struct audit_tree_refs {
+ 	struct audit_tree_refs *next;
+ 	struct audit_chunk *c[31];
+@@ -181,6 +197,7 @@ struct audit_context {
+ 	struct audit_context *previous; /* For nested syscalls */
+ 	struct audit_aux_data *aux;
+ 	struct audit_aux_data *aux_pids;
++	struct list_head crypto;
+ 	struct sockaddr_storage *sockaddr;
+ 	size_t sockaddr_len;
+ 				/* Save things to print about task_struct */
+@@ -632,6 +649,18 @@ static int audit_filter_rules(struct task_struct *tsk,
+ 		case AUDIT_FILETYPE:
+ 			result = audit_match_filetype(ctx, f->val);
+ 			break;
++		case AUDIT_CRYPTO_OP:
++			if (ctx) {
++				struct audit_crypto_op *ax;
 +
-+static int key_list_deinit_fn(int id, void *item, void *unused)
-+{
-+	(void)unused;
-+	_ncr_key_item_put(item);
-+	return 0;
-+}
-+
-+void ncr_key_list_deinit(struct ncr_lists *lst)
-+{
-+	/* The mutex is not necessary, but doesn't hurt and makes it easier to
-+	   verify locking correctness. */
-+	mutex_lock(&lst->key_idr_mutex);
-+	idr_for_each(&lst->key_idr, key_list_deinit_fn, NULL);
-+	idr_remove_all(&lst->key_idr);
-+	idr_destroy(&lst->key_idr);
-+	mutex_unlock(&lst->key_idr_mutex);
-+}
-+
-+/* returns the data item corresponding to desc */
-+int ncr_key_item_get_read(struct key_item_st**st, struct ncr_lists *lst,
-+	ncr_key_t desc)
-+{
-+struct key_item_st* item;
-+int ret;
-+	
-+	*st = NULL;
-+	
-+	mutex_lock(&lst->key_idr_mutex);
-+	item = idr_find(&lst->key_idr, desc);
-+	if (item == NULL) {
-+		err();
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+	atomic_inc(&item->refcnt);
-+
-+	if (atomic_read(&item->writer) != 0) {
-+		/* writer in place busy */
-+		atomic_dec(&item->refcnt);
-+		ret = -EBUSY;
-+		goto exit;
-+	}
-+
-+	*st = item;
-+	ret = 0;
-+
-+exit:
-+	mutex_unlock(&lst->key_idr_mutex);
-+	return ret;
-+}
-+
-+/* as above but will never return anything that
-+ * is in use.
-+ */
-+int ncr_key_item_get_write( struct key_item_st** st, 
-+	struct ncr_lists *lst, ncr_key_t desc)
-+{
-+struct key_item_st* item;
-+int ret;
-+
-+	*st = NULL;
-+
-+	mutex_lock(&lst->key_idr_mutex);
-+	item = idr_find(&lst->key_idr, desc);
-+	if (item == NULL) {
-+		err();
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+	/* do not return items that are in use already */
-+
-+	if (atomic_add_unless(&item->writer, 1, 1)==0) {
-+		/* another writer so busy */
-+		ret = -EBUSY;
-+		goto exit;
-+	}
-+
-+	if (atomic_add_unless(&item->refcnt, 1, 2)==0) {
-+		/* some reader is active so busy */
-+		atomic_dec(&item->writer);
-+		ret = -EBUSY;
-+		goto exit;
-+	}
-+
-+	*st = item;
-+	ret = 0;
-+
-+exit:
-+	mutex_unlock(&lst->key_idr_mutex);
-+	return ret;
-+}
-+
-+void _ncr_key_item_put( struct key_item_st* item)
-+{
-+	if (atomic_read(&item->writer) > 0)
-+		atomic_dec(&item->writer);
-+	if (atomic_dec_and_test(&item->refcnt)) {
-+			ncr_limits_remove(item->uid, item->pid, LIMIT_TYPE_KEY);
-+			ncr_key_clear(item);
-+			kfree(item);
-+	}
-+}
-+
-+static void _ncr_key_remove(struct ncr_lists *lst, ncr_key_t desc)
-+{
-+	struct key_item_st * item;
-+
-+	mutex_lock(&lst->key_idr_mutex);
-+	item = idr_find(&lst->key_idr, desc);
-+	if (item != NULL)
-+		idr_remove(&lst->key_idr, desc); /* Steal the reference */
-+	mutex_unlock(&lst->key_idr_mutex);
-+
-+	if (item != NULL)
-+		_ncr_key_item_put(item);
-+}
-+
-+int ncr_key_init(struct ncr_lists *lst)
-+{
-+	ncr_key_t desc;
-+	struct key_item_st* key;
-+	int ret;
-+
-+	ret = ncr_limits_add_and_check(current_euid(), task_pid_nr(current), LIMIT_TYPE_KEY);
-+	if (ret < 0) {
-+		err();
-+		return ret;
-+	}
-+
-+	key = kmalloc(sizeof(*key), GFP_KERNEL);
-+	if (key == NULL) {
-+		err();
-+		ret = -ENOMEM;
-+		goto err_limits;
-+	}
-+
-+	memset(key, 0, sizeof(*key));
-+
-+	atomic_set(&key->refcnt, 1);
-+	atomic_set(&key->writer, 0);
-+	key->uid = current_euid();
-+	key->pid = task_pid_nr(current);
-+	key->context_id = lst->id;
-+
-+	mutex_lock(&lst->key_idr_mutex);
-+	/* idr_pre_get() should preallocate enough, and, due to key_idr_mutex,
-+	   nobody else can use the preallocated data.  Therefore the loop
-+	   recommended in idr_get_new() documentation is not necessary. */
-+	if (idr_pre_get(&lst->key_idr, GFP_KERNEL) == 0 ||
-+	    idr_get_new(&lst->key_idr, key, &key->desc) != 0) {
-+		mutex_unlock(&lst->key_idr_mutex);
-+		_ncr_key_item_put(key);
-+		return -ENOMEM;
-+	}
-+	desc = key->desc;
-+	mutex_unlock(&lst->key_idr_mutex);
-+
-+	return desc;
-+
-+err_limits:
-+	ncr_limits_remove(current_euid(), task_pid_nr(current), LIMIT_TYPE_KEY);
-+	return ret;
-+}
-+
-+int ncr_key_deinit(struct ncr_lists *lst, ncr_key_t desc)
-+{
-+	_ncr_key_remove(lst, desc);
-+	return 0;
-+}
-+
-+int ncr_key_export(struct ncr_lists *lst, const struct ncr_key_export *data,
-+		   struct nlattr *tb[])
-+{
-+struct key_item_st* item = NULL;
-+void* tmp = NULL;
-+uint32_t tmp_size;
-+int ret;
-+
-+	if (data->buffer_size < 0) {
-+		err();
-+		return -EINVAL;
-+	}
-+
-+	ret = ncr_key_item_get_read(&item, lst, data->key);
-+	if (ret < 0) {
-+		err();
-+		return ret;
-+	}
-+
-+	if (!(item->flags & NCR_KEY_FLAG_EXPORTABLE)) {
-+		err();
-+		ret = -EPERM;
-+		goto fail;
-+	}
-+
-+	switch (item->type) {
-+		case NCR_KEY_TYPE_SECRET:
-+			if (item->key.secret.size > data->buffer_size) {
-+				err();
-+				ret = -ERANGE;
-+				goto fail;
-+			}
-+
-+			/* found */
-+			if (item->key.secret.size > 0) {
-+				ret = copy_to_user(data->buffer, item->key.secret.data, item->key.secret.size);
-+				if (unlikely(ret)) {
-+					err();
-+					ret = -EFAULT;
-+					goto fail;
++				list_for_each_entry(ax, &ctx->crypto, list) {
++					result = audit_comparator(ax->op, f->op,
++								  f->val);
++					if (result)
++						break;
 +				}
 +			}
-+
-+			ret = item->key.secret.size;
 +			break;
-+		case NCR_KEY_TYPE_PUBLIC:
-+		case NCR_KEY_TYPE_PRIVATE:
-+			tmp_size = data->buffer_size;
-+			
-+			tmp = kmalloc(tmp_size, GFP_KERNEL);
-+			if (tmp == NULL) {
-+				err();
-+				ret = -ENOMEM;
-+				goto fail;
+ 		}
+ 
+ 		if (!result) {
+@@ -827,6 +856,7 @@ static inline void audit_free_names(struct audit_context *context)
+ static inline void audit_free_aux(struct audit_context *context)
+ {
+ 	struct audit_aux_data *aux;
++	struct audit_crypto_op *crypto, *tmp;
+ 
+ 	while ((aux = context->aux)) {
+ 		context->aux = aux->next;
+@@ -836,6 +866,10 @@ static inline void audit_free_aux(struct audit_context *context)
+ 		context->aux_pids = aux->next;
+ 		kfree(aux);
+ 	}
++	list_for_each_entry_safe(crypto, tmp, &context->crypto, list) {
++		list_del(&crypto->list);
++		kfree(crypto);
++	}
+ }
+ 
+ static inline void audit_zero_context(struct audit_context *context,
+@@ -853,6 +887,7 @@ static inline struct audit_context *audit_alloc_context(enum audit_state state)
+ 	if (!(context = kmalloc(sizeof(*context), GFP_KERNEL)))
+ 		return NULL;
+ 	audit_zero_context(context, state);
++	INIT_LIST_HEAD(&context->crypto);
+ 	INIT_LIST_HEAD(&context->killed_trees);
+ 	return context;
+ }
+@@ -1316,6 +1351,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+ 	int i, call_panic = 0;
+ 	struct audit_buffer *ab;
+ 	struct audit_aux_data *aux;
++	struct audit_crypto_op *crypto;
+ 	const char *tty;
+ 
+ 	/* tsk == current */
+@@ -1442,6 +1478,58 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+ 				call_panic = 1;
+ 	}
+ 
++	list_for_each_entry(crypto, &context->crypto, list) {
++		static const char *const ops[] = {
++			[AUDIT_CRYPTO_OP_CONTEXT_NEW] = "context_new",
++			[AUDIT_CRYPTO_OP_CONTEXT_DEL] = "context_del",
++			[AUDIT_CRYPTO_OP_SESSION_INIT] = "session_init",
++			[AUDIT_CRYPTO_OP_SESSION_OP] = "session_op",
++			[AUDIT_CRYPTO_OP_SESSION_FINAL] = "session_final",
++			[AUDIT_CRYPTO_OP_KEY_IMPORT] = "key_import",
++			[AUDIT_CRYPTO_OP_KEY_EXPORT] = "key_export",
++			[AUDIT_CRYPTO_OP_KEY_WRAP] = "key_wrap",
++			[AUDIT_CRYPTO_OP_KEY_UNWRAP] = "key_unwrap",
++			[AUDIT_CRYPTO_OP_KEY_GEN] = "key_gen",
++			[AUDIT_CRYPTO_OP_KEY_DERIVE] = "key_derive",
++			[AUDIT_CRYPTO_OP_KEY_ZEROIZE] = "key_zeroize",
++			[AUDIT_CRYPTO_OP_KEY_GET_INFO] = "key_get_info",
++		};
++
++		ab = audit_log_start(context, GFP_KERNEL,
++				     AUDIT_CRYPTO_USERSPACE_OP);
++		if (!ab)
++			continue;
++		if (crypto->op < ARRAY_SIZE(ops) && ops[crypto->op] != NULL)
++			audit_log_format(ab, "crypto_op=%s", ops[crypto->op]);
++		else
++			audit_log_format(ab, "crypto_op=%d", crypto->op);
++		audit_log_format(ab, " ctx=%d", crypto->context);
++		if (crypto->session != -1)
++			audit_log_format(ab, " session=%d", crypto->session);
++		if (crypto->operation != NULL)
++			audit_log_format(ab, " operation=%s",
++					 crypto->operation);
++		if (crypto->algorithm != NULL)
++			audit_log_format(ab, " algo=%s", crypto->algorithm);
++		if (crypto->key1 != -1) {
++			audit_log_format(ab, " key1=%d", crypto->key1);
++			if (crypto->key1_id_size > 0) {
++				audit_log_format(ab, " key1_id=");
++				audit_log_n_untrustedstring(ab, crypto->key1_id,
++							    crypto->key1_id_size);
 +			}
-+
-+			ret = ncr_pk_pack(item, tmp, &tmp_size);
-+			if (ret < 0) {
-+				err();
-+				goto fail;
-+			}
-+
-+			ret = copy_to_user(data->buffer, tmp, tmp_size);
-+			if (unlikely(ret)) {
-+				err();
-+				ret = -EFAULT;
-+				goto fail;
-+			}
-+			
-+			ret = tmp_size;
-+			break;
-+		default:
-+			err();
-+			ret = -EINVAL;
-+			goto fail;
-+	}
-+
-+fail:
-+	audit_log_crypto_op(AUDIT_CRYPTO_OP_KEY_EXPORT, lst->id, -1, NULL,
-+			    ncr_algorithm_name(item->algorithm), item->desc,
-+			    item->key_id, item->key_id_size, -1, NULL, 0);
-+
-+	kfree(tmp);
-+	_ncr_key_item_put(item);
-+	return ret;
-+	
-+}
-+
-+int ncr_key_import(struct ncr_lists *lst, const struct ncr_key_import *data,
-+		   struct nlattr *tb[])
-+{
-+const struct nlattr *nla;
-+struct key_item_st* item = NULL;
-+int ret;
-+void* tmp = NULL;
-+size_t tmp_size;
-+
-+	ret = ncr_key_item_get_write( &item, lst, data->key);
-+	if (ret < 0) {
-+		err();
-+		return ret;
-+	}
-+
-+	ncr_key_clear(item);
-+
-+	tmp = kmalloc(data->data_size, GFP_KERNEL);
-+	if (tmp == NULL) {
-+		err();
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
-+	
-+	if (unlikely(copy_from_user(tmp, data->data, data->data_size))) {
-+		err();
-+		ret = -EFAULT;
-+		goto fail;
-+	}
-+	tmp_size = data->data_size;
-+
-+	nla = tb[NCR_ATTR_KEY_TYPE];
-+	if (tb == NULL) {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+	item->type = nla_get_u32(nla);
-+
-+	item->algorithm = _ncr_nla_to_properties(tb[NCR_ATTR_ALGORITHM]);
-+	if (item->algorithm == NULL) {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+
-+	nla = tb[NCR_ATTR_KEY_FLAGS];
-+	if (nla != NULL)
-+		item->flags = nla_get_u32(nla);
-+
-+	nla = tb[NCR_ATTR_KEY_ID];
-+	if (nla != NULL) {
-+		if (nla_len(nla) > MAX_KEY_ID_SIZE) {
-+			err();
-+			ret = -EOVERFLOW;
-+			goto fail;
 +		}
-+
-+		item->key_id_size = nla_len(nla);
-+		memcpy(item->key_id, nla_data(nla), item->key_id_size);
-+	}
-+
-+	switch(item->type) {
-+		case NCR_KEY_TYPE_SECRET:
-+
-+			if (tmp_size > NCR_CIPHER_MAX_KEY_LEN) {
-+				err();
-+				ret = -EINVAL;
-+				goto fail;
++		if (crypto->key2 != -1) {
++			audit_log_format(ab, " key2=%d", crypto->key2);
++			if (crypto->key2_id_size > 0) {
++				audit_log_format(ab, " key2_id=");
++				audit_log_n_untrustedstring(ab, crypto->key2_id,
++							    crypto->key2_id_size);
 +			}
-+			
-+			memcpy(item->key.secret.data, tmp, tmp_size);
-+			item->key.secret.size = tmp_size;
-+			break;
-+		case NCR_KEY_TYPE_PRIVATE:
-+		case NCR_KEY_TYPE_PUBLIC:
-+			ret = ncr_pk_unpack( item, tmp, tmp_size);
-+			if (ret < 0) {
-+				err();
-+				goto fail;
-+			}
-+			break;
-+
-+		default:
-+			err();
-+			ret = -EINVAL;
-+			goto fail;
++		}
++		audit_log_end(ab);
 +	}
 +
-+	ret = 0;
-+
-+fail:
-+	audit_log_crypto_op(AUDIT_CRYPTO_OP_KEY_IMPORT, lst->id, -1, NULL,
-+			    ncr_algorithm_name(item->algorithm), item->desc,
-+			    item->key_id, item->key_id_size, -1, NULL, 0);
-+
-+	_ncr_key_item_put(item);
-+	kfree(tmp);
-+
-+	return ret;
-+}
-+
-+static void ncr_key_clear(struct key_item_st* item)
-+{
-+	audit_log_crypto_op(AUDIT_CRYPTO_OP_KEY_ZEROIZE, item->context_id, -1,
-+			    NULL, ncr_algorithm_name(item->algorithm),
-+			    item->desc, item->key_id, item->key_id_size, -1,
-+			    NULL, 0);
-+
-+	/* clears any previously allocated parameters */
-+	if (item->type == NCR_KEY_TYPE_PRIVATE ||
-+		item->type == NCR_KEY_TYPE_PUBLIC) {
-+		
-+		ncr_pk_clear(item);
-+	}
-+	memset(&item->key, 0, sizeof(item->key));
-+	memset(item->key_id, 0, sizeof(item->key_id));
-+	item->key_id_size = 0;
-+	item->flags = 0;
-+	
-+	return;
-+}
-+
-+/* Generate a secret key
+ 	if (context->target_pid &&
+ 	    audit_log_pid_context(context, context->target_pid,
+ 				  context->target_auid, context->target_uid,
+@@ -2486,6 +2574,54 @@ void __audit_log_capset(pid_t pid,
+ }
+ 
+ /**
++ * __audit_log_crypto_op - store information about an user-space crypto op
++ * @op: AUDIT_CRYPTO_OP_*
++ * @context: user-space context ID
++ * @session: session ID within @context, or -1
++ * @operation: more detailed operation description, or NULL
++ * @algorithm: algorithm (crypto API transform) name, or NULL
++ * @key1: ID of key 1 within @context, or -1
++ * @key1_id: user-space ID of key 1 set from user-space if @key1 != -1
++ * @key1_id_size: Size of @key1_id
++ * @key2: ID of key 2 within @context, or -1
++ * @key2_id: user-space ID of key 2 set from user-space if @key2 != -1
++ * @key2_id_size: Size of @key2_id
 + */
-+int ncr_key_generate(struct ncr_lists *lst, const struct ncr_key_generate *gen,
-+		     struct nlattr *tb[])
++int __audit_log_crypto_op(int op, int context, int session,
++			  const char *operation, const char *algorithm,
++			  int key1, void *key1_id, size_t key1_id_size,
++			  int key2, void *key2_id, size_t key2_id_size)
 +{
-+const struct nlattr *nla;
-+struct key_item_st* item = NULL;
-+const struct algo_properties_st *algo;
-+int ret;
-+size_t size;
++	struct audit_crypto_op *ax;
++	struct audit_context *ctx = current->audit_context;
 +
-+	ret = ncr_key_item_get_write(&item, lst, gen->key);
-+	if (ret < 0) {
-+		err();
-+		return ret;
-+	}
++	ax = kmalloc(sizeof(*ax), GFP_KERNEL);
++	if (!ax)
++		return -ENOMEM;
 +
-+	ncr_key_clear(item);
-+
-+	/* we generate only secret keys */
-+	nla = tb[NCR_ATTR_KEY_FLAGS];
-+	if (nla != NULL)
-+		item->flags = nla_get_u32(nla);
-+
-+	algo = _ncr_nla_to_properties(tb[NCR_ATTR_ALGORITHM]);
-+	if (algo == NULL) {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+	item->type = algo->key_type;
-+	if (item->type == NCR_KEY_TYPE_SECRET) {
-+		u32 key_bits;
-+
-+		item->algorithm = algo;
-+
-+		nla = tb[NCR_ATTR_SECRET_KEY_BITS];
-+		if (nla == NULL) {
-+			err();
-+			ret = -EINVAL;
-+			goto fail;
-+		}
-+		key_bits = nla_get_u32(nla);
-+		size = key_bits / 8;
-+		if (key_bits % 8 != 0 || size > NCR_CIPHER_MAX_KEY_LEN) {
-+			err();
-+			ret = -EINVAL;
-+			goto fail;
-+		}
-+
-+		get_random_bytes(item->key.secret.data, size);
-+		item->key.secret.size = size;
-+
-+		/* generate random key id */
-+		item->key_id_size = 5;
-+		get_random_bytes(item->key_id, item->key_id_size);
-+	} else {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+	
-+	ret = 0;
-+
-+fail:
-+	audit_log_crypto_op(AUDIT_CRYPTO_OP_KEY_GEN, lst->id, -1, NULL,
-+			    ncr_algorithm_name(algo), item->desc, item->key_id,
-+			    item->key_id_size, -1, NULL, 0);
-+
-+	if (ret < 0) item->type = NCR_KEY_TYPE_INVALID;
-+	_ncr_key_item_put(item);
-+	return ret;
++	ax->op = op;
++	ax->context = context;
++	ax->session = session;
++	ax->operation = operation;
++	ax->algorithm = algorithm;
++	ax->key1 = key1;
++	if (key1 != -1) {
++		ax->key1_id_size = min(key1_id_size, sizeof(ax->key1_id));
++		memcpy(ax->key1_id, key1_id, ax->key1_id_size);
++	} else
++		ax->key1_id_size = 0;
++	ax->key2 = key2;
++	if (key2 != -1) {
++		ax->key2_id_size = min(key2_id_size, sizeof(ax->key2_id));
++		memcpy(ax->key2_id, key2_id, ax->key2_id_size);
++	} else
++		ax->key2_id_size = 0;
++	list_add_tail(&ax->list, &ctx->crypto);
++	return 0;
 +}
++EXPORT_SYMBOL_GPL(__audit_log_crypto_op);
 +
-+int ncr_key_get_info(struct ncr_lists *lst, struct ncr_out *out,
-+		     const struct ncr_key_get_info *info, struct nlattr *tb[])
-+{
-+const struct nlattr *nla;
-+const u16 *attr, *attr_end;
-+struct key_item_st* item = NULL;
-+int ret;
-+
-+	ret = ncr_key_item_get_read(&item, lst, info->key);
-+	if (ret < 0) {
-+		err();
-+		return ret;
-+	}
-+	
-+	if (item->type == NCR_KEY_TYPE_INVALID) {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+
-+	nla = tb[NCR_ATTR_WANTED_ATTRS];
-+	if (nla == NULL || nla_len(nla) % sizeof(u16) != 0) {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+	attr = nla_data(nla);
-+	attr_end = attr + nla_len(nla) / sizeof(u16);
-+	while (attr < attr_end) {
-+		switch (*attr) {
-+		case NCR_ATTR_KEY_FLAGS:
-+			ret = ncr_out_put_u32(out, *attr, item->flags);
-+			break;
-+		case NCR_ATTR_KEY_TYPE:
-+			ret = ncr_out_put_u32(out, *attr, item->type);
-+			break;
-+		case NCR_ATTR_ALGORITHM:
-+			ret = ncr_out_put_string(out, *attr,
-+						 item->algorithm->kstr);
-+			break;
-+		default:
-+			break; /* Silently ignore */
-+		}
-+		if (ret != 0) {
-+			err();
-+			goto fail;
-+		}
-+		attr++;
-+	}
-+
-+	ret = ncr_out_finish(out);
-+	if (ret != 0) {
-+		err();
-+		goto fail;
-+	}
-+
-+fail:
-+	audit_log_crypto_op(AUDIT_CRYPTO_OP_KEY_GET_INFO, lst->id, -1, NULL,
-+			    ncr_algorithm_name(item->algorithm), item->desc,
-+			    item->key_id, item->key_id_size, -1, NULL, 0);
-+
-+	_ncr_key_item_put( item);
-+
-+	return ret;
-+}
-+
-+int ncr_key_generate_pair(struct ncr_lists *lst,
-+			  const struct ncr_key_generate_pair *gen,
-+			  struct nlattr *tb[])
-+{
-+const struct nlattr *nla;
-+struct key_item_st* private = NULL;
-+struct key_item_st* public = NULL;
-+int ret;
-+
-+	ret = ncr_key_item_get_write(&private, lst, gen->private_key);
-+	if (ret < 0) {
-+		err();
-+		goto fail;
-+	}
-+
-+	ret = ncr_key_item_get_write(&public, lst, gen->public_key);
-+	if (ret < 0) {
-+		err();
-+		goto fail;
-+	}
-+
-+	ncr_key_clear(public);
-+	ncr_key_clear(private);
-+
-+	/* we generate only secret keys */
-+	nla = tb[NCR_ATTR_KEY_FLAGS];
-+	if (nla != NULL)
-+		private->flags = public->flags = nla_get_u32(nla);
-+
-+	private->algorithm = public->algorithm
-+		= _ncr_nla_to_properties(tb[NCR_ATTR_ALGORITHM]);
-+	if (private->algorithm == NULL) {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+	public->type = public->algorithm->key_type;
-+	private->type = NCR_KEY_TYPE_PRIVATE;
-+	public->flags |= (NCR_KEY_FLAG_EXPORTABLE|NCR_KEY_FLAG_WRAPPABLE);
-+	
-+	if (public->type == NCR_KEY_TYPE_PUBLIC) {
-+		ret = ncr_pk_generate(public->algorithm, tb, private, public);
-+		if (ret < 0) {
-+			err();
-+			goto fail;
-+		}
-+	} else {
-+		err();
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+	
-+	ret = 0;
-+fail:
-+	audit_log_crypto_op(AUDIT_CRYPTO_OP_KEY_GEN, lst->id, -1, NULL,
-+			    ncr_algorithm_name(private != NULL
-+					       ? private->algorithm : NULL),
-+			    gen->private_key,
-+			    private != NULL ? private->key_id : NULL,
-+			    private != NULL ? private->key_id_size : 0,
-+			    gen->public_key,
-+			    public != NULL ? public->key_id : NULL,
-+			    public != NULL ? public->key_id_size : 0);
-+
-+	if (public) {
-+		if (ret < 0) public->type = NCR_KEY_TYPE_INVALID;
-+		_ncr_key_item_put(public);
-+	}
-+	if (private) {
-+		if (ret < 0) private->type = NCR_KEY_TYPE_INVALID;
-+		_ncr_key_item_put(private);
-+	}
-+	return ret;
-+}
-+
-+int ncr_key_derive(struct ncr_lists *lst, const struct ncr_key_derive *data,
-+		   struct nlattr *tb[])
-+{
-+const struct nlattr *nla;
-+int ret;
-+struct key_item_st* key = NULL;
-+struct key_item_st* newkey = NULL;
-+
-+	ret = ncr_key_item_get_read(&key, lst, data->input_key);
-+	if (ret < 0) {
-+		err();
-+		return ret;
-+	}
-+
-+	ret = ncr_key_item_get_write(&newkey, lst, data->new_key);
-+	if (ret < 0) {
-+		err();
-+		goto fail;
-+	}
-+
-+	ncr_key_clear(newkey);
-+
-+	nla = tb[NCR_ATTR_KEY_FLAGS];
-+	if (nla != NULL)
-+		newkey->flags = nla_get_u32(nla);
-+
-+	switch (key->type) {
-+		case NCR_KEY_TYPE_PUBLIC:
-+		case NCR_KEY_TYPE_PRIVATE:
-+			ret = ncr_pk_derive(newkey, key, tb);
-+			if (ret < 0) {
-+				err();
-+				goto fail;
-+			}
-+			break;
-+		default:
-+			err();
-+			ret = -EINVAL;
-+			goto fail;
-+	}
-+
-+fail:
-+	audit_log_crypto_op(AUDIT_CRYPTO_OP_KEY_DERIVE, lst->id, -1, NULL,
-+			    ncr_algorithm_name(key->algorithm), key->desc,
-+			    key->key_id, key->key_id_size, data->new_key,
-+			    newkey != NULL ? newkey->key_id : NULL,
-+			    newkey != NULL ? newkey->key_id_size : 0);
-+
-+	_ncr_key_item_put(key);
-+	if (newkey)
-+		_ncr_key_item_put(newkey);
-+	return ret;
-+	
-+}
-+
++/**
+  * audit_core_dumps - record information about processes that end abnormally
+  * @signr: signal value
+  *
 -- 
 1.7.2.1
 
