@@ -1,105 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab0HTDij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Aug 2010 23:38:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493Ab0HTDig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Aug 2010 23:38:36 -0400
-Subject: Re: [GIT PULL] notification tree: directory events
-From: Eric Paris <eparis@redhat.com>
-To: Andreas Gruenbacher <agruen@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        Michael Kerrisk <michael.kerrisk@gmail.com>,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <201008200141.10068.agruen@suse.de>
-References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
-	 <201008191444.08966.agruen@suse.de>
-	 <1282230012.21419.1566.camel@acb20005.ipt.aol.com>
-	 <201008200141.10068.agruen@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Aug 2010 23:38:17 -0400
-Message-ID: <1282275497.21419.2073.camel@acb20005.ipt.aol.com>
+	id S1752327Ab0HTDkk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Aug 2010 23:40:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34893 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751701Ab0HTDki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Aug 2010 23:40:38 -0400
+Date: Thu, 19 Aug 2010 20:42:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Len Brown <len.brown@intel.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Andy Grover <andy.grover@oracle.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
+ and touch_softlockup_watchdog
+Message-Id: <20100819204256.3380bf6f.akpm@linux-foundation.org>
+In-Reply-To: <20100820025749.GB4879@redhat.com>
+References: <20100817025954.GA12366@nowhere>
+	<AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
+	<20100817083945.GA12022@swordfish.minsk.epam.com>
+	<AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
+	<20100817092407.GB12022@swordfish.minsk.epam.com>
+	<AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
+	<20100817103948.GA5352@swordfish.minsk.epam.com>
+	<20100817131320.GX4879@redhat.com>
+	<20100818024802.GA24748@nowhere>
+	<20100818130156.43a183d9.akpm@linux-foundation.org>
+	<20100820025749.GB4879@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 01:41 +0200, Andreas Gruenbacher wrote:
-> [Adding linux-fsdevel to the list as this really is a filesystem discussion.]
+On Thu, 19 Aug 2010 22:57:49 -0400 Don Zickus <dzickus@redhat.com> wrote:
 
-> Yes.  Right now, struct fanotify_event_metadata contains a file descriptor 
-> which is the only information we have about the object the event refers to, or 
-> a negative error code if a file descriptor could not be opened with 
-> dentry_open() or some other error occurred.
+> On Wed, Aug 18, 2010 at 01:01:56PM -0700, Andrew Morton wrote:
+> > The surprise new requirement that touch_nmi_watchdog() be called from
+> > non-preemptible code does seem to make sense IMO.  It's hard to see why
+> > anyone would be touching the watchdog unless he's spinning in irqs-off
+> > code.  Except, of course, when we have a utility function which can be
+> > called from wither irqs-on or irqs-off: acpi_os_stall().
+> > 
+> > That being said, it's not good to introduce new API requirements by
+> > accident!  An audit of all callers should first be performed, at least.
+> > 
+> > 
+> > The surprise new requirement that touch_softlockup_watchdog() be called
+> > from non-preemptible code doesn't make sense IMO.  If I have a piece of
+> > code in the kernel which I expect to sit in TASK_UNINTERRUPTIBLE state
+> > for three minutes waiting for my egg to boil, I should be able to do
+> > that and I should be able to touch the softlockup detector without
+> > needing to go non-preemptible.
 > 
-> Being able to identify the object that an event refers to is important.  There 
-> are two ways to do that:
+> Ok, so here is my patch that syncs the touch_*_watchdog back in line with
+> the old semantics.  Hopefully this will undo any harm I caused.
 > 
-> 	(1) Include fields like st_dev and st_ino in struct
-> 	    fanotify_event_metadata.  This is not ideal because the listener
-> 	    won't be able to find out any additional information about the file
-> 	    (like an idea about its name, for example).
+> ------------cut -->---------------------------
 > 
-> 		 For example, if inode->i_generation is ever exposed to user-space
-> 	    through stat(), that information would still be missing in struct
-> 	    fanotify_event_metadata.
+> >From b372e821c804982438db090db6b4a2f753c78091 Mon Sep 17 00:00:00 2001
+> From: Don Zickus <dzickus@redhat.com>
+> Date: Thu, 19 Aug 2010 22:48:26 -0400
+> Subject: [PATCH] [lockup detector] sync touch_*_watchdog back to old semantics
 > 
-> 	(2) Construct a file descriptor that refers to the file that could not be
-> 	    dentry_open()ed, but which cannot be used for any I/O, and pass the
-> 	    error condition in a separate field.  The kernel has all the
-> 	    information needed for doing that, and it shouldn't be hard to
-> 	    implement.
+> During my rewrite, the semantics of touch_nmi_watchdog and
+> touch_softlockup_watchdog changed enough to break some drivers
+> (mostly over preemptable regions).
 > 
-> 	    That way, the listener always has a file descriptor to poke around
-> 	    with.
+> This change brings those touch_*_watchdog functions back in line
+> to how they used to work.
 > 
-> Failing to do (2) right now, I think it still makes sense to separate the file 
-> descriptor from the error code in struct fanotify_event_metadata; this would 
-> enable us to do (2) later if we decide to.
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  kernel/watchdog.c |   17 ++++++++++++-----
+>  1 files changed, 12 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 613bc1f..99e35a2 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -122,7 +122,7 @@ static void __touch_watchdog(void)
+>  
+>  void touch_softlockup_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_touch_ts) = 0;
+> +	__raw_get_cpu_var(watchdog_touch_ts) = 0;
+>  }
+>  EXPORT_SYMBOL(touch_softlockup_watchdog);
+>  
+> @@ -142,7 +142,14 @@ void touch_all_softlockup_watchdogs(void)
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  void touch_nmi_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_nmi_touch) = true;
+> +	if (watchdog_enabled) {
+> +		unsigned cpu;
+> +
+> +		for_each_present_cpu(cpu) {
+> +			if (per_cpu(watchdog_nmi_touch, cpu) != true)
+> +				per_cpu(watchdog_nmi_touch, cpu) = true;
+> +		}
+> +	}
+>  	touch_softlockup_watchdog();
+>  }
+>  EXPORT_SYMBOL(touch_nmi_watchdog);
+> @@ -430,6 +437,9 @@ static int watchdog_enable(int cpu)
+>  		wake_up_process(p);
+>  	}
+>  
+> +	/* if any cpu succeeds, watchdog is considered enabled for the system */
+> +	watchdog_enabled = 1;
+> +
+>  	return 0;
+>  }
+>  
+> @@ -452,9 +462,6 @@ static void watchdog_disable(int cpu)
+>  		per_cpu(softlockup_watchdog, cpu) = NULL;
+>  		kthread_stop(p);
+>  	}
+> -
+> -	/* if any cpu succeeds, watchdog is considered enabled for the system */
+> -	watchdog_enabled = 1;
+>  }
+>  
+>  static void watchdog_enable_all_cpus(void)
 
-In reference to (2), I don't even understand what an fd is that can't be
-used for anything.  I'll let Al or Christoph respond if they feel like
-it, but it sounds crazy to me.  You want to just magic up some struct
-file and attach a struct path to it even though dentry_open() failed?
-So you can do what with it?
+hm, the code seems a bit screwy.  Maybe it was always thus.
 
-On a more realistic note, I'm not opposed to (1), however, your
-arguments would lead one to reject inotify as the IN_OVERFLOW or oom
-conditions will result in silently lost events or events which provide
-no useful information since the notification system has broken down.
-When the appropriate use of notification is impossible I'm certainly not
-opposed to patches which add best effort information, but you are
-already outside the bounds of a reasonably functional system and there
-is no good solution.
+watchdog_enabled gets set in the per-cpu function but it gets cleared
+in the all-cpus function.  Asymmetric.
 
-> bugs that 
-> would have been shaken out in a proper review (OOMing the system when a 
-> listener stops listening or blocking access to files when a listener dies; I 
-> have reported that).
+Also afacit the action of cpu-hotunplug+cpu-hotplug will reenable the
+watchdog on a CPU which was supposed to have it disabled.  Perhaps you
+could recheck that and make sure it all makes sense - perhaps we need a
+separate state variable which is purely "current setting of
+/proc/sys/kernel/nmi_watchdog" and doesn't get altered internally.
 
-So the actual bugs you have reported, I see two.
-
-The (nearly) unbounded number of potential outstanding notifications
-events is a known situation, pointed out in previous discussions well
-before this commit and is one of the (numerous) reasons why fanotify is
-at this time CAP_SYS_ADMIN only.  It is something that is difficult to
-address while still making fanotify useful for permissions gating.  But
-the issue is clearly noted.
-
-As to when a listener dies:  You have to define 'dies'.  If the process
-just stops respond it is supposed to lock forever.  I was explicitly ask
-to remove timeouts (even though I've already been ask off list to put
-them back)  In Linus' tree there is a race in which both processes (the
-listener and the process doing an action waiting on the listener) can
-deadlock and hang forever.  A (much less racy but not right) patch to
-fix this has already been posted.  Do you have comments on that patch?
-I have a better version which has worked well for me today which I will
-likely post tomorrow morning after I look over it again.  I'd love your
-feedback.
-
--Eric
-
+Anyway, I'll be disappearing for a few days so perhaps Frederic or hpa
+can help get this all fixed/merged up?
