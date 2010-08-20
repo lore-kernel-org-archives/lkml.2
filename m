@@ -1,288 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab0HTQHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 12:07:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48406 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab0HTQHn (ORCPT
+	id S1753465Ab0HTQRW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 12:17:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51736 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753417Ab0HTQRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 12:07:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Nfr1eq+mcgecvsOZorXNAJdBPht5JzvZqZ3ymvWaX+TSpMTS0vGfE94A56PpF2i3bC
-         Ro/m6DkTTJu1+CBtfuu67QvnUfqQ+Eh6JBIE1zGhHd8SZ98YPJccDcQT6XPEtHAq+9YY
-         T7IqxOR6lrYP++89cLuXJLT6V1Z70kI52PVAU=
-From: Changli Gao <xiaosuo@gmail.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        akpm@linux-foundation.org, netfilter-devel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH v4 2/2] netfilter: save the hash of the tuple in the original direction for latter use
-Date: Sat, 21 Aug 2010 00:07:24 +0800
-Message-Id: <1282320444-2987-1-git-send-email-xiaosuo@gmail.com>
+	Fri, 20 Aug 2010 12:17:12 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Jassi Brar <jassi.brar@samsung.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] spi/spi_s3c64xx: Staticise non-exported functions
+Date: Fri, 20 Aug 2010 17:17:08 +0100
+Message-Id: <1282321028-32196-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we don't change the tuple in the original direction, we can save it
-in ct->tuplehash[IP_CT_DIR_REPLY].hnode.pprev for __nf_conntrack_confirm()
-use.
-
-__hash_conntrack() is split into two steps: ____hash_conntrack() is used
-to get the raw hash, and __hash_bucket() is used to get the bucket id.
-
-In SYN-flood case, early_drop() doesn't need to recompute the hash again.
-
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
-v4: init rnd when allocating conntrack.
-v3: define static variable rnd out of the function ____hash_conntrack(),
-    and call get_random_bytes() until we get a non-zero random int.
-v2: use cmpxchg() to save 2 variables.
- net/netfilter/nf_conntrack_core.c |  104 +++++++++++++++++++++++++++-----------
- 1 file changed, 75 insertions(+), 29 deletions(-)
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index 7ae7f71..ca6b6ab 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -67,8 +67,7 @@ EXPORT_PER_CPU_SYMBOL(nf_conntrack_untracked);
- 
- static unsigned int nf_conntrack_hash_rnd __read_mostly;
- 
--static u_int32_t __hash_conntrack(const struct nf_conntrack_tuple *tuple,
--				  u16 zone, unsigned int size, unsigned int rnd)
-+static u32 ____hash_conntrack(const struct nf_conntrack_tuple *tuple, u16 zone)
- {
- 	unsigned int n;
- 	u_int32_t h;
-@@ -78,18 +77,33 @@ static u_int32_t __hash_conntrack(const struct nf_conntrack_tuple *tuple,
- 	 * three bytes manually.
- 	 */
- 	n = (sizeof(tuple->src) + sizeof(tuple->dst.u3)) / sizeof(u32);
--	h = jhash2((u32 *)tuple, n,
--		   zone ^ rnd ^ (((__force __u16)tuple->dst.u.all << 16) |
--				 tuple->dst.protonum));
-+	h = jhash2((u32 *)tuple, n, zone ^ nf_conntrack_hash_rnd ^
-+		   (((__force __u16)tuple->dst.u.all << 16) |
-+		    tuple->dst.protonum));
-+
-+	return h;
-+}
-+
-+static u32 __hash_bucket(u32 __hash, unsigned int size)
-+{
-+	return ((u64)__hash * size) >> 32;
-+}
-+
-+static u32 hash_bucket(u32 __hash, const struct net *net)
-+{
-+	return __hash_bucket(__hash, net->ct.htable_size);
-+}
- 
--	return ((u64)h * size) >> 32;
-+static u_int32_t __hash_conntrack(const struct nf_conntrack_tuple *tuple,
-+				  u16 zone, unsigned int size)
-+{
-+	return __hash_bucket(____hash_conntrack(tuple, zone), size);
+ drivers/spi/spi_s3c64xx.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
+index a0b63b7..7e627f7 100644
+--- a/drivers/spi/spi_s3c64xx.c
++++ b/drivers/spi/spi_s3c64xx.c
+@@ -447,8 +447,8 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
+ 	writel(val, regs + S3C64XX_SPI_CLK_CFG);
  }
  
- static inline u_int32_t hash_conntrack(const struct net *net, u16 zone,
- 				       const struct nf_conntrack_tuple *tuple)
+-void s3c64xx_spi_dma_rxcb(struct s3c2410_dma_chan *chan, void *buf_id,
+-				int size, enum s3c2410_dma_buffresult res)
++static void s3c64xx_spi_dma_rxcb(struct s3c2410_dma_chan *chan, void *buf_id,
++				 int size, enum s3c2410_dma_buffresult res)
  {
--	return __hash_conntrack(tuple, zone, net->ct.htable_size,
--				nf_conntrack_hash_rnd);
-+	return __hash_conntrack(tuple, zone, net->ct.htable_size);
+ 	struct s3c64xx_spi_driver_data *sdd = buf_id;
+ 	unsigned long flags;
+@@ -467,8 +467,8 @@ void s3c64xx_spi_dma_rxcb(struct s3c2410_dma_chan *chan, void *buf_id,
+ 	spin_unlock_irqrestore(&sdd->lock, flags);
  }
  
- bool
-@@ -291,13 +305,13 @@ static void death_by_timeout(unsigned long ul_conntrack)
-  * OR
-  * - Caller must lock nf_conntrack_lock before calling this function
-  */
--struct nf_conntrack_tuple_hash *
--__nf_conntrack_find(struct net *net, u16 zone,
--		    const struct nf_conntrack_tuple *tuple)
-+static struct nf_conntrack_tuple_hash *
-+____nf_conntrack_find(struct net *net, u16 zone,
-+		      const struct nf_conntrack_tuple *tuple, u32 __hash)
+-void s3c64xx_spi_dma_txcb(struct s3c2410_dma_chan *chan, void *buf_id,
+-				int size, enum s3c2410_dma_buffresult res)
++static void s3c64xx_spi_dma_txcb(struct s3c2410_dma_chan *chan, void *buf_id,
++				 int size, enum s3c2410_dma_buffresult res)
  {
- 	struct nf_conntrack_tuple_hash *h;
- 	struct hlist_nulls_node *n;
--	unsigned int hash = hash_conntrack(net, zone, tuple);
-+	unsigned int hash = hash_bucket(__hash, net);
- 
- 	/* Disable BHs the entire time since we normally need to disable them
- 	 * at least once for the stats anyway.
-@@ -326,19 +340,27 @@ begin:
- 
- 	return NULL;
- }
-+
-+struct nf_conntrack_tuple_hash *
-+__nf_conntrack_find(struct net *net, u16 zone,
-+		    const struct nf_conntrack_tuple *tuple)
-+{
-+	return ____nf_conntrack_find(net, zone, tuple,
-+				     ____hash_conntrack(tuple, zone));
-+}
- EXPORT_SYMBOL_GPL(__nf_conntrack_find);
- 
- /* Find a connection corresponding to a tuple. */
--struct nf_conntrack_tuple_hash *
--nf_conntrack_find_get(struct net *net, u16 zone,
--		      const struct nf_conntrack_tuple *tuple)
-+static struct nf_conntrack_tuple_hash *
-+__nf_conntrack_find_get(struct net *net, u16 zone,
-+			const struct nf_conntrack_tuple *tuple, u32 __hash)
- {
- 	struct nf_conntrack_tuple_hash *h;
- 	struct nf_conn *ct;
- 
- 	rcu_read_lock();
- begin:
--	h = __nf_conntrack_find(net, zone, tuple);
-+	h = ____nf_conntrack_find(net, zone, tuple, __hash);
- 	if (h) {
- 		ct = nf_ct_tuplehash_to_ctrack(h);
- 		if (unlikely(nf_ct_is_dying(ct) ||
-@@ -356,6 +378,14 @@ begin:
- 
- 	return h;
- }
-+
-+struct nf_conntrack_tuple_hash *
-+nf_conntrack_find_get(struct net *net, u16 zone,
-+		      const struct nf_conntrack_tuple *tuple)
-+{
-+	return __nf_conntrack_find_get(net, zone, tuple,
-+				       ____hash_conntrack(tuple, zone));
-+}
- EXPORT_SYMBOL_GPL(nf_conntrack_find_get);
- 
- static void __nf_conntrack_hash_insert(struct nf_conn *ct,
-@@ -408,7 +438,8 @@ __nf_conntrack_confirm(struct sk_buff *skb)
- 		return NF_ACCEPT;
- 
- 	zone = nf_ct_zone(ct);
--	hash = hash_conntrack(net, zone, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple);
-+	/* reuse the __hash saved before */
-+	hash = hash_bucket(*(unsigned long *)&ct->tuplehash[IP_CT_DIR_REPLY].hnnode.pprev, net);
- 	repl_hash = hash_conntrack(net, zone, &ct->tuplehash[IP_CT_DIR_REPLY].tuple);
- 
- 	/* We're not in hash table, and we refuse to set up related
-@@ -566,10 +597,11 @@ static noinline int early_drop(struct net *net, unsigned int hash)
- 	return dropped;
- }
- 
--struct nf_conn *nf_conntrack_alloc(struct net *net, u16 zone,
--				   const struct nf_conntrack_tuple *orig,
--				   const struct nf_conntrack_tuple *repl,
--				   gfp_t gfp)
-+static struct nf_conn *
-+__nf_conntrack_alloc(struct net *net, u16 zone,
-+		     const struct nf_conntrack_tuple *orig,
-+		     const struct nf_conntrack_tuple *repl,
-+		     gfp_t gfp, u32 __hash)
- {
- 	struct nf_conn *ct;
- 
-@@ -583,6 +615,9 @@ struct nf_conn *nf_conntrack_alloc(struct net *net, u16 zone,
- 			get_random_bytes(&rand, sizeof(rand));
- 		} while (!rand);
- 		cmpxchg(&nf_conntrack_hash_rnd, 0, rand);
-+
-+		/* recompute the hash as nf_conntrack_hash_rnd is initialized */
-+		__hash = ____hash_conntrack(orig, zone);
- 	}
- 
- 	/* We don't want any race condition at early drop stage */
-@@ -590,7 +625,7 @@ struct nf_conn *nf_conntrack_alloc(struct net *net, u16 zone,
- 
- 	if (nf_conntrack_max &&
- 	    unlikely(atomic_read(&net->ct.count) > nf_conntrack_max)) {
--		unsigned int hash = hash_conntrack(net, zone, orig);
-+		unsigned int hash = hash_bucket(__hash, net);
- 		if (!early_drop(net, hash)) {
- 			atomic_dec(&net->ct.count);
- 			if (net_ratelimit())
-@@ -621,7 +656,8 @@ struct nf_conn *nf_conntrack_alloc(struct net *net, u16 zone,
- 	ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple = *orig;
- 	ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode.pprev = NULL;
- 	ct->tuplehash[IP_CT_DIR_REPLY].tuple = *repl;
--	ct->tuplehash[IP_CT_DIR_REPLY].hnnode.pprev = NULL;
-+	/* save __hash for reusing when confirming */
-+	*(unsigned long *)(&ct->tuplehash[IP_CT_DIR_REPLY].hnnode.pprev) = __hash;
- 	/* Don't set timer yet: wait for confirmation */
- 	setup_timer(&ct->timeout, death_by_timeout, (unsigned long)ct);
- 	write_pnet(&ct->ct_net, net);
-@@ -648,6 +684,14 @@ out_free:
- 	return ERR_PTR(-ENOMEM);
- #endif
- }
-+
-+struct nf_conn *nf_conntrack_alloc(struct net *net, u16 zone,
-+				   const struct nf_conntrack_tuple *orig,
-+				   const struct nf_conntrack_tuple *repl,
-+				   gfp_t gfp)
-+{
-+	return __nf_conntrack_alloc(net, zone, orig, repl, gfp, 0);
-+}
- EXPORT_SYMBOL_GPL(nf_conntrack_alloc);
- 
- void nf_conntrack_free(struct nf_conn *ct)
-@@ -669,7 +713,7 @@ init_conntrack(struct net *net, struct nf_conn *tmpl,
- 	       struct nf_conntrack_l3proto *l3proto,
- 	       struct nf_conntrack_l4proto *l4proto,
- 	       struct sk_buff *skb,
--	       unsigned int dataoff)
-+	       unsigned int dataoff, u32 __hash)
- {
- 	struct nf_conn *ct;
- 	struct nf_conn_help *help;
-@@ -683,7 +727,8 @@ init_conntrack(struct net *net, struct nf_conn *tmpl,
- 		return NULL;
- 	}
- 
--	ct = nf_conntrack_alloc(net, zone, tuple, &repl_tuple, GFP_ATOMIC);
-+	ct = __nf_conntrack_alloc(net, zone, tuple, &repl_tuple, GFP_ATOMIC,
-+				  __hash);
- 	if (IS_ERR(ct)) {
- 		pr_debug("Can't allocate conntrack.\n");
- 		return (struct nf_conntrack_tuple_hash *)ct;
-@@ -760,6 +805,7 @@ resolve_normal_ct(struct net *net, struct nf_conn *tmpl,
- 	struct nf_conntrack_tuple_hash *h;
- 	struct nf_conn *ct;
- 	u16 zone = tmpl ? nf_ct_zone(tmpl) : NF_CT_DEFAULT_ZONE;
-+	u32 __hash;
- 
- 	if (!nf_ct_get_tuple(skb, skb_network_offset(skb),
- 			     dataoff, l3num, protonum, &tuple, l3proto,
-@@ -769,10 +815,11 @@ resolve_normal_ct(struct net *net, struct nf_conn *tmpl,
- 	}
- 
- 	/* look for tuple match */
--	h = nf_conntrack_find_get(net, zone, &tuple);
-+	__hash = ____hash_conntrack(&tuple, zone);
-+	h = __nf_conntrack_find_get(net, zone, &tuple, __hash);
- 	if (!h) {
- 		h = init_conntrack(net, tmpl, &tuple, l3proto, l4proto,
--				   skb, dataoff);
-+				   skb, dataoff, __hash);
- 		if (!h)
- 			return NULL;
- 		if (IS_ERR(h))
-@@ -1312,8 +1359,7 @@ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
- 			ct = nf_ct_tuplehash_to_ctrack(h);
- 			hlist_nulls_del_rcu(&h->hnnode);
- 			bucket = __hash_conntrack(&h->tuple, nf_ct_zone(ct),
--						  hashsize,
--						  nf_conntrack_hash_rnd);
-+						  hashsize);
- 			hlist_nulls_add_head_rcu(&h->hnnode, &hash[bucket]);
- 		}
- 	}
+ 	struct s3c64xx_spi_driver_data *sdd = buf_id;
+ 	unsigned long flags;
+-- 
+1.7.1
+
