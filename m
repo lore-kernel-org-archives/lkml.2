@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab0HUS1K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 14:27:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42227 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab0HUS1H (ORCPT
+	id S1751985Ab0HUSkV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 14:40:21 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:34119 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751173Ab0HUSkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 14:27:07 -0400
-Date: Sat, 21 Aug 2010 15:26:58 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+	Sat, 21 Aug 2010 14:40:18 -0400
+Date: Sat, 21 Aug 2010 14:40:15 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>, Jan Beulich <JBeulich@novell.com>,
+        Roland Dreier <rdreier@cisco.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ltt-dev@lists.casi.polymtl.ca,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf tools: Add --tui and --stdio to choose the UI
-Message-ID: <20100821182658.GH2973@ghostprotocols.net>
-References: <1282412712-3547-1-git-send-email-acme@infradead.org> <1282412712-3547-2-git-send-email-acme@infradead.org> <20100821174754.GA10213@infradead.org>
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
+        Jamie Lokier <jamie@shareable.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH for -tip 1/2] kernel.h: add
+	MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2
+Message-ID: <20100821184015.GA17805@Krystal>
+References: <20100821141750.770348530@efficios.com> <20100821142215.023431313@efficios.com> <20100821182623.GA9621@core2.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100821174754.GA10213@infradead.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100821182623.GA9621@core2.telecom.by>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:36:49 up 210 days, 21:13,  4 users,  load average: 0.20, 0.14,
+	0.10
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Aug 21, 2010 at 01:47:54PM -0400, Christoph Hellwig escreveu:
-> On Sat, Aug 21, 2010 at 02:45:11PM -0300, Arnaldo Carvalho de Melo wrote:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > Relying just on ~/.perfconfig or rebuilding the tool disabling support
-> > for the TUI is too cumbersome, so allow specifying which UI to use and
-> > make the command line switch override whatever is in ~/.perfconfig.
+* Alexey Dobriyan (adobriyan@gmail.com) wrote:
+> On Sat, Aug 21, 2010 at 10:17:51AM -0400, Mathieu Desnoyers wrote:
+> > +/* Force a compilation error if condition is constant and not a power of 2 */
+> > +#define MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2(n)		\
+> > +	MAYBE_BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
 > 
-> Much better than the current situation, thanks!
-> 
-> I still thinks commands like perf report should not be overloaded for
-> two different user interfaces, that is a
-> 
-> 	perf report
-> 
-> should always be the line oriented interface, and the newt UI should be
-> something like
-> 
-> 	perf treport
-> 
-> Btw, am I the only one that doesn't find the next interface too helpful?
-> In general the line oriented interface seem to present the information
-> much better, and in the cases where it gets too complicated the newt
+> Sorry, this is tasteless macro.
 
-Much better how, exactly?
+Let's look at the surrounding where I added this macro in kernel.h:
 
-> interface doesn't really helper either.  A real gtk/qt interface with
-> a proper tree widget would seem like the more useful interface for that.
 
-What would a gtk/qt interface buy us that is not present on the TUI
-right now?
+/* Force a compilation error if condition is true */
+#define BUILD_BUG_ON(condition) ((void)BUILD_BUG_ON_ZERO(condition))
 
-I'm not saying it wouldn't buy something, just interested in what is
-this something :)
+/* Force a compilation error if condition is constant and true */
+#define MAYBE_BUILD_BUG_ON(cond) ((void)sizeof(char[1 - 2 * !!(cond)]))
 
-And yes, gtk/qt interfaces should be added. The experience with the TUI
-is helping organize the data structures for that.
+/* Force a compilation error if a constant expression is not a power of 2 */
+#define BUILD_BUG_ON_NOT_POWER_OF_2(n)			\
+	BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
 
-- Arnaldo
+/* Force a compilation error if condition is true, but also produce a
+   result (of value 0 and type size_t), so the expression can be used
+   e.g. in a structure initializer (or where-ever else comma expressions
+   aren't permitted). */
+#define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
+#define BUILD_BUG_ON_NULL(e) ((void *)sizeof(struct { int:-!!(e); }))
+
+
+So I am guessing that you plan to rewrite all of these ? Or perharps you have
+other suggestions ? Commit cc8ef6eb21e964b1c5eb97b2d0e8ac9893e1bf86 introduced
+"BUILD_BUG_ON_NOT_POWER_OF_2()" btw.
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
