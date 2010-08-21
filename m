@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab0HUUnZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 16:43:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45650 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab0HUUnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 16:43:23 -0400
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: James Bottomley <James.Bottomley@suse.de>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C701E08.2020005@vlnb.net>
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
-	 <1282144271.3035.31.camel@mulgrave.site>
-	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
-	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>
-	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
-	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
-	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>
-	 <4C701E08.2020005@vlnb.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 Aug 2010 15:43:18 -0500
-Message-ID: <1282423398.3015.39.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1751841Ab0HUUr7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 16:47:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35830 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab0HUUr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 16:47:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=pVX1FE4k56ML0ZUOAMfNFIYmOm4fSyYcQK38jDWrmm+E56yOJA43Aca9M3VDkF/IqN
+         fRSscD//CzPTcMKT5uRyylGSB1uKNn/Mbfbz+QyWyZwmqv1Axhzd2SRqrnM86WA1JdZj
+         mN4HO5zAOhm3K47Ch8DcBHtzFKAEKV7nZTvlE=
+Message-ID: <4C703B78.6080005@gmail.com>
+Date: Sat, 21 Aug 2010 22:47:52 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Someone Something <fordhaivat@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: How the heck do I get started?
+References: <AANLkTi=9y=_NnC349523E_qgJ2nSk1++3Z_Phx+GMJW4@mail.gmail.com>
+In-Reply-To: <AANLkTi=9y=_NnC349523E_qgJ2nSk1++3Z_Phx+GMJW4@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-21 at 22:42 +0400, Vladislav Bolkhovitin wrote:
-> Nicholas A. Bellinger, on 08/20/2010 02:29 AM wrote:
-> > "We will be extending the scsi_tgt_[lib,if].c mapped ring interface to
-> > allow TCM to access userspace backstores transparently with existing
-> > kernel level TCM fabric modules, and using the generic configfs fabric
-> > module infrastructure in target_core_fabric_configfs.c for the port and
-> > I_T nexus control plane just as you would with any TCM backstore
-> > subsystem today.
-> >
-> > Again, in open source you have to build upon what already exists and
-> > move forward.  The original STGT kernel<->  userspace ring abstraction
-> > and logic in drivers/scsi/scsi_tgt_lib.c:scsi_tgt_queue_command() ->
-> > scsi_tgt_uspace_send_cmd() is already going to do the vast majority of
-> > what is required for handling fabric I/O processing and I_T Nexus and
-> > Port management in kernel space with a userspace backstore.  It is
-> > really just a matter of allowing the STGT ring request to optionally be
-> > sent out to userspace as a standalone LUN instead of as a target port."
-> 
-> You forgot to mention one small thing. You are going to (re)use current 
-> STGT interface for user space backend, which in 5 years of being 
-> mainline has not gained any noticeable interest, because it is 
-> fundamentally slow.
+On 08/21/2010 07:56 PM, Someone Something wrote:
+> How should
+> I get started hacking on it? Writing modules, or just browsing through
+> the code and trying to understand it? Any books you guys recommend?
 
-That's not exactly what the results of a speed comparison one of your
-people did said, now is it?  The results were actually not much
-difference on line speeds up to GigE.
+Go through
+Documentation/kernel-docs.txt
+and
+http://kernelnewbies.org/KernelJanitors
 
-Interface re-use (or at least ABI compatibility) is the whole point,
-it's what makes the solution a drop in replacement.
+> 1) Does the linux kernel use pages AND segments? Or just one of them?
 
->  It needs a complete redesign to become fast. In 
-> contrast, interface provided by scst_user has just 3% overhead comparing 
-> with fully in-kernel backend and allows to build storage capable of 
-> handling 1,500,000 IOPSes (Kaminario).
+Speaking of x86 32-bit, both. Segments are a whole space 0-4G though, so
+fairly unused except some small kind of protection. x86 64-bit removed
+segmenting support.
 
-For a replacement, first we get the current userspace code working as
-is, then you can propose modifications to make it go faster.
+> If its pages, how does it deal with the wasted memory at the end of
+> each page? Very small pages?
 
-James
+Which wasted memory? No memory is wasted. If code needs memory <
+PAGE_SIZE, one of slab allocator is used.
 
+> 2) I looked at the 0.01 kernel and it has this weird mix of nasm and
+> gas syntax for its assembly. Why's that?
 
+0.01 is the ancient history, who cares?
+
+> 3) Is there some kind of tracker for the kernel where it lists bugs and stuff?
+
+bugzilla.kernel.org
+And some reports are reported solely to this (or other) ML.
+
+> 4) If I do have a patch I'd like to submit, how would I do this?
+
+See
+Documentation/SubmittingPatches
+
+And Documentation/00-INDEX is of interest usually.
+
+hth,
+-- 
+js
