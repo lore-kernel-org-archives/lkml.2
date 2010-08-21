@@ -1,148 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab0HUACr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 20:02:47 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:37013 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab0HUACq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 20:02:46 -0400
-Subject: Re: [KVM timekeeping 17/35] Implement getnsboottime kernel API
-From: john stultz <johnstul@us.ibm.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <4C6F11D6.1050101@redhat.com>
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
-	 <1282291669-25709-18-git-send-email-zamsden@redhat.com>
-	 <1282329594.3302.39.camel@localhost.localdomain>
-	 <4C6F11D6.1050101@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Aug 2010 17:02:38 -0700
-Message-ID: <1282348958.28794.21.camel@localhost.localdomain>
+	id S1751465Ab0HUAJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 20:09:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34820 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915Ab0HUAJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 20:09:13 -0400
+Date: Sat, 21 Aug 2010 10:09:00 +1000
+From: Neil Brown <neilb@suse.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, adilger@sun.com,
+        corbet@lwn.net, npiggin@kernel.dk, hooanon05@yahoo.co.jp,
+        bfields@fieldses.org, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+Message-ID: <20100821100900.4b15fe08@notabene>
+In-Reply-To: <20100820115135.GQ31363@ZenIV.linux.org.uk>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100820083057.GA10039@infradead.org>
+	<20100820195303.20b17210@notabene>
+	<20100820115135.GQ31363@ZenIV.linux.org.uk>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 13:37 -1000, Zachary Amsden wrote:
-> On 08/20/2010 08:39 AM, john stultz wrote:
-> > On Thu, 2010-08-19 at 22:07 -1000, Zachary Amsden wrote:
-> >    
-> >> Add a kernel call to get the number of nanoseconds since boot.  This
-> >> is generally useful enough to make it a generic call.
-> >>      
-> > Few comments here.
-> >
-> >    
-> >> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
-> >> ---
-> >>   include/linux/time.h      |    1 +
-> >>   kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
-> >>   2 files changed, 28 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/include/linux/time.h b/include/linux/time.h
-> >> index ea3559f..5d04108 100644
-> >> --- a/include/linux/time.h
-> >> +++ b/include/linux/time.h
-> >> @@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
-> >>   extern void getrawmonotonic(struct timespec *ts);
-> >>   extern void getboottime(struct timespec *ts);
-> >>   extern void monotonic_to_bootbased(struct timespec *ts);
-> >> +extern s64 getnsboottime(void);
-> >>      
-> > So instead of converting the timespec from getboottime, why did you add
-> > a new interface? Also if not a timespec, why did you pick a s64 instead
-> > of a ktime_t?
-> >    
+[[email address for Nick Piggin changed to npiggin@kernel.dk]]
+
+On Fri, 20 Aug 2010 12:51:35 +0100
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
+
+> On Fri, Aug 20, 2010 at 07:53:03PM +1000, Neil Brown wrote:
+> > On Fri, 20 Aug 2010 04:30:57 -0400
+> > Christoph Hellwig <hch@infradead.org> wrote:
+> > 
+> > > Suddenly getting an file pointer for a symlink which could never happen
+> > > before is a really bad idea.  Just add a proper readlink_by_handle
+> > > system call, similar to what's done in the XFS interface.
+> > 
+> > Why is that?
+> > With futexes we suddenly get a file descriptor for something we could never
+> > get a file descriptor on before and that doesn't seem to be a problem.
+> > 
+> > Why should symlinks be special as the only thing that you cannot have a file
+> > descriptor for?  Uniformity of interface is a very valuable property.
 > 
-> The new interface was suggested several times, so I'm proposing it.  I'm 
-> indifferent to putting it the kernel API or making it internal to KVM.  
-> KVM doesn't want to deal with conversions to / from ktime_t; this code 
-> uses a lot (too much) math, and it's easy to get wrong when splitting 
-> sec / nsec fields.  So s64 seems a natural type for ns values.  I 
-> realize it's not entirely consistent with the kernel API, but s64 
-> representation for ns seems to be creeping in.
+> You are welcome to review the codepaths around pathname resolution for
+> assumptions of presense of ->follow_link() and friends; there _are_
+> subtle cases and dumping your "opened symlinks" in there is far from
+> a trivial change.  Note that it affects more than just the starting
+> points of lookups; /proc/*/fd/* stuff is also involved.
 
-I can understand wanting that, way back I was pushing for s64 ns
-representations for most time values, but the ktime_t was considered a
-reasonable compromise to avoid costly 64bit divides to split (sec,nsec)
-on 32bit arches.
+So as I understand it you aren't rejecting the concept in principle, but you
+believe non-trivial code review is required before it can be considered an
+acceptable change?
+That's quite reasonable.  I hope to find time to have a look at the code.
 
-Maybe call it getboottime_ns() just to distinguish it from
-getnstimeofday() which returns a timespec?
-
-
-> >>   extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
-> >>   extern int timekeeping_valid_for_hres(void);
-> >> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> >> index caf8d4d..d250f0a 100644
-> >> --- a/kernel/time/timekeeping.c
-> >> +++ b/kernel/time/timekeeping.c
-> >> @@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
-> >>   }
-> >>   EXPORT_SYMBOL_GPL(ktime_get_ts);
-> >>
-> >> +
-> >> +/**
-> >> + * getnsboottime - get the bootbased clock in nsec format
-> >> + *
-> >> + * The function calculates the bootbased clock from the realtime
-> >> + * clock and the wall_to_monotonic offset and stores the result
-> >> + * in normalized timespec format in the variable pointed to by @ts.
-> >> + */
-> >> +s64 getnsboottime(void)
-> >> +{
-> >> +	unsigned int seq;
-> >> +	s64 secs, nsecs;
-> >> +
-> >> +	WARN_ON(timekeeping_suspended);
-> >> +
-> >> +	do {
-> >> +		seq = read_seqbegin(&xtime_lock);
-> >> +		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
-> >> +		secs += total_sleep_time.tv_sec;
-> >> +		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
-> >> +		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
-> >> +
-> >> +	} while (read_seqretry(&xtime_lock, seq));
-> >> +	return nsecs + (secs * NSEC_PER_SEC);
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(getnsboottime);
-> >>      
-> > You forgot to include the boottime.tv_sec/nsec offset in this. Take a
-> > look again at getboottime()
-> >    
 > 
-> I don't think so... boottime is internal to getboottime, and it's just 
-> wall_to_monotonic + total_sleep_time -- right?
+> BTW, speaking of NULL pathname, linkat() variant that allows creating a link
+> to an opened file is also a very dubious thing; at the very least, you get
+> non-trivial security implications, since now a process that got an opened
+> descriptor passed to it by somebody else may create hardlinks to the sucker.
 
-Right, sorry, some architectures refine boot time even further,
-providing an offset from when the machine was actually powered on to
-when the timekeeping code was initialized. But that's already adjusted
-into wall_to_monotonic at startup. I thought we kept it separately.
+Fair comment, and while one could imagine ways around this (such as requiring
+some Capability to link an fd) they wouldn't be very elegant.
+But then nor is inventing a pile of new syscalls for doing different things
+with handles such as the list Aneesh posted.
 
+Maybe a different approach is needed.
 
-> Perhaps I've named the function badly.  What I want is the monotonic 
-> clock, adjusted for sleep time - i.e. a clock that counts elapsed real 
-> time without accounting for wall clock changes due to time zone, which 
-> never goes backwards.
+How about a new AT flag:  AT_FILE_HANDLE
 
-That looks fine then.  Its a little confusing since getboottime()
-returns a timespec with the absolute time that the system booted. Where
-as your interface is providing the time since boot. 
+Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
+the 'name' pointer actually points to a filehandle fragment interpreted in
+that filesystem.
 
-Maybe gettimefromboot_ns() would be clearer?
+One problem is that there is no way to pass the length...
+Options:
+   fragment is at most 64 bytes nul padded at the end
+   fragment is hex encoded and nul terminated
+   ??
 
-thanks
--john
+I think I prefer the hex encoding, but I'm hoping someone else has a better
+idea.
 
-
-
-
-
-
+NeilBrown
