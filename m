@@ -1,177 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab0HUUTW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 16:19:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50452 "EHLO hera.kernel.org"
+	id S1751650Ab0HUUTo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 16:19:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50464 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab0HUUTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 16:19:20 -0400
-Date: Sat, 21 Aug 2010 20:18:51 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        hch@infradead.org, fweisbec@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, efault@gmx.de,
-        peterz@infradead.org, tglx@linutronix.de, hch@infradead.org
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1751335Ab0HUUTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 16:19:42 -0400
+Date: Sat, 21 Aug 2010 20:19:13 GMT
+From: "tip-bot for Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, kirill@shutemov.name, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, kirill@shutemov.name, mingo@elte.hu
+In-Reply-To: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
+References: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add --tui and --stdio to choose the UI
-Message-ID: <tip-8b9e74eb8af808807192d16b76565c27154ae7ed@git.kernel.org>
-Git-Commit-ID: 8b9e74eb8af808807192d16b76565c27154ae7ed
+Subject: [tip:perf/core] perf tools: add test for strlcpy()
+Message-ID: <tip-f4e7ac0a233a4dc9b51345546ab69c64bb43e2c1@git.kernel.org>
+Git-Commit-ID: f4e7ac0a233a4dc9b51345546ab69c64bb43e2c1
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 21 Aug 2010 20:18:52 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 21 Aug 2010 20:19:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8b9e74eb8af808807192d16b76565c27154ae7ed
-Gitweb:     http://git.kernel.org/tip/8b9e74eb8af808807192d16b76565c27154ae7ed
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 21 Aug 2010 10:38:16 -0300
+Commit-ID:  f4e7ac0a233a4dc9b51345546ab69c64bb43e2c1
+Gitweb:     http://git.kernel.org/tip/f4e7ac0a233a4dc9b51345546ab69c64bb43e2c1
+Author:     Kirill A. Shutemov <kirill@shutemov.name>
+AuthorDate: Sat, 21 Aug 2010 03:38:20 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 21 Aug 2010 10:49:46 -0300
+CommitDate: Sat, 21 Aug 2010 11:22:47 -0300
 
-perf tools: Add --tui and --stdio to choose the UI
+perf tools: add test for strlcpy()
 
-Relying just on ~/.perfconfig or rebuilding the tool disabling support
-for the TUI is too cumbersome, so allow specifying which UI to use and
-make the command line switch override whatever is in ~/.perfconfig.
+Some Linux distributions like ALT Linux provides patched glibc with
+contains strlcpy(). It's confilcts with strlcpy() from perf.
 
-Suggested-by: Christoph Hellwig <hch@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <new-submission>
+Let's add check for strlcpy().
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-annotate.txt |   11 +++++++++--
- tools/perf/Documentation/perf-report.txt   |    7 +++++++
- tools/perf/builtin-annotate.c              |    9 ++++++++-
- tools/perf/builtin-report.c                |   11 ++++++++++-
- 4 files changed, 34 insertions(+), 4 deletions(-)
+ tools/perf/Makefile          |    9 +++++++++
+ tools/perf/feature-tests.mak |   11 +++++++++++
+ tools/perf/util/cache.h      |    2 ++
+ tools/perf/util/path.c       |    3 ++-
+ 4 files changed, 24 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-index 5164a65..b2c6330 100644
---- a/tools/perf/Documentation/perf-annotate.txt
-+++ b/tools/perf/Documentation/perf-annotate.txt
-@@ -8,7 +8,7 @@ perf-annotate - Read perf.data (created by perf record) and display annotated co
- SYNOPSIS
- --------
- [verse]
--'perf annotate' [-i <file> | --input=file] symbol_name
-+'perf annotate' [-i <file> | --input=file] [symbol_name]
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index dcb9700..7473de0 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -647,6 +647,15 @@ else
+ 	endif
+ endif
  
- DESCRIPTION
- -----------
-@@ -24,6 +24,13 @@ OPTIONS
- --input=::
-         Input file name. (default: perf.data)
- 
-+--stdio:: Use the stdio interface.
 +
-+--tui:: Use the TUI interface Use of --tui requires a tty, if one is not
-+	present, as when piping to other commands, the stdio interface is
-+	used. This interfaces starts by centering on the line with more
-+	samples, TAB/UNTAB cycles thru the lines with more samples.
++ifdef NO_STRLCPY
++	BASIC_CFLAGS += -DNO_STRLCPY
++else
++	ifneq ($(call try-cc,$(SOURCE_STRLCPY),),y)
++		BASIC_CFLAGS += -DNO_STRLCPY
++	endif
++endif
 +
- SEE ALSO
- --------
--linkperf:perf-record[1]
-+linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index abfabe9..12052c9 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -65,6 +65,13 @@ OPTIONS
- 		 the tree is considered as a new profiled object. +
- 	Default: fractal,0.5.
+ ifndef CC_LD_DYNPATH
+ 	ifdef NO_R_TO_GCC_LINKER
+ 		# Some gcc does not accept and pass -R to the linker to specify
+diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+index ddb68e6..ef3d0d6 100644
+--- a/tools/perf/feature-tests.mak
++++ b/tools/perf/feature-tests.mak
+@@ -110,6 +110,17 @@ int main(void)
+ }
+ endef
  
-+--stdio:: Use the stdio interface.
++define SOURCE_STRLCPY
++#include <stdlib.h>
++extern size_t strlcpy(char *dest, const char *src, size_t size);
 +
-+--tui:: Use the TUI interface, that is integrated with annotate and allows
-+        zooming into DSOs or threads, among other features. Use of --tui
-+	requires a tty, if one is not present, as when piping to other
-+	commands, the stdio interface is used.
++int main(void)
++{
++	strlcpy(NULL, NULL, 0);
++	return 0;
++}
++endef
 +
- SEE ALSO
- --------
- linkperf:perf-stat[1]
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 20ee21d..6d5604d8d 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -28,7 +28,7 @@
+ # try-cc
+ # Usage: option = $(call try-cc, source-to-build, cc-options)
+ try-cc = $(shell sh -c						  \
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 27e9ebe..a772979 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -82,6 +82,8 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
+ extern char *perf_pathdup(const char *fmt, ...)
+ 	__attribute__((format (printf, 1, 2)));
  
- static char		const *input_name = "perf.data";
++#ifdef NO_STRLCPY
+ extern size_t strlcpy(char *dest, const char *src, size_t size);
++#endif
  
--static bool		force;
-+static bool		force, use_tui, use_stdio;
+ #endif /* __PERF_CACHE_H */
+diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
+index 58a470d..bd74977 100644
+--- a/tools/perf/util/path.c
++++ b/tools/perf/util/path.c
+@@ -22,6 +22,7 @@ static const char *get_perf_dir(void)
+ 	return ".";
+ }
  
- static bool		full_paths;
- 
-@@ -427,6 +427,8 @@ static const struct option options[] = {
- 		    "be more verbose (show symbol address, etc)"),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
-+	OPT_BOOLEAN(0, "tui", &use_tui, "Use the TUI interface"),
-+	OPT_BOOLEAN(0, "stdio", &use_stdio, "Use the stdio interface"),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
- 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
-@@ -442,6 +444,11 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __used)
++#ifdef NO_STRLCPY
+ size_t strlcpy(char *dest, const char *src, size_t size)
  {
- 	argc = parse_options(argc, argv, options, annotate_usage, 0);
+ 	size_t ret = strlen(src);
+@@ -33,7 +34,7 @@ size_t strlcpy(char *dest, const char *src, size_t size)
+ 	}
+ 	return ret;
+ }
+-
++#endif
  
-+	if (use_stdio)
-+		use_browser = 0;
-+	else if (use_tui)
-+		use_browser = 1;
-+
- 	setup_browser();
- 
- 	symbol_conf.priv_size = sizeof(struct sym_priv);
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 55fc1f4..7d35a71 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -32,7 +32,7 @@
- 
- static char		const *input_name = "perf.data";
- 
--static bool		force;
-+static bool		force, use_tui, use_stdio;
- static bool		hide_unresolved;
- static bool		dont_use_callchains;
- 
-@@ -450,6 +450,8 @@ static const struct option options[] = {
- 		    "Show per-thread event counters"),
- 	OPT_STRING(0, "pretty", &pretty_printing_style, "key",
- 		   "pretty printing style key: normal raw"),
-+	OPT_BOOLEAN(0, "tui", &use_tui, "Use the TUI interface"),
-+	OPT_BOOLEAN(0, "stdio", &use_stdio, "Use the stdio interface"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
-@@ -482,8 +484,15 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ static char *get_pathname(void)
  {
- 	argc = parse_options(argc, argv, options, report_usage, 0);
- 
-+	if (use_stdio)
-+		use_browser = 0;
-+	else if (use_tui)
-+		use_browser = 1;
-+
- 	if (strcmp(input_name, "-") != 0)
- 		setup_browser();
-+	else
-+		use_browser = 0;
- 	/*
- 	 * Only in the newt browser we are doing integrated annotation,
- 	 * so don't allocate extra space that won't be used in the stdio
