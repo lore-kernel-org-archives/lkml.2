@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab0HUKYY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 06:24:24 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:51634 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab0HUKYW (ORCPT
+	id S1751876Ab0HUKgn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 06:36:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51000 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab0HUKgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 06:24:22 -0400
-Subject: Re: [PATCH 0/6] improve list_sort test
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Don Mullis <don.mullis@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
-References: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 Aug 2010 13:22:35 +0300
-Message-ID: <1282386155.2358.43.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 21 Aug 2010 10:24:13.0235 (UTC) FILETIME=[00222030:01CB411B]
-X-Nokia-AV: Clean
+	Sat, 21 Aug 2010 06:36:40 -0400
+Date: Sat, 21 Aug 2010 06:36:38 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [patch 04/10] ioctl: Use asm-generic/ioctls.h on frv (enables
+ termiox)
+Message-ID: <20100821103638.GB10671@infradead.org>
+References: <20100820211401.651509182@suse.com>
+ <20100820211538.515791797@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100820211538.515791797@suse.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-07 at 11:10 +0300, Artem Bityutskiy wrote:
-> Hi,
+On Fri, Aug 20, 2010 at 05:14:05PM -0400, Jeff Mahoney wrote:
+> This patch converts frv to use asm-generic/ioctls.h instead of its
+> own version.
 > 
-> while hunting a non-existing bug in 'list_sort()', I've improved the
-> 'list_sort_test()' function which tests the 'list_sort()' library call. Although
-> at the end I found a bug in my code, but not in 'list_sort()', I think my
-> clean-ups and improvements are worth merging because they make the test function
-> better.
+> The differences between the arch-specific version and the generic
+> version are as follows:
 > 
-> Don, if you are ok with the patches, I'll send them to Andrew Morton.
+> - FRV defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
+> - FRV defines TIOCTTYGSTRUCT, kept in arch-specific version
 
-Any feedback?
-
-I'm also going to add this patch to the series:
-
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [PATCH 1/7] lib/list_sort: improve comments
-
-Document the fact that 'list_sort()' can call the 'cmp()' function with
-'a' == 'b' for the sake of 'cond_reshed()'.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
----
- lib/list_sort.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/lib/list_sort.c b/lib/list_sort.c
-index 4b5cb79..d134b41 100644
---- a/lib/list_sort.c
-+++ b/lib/list_sort.c
-@@ -93,6 +93,11 @@ static void merge_and_restore_back_links(void *priv,
-  * should sort before @b, and a positive value if @a should sort after
-  * @b. If @a and @b are equivalent, and their original relative
-  * ordering is to be preserved, @cmp must return 0.
-+ *
-+ * This function can be used in atomic context. This means that @cmp has to
-+ * take care of calling 'cond_resched()' when needed. And 'list_sort()' will
-+ * sometimes call @cmp with @a equivalent to @b, just to let the user call
-+ * 'cond_resched()'.
-  */
- void list_sort(void *priv, struct list_head *head,
- 		int (*cmp)(void *priv, struct list_head *a,
--- 
-1.7.1.1
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+This is an ioctl that used be implemented in generic code and then
+was removed.  I looks like a couple of ports added after the removal
+kept the defintion anyway.  Just kill it from all of them.
 
