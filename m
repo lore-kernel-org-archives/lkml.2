@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416Ab0HUDpF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 23:45:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35787 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab0HUDpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 23:45:03 -0400
-Message-ID: <4C6F4BBB.5040207@zytor.com>
-Date: Fri, 20 Aug 2010 20:44:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1751285Ab0HUD6k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 23:58:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57296 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab0HUD6h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 23:58:37 -0400
 MIME-Version: 1.0
-To: Mark Stanovich <mrktimber@gmail.com>
-CC: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.35.3
-References: <AANLkTi=wyG13QOU3EQwaO3qBxY=aR=ftiP4s7YpemrPp@mail.gmail.com>
-In-Reply-To: <AANLkTi=wyG13QOU3EQwaO3qBxY=aR=ftiP4s7YpemrPp@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [115.174.151.228]
+In-Reply-To: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
+References: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
+Date: Sat, 21 Aug 2010 03:58:35 +0000
+Message-ID: <AANLkTik0ZGs3i_mHtB0s6iT6X0cLgxMjRN7Hi9FK_ZLF@mail.gmail.com>
+Subject: Re: System time drifts when processor idle.
+From: Lin Ming <lin@ming.vg>
+To: jean-philippe francois <jp.francois@cynove.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2010 08:40 PM, Mark Stanovich wrote:
-> After updating to the 2.6.35.3 stable release, my machine was rebooting
-> automatically during the first few seconds of boot.
-> 
-> I bisected to the first bad commit of
-> 
-> commit 568132624386f53e87575195d868db
-> 9afb2e9316
-> Author: H. Peter Anvin <hpa@zytor.com <mailto:hpa@zytor.com>>
-> Date:   Tue Jul 27 17:01:49 2010 -0700
-> 
->     x86: Add memory modify constraints to xchg() and cmpxchg()
->    
->     commit 113fc5a6e8c2288619ff7e8187a6f556b7e0d372 upstream.
->    
->     xchg() and cmpxchg() modify their memory operands, not merely read
->     them.  For some versions of gcc the "memory" clobber has apparently
->     dealt with the situation, but not for all.
->    
-> I noticed that the latest version pulled from Linus's git tree did not
-> have the problem.  After looking at the changes to
-> arch/x86/include/asm/cmpxchg_32.h, I cherry-picked two patches from
-> Linus's tree that seemed to make a difference, namely:
-> 
-> 69309a05907546fb686b251d4ab041c26afe1e1d
-> 4532b305e8f0c238dd73048068ff8a6dd1380291
-> 
-> Applying these patches solved the rebooting problem on 2.6.35.3
-> 
-> I believe the same problem also happens for the latest stable version of
-> 2.6.34, but did not verify the fix worked for the 2.6.34 stable releases.
-> 
-> I don't know if this is helpful, but I thought I would let you know in
-> case someone else is having the same problem.
-> 
-> If you need any further information, just let me know.
-> 
+On Fri, Aug 20, 2010 at 8:55 AM, jean-philippe francois
+<jp.francois@cynove.com> wrote:
+> Hi,
+>
+> Please correct me if I am sending this to the wrong list.
 
-Yes, as a matter of fact, we have been trying to root-cause this
-problem; please see:
+LKML is better for this issue. Added.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16612
+Lin Ming
 
-If you could try the one-liner in there and see if it solves your
-problem, it would be great.
-
-	-hpa
-
-P.S. What version of gcc do you use?
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+>
+> I would like to debug the following issue, which I suspect is related
+> to cpu losing track of time when going idle.
+>
+> When I run the following script :
+>
+> #!/bin/bash
+> # set hwclock to system clock to start
+> # the log file with the same time
+> hwclock -w
+> #start with a fresh logfile
+> touch clocktest.log
+> echo START > clocktest.log
+> while [[ true ]]
+> do
+>    systime=$(date)
+>    hwtime=$(hwclock -r)
+>    echo "$systime | $hwtime" >> clocktest.log
+>    sleep 20
+> done
+>
+> Expected output :
+> On each line, the system time (left) and hardware time (right)
+> should be roughly the same. Time delta between each line should be
+> around 20 seconds
+>
+> Observed output :
+> This is an edited version of the real logfile  so that it fits on one
+> line. the date was removed.
+> START
+> 15:09:43 (UTC+0200) |  15:09:44 CEST -0.500555 secondes
+> 15:10:04 (UTC+0200) |  15:10:05 CEST -1.001562 secondes
+> 15:10:25 (UTC+0200) |  15:10:26 CEST -0.985944 secondes
+> 15:10:46 (UTC+0200) |  15:15:46 CEST -0.032792 secondes <-- 5 minute lag !
+> 15:11:06 (UTC+0200) |  15:16:07 CEST -0.985926 secondes
+> 15:11:27 (UTC+0200) |  15:16:28 CEST -1.001539 secondes
+> 15:11:48 (UTC+0200) |  15:16:49 CEST -0.985969 secondes
+> 15:12:09 (UTC+0200) |  15:17:10 CEST -0.985977 secondes
+> 15:12:30 (UTC+0200) |  15:17:31 CEST -1.001544 secondes
+> 15:12:51 (UTC+0200) |  15:17:52 CEST -0.985920 secondes
+> 15:13:12 (UTC+0200) |  15:18:13 CEST -0.985939 secondes
+> 15:13:33 (UTC+0200) |  15:18:34 CEST -1.001581 secondes
+> 15:13:54 (UTC+0200) |  15:18:55 CEST -0.985917 secondes
+> 15:14:15 (UTC+0200) |  15:29:15 CEST -0.079685 secondes <-- add
+> another 10 minute
+> 15:14:35 (UTC+0200) |  15:29:36 CEST -1.001568 secondes
+> 15:14:56 (UTC+0200) |  15:29:57 CEST -0.985952 secondes
+>
+> As you can see, after 20 minutes without touching the computer, the
+> system time is late by 15 minutes.
+> This was tested on ubuntu 10.04 with a 2.6.32  "vanilla" kernel where
+> "vanilla" means ubuntu packaged
+> upstream kernel  closest to the distribution shipped kernel.
+>
+> How can I debug and possibly fix this issue ?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
