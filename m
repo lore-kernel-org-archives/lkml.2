@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab0HUAlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 20:41:03 -0400
+	id S1751613Ab0HUAl3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 20:41:29 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:37644 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab0HUAlB (ORCPT
+	with ESMTP id S1751160Ab0HUAlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 20:41:01 -0400
+	Fri, 20 Aug 2010 20:41:03 -0400
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 1/2] perf: add test for strlcpy()
-Date: Sat, 21 Aug 2010 03:38:20 +0300
-Message-Id: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
+Subject: [PATCH 2/2] perf: fix build with -Wl,--as-needed
+Date: Sat, 21 Aug 2010 03:38:21 +0300
+Message-Id: <1282351101-8879-2-git-send-email-kirill@shutemov.name>
 X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
+References: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Linux distributions like ALT Linux provides patched glibc with
-contains strlcpy(). It's confilcts with strlcpy() from perf.
+We need to put all libraries at the end of linking command to be able to
+use -Wl,--as-needed (default in some distributions).
 
-Let's add check for strlcpy().
+python-config --ldconfig also prints -lpython*, but we need to put it
+to EXTLIBS, not to ALL_LDFLAGS.
+
+Let's add call of python-config --libs and put its output to EXTLIBS.
 
 Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 ---
- tools/perf/Makefile          |    8 ++++++++
- tools/perf/feature-tests.mak |   11 +++++++++++
- tools/perf/util/cache.h      |    2 ++
- tools/perf/util/path.c       |    3 ++-
- 4 files changed, 23 insertions(+), 1 deletions(-)
+ tools/perf/Makefile |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4f1fa77..496a0d6 100644
+index 496a0d6..a5972f6 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -653,6 +653,14 @@ else
+@@ -605,12 +605,14 @@ ifdef NO_LIBPYTHON
+ 	BASIC_CFLAGS += -DNO_LIBPYTHON
+ else
+ 	PYTHON_EMBED_LDOPTS = `python-config --ldflags 2>/dev/null`
++	PYTHON_EMBED_LIBS = `python-config --libs 2>/dev/null`
+ 	PYTHON_EMBED_CCOPTS = `python-config --cflags 2>/dev/null`
+-	FLAGS_PYTHON_EMBED=$(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
++	FLAGS_PYTHON_EMBED=$(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS) $(PYTHON_EMBED_LIBS)
+ 	ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
+ 		BASIC_CFLAGS += -DNO_LIBPYTHON
+ 	else
+ 		ALL_LDFLAGS += $(PYTHON_EMBED_LDOPTS)
++		EXTLIBS += $(PYTHON_EMBED_LIBS)
+ 		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+ 		LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
  	endif
- endif
- 
-+ifdef NO_STRLCPY
-+	BASIC_CFLAGS += -DNO_STRLCPY
-+else
-+	ifneq ($(call try-cc,$(SOURCE_STRLCPY),),y)
-+		BASIC_CFLAGS += -DNO_STRLCPY
-+	endif
-+endif
-+
- ifndef CC_LD_DYNPATH
- 	ifdef NO_R_TO_GCC_LINKER
- 		# Some gcc does not accept and pass -R to the linker to specify
-diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
-index 7a7b608..b253db6 100644
---- a/tools/perf/feature-tests.mak
-+++ b/tools/perf/feature-tests.mak
-@@ -110,6 +110,17 @@ int main(void)
- }
- endef
- 
-+define SOURCE_STRLCPY
-+#include <stdlib.h>
-+extern size_t strlcpy(char *dest, const char *src, size_t size);
-+
-+int main(void)
-+{
-+	strlcpy(NULL, NULL, 0);
-+	return 0;
-+}
-+endef
-+
- # try-cc
- # Usage: option = $(call try-cc, source-to-build, cc-options)
- try-cc = $(shell sh -c						  \
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 27e9ebe..a772979 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -82,6 +82,8 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
- extern char *perf_pathdup(const char *fmt, ...)
- 	__attribute__((format (printf, 1, 2)));
- 
-+#ifdef NO_STRLCPY
- extern size_t strlcpy(char *dest, const char *src, size_t size);
-+#endif
- 
- #endif /* __PERF_CACHE_H */
-diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
-index 58a470d..029661c 100644
---- a/tools/perf/util/path.c
-+++ b/tools/perf/util/path.c
-@@ -22,6 +22,7 @@ static const char *get_perf_dir(void)
- 	return ".";
- }
- 
-+#ifdef STRLCPY
- size_t strlcpy(char *dest, const char *src, size_t size)
- {
- 	size_t ret = strlen(src);
-@@ -33,7 +34,7 @@ size_t strlcpy(char *dest, const char *src, size_t size)
- 	}
- 	return ret;
- }
--
-+#endif
- 
- static char *get_pathname(void)
- {
 -- 
 1.7.2.1
 
