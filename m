@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab0HUPZQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 11:25:16 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:52560 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750926Ab0HUPZM (ORCPT
+	id S1751423Ab0HUPtk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 11:49:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48224 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750926Ab0HUPtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 11:25:12 -0400
-Date: Sat, 21 Aug 2010 17:24:45 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-bluetooth@vger.kernel.org
-Subject: 2.6.36-rc1 on zaurus: bluetooth regression
-Message-ID: <20100821152445.GA1536@ucw.cz>
+	Sat, 21 Aug 2010 11:49:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1282391770.29609.1223.camel@localhost.localdomain>
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com> <1282391770.29609.1223.camel@localhost.localdomain>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 21 Aug 2010 08:48:29 -0700
+Message-ID: <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
+Subject: Re: [RFC] mlock/stack guard interaction fixup
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, Aug 21, 2010 at 4:56 AM, Ian Campbell <ijc@hellion.org.uk> wrote:
+>
+> I don't know that they are particularly good tests for this change but I
+> also ran allmodconfig kernel build and ltp on 2.6.35.3+fixes without
+> issue. Are there any good mlock heavy workloads?
 
-Good news is that it boots, suspends and resumes.
+mlock itself isn't very interesting, I think more interesting is
+testing that the doubly linked list handles all the cases correctly.
+Something that splits mappings, unmaps partial ones etc etc. Running
+something like Electric Fence is probably a good idea.
 
-Bad news is that bluetooth broke for me. I'm using CF bluetooth
-card.
+The happy news is that we really didn't have lots of assignments to
+vma->vm_next - they were all pretty cleanly separated into just a
+couple of cases. So I'm pretty confident in the patches. But...
 
-Socket 0 Bridge:   	[pxa2xx-pcmcia] 	(bus ID: pxa2xx-pcmcia)
-	Configuration:	state: on	ready: yes
-			Voltage: 3.3V Vcc: 3.3V Vpp: 0.0V
-Socket 0 Device 0:	[serial_cs]		(bus ID: 0.0)
-	Configuration:	state: on
-	Product Name:   Compact Flash Bluetooth Card 
-	Identification:	manf_id: 0x0279	card_id: 0x950b
-			function: 2 (serial)
-			prod_id(1): "Compact Flash" (0x95521410)
-			prod_id(2): "Bluetooth Card" (0x7664fb1d)
-			prod_id(3): --- (---)
-			prod_id(4): --- (---)
-Socket 1 Bridge:   	[pxa2xx-pcmcia] 	(bus ID: pxa2xx-pcmcia)
-	Configuration:	state: on	ready: yes
-			Voltage: 3.3V Vcc: 3.3V Vpp: 0.0V
-Socket 1 Device 0:	[ide-cs]		(bus ID: 1.0)
-	Configuration:	state: on
-	Product Name:   HITACHI microdrive 
-	Identification:	manf_id: 0x0319	card_id: 0x0000
-			function: 4 (fixed disk)
-			prod_id(1): "HITACHI" (0xf4f43949)
-			prod_id(2): "microdrive" (0xa6d76178)
-			prod_id(3): --- (---)
-			prod_id(4): --- (---)
+> Out of interest, why is there no guard page for the VM_GROWSUP stack
+> case? Is it just that the memory layout on PA-RISC makes the stack grows
+> into the heap scenario impossible?
 
+No, it's just that I can't find it in myself to care about PA-RISC, so
+I never wrote the code. I don't think anything else has a grows-up
+stack. And even if I were to write the code, I couldn't even test it.
 
-In 2.6.35, I have lots of messages in the syslog, and speed is slow,
-but it works.
+It should be reasonably easy to do the VM_GROWSUP case too, but
+somebody with a PA-RISC would need to do it.
 
-Aug 19 08:01:06 toy kernel: bcsp_recv: Out-of-order packet arrived, got 3 expected 2
-Aug 19 08:01:06 toy kernel: bcsp_recv: Out-of-order packet arrived, got 4 expected 2
-Aug 19 08:01:11 toy kernel: bcsp_recv: Short BCSP packet
-Aug 19 08:01:11 toy kernel: bcsp_recv: Out-of-order packet arrived, got 3 expected 2
-Aug 19 08:01:11 toy kernel: bcsp_recv: Out-of-order packet arrived, got 4 expected 2
-Aug 19 08:01:12 toy kernel: bcsp_recv: Out-of-order packet arrived, got 5 expected 2
-Aug 19 08:01:16 toy kernel: bcsp_recv: Short BCSP packet
-Aug 19 08:01:16 toy kernel: bcsp_recv: Out-of-order packet arrived, got 2 expected 1
-Aug 19 08:01:16 toy kernel: bcsp_recv: Out-of-order packet arrived, got 3 expected 1
-Aug 19 08:01:16 toy kernel: bcsp_recv: Out-of-order packet arrived, got 4 expected 1
-
-In 2.6.36-rc1, I get:
-
-Aug 20 08:38:27 toy bluetoothd[1318]: HCI dev 0 down
-Aug 20 08:38:27 toy bluetoothd[1318]: Adapter /org/bluez/1318/hci0 has been disabled
-Aug 20 08:38:27 toy bluetoothd[1318]: Stopping security manager 0
-Aug 20 08:38:27 toy kernel: pcmcia_socket pcmcia_socket0: pccard: card ejected from slot 0
-Aug 20 08:38:27 toy kernel: PM: Removing info for pcmcia:0.0
-Aug 20 08:38:27 toy kernel: PM: Removing info for No Bus:ttyS0
-Aug 20 08:38:27 toy bluetoothd[1318]: HCI dev 0 unregistered
-Aug 20 08:38:27 toy bluetoothd[1318]: Unregister path: /org/bluez/1318/hci0
-Aug 20 08:38:27 toy kernel: PM: Removing info for No Bus:hci0
-Aug 20 08:38:27 toy kernel: PM: Adding info for No Bus:ttyS0
-Aug 20 08:38:31 toy kernel: pcmcia_socket pcmcia_socket0: pccard: PCMCIA card inserted into slot 0
-Aug 20 08:38:31 toy kernel: pcmcia 0.0: pcmcia: registering new device pcmcia0.0 (IRQ: 201)
-Aug 20 08:38:31 toy kernel: PM: Adding info for pcmcia:0.0
-Aug 20 08:38:31 toy kernel: PM: Removing info for No Bus:ttyS0
-Aug 20 08:38:31 toy kernel: 0.0: ttyS0 at I/O 0xc48402f8 (irq = 201) is a 16C950/954
-Aug 20 08:38:31 toy kernel: PM: Adding info for No Bus:ttyS0
-Aug 20 08:38:36 toy bluetoothd[1318]: HCI dev 0 registered
-Aug 20 08:38:36 toy kernel: PM: Adding info for No Bus:hci0
-Aug 20 08:38:36 toy kernel: bcsp_recv: Out-of-order packet arrived, got 1 expected 0
-Aug 20 08:38:37 toy bluetoothd[1318]: accept: Socket operation on non-socket (88)
-Aug 20 08:38:37 toy bluetoothd[1318]: HCI dev 0 up
-Aug 20 08:38:37 toy bluetoothd[1318]: Starting security manager 0
-Aug 20 08:38:37 toy kernel: bcsp_recv: Short BCSP packet
-Aug 20 08:38:39 toy kernel: PM: Removing info for No Bus:rfcomm1
-Aug 20 08:38:39 toy kernel: PM: Adding info for No Bus:rfcomm1
-Aug 20 08:38:40 toy pand[1546]: Bluetooth PAN daemon version 4.66
-Aug 20 08:38:40 toy pand[1546]: Connecting to 00:21:BA:FF:2D:37
-Aug 20 08:38:40 toy kernel: hci_cmd_task: hci0 command tx timeout
-Aug 20 08:38:42 toy bluetoothd[1318]: Can't read version info for /org/bluez/1318/hci0: Connection timed out (110)
-Aug 20 08:38:44 toy modprobe: FATAL: Could not load /lib/modules/2.6.36-rc1/modules.dep: No such file or directory 
-
-Any ideas?
-							Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+                         Linus
