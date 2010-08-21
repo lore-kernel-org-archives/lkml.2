@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363Ab0HUFvz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 01:51:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19743 "EHLO mga02.intel.com"
+	id S1751385Ab0HUGWG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 02:22:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20562 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab0HUFvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 01:51:53 -0400
+	id S1750919Ab0HUGWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 02:22:03 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,243,1280732400"; 
-   d="scan'208";a="649858505"
-Date: Fri, 20 Aug 2010 22:51:52 -0700
-From: Fenghua Yu <fenghua.yu@intel.com>
-To: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Joerg.Roedel@amd.com" <Joerg.Roedel@amd.com>,
-        "maciej.rutecki@gmail.com" <maciej.rutecki@gmail.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "sergey.senozhatsky@gmail.com" <sergey.senozhatsky@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Cc: "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86, hwmon: Fix unsafe smp_processor_id() in thermal_throttle_add_dev
-Message-ID: <20100821055152.GD22602@linux-os.sc.intel.com>
-References: <20100820073634.GB5209@swordfish.minsk.epam.com> <tip-51e3c1b558b31b11bf5fc66d3c6f5adacf3573f7@git.kernel.org>
-Mime-Version: 1.0
+X-IronPort-AV: E=Sophos;i="4.56,244,1280732400"; 
+   d="scan'208";a="649862551"
+Date: Sat, 21 Aug 2010 14:21:33 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tiago Maluta <tiago.maluta@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH][RESEND] fix compilation error with CROSS_COMPILE
+Message-ID: <20100821062133.GA809@localhost>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-51e3c1b558b31b11bf5fc66d3c6f5adacf3573f7@git.kernel.org>
-User-Agent: Mutt/1.4.1i
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 09:43:03PM -0700, tip-bot for Sergey Senozhatsky wrote:
-> Commit-ID:  51e3c1b558b31b11bf5fc66d3c6f5adacf3573f7
-> Gitweb:     http://git.kernel.org/tip/51e3c1b558b31b11bf5fc66d3c6f5adacf3573f7
-> Author:     Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> AuthorDate: Fri, 20 Aug 2010 10:36:34 +0300
-> Committer:  H. Peter Anvin <hpa@zytor.com>
-> CommitDate: Fri, 20 Aug 2010 19:56:00 -0700
-> 
-> x86, hwmon: Fix unsafe smp_processor_id() in thermal_throttle_add_dev
-> 
-> Fix BUG: using smp_processor_id() in preemptible thermal_throttle_add_dev.
-> We know the cpu number when calling thermal_throttle_add_dev, so we can
-> remove smp_processor_id call in thermal_throttle_add_dev by supplying
-> the cpu number as argument.
-> 
-> This should resolve kernel bugzilla 16615/16629.
+        $ make CROSS_COMPILE=x86_64-linux-gnu-
+        ...
+        cc1: error: unrecognized command line option "-m64"
+        cc1: error: unrecognized command line option "-mno-red-zone"
+        cc1: error: unrecognized command line option "-mcmodel=kernel"
+        cc1: error: unrecognized command line option "-maccumulate-outgoing-args"
 
-The fix is right. Current thermal_throttle_add_dev checks local processor to
-determine PTS and PLN features on another processor. Logically that is wrong.
+Cc: Tiago Maluta <tiago.maluta@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
 
-Thanks.
+Andrew: the compile error only occurs in the -mm tree
+The bug is introduced by patch "Linux has an recent option to define
+CROSS_COMPILE in menuconfig.".
 
--Fenghua
+diff --git a/Makefile b/Makefile
+index d646d69..af8864e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -190,7 +190,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ export KBUILD_BUILDHOST := $(SUBARCH)
+ ARCH		?= $(SUBARCH)
+ CROSS_COMPILE	?=
+-CROSS_COMPILE	:= $(shell grep CONFIG_CROSS_COMPILE .config | cut -d'"' -f2)
++CROSS_COMPILE	?= $(shell grep CONFIG_CROSS_COMPILE .config | cut -d'"' -f2)
+ 
+ # Architecture as present in compile.h
+ UTS_MACHINE 	:= $(ARCH)
