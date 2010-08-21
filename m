@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab0HUOP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 10:15:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54565 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab0HUOPy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 10:15:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=X3wbLhYa+7BW7y7boRK23L+PjIEpo7Qrv5FgXDIq/BVXBLYhBtuj6aanNInbSOdegG
-         NIo5NxGcHGOsaOBOv/zQe4YnZKhX0s68YgA+s7mXaaBSk1bumgYpGrRwpWtOONGS17pq
-         RNE5fRC4ebrGkcAsXq1b7XDyW66VKDUviFNhk=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTiktWtAefkAWJNDnSx9SKf_hAOHqcHeEAXV0ARj3@mail.gmail.com>
-References: <AANLkTikEMfVE0FaT_se5H1yq7FOKi0gu8qbRMB0c8JKJ@mail.gmail.com>
-	<AANLkTiktWtAefkAWJNDnSx9SKf_hAOHqcHeEAXV0ARj3@mail.gmail.com>
-Date: Sat, 21 Aug 2010 11:15:53 -0300
-Message-ID: <AANLkTimtwc28BzpxzEhNSMH2TiDvZwxKrOyiOfv8r2kZ@mail.gmail.com>
-Subject: Re: Using block layer's I/O context api (block/blk-ioc.c) without CFQ.
-From: =?ISO-8859-1?Q?Pedro_Eug=EAnio_Rocha?= 
-	<pedro.eugenio.rocha@gmail.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752175Ab0HUOXK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 10:23:10 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:36004 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751773Ab0HUOXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 10:23:08 -0400
+Message-Id: <20100821141750.770348530@efficios.com>
+User-Agent: quilt/0.48-1
+Date: Sat, 21 Aug 2010 10:17:50 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: ltt-dev@lists.casi.polymtl.ca,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH for -tip 0/2] Generic Alignment API
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Sat, 21 Aug 2010 14:22:15 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your reply,
+Hi,
 
-2010/8/20 Corrado Zoccolo <czoccolo@gmail.com>:
-> 2010/8/19 Pedro Eugênio Rocha <pedro.eugenio.rocha@gmail.com>:
->> Hi,
-> Hi,
->>
->> Is there a way to use the generic block layer I/O context api
->> (block/blk-ioc.c), without
->> using cfq specific functions and structs? I'm writing an I/O scheduler
->> for my master
->> thesis, and I'd like to use my own functions for I/O context handling,
->> not cfq's. Sorry
->> if I'm missing something here.
-> Sure. I think you can get an idea by grabbing an old enough kernel
-> that still has anticipatory scheduler (if I recall correctly, 2.6.32
-> should have it), and look at its functions.
+These two patches implement a generic alignment header needed by the "Generic
+Ring Buffer" patchset and by xchg() fallback implementation on some ARM
+architectures.
 
-In mainstream kernel as in 2.6.32, it's used a generic get_io_context
-function to get the current task io_context. In addition, you can create
-a function like cfq_get_io_context to implement some scheduler
-specific stuff. Oh right so far.
+The goal of this patch is to move pointer alignment arithmetic to one single
+location in the kernel rather than spreading these all over the place as this is
+currently the case in the Linux kernel (especially when an alignment on the
+floor value is needed).
 
-But when the task is exiting there is an exit_io_context function, which
-calls put_io_context. This function calls cfq_dtor, which seems to be
-an specific cfq function, and maybe will not work with others I/O
-schedulers. My newbie question is, those block/blk-ioc.c functions
-are  supposed to be generic, or my scheduler should implement it's
-own?
+I submit this patch for inclusion through -tip. Meanwhile, I will pull it in a
+git tree (based on -tip) on top of which I will rebase the "Generic Ring Buffer"
+patchset:
 
+ git://git.kernel.org/pub/scm/linux/kernel/git/compudj/linux-2.6-ringbuffer.git
+   branch: tip-pull-queue
 
-> Or you can look at my post:
-> http://lists.openwall.net/linux-kernel/2009/06/08/387, where I
-> implemented a proof-of-concept I/O scheduler based on anticipatory
-> scheduler. Most of the concepts in that scheduler were later ported to
-> CFQ.
-> Do you already have a scheduling algorithm in mind? And what will be
-> your main purpose/target?
->
+Ingo, to merge these patches, you can either take these 2 patches or pull from
+the "tip-pull-queue", at your convenience (tip-pull-queue is based on
+tip/master).
 
-Yes. Our main purpose is to share disk I/O bandwidth among
-processes/tasks/cgroups/whatever providing strong QoS guarantees, such
-as bandwidth, bursts and latency. It borrows many ideas from bfq and
-pClock I/O schedulers. The implementation will be just a proof-of-concept,
-not something you can use in a real environment. =)
+Thanks,
 
-Thanks for your help!
-
-> Thanks
-> Corrado
->>
->> Thanks,
->>
->> Pedro Eugênio Rocha
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
->
-> --
-> __________________________________________________________________________
->
-> dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-> PhD - Department of Computer Science - University of Pisa, Italy
-> --------------------------------------------------------------------------
-> The self-confidence of a warrior is not the self-confidence of the average
-> man. The average man seeks certainty in the eyes of the onlooker and calls
-> that self-confidence. The warrior seeks impeccability in his own eyes and
-> calls that humbleness.
->                                Tales of Power - C. Castaneda
->
-
-
+Mathieu
 
 -- 
-Pedro Eugênio Rocha
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
