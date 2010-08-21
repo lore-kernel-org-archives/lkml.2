@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab0HUIaf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 04:30:35 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:16783 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751512Ab0HUIab (ORCPT
+	id S1751638Ab0HUIld (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 04:41:33 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:49600 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751477Ab0HUIla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 04:30:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAO4qb0x5Ld90/2dsb2JhbACgP3K3IYJtgkoE
-Date: Sat, 21 Aug 2010 18:30:24 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Neil Brown <neilb@suse.de>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, adilger@sun.com,
-        corbet@lwn.net, npiggin@kernel.dk, hooanon05@yahoo.co.jp,
-        bfields@fieldses.org, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-Message-ID: <20100821083024.GB3448@amd>
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20100820083057.GA10039@infradead.org>
- <20100820195303.20b17210@notabene>
- <20100820115135.GQ31363@ZenIV.linux.org.uk>
- <20100821100900.4b15fe08@notabene>
+	Sat, 21 Aug 2010 04:41:30 -0400
+Date: Sat, 21 Aug 2010 18:41:26 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Subject: [2.6.36-rc1] unmount livelock due to racing with bdi-flusher
+ threads
+Message-ID: <20100821084126.GE31488@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100821100900.4b15fe08@notabene>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I had both of the same concerns as Christoph with API
-change and exposing symlink fds last time I looked at the patces,
-actually.
+Folks,
 
-But they can probably be worked around or avoided. I think the more
-important thing is whether it is worth supporting. This is
-all restricted to root (or CAP_DAC_READ_SEARCH) only, right, and
-what exact semantics they want. I would like to see more discussion
-of what this enables and some results.
+I just had an umount take a very long time burning a CPU the entire
+time. It wasn't the unmount thread, either, it was the the bdi
+flusher thread for the the filesystem being unmounted. It was
+spinning with this perf top trace:
 
-For the case of avoiding expensive network revalidations in path name
-lookup, do we even need to open symlinks? Could the security issues be
-avoided by always having handle attached to an open fd?
+           553144.00 76.9% writeback_inodes_wb  [kernel.kallsyms]
+           106434.00 14.8% __ticket_spin_lock   [kernel.kallsyms]
+            25646.00  3.6% __ticket_spin_unlock [kernel.kallsyms]
+            10512.00  1.5% _raw_spin_lock       [kernel.kallsyms]
+             9606.00  1.3% put_super            [kernel.kallsyms]
+             7920.00  1.1% __put_super          [kernel.kallsyms]
+             5592.00  0.8% down_read_trylock    [kernel.kallsyms]
+               46.00  0.0% kfree                [kernel.kallsyms]
+               22.00  0.0% __do_softirq         [kernel.kallsyms]
+               19.00  0.0% wb_writeback         [kernel.kallsyms]
+               16.00  0.0% wb_do_writeback      [kernel.kallsyms]
+                8.00  0.0% queue_io             [kernel.kallsyms]
+                6.00  0.0% run_timer_softirq    [kernel.kallsyms]
+                6.00  0.0% local_bh_enable_ip   [kernel.kallsyms]
 
-On Sat, Aug 21, 2010 at 10:09:00AM +1000, Neil Brown wrote:
-> [[email address for Nick Piggin changed to npiggin@kernel.dk]]
-> 
-> On Fri, 20 Aug 2010 12:51:35 +0100
-> Al Viro <viro@ZenIV.linux.org.uk> wrote:
-> 
-> > On Fri, Aug 20, 2010 at 07:53:03PM +1000, Neil Brown wrote:
-> > > On Fri, 20 Aug 2010 04:30:57 -0400
-> > > Christoph Hellwig <hch@infradead.org> wrote:
-> > > 
-> > > > Suddenly getting an file pointer for a symlink which could never happen
-> > > > before is a really bad idea.  Just add a proper readlink_by_handle
-> > > > system call, similar to what's done in the XFS interface.
-> > > 
-> > > Why is that?
-> > > With futexes we suddenly get a file descriptor for something we could never
-> > > get a file descriptor on before and that doesn't seem to be a problem.
-> > > 
-> > > Why should symlinks be special as the only thing that you cannot have a file
-> > > descriptor for?  Uniformity of interface is a very valuable property.
-> > 
-> > You are welcome to review the codepaths around pathname resolution for
-> > assumptions of presense of ->follow_link() and friends; there _are_
-> > subtle cases and dumping your "opened symlinks" in there is far from
-> > a trivial change.  Note that it affects more than just the starting
-> > points of lookups; /proc/*/fd/* stuff is also involved.
-> 
-> So as I understand it you aren't rejecting the concept in principle, but you
-> believe non-trivial code review is required before it can be considered an
-> acceptable change?
-> That's quite reasonable.  I hope to find time to have a look at the code.
-> 
-> > 
-> > BTW, speaking of NULL pathname, linkat() variant that allows creating a link
-> > to an opened file is also a very dubious thing; at the very least, you get
-> > non-trivial security implications, since now a process that got an opened
-> > descriptor passed to it by somebody else may create hardlinks to the sucker.
-> 
-> Fair comment, and while one could imagine ways around this (such as requiring
-> some Capability to link an fd) they wouldn't be very elegant.
-> But then nor is inventing a pile of new syscalls for doing different things
-> with handles such as the list Aneesh posted.
-> 
-> Maybe a different approach is needed.
-> 
-> How about a new AT flag:  AT_FILE_HANDLE
-> 
-> Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
-> the 'name' pointer actually points to a filehandle fragment interpreted in
-> that filesystem.
-> 
-> One problem is that there is no way to pass the length...
-> Options:
->    fragment is at most 64 bytes nul padded at the end
->    fragment is hex encoded and nul terminated
->    ??
-> 
-> I think I prefer the hex encoding, but I'm hoping someone else has a better
-> idea.
-> 
-> NeilBrown
+This went on for ~7m25s (according to the pmchart trace I had on
+screen) before something broke the livelock by writing the inodes to
+disk (maybe the xfssyncd) and the unmount then completed a couple
+of seconds later.
+
+>From the above profile, I'm assuming that writeback_inodes_wb() was
+seeing pin_sb_for_writeback(sb) failing and moving dirty inodes from
+the the b_io to the b_more_io list, then being called again,
+splicing the inodes on b_more_io back to b_io, and then failed again
+to pin_sb_for_writeback() for each inode, moving them back to the
+b_more_io list....
+
+This is on 2.6.36-rc1 + the radix tree fixes for writeback.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
