@@ -1,137 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab0HUCrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 22:47:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63636 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab0HUCrR (ORCPT
+	id S1751385Ab0HUDol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 23:44:41 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53129 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab0HUDoj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 22:47:17 -0400
+	Fri, 20 Aug 2010 23:44:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Dip88C7b151xZ6pYa48ZopAEYfJY5QdFUtN2kw9WeCOSHxH35lxb0Kcaijw5Dik4V7
-         lZPR5a7cOedYPGE0im+Na36RQzCtDHAfPRYH5N6JuCCAsSrEzcSqyC4I/41JHyof6UTt
-         toReVaPzqDparM9FPV0mLzbTee+W8qsrL7ugc=
-Date: Sat, 21 Aug 2010 04:47:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: callchain sampling bug in perf?
-Message-ID: <20100821024713.GD7959@nowhere>
-References: <20100815225359.GA32152@infradead.org> <20100819005720.GB5324@nowhere> <20100819085700.GB8782@infradead.org> <20100819150422.GA325@ghostprotocols.net> <20100820091645.GA20138@infradead.org>
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=BuA/2mHa3mbKqtNDTeHIflK76g1pGxCGS1t+g8NDj9NCjzoUVDgwaSnG9ncqteyN8v
+         yx+1+tWVe1l2HBBA373yGdhFz/oEPRl5/HRPu5zZGAEXnzKMPzFxbaFjtRMpb4A8IooU
+         1bSG3f2Y1v6XGIG8sh48GWl9vEiAC6Jyd71pE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100820091645.GA20138@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Fri, 20 Aug 2010 23:44:38 -0400
+Message-ID: <AANLkTi=Kd303+KV6+QHVuZnLq23czS_5W0yYtX-FdRJT@mail.gmail.com>
+Subject: Linux 2.6.35.3
+From: Mark Stanovich <mrktimber@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 05:16:45AM -0400, Christoph Hellwig wrote:
-> On Thu, Aug 19, 2010 at 12:04:22PM -0300, Arnaldo Carvalho de Melo wrote:
-> > 
-> > [acme@doppio tmp]$ perf report
-> > 
-> > http://vger.kernel.org/~acme/perf/perf-report-tui-callchain-xlog_sync.png
-> > 
-> > So it seems to work (you tell me if the callchains make sense), and the problem
-> 
-> I've rebuilt perf with libnewt to reproduce it, but to get any of the
-> callchain data I need to call perf report with a -g argument (which is
-> rather expected from the documentation anyway)
-> 
-> I still see the same problems as with the TUI perf report with that.
-> With the -g {mode},0.0 there is nothing to expand inside the GUI for
-  ^^
-  you meant "without", right?
+After updating to the 2.6.35.3 stable release, my machine was
+rebooting automatically during the first few seconds of boot.
 
-> e.g. the pythong process, and with the 0.0 threshold I can only expand
-> a few 0.<something> callchains, but I never see the 80% your screenshot
-> shows.  What perf version are you running?
+I bisected to the first bad commit of
 
+commit 568132624386f53e87575195d868db
+9afb2e9316
+Author: H. Peter Anvin <hpa@zytor.com>
+Date:   Tue Jul 27 17:01:49 2010 -0700
 
+    x86: Add memory modify constraints to xchg() and cmpxchg()
 
-Right. So this is due to the roots of the callchains that have uninitialized
-values for their children hits.
+    commit 113fc5a6e8c2288619ff7e8187a6f556b7e0d372 upstream.
 
-To summarize, you enter a percentage (or you keep the default 0.5%) and it gets
-multiplied by a random number. The result is supposed to be the minimum hits
-a branch should have to be displayed. But it often produced a huge number due
-to the unintialization randomness. Hence some callchains were not displayed.
+    xchg() and cmpxchg() modify their memory operands, not merely read
+    them.  For some versions of gcc the "memory" clobber has apparently
+    dealt with the situation, but not for all.
 
-The following patch solves that particular problem, I'll push it to Ingo for .36
-(and -stable):
+I noticed that the latest version pulled from Linus's git tree did not
+have the problem.  After looking at the changes to
+arch/x86/include/asm/cmpxchg_32.h, I cherry-picked two patches from
+Linus's tree that seemed to make a difference, namely:
 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 624a96c..d1349d0 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -51,6 +51,7 @@ static inline void callchain_init(struct callchain_node *node)
- 	INIT_LIST_HEAD(&node->val);
- 
- 	node->parent = NULL;
-+	node->children_hit = 0;
- 	node->hit = 0;
- }
- 
+69309a05907546fb686b251d4ab041c26afe1e1d
+4532b305e8f0c238dd73048068ff8a6dd1380291
 
+Applying these patches solved the rebooting problem on 2.6.35.3
 
+I believe the same problem also happens for the latest stable version
+of 2.6.34, but did not verify the fix worked for the 2.6.34 stable
+releases.
 
-> Also the flat mode is rendered incorrectly, it just adds different call
-> graphs inside a single process directly after each other instead of
-> separating them in the rendering.
+I don't know if this is helpful, but I thought I would let you know in
+case someone else is having the same problem.
 
+If you need any further information, just let me know.
 
-I'm not sure what you mean. The flat format is a pure dump of every callchains
-that belong to a single process (or whatever kind of histogram source...).
-
-What do you mean by separating them in the rendering?
-
-OTOH I see another bug:
-
-    61.70%        python  [kernel.kallsyms]  [k] xlog_sync
-             0.03%
-                xlog_sync
-                xlog_write
-                xlog_cil_push
-                _xfs_log_force
-                xfs_log_force
-                xfs_commit_dummy_trans
-                xfs_quiesce_data
-                xfs_fs_sync_fs
-                __sync_filesystem
-                sync_one_sb
-                iterate_supers
-                sync_filesystems
-                sys_sync
-                system_call_fastpath
-                0x334f0d72e7
-
-             0.01%
-                xlog_sync
-                _xfs_log_force
-                xfs_log_force
-                xfs_commit_dummy_trans
-                xfs_quiesce_data
-                xfs_fs_sync_fs
-                __sync_filesystem
-                sync_one_sb
-                iterate_supers
-                sync_filesystems
-                sys_sync
-                system_call_fastpath
-                0x334f0d72e7
-
-I think that's what you said previously: they sometimes don't add up correctly.
-The total of hit percentages from callchains should equal the total
-percentage of the process they belong to.
-
-I'm investigating to find the reason.
-
-Thanks a lot of your reports!
-
+    - Mark
