@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab0HUMbS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 08:31:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33177 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab0HUMat (ORCPT
+	id S1752060Ab0HUMbo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 08:31:44 -0400
+Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:46383 "EHLO
+	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751355Ab0HUMbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 08:30:49 -0400
-From: hvaibhav@ti.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, byron.bbradley@gmail.com,
-        linux-omap@vger.kernel.org, felipe.balbi@nokia.com,
-        Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: [PATCH-V2 0/3] RTC:A35390A: Add Interrupt API interfaces
-Date: Sat, 21 Aug 2010 18:00:26 +0530
-Message-Id: <1282393829-7326-1-git-send-email-hvaibhav@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <hvaibhav@ti.com>
-References: <hvaibhav@ti.com>
+	Sat, 21 Aug 2010 08:31:43 -0400
+Subject: Re: [PATCH] ext4: remove alignment padding from ext4_inode_info on
+ 64 bit builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+In-Reply-To: <4C6EE173.3030204@redhat.com>
+References: <1282144088.2068.16.camel@castor.rsk>
+	 <4C6EE173.3030204@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Aug 2010 13:31:38 +0100
+Message-ID: <1282393898.1978.18.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
+On Fri, 2010-08-20 at 15:11 -0500, Eric Sandeen wrote:
+> Richard Kennedy wrote:
+> > Reorder structure ext4_inode_info to remove 16 bytes of alignment
+> > padding on 64 bit builds. This shrinks its size from 904 to 888 bytes
+> > with (CONFIG_EXT4_S_XATTR=y && CONFIG_QUOTA=n).
+> >     
+> > This will allow this structure to use one fewer cache lines.
+> > 
+> > Also change type of i_delalloc_reserved_flag to bool to better reflect
+> > its usage.
+> > 
+> > compiled & tested on x86_64
+> 
+> 
+> Looks good to me; there is still a bit of padding at the end:
+> 
+>         qsize_t                    i_reserved_quota;     /*   864     8 */
+>         struct list_head           i_completed_io_list;  /*   872    16 */
+>         spinlock_t                 i_completed_io_lock;  /*   888     4 */
+> 
+>         /* XXX 4 bytes hole, try to pack */
+> 
+>         /* --- cacheline 14 boundary (896 bytes) --- */
+>         ext4_io_end_t *            cur_aio_dio;          /*   896     8 */
+>         tid_t                      i_sync_tid;           /*   904     4 */
+>         tid_t                      i_datasync_tid;       /*   908     4 */
+> 
+> 
+> but it wouldn't save a cacheline anyway...
+> 
+> -Eric
+> 
+Thanks Eric, yes there is padding but we don't have anything to fill the
+hole with :(
 
-This patch adds support for interrupt API interfaces like,
-	- Alarm interrupt
-	- Periodic interrupt
-	- Per minute interrupt
+If it becomes important to save space, i_state_flags seem to be unused
+in ext4 so we could possibly drop that.
 
-Changes from V1 :-
-	- Converted work-queue to threaded irq
-	- Fixed comments from Felipe Balbi
+With my patch applied, under slub I'm getting one more object per slab
+in the ext4_inode_cache
 
-Vaibhav Hiremath (3):
-  RTC:s35390a: Add Alarm interrupt support
-  RTC:s35390a: Add Periodic interrupt support
-  RTC:s35390a: Add update_irq (per Min interrupt) support
+[2.6.35] 17 objects of 960 bytes -- 4 pages per slab
+[+patch] 18 objects of 896 bytes -- 4 pages per slab
 
- drivers/rtc/rtc-s35390a.c |  281 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 278 insertions(+), 3 deletions(-)
+So I guess that is where most of the write test performance improvement
+came from.
+
+regards
+Richard
+
 
