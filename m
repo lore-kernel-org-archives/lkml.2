@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab0HUHk0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 03:40:26 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:59221 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab0HUHkX (ORCPT
+	id S1751504Ab0HUHkZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 03:40:25 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:55023 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab0HUHkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 21 Aug 2010 03:40:23 -0400
-Date: Sat, 21 Aug 2010 09:40:21 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Tiago Maluta <tiago.maluta@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RESEND] fix compilation error with CROSS_COMPILE
-Message-ID: <20100821074021.GA25099@merkur.ravnborg.org>
-References: <20100821062133.GA809@localhost> <20100821072454.GA25054@merkur.ravnborg.org> <20100821072955.GA4950@localhost>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bjEkWJI1bT5cUzVzatG5jeLBmZ0oizD2PgQHZTE3IjKBPvOh4wdYCHy1mpbmAFneyA
+         w4PHCr7FMRX4esapBytWa0D9RBHzEZXSqBNp1yzxv5yXMXOH4M1lbsCIs+NEYATF3OOO
+         RKShAZQMrpEfcwne8vxo5GzCq6g5SkAZDGUTI=
+Date: Sat, 21 Aug 2010 00:40:19 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: schwidefsky@de.ibm.com, linux-s390@vger.kernel.org,
+        heiko.carstens@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [-next PATCH] Fix s390 keyboard driver build break
+Message-ID: <20100821074018.GB2160@core.coreip.homeip.net>
+References: <20100821072126.8965.41003.sendpatchset@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100821072955.GA4950@localhost>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100821072126.8965.41003.sendpatchset@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 03:29:56PM +0800, Wu Fengguang wrote:
-> On Sat, Aug 21, 2010 at 03:24:54PM +0800, Sam Ravnborg wrote:
-> > On Sat, Aug 21, 2010 at 02:21:33PM +0800, Wu Fengguang wrote:
-> > >         $ make CROSS_COMPILE=x86_64-linux-gnu-
-> > >         ...
-> > >         cc1: error: unrecognized command line option "-m64"
-> > >         cc1: error: unrecognized command line option "-mno-red-zone"
-> > >         cc1: error: unrecognized command line option "-mcmodel=kernel"
-> > >         cc1: error: unrecognized command line option "-maccumulate-outgoing-args"
-> > > 
-> > > Cc: Tiago Maluta <tiago.maluta@gmail.com>
-> > > Cc: Michal Marek <mmarek@suse.cz>
-> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > ---
-> > > 
-> > > Andrew: the compile error only occurs in the -mm tree
-> > > The bug is introduced by patch "Linux has an recent option to define
-> > > CROSS_COMPILE in menuconfig.".
-> > > 
-> > > diff --git a/Makefile b/Makefile
-> > > index d646d69..af8864e 100644
-> > > --- a/Makefile
-> > > +++ b/Makefile
-> > > @@ -190,7 +190,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-> > >  export KBUILD_BUILDHOST := $(SUBARCH)
-> > >  ARCH		?= $(SUBARCH)
-> > >  CROSS_COMPILE	?=
-> > > -CROSS_COMPILE	:= $(shell grep CONFIG_CROSS_COMPILE .config | cut -d'"' -f2)
-> > > +CROSS_COMPILE	?= $(shell grep CONFIG_CROSS_COMPILE .config | cut -d'"' -f2)
-> > 
-> > I cannot see how this would solve your problem.
-> > Any variable assigned using := or ?= can be overrided by  variable
-> > assigned on the command line like this:
-> > 
-> >    make VAR=values
-> > 
-> > Please note that there is a big difference between the above and this:
-> > 
-> >     VAR=value make
+Hi Sachin,
+
+On Sat, Aug 21, 2010 at 12:51:26PM +0530, Sachin Sant wrote:
+> Next 20100820 fails to build on s390 with 
 > 
-> Ah yes I'm using that form indeed. Sorry for the confusion.
+> drivers/s390/char/keyboard.c: In function 'kbd_keycode':
+> drivers/s390/char/keyboard.c:308: error: too many arguments to function 'handle_sysrq'
+> make[2]: *** [drivers/s390/char/keyboard.o] Error 1
 > 
-> > In the latter case you pass in VAR using the enviroment and it
-> > is just like any other environment variable as seen from make.
-> > 
-> > On top of that the upstream kernel does not have the first
-> > assignmnet to CROSS_COMPILE - so you need to update
-> > your sources (or Andrews --mm is not recent enough.
-> > 
-> > Please try again with upstream kernel and let us know what you
-> > conclude.
+> The following commit changed handle_sysrq() function to accept single argument. 
 > 
-> Upstream kernel uses the ?= form and runs always OK.
+> commit a821bafce37b26499e2bfbf2e6b96b0636efc014
+> Input: sysrq - drop tty argument form handle_sysrq()
 > 
-> The recent -mm kernels I tried all have the problem.
+> Adapt the code accordingly to fix the build break.
+> 
+> Signed-off-by: Sachin Sant <sachinp@in.ibm.com>
+> ---
+> 
+> diff -Naurp next20100820/drivers/s390/char/keyboard.c next20100820-new//drivers/s390/char/keyboard.c
+> --- next20100820/drivers/s390/char/keyboard.c	2010-08-16 06:11:37.000000000 +0530
+> +++ next20100820-new//drivers/s390/char/keyboard.c	2010-08-21 11:55:25.000000000 +0530
+> @@ -305,7 +305,7 @@ kbd_keycode(struct kbd_data *kbd, unsign
+>  		if (kbd->sysrq) {
+>  			if (kbd->sysrq == K(KT_LATIN, '-')) {
+>  				kbd->sysrq = 0;
+> -				handle_sysrq(value, kbd->tty);
+> +				handle_sysrq(value);
+>  				return;
+>  			}
+>  			if (value == '-') {
 
-Good.
-Then we can assume that next -mm has this fixed when he picks up
-this change from upstream. Or maybe -mm has a patch in needs for revert.
+Thank you very much for the patch. I folded it into original patch to
+avoid build failures in case someone needs to bisect.
 
-Took a quick looks at -mm and only fould this:
-kbuild-fix-config_cross_compile-issue-in-config.patch
-And this is already upstream.
-
-
-So I suggest you to fix it locally and check that
-next -mm is correct.
-
-	Sam
+-- 
+Dmitry
