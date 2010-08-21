@@ -1,54 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751242Ab0HUCP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 22:15:59 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:41063 "EHLO
-	mx02.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751027Ab0HUCP4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 22:15:56 -0400
-Date: Fri, 20 Aug 2010 22:15:41 -0400 (EDT)
-From: Miloslav Trmac <mitr@redhat.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-Message-ID: <1833173750.1044971282356941800.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <4C6E7C1A.1070203@s5r6.in-berlin.de>
-Subject: Re: [PATCH 06/19] Add ioctl() argument and attribute handling utils
+	id S1751209Ab0HUC3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 22:29:51 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59361 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab0HUC3t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 22:29:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=GgCXnN7f4oOxGPM8wFhSbvZE6zwmjOchWXNNyaH5xxngvzdYfvjIuSQe3wwn/TtS9W
+         2SWpAHM1Fu8aE/grc3dNZtjrmktMotYe2EBxTQytkiItSxx7Gkdi4y8oWbJdEOUaHKJf
+         6L4o8tGEShaOkX3ZiWhp3jSQSYax1K1F75mOk=
+Date: Sat, 21 Aug 2010 04:29:46 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: callchain sampling bug in perf?
+Message-ID: <20100821022944.GC7959@nowhere>
+References: <20100815225359.GA32152@infradead.org> <20100819005720.GB5324@nowhere> <20100819085700.GB8782@infradead.org> <20100819150422.GA325@ghostprotocols.net> <20100820091645.GA20138@infradead.org> <20100820191230.GD14788@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100820191230.GD14788@ghostprotocols.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ "Stefan Richter" <stefanr@s5r6.in-berlin.de> wrote:
-> Miloslav TrmaÄ wrote:
-> > --- /dev/null
-> > +++ b/crypto/userspace/utils.c
-> [...]
-> > +#ifdef CONFIG_COMPAT
-> > +/* max() is too clever for compile-time constants */
-> > +#define CONST_MAX(A, B) ((A) > (B) ? (A) : (B))
-> > +
-> > +#define MAX_SESSION_INPUT_DATA_SIZE					\
-> > +	(CONST_MAX(sizeof(struct ncr_session_input_data),		\
-> > +		   sizeof(struct compat_ncr_session_input_data)))
-> > +#define MAX_SESSION_OUTPUT_BUFFER_SIZE					\
-> > +	(CONST_MAX(sizeof(struct ncr_session_output_buffer),		\
-> > +		   sizeof(struct compat_ncr_session_output_buffer)))
-> > +
-> > +#else /* !CONFIG_COMPAT */
-> > +
-> > +#define MAX_SESSION_INPUT_DATA_SIZE (sizeof(struct ncr_session_input_data))
-> > +#define MAX_SESSION_OUTPUT_BUFFER_SIZE			\
-> > +	(sizeof(struct ncr_session_output_buffer))
-> > +
-> > +#endif /* !CONFIG_COMPAT */
+On Fri, Aug 20, 2010 at 04:12:30PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Aug 20, 2010 at 05:16:45AM -0400, Christoph Hellwig escreveu:
+> > On Thu, Aug 19, 2010 at 12:04:22PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > 
+> > > [acme@doppio tmp]$ perf report
+> > > 
+> > > http://vger.kernel.org/~acme/perf/perf-report-tui-callchain-xlog_sync.png
+> > > 
+> > > So it seems to work (you tell me if the callchains make sense), and the problem
+> > 
+> > I've rebuilt perf with libnewt to reproduce it, but to get any of the
+> > callchain data I need to call perf report with a -g argument (which is
+> > rather expected from the documentation anyway)
 > 
-> struct compat_xyz cannot be bigger than struct xyz, can it?
-Perhaps not, but the code has been written and it's easier to keep it than to speculate :)  It also helps document the fact that the data format depends on properties of the userspace.
-    Mirek
+> In fact I never run 'perf report' specifying '-g', have you tried it
+> that way?
+>  
+> > I still see the same problems as with the TUI perf report with that.
+> > With the -g {mode},0.0 there is nothing to expand inside the GUI for
+> > e.g. the pythong process, and with the 0.0 threshold I can only expand
+> > a few 0.<something> callchains, but I never see the 80% your screenshot
+> > shows.  What perf version are you running?
+> 
+> IIRC I tried this on perf/urgent and on perf/core, the former should be what
+> is Linus tree.
+> 
+> Lemme try again, right, just checked out from torvalds/master and running it
+> as:
+> 
+> $ perf report
+> 
+> that screenshot is reproduced.
+> 
+> > Also the flat mode is rendered incorrectly, it just adds different call
+> > graphs inside a single process directly after each other instead of
+> > separating them in the rendering.
+> 
+> Probably because of what I said above, i.e. I still have to try 'perf
+> record -g flat' on the TUI, lets see...
+> 
+> Running it as:
+> 
+> $ perf report -g flat,0,0
+> 
+> This is produced:
+> 
+> http://vger.kernel.org/~acme/perf/perf-report-tui-g-flat.png
+> 
+> which has the flat percentages missing, have to fix that but hey, at least I
+> finally tried it! 8-)
+> 
+> The TUI code started with the default:
+> 
+> [acme@doppio linux-2.6-tip]$ perf report --help
+> <SNIP>
+>        -g [type,min], --call-graph
+>            Display callchains using type and min percent threshold. type can
+>            be either:
+> 
+>            ·   flat: single column, linear exposure of callchains.
+> 
+>            ·   graph: use a graph tree, displaying absolute overhead rates.
+> 
+>            ·   fractal: like graph, but displays relative rates. Each branch
+>                of the tree is considered as a new profiled object. Default:
+>                                                                    ^^^^^^^^
+>                fractal,0.5.
+>                ^^^^^^^^^^^
+> <SNIP>
+> 
+> The TUI took longer than I antecipated to get right, requiring writing a
+> generic tree widget from scratch, not using any libnewt code, as the one newt
+> has is too cumbersome and inflexible to use :-\
+> 
+> I will work to have the "flat" and "graph" modes working properly in the coming
+> weeks.
+
+
+
+I think graph mode is nice to have in the TUI.
+Actually this should be called "absolute fractal", as opposite to default
+mode that "relative fractal".
+
+In "graph" mode we show the overhead percentage against the total overhead, while
+in default mode "fractal" we show overhead against the parent branch.
+
+But the flat mode is just a dumb dump of every callchain records. It's mostly
+useful for callchain debugging I think. May be it's not worth adapting the TUI
+for that mode. As you want.
+
+One day I really need to fill the perf wiki about callchains.
+
+
+
+> It should work on the stdio mode, IIRC Frédéric told me he found and fixed the
+> problem there, right?
+
+
+
+Part of it. I've a fix for the "nothing displayed unless 0 min percentage" case.
+Now I need to investigate on why callchains percentages sometimes don't add up correctly.
+
+Those are eventually two different problems (more details in my next reply to Christoph).
+
+Thanks.
+
