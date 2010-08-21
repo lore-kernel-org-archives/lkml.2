@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447Ab0HUHPb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 03:15:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33881 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0HUHP0 convert rfc822-to-8bit (ORCPT
+	id S1751453Ab0HUHQQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 03:16:16 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:57292 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab0HUHQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 03:15:26 -0400
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100820083057.GA10039@infradead.org> <20100820195303.20b17210@notabene> <20100820115135.GQ31363@ZenIV.linux.org.uk> <20100821100900.4b15fe08@notabene>
-In-Reply-To: <20100821100900.4b15fe08@notabene>
-Mime-Version: 1.0 (iPhone Mail 8A400)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
-        "philippe.deniel@CEA.FR" <philippe.deniel@CEA.FR>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (8A400)
-From: Andreas Dilger <andreas.dilger@oracle.com>
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-Date: Sat, 21 Aug 2010 01:13:52 -0600
-To: Neil Brown <neilb@suse.de>
+	Sat, 21 Aug 2010 03:16:15 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C6F7D2D.6060101@s5r6.in-berlin.de>
+Date: Sat, 21 Aug 2010 09:15:57 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: Miloslav Trmac <mitr@redhat.com>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/19] Add ioctl() argument and attribute handling utils
+References: <1833173750.1044971282356941800.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1833173750.1044971282356941800.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-20, at 18:09, Neil Brown <neilb@suse.de> wrote:
-> How about a new AT flag:  AT_FILE_HANDLE
-> 
-> Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
-> the 'name' pointer actually points to a filehandle fragment interpreted in
-> that filesystem.
-> 
-> One problem is that there is no way to pass the length...
-> Options:
->   fragment is at most 64 bytes nul padded at the end
->   fragment is hex encoded and nul terminated
->   ??
-> 
-> I think I prefer the hex encoding, but I'm hoping someone else has a better
-> idea.
+Miloslav Trmac wrote:
+> ----- "Stefan Richter" <stefanr@s5r6.in-berlin.de> wrote:
+>> Miloslav Trmač wrote:
+>>> --- /dev/null
+>>> +++ b/crypto/userspace/utils.c
+>> [...]
+>>> +#ifdef CONFIG_COMPAT
+>>> +/* max() is too clever for compile-time constants */
+>>> +#define CONST_MAX(A, B) ((A) > (B) ? (A) : (B))
+>>> +
+>>> +#define MAX_SESSION_INPUT_DATA_SIZE					\
+>>> +	(CONST_MAX(sizeof(struct ncr_session_input_data),		\
+>>> +		   sizeof(struct compat_ncr_session_input_data)))
+>>> +#define MAX_SESSION_OUTPUT_BUFFER_SIZE					\
+>>> +	(CONST_MAX(sizeof(struct ncr_session_output_buffer),		\
+>>> +		   sizeof(struct compat_ncr_session_output_buffer)))
+>>> +
+>>> +#else /* !CONFIG_COMPAT */
+>>> +
+>>> +#define MAX_SESSION_INPUT_DATA_SIZE (sizeof(struct ncr_session_input_data))
+>>> +#define MAX_SESSION_OUTPUT_BUFFER_SIZE			\
+>>> +	(sizeof(struct ncr_session_output_buffer))
+>>> +
+>>> +#endif /* !CONFIG_COMPAT */
+>> 
+>> struct compat_xyz cannot be bigger than struct xyz, can it?
+>
+> Perhaps not, but the code has been written and it's easier to keep it than to
+> speculate :)
 
-That makes it ugly for the kernel to stringify and parse the file handles. 
+What's there to speculate? :-)  COMPAT = 32bit user on 64bit kernel.  The
+latter has larger long and pointers and possibly different alignment of 64bit
+data.
 
-How about for AT_FILE_HANDLE THE FIRST __u32 (maybe with an extra __u32 for alignment) is the length and the rest of the binary file handle follows this?  In fact, doesn't the handle itself already encode the length in the header?
+> It also helps document the fact that the data format depends on properties of
+> the userspace.
 
-Cheers, Andreas
+Since it is a new ABI, it can be written to not need COMPAT ifdef'ery nor
+compat handlers.
+-- 
+Stefan Richter
+-=====-==-=- =--- =-=-=
+http://arcgraph.de/sr/
