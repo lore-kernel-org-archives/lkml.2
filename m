@@ -1,210 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337Ab0HUAAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 20:00:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48311 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750857Ab0HUAAk (ORCPT
+	id S1751559Ab0HUACr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 20:02:47 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:37013 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab0HUACq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 20:00:40 -0400
-MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 20 Aug 2010 16:59:55 -0700
-Message-ID: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
-Subject: [RFC] mlock/stack guard interaction fixup
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg KH <gregkh@suse.de>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: multipart/mixed; boundary=0016e6469b0c9ee6e4048e4a19f7
+	Fri, 20 Aug 2010 20:02:46 -0400
+Subject: Re: [KVM timekeeping 17/35] Implement getnsboottime kernel API
+From: john stultz <johnstul@us.ibm.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <4C6F11D6.1050101@redhat.com>
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
+	 <1282291669-25709-18-git-send-email-zamsden@redhat.com>
+	 <1282329594.3302.39.camel@localhost.localdomain>
+	 <4C6F11D6.1050101@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Aug 2010 17:02:38 -0700
+Message-ID: <1282348958.28794.21.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6469b0c9ee6e4048e4a19f7
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, 2010-08-20 at 13:37 -1000, Zachary Amsden wrote:
+> On 08/20/2010 08:39 AM, john stultz wrote:
+> > On Thu, 2010-08-19 at 22:07 -1000, Zachary Amsden wrote:
+> >    
+> >> Add a kernel call to get the number of nanoseconds since boot.  This
+> >> is generally useful enough to make it a generic call.
+> >>      
+> > Few comments here.
+> >
+> >    
+> >> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+> >> ---
+> >>   include/linux/time.h      |    1 +
+> >>   kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
+> >>   2 files changed, 28 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/include/linux/time.h b/include/linux/time.h
+> >> index ea3559f..5d04108 100644
+> >> --- a/include/linux/time.h
+> >> +++ b/include/linux/time.h
+> >> @@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
+> >>   extern void getrawmonotonic(struct timespec *ts);
+> >>   extern void getboottime(struct timespec *ts);
+> >>   extern void monotonic_to_bootbased(struct timespec *ts);
+> >> +extern s64 getnsboottime(void);
+> >>      
+> > So instead of converting the timespec from getboottime, why did you add
+> > a new interface? Also if not a timespec, why did you pick a s64 instead
+> > of a ktime_t?
+> >    
+> 
+> The new interface was suggested several times, so I'm proposing it.  I'm 
+> indifferent to putting it the kernel API or making it internal to KVM.  
+> KVM doesn't want to deal with conversions to / from ktime_t; this code 
+> uses a lot (too much) math, and it's easy to get wrong when splitting 
+> sec / nsec fields.  So s64 seems a natural type for ns values.  I 
+> realize it's not entirely consistent with the kernel API, but s64 
+> representation for ns seems to be creeping in.
 
-Ian (and others),
- here's a three-patch series that uses the doubly linked list to do
-your mlock() case hopefully correctly.
+I can understand wanting that, way back I was pushing for s64 ns
+representations for most time values, but the ktime_t was considered a
+reasonable compromise to avoid costly 64bit divides to split (sec,nsec)
+on 32bit arches.
 
-NOTE! It's untested. The first patch (which is the slightly scary one)
-is tested to some degree, the two other ones I checked that they
-compile, but that's it.
+Maybe call it getboottime_ns() just to distinguish it from
+getnstimeofday() which returns a timespec?
 
-I'm not going to apply them to my main tree unless they get testing
-and acks. And as mentioned, I've not done any of the changes that
-having a vm_prev pointer can allow in other places.
 
-Comments? Fixes? Braindamage?
+> >>   extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+> >>   extern int timekeeping_valid_for_hres(void);
+> >> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> >> index caf8d4d..d250f0a 100644
+> >> --- a/kernel/time/timekeeping.c
+> >> +++ b/kernel/time/timekeeping.c
+> >> @@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
+> >>   }
+> >>   EXPORT_SYMBOL_GPL(ktime_get_ts);
+> >>
+> >> +
+> >> +/**
+> >> + * getnsboottime - get the bootbased clock in nsec format
+> >> + *
+> >> + * The function calculates the bootbased clock from the realtime
+> >> + * clock and the wall_to_monotonic offset and stores the result
+> >> + * in normalized timespec format in the variable pointed to by @ts.
+> >> + */
+> >> +s64 getnsboottime(void)
+> >> +{
+> >> +	unsigned int seq;
+> >> +	s64 secs, nsecs;
+> >> +
+> >> +	WARN_ON(timekeeping_suspended);
+> >> +
+> >> +	do {
+> >> +		seq = read_seqbegin(&xtime_lock);
+> >> +		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
+> >> +		secs += total_sleep_time.tv_sec;
+> >> +		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
+> >> +		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
+> >> +
+> >> +	} while (read_seqretry(&xtime_lock, seq));
+> >> +	return nsecs + (secs * NSEC_PER_SEC);
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(getnsboottime);
+> >>      
+> > You forgot to include the boottime.tv_sec/nsec offset in this. Take a
+> > look again at getboottime()
+> >    
+> 
+> I don't think so... boottime is internal to getboottime, and it's just 
+> wall_to_monotonic + total_sleep_time -- right?
 
-                               Linus
+Right, sorry, some architectures refine boot time even further,
+providing an offset from when the machine was actually powered on to
+when the timekeeping code was initialized. But that's already adjusted
+into wall_to_monotonic at startup. I thought we kept it separately.
 
---0016e6469b0c9ee6e4048e4a19f7
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-mm-make-the-vma-list-be-doubly-linked.patch"
-Content-Disposition: attachment; 
-	filename="0001-mm-make-the-vma-list-be-doubly-linked.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gd3p5ty21
 
-RnJvbSA2NmZkZjAwYWFkMmNmNTM5YTY2OTE2OTQ2ZWE2ZmM0MTNjMzBjODA1IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
-dGlvbi5vcmc+CkRhdGU6IEZyaSwgMjAgQXVnIDIwMTAgMTY6MjQ6NTUgLTA3MDAKU3ViamVjdDog
-W1BBVENIIDEvM10gbW06IG1ha2UgdGhlIHZtYSBsaXN0IGJlIGRvdWJseSBsaW5rZWQKCkl0J3Mg
-YSByZWFsbHkgc2ltcGxlIGxpc3QsIGFuZCBzZXZlcmFsIG9mIHRoZSB1c2VycyB3YW50IHRvIGdv
-IGJhY2t3YXJkcwppbiBpdCB0byBmaW5kIHRoZSBwcmV2aW91cyB2bWEuICBTbyByYXRoZXIgdGhh
-biBoYXZlIHRvIGxvb2sgdXAgdGhlCnByZXZpb3VzIGVudHJ5IHdpdGggJ2ZpbmRfdm1hX3ByZXYo
-KScgb3Igc29tZXRoaW5nIHNpbWlsYXIsIGp1c3QgbWFrZSBpdApkb3VibHkgbGlua2VkIGluc3Rl
-YWQuCgpTaWduZWQtb2ZmLWJ5OiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
-dGlvbi5vcmc+Ci0tLQogaW5jbHVkZS9saW51eC9tbV90eXBlcy5oIHwgICAgMiArLQoga2VybmVs
-L2ZvcmsuYyAgICAgICAgICAgIHwgICAgNyArKysrKy0tCiBtbS9tbWFwLmMgICAgICAgICAgICAg
-ICAgfCAgIDIxICsrKysrKysrKysrKysrKysrLS0tLQogbW0vbm9tbXUuYyAgICAgICAgICAgICAg
-IHwgICAgNyArKysrKy0tCiA0IGZpbGVzIGNoYW5nZWQsIDI4IGluc2VydGlvbnMoKyksIDkgZGVs
-ZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tbV90eXBlcy5oIGIvaW5jbHVk
-ZS9saW51eC9tbV90eXBlcy5oCmluZGV4IGI4YmI5YTYuLmVlN2UyNTggMTAwNjQ0Ci0tLSBhL2lu
-Y2x1ZGUvbGludXgvbW1fdHlwZXMuaAorKysgYi9pbmNsdWRlL2xpbnV4L21tX3R5cGVzLmgKQEAg
-LTEzNCw3ICsxMzQsNyBAQCBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgewogCQkJCQkgICB3aXRoaW4g
-dm1fbW0uICovCiAKIAkvKiBsaW5rZWQgbGlzdCBvZiBWTSBhcmVhcyBwZXIgdGFzaywgc29ydGVk
-IGJ5IGFkZHJlc3MgKi8KLQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtX25leHQ7CisJc3RydWN0
-IHZtX2FyZWFfc3RydWN0ICp2bV9uZXh0LCAqdm1fcHJldjsKIAogCXBncHJvdF90IHZtX3BhZ2Vf
-cHJvdDsJCS8qIEFjY2VzcyBwZXJtaXNzaW9ucyBvZiB0aGlzIFZNQS4gKi8KIAl1bnNpZ25lZCBs
-b25nIHZtX2ZsYWdzOwkJLyogRmxhZ3MsIHNlZSBtbS5oLiAqLwpkaWZmIC0tZ2l0IGEva2VybmVs
-L2ZvcmsuYyBiL2tlcm5lbC9mb3JrLmMKaW5kZXggODU2ZWFjMy4uYjdlOWQ2MCAxMDA2NDQKLS0t
-IGEva2VybmVsL2ZvcmsuYworKysgYi9rZXJuZWwvZm9yay5jCkBAIC0zMDAsNyArMzAwLDcgQEAg
-b3V0OgogI2lmZGVmIENPTkZJR19NTVUKIHN0YXRpYyBpbnQgZHVwX21tYXAoc3RydWN0IG1tX3N0
-cnVjdCAqbW0sIHN0cnVjdCBtbV9zdHJ1Y3QgKm9sZG1tKQogewotCXN0cnVjdCB2bV9hcmVhX3N0
-cnVjdCAqbXBudCwgKnRtcCwgKipwcHJldjsKKwlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKm1wbnQs
-ICp0bXAsICpwcmV2LCAqKnBwcmV2OwogCXN0cnVjdCByYl9ub2RlICoqcmJfbGluaywgKnJiX3Bh
-cmVudDsKIAlpbnQgcmV0dmFsOwogCXVuc2lnbmVkIGxvbmcgY2hhcmdlOwpAQCAtMzI4LDYgKzMy
-OCw3IEBAIHN0YXRpYyBpbnQgZHVwX21tYXAoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCBt
-bV9zdHJ1Y3QgKm9sZG1tKQogCWlmIChyZXR2YWwpCiAJCWdvdG8gb3V0OwogCisJcHJldiA9IE5V
-TEw7CiAJZm9yIChtcG50ID0gb2xkbW0tPm1tYXA7IG1wbnQ7IG1wbnQgPSBtcG50LT52bV9uZXh0
-KSB7CiAJCXN0cnVjdCBmaWxlICpmaWxlOwogCkBAIC0zNTksNyArMzYwLDcgQEAgc3RhdGljIGlu
-dCBkdXBfbW1hcChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IG1tX3N0cnVjdCAqb2xkbW0p
-CiAJCQlnb3RvIGZhaWxfbm9tZW1fYW5vbl92bWFfZm9yazsKIAkJdG1wLT52bV9mbGFncyAmPSB+
-Vk1fTE9DS0VEOwogCQl0bXAtPnZtX21tID0gbW07Ci0JCXRtcC0+dm1fbmV4dCA9IE5VTEw7CisJ
-CXRtcC0+dm1fbmV4dCA9IHRtcC0+dm1fcHJldiA9IE5VTEw7CiAJCWZpbGUgPSB0bXAtPnZtX2Zp
-bGU7CiAJCWlmIChmaWxlKSB7CiAJCQlzdHJ1Y3QgaW5vZGUgKmlub2RlID0gZmlsZS0+Zl9wYXRo
-LmRlbnRyeS0+ZF9pbm9kZTsKQEAgLTM5Miw2ICszOTMsOCBAQCBzdGF0aWMgaW50IGR1cF9tbWFw
-KHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3QgbW1fc3RydWN0ICpvbGRtbSkKIAkJICovCiAJ
-CSpwcHJldiA9IHRtcDsKIAkJcHByZXYgPSAmdG1wLT52bV9uZXh0OworCQl0bXAtPnZtX3ByZXYg
-PSBwcmV2OworCQlwcmV2ID0gdG1wOwogCiAJCV9fdm1hX2xpbmtfcmIobW0sIHRtcCwgcmJfbGlu
-aywgcmJfcGFyZW50KTsKIAkJcmJfbGluayA9ICZ0bXAtPnZtX3JiLnJiX3JpZ2h0OwpkaWZmIC0t
-Z2l0IGEvbW0vbW1hcC5jIGIvbW0vbW1hcC5jCmluZGV4IDMxMDAzMzMuLjMzMWU1MWEgMTAwNjQ0
-Ci0tLSBhL21tL21tYXAuYworKysgYi9tbS9tbWFwLmMKQEAgLTM4OCwxNyArMzg4LDIzIEBAIHN0
-YXRpYyBpbmxpbmUgdm9pZAogX192bWFfbGlua19saXN0KHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBz
-dHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwKIAkJc3RydWN0IHZtX2FyZWFfc3RydWN0ICpwcmV2
-LCBzdHJ1Y3QgcmJfbm9kZSAqcmJfcGFyZW50KQogeworCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAq
-bmV4dDsKKworCXZtYS0+dm1fcHJldiA9IHByZXY7CiAJaWYgKHByZXYpIHsKLQkJdm1hLT52bV9u
-ZXh0ID0gcHJldi0+dm1fbmV4dDsKKwkJbmV4dCA9IHByZXYtPnZtX25leHQ7CiAJCXByZXYtPnZt
-X25leHQgPSB2bWE7CiAJfSBlbHNlIHsKIAkJbW0tPm1tYXAgPSB2bWE7CiAJCWlmIChyYl9wYXJl
-bnQpCi0JCQl2bWEtPnZtX25leHQgPSByYl9lbnRyeShyYl9wYXJlbnQsCisJCQluZXh0ID0gcmJf
-ZW50cnkocmJfcGFyZW50LAogCQkJCQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QsIHZtX3JiKTsKIAkJ
-ZWxzZQotCQkJdm1hLT52bV9uZXh0ID0gTlVMTDsKKwkJCW5leHQgPSBOVUxMOwogCX0KKwl2bWEt
-PnZtX25leHQgPSBuZXh0OworCWlmIChuZXh0KQorCQluZXh0LT52bV9wcmV2ID0gdm1hOwogfQog
-CiB2b2lkIF9fdm1hX2xpbmtfcmIoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCB2bV9hcmVh
-X3N0cnVjdCAqdm1hLApAQCAtNDgzLDcgKzQ4OSwxMSBAQCBzdGF0aWMgaW5saW5lIHZvaWQKIF9f
-dm1hX3VubGluayhzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2
-bWEsCiAJCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqcHJldikKIHsKLQlwcmV2LT52bV9uZXh0ID0g
-dm1hLT52bV9uZXh0OworCXN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqbmV4dCA9IHZtYS0+dm1fbmV4
-dDsKKworCXByZXYtPnZtX25leHQgPSBuZXh0OworCWlmIChuZXh0KQorCQluZXh0LT52bV9wcmV2
-ID0gcHJldjsKIAlyYl9lcmFzZSgmdm1hLT52bV9yYiwgJm1tLT5tbV9yYik7CiAJaWYgKG1tLT5t
-bWFwX2NhY2hlID09IHZtYSkKIAkJbW0tPm1tYXBfY2FjaGUgPSBwcmV2OwpAQCAtMTkxNSw2ICsx
-OTI1LDcgQEAgZGV0YWNoX3ZtYXNfdG9fYmVfdW5tYXBwZWQoc3RydWN0IG1tX3N0cnVjdCAqbW0s
-IHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAogCXVuc2lnbmVkIGxvbmcgYWRkcjsKIAogCWlu
-c2VydGlvbl9wb2ludCA9IChwcmV2ID8gJnByZXYtPnZtX25leHQgOiAmbW0tPm1tYXApOworCXZt
-YS0+dm1fcHJldiA9IE5VTEw7CiAJZG8gewogCQlyYl9lcmFzZSgmdm1hLT52bV9yYiwgJm1tLT5t
-bV9yYik7CiAJCW1tLT5tYXBfY291bnQtLTsKQEAgLTE5MjIsNiArMTkzMyw4IEBAIGRldGFjaF92
-bWFzX3RvX2JlX3VubWFwcGVkKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3Qgdm1fYXJlYV9z
-dHJ1Y3QgKnZtYSwKIAkJdm1hID0gdm1hLT52bV9uZXh0OwogCX0gd2hpbGUgKHZtYSAmJiB2bWEt
-PnZtX3N0YXJ0IDwgZW5kKTsKIAkqaW5zZXJ0aW9uX3BvaW50ID0gdm1hOworCWlmICh2bWEpCisJ
-CXZtYS0+dm1fcHJldiA9IHByZXY7CiAJdGFpbF92bWEtPnZtX25leHQgPSBOVUxMOwogCWlmICht
-bS0+dW5tYXBfYXJlYSA9PSBhcmNoX3VubWFwX2FyZWEpCiAJCWFkZHIgPSBwcmV2ID8gcHJldi0+
-dm1fZW5kIDogbW0tPm1tYXBfYmFzZTsKZGlmZiAtLWdpdCBhL21tL25vbW11LmMgYi9tbS9ub21t
-dS5jCmluZGV4IGVmYTlhMzguLjg4ZmYwOTEgMTAwNjQ0Ci0tLSBhL21tL25vbW11LmMKKysrIGIv
-bW0vbm9tbXUuYwpAQCAtNjA0LDcgKzYwNCw3IEBAIHN0YXRpYyB2b2lkIHByb3RlY3Rfdm1hKHN0
-cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLCB1bnNpZ25lZCBsb25nIGZsYWdzKQogICovCiBzdGF0
-aWMgdm9pZCBhZGRfdm1hX3RvX21tKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3Qgdm1fYXJl
-YV9zdHJ1Y3QgKnZtYSkKIHsKLQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnB2bWEsICoqcHA7CisJ
-c3RydWN0IHZtX2FyZWFfc3RydWN0ICpwdm1hLCAqKnBwLCAqbmV4dDsKIAlzdHJ1Y3QgYWRkcmVz
-c19zcGFjZSAqbWFwcGluZzsKIAlzdHJ1Y3QgcmJfbm9kZSAqKnAsICpwYXJlbnQ7CiAKQEAgLTY2
-NCw4ICs2NjQsMTEgQEAgc3RhdGljIHZvaWQgYWRkX3ZtYV90b19tbShzdHJ1Y3QgbW1fc3RydWN0
-ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEpCiAJCQlicmVhazsKIAl9CiAKLQl2bWEt
-PnZtX25leHQgPSAqcHA7CisJbmV4dCA9ICpwcDsKIAkqcHAgPSB2bWE7CisJdm1hLT52bV9uZXh0
-ID0gbmV4dDsKKwlpZiAobmV4dCkKKwkJbmV4dC0+dm1fcHJldiA9IHZtYTsKIH0KIAogLyoKLS0g
-CjEuNy4yLjEuOTcuZzMyMzViCgo=
---0016e6469b0c9ee6e4048e4a19f7
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0002-mm-make-the-mlock-stack-guard-page-checks-stricter.patch"
-Content-Disposition: attachment; 
-	filename="0002-mm-make-the-mlock-stack-guard-page-checks-stricter.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gd3p6gk82
+> Perhaps I've named the function badly.  What I want is the monotonic 
+> clock, adjusted for sleep time - i.e. a clock that counts elapsed real 
+> time without accounting for wall clock changes due to time zone, which 
+> never goes backwards.
 
-RnJvbSBlZmVkN2EyNGExNjI1ODlmN2NhZTQyOTVlZTNlYjQwNGQyY2MwMDJjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
-dGlvbi5vcmc+CkRhdGU6IEZyaSwgMjAgQXVnIDIwMTAgMTY6Mzk6MjUgLTA3MDAKU3ViamVjdDog
-W1BBVENIIDIvM10gbW06IG1ha2UgdGhlIG1sb2NrKCkgc3RhY2sgZ3VhcmQgcGFnZSBjaGVja3Mg
-c3RyaWN0ZXIKCklmIHdlJ3ZlIHNwbGl0IHRoZSBzdGFjayB2bWEsIG9ubHkgdGhlIGxvd2VzdCBv
-bmUgaGFzIHRoZSBndWFyZCBwYWdlLgpOb3cgdGhhdCB3ZSBoYXZlIGEgZG91Ymx5IGxpbmtlZCBs
-aXN0IG9mIHZtYSdzLCBjaGVja2luZyB0aGlzIGlzIHRyaXZpYWwuCgpTaWduZWQtb2ZmLWJ5OiBM
-aW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+Ci0tLQogbW0vbWxv
-Y2suYyB8ICAgMjEgKysrKysrKysrKysrKysrKy0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDE2IGlu
-c2VydGlvbnMoKyksIDUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbW0vbWxvY2suYyBiL21t
-L21sb2NrLmMKaW5kZXggNDllNWU0Yy4uY2JhZTdjNSAxMDA2NDQKLS0tIGEvbW0vbWxvY2suYwor
-KysgYi9tbS9tbG9jay5jCkBAIC0xMzUsNiArMTM1LDE5IEBAIHZvaWQgbXVubG9ja192bWFfcGFn
-ZShzdHJ1Y3QgcGFnZSAqcGFnZSkKIAl9CiB9CiAKKy8qIElzIHRoZSB2bWEgYSBjb250aW51YXRp
-b24gb2YgdGhlIHN0YWNrIHZtYSBhYm92ZSBpdD8gKi8KK3N0YXRpYyBpbmxpbmUgaW50IHZtYV9z
-dGFja19jb250aW51ZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgdW5zaWduZWQgbG9uZyBh
-ZGRyKQoreworCXJldHVybiB2bWEgJiYgKHZtYS0+dm1fZW5kID09IGFkZHIpICYmICh2bWEtPnZt
-X2ZsYWdzICYgVk1fR1JPV1NET1dOKTsKK30KKworc3RhdGljIGlubGluZSBpbnQgc3RhY2tfZ3Vh
-cmRfcGFnZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgdW5zaWduZWQgbG9uZyBhZGRyKQor
-eworCXJldHVybiAodm1hLT52bV9mbGFncyAmIFZNX0dST1dTRE9XTikgJiYKKwkJKHZtYS0+dm1f
-c3RhcnQgPT0gYWRkcikgJiYKKwkJIXZtYV9zdGFja19jb250aW51ZSh2bWEtPnZtX3ByZXYsIGFk
-ZHIpOworfQorCiAvKioKICAqIF9fbWxvY2tfdm1hX3BhZ2VzX3JhbmdlKCkgLSAgbWxvY2sgYSBy
-YW5nZSBvZiBwYWdlcyBpbiB0aGUgdm1hLgogICogQHZtYTogICB0YXJnZXQgdm1hCkBAIC0xNjgs
-MTEgKzE4MSw5IEBAIHN0YXRpYyBsb25nIF9fbWxvY2tfdm1hX3BhZ2VzX3JhbmdlKHN0cnVjdCB2
-bV9hcmVhX3N0cnVjdCAqdm1hLAogCQlndXBfZmxhZ3MgfD0gRk9MTF9XUklURTsKIAogCS8qIFdl
-IGRvbid0IHRyeSB0byBhY2Nlc3MgdGhlIGd1YXJkIHBhZ2Ugb2YgYSBzdGFjayB2bWEgKi8KLQlp
-ZiAodm1hLT52bV9mbGFncyAmIFZNX0dST1dTRE9XTikgewotCQlpZiAoc3RhcnQgPT0gdm1hLT52
-bV9zdGFydCkgewotCQkJc3RhcnQgKz0gUEFHRV9TSVpFOwotCQkJbnJfcGFnZXMtLTsKLQkJfQor
-CWlmIChzdGFja19ndWFyZF9wYWdlKHZtYSwgc3RhcnQpKSB7CisJCWFkZHIgKz0gUEFHRV9TSVpF
-OworCQlucl9wYWdlcy0tOwogCX0KIAogCXdoaWxlIChucl9wYWdlcyA+IDApIHsKLS0gCjEuNy4y
-LjEuOTcuZzMyMzViCgo=
---0016e6469b0c9ee6e4048e4a19f7
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0003-mm-make-stack-guard-page-logic-use-vm_prev-pointer.patch"
-Content-Disposition: attachment; 
-	filename="0003-mm-make-stack-guard-page-logic-use-vm_prev-pointer.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gd3p6psm3
+That looks fine then.  Its a little confusing since getboottime()
+returns a timespec with the absolute time that the system booted. Where
+as your interface is providing the time since boot. 
 
-RnJvbSAzYzMzZTA0ZDIyNWVjMjk1ZWVlNGY4ZmI0ZTdiNzhiMzA5YzNjMGM4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
-dGlvbi5vcmc+CkRhdGU6IEZyaSwgMjAgQXVnIDIwMTAgMTY6NDk6NDAgLTA3MDAKU3ViamVjdDog
-W1BBVENIIDMvM10gbW06IG1ha2Ugc3RhY2sgZ3VhcmQgcGFnZSBsb2dpYyB1c2Ugdm1fcHJldiBw
-b2ludGVyCgpMaWtlIHRoZSBtbG9jaygpIGNoYW5nZSBwcmV2aW91c2x5LCB0aGlzIG1ha2VzIHRo
-ZSBzdGFjayBndWFyZCBjaGVjawpjb2RlIHVzZSB2bWEtPnZtX3ByZXYgdG8gc2VlIHdoYXQgdGhl
-IG1hcHBpbmcgYmVsb3cgdGhlIGN1cnJlbnQgc3RhY2sKaXMsIHJhdGhlciB0aGFuIGhhdmUgdG8g
-bG9vayBpdCB1cCB3aXRoIGZpbmRfdm1hKCkuCgpBbHNvLCBhY2NlcHQgYW4gYWJ1dHRpbmcgc3Rh
-Y2sgc2VnbWVudCwgc2luY2UgdGhhdCBoYXBwZW5zIG5hdHVyYWxseSBpZgp5b3Ugc3BsaXQgdGhl
-IHN0YWNrIHdpdGggbWxvY2sgb3IgbXByb3RlY3QuCgpTaWduZWQtb2ZmLWJ5OiBMaW51cyBUb3J2
-YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+Ci0tLQogbW0vbWVtb3J5LmMgfCAg
-IDE1ICsrKysrKysrKysrLS0tLQogMSBmaWxlcyBjaGFuZ2VkLCAxMSBpbnNlcnRpb25zKCspLCA0
-IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL21tL21lbW9yeS5jIGIvbW0vbWVtb3J5LmMKaW5k
-ZXggYjZlNWZkMi4uMmVkMjI2NyAxMDA2NDQKLS0tIGEvbW0vbWVtb3J5LmMKKysrIGIvbW0vbWVt
-b3J5LmMKQEAgLTI3NzAsMTEgKzI3NzAsMTggQEAgc3RhdGljIGlubGluZSBpbnQgY2hlY2tfc3Rh
-Y2tfZ3VhcmRfcGFnZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgdW5zaWduZWQgbG8KIHsK
-IAlhZGRyZXNzICY9IFBBR0VfTUFTSzsKIAlpZiAoKHZtYS0+dm1fZmxhZ3MgJiBWTV9HUk9XU0RP
-V04pICYmIGFkZHJlc3MgPT0gdm1hLT52bV9zdGFydCkgewotCQlhZGRyZXNzIC09IFBBR0VfU0la
-RTsKLQkJaWYgKGZpbmRfdm1hKHZtYS0+dm1fbW0sIGFkZHJlc3MpICE9IHZtYSkKLQkJCXJldHVy
-biAtRU5PTUVNOworCQlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnByZXYgPSB2bWEtPnZtX3ByZXY7
-CisKKwkJLyoKKwkJICogSXMgdGhlcmUgYSBtYXBwaW5nIGFidXR0aW5nIHRoaXMgb25lIGJlbG93
-PworCQkgKgorCQkgKiBUaGF0J3Mgb25seSBvayBpZiBpdCdzIHRoZSBzYW1lIHN0YWNrIG1hcHBp
-bmcKKwkJICogdGhhdCBoYXMgZ290dGVuIHNwbGl0Li4KKwkJICovCisJCWlmIChwcmV2ICYmIHBy
-ZXYtPnZtX2VuZCA9PSBhZGRyZXNzKQorCQkJcmV0dXJuIHByZXYtPnZtX2ZsYWdzICYgVk1fR1JP
-V1NET1dOID8gMCA6IC1FTk9NRU07CiAKLQkJZXhwYW5kX3N0YWNrKHZtYSwgYWRkcmVzcyk7CisJ
-CWV4cGFuZF9zdGFjayh2bWEsIGFkZHJlc3MgLSBQQUdFX1NJWkUpOwogCX0KIAlyZXR1cm4gMDsK
-IH0KLS0gCjEuNy4yLjEuOTcuZzMyMzViCgo=
---0016e6469b0c9ee6e4048e4a19f7--
+Maybe gettimefromboot_ns() would be clearer?
+
+thanks
+-john
+
+
+
+
+
+
