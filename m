@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab0HUHQQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 03:16:16 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:57292 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0HUHQP (ORCPT
+	id S1751459Ab0HUHVe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 03:21:34 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47686 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab0HUHVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 03:16:15 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C6F7D2D.6060101@s5r6.in-berlin.de>
-Date: Sat, 21 Aug 2010 09:15:57 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Miloslav Trmac <mitr@redhat.com>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/19] Add ioctl() argument and attribute handling utils
-References: <1833173750.1044971282356941800.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1833173750.1044971282356941800.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sat, 21 Aug 2010 03:21:32 -0400
+From: Sachin Sant <sachinp@in.ibm.com>
+To: schwidefsky@de.ibm.com
+Cc: Sachin Sant <sachinp@in.ibm.com>, linux-s390@vger.kernel.org,
+        dmitry.torokhov@gmail.com, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Date: Sat, 21 Aug 2010 12:51:26 +0530
+Message-Id: <20100821072126.8965.41003.sendpatchset@localhost.localdomain>
+Subject: [-next PATCH] Fix s390 keyboard driver build break
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miloslav Trmac wrote:
-> ----- "Stefan Richter" <stefanr@s5r6.in-berlin.de> wrote:
->> Miloslav Trmač wrote:
->>> --- /dev/null
->>> +++ b/crypto/userspace/utils.c
->> [...]
->>> +#ifdef CONFIG_COMPAT
->>> +/* max() is too clever for compile-time constants */
->>> +#define CONST_MAX(A, B) ((A) > (B) ? (A) : (B))
->>> +
->>> +#define MAX_SESSION_INPUT_DATA_SIZE					\
->>> +	(CONST_MAX(sizeof(struct ncr_session_input_data),		\
->>> +		   sizeof(struct compat_ncr_session_input_data)))
->>> +#define MAX_SESSION_OUTPUT_BUFFER_SIZE					\
->>> +	(CONST_MAX(sizeof(struct ncr_session_output_buffer),		\
->>> +		   sizeof(struct compat_ncr_session_output_buffer)))
->>> +
->>> +#else /* !CONFIG_COMPAT */
->>> +
->>> +#define MAX_SESSION_INPUT_DATA_SIZE (sizeof(struct ncr_session_input_data))
->>> +#define MAX_SESSION_OUTPUT_BUFFER_SIZE			\
->>> +	(sizeof(struct ncr_session_output_buffer))
->>> +
->>> +#endif /* !CONFIG_COMPAT */
->> 
->> struct compat_xyz cannot be bigger than struct xyz, can it?
->
-> Perhaps not, but the code has been written and it's easier to keep it than to
-> speculate :)
+Next 20100820 fails to build on s390 with 
 
-What's there to speculate? :-)  COMPAT = 32bit user on 64bit kernel.  The
-latter has larger long and pointers and possibly different alignment of 64bit
-data.
+drivers/s390/char/keyboard.c: In function 'kbd_keycode':
+drivers/s390/char/keyboard.c:308: error: too many arguments to function 'handle_sysrq'
+make[2]: *** [drivers/s390/char/keyboard.o] Error 1
 
-> It also helps document the fact that the data format depends on properties of
-> the userspace.
+The following commit changed handle_sysrq() function to accept single argument. 
 
-Since it is a new ABI, it can be written to not need COMPAT ifdef'ery nor
-compat handlers.
--- 
-Stefan Richter
--=====-==-=- =--- =-=-=
-http://arcgraph.de/sr/
+commit a821bafce37b26499e2bfbf2e6b96b0636efc014
+Input: sysrq - drop tty argument form handle_sysrq()
+
+Adapt the code accordingly to fix the build break.
+
+Signed-off-by: Sachin Sant <sachinp@in.ibm.com>
+---
+
+diff -Naurp next20100820/drivers/s390/char/keyboard.c next20100820-new//drivers/s390/char/keyboard.c
+--- next20100820/drivers/s390/char/keyboard.c	2010-08-16 06:11:37.000000000 +0530
++++ next20100820-new//drivers/s390/char/keyboard.c	2010-08-21 11:55:25.000000000 +0530
+@@ -305,7 +305,7 @@ kbd_keycode(struct kbd_data *kbd, unsign
+ 		if (kbd->sysrq) {
+ 			if (kbd->sysrq == K(KT_LATIN, '-')) {
+ 				kbd->sysrq = 0;
+-				handle_sysrq(value, kbd->tty);
++				handle_sysrq(value);
+ 				return;
+ 			}
+ 			if (value == '-') {
