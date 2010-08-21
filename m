@@ -1,224 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab0HUOX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 10:23:26 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:54068 "EHLO smtp.polymtl.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab0HUOXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 10:23:20 -0400
-Message-Id: <20100821142215.202094497@efficios.com>
-User-Agent: quilt/0.48-1
-Date: Sat, 21 Aug 2010 10:17:52 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: ltt-dev@lists.casi.polymtl.ca,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	id S1752186Ab0HUOmo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 10:42:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59028 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab0HUOml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 10:42:41 -0400
+Date: Sat, 21 Aug 2010 10:42:39 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
-        Jamie Lokier <jamie@shareable.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH for -tip 2/2] Create generic alignment API (v9)
-References: <20100821141750.770348530@efficios.com>
-Content-Disposition: inline; filename=create-generic-alignment-api.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Sat, 21 Aug 2010 14:22:15 +0000
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: callchain sampling bug in perf?
+Message-ID: <20100821144239.GA31202@infradead.org>
+References: <20100815225359.GA32152@infradead.org>
+ <20100819005720.GB5324@nowhere>
+ <20100819085700.GB8782@infradead.org>
+ <20100819150422.GA325@ghostprotocols.net>
+ <20100820091645.GA20138@infradead.org>
+ <20100821024713.GD7959@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100821024713.GD7959@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than re-doing the "alignment on a type size" trick all over again at
-different levels, import the "ltt_align" from LTTng into kernel.h and make this
-available to everyone. Renaming to:
+On Sat, Aug 21, 2010 at 04:47:14AM +0200, Frederic Weisbecker wrote:
+> > I still see the same problems as with the TUI perf report with that.
+> > With the -g {mode},0.0 there is nothing to expand inside the GUI for
+>   ^^
+>   you meant "without", right?
 
-- object_align()
-- object_align_floor()
-- offset_align()
-- offset_align_floor()
+Yes, sorry.
 
-Changelog since v8:
-- Remove unnecessary braces.
-- Update object_align/object_align_floor comments.
+> The following patch solves that particular problem, I'll push it to Ingo for .36
+> (and -stable):
 
-Changelog since v7:
-- Add missing include/linux/Kconfig header-y.
+It does seem to fix the bug for some cases but not all.  Default perf
+report in TUI and the normal command line seem to get it right.  perf
+report -g flat still shows the old problem.  perf report -g flat,0.0
+shows callgraphs, but just as before they just show the 0.<n>
+percentages.
 
-Changelog since v6:
-- Adapt to changes introduced by
-  commit a79ff731a1b277d0e92d9453bdf374e04cec717a
-- Use __alignof__() instead of sizeof() to support compound types.
+Btw, even in normal perf report mode the numbers while they look correct
+confused me a bit.  The percentages before the callgraphs split are
+always relative to the node above, not absolute which is rather
+confusing.  And even despite adding -n to the perf report command line
+I only get absolute numbers for the proccesses but not the actual
+callgraphs.
 
-Changelog since v5:
-- moved alignment apis to a separate header file so that it is possible
-  to use them from other header files which are, for example, included
-  from kernel.h.
+> > Also the flat mode is rendered incorrectly, it just adds different call
+> > graphs inside a single process directly after each other instead of
+> > separating them in the rendering.
+> 
+> 
+> I'm not sure what you mean. The flat format is a pure dump of every callchains
+> that belong to a single process (or whatever kind of histogram source...).
+> 
+> What do you mean by separating them in the rendering?
 
-Changelog since v4:
-- add missing ( ) around parameters within object_align() and
-  object_align_floor().
-- More coding style cleanups to ALIGN() (checkpatch.pl is happy now).
-
-Changelog since v3:
-- optimize object_align*() so fewer instructions are needed for alignment of
-  addresses known dynamically. Use the (already existing) "ALIGN()", and create
-  the "ALIGN_FLOOR()" macro.
-- While we are there, let's clean up the ALIGN() macros wrt coding style. e.g.
-  missing parenthesis around the first use of the "x" parameter in ALIGN().
-
-Changelog since v2:
-- Fix object_align*(): should use object size alignment, not pointer alignment.
-
-Changelog since v1:
-- Align on the object natural alignment
-    (rather than min(arch word alignment, natural alignment))
-
-The advantage of separating the API in "object alignment" and "offset alignment"
-is that it gives more freedom to play with offset alignment. Very useful to
-implement a tracer ring-buffer alignment. (hint hint)
-
-Typical users will use "object alignment", but infrastructures like tracers
-which need to perform alignment of statically known base+offsets will typically
-use "offset alignment", because it allows to align with respect to a base rather
-than to pass an absolute address.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org
-CC: Imre Deak <imre.deak@nokia.com>
-CC: Jamie Lokier <jamie@shareable.org>
-CC: mingo@elte.hu
-CC: Alexey Dobriyan <adobriyan@gmail.com>
----
- include/linux/Kbuild   |    1 
- include/linux/align.h  |   59 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/kernel.h |   10 ++------
- 3 files changed, 63 insertions(+), 7 deletions(-)
- create mode 100644 include/linux/align.h
-
-Index: linux.trees.git/include/linux/align.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux.trees.git/include/linux/align.h	2010-08-17 22:12:37.000000000 -0400
-@@ -0,0 +1,59 @@
-+#ifndef _LINUX_ALIGN_H
-+#define _LINUX_ALIGN_H
-+
-+#define __ALIGN_KERNEL(x, a)	__ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
-+#define __ALIGN_KERNEL_MASK(x, mask) \
-+				(((x) + (mask)) & ~(mask))
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/types.h>
-+#include <linux/log2.h>
-+
-+#define ALIGN(x, a)		__ALIGN_KERNEL(x, a)
-+#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK(x, mask)
-+#define PTR_ALIGN(p, a)		((typeof(p)) ALIGN((unsigned long) (p), a))
-+#define ALIGN_FLOOR(x, a)	__ALIGN_FLOOR_MASK(x, (typeof(x)) (a) - 1)
-+#define __ALIGN_FLOOR_MASK(x, mask)	((x) & ~(mask))
-+#define PTR_ALIGN_FLOOR(p, a) \
-+			((typeof(p)) ALIGN_FLOOR((unsigned long) (p), a))
-+#define IS_ALIGNED(x, a)	(((x) & ((typeof(x)) (a) - 1)) == 0)
-+
-+/*
-+ * Align pointer on natural object alignment.
-+ */
-+#define object_align(obj)	PTR_ALIGN(obj, __alignof__(*(obj)))
-+#define object_align_floor(obj)	PTR_ALIGN_FLOOR(obj, __alignof__(*(obj)))
-+
-+/**
-+ * offset_align - Calculate the offset needed to align an object on its natural
-+ *                alignment towards higher addresses.
-+ * @align_drift:  object offset from an "alignment"-aligned address.
-+ * @alignment:    natural object alignment. Must be non-zero, power of 2.
-+ *
-+ * Returns the offset that must be added to align towards higher
-+ * addresses.
-+ */
-+#define offset_align(align_drift, alignment)			\
-+	({							\
-+		MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2(alignment);	\
-+		((alignment - align_drift) & (alignment - 1));	\
-+	})
-+
-+/**
-+ * offset_align_floor - Calculate the offset needed to align an object
-+ *                      on its natural alignment towards lower addresses.
-+ * @align_drift:  object offset from an "alignment"-aligned address.
-+ * @alignment:    natural object alignment. Must be non-zero, power of 2.
-+ *
-+ * Returns the offset that must be substracted to align towards lower addresses.
-+ */
-+#define offset_align_floor(align_drift, alignment)		\
-+	({							\
-+		MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2(alignment);	\
-+		((align_drift - alignment) & (alignment - 1);	\
-+	})
-+
-+#endif /* __KERNEL__ */
-+
-+#endif
-Index: linux.trees.git/include/linux/kernel.h
-===================================================================
---- linux.trees.git.orig/include/linux/kernel.h	2010-08-17 22:12:11.000000000 -0400
-+++ linux.trees.git/include/linux/kernel.h	2010-08-17 22:13:31.000000000 -0400
-@@ -4,8 +4,6 @@
- /*
-  * 'kernel.h' contains some often-used function prototypes etc
-  */
--#define __ALIGN_KERNEL(x, a)		__ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
--#define __ALIGN_KERNEL_MASK(x, mask)	(((x) + (mask)) & ~(mask))
- 
- #ifdef __KERNEL__
- 
-@@ -39,11 +37,6 @@ extern const char linux_proc_banner[];
- 
- #define STACK_MAGIC	0xdeadbeef
- 
--#define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
--#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
--#define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
--#define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
--
- #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
- 
- /*
-@@ -771,6 +764,9 @@ struct sysinfo {
- #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
- #define BUILD_BUG_ON_NULL(e) ((void *)sizeof(struct { int:-!!(e); }))
- 
-+/* The header align.h depends on MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2() */
-+#include <linux/align.h>
-+
- /* Trap pasters of __FUNCTION__ at compile-time */
- #define __FUNCTION__ (__func__)
- 
-Index: linux.trees.git/include/linux/Kbuild
-===================================================================
---- linux.trees.git.orig/include/linux/Kbuild	2010-08-17 22:12:11.000000000 -0400
-+++ linux.trees.git/include/linux/Kbuild	2010-08-17 22:12:37.000000000 -0400
-@@ -38,6 +38,7 @@ header-y += adfs_fs.h
- header-y += affs_hardblocks.h
- header-y += agpgart.h
- header-y += aio_abi.h
-+header-y += align.h
- header-y += apm_bios.h
- header-y += arcfb.h
- header-y += atalk.h
+If there are different callchains leading to the same tracepoint they
+are just appened to each other with no visual indication that they are
+separate callchains
 
