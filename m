@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab0HUOq3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 10:46:29 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59187 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab0HUOq1 (ORCPT
+	id S1752143Ab0HUOwR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 10:52:17 -0400
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:40536 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751737Ab0HUOwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 10:46:27 -0400
-Date: Sat, 21 Aug 2010 10:46:25 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: callchain sampling bug in perf?
-Message-ID: <20100821144625.GA19711@infradead.org>
-References: <20100815225359.GA32152@infradead.org>
- <20100819005720.GB5324@nowhere>
- <20100819085700.GB8782@infradead.org>
- <20100819150422.GA325@ghostprotocols.net>
- <20100820091645.GA20138@infradead.org>
- <20100821024713.GD7959@nowhere>
- <20100821144239.GA31202@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100821144239.GA31202@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 21 Aug 2010 10:52:14 -0400
+Subject: TRACE: config warning for IRQSOFF_TRACER
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Aug 2010 15:52:12 +0100
+Message-ID: <1282402332.1978.32.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 10:42:39AM -0400, Christoph Hellwig wrote:
-> It does seem to fix the bug for some cases but not all.  Default perf
-> report in TUI and the normal command line seem to get it right.  perf
-> report -g flat still shows the old problem.  perf report -g flat,0.0
-> shows callgraphs, but just as before they just show the 0.<n>
-> percentages.
+In my config with PROVE_LOCKING=n and FTRACE=y (which defaults
+IRQSOFF_TRACER to y), I get the following warning from make oldconfig.
 
--g graph also shows the same issue of not beeing able to expand the
-python line.  It seems like only the fractal case was fixed by that
-patch.
+scripts/kconfig/conf --oldconfig arch/x86/Kconfig
+warning: (IRQSOFF_TRACER && TRACING_SUPPORT && FTRACE &&
+TRACE_IRQFLAGS_SUPPORT && !ARCH_USES_GETTIMEOFFSET) selects
+TRACE_IRQFLAGS which has unmet direct dependencies (DEBUG_KERNEL &&
+TRACE_IRQFLAGS_SUPPORT && PROVE_LOCKING)
+
+The problem is that TRACE_IRQFLAGS depends on PROVE_LOCKING.
+Should it select PROVE_LOCKING instead? or is there a better way to fix
+this?
+
+regards
+
+Richard
+
+
+
 
