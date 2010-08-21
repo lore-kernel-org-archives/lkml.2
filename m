@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab0HUG3B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 02:29:01 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51280 "EHLO
+	id S1751434Ab0HUG5Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 02:57:25 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53174 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab0HUG27 (ORCPT
+	with ESMTP id S1751211Ab0HUG5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 02:28:59 -0400
+	Sat, 21 Aug 2010 02:57:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ODIToE9HmHs/EYhG3LpLgMkOSg8KBRR+ciGZMY289SjiqOvu3KI8jF/owxMTzf3di7
-         JxEZyGHBmuc4OORJKFn9BtRJTGgkm0OKmIGt+YF34WOjDSyIefJjQM30nWHrPv7aH+46
-         c8lTvxgiYqgcfgbO6Ble1f2PEVTb8WWd7jsxU=
-From: jiang.adam@gmail.com
-To: ralf@linux-mips.org
-Cc: dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
-        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
-        tj@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Adam Jiang <jiang.adam@gmail.com>
-Subject: [PATCH] mips: irq: add statckoverflow detection
-Date: Sat, 21 Aug 2010 15:31:33 +0900
-Message-Id: <1282372293-30211-1-git-send-email-jiang.adam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=subject:from:reply-to:to:cc:content-type:date:message-id
+         :mime-version:x-mailer:content-transfer-encoding;
+        b=FY3vbsa15TpoD6r0FTsvPkDTQ4dFBKl0CEurxuayuxJQEZMEYG7zjBuFJOGYTj78tu
+         YaRUNXRl4YQXGDgN1LK/67o7P6aqJLqSpPwUfKJg320lObety4BV+KQDNxSe7+RNQ/9d
+         APuEPTpGVD4YAybMu4uYCDT3wRQhVIo0khPVk=
+Subject: help needed with EXPORT_SYMBOL
+From: Aijaz Baig <aijazbaig1@gmail.com>
+Reply-To: aijazbaig1@gmail.com
+To: netfilter-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Aug 2010 12:27:14 +0530
+Message-ID: <1282373834.4080.79.camel@aijazbaig1-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adam Jiang <jiang.adam@gmail.com>
+Hello,
 
-Add stackoverflow detection to mips arch
+Ive been trying to EXPORT a SYMBOL from a netfilter module (actually a
+hook) to the KERNEL. Various modules seem to export various symbols to
+the kernel (or so it seems), an example being x_tables which exports a
+whole lot of functions like xt_register_target and so on and all other
+netfilter modules which use these functions dont seem to have any
+problems.
 
-Signed-off-by: Adam Jiang <jiang.adam@gmail.com>
----
- arch/mips/Kconfig.debug |    7 +++++++
- arch/mips/kernel/irq.c  |   19 +++++++++++++++++++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+So why is it that when my netfilter module is exporting something to the
+kernel and im tryin to use it from within a core kernel file, the
+compiler flags a 'undefined reference to' error?
 
-diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
-index 43dc279..f1a00a2 100644
---- a/arch/mips/Kconfig.debug
-+++ b/arch/mips/Kconfig.debug
-@@ -67,6 +67,13 @@ config CMDLINE_OVERRIDE
+I googled and came to the conclusion from the kernelnewbies mailing list
+that using kallsyms_lookup() seems to be the answer or is it?
+So, if I do intend to use kallsyms_lookup how do I use it? There aren't
+so many instances of it being used it seems.
  
- 	  Normally, you will choose 'N' here.
- 
-+config DEBUG_STACKOVERFLOW
-+	bool "Check for stack overflows"
-+	depends on DEBUG_KERNEL
-+	help
-+	  This option will cause messages to be printed if free stack space
-+	  drops below a certain limit.
-+
- config DEBUG_STACK_USAGE
- 	bool "Enable stack utilization instrumentation"
- 	depends on DEBUG_KERNEL
-diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
-index c6345f5..6334037 100644
---- a/arch/mips/kernel/irq.c
-+++ b/arch/mips/kernel/irq.c
-@@ -151,6 +151,22 @@ void __init init_IRQ(void)
- #endif
- }
- 
-+static inline void check_stack_overflow(void)
-+{
-+#ifdef CONFIG_DEBUG_STACKOVERFLOW
-+	long sp;
-+
-+	asm volatile("move %0, $sp" : "=r" (sp));
-+	sp = sp & (THREAD_SIZE-1);
-+
-+	/* check for stack overflow: is there less then 2KB free? */
-+	if (unlikely(sp < (sizeof(struct thread_info) + 2048))) {
-+		printk("do_IRQ: stack overflow: %ld\n",
-+		       sp - sizeof(struct thread_info));
-+		dump_stack();
-+	}
-+#endif
-+}
- /*
-  * do_IRQ handles all normal device IRQ's (the special
-  * SMP cross-CPU interrupts have their own specific
-@@ -159,6 +175,9 @@ void __init init_IRQ(void)
- void __irq_entry do_IRQ(unsigned int irq)
- {
- 	irq_enter();
-+
-+	check_stack_overflow();
-+
- 	__DO_IRQ_SMTC_HOOK(irq);
- 	generic_handle_irq(irq);
- 	irq_exit();
--- 
-1.7.1
+Ive seen it being used in dev/core.c like so:
+symname = kallsyms_lookup((unsigned long)sym, &symsize,&offset,&modname,
+namebuf);
+
+I am basically trying to call a function that MY module EXPORTs inside
+one of the core linux routines. This would also mean that my netfilter
+module must be compiled (and linked also maybe?..not so sound with link
+time stuff) before the address becomes visible so that kallsyms_lookup
+can find it. So do I really shd be using it and if so, how?
+
+Any input is appreciated.
+
+Regards,
+Aijaz Baig.
+
+
 
