@@ -1,75 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab0HUURl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 16:17:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36044 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751009Ab0HUURj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 16:17:39 -0400
+	id S1751585Ab0HUUTW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 16:19:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50452 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751009Ab0HUUTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 16:19:20 -0400
+Date: Sat, 21 Aug 2010 20:18:51 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        hch@infradead.org, fweisbec@gmail.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, efault@gmx.de,
+        peterz@infradead.org, tglx@linutronix.de, hch@infradead.org
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Add --tui and --stdio to choose the UI
+Message-ID: <tip-8b9e74eb8af808807192d16b76565c27154ae7ed@git.kernel.org>
+Git-Commit-ID: 8b9e74eb8af808807192d16b76565c27154ae7ed
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-In-Reply-To: <20100821200528.GA27421@merkur.ravnborg.org>
-References: <20100821193241.GB4760@const.famille.thibault.fr>
- <AANLkTi=Pha8jRFhr+kQfh9doKZDW-=VHq2KqNxXaq6ts@mail.gmail.com>
- <20100821195559.GC4760@const.famille.thibault.fr> <20100821200528.GA27421@merkur.ravnborg.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 21 Aug 2010 13:16:48 -0700
-Message-ID: <AANLkTik0EhJVqUxMqXzC9q2AK++ZUje6NM1ki8hEmjUR@mail.gmail.com>
-Subject: Re: [PATCH,TRIVIAL] Replace Configure with Enable in description of MAXSMP
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 21 Aug 2010 20:18:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 1:05 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
->
-> From said document:
-> 15) The canonical patch format
->
-> The canonical patch subject line is:
->
->    Subject: [PATCH 001/123] subsystem: summary phrase
->
-> The canonical patch message body contains the following:
->
->  - A "from" line specifying the patch author.
+Commit-ID:  8b9e74eb8af808807192d16b76565c27154ae7ed
+Gitweb:     http://git.kernel.org/tip/8b9e74eb8af808807192d16b76565c27154ae7ed
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Sat, 21 Aug 2010 10:38:16 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sat, 21 Aug 2010 10:49:46 -0300
 
-Btw, git (and other systems, at least Andrew's patchqueue) also accepts
+perf tools: Add --tui and --stdio to choose the UI
 
- - a Subject: line to repeat the subject. This can be useful if you
-(for example) want to keep the actual email subject in an old thread,
-and thus want to override the email Subject: line with one that is
-appropriate for the patch itself.
+Relying just on ~/.perfconfig or rebuilding the tool disabling support
+for the TUI is too cumbersome, so allow specifying which UI to use and
+make the command line switch override whatever is in ~/.perfconfig.
 
- - a "Date: " line to specify the date of the patch. Not that most
-people care, but when patches get forwarded by email and sign-off's
-added, the date of the newer email will obviously change. So _if_ you
-care about the date when you actually sent out the patch, you can add
-the Date: line to specify the date of the submission, and then as
-people forward it, that one may stay around (because it is in the body
-of the email)
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-annotate.txt |   11 +++++++++--
+ tools/perf/Documentation/perf-report.txt   |    7 +++++++
+ tools/perf/builtin-annotate.c              |    9 ++++++++-
+ tools/perf/builtin-report.c                |   11 ++++++++++-
+ 4 files changed, 34 insertions(+), 4 deletions(-)
 
-Quite frankly, I don't personally much care for the "date" line, and
-it easily gets lost if a patch is maintained not in email, but in some
-other patch queue system (so I think the date line gets dropped if the
-patch goes through Andrew, for example). But a patch queue that
-doesn't honor the summary and author information isn't a patch queue,
-it's a broken mess.
-
-Putting the author line ("From: xyz <abc@example.com>") at the top of
-the email body is always a good idea, though. That means that other
-people can forward the email, without accidentally then becoming
-marked as the author. Of course, careful people will make sure to save
-authorship anyway, but mistakes have happened.
-
-(Of course, if you send the patch directly to me or Andrew, you don't
-really need to. We both make sure that author information gets saved
-off. It tends to be people who aren't quite as used to emailed patches
-that get this wrong).
-
-                                    Linus
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 5164a65..b2c6330 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -8,7 +8,7 @@ perf-annotate - Read perf.data (created by perf record) and display annotated co
+ SYNOPSIS
+ --------
+ [verse]
+-'perf annotate' [-i <file> | --input=file] symbol_name
++'perf annotate' [-i <file> | --input=file] [symbol_name]
+ 
+ DESCRIPTION
+ -----------
+@@ -24,6 +24,13 @@ OPTIONS
+ --input=::
+         Input file name. (default: perf.data)
+ 
++--stdio:: Use the stdio interface.
++
++--tui:: Use the TUI interface Use of --tui requires a tty, if one is not
++	present, as when piping to other commands, the stdio interface is
++	used. This interfaces starts by centering on the line with more
++	samples, TAB/UNTAB cycles thru the lines with more samples.
++
+ SEE ALSO
+ --------
+-linkperf:perf-record[1]
++linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index abfabe9..12052c9 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -65,6 +65,13 @@ OPTIONS
+ 		 the tree is considered as a new profiled object. +
+ 	Default: fractal,0.5.
+ 
++--stdio:: Use the stdio interface.
++
++--tui:: Use the TUI interface, that is integrated with annotate and allows
++        zooming into DSOs or threads, among other features. Use of --tui
++	requires a tty, if one is not present, as when piping to other
++	commands, the stdio interface is used.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1]
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 20ee21d..6d5604d8d 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -28,7 +28,7 @@
+ 
+ static char		const *input_name = "perf.data";
+ 
+-static bool		force;
++static bool		force, use_tui, use_stdio;
+ 
+ static bool		full_paths;
+ 
+@@ -427,6 +427,8 @@ static const struct option options[] = {
+ 		    "be more verbose (show symbol address, etc)"),
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+ 		    "dump raw trace in ASCII"),
++	OPT_BOOLEAN(0, "tui", &use_tui, "Use the TUI interface"),
++	OPT_BOOLEAN(0, "stdio", &use_stdio, "Use the stdio interface"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
+ 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
+@@ -442,6 +444,11 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __used)
+ {
+ 	argc = parse_options(argc, argv, options, annotate_usage, 0);
+ 
++	if (use_stdio)
++		use_browser = 0;
++	else if (use_tui)
++		use_browser = 1;
++
+ 	setup_browser();
+ 
+ 	symbol_conf.priv_size = sizeof(struct sym_priv);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 55fc1f4..7d35a71 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -32,7 +32,7 @@
+ 
+ static char		const *input_name = "perf.data";
+ 
+-static bool		force;
++static bool		force, use_tui, use_stdio;
+ static bool		hide_unresolved;
+ static bool		dont_use_callchains;
+ 
+@@ -450,6 +450,8 @@ static const struct option options[] = {
+ 		    "Show per-thread event counters"),
+ 	OPT_STRING(0, "pretty", &pretty_printing_style, "key",
+ 		   "pretty printing style key: normal raw"),
++	OPT_BOOLEAN(0, "tui", &use_tui, "Use the TUI interface"),
++	OPT_BOOLEAN(0, "stdio", &use_stdio, "Use the stdio interface"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+@@ -482,8 +484,15 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ {
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
+ 
++	if (use_stdio)
++		use_browser = 0;
++	else if (use_tui)
++		use_browser = 1;
++
+ 	if (strcmp(input_name, "-") != 0)
+ 		setup_browser();
++	else
++		use_browser = 0;
+ 	/*
+ 	 * Only in the newt browser we are doing integrated annotation,
+ 	 * so don't allocate extra space that won't be used in the stdio
