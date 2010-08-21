@@ -1,126 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650Ab0HURIs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 13:08:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58998 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab0HURIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 13:08:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Miloslav =?utf-8?q?Trma=C4=8D?= <mitr@redhat.com>
-Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
-Date: Sat, 21 Aug 2010 19:08:03 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.5.0; x86_64; ; )
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
-In-Reply-To: <1282293963-27807-1-git-send-email-mitr@redhat.com>
+	id S1751616Ab0HURP7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 13:15:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36892 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751173Ab0HURP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 13:15:57 -0400
+Date: Sat, 21 Aug 2010 14:15:37 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: add test for strlcpy()
+Message-ID: <20100821171537.GE2973@ghostprotocols.net>
+References: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201008211908.03705.arnd@arndb.de>
-X-Provags-ID: V02:K0:hwTLREVl0asrU7qwzAmlC3eOjqQa5WVzsXblvJhdwbV
- x59DlK8dt57pEjpRoGvVafi0SVaWsgJHvUu8LM7SVaIZcw4Zl2
- nzjzFXeLNYnYZAZD1mJ5wJ/pI319Cr9lUMsNdjRtjz1qcBMd4W
- Gex8pOXOyPDj4pjUCgcUBAqmoXC13mXBpw00iHv1WSI26PCTee
- qU20KfCqrIviLztIFFNEw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 August 2010 10:45:43 Miloslav Trmač wrote:
+Em Sat, Aug 21, 2010 at 03:38:20AM +0300, Kirill A. Shutemov escreveu:
+> Some Linux distributions like ALT Linux provides patched glibc with
+> contains strlcpy(). It's confilcts with strlcpy() from perf.
 > 
-> Major changes since the previous post:
-> * "struct nlattr"-based extensible attributes used for extensibility
->   of most operations, both for input and output attributes
+> Let's add check for strlcpy().
 
-The API here looks overly complex resulting from the use of a combination
-of ioctl and netlink. If your interface cannot be easily expressed using
-simple (no indirect pointers or variable-length fields please) ioctl
-and read/write operations, why not go all the way and turn the interface
-into a netlink facility?
+It doesn't work on !ALT Linux ;-\
 
-> * Full compat_ioctl implementation
+    LINK /home/acme/git/build/perf//perf
+/home/acme/git/build/perf//libperf.a(path.o): In function `perf_vsnpath':
+/home/acme/git/linux/tools/perf/util/path.c:74: undefined reference to `strlcpy'
+/home/acme/git/build/perf//libperf.a(abspath.o): In function `get_pwd_cwd':
+/home/acme/git/linux/tools/perf/util/abspath.c:16: undefined reference to `strlcpy'
+/home/acme/git/build/perf//libperf.a(abspath.o): In function `make_nonrelative_path':
+/home/acme/git/linux/tools/perf/util/abspath.c:27: undefined reference to `strlcpy'
+collect2: ld returned 1 exit status
+make: *** [/home/acme/git/build/perf//perf] Error 1
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+[acme@emilia linux]$ 
 
-New drivers should be written to *avoid* compat_ioctl calls, using only
-very simple fixed-length data structures as ioctl commands.
-
-> * Version number added to the data format used when wrapping keys for storage
-
-Again, wrong direction. If you think you need a version number, the interface
-is probably not ready for inclusion yet. Make sure it is simple enough that
-you don't run into the case where you have to make incompatible changes
-that require API versioning.
-
->   The libtom* patches will probably still be too large for the mailing list;
->   the whole patch set is also available at
->   http://people.redhat.com/mitr/cryptodev-ncr/v2/ .
-
-They actually seem to have made it to the list. However, the more signficant
-problem is the amount of code added to a security module. 20000 lines of
-code that is essentially a user-level library moved into kernel space
-can open up so many possible holes that you end up with a less secure
-(and slower) setup in the end than just doing everything in user space.
+See below why:
  
-> Original patch set description follows.
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> ---
+>  tools/perf/Makefile          |    8 ++++++++
+>  tools/perf/feature-tests.mak |   11 +++++++++++
+>  tools/perf/util/cache.h      |    2 ++
+>  tools/perf/util/path.c       |    3 ++-
+>  4 files changed, 23 insertions(+), 1 deletions(-)
 > 
-> These are the major differences compared to the BSD-like interface:
-> 
-> * The API supports key storage and management inside the kernel.
->   An application can thus ask the kernel to generate a key; the key is
->   then referenced via an integer identifier, and the application can be
->   prevented from accessing the raw key data.  Such a key can, if so configured,
->   still be wrapped for key transport to the recipient of the message, and
->   unwrapped by the recipient.
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 4f1fa77..496a0d6 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -653,6 +653,14 @@ else
+> diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
+> index 58a470d..029661c 100644
+> --- a/tools/perf/util/path.c
+> +++ b/tools/perf/util/path.c
+> @@ -22,6 +22,7 @@ static const char *get_perf_dir(void)
+>  	return ".";
+>  }
+>  
+> +#ifdef STRLCPY
 
-As Kyle mentioned, we already have a key management API in the kernel.
-I think you should make a better effort of interfacing with that and
-adding features you need to it, like a way to prevent the kernel from
-handing out keys as you mentioned in your reply.
+Should be:
 
->   An user-space library is not separated, options are a) root
->   running daemon that does crypto, but this would be slow due to context
->   switches, scheduler mismatching and all the IPC overhead and b) use crypto
->   that is in the kernel.
++#ifdef NO_STRLCPY
 
-I think you will have to back that statement by measurements. There are
-reasonably fast ways to do IPC and the interface you suggest to put in the
-kernel does not exactly look tuned for performance.
- 
-> * FIPS-140-3 calls out for cryptographic functions to be non-debuggable (ptrace)
->   meaning that you cannot get to the key material. The solution is the same as
->   above.
+I'm fixing it up.
 
-We have kgdb, kdb, qemu gdbserver, tracing and more things that would very
-much make your code debuggable.
-
-OTOH, disabling ptrace with a root-only prctl should be an easy thing to
-implement if there is a use case for it.
-
-> Other advantages to having kernel crypto available to user space:
-> 
-> * User space will be able to take advantage of kernel drivers for hardware
->   crypto accelerators.
-
-I can see this as a good reason to put a proper interface for asymmetric
-crypto into the kernel. There are PCI cards and other things that are
-supported using ad-hoc interfaces right now. It would be wonderful
-if someone could clean that up and create a simple common interface that
-covers all the hardware variants.
-But that does not justify putting a software implementation into the kernel.
-
-For symmetric crypto and hashing hardware acceleration is typically
-implemented as CPU instructions anyway and available to user space
-already, without the need for kernel support.
-
-> * glibc, which in some configurations links to libfreebl3.so for hashes
->   necessary for crypt(), will be able to use the kernel implementation; this
->   means one less library to load and dynamically link for each such process.
-
-If you are really worried about library load times, you can probably create
-a patch that statically links libfreebl3 into glibc.
-
-	Arnd
+>  size_t strlcpy(char *dest, const char *src, size_t size)
+>  {
+>  	size_t ret = strlen(src);
+> @@ -33,7 +34,7 @@ size_t strlcpy(char *dest, const char *src, size_t size)
+>  	}
+>  	return ret;
+>  }
