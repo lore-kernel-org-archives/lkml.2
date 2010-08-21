@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab0HUR4W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 13:56:22 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48033 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab0HUR4U (ORCPT
+	id S1751895Ab0HUS0f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 14:26:35 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61231 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab0HUS0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 13:56:20 -0400
+	Sat, 21 Aug 2010 14:26:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=kTJsw+IWJ+U+LLGob+NrKDVNvr5oJF5VavMopJKoxTaJ4zQn9BNWX/FtuCeY1F/U1y
-         Egcs8mio8WcnLyNu1S7TtkFm/+D9Pzf2weLgqqXl+xX/ZIig6IG0364uZPhjfmUZte9s
-         ih98Hqr3gPWU1BaQ1C3jAMmXOJ2M0xs593k1M=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sXTpPErjRw3eDYlp/KPXZa1pTuqnzx1cEp0jZrUo7chfkmG0/8PjcXHdQ0Xvle3vGh
+         maVAah23uHVoSE6rgE3aC+V/a5xvX/eDzP8pFkp3IyS7ZnjLFx3DNSDkZfRNvTSSvolE
+         o5VDvLA8zgOw6p+239icfrJNdbJ/URSxZytrM=
+Date: Sat, 21 Aug 2010 21:26:23 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ltt-dev@lists.casi.polymtl.ca,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
+        Jamie Lokier <jamie@shareable.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH for -tip 1/2] kernel.h: add
+ MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2
+Message-ID: <20100821182623.GA9621@core2.telecom.by>
+References: <20100821141750.770348530@efficios.com>
+ <20100821142215.023431313@efficios.com>
 MIME-Version: 1.0
-Date: Sat, 21 Aug 2010 13:56:19 -0400
-Message-ID: <AANLkTi=9y=_NnC349523E_qgJ2nSk1++3Z_Phx+GMJW4@mail.gmail.com>
-Subject: How the heck do I get started?
-From: Someone Something <fordhaivat@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100821142215.023431313@efficios.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+On Sat, Aug 21, 2010 at 10:17:51AM -0400, Mathieu Desnoyers wrote:
+> +/* Force a compilation error if condition is constant and not a power of 2 */
+> +#define MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2(n)		\
+> +	MAYBE_BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
 
-I am a pretty so so C programmer (I've written small networked stuff,
-a simple game engine, GUI tools etc.), I just do programming as a
-hobby and I'm a middle school student. I am interested in low level
-programming and I dabble in assembly, so, I downloaded the latest
-kernel source and the sheer size of it just blows my mind. How should
-I get started hacking on it? Writing modules, or just browsing through
-the code and trying to understand it? Any books you guys recommend?
-I'm pretty sure that you're sick and tired of these newb questions,
-so, I actually did some research, and I do have a few concrete
-questions.
-1) Does the linux kernel use pages AND segments? Or just one of them?
-If its pages, how does it deal with the wasted memory at the end of
-each page? Very small pages?
-2) I looked at the 0.01 kernel and it has this weird mix of nasm and
-gas syntax for its assembly. Why's that?
-3) Is there some kind of tracker for the kernel where it lists bugs and stuff?
-4) If I do have a patch I'd like to submit, how would I do this?
-
-
-Thanks a lot,
-Dhaivat
+Sorry, this is tasteless macro.
