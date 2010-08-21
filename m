@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab0HUQvE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 12:51:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089Ab0HUQvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 12:51:02 -0400
-Message-ID: <4C7001C9.7050200@redhat.com>
-Date: Sat, 21 Aug 2010 11:41:45 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1751668Ab0HUQ7J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 12:59:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63254 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab0HUQ7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 12:59:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=NSMY0kqawzpOPNTD7AZaK/RaDXQoEr3FIpm1zcPwOgq5cf/NAlZmV5R6azfqj5eT8z
+         uKzntHC6Okcvk1qSNz9r0n0az0UHQ/BDqRbT3fYDp/uCCOby0sujheHUyCm1gA4riMBR
+         JnMySVbxHBDbTLkszUL6/XwPlIl1qF3iWg3rU=
+From: don.mullis@gmail.com
+To: dedekind1@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] improve list_sort test
+References: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
+	<1282386155.2358.43.camel@localhost>
+Date: Sat, 21 Aug 2010 09:59:03 -0700
+In-Reply-To: <1282386155.2358.43.camel@localhost> (Artem Bityutskiy's message
+	of "Sat, 21 Aug 2010 13:22:35 +0300")
+Message-ID: <87lj7zgaw8.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-CC: "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext4: remove alignment padding from ext4_inode_info on
- 64 bit builds
-References: <1282144088.2068.16.camel@castor.rsk>	 <4C6EE173.3030204@redhat.com> <1282393898.1978.18.camel@castor.rsk>
-In-Reply-To: <1282393898.1978.18.camel@castor.rsk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Kennedy wrote:
-> On Fri, 2010-08-20 at 15:11 -0500, Eric Sandeen wrote:
->> Richard Kennedy wrote:
->>> Reorder structure ext4_inode_info to remove 16 bytes of alignment
->>> padding on 64 bit builds. This shrinks its size from 904 to 888 bytes
->>> with (CONFIG_EXT4_S_XATTR=y && CONFIG_QUOTA=n).
->>>     
->>> This will allow this structure to use one fewer cache lines.
->>>
->>> Also change type of i_delalloc_reserved_flag to bool to better reflect
->>> its usage.
->>>
->>> compiled & tested on x86_64
->>
->> Looks good to me; there is still a bit of padding at the end:
->>
->>         qsize_t                    i_reserved_quota;     /*   864     8 */
->>         struct list_head           i_completed_io_list;  /*   872    16 */
->>         spinlock_t                 i_completed_io_lock;  /*   888     4 */
->>
->>         /* XXX 4 bytes hole, try to pack */
->>
->>         /* --- cacheline 14 boundary (896 bytes) --- */
->>         ext4_io_end_t *            cur_aio_dio;          /*   896     8 */
->>         tid_t                      i_sync_tid;           /*   904     4 */
->>         tid_t                      i_datasync_tid;       /*   908     4 */
->>
->>
->> but it wouldn't save a cacheline anyway...
->>
->> -Eric
->>
-> Thanks Eric, yes there is padding but we don't have anything to fill the
-> hole with :(
-> 
-> If it becomes important to save space, i_state_flags seem to be unused
-> in ext4 so we could possibly drop that.
+Artem Bityutskiy <dedekind1@gmail.com> writes:
+> Any feedback?
+>
+> I'm also going to add this patch to the series:
+>
+> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Subject: [PATCH 1/7] lib/list_sort: improve comments
+>
+> Document the fact that 'list_sort()' can call the 'cmp()' function with
+> 'a' == 'b' for the sake of 'cond_reshed()'.
+>
+> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> ---
+>  lib/list_sort.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/lib/list_sort.c b/lib/list_sort.c
+> index 4b5cb79..d134b41 100644
+> --- a/lib/list_sort.c
+> +++ b/lib/list_sort.c
+> @@ -93,6 +93,11 @@ static void merge_and_restore_back_links(void *priv,
+>   * should sort before @b, and a positive value if @a should sort after
+>   * @b. If @a and @b are equivalent, and their original relative
+>   * ordering is to be preserved, @cmp must return 0.
+> + *
+> + * This function can be used in atomic context. This means that @cmp has to
+> + * take care of calling 'cond_resched()' when needed. And 'list_sort()' will
+> + * sometimes call @cmp with @a equivalent to @b, just to let the user call
+> + * 'cond_resched()'.
+>   */
+>  void list_sort(void *priv, struct list_head *head,
+>  		int (*cmp)(void *priv, struct list_head *a,
+> -- 
 
-Actually it is used, it's just expertly hidden in:
+Thanks, Artem.  I've prepared and tested locally a patch series that
+brings in most of the series you sent earlier, and adds a few more
+cleanups.  The one patch of yours that I did replace was the last one,
+that modifies semantics of the correctness test.  My reasoning is that
+the value of testing lies in exposing bugs, as economically as possible,
+and your test wasn't exposing my power-of-two bug.  So I created an
+alternative that's as simple as possible while picking at the corner
+cases, e.g. power-of-two.
 
-EXT4_INODE_BIT_FNS(state, state_flags):
+Last in my local patch series is the bug fix itself.  Setting
+CONFIG_TEST_LIST_SORT and testing with all but the last patch applied
+produces failure messages on the boot console.  Pushing the final "fix"
+patch makes them go away :-)
 
-#define EXT4_INODE_BIT_FNS(name, field)                                 \
-static inline int ext4_test_inode_##name(struct inode *inode, int bit)  \
-{                                                                       \
-        return test_bit(bit, &EXT4_I(inode)->i_##field);                \
-}                                                                       \
+Okay if I incorporate your comment addition, above, and post the series
+for review?
 
-etc..
-
--Eric
-
+Don
