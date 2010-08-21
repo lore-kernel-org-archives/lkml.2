@@ -1,147 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab0HULVs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 07:21:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65526 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751682Ab0HULVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 07:21:46 -0400
-Message-ID: <4C710949.3060200@cn.fujitsu.com>
-Date: Sun, 22 Aug 2010 19:26:01 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1751957Ab0HULXl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 07:23:41 -0400
+Received: from aa011msr.fastwebnet.it ([85.18.95.71]:58848 "EHLO
+	aa011msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab0HULXi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 07:23:38 -0400
+Message-ID: <22375388.412521282389494596.JavaMail.defaultUser@defaultHost>
+Date: Sat, 21 Aug 2010 13:18:14 +0200 (CEST)
+From: MICROSOFT NATIONAL <antonio.sardideletto@fastwebnet.it>
+Reply-To: msnonlinedpt@w.cn
+Subject: Esteemed Winner
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v7 2/5] KVM: MMU: introduce hva_to_pfn_atomic function
-References: <4C710549.9090704@cn.fujitsu.com>
-In-Reply-To: <4C710549.9090704@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: 84.254.189.80
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce hva_to_pfn_atomic(), it's the fast path and can used in atomic
-context, the later patch will use it
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- include/linux/kvm_host.h |    7 +++++++
- virt/kvm/kvm_main.c      |   30 +++++++++++++++++++-----------
- 2 files changed, 26 insertions(+), 11 deletions(-)
+Your Email Id has won £980,000.00 
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c13cc48..307d0e2 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -296,6 +296,7 @@ void kvm_release_page_dirty(struct page *page);
- void kvm_set_page_dirty(struct page *page);
- void kvm_set_page_accessed(struct page *page);
- 
-+pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr);
- pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
- pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
- 			 struct kvm_memory_slot *slot, gfn_t gfn);
-@@ -518,6 +519,12 @@ static inline void kvm_guest_exit(void)
- 	current->flags &= ~PF_VCPU;
- }
- 
-+static inline unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot,
-+					       gfn_t gfn)
-+{
-+	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
-+}
-+
- static inline gpa_t gfn_to_gpa(gfn_t gfn)
- {
- 	return (gpa_t)gfn << PAGE_SHIFT;
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index b78b794..2dc0c18 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -927,11 +927,6 @@ int memslot_id(struct kvm *kvm, gfn_t gfn)
- 	return memslot - slots->memslots;
- }
- 
--static unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
--{
--	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
--}
--
- unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
- {
- 	struct kvm_memory_slot *slot;
-@@ -943,19 +938,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
- }
- EXPORT_SYMBOL_GPL(gfn_to_hva);
- 
--static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
-+static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
- {
- 	struct page *page[1];
- 	int npages;
- 	pfn_t pfn;
- 
--	might_sleep();
--
--	npages = get_user_pages_fast(addr, 1, 1, page);
-+	if (atomic)
-+		npages = __get_user_pages_fast(addr, 1, 1, page);
-+	else {
-+		might_sleep();
-+		npages = get_user_pages_fast(addr, 1, 1, page);
-+	}
- 
- 	if (unlikely(npages != 1)) {
- 		struct vm_area_struct *vma;
- 
-+		if (atomic)
-+			goto return_fault_page;
-+
- 		down_read(&current->mm->mmap_sem);
- 		if (is_hwpoison_address(addr)) {
- 			up_read(&current->mm->mmap_sem);
-@@ -968,6 +969,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
- 		if (vma == NULL || addr < vma->vm_start ||
- 		    !(vma->vm_flags & VM_PFNMAP)) {
- 			up_read(&current->mm->mmap_sem);
-+return_fault_page:
- 			get_page(fault_page);
- 			return page_to_pfn(fault_page);
- 		}
-@@ -981,6 +983,12 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
- 	return pfn;
- }
- 
-+pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr)
-+{
-+	return hva_to_pfn(kvm, addr, true);
-+}
-+EXPORT_SYMBOL_GPL(hva_to_pfn_atomic);
-+
- pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
- {
- 	unsigned long addr;
-@@ -991,7 +999,7 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
- 		return page_to_pfn(bad_page);
- 	}
- 
--	return hva_to_pfn(kvm, addr);
-+	return hva_to_pfn(kvm, addr, false);
- }
- EXPORT_SYMBOL_GPL(gfn_to_pfn);
- 
-@@ -999,7 +1007,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
- 			 struct kvm_memory_slot *slot, gfn_t gfn)
- {
- 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
--	return hva_to_pfn(kvm, addr);
-+	return hva_to_pfn(kvm, addr, false);
- }
- 
- struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
--- 
-1.7.0.4
+GBP in the Microsoft Award Winner 
+
+London United Kingdom promotion 
+
+2010.
+
+1. Name in Full
+2. Address
+3. Nationality
+4. Age
+5. Sex
+6. Occupation
+7. Phone/Fax
+
+Contact For Award Recipient.
+Mr. Gerrard Hamilton.
 
