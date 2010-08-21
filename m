@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab0HUJuN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 05:50:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62268 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab0HUJuK (ORCPT
+	id S1751808Ab0HUJuT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 05:50:19 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57008 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab0HUJuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 05:50:10 -0400
+	Sat, 21 Aug 2010 05:50:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=qiOM0mjTSeFLy15yUd7rkuiwmYAPT9fQzUpeT7KddWea8B+n2lP1JMqV1dZmd93tLG
-         NB5lPXj0dZEYFE6qEviAwvf8OPPr0emZSidJqofTEHD+kg6ptACl3ZuYnEcBkZ7G2J2f
-         1BUu+XDnQYocBu7p7DWkROkZERFDwusG9Ah9w=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=tCUD+4Z3HsPHw100m8tksRtu3GVu8hYJTT5lHYhiUApSuDH49Sv4CZG1w40guQpaSL
+         nm7XZiSOkt/e+ueh8lbJ8CKf3Rx+RO85qvORdJwyHjiO/x9gCzoFWNFurK4hR1VaG0bL
+         0Sg6rqyi2GCTY9pjWeTRip3yGNnCX93BRWqfc=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>, Don Zickus <dzickus@redhat.com>,
         Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 1/2] lockup_detector: convert cpu notifier to return encapsulate errno value
-Date: Sat, 21 Aug 2010 18:43:46 +0900
-Message-Id: <1282383827-12064-1-git-send-email-akinobu.mita@gmail.com>
+Subject: [PATCH 2/2] lockup_detector: remove unnecessary panic_notifier
+Date: Sat, 21 Aug 2010 18:43:47 +0900
+Message-Id: <1282383827-12064-2-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.6.0.6
+In-Reply-To: <1282383827-12064-1-git-send-email-akinobu.mita@gmail.com>
+References: <1282383827-12064-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the commit e6bde73b07edeb703d4c89c1daabc09c303de11f
-("cpu-hotplug: return better errno on cpu hotplug failure"),
-the cpu notifier can return encapsulate errno value.
-
-This converts the cpu notifier to return encapsulate errno value
-for lockup_detector.
+The panic notifer in lockup_detector just set did_panic to 1.
+But did_panic is not used anywhere so we can just remove it.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
 Cc: Don Zickus <dzickus@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/watchdog.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+ kernel/watchdog.c |   15 ---------------
+ 1 files changed, 0 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 613bc1f..de98f77 100644
+index de98f77..1ff0b8c 100644
 --- a/kernel/watchdog.c
 +++ b/kernel/watchdog.c
-@@ -368,7 +368,7 @@ static int watchdog_nmi_enable(int cpu)
- 	}
+@@ -43,7 +43,6 @@ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
+ static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+ #endif
  
- 	printk(KERN_ERR "NMI watchdog failed to create perf event on cpu%i: %p\n", cpu, event);
--	return -1;
-+	return PTR_ERR(event);
+-static int __read_mostly did_panic;
+ static int __initdata no_watchdog;
  
- 	/* success path */
- out_save:
-@@ -412,17 +412,19 @@ static int watchdog_prepare_cpu(int cpu)
- static int watchdog_enable(int cpu)
- {
- 	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
-+	int err;
  
- 	/* enable the perf event */
--	if (watchdog_nmi_enable(cpu) != 0)
--		return -1;
-+	err = watchdog_nmi_enable(cpu);
-+	if (err)
-+		return err;
- 
- 	/* create the watchdog thread */
- 	if (!p) {
- 		p = kthread_create(watchdog, (void *)(unsigned long)cpu, "watchdog/%d", cpu);
- 		if (IS_ERR(p)) {
- 			printk(KERN_ERR "softlockup watchdog for %i failed\n", cpu);
--			return -1;
-+			return PTR_ERR(p);
- 		}
- 		kthread_bind(p, cpu);
- 		per_cpu(watchdog_touch_ts, cpu) = 0;
-@@ -516,17 +518,16 @@ static int __cpuinit
- cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- {
- 	int hotcpu = (unsigned long)hcpu;
-+	int err = 0;
- 
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		if (watchdog_prepare_cpu(hotcpu))
--			return NOTIFY_BAD;
-+		err = watchdog_prepare_cpu(hotcpu);
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
--		if (watchdog_enable(hotcpu))
--			return NOTIFY_BAD;
-+		err = watchdog_enable(hotcpu);
- 		break;
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_UP_CANCELED:
-@@ -539,7 +540,7 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- #endif /* CONFIG_HOTPLUG_CPU */
- 	}
--	return NOTIFY_OK;
-+	return notifier_from_errno(err);
+@@ -180,18 +179,6 @@ static int is_softlockup(unsigned long touch_ts)
+ 	return 0;
  }
  
- static struct notifier_block __cpuinitdata cpu_nfb = {
-@@ -555,7 +556,7 @@ static int __init spawn_watchdog_task(void)
- 		return 0;
- 
- 	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
--	WARN_ON(err == NOTIFY_BAD);
-+	WARN_ON(notifier_to_errno(err));
- 
+-static int
+-watchdog_panic(struct notifier_block *this, unsigned long event, void *ptr)
+-{
+-	did_panic = 1;
+-
+-	return NOTIFY_DONE;
+-}
+-
+-static struct notifier_block panic_block = {
+-	.notifier_call = watchdog_panic,
+-};
+-
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ static struct perf_event_attr wd_hw_attr = {
+ 	.type		= PERF_TYPE_HARDWARE,
+@@ -561,8 +548,6 @@ static int __init spawn_watchdog_task(void)
  	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
  	register_cpu_notifier(&cpu_nfb);
+ 
+-	atomic_notifier_chain_register(&panic_notifier_list, &panic_block);
+-
+ 	return 0;
+ }
+ early_initcall(spawn_watchdog_task);
 -- 
 1.6.0.6
 
