@@ -1,69 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab0HUOyg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 10:54:36 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38488 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab0HUOyd (ORCPT
+	id S1752189Ab0HUO4d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 10:56:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45970 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab0HUO4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 10:54:33 -0400
+	Sat, 21 Aug 2010 10:56:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:openpgp:content-type
-         :content-transfer-encoding;
-        b=kJIj+MWlyX3mc5+DSln7WMOdaTRRX12JLmtEptJ66KNVcSxrjq55THFD+aSAq/a2Cp
-         bX8oDgN7L21s6USNsmGz3MxZ4jQ0fe6goourwanPlHHorJ0gTlbqfYRKBhdtJBSTsGvg
-         e7ueNem9fjk14va0Pl6eonuwpbdPaSfJb8rbk=
-Message-ID: <4C6FE8A5.30309@gnutls.org>
-Date: Sat, 21 Aug 2010 16:54:29 +0200
-From: Nikos Mavrogiannopoulos <nmav@gnutls.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Kyle Moffett <kyle@moffetthome.net>
-CC: =?UTF-8?B?TWlsb3NsYXYgVHJtYcSN?= <mitr@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-crypto@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 01/19] User-space API definition
-References: <1282293963-27807-1-git-send-email-mitr@redhat.com> <1282293963-27807-2-git-send-email-mitr@redhat.com> <AANLkTinzUuihbS_Znm1rgxPPxiLTXeNx8ySF8LHqU=Jz@mail.gmail.com>
-In-Reply-To: <AANLkTinzUuihbS_Znm1rgxPPxiLTXeNx8ySF8LHqU=Jz@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=96865171
-Content-Type: text/plain; charset=UTF-8
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=VC8Poc9OsSvKaQUY7lqfUBrj/gV4s+jd5lo9qdZzORaIvu9tGFhZl0bTofUOy6Dy6q
+         O958Zh4Fyme1xrbrwAb42odttxl3ERbxsbWwdxoTvLg8eR8N8DpjEzqXEcuhNnOlgyRA
+         kOIMNCZ4VtRVpxrTfybrFTRojClO8z0ktI36Q=
+Subject: Re: [PATCH] My work on MemoryStick system
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <292036.65081.qm@web37607.mail.mud.yahoo.com>
+References: <292036.65081.qm@web37607.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Aug 2010 17:56:19 +0300
+Message-ID: <1282402579.4799.20.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2010 03:09 PM, Kyle Moffett wrote:
-
->> This patch introduces the new user-space API, <ncr.h>.
->>
->> Quick overview:
->>
->> * open("/dev/crypto") to get a FD, which acts as a namespace for key and
->>  session identifiers.
->>
->> * ioctl(NCRIO_KEY_INIT) to allocate a key object; then generate the key
->>  material inside the kernel, load a plaintext key, unwrap a key, or
->>  derive a key.  Similarly the key material can be copied out of the
->>  kernel or wrapped.
->>
->> [...snip...]
+On Sat, 2010-08-21 at 06:50 -0700, Alex Dubov wrote: 
+> > 
+> > I just tested this series with Jmicron, and unfortunelly
+> > there are bugs.
+> > 
+> > * driver refuses to handle 26 byte TPC I use to read regs
+> > (sizeof(ms_registers). If I bump it to 32, it works.
 > 
-> Ugh... We already have one very nice key/keyring API in the kernel
-> (see Documentation/keys.txt) that's being used for crypto keys for
-> NFSv4, AFS, etc.  Can't you just add a bunch of cryptoapi key types to
-> that API instead?
-
-It is not that simple. My understanding of the keyring API is that it
-allows exporting of the keys to user-space and this crypto API
-explicitly prevents that, so enhancing the API that way will remove the
-benefits of using it. It would be ideal to combine somehow those
-solutions but this is more elaborate work than adding a bunch of new key
-types. If anyone is interested in attempting that I'd be glad to help.
+> It will work with any multiply of 4 (24 and 28 work as well). It's a known
+> "feature".
+Then I bump the size of ms_registers to 32 and leave this as is.
+OK?
+And I add a warning about this feature of some hardwares someplace.
 
 
-regards,
-Nikos
+But what about MS_TPC_GET_INT. This asks for single byte.
+Hardware has to support it.
+
+
+
+> 
+> > 
+> > * With this fix first few reads still fail.
+> > That means that card isn't detected always because boot
+> > blocks might not
+> > be read.
+> > Later card works fine.
+> > 
+> > * Also I found out that msproblk.c allocates memory for
+> > attributes IO
+> > using stock kmalloc, and hangs that to driver.
+> > However if driver doesn't support such address, it will
+> > fail.
+> 
+> Why would hardware do anything at all with attribute memory space?
+Read it?
+
+You allocate the memory with kmalloc, create a sg with sg_init_one and
+pass that to driver.
+So therefore it can be from arbitrary address.
+
+In fact swiotlb takes care of that, and I just forgot the dma_unmap_sg
+in my r592.c...
+
+
+> 
+> > I fixed that in my driver by properly calling dma_unmap_sg,
+> > and thus
+> > using SWIOTLB if necessary.
+> > But Jmicron driver doesn't unmap its sg.
+It does btw, didn't notice.... 
+> > (Yet the system with Jmicron device has just one GB, so
+> > this isn't the
+> > problem I am seeing).
+
+I found further problems in jmicron driver:
+
+
+1. Serial mode doesn't work well.
+I first read the boot block, and then enable parallel mode.
+I do so because boot block has a flag that tells if parallel mode is
+supported.
+It turns out that sector reads often don't finish, especially first and
+often second one which contain boot blocks.
+If I enable parallel mode right away problem goes away.
+
+
+2. the MS_TPC_WRITE_LONG_DATA fail, therefore I can't write anything to
+the stick.
+
+As soon as my driver starts to write a block,  first
+MS_TPC_WRITE_LONG_DATA succeeds, but second one timeouts.
+(there is no MS_TPC_GET_INT in between, because of parallel mode).
+
+Maybe I do something wrong in my ms_block.c, but I checked it many
+times, and it appears to be correct, and it works fine with r592.c
+
+
+Best regards,
+Maxim Levitsky
+
+
+
