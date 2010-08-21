@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab0HUTaU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 15:30:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46487 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752055Ab0HUTaR (ORCPT
+	id S1752234Ab0HUTcm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 15:32:42 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:57934 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab0HUTcj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 15:30:17 -0400
-Date: Sat, 21 Aug 2010 20:30:15 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [spi-devel-general] [PATCH 1/2] spi/spi_s3c64xx: Make probe
-	more robust against missing board config
-Message-ID: <20100821193015.GA16455@opensource.wolfsonmicro.com>
-References: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com> <AANLkTimggbZqgv=eKe+wx8YvUX5vOppDfmwpLwTgxJFM@mail.gmail.com> <20100821100855.GA5545@opensource.wolfsonmicro.com> <AANLkTikbGR4wWUEHjR74UFu8P-w9us3ZpKgmG+yDukfC@mail.gmail.com>
+	Sat, 21 Aug 2010 15:32:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=YABdz88zWtV87FxMuOhnrYD75X5upM+V/QeP3aMTAa1myju4c1ui+5Te52qvbA2PEY
+         NENIyoTmAbOCdTJ6ubL/clHpXxvcbqgOdYGhmeNLaySCgze1V1o3oyd6SCeh0OVWPvMd
+         aDOeBfpKa1q5Q2V+hEfHvEY5LI2cFropgI3Fo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikbGR4wWUEHjR74UFu8P-w9us3ZpKgmG+yDukfC@mail.gmail.com>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <AANLkTin7GPuDhjOxXwJ4-m3k95XbxsLMkNbRQUWR5goH@mail.gmail.com>
+References: <AANLkTi=9y=_NnC349523E_qgJ2nSk1++3Z_Phx+GMJW4@mail.gmail.com>
+	<20100822042525.7168ac37.lisa@ltmnet.com>
+	<AANLkTin22E7zF0aomc+t23X7bETzNv-WgLivV_j98+dq@mail.gmail.com>
+	<AANLkTin7GPuDhjOxXwJ4-m3k95XbxsLMkNbRQUWR5goH@mail.gmail.com>
+Date: Sat, 21 Aug 2010 15:32:38 -0400
+Message-ID: <AANLkTi=3AWftm3mjYwoYBgPPgo8s12DCuHdHO+=69job@mail.gmail.com>
+Subject: Re: How the heck do I get started?
+From: Someone Something <fordhaivat@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 10:58:36PM +0900, Jassi Brar wrote:
-> On Sat, Aug 21, 2010 at 7:08 PM, Mark Brown
-> > On Sat, Aug 21, 2010 at 10:45:56AM +0900, Jassi Brar wrote:
+As for Ben's remark on Linux Device Drivers, I don't really have any
+hardware that I could write a device driver for, would a USB mouse do,
+or is that too complex? I do have a microcontroller or two lying
+around, would be feasible to write a software bootloader for them?
 
-> >>      The movement of sci assignment and check doesn't make any
-> >> difference because
-> >>       we already check for presence of platform_data and DMA-Tx,Rx and
-> >> IO base is
-> >>       set irrespective of calling s3c64xx_spi_set_info()
-
-> > While it does check for those things for at least the 6410 they're all
-> > unconditionally set up by dev-spi.c so the tests all pass and we make it
-> > down into to the clk_get() which then falls over horribly.
-
-> Those parameters are SoC specific and hence will be always available to
-> platform devices.
-> Clock selection and num_cs(number of slaves attached to the SPI bus) are
-> machine specific and hence responsibility of the machine developer to
-> set appropriately via s3c64xx_spi_set_info()
-
-Sure, the split does make sense - it's just that this means that we need
-to do something to make sure that s3c64xx_spi_set_info() got called.
-
-> > The problem with num_cs is that it gets interpreted by a custom function
-> > provided by the board driver so we really can't say anything about what
-> > it does.
-
-> num_cs is passed on as such to the SPI core to master->num_chipselect
-> which is strictly checked for before a master is created.
-
-Ah, too many variables with similar functions.
-
-> > support gpiolib chip selects - my first thought when I saw that stuff
-> > was that it seemed like something that lots of SPI controllers would be
-> > able to share but I didn't look at the overall SPI code for long enough
-> > to figure out what was going on there.
-
-> we have common spi bitbanging driver that takes only four gpio pins
-> and work like a charm.
-
-Though it does burn CPU rather a lot which makes them unsuitable for
-some applications where SPI is used for bulk data transfers or CPU is
-otherwise tight.  In general if you've got an actual SPI controller it's
-much nicer to use it.
-
-> In order to enable users use multiple CS per master, in spi_s3c64xx.c
-> the single CS feature provided by the controller is deliberately left unused
-> and the driver accepts a gpio per slave and manually controls it. Though
-> the callbacks and arguments are designed so that a simple gpio number
-> and gpio_set can be assigned by the machine code.
-
-It did occur to me that a nice way of dealing with this would be to have
-the driver default to using the built in chip select (even if driven as
-a GPIO for the sake of code simplicity) but leave the current method
-there as an override.  That way if people are using the IP block in the
-"natural" manner they'd have less to set up.
+On Sat, Aug 21, 2010 at 3:26 PM, Someone Something <fordhaivat@gmail.com> wrote:
+> I have joined the kernel newbies mailing list, and I am reading
+> through the website.
+> A long term (3 month) goal for me would be to fix up the 0.01 kernel
+> so it compiles and boots.
+>
+> If you look at the code in head.s and boot.s, they are written in
+> different styles, comments are different (| instead of # or ; ), do
+> have to get rid of them to make it compile correctly?
+>
+> On Sat, Aug 21, 2010 at 2:25 PM, Lisa Milne <lisa@ltmnet.com> wrote:
+>> On Sat, 21 Aug 2010 13:56:19 -0400
+>> Someone Something <fordhaivat@gmail.com> wrote:
+>>
+>>> Hello everyone,
+>>>
+>>> I am a pretty so so C programmer (I've written small networked stuff,
+>>> a simple game engine, GUI tools etc.), I just do programming as a
+>>> hobby and I'm a middle school student. I am interested in low level
+>>> programming and I dabble in assembly, so, I downloaded the latest
+>>> kernel source and the sheer size of it just blows my mind. How should
+>>> I get started hacking on it? Writing modules, or just browsing through
+>>> the code and trying to understand it? Any books you guys recommend?
+>>> I'm pretty sure that you're sick and tired of these newb questions,
+>>> so, I actually did some research, and I do have a few concrete
+>>> questions.
+>>> 1) Does the linux kernel use pages AND segments? Or just one of them?
+>>> If its pages, how does it deal with the wasted memory at the end of
+>>> each page? Very small pages?
+>>> 2) I looked at the 0.01 kernel and it has this weird mix of nasm and
+>>> gas syntax for its assembly. Why's that?
+>>> 3) Is there some kind of tracker for the kernel where it lists bugs
+>>> and stuff?
+>>> 4) If I do have a patch I'd like to submit, how would I do this?
+>>>
+>>>
+>>> Thanks a lot,
+>>> Dhaivat
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>> Hi Dhaivat,
+>>
+>> I'd recommend you join the kernel newbies mailing list, and look around
+>> their website, it's the best place for getting started with kernel
+>> development.
+>>
+>> http://kernelnewbies.org/MailingList
+>>
+>> --
+>> Lisa Milne <lisa@ltmnet.com>
+>>
+>
