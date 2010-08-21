@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab0HUKgn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 06:36:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51000 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab0HUKgk (ORCPT
+	id S1751896Ab0HUKyI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 06:54:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37732 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab0HUKyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 06:36:40 -0400
-Date: Sat, 21 Aug 2010 06:36:38 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [patch 04/10] ioctl: Use asm-generic/ioctls.h on frv (enables
- termiox)
-Message-ID: <20100821103638.GB10671@infradead.org>
-References: <20100820211401.651509182@suse.com>
- <20100820211538.515791797@suse.com>
+	Sat, 21 Aug 2010 06:54:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=DNXL866AmEjMNX50QglqJ4pw2x0e2uqIyHo/ta+PBTWOEU+87XR4spfo7yBHA4+oov
+         iQAy8uQRNXcMoSCR2I9Rj7M9WvBJ6Bgj8BgSbHwOhmmBE0mQQ3CWexwl+n6Q4G/4BDQU
+         7vXuUX13wxPNEzE5O43arBwRGEBKRlKrFa8gg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100820211538.515791797@suse.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Date: Sat, 21 Aug 2010 14:54:06 +0400
+Message-ID: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
+Subject: [PATCH] USB: Fix kernel oops with g_ether and Windows
+From: Maxim Osipov <maxim.osipov@gmail.com>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Maxim Osipov <maxim.osipov@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00504502b9acf8e40d048e533ba2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 05:14:05PM -0400, Jeff Mahoney wrote:
-> This patch converts frv to use asm-generic/ioctls.h instead of its
-> own version.
-> 
-> The differences between the arch-specific version and the generic
-> version are as follows:
-> 
-> - FRV defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
-> - FRV defines TIOCTTYGSTRUCT, kept in arch-specific version
+--00504502b9acf8e40d048e533ba2
+Content-Type: text/plain; charset=UTF-8
 
-This is an ioctl that used be implemented in generic code and then
-was removed.  I looks like a couple of ports added after the removal
-kept the defintion anyway.  Just kill it from all of them.
+Hello,
 
+Please find attached patch for
+https://bugzilla.kernel.org/show_bug.cgi?id=16023 problem.
+
+Kind regards,
+Maxim
+
+--00504502b9acf8e40d048e533ba2
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-USB-Fix-kernel-oops-with-g_ether-and-Windows.patch"
+Content-Disposition: attachment; 
+	filename="0001-USB-Fix-kernel-oops-with-g_ether-and-Windows.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gd4cpqr60
+
+RnJvbSA0MzU2OGRlYzRmMzg3ZGE0NTYyZDViYzgxNTU3YzY0MmE0NjhiNjg1IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBNYXhpbSBPc2lwb3YgPG1heGltLm9zaXBvdkBnbWFpbC5jb20+
+CkRhdGU6IFRodSwgMTkgQXVnIDIwMTAgMDc6MjU6MjggKzA0MDAKU3ViamVjdDogW1BBVENIXSBV
+U0I6IEZpeCBrZXJuZWwgb29wcyB3aXRoIGdfZXRoZXIgYW5kIFdpbmRvd3MKClNpZ25lZC1vZmYt
+Ynk6IE1heGltIE9zaXBvdiA8bWF4aW0ub3NpcG92QGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL3Vz
+Yi9nYWRnZXQvcm5kaXMuYyB8ICAgMTAgKysrKysrKy0tLQogMSBmaWxlcyBjaGFuZ2VkLCA3IGlu
+c2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy91c2IvZ2Fk
+Z2V0L3JuZGlzLmMgYi9kcml2ZXJzL3VzYi9nYWRnZXQvcm5kaXMuYwppbmRleCA1YzBkMDZjLi4x
+MDQzZGExIDEwMDY0NAotLS0gYS9kcml2ZXJzL3VzYi9nYWRnZXQvcm5kaXMuYworKysgYi9kcml2
+ZXJzL3VzYi9nYWRnZXQvcm5kaXMuYwpAQCAtMjkyLDkgKzI5MiwxMyBAQCBnZW5fbmRpc19xdWVy
+eV9yZXNwIChpbnQgY29uZmlnTnIsIHUzMiBPSUQsIHU4ICpidWYsIHVuc2lnbmVkIGJ1Zl9sZW4s
+CiAJLyogbWFuZGF0b3J5ICovCiAJY2FzZSBPSURfR0VOX1ZFTkRPUl9ERVNDUklQVElPTjoKIAkJ
+cHJfZGVidWcoIiVzOiBPSURfR0VOX1ZFTkRPUl9ERVNDUklQVElPTlxuIiwgX19mdW5jX18pOwot
+CQlsZW5ndGggPSBzdHJsZW4gKHJuZGlzX3Blcl9kZXZfcGFyYW1zIFtjb25maWdOcl0udmVuZG9y
+RGVzY3IpOwotCQltZW1jcHkgKG91dGJ1ZiwKLQkJCXJuZGlzX3Blcl9kZXZfcGFyYW1zIFtjb25m
+aWdOcl0udmVuZG9yRGVzY3IsIGxlbmd0aCk7CisJCWlmICggcm5kaXNfcGVyX2Rldl9wYXJhbXMg
+W2NvbmZpZ05yXS52ZW5kb3JEZXNjciApIHsKKwkJCWxlbmd0aCA9IHN0cmxlbiAocm5kaXNfcGVy
+X2Rldl9wYXJhbXMgW2NvbmZpZ05yXS52ZW5kb3JEZXNjcik7CisJCQltZW1jcHkgKG91dGJ1ZiwK
+KwkJCQlybmRpc19wZXJfZGV2X3BhcmFtcyBbY29uZmlnTnJdLnZlbmRvckRlc2NyLCBsZW5ndGgp
+OworCQl9IGVsc2UgeworCQkJb3V0YnVmWzBdID0gMDsKKwkJfQogCQlyZXR2YWwgPSAwOwogCQli
+cmVhazsKIAotLSAKMS43LjEKCg==
+--00504502b9acf8e40d048e533ba2--
