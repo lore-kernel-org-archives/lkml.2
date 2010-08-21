@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab0HUPtk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 11:49:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48224 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750926Ab0HUPtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 11:49:39 -0400
+	id S1751446Ab0HUP7G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 11:59:06 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:52152 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab0HUP7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 11:59:05 -0400
+Message-ID: <1282406337.4c6ff7c1533ad@imp.free.fr>
+Date: Sat, 21 Aug 2010 17:58:57 +0200
+From: castet.matthieu@free.fr
+To: linux-kernel@vger.kernel.org
+Subject: is VM_GROWSDOWN still useful
 MIME-Version: 1.0
-In-Reply-To: <1282391770.29609.1223.camel@localhost.localdomain>
-References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com> <1282391770.29609.1223.camel@localhost.localdomain>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 21 Aug 2010 08:48:29 -0700
-Message-ID: <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
-Subject: Re: [RFC] mlock/stack guard interaction fixup
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg KH <gregkh@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.8
+X-Originating-IP: 81.57.151.96
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 4:56 AM, Ian Campbell <ijc@hellion.org.uk> wrote:
->
-> I don't know that they are particularly good tests for this change but I
-> also ran allmodconfig kernel build and ltp on 2.6.35.3+fixes without
-> issue. Are there any good mlock heavy workloads?
+Hi,
 
-mlock itself isn't very interesting, I think more interesting is
-testing that the doubly linked list handles all the cases correctly.
-Something that splits mappings, unmaps partial ones etc etc. Running
-something like Electric Fence is probably a good idea.
+I am wondering if the flags GROWSDOWN/GROWSUP is still useful on linux today. It
+is only used for the main thread stack.
+Stack allocated by pthread doesn't use anymore GROWSDOWN because you can't
+guaranty that a user mapping (via mmap) will collide with it.
 
-The happy news is that we really didn't have lots of assignments to
-vma->vm_next - they were all pretty cleanly separated into just a
-couple of cases. So I'm pretty confident in the patches. But...
+Why not doing the same for the main thread : allocate a stack of the rlimit size
+?
 
-> Out of interest, why is there no guard page for the VM_GROWSUP stack
-> case? Is it just that the memory layout on PA-RISC makes the stack grows
-> into the heap scenario impossible?
+Linux memory allocation use over-commit, and physical memory will only be
+allocated when the stack is really used.
 
-No, it's just that I can't find it in myself to care about PA-RISC, so
-I never wrote the code. I don't think anything else has a grows-up
-stack. And even if I were to write the code, I couldn't even test it.
+Or are they real usage of GROWSDOWN ?
 
-It should be reasonably easy to do the VM_GROWSUP case too, but
-somebody with a PA-RISC would need to do it.
-
-                         Linus
+Matthieu
