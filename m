@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab0HWJlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:41:05 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34223 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab0HWJlD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:41:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C72422C.5070102@jp.fujitsu.com>
-Date: Mon, 23 Aug 2010 18:41:00 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+	id S1753732Ab0HWJmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:42:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58314 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753501Ab0HWJma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 05:42:30 -0400
+Date: Sat, 21 Aug 2010 22:13:50 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: JBeulich@novell.com, amwang@redhat.com, mmarek@suse.cz, sam@ravnborg.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild fixes for 2.6.36-rc2
+Message-ID: <20100821201350.GA9144@sepie.suse.cz>
 MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
-        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: [PATCH v4 0/5] netdev: show a process of packets
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rebase to the latest net-next.
+Hi Linus,
 
-CHANGE-LOG since v3:
-    1) change arguments of softirq tracepoint into original one.
-    2) remove tracepoint of dev_kfree_skb_irq and skb_free_datagram_locked
-       and add trace_kfree_skb before __kfree_skb instead of them.
-    3) add tracepoint to netif_rx and display it by netdev-times script.
-
-These patch-set adds tracepoints to show us a process of packets.
-Using these tracepoints and existing points, we can get the time when
-packet passes through some points in transmit or receive sequence.
-For example, this is an output of perf script which is attached by patch 5/5.
-
-106133.171439sec cpu=0
-  irq_entry(+0.000msec irq=24:eth4)
-         |
-  softirq_entry(+0.006msec)
-         |
-         |---netif_receive_skb(+0.010msec skb=f2d15900 len=100)
-         |            |
-         |      skb_copy_datagram_iovec(+0.039msec 10291::10291)
-         |
-  napi_poll_exit(+0.022msec eth4)
-
-106134.175634sec cpu=1
-  irq_entry(+0.000msec irq=28:eth1)
-         |
-         |---netif_rx(+0.009msec skb=f3ef0a00)
-         |
-  softirq_entry(+0.018msec)
-         |
-         |---netif_receive_skb(+0.021msec skb=f3ef0a00 len=84)
-         |            |
-         |      skb_copy_datagram_iovec(+0.033msec 0:swapper)
-         |
-  napi_poll_exit(+0.035msec (no_device))
-
-The above is a receive side(eth4 is NAPI. eth1 is non-NAPI). Like this, it can
-show receive sequence frominterrupt(irq_entry) to application
-(skb_copy_datagram_iovec). 
-This script shows one NET_RX softirq and events related to it. All relative
-time bases on first irq_entry which raise NET_RX softirq.
-
-   dev    len      Qdisc               netdevice             free
-   eth4    74 106125.030004sec        0.006msec             0.009msec
-   eth4    87 106125.041020sec        0.007msec             0.023msec
-   eth4    66 106125.042291sec        0.003msec             0.012msec
-   eth4    66 106125.043274sec        0.006msec             0.004msec
-   eth4   850 106125.044283sec        0.007msec             0.018msec
-
-The above is a transmit side. There are three check-time-points.
-Point1 is before putting a packet to Qdisc. point2 is after ndo_start_xmit in
-dev_hard_start_xmit. It indicates finishing putting a packet to driver.
-point3 is in consume_skb and kfree_skb. It indicates freeing a transmitted packet.
-Values of this script are, from left, device name, length of a packet, a time of
-point1, an interval time between point1 and point2 and an interval time between
-point2 and point3.
-
-These times are useful to analyze a performance or to detect a point where
-packet delays. For example,
-- NET_RX softirq calling is late.
-- Application is late to take a packet.
-- It takes much time to put a transmitting packet to driver
-  (It may be caused by packed queue)
-
-And also, these tracepoint help us to investigate a network driver's trouble
-from memory dump because ftrace records it to memory. And ftrace is so light
-even if always trace on. So, in a case investigating a problem which doesn't
-reproduce, it is useful.
+there are some post-rc1 kbuild fixes:
+* Two kconfig fixes by Sam.
+* A fix for new make version by Jan (this is technically no a rc1
+  regression, but we should fix it sooner rather than later).
+* Two setlocalversion fixes, one by Amerigo, one by me.
 
 Thanks,
-Koki Sanagi.
+Michal
 
+
+The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
+
+  Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
+
+Amerigo Wang (1):
+      makefile: not need to regenerate kernel.release file when make kernelrelease
+
+Jan Beulich (1):
+      fixes for using make 3.82
+
+Michal Marek (2):
+      Merge commit 'v2.6.36-rc1' into kbuild/rc-fixes
+      setlocalversion: Ignote SCMs above the linux source tree
+
+Sam Ravnborg (2):
+      kconfig: fix savedefconfig with choice marked optional
+      kconfig: fix segfault when detecting recursive dependency
+
+ Makefile                   |    4 ++--
+ firmware/Makefile          |    2 +-
+ scripts/kconfig/confdata.c |    6 ++++--
+ scripts/kconfig/symbol.c   |    2 ++
+ scripts/mkmakefile         |    4 +++-
+ scripts/setlocalversion    |    4 ++--
+ 6 files changed, 14 insertions(+), 8 deletions(-)
