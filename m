@@ -1,39 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab0HUEuP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 00:50:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47758 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab0HUEuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 00:50:13 -0400
-Date: Fri, 20 Aug 2010 21:50:31 -0700
-From: Greg KH <gregkh@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mark Stanovich <mrktimber@gmail.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.35.3
-Message-ID: <20100821045031.GA3291@suse.de>
-References: <AANLkTi=wyG13QOU3EQwaO3qBxY=aR=ftiP4s7YpemrPp@mail.gmail.com> <4C6F4BBB.5040207@zytor.com> <AANLkTi=sKH95tLee+H03ah=8dF6LV9hpw+1esGSZuHRS@mail.gmail.com> <4C6F58DE.1010503@zytor.com>
+	id S1751255Ab0HUFkQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 01:40:16 -0400
+Received: from web51008.mail.re2.yahoo.com ([206.190.38.139]:36216 "HELO
+	web51008.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751099Ab0HUFkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 01:40:12 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
+  b=ZCZqT1VP3eVUBZaZOB7jGCMO7MnQF7ohIZKNSvgDBgqj+NKmBP8cek8/oxLC29QitT3zzeaFD2haLy5hvINtKvSvC/X5ibnAGFmiYhChqoZXVuoi2ZOAvSXEP+L1cEfOoAbMAAebSyiUO8Jvj/4JrSb/A9iPZ3eMVjhXqxoKskc=;
+Message-ID: <251595.44238.qm@web51008.mail.re2.yahoo.com>
+X-YMail-OSG: bXHvA5EVM1lR3.I0.m4hG5IH0SeHwcqImYXHGNe3oYpYKuS
+ UaqeYeg_Tv6j0Ey8l14tGE_LT9LOUwWd_eFsN5OF6P2XZM279mZm_BXmlbxD
+ 7PuifFOvWSUOBkdXYEW92hexGxYesd19DQh_bGLHTOzlCrGkQKSJosAYh0cW
+ 5FNAEjJKKZtJ4p0zrH7b4k9kpuWdYtgatlkR5NiSPfiJnfWcr1WFY2Vn6Ehy
+ 3UPA7DU6b2bKDdHH7TwCPaI9z7vpeRsvgL3IFMxj2dLOIGqXJePI5WV.3OM_
+ dOZVPkBJX1MnO8avIFwA5H.AlNJhgTny0m8D2exkexzBn1dwKO4_XWcfsdYW
+ PdoKG5OJYMISxuWIC.yMmETwTRfAriw--
+X-Mailer: YahooMailWebService/0.8.105.279950
+Date: Fri, 20 Aug 2010 22:33:29 -0700 (PDT)
+From: Eugene K <evgfpeters@yahoo.com>
+To: linux-kernel@vger.kernel.org, majordomo@vger.kernel.org, grach-5@yandex.ru
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6F58DE.1010503@zytor.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 09:41:02PM -0700, H. Peter Anvin wrote:
-> OK, I think we can consider this root-caused (it's unclear if it's our
-> bug or gcc's, but adding "volatile" to the pointer solves the problem.)
-> 
-> Greg, do you want to take the listed upstream patches (thus bringing the
-> code closer to mainline) or do you want to take the one-liner patch from
-> the bugzilla?  [Attached for reference?]
+http://zenobiakofoid3344.angelfire.com/
 
-Let me look at the 2 upstream patches tomorrow, and I'd prefer to take
-them instead of something else, just to keep everything in sync.
 
-thanks,
-
-greg k-h
+      
