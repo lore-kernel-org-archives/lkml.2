@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab0HUNKE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 09:10:04 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65102 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab0HUNKB (ORCPT
+	id S1752130Ab0HUNKX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 09:10:23 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39350 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab0HUNKU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 09:10:01 -0400
-Message-ID: <4C6FCFC7.7020903@mvista.com>
-Date: Sat, 21 Aug 2010 17:08:23 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Sat, 21 Aug 2010 09:10:20 -0400
 MIME-Version: 1.0
-To: jiang.adam@gmail.com
-CC: ralf@linux-mips.org, dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
-        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
-        tj@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mips: irq: add statckoverflow detection
-References: <1282372293-30211-1-git-send-email-jiang.adam@gmail.com>
-In-Reply-To: <1282372293-30211-1-git-send-email-jiang.adam@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1282293963-27807-2-git-send-email-mitr@redhat.com>
+References: <1282293963-27807-1-git-send-email-mitr@redhat.com> <1282293963-27807-2-git-send-email-mitr@redhat.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Sat, 21 Aug 2010 09:09:58 -0400
+Message-ID: <AANLkTinzUuihbS_Znm1rgxPPxiLTXeNx8ySF8LHqU=Jz@mail.gmail.com>
+Subject: Re: [PATCH 01/19] User-space API definition
+To: =?UTF-8?Q?Miloslav_Trma=C4=8D?= <mitr@redhat.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Aug 20, 2010 at 04:45, Miloslav Trmač <mitr@redhat.com> wrote:
+> This patch introduces the new user-space API, <ncr.h>.
+>
+> Quick overview:
+>
+> * open("/dev/crypto") to get a FD, which acts as a namespace for key and
+>  session identifiers.
+>
+> * ioctl(NCRIO_KEY_INIT) to allocate a key object; then generate the key
+>  material inside the kernel, load a plaintext key, unwrap a key, or
+>  derive a key.  Similarly the key material can be copied out of the
+>  kernel or wrapped.
+>
+> [...snip...]
 
-jiang.adam@gmail.com wrote:
+Ugh... We already have one very nice key/keyring API in the kernel
+(see Documentation/keys.txt) that's being used for crypto keys for
+NFSv4, AFS, etc.  Can't you just add a bunch of cryptoapi key types to
+that API instead?
 
-> From: Adam Jiang <jiang.adam@gmail.com>
+David Howells added to CC, since I believe he wrote most of that code initially.
 
-> Add stackoverflow detection to mips arch
-
-> Signed-off-by: Adam Jiang <jiang.adam@gmail.com>
-[...]
-> diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
-> index c6345f5..6334037 100644
-> --- a/arch/mips/kernel/irq.c
-> +++ b/arch/mips/kernel/irq.c
-> @@ -151,6 +151,22 @@ void __init init_IRQ(void)
->  #endif
->  }
->  
-> +static inline void check_stack_overflow(void)
-> +{
-> +#ifdef CONFIG_DEBUG_STACKOVERFLOW
-
-    #ifdef within function is considered bad style. Better do it this way:
-
-#ifdef CONFIG_DEBUG_STACKOVERFLOW
-static inline void check_stack_overflow(void)
-{
-[...]
-}
-#else
-static inline void check_stack_overflow(void) {}
-#endif
-
-> +	long sp;
-> +
-> +	asm volatile("move %0, $sp" : "=r" (sp));
-> +	sp = sp & (THREAD_SIZE-1);
-> +
-> +	/* check for stack overflow: is there less then 2KB free? */
-
-    Hm, 2KB seems pretty large margin...
-
-WBR, Sergei
+Cheers,
+Kyle Moffett
