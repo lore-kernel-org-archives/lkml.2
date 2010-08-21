@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab0HUJcg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 05:32:36 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37937 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab0HUJce (ORCPT
+	id S1751747Ab0HUJe7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 05:34:59 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:34176 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab0HUJe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 05:32:34 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andreas Dilger <andreas.dilger@oracle.com>, Neil Brown <neilb@suse.de>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        "adilger\@sun.com" <adilger@sun.com>,
-        "corbet\@lwn.net" <corbet@lwn.net>,
-        "npiggin\@kernel.dk" <npiggin@kernel.dk>,
-        "hooanon05\@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
-        "bfields\@fieldses.org" <bfields@fieldses.org>,
-        "miklos\@szeredi.hu" <miklos@szeredi.hu>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "sfrench\@us.ibm.com" <sfrench@us.ibm.com>,
-        "philippe.deniel\@CEA.FR" <philippe.deniel@CEA.FR>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-In-Reply-To: <17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100820083057.GA10039@infradead.org> <20100820195303.20b17210@notabene> <20100820115135.GQ31363@ZenIV.linux.org.uk> <20100821100900.4b15fe08@notabene> <17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
-User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Sat, 21 Aug 2010 15:02:14 +0530
-Message-ID: <m339u8s44h.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sat, 21 Aug 2010 05:34:56 -0400
+Subject: Re: [PATCH 0/6] improve list_sort test
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Don Mullis <don.mullis@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Dave Chinner <david@fromorbit.com>
+In-Reply-To: <AANLkTi=F5andv+K1XRdVrFL6gL22CC++fGJJJ3d3nFyb@mail.gmail.com>
+References: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
+	 <1281261789.2384.11.camel@localhost>
+	 <AANLkTi=F5andv+K1XRdVrFL6gL22CC++fGJJJ3d3nFyb@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Aug 2010 12:32:49 +0300
+Message-ID: <1282383169.2358.33.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 21 Aug 2010 09:34:28.0789 (UTC) FILETIME=[0D43CE50:01CB4114]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Aug 2010 01:13:52 -0600, Andreas Dilger <andreas.dilger@oracle.com> wrote:
-> On 2010-08-20, at 18:09, Neil Brown <neilb@suse.de> wrote:
-> > How about a new AT flag:  AT_FILE_HANDLE
-> > 
-> > Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
-> > the 'name' pointer actually points to a filehandle fragment interpreted in
-> > that filesystem.
-> > 
-> > One problem is that there is no way to pass the length...
-> > Options:
-> >   fragment is at most 64 bytes nul padded at the end
-> >   fragment is hex encoded and nul terminated
-> >   ??
-> > 
-> > I think I prefer the hex encoding, but I'm hoping someone else has a better
-> > idea.
+On Sun, 2010-08-08 at 12:31 -0700, Don Mullis wrote:
+> Yes, invalid 'a' or 'b' pointers would be a bug.  If providing a test
+> case is hard, can you say what segment is pointed to?  Into the stack?
+> Into address ranges normal for elements, but not now on the list?  Is
+> there a pattern to the values returned?  Is it perhaps always the
+> first or last callback from a particular call to list_sort()?
+
+You've correctly identified in the the other mail that 'a' and 'b'
+sometimes point to the list head. I've just checked this.
+
+> That sometimes a==b is, on the other hand, by design:
 > 
-> That makes it ugly for the kernel to stringify and parse the file handles. 
+> 	/*
+> 	 * In worst cases this loop may run many iterations.
+> 	 * Continue callbacks to the client even though no
+> 	 * element comparison is needed, so the client's cmp()
+> 	 * routine can invoke cond_resched() periodically.
+> 	 */
+> 	(*cmp)(priv, tail, tail);
 > 
-> How about for AT_FILE_HANDLE THE FIRST __u32 (maybe with an extra
-> __u32 for alignment) is the length and the rest of the binary file
-> handle follows this?  In fact, doesn't the handle itself already
-> encode the length in the header?
+> Adding a sentence to the function header comment reminding callers
+> that they need to be able to handle a==b seems like a good idea.
 
+OK, I'll add it.
 
-struct file_handle already include length
-
--aneesh
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
