@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab0HUN3X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 09:29:23 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55148 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab0HUN3V (ORCPT
+	id S1752102Ab0HUNqD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 09:46:03 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41060 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab0HUNp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 09:29:21 -0400
-Message-ID: <4C6FD450.6040405@ru.mvista.com>
-Date: Sat, 21 Aug 2010 17:27:44 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Maxim Osipov <maxim.osipov@gmail.com>
-CC: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+	Sat, 21 Aug 2010 09:45:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=u+HWMK5LksUNimMLhLL/smZzamGBpcLfnhABqUr3FRRxUeY67ETmHg1c/Jq5Ka0lHK
+         BSoxzDTRn19QAM9OzWiMDB6yD8MYqhjCEJULh/2uKlP/CpjGFqSnF79E1SGPxMfumF3K
+         8elFypG6OMK7DzKzZdUDS2XfxHlrE1SuXjM3w=
+Date: Sat, 21 Aug 2010 15:50:03 +0200
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Daniel Mack <daniel@caiaq.de>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: Fix kernel oops with g_ether and Windows
-References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
-In-Reply-To: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] Input: mousedev - fix regression of inverting axes
+Message-ID: <20100821135002.GA3357@lovely.krouter>
+References: <20100820223316.4f6ac734@neptune.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100820223316.4f6ac734@neptune.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Aug 20, 2010 at 10:33:16PM +0200, Bruno Prémont wrote:
+> Somewhere between 2.6.35 and Linus's tree as of this writing gpm
+> started moving its cursor to the opposite direction of mouse movement.
+> 
+> e.g. moving mouse up causes cursor to move down, moving mouse left
+>      causes cursor to go right
+> 
+> Under 2.6.35 the cursor moved into the same direction as the mouse.
+> 
+> Note, mouse is synaptics touchpad (Acer TravelMate660):
+>   Synaptics Touchpad, model: 1, fw: 5.8, id: 0x9d48b1, caps: 0x904713/0x4006/0x0
+> 
+> 
+> When I get around to it I will try to get more precise information as
+> to when this regression got introduced, eventually bisecting.
+> 
+> Bruno
 
-Maxim Osipov wrote:
+Thanks Bruno,
+ I successfully tested the patch below with gpm.
 
-> Please find attached patch for
-> https://bugzilla.kernel.org/show_bug.cgi?id=16023 problem.
+---
+Introduced by 987a6c0298260b7aa40702b349282554d6180e4b a swap in max/min
+calculation gets fixed by this patch.
 
-    It's preferrable that the patahces areposted inline.
+Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+---
+ drivers/input/mousedev.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-> Kind regards,
-> Maxim
-
-> From 43568dec4f387da4562d5bc81557c642a468b685 Mon Sep 17 00:00:00 2001
-> From: Maxim Osipov <maxim.osipov@gmail.com>
-> Date: Thu, 19 Aug 2010 07:25:28 +0400
-> Subject: [PATCH] USB: Fix kernel oops with g_ether and Windows
-
-> Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
-[...]
-> diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
-> index 5c0d06c..1043da1 100644
-> --- a/drivers/usb/gadget/rndis.c
-> +++ b/drivers/usb/gadget/rndis.c
-> @@ -292,9 +292,13 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
->  	/* mandatory */
->  	case OID_GEN_VENDOR_DESCRIPTION:
->  		pr_debug("%s: OID_GEN_VENDOR_DESCRIPTION\n", __func__);
-> -		length = strlen (rndis_per_dev_params [configNr].vendorDescr);
-> -		memcpy (outbuf,
-> -			rndis_per_dev_params [configNr].vendorDescr, length);
-> +		if ( rndis_per_dev_params [configNr].vendorDescr ) {
-
-    There should be not space after ( and before ). Run your patches thru 
-scripts/checkpatch.pl before submitting please.
-
-> +			length = strlen (rndis_per_dev_params [configNr].vendorDescr);
-> +			memcpy (outbuf,
-> +				rndis_per_dev_params [configNr].vendorDescr, length);
-
-    Should be no space before ( either and before [ too.
-
-WBR, Sergei
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index 83c24cc..d528a2d 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -138,8 +138,8 @@ static void mousedev_touchpad_event(struct input_dev *dev,
+ 
+ 		fx(0) = value;
+ 		if (mousedev->touch && mousedev->pkt_count >= 2) {
+-			size = input_abs_get_min(dev, ABS_X) -
+-					input_abs_get_max(dev, ABS_X);
++			size = input_abs_get_max(dev, ABS_X) -
++					input_abs_get_min(dev, ABS_X);
+ 			if (size == 0)
+ 				size = 256 * 2;
+ 
+@@ -155,8 +155,8 @@ static void mousedev_touchpad_event(struct input_dev *dev,
+ 		fy(0) = value;
+ 		if (mousedev->touch && mousedev->pkt_count >= 2) {
+ 			/* use X size for ABS_Y to keep the same scale */
+-			size = input_abs_get_min(dev, ABS_X) -
+-					input_abs_get_max(dev, ABS_X);
++			size = input_abs_get_max(dev, ABS_X) -
++					input_abs_get_min(dev, ABS_X);
+ 			if (size == 0)
+ 				size = 256 * 2;
+ 
+-- 
+1.7.1
 
