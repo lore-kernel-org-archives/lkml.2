@@ -1,66 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab0HUG5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 02:57:25 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:53174 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab0HUG5W (ORCPT
+	id S1751385Ab0HUHK1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 03:10:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46828 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab0HUHK0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 02:57:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=FY3vbsa15TpoD6r0FTsvPkDTQ4dFBKl0CEurxuayuxJQEZMEYG7zjBuFJOGYTj78tu
-         YaRUNXRl4YQXGDgN1LK/67o7P6aqJLqSpPwUfKJg320lObety4BV+KQDNxSe7+RNQ/9d
-         APuEPTpGVD4YAybMu4uYCDT3wRQhVIo0khPVk=
-Subject: help needed with EXPORT_SYMBOL
-From: Aijaz Baig <aijazbaig1@gmail.com>
-Reply-To: aijazbaig1@gmail.com
-To: netfilter-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 Aug 2010 12:27:14 +0530
-Message-ID: <1282373834.4080.79.camel@aijazbaig1-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Sat, 21 Aug 2010 03:10:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <87y6c03jxj.fsf@deeprootsystems.com>
+References: <1281484174-32174-1-git-send-email-ppannuto@codeaurora.org>
+ <1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
+ <3F978429-F916-42E5-8B36-6AC02DAC8CA2@boeing.com> <AANLkTi=Pm8BL+Ksq1o7MYpV7mMH10bEPu1=Am9EgT-Kk@mail.gmail.com>
+ <87hbiql89d.fsf@deeprootsystems.com> <AANLkTinaddiPAcokH3fRVYAFf3N-Gz--U5Jd1iyNsi+m@mail.gmail.com>
+ <87hbip9kxx.fsf@deeprootsystems.com> <AANLkTine=VLLm4+ReKeMKBdbV1JsunNagwKxGMDhEe8e@mail.gmail.com>
+ <87y6c03jxj.fsf@deeprootsystems.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sat, 21 Aug 2010 01:10:05 -0600
+X-Google-Sender-Auth: 31jIEXiKhKP4BVewQ5-a0-d54Zo
+Message-ID: <AANLkTi=WKcb59jJQuLVfqJG07Et+cU75GOC5Lrr_dXR4@mail.gmail.com>
+Subject: Re: [PATCH 2/2] platform: Facilitate the creation of pseudo-platform buses
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>,
+        Patrick Pannuto <ppannuto@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
+        "gregkh@suse.de" <gregkh@suse.de>, Paul Mundt <lethal@linux-sh.org>,
+        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Kyle D Moffett <kyle@moffetthome.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Aug 20, 2010 at 6:10 PM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
+> Grant Likely <grant.likely@secretlab.ca> writes:
+>
+> [...]
+>
+>>>>
+>>>> My fears on this point may very well be unfounded.  This isn't the
+>>>> hill I'm going to die on either.  Show me an implementation of driver
+>>>> sharing that is clean and prove me wrong!  :-)
+>>>
+>>> IMHO, simply overriding the few dev_pm_ops methods was the cleanest and
+>>> simplest.
+>>>
+>>> Since we seem to be in agreement now that the a new bus may not the
+>>> right abstraction for this (since we want it to be completely
+>>> transparent to the drivers), I'll go back to the original design.  No new
+>>> bus types, keep the platform_bus as is, but simply override the few
+>>> dev_pm_ops methods I care about.  This is what is done on SH,
+>>> SH-Mobile[1] and my original version for OMAP that started this
+>>> conversation.
+>>>
+>>> Yes, the weak-symbol method of overriding is not scalable, but that's a
+>>> separate issue from whether or not to create a new bus.  I have a
+>>> proposed fix for the weak which I'll post shortly.
+>>
+>> Okay.
+>>
+>> One constraint remains though:  If you can override the dev_pm_ops on
+>> a per-device or per-device-parent basis, then you've got my support.
+>
+> hmm, a new requirement?, and one that would require some significant
+> changes to the driver model.
 
-Ive been trying to EXPORT a SYMBOL from a netfilter module (actually a
-hook) to the KERNEL. Various modules seem to export various symbols to
-the kernel (or so it seems), an example being x_tables which exports a
-whole lot of functions like xt_register_target and so on and all other
-netfilter modules which use these functions dont seem to have any
-problems.
+Nope!  Not a new requirement; this is the issue that this entire
+thread has been about.  Hijacking the entire platform_bus_type
+behaviour for a particular bus is the wrong thing to do because there
+are other users in the same system.
 
-So why is it that when my netfilter module is exporting something to the
-kernel and im tryin to use it from within a core kernel file, the
-compiler flags a 'undefined reference to' error?
+> Currently, dev_pm_ops for a bus applies globally to *all* devices on
+> that bus (or class or type) and changing that would require changing the
+> platform_bus code to start having per-device (or per-parent-device)
+> checks.
 
-I googled and came to the conclusion from the kernelnewbies mailing list
-that using kallsyms_lookup() seems to be the answer or is it?
-So, if I do intend to use kallsyms_lookup how do I use it? There aren't
-so many instances of it being used it seems.
- 
-Ive seen it being used in dev/core.c like so:
-symname = kallsyms_lookup((unsigned long)sym, &symsize,&offset,&modname,
-namebuf);
+I'm not opposed to modifying the platform_bus_type to support the use-case.
 
-I am basically trying to call a function that MY module EXPORTs inside
-one of the core linux routines. This would also mean that my netfilter
-module must be compiled (and linked also maybe?..not so sound with link
-time stuff) before the address becomes visible so that kallsyms_lookup
-can find it. So do I really shd be using it and if so, how?
+>> If the override (even when fixed to work at runtime) applies to every
+>> device on the platform_bus_type, then I'll nack it.
+>
+> /me can't help but wonder why the OMAP implementation is getting all the
+> negative attention while the other identical implementations are already
+> upstream.
 
-Any input is appreciated.
+OMAP is not getting singled out.  This applies to all the implementations.
 
-Regards,
-Aijaz Baig.
+>> My concern here is that the SoC or platform support code doesn't get
+>> to "own" the platform_bus_type.
+>
+> Well, I'm not proposing that here.  This "feature" already exists in
+> mainline (albeit using the less-than-optimal weak symbol approach.)  All
+> I'm proposing is fixing it to make it multi-arch friendly.
 
+Oops, I didn't phrase that very well.  What I meant was that SoC or
+platform support code must not be allowed to "own" or hijack the
+platform_bus_type for it's own purposes.  What I wrote sounds like I
+was suggesting that as a good thing.
 
+> If you think this behavior should be changed to non global, that should
+> be done a separate series since it is not directly related to runtime PM
+> support for a given platform, IMO.
+>
+>> Other drivers/code can register their own set of
+>> platform_devices, which may also need to perform their own dev_pm_ops
+>> override.
+>
+> IMHO, we should deal with such hypothetical, future problems *if* they
+> arise down the road.
+>
+>> If the override is global to the platform_bus_type, then the model
+>> will not scale.
+>
+> It will not scale any more (or less) than the current functionality of
+> the driver model which handles this globally.  Again, if scalabilty
+> becomes a problem down the road, lets fix it then.
 
+Alright, I can agree to that.  I do agree that the runtime override is
+far and away better than the weak symbol approach.  However, there
+needs to be some very clear rules in place for users of the override,
+namely that users must understand that they are stewards of the
+platform_bus_type, and must take care to preserve the default
+behaviour for "uninteresting" devices.
+
+Also, the expectation should be that it is a temporary measure until a
+better abstraction is implemented.  It might be that a separate
+bus_type is the way to go (if the multiple driver registration problem
+can be solved) or it might be a way to differentiate pm_ops either
+per-device or per-parent.  I'm not sure, but I'm starting on an OMAP
+project soon, so I may very well end up working on this.
+
+Cheers,
+g.
