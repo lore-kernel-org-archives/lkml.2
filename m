@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab0HUQth (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 12:49:37 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:63705 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab0HUQte (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 12:49:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=mnBk5w0lhT3OhDelV1JvpQ2TvlKgpfGIhTBp38ipHjTDtsctTGUwdPqAwpRvdtBpv6
-         aRGmJn+3JZGWlzW8ErDJy+27vfVWeAm6rcJvgTjzfbGoxc1Hq6Fk8e701erP3ZwOPu3O
-         2TmzQL2f+ZWdyAUbd0gSua74D9X7Xnb+LA5jg=
-Date: Sat, 21 Aug 2010 09:49:29 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christoph Fritz <chf.fritz@googlemail.com>
-Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Daniel Mack <daniel@caiaq.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: mousedev - fix regression of inverting axes
-Message-ID: <20100821164929.GA13677@core.coreip.homeip.net>
-References: <20100820223316.4f6ac734@neptune.home>
- <20100821135002.GA3357@lovely.krouter>
+	id S1751692Ab0HUQvE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 12:51:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089Ab0HUQvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 12:51:02 -0400
+Message-ID: <4C7001C9.7050200@redhat.com>
+Date: Sat, 21 Aug 2010 11:41:45 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100821135002.GA3357@lovely.krouter>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+CC: "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext4: remove alignment padding from ext4_inode_info on
+ 64 bit builds
+References: <1282144088.2068.16.camel@castor.rsk>	 <4C6EE173.3030204@redhat.com> <1282393898.1978.18.camel@castor.rsk>
+In-Reply-To: <1282393898.1978.18.camel@castor.rsk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 03:50:03PM +0200, Christoph Fritz wrote:
-> On Fri, Aug 20, 2010 at 10:33:16PM +0200, Bruno Prémont wrote:
-> > Somewhere between 2.6.35 and Linus's tree as of this writing gpm
-> > started moving its cursor to the opposite direction of mouse movement.
-> > 
-> > e.g. moving mouse up causes cursor to move down, moving mouse left
-> >      causes cursor to go right
-> > 
-> > Under 2.6.35 the cursor moved into the same direction as the mouse.
-> > 
-> > Note, mouse is synaptics touchpad (Acer TravelMate660):
-> >   Synaptics Touchpad, model: 1, fw: 5.8, id: 0x9d48b1, caps: 0x904713/0x4006/0x0
-> > 
-> > 
-> > When I get around to it I will try to get more precise information as
-> > to when this regression got introduced, eventually bisecting.
-> > 
-> > Bruno
+Richard Kennedy wrote:
+> On Fri, 2010-08-20 at 15:11 -0500, Eric Sandeen wrote:
+>> Richard Kennedy wrote:
+>>> Reorder structure ext4_inode_info to remove 16 bytes of alignment
+>>> padding on 64 bit builds. This shrinks its size from 904 to 888 bytes
+>>> with (CONFIG_EXT4_S_XATTR=y && CONFIG_QUOTA=n).
+>>>     
+>>> This will allow this structure to use one fewer cache lines.
+>>>
+>>> Also change type of i_delalloc_reserved_flag to bool to better reflect
+>>> its usage.
+>>>
+>>> compiled & tested on x86_64
+>>
+>> Looks good to me; there is still a bit of padding at the end:
+>>
+>>         qsize_t                    i_reserved_quota;     /*   864     8 */
+>>         struct list_head           i_completed_io_list;  /*   872    16 */
+>>         spinlock_t                 i_completed_io_lock;  /*   888     4 */
+>>
+>>         /* XXX 4 bytes hole, try to pack */
+>>
+>>         /* --- cacheline 14 boundary (896 bytes) --- */
+>>         ext4_io_end_t *            cur_aio_dio;          /*   896     8 */
+>>         tid_t                      i_sync_tid;           /*   904     4 */
+>>         tid_t                      i_datasync_tid;       /*   908     4 */
+>>
+>>
+>> but it wouldn't save a cacheline anyway...
+>>
+>> -Eric
+>>
+> Thanks Eric, yes there is padding but we don't have anything to fill the
+> hole with :(
 > 
-> Thanks Bruno,
->  I successfully tested the patch below with gpm.
-> 
-> ---
-> Introduced by 987a6c0298260b7aa40702b349282554d6180e4b a swap in max/min
-> calculation gets fixed by this patch.
-> 
-> Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
-> Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+> If it becomes important to save space, i_state_flags seem to be unused
+> in ext4 so we could possibly drop that.
 
-Applied, thanks Christoph.
+Actually it is used, it's just expertly hidden in:
 
--- 
-Dmitry
+EXT4_INODE_BIT_FNS(state, state_flags):
+
+#define EXT4_INODE_BIT_FNS(name, field)                                 \
+static inline int ext4_test_inode_##name(struct inode *inode, int bit)  \
+{                                                                       \
+        return test_bit(bit, &EXT4_I(inode)->i_##field);                \
+}                                                                       \
+
+etc..
+
+-Eric
+
