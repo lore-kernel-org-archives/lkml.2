@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab0HUN6k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 09:58:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51646 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab0HUN6h convert rfc822-to-8bit (ORCPT
+	id S1752158Ab0HUOGR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 10:06:17 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:49287 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab0HUOGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 09:58:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=N+0S27eT1W6pvQzEWrBkRr+K7oxuuZsT7IyTWKRKNwcBZ2p94uwiPKIFsKyqNKOIcO
-         ugnk+zb4fqkPrwDqSLz3VaMjkRMoAL9XnDv+ONnL35D7FAUHw6jfu0Z5pMAXwyuvFpVg
-         jeR/RXekt1ssy05mQ4N8ZFjFUIjpU/H7pEi5c=
+	Sat, 21 Aug 2010 10:06:15 -0400
+Date: Sat, 21 Aug 2010 17:05:41 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: "ext hvaibhav@ti.com" <hvaibhav@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "byron.bbradley@gmail.com" <byron.bbradley@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>
+Subject: Re: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
+Message-ID: <20100821140541.GA31697@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <hvaibhav@ti.com>
+ <1282393829-7326-2-git-send-email-hvaibhav@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20100821100855.GA5545@opensource.wolfsonmicro.com>
-References: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<AANLkTimggbZqgv=eKe+wx8YvUX5vOppDfmwpLwTgxJFM@mail.gmail.com>
-	<20100821100855.GA5545@opensource.wolfsonmicro.com>
-Date: Sat, 21 Aug 2010 22:58:36 +0900
-Message-ID: <AANLkTikbGR4wWUEHjR74UFu8P-w9us3ZpKgmG+yDukfC@mail.gmail.com>
-Subject: Re: [spi-devel-general] [PATCH 1/2] spi/spi_s3c64xx: Make probe more
- robust against missing board config
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1282393829-7326-2-git-send-email-hvaibhav@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 21 Aug 2010 14:06:02.0279 (UTC) FILETIME=[FCF11370:01CB4139]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 7:08 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Sat, Aug 21, 2010 at 10:45:56AM +0900, Jassi Brar wrote:
->> On Sat, Aug 21, 2010 at 1:17 AM, Mark Brown
->> <broonie@opensource.wolfsonmicro.com> wrote:
->> > The S3C64xx SPI driver requires the machine to call s3c64xx_spi_set_info()
->> > to select a few options, including the clock to use for the SPI controller.
->> > If this is not done then a NULL will be passed as the clock name for
->> > clk_get(), causing an obscure crash. Guard against this and other missing
->> > configuration by validating that the clock name has been filled in in
->> > the platform data that ets passed in.
+Hi,
+
+On Sat, Aug 21, 2010 at 02:30:27PM +0200, ext hvaibhav@ti.com wrote:
+>+static irqreturn_t s35390a_irq_thread(int irq, void *handle)
+>+{
+>+	char buf[1];
+>+	struct s35390a *s35390a = handle;
+>+	struct i2c_client *client = s35390a->client[0];
+
+don't you need some locking on the irq handler ? a mutex maybe ? Just 
+wondering...
+
+>@@ -261,15 +424,30 @@ static int s35390a_probe(struct i2c_client *client,
+> 	if (s35390a_get_datetime(client, &tm) < 0)
+> 		dev_warn(&client->dev, "clock needs to be set\n");
 >
->>      The movement of sci assignment and check doesn't make any
->> difference because
->>       we already check for presence of platform_data and DMA-Tx,Rx and
->> IO base is
->>       set irrespective of calling s3c64xx_spi_set_info()
+>+	if (client->irq >= 0) {
+>+		err = request_threaded_irq(client->irq, NULL,
+>+				s35390a_irq_thread,
+>+				IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+>+				client->name, s35390a);
+>+		if (err) {
+>+			dev_err(&client->dev, "unable to request IRQ\n");
+>+			goto exit_dummy;
+>+		}
+>+	}
+>+
+> 	s35390a->rtc = rtc_device_register(s35390a_driver.driver.name,
+> 				&client->dev, &s35390a_rtc_ops, THIS_MODULE);
 >
-> While it does check for those things for at least the 6410 they're all
-> unconditionally set up by dev-spi.c so the tests all pass and we make it
-> down into to the clk_get() which then falls over horribly.
-Those parameters are SoC specific and hence will be always available to
-platform devices.
-Clock selection and num_cs(number of slaves attached to the SPI bus) are
-machine specific and hence responsibility of the machine developer to
-set appropriately via s3c64xx_spi_set_info()
-
-
->>     Also, I think !sci->num_cs might be an even better check because
->> the samsung clock
->>    api might be changed (IIRC Ben was already working it out) to make
->> it redundant
->>    to pass clock name strings to clk_get. If that is the case, we might end up
->>    adding another foolproof check like !sci->num_cs
+> 	if (IS_ERR(s35390a->rtc)) {
+> 		err = PTR_ERR(s35390a->rtc);
+>-		goto exit_dummy;
+>+		goto exit_intr;
+> 	}
+>+
+> 	return 0;
 >
-> The problem with num_cs is that it gets interpreted by a custom function
-> provided by the board driver so we really can't say anything about what
-> it does.
-num_cs is passed on as such to the SPI core to master->num_chipselect
-which is strictly checked for before a master is created.
+>+exit_intr:
+>+	free_irq(client->irq, client);
 
->  If the clock API gets enhanced then we can always cope with
-> things then, but given the pace of development there I'd expect that
-> we'd need to continue checking for a while.
-yes, so do i think.
+free_irq() won't behave correctly, I believe since you're passing 
+different dev_id parameters. If you look at the implementation of 
+free_irq() you'll see it uses dev_id to find the correct struct 
+irqaction pointer.
 
-> TBH I'm a bit surprised that the driver has to do custom stuff to
-> support gpiolib chip selects - my first thought when I saw that stuff
-> was that it seemed like something that lots of SPI controllers would be
-> able to share but I didn't look at the overall SPI code for long enough
-> to figure out what was going on there.
-we have common spi bitbanging driver that takes only four gpio pins
-and work like a charm.
-In order to enable users use multiple CS per master, in spi_s3c64xx.c
-the single CS feature provided by the controller is deliberately left unused
-and the driver accepts a gpio per slave and manually controls it. Though
-the callbacks and arguments are designed so that a simple gpio number
-and gpio_set can be assigned by the machine code.
+-- 
+balbi
 
-Anyways, I think we can keep the patch as it is, if it's already
-applied in Grant's
-tree.
+DefectiveByDesign.org
