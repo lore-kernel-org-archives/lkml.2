@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab0HUBwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Aug 2010 21:52:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64742 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab0HUBwp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Aug 2010 21:52:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HmhlYy0sU3Tt0lXCC/vIhaGqPexQfLeiTnLW2CArQBcTPRZZ8uWQmHxNZqhMgjFt4H
-         COghIf+lH9J7inddaLk/FPCa+lTHJQSmPc3DWD7JZiXRHsWJxBgrXDNuVsRkrW6OECAb
-         BcHMxcWAeof1fu3wWS1h+2TbBlJPLapBrFw5o=
+	id S1751242Ab0HUCP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Aug 2010 22:15:59 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:41063 "EHLO
+	mx02.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751027Ab0HUCP4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Aug 2010 22:15:56 -0400
+Date: Fri, 20 Aug 2010 22:15:41 -0400 (EDT)
+From: Miloslav Trmac <mitr@redhat.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
+Message-ID: <1833173750.1044971282356941800.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4C6E7C1A.1070203@s5r6.in-berlin.de>
+Subject: Re: [PATCH 06/19] Add ioctl() argument and attribute handling utils
 MIME-Version: 1.0
-In-Reply-To: <1282321028-32196-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<1282321028-32196-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Sat, 21 Aug 2010 10:52:44 +0900
-Message-ID: <AANLkTiknsnER2Z-4_h8OC=VAqbjEfF0H0-y8etzW3i0q@mail.gmail.com>
-Subject: Re: [spi-devel-general] [PATCH 2/2] spi/spi_s3c64xx: Staticise
- non-exported functions
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 1:17 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/spi/spi_s3c64xx.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
-> index a0b63b7..7e627f7 100644
-> --- a/drivers/spi/spi_s3c64xx.c
-> +++ b/drivers/spi/spi_s3c64xx.c
-> @@ -447,8 +447,8 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
->        writel(val, regs + S3C64XX_SPI_CLK_CFG);
->  }
->
-> -void s3c64xx_spi_dma_rxcb(struct s3c2410_dma_chan *chan, void *buf_id,
-> -                               int size, enum s3c2410_dma_buffresult res)
-> +static void s3c64xx_spi_dma_rxcb(struct s3c2410_dma_chan *chan, void *buf_id,
-> +                                int size, enum s3c2410_dma_buffresult res)
->  {
->        struct s3c64xx_spi_driver_data *sdd = buf_id;
->        unsigned long flags;
-> @@ -467,8 +467,8 @@ void s3c64xx_spi_dma_rxcb(struct s3c2410_dma_chan *chan, void *buf_id,
->        spin_unlock_irqrestore(&sdd->lock, flags);
->  }
->
-> -void s3c64xx_spi_dma_txcb(struct s3c2410_dma_chan *chan, void *buf_id,
-> -                               int size, enum s3c2410_dma_buffresult res)
-> +static void s3c64xx_spi_dma_txcb(struct s3c2410_dma_chan *chan, void *buf_id,
-> +                                int size, enum s3c2410_dma_buffresult res)
->  {
->        struct s3c64xx_spi_driver_data *sdd = buf_id;
->        unsigned long flags;
-
-Oh, yes. What was I thinking ?!
-
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+----- "Stefan Richter" <stefanr@s5r6.in-berlin.de> wrote:
+> Miloslav Trmač wrote:
+> > --- /dev/null
+> > +++ b/crypto/userspace/utils.c
+> [...]
+> > +#ifdef CONFIG_COMPAT
+> > +/* max() is too clever for compile-time constants */
+> > +#define CONST_MAX(A, B) ((A) > (B) ? (A) : (B))
+> > +
+> > +#define MAX_SESSION_INPUT_DATA_SIZE					\
+> > +	(CONST_MAX(sizeof(struct ncr_session_input_data),		\
+> > +		   sizeof(struct compat_ncr_session_input_data)))
+> > +#define MAX_SESSION_OUTPUT_BUFFER_SIZE					\
+> > +	(CONST_MAX(sizeof(struct ncr_session_output_buffer),		\
+> > +		   sizeof(struct compat_ncr_session_output_buffer)))
+> > +
+> > +#else /* !CONFIG_COMPAT */
+> > +
+> > +#define MAX_SESSION_INPUT_DATA_SIZE (sizeof(struct ncr_session_input_data))
+> > +#define MAX_SESSION_OUTPUT_BUFFER_SIZE			\
+> > +	(sizeof(struct ncr_session_output_buffer))
+> > +
+> > +#endif /* !CONFIG_COMPAT */
+> 
+> struct compat_xyz cannot be bigger than struct xyz, can it?
+Perhaps not, but the code has been written and it's easier to keep it than to speculate :)  It also helps document the fact that the data format depends on properties of the userspace.
+    Mirek
