@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815Ab0HURYR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 13:24:17 -0400
-Received: from shutemov.name ([188.40.19.243]:50943 "EHLO shutemov.name"
+	id S1751824Ab0HURYu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 13:24:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29410 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512Ab0HURYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 13:24:15 -0400
-Date: Sat, 21 Aug 2010 20:24:14 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: add test for strlcpy()
-Message-ID: <20100821172414.GA24696@shutemov.name>
-References: <1282351101-8879-1-git-send-email-kirill@shutemov.name>
- <20100821171537.GE2973@ghostprotocols.net>
+	id S1751173Ab0HURYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 13:24:48 -0400
+Date: Sat, 21 Aug 2010 14:24:33 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu
+Subject: Re: [PATCH] perf tools: Fix linking errors with --as-needed flag
+Message-ID: <20100821172433.GF2973@ghostprotocols.net>
+References: <1279449937-29115-1-git-send-email-ozan@pardus.org.tr> <4C42DFC0.1090708@pardus.org.tr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100821171537.GE2973@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C42DFC0.1090708@pardus.org.tr>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 02:15:37PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Sat, Aug 21, 2010 at 03:38:20AM +0300, Kirill A. Shutemov escreveu:
-> > Some Linux distributions like ALT Linux provides patched glibc with
-> > contains strlcpy(). It's confilcts with strlcpy() from perf.
+Em Sun, Jul 18, 2010 at 02:04:32PM +0300, Ozan Çağlayan escreveu:
+> On 18.07.2010 13:45, Ozan Çağlayan wrote:
+> > External shared libraries should never be appended to the LDFLAGS as
+> > this messes the linking order. As EXTLIBS collects those libraries,
+> > it seems that perl and python libraries  should also be appended
+> > to EXTLIBS.
 > > 
-> > Let's add check for strlcpy().
+> > Also fix the broken linking order.
 > 
-> It doesn't work on !ALT Linux ;-\
+> Hm actually the PERL_EMBED_LDOPTS may contain LDFLAGS and LIBADD according
+> to distribution's perl package configuration's goodness/badness. On my system
+> the return value is crap which bloats the linking process:
 > 
->     LINK /home/acme/git/build/perf//perf
-> /home/acme/git/build/perf//libperf.a(path.o): In function `perf_vsnpath':
-> /home/acme/git/linux/tools/perf/util/path.c:74: undefined reference to `strlcpy'
-> /home/acme/git/build/perf//libperf.a(abspath.o): In function `get_pwd_cwd':
-> /home/acme/git/linux/tools/perf/util/abspath.c:16: undefined reference to `strlcpy'
-> /home/acme/git/build/perf//libperf.a(abspath.o): In function `make_nonrelative_path':
-> /home/acme/git/linux/tools/perf/util/abspath.c:27: undefined reference to `strlcpy'
-> collect2: ld returned 1 exit status
-> make: *** [/home/acme/git/build/perf//perf] Error 1
-> make: Leaving directory `/home/acme/git/linux/tools/perf'
-> [acme@emilia linux]$ 
+>  -rdynamic -Wl,-rpath,/usr/lib/perl5/5.10.1/i686-linux-thread-multi/CORE  -fstack-protector -L/usr/local/lib  -L/usr/lib/perl5/5.10.1/i686-linux-thread-multi/CORE -lperl -lpthread -lnsl -ldl -lm -lcrypt -lutil -lc
 > 
-> See below why:
->  
-> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> > ---
-> >  tools/perf/Makefile          |    8 ++++++++
-> >  tools/perf/feature-tests.mak |   11 +++++++++++
-> >  tools/perf/util/cache.h      |    2 ++
-> >  tools/perf/util/path.c       |    3 ++-
-> >  4 files changed, 23 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> > index 4f1fa77..496a0d6 100644
-> > --- a/tools/perf/Makefile
-> > +++ b/tools/perf/Makefile
-> > @@ -653,6 +653,14 @@ else
-> > diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
-> > index 58a470d..029661c 100644
-> > --- a/tools/perf/util/path.c
-> > +++ b/tools/perf/util/path.c
-> > @@ -22,6 +22,7 @@ static const char *get_perf_dir(void)
-> >  	return ".";
-> >  }
-> >  
-> > +#ifdef STRLCPY
+> PYTHON_EMBED_LDOPTS evaluates python-config --ldflags and adds these to 
+> ALL_LDFLAGS. (--libs and --ldflags are synonyms for python-config). According
+> to python-config this code *never* returns LDFLAGS so it's safe to put them in
+> EXTLIBS.
 > 
-> Should be:
-> 
-> +#ifdef NO_STRLCPY
-> 
+> So the cure may be more than this patch for perl stuff, but at least it fixes my
+> linking problems with -Wl, --as-needed.
 
-Oops. Sorry.
+Can you refresh this patch? I had it in the back of my mind, remembered
+it when considering a similar patch by Kirill, but his covers just the
+python case.
 
-> I'm fixing it up.
-> 
-> >  size_t strlcpy(char *dest, const char *src, size_t size)
-> >  {
-> >  	size_t ret = strlen(src);
-> > @@ -33,7 +34,7 @@ size_t strlcpy(char *dest, const char *src, size_t size)
-> >  	}
-> >  	return ret;
-> >  }
+Tom, can you please check Ozan's and Kirill's patches and tell me if I
+can stick your Acked-by to them?
 
--- 
- Kirill A. Shutemov
+I'll CC you on the Kirill patch on private cover.
+
+- Arnaldo
