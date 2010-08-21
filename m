@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab0HUWqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 18:46:17 -0400
-Received: from tor-exit-node-readme.printf.net ([89.145.121.180]:34086 "EHLO
-	void.printf.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751516Ab0HUWqQ (ORCPT
+	id S1751823Ab0HUW4l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 18:56:41 -0400
+Received: from relay03.mail-hub.dodo.com.au ([123.2.6.238]:55532 "EHLO
+	relay03.mail-hub.dodo.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751121Ab0HUW4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 18:46:16 -0400
-X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Aug 2010 18:46:16 EDT
-From: Chris Ball <cjb@laptop.org>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: linux-mmc@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        Hanumath Prasad <hanumath.prasad@stericsson.com>
-Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
-References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com>
-	<AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com>
-Date: Sat, 21 Aug 2010 18:37:45 -0400
-In-Reply-To: <AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com>
-	(Linus Walleij's message of "Sun, 22 Aug 2010 00:30:33 +0200")
-Message-ID: <m3pqxbsibq.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+	Sat, 21 Aug 2010 18:56:37 -0400
+Recieved: from [41.203.64.247] with HTTP; Sun, 22 Aug 2010 8:56:08 +1000
+Message-ID: <20100822085608.4590.4C7052D44F71C-4C70@webmail.dodo.com.au>
+Date: Sun, 22 Aug 2010 8:56:08 +1000
+From: "NOKIA MOBILE PROMO AWARD" <tguy1@dodo.com.au>
+Reply-to: "NOKIA MOBILE PROMO AWARD" <anokiamobilepromo@yahoo.com.hk>
+Subject: Payment Information
+X-Priority: 3
+X-Mailer: Dodo Internet Webmail Server 
+X-Original-IP: 41.203.64.247
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--
+FROM THE DESK OF THE PROMOTION OFFICER,
+NOKIA MOBILE SWEEPSTAKES PROMO.
+2ND FLOOR BERKLEY SQUARE HOUSE
+BERKLEY SQUARE LONDON W1J 6BD,
+LONDON. UNITED KINGDOM.
 
-   > Hm is there some problem with this patch or has the processing of
-   > it simply stalled? When I read the thread I cannot see Hanumaths
-   > answers on the list but it looks mainly like the patch is OK and
-   > there is some chit-chat.
-   > 
-   > Can it be picked up? Everyone is going to need DDR MMC for their
-   > eMMCs soon-ish.
+NOKIA MOBILE PROMO AWARD
 
-I'd like to dedicate more time to mmc/.  Do you think it'd be useful
-for me to catch all the patches sent to linux-mmc@ into a public Git
-tree, and periodically report on what went upstream via akpm and
-what's still waiting?
+OFFICIAL WINNING NOTIFICATION.
 
-Of course, the tree could also be used for testing.  Maybe even
-automated testing, which I'm also interested in.
+We are pleased to inform you of the release of the long
+awaited results of Nokia LOTTERY promotion organized
+in conjunction with T-MOBILE your email address emerged as
+one of the seven others online Winning e-mails in the 2nd
+category and therefore attracted a cash award of
+$1,000.000.00 USD (ONE MILLION United States Dollars)
 
-Thanks,
+To begin your claim, do file for the release of your winning
+by contacting our Foreign Transfer Manager with your
+PERSONAL DETAILS (Compulsory)
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>
-One Laptop Per Child
+Fill the form below:
+
+NAME:
+ADDRESS:
+PHONE NO:
+OCCUPATION:
+AGE:
+SEX:
+COUNTRY:
+
+Mr. John Bamaco
+Tel: +447045710800
+Email: awardnokiamobilepromo@yahoo.com.hk
+
+
+The Nokia E-mail LOTTERY draw is held periodically and is organized
+to encourage the use of Internet and promote computer literacy worldwide.
+
+Congratulations!!
+
+Sincerely,
+Mrs. Maria Alanjedro
+Promotions Manager.
+
+________________________________________________
+
+This message was sent
+using Dodo Webmail - www.dodo.com.au
+
