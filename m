@@ -1,54 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab0HVGM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 02:12:26 -0400
-Received: from [64.85.170.234] ([64.85.170.234]:55334 "EHLO mail.tomasu.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283Ab0HVGMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 02:12:23 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: linux-wireless@vger.kernel.org
-Subject: ath5k problem with 2.6.35
-Date: Sun, 22 Aug 2010 00:05:38 -0600
-User-Agent: KMail/1.13.5 (Linux/2.6.35-trunk-amd64; KDE/4.4.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
+	id S1751506Ab0HVGXA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 02:23:00 -0400
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:37389 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab0HVGW6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 02:22:58 -0400
+X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Aug 2010 02:22:58 EDT
+Message-ID: <4C70BFF3.8030507@hardwarefreak.com>
+Date: Sun, 22 Aug 2010 01:13:07 -0500
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: 2.6.34.1 page allocation failure
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008220005.38969.tfjellstrom@strangesoft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I'm running 2.6.35, and my wireless card fails to initialize properly on 
-boot. I get the following messages in dmesg:
+I'm not subscribed to lkml so please CC me in replies.  First post.
 
-[    0.866525] ath5k 0000:02:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[    0.866536] ath5k 0000:02:00.0: setting latency timer to 64
-[    0.866571] ath5k 0000:02:00.0: registered as 'phy0'
-[    1.358241] ath: EEPROM regdomain: 0x67
-[    1.358242] ath: EEPROM indicates we should expect a direct regpair map
-[    1.358245] ath: Country alpha2 being used: 00
-[    1.358247] ath: Regpair used: 0x67
-[    1.372021] ath5k phy0: can't register ieee80211 hw
-[    1.372080] ath5k 0000:02:00.0: PCI INT A disabled
-[    1.372084] ath5k: probe of 0000:02:00.0 failed with error -2
+Mobo:    Abit BP6, dual Celeron 366@500, i440BX chipset, 384MB PC100
+Disk:    SiI 3512 PCI (sata_sil, libata), 1 x WD5000AAKS 500 GB SATAII
+Kernel:  vanilla 2.6.34.1, 32 bit x86, SMP, Celeron pre Coppermine
+OS:      Debian 5.0.5 (Stable)
+Build:   kernel configured via make menuconfig
+         no modules, no initrd
+         built via "make KDEB_PKGVERSION="
+         installed via dpkg, bootloader is LILO
+Role:    headless SOHO server, run level 2, _very_ light load
+         Postfix, pdns-recursor, Dovecot, Lighttpd, Roundcube, Samba
+         bulk of system memory (>300MB) is consumed by buffers/cache
+Issue:   AFAIK, these errors never occurred with any revisions of
+         2.6.26, .31, or .32.  After installing 2.6.34.1 I've noticed
+         the following errors in dmesg.  I see 6 of these, including
+         two errors each for kswapd0, lighttpd, and smtpd, all not
+         tainted.  AFAICT everything is still running fine.  Are these
+         critical errors?  If so, how do I fix?
 
-That said, if I remove the ath5k module, and modprobe ath5k, it starts 
-working.
+kswapd0: page allocation failure. order:1, mode:0x20
+Pid: 139, comm: kswapd0 Not tainted 2.6.34.1 #1
+Call Trace:
+ [<c104b6b3>] ? __alloc_pages_nodemask+0x448/0x48a
+ [<c1062ffb>] ? cache_alloc_refill+0x22f/0x422
+ [<c11a9a73>] ? tcp_v4_send_check+0x6e/0xa4
+ [<c10632c3>] ? kmem_cache_alloc+0x41/0x6a
+ [<c11773a5>] ? sk_prot_alloc+0x19/0x55
+ [<c117744b>] ? sk_clone+0x16/0x1cc
+ [<c119a71d>] ? inet_csk_clone+0xf/0x80
+ [<c11ac0e3>] ? tcp_create_openreq_child+0x1a/0x3c8
+ [<c11aaf0a>] ? tcp_v4_syn_recv_sock+0x4b/0x151
+ [<c11abf9d>] ? tcp_check_req+0x209/0x335
+ [<c11aa892>] ? tcp_v4_do_rcv+0x8d/0x14d
+ [<c11aacd5>] ? tcp_v4_rcv+0x383/0x56d
+ [<c1193ba4>] ? ip_local_deliver+0x76/0xc0
+ [<c1193b10>] ? ip_rcv+0x3dc/0x3fa
+ [<c103655e>] ? ktime_get_real+0xf/0x2b
+ [<c117f8d3>] ? netif_receive_skb+0x219/0x234
+ [<c115ff46>] ? e100_poll+0x1d0/0x47e
+ [<c117fa98>] ? net_rx_action+0x58/0xf8
+ [<c102539c>] ? __do_softirq+0x78/0xe5
+ [<c102542c>] ? do_softirq+0x23/0x27
+ [<c1003955>] ? do_IRQ+0x7d/0x8e
+ [<c1002aa9>] ? common_interrupt+0x29/0x30
+ [<c1062870>] ? kmem_cache_free+0xbd/0xc5
+ [<c10fa7d1>] ? __xfs_inode_set_reclaim_tag+0x29/0x2f
+ [<c1075215>] ? destroy_inode+0x1c/0x2b
+ [<c10752ce>] ? dispose_list+0xaa/0xd0
+ [<c107548c>] ? shrink_icache_memory+0x198/0x1c5
+ [<c104f76b>] ? shrink_slab+0xda/0x12f
+ [<c104fc28>] ? kswapd+0x468/0x63b
+ [<c104dca3>] ? isolate_pages_global+0x0/0x1bc
+ [<c10304d6>] ? autoremove_wake_function+0x0/0x2d
+ [<c1018faf>] ? complete+0x28/0x36
+ [<c104f7c0>] ? kswapd+0x0/0x63b
+ [<c10301cd>] ? kthread+0x61/0x66
+ [<c103016c>] ? kthread+0x0/0x66
+ [<c1002ab6>] ? kernel_thread_helper+0x6/0x10
+Mem-Info:
+DMA per-cpu:
+CPU    0: hi:    0, btch:   1 usd:   0
+CPU    1: hi:    0, btch:   1 usd:   0
+Normal per-cpu:
+CPU    0: hi:  186, btch:  31 usd: 180
+CPU    1: hi:  186, btch:  31 usd:  29
+active_anon:646 inactive_anon:4337 isolated_anon:0
+ active_file:27189 inactive_file:35957 isolated_file:0
+ unevictable:0 dirty:56 writeback:0 unstable:0
+ free:1142 slab_reclaimable:25495 slab_unreclaimable:1020
+ mapped:3116 shmem:143 pagetables:123 bounce:0
+DMA free:1568kB min:100kB low:124kB high:148kB active_anon:0kB
+inactive_anon:4kB active_file:5704kB inactive_file:7732kB
+unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15868kB
+mlocked:0kB dirty:0kB writeback:0kB mapped:28kB shmem:0kB
+slab_reclaimable:912kB slab_unreclaimable:52kB kernel_stack:0kB
+pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+all_unreclaimable? no
+lowmem_reserve[]: 0 365 365
+Normal free:3000kB min:2392kB low:2988kB high:3588kB active_anon:2584kB
+inactive_anon:17344kB active_file:103052kB inactive_file:136096kB
+unevictable:0kB isolated(anon):0kB isolated(file):0kB present:373888kB
+mlocked:0kB dirty:224kB writeback:0kB mapped:12436kB shmem:572kB
+slab_reclaimable:101068kB slab_unreclaimable:4028kB kernel_stack:520kB
+pagetables:492kB unstable:0kB bounce:0kB writeback_tmp:0kB
+pages_scanned:0 all_unreclaimable? no
+lowmem_reserve[]: 0 0 0
+DMA: 391*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB
+0*2048kB 0*4096kB = 1564kB
+Normal: 750*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+0*1024kB 0*2048kB 0*4096kB = 3000kB
+63342 total pagecache pages
+23 pages in swap cache
+Swap cache stats: add 159, delete 136, find 401/412
+Free swap  = 995636kB
+Total swap = 995992kB
+98303 pages RAM
+1638 pages reserved
+22416 pages shared
+76947 pages non-shared
 
-[ 2976.411770] ath5k 0000:02:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[ 2976.411783] ath5k 0000:02:00.0: setting latency timer to 64
-[ 2976.412767] ath5k 0000:02:00.0: registered as 'phy1'
-[ 2976.912422] ath: EEPROM regdomain: 0x67
-[ 2976.912424] ath: EEPROM indicates we should expect a direct regpair map
-[ 2976.912427] ath: Country alpha2 being used: 00
-[ 2976.912429] ath: Regpair used: 0x67
-[ 2977.079190] ath5k phy1: Atheros AR2425 chip found (MAC: 0xe2, PHY: 0x70)
-
-Is this a known issue?
+Thanks.
 
 -- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
+Stan
