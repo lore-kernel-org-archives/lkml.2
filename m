@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab0HVOUX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 10:20:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51409 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab0HVOTy (ORCPT
+	id S1752663Ab0HVOU0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 10:20:26 -0400
+Received: from fed1rmmtai103.cox.net ([68.230.241.57]:51825 "EHLO
+	fed1rmmtai103.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab0HVOUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 10:19:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=IijX0Qi4VM6b1QZ0nTG77ejIVFWFuXb/sG2/F+yFOPLQCLFy8rlIB0IG8quAsW46lQ
-         +qJh0WYC6hKf8IjHX90ZOb/69ZtIn+mAFbBKpDmPZNg2Uy/pt2+JZtxzyGt/3uKb046O
-         tJsxToEpa9xw6PTUXMJDecBpU2nUXjRz/0m+s=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] workqueue: mark lock acquisition on worker_maybe_bind_and_lock()
-Date: Sun, 22 Aug 2010 23:19:43 +0900
-Message-Id: <1282486783-4573-2-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 22 Aug 2010 10:20:16 -0400
+X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Aug 2010 10:20:15 EDT
+X-VR-Score: 130.00
+X-Authority-Analysis: v=1.1 cv=b7HAPzpwzCQJ8M2itpcNPfPnPyOS+ZwahxMwALWFHgU=
+ c=1 sm=1 a=M58Ut_zYM0YA:10 a=l-mjcx2A0XsA:10 a=IkcTkHD0fZMA:10
+ a=40W+Lnb4GQCKcVHw9Z7S9g==:17 a=IuR5XPxDKaDV6yzigNkA:9
+ a=A55pZ54xZHGYAhaM_ImfXfSOuSYA:4 a=QEXdDO2ut3YA:10 a=QiC3TwnRIw9dpzN2:21
+ a=dbAtiG3zXJQWaVnA:21 a=40W+Lnb4GQCKcVHw9Z7S9g==:117
+X-CM-Score: 0.00
+Message-ID: <20100822101114.LUJDI.552092.imail@fed1rmwml35>
+Date: Sun, 22 Aug 2010 7:11:14 -0700
+From: wins <rdsgea@cox.net>
+Reply-To: ba025@aol.com
+Subject: Legitimate Winner
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-worker_maybe_bind_and_lock() actually grabs gcwq->lock but was missing proper
-annotation. Add it. So this patch will remove following sparse warnings:
+Your e mail address was choosed  in the UK Award  2010 that was held
+August 18th, and you are to claim the
+sum  of $1,000 000 USD.that means you are one of our five(5) lucky
+recipents . Your winning number is: (CT-222-6747,FGN/P-900-56).
 
- kernel/workqueue.c:1214:13: warning: context imbalance in 'worker_maybe_bind_and_lock' - wrong count at exit
- arch/x86/include/asm/irqflags.h:44:9: warning: context imbalance in 'worker_rebind_fn' - unexpected unlock
- kernel/workqueue.c:1991:17: warning: context imbalance in 'rescuer_thread' - unexpected unlock
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- kernel/workqueue.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+You are to send us this details
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index be0b71d..1145c50 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1212,6 +1212,7 @@ static void worker_leave_idle(struct worker *worker)
-  * bound), %false if offline.
-  */
- static bool worker_maybe_bind_and_lock(struct worker *worker)
-+__acquires(&gcwq->lock)
- {
- 	struct global_cwq *gcwq = worker->gcwq;
- 	struct task_struct *task = worker->task;
--- 
-1.7.0.4
-
+NAME IN FULL: 
+DELIVERY ADDRESS: 
+AGE:
+NATIONALITY: 
+OCCUPATION:
+PHONE:
+SEX:
