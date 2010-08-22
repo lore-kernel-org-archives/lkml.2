@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab0HVNrU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 09:47:20 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:46965 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752377Ab0HVNrT (ORCPT
+	id S1752683Ab0HVNrl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 09:47:41 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55747 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab0HVNr1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 09:47:19 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 1/2] input: mt: Initialize slots to unused
-Date: Sun, 22 Aug 2010 15:46:49 +0200
-Message-Id: <1282484809-8554-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OnAt9-00053j-9e.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OnAt9-00053j-9e 390c654becaf956587d92262f2197469
+	Sun, 22 Aug 2010 09:47:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cHEQJcFm5jVRtEOiPrq2nSF6PSFFUM28unqryy0x8Cksnc8gVycMHAuD60fbZ3EEXF
+         Xkfz2ZKF8SJTRm6R7C3a2ecpoA5V19mtS+PT2WFShuGT5EKQKHn716xVWsYVbbCwwdmD
+         S9w/CARr+VQy4vHOmhOmsUDEoa4yFk01AYxig=
+MIME-Version: 1.0
+In-Reply-To: <201008221507.42023.arnd@arndb.de>
+References: <1282475544-24708-1-git-send-email-xiaosuo@gmail.com>
+ <AANLkTin1BOgHBc4sTwFAmQhKFNvZ+90herc4Dsh9P8y2@mail.gmail.com> <201008221507.42023.arnd@arndb.de>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Sun, 22 Aug 2010 21:47:06 +0800
+Message-ID: <AANLkTiktOcAvAxcXUxh+4jKh0nBmYCf0OVG0wqRNMb9T@mail.gmail.com>
+Subject: Re: [PATCH] net: define __packed for the userspace code
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For MT slots, the ABS_MT_TRACKING_ID determines whether a slot is in use,
-but currently leaves initialization up to the drivers. This patch sets the
-slot state to unused upon creation.
+On Sun, Aug 22, 2010 at 9:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Sunday 22 August 2010 13:23:42 Changli Gao wrote:
+>> On Sun, Aug 22, 2010 at 7:12 PM, Changli Gao <xiaosuo@gmail.com> wrote:
+>> > This commit
+>> >
+>> >  commit bc10502dba37d3b210efd9f3867212298f13b78e
+>> >  Author: Eric Dumazet <eric.dumazet@gmail.com>
+>> >  Date:   Thu Jun 3 03:21:52 2010 -0700
+>> >
+>> >    net: use __packed annotation
+>> >
+>> > makes use of __packed in the userspace code. So we'd better define __packed
+>> > for the userspace code too.
+>> >
+>>
+>> Oh, sorry. This patch can't work as include/linux/compiler.h isn't
+>> exported to the userspace. But where should we define __packed for the
+>> userspace code? include/linux/types.h?
+>
+> I would try to avoid making those structures packed to start with.
+> From what I can see, they structures annotated in the above commit
+> mostly don't even require explicit packing because they are already
+> packed. Not marking them packed makes the code portable to non-gcc
+> compilers.
+>
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/input.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Maybe __packed is used somewhere to hint that some members of a
+structure maybe unaligned.
 
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index a9b025f..9325844 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -1599,8 +1599,9 @@ EXPORT_SYMBOL(input_free_device);
-  * @dev: input device supporting MT events and finger tracking
-  * @num_slots: number of slots used by the device
-  *
-- * This function allocates all necessary memory for MT slot handling
-- * in the input device, and adds ABS_MT_SLOT to the device capabilities.
-+ * This function allocates all necessary memory for MT slot handling in the
-+ * input device, and adds ABS_MT_SLOT to the device capabilities. All slots
-+ * are initially unused with ABS_MT_TRACKING_ID == -1.
-  */
- int input_mt_create_slots(struct input_dev *dev, unsigned int num_slots)
- {
-@@ -1613,6 +1614,8 @@ int input_mt_create_slots(struct input_dev *dev, unsigned int num_slots)
- 
- 	dev->mtsize = num_slots;
- 	input_set_abs_params(dev, ABS_MT_SLOT, 0, num_slots - 1, 0, 0);
-+	while (num_slots--)
-+		dev->mt[num_slots].abs[ABS_MT_TRACKING_ID - ABS_MT_FIRST] = -1;
- 
- 	return 0;
- }
 -- 
-1.7.1
-
+Regards,
+Changli Gao(xiaosuo@gmail.com)
