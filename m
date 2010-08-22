@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251Ab0HVLYG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 07:24:06 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60489 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab0HVLYE convert rfc822-to-8bit (ORCPT
+	id S1752215Ab0HVL6a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 07:58:30 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:31498 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab0HVL62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 07:24:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=OU0oXP5M/G2BA+SHtHSZIF8wgm8KaKAvjL2fwWwDPmwGCnQAGnSA3Qqy932VaNEqSM
-         mbD6CysxFxFMq4eFXfYSQIp3zmIf6dwx3Zr/ZGe1y6QpZ3H/rqG4OvZyjDoTtmWejmcv
-         Kr/KyApUbwZP0gXbU1DuxJEx9hUNH7yp3e24w=
-MIME-Version: 1.0
-In-Reply-To: <1282475544-24708-1-git-send-email-xiaosuo@gmail.com>
-References: <1282475544-24708-1-git-send-email-xiaosuo@gmail.com>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sun, 22 Aug 2010 19:23:42 +0800
-Message-ID: <AANLkTin1BOgHBc4sTwFAmQhKFNvZ+90herc4Dsh9P8y2@mail.gmail.com>
-Subject: Re: [PATCH] net: define __packed for the userspace code
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 22 Aug 2010 07:58:28 -0400
+Date: Sun, 22 Aug 2010 13:58:01 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Axel Lin <axel.lin@gmail.com>, Paul Thomas <pthomas8589@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v2] hwmon: (ads7871) Fix ads7871_probe  error path
+Message-ID: <20100822135801.4861066d@hyperion.delvare>
+In-Reply-To: <20100817161048.51b42394@hyperion.delvare>
+References: <1282048884.2626.2.camel@phoenix>
+	<20100817161048.51b42394@hyperion.delvare>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 7:12 PM, Changli Gao <xiaosuo@gmail.com> wrote:
-> This commit
->
->  commit bc10502dba37d3b210efd9f3867212298f13b78e
->  Author: Eric Dumazet <eric.dumazet@gmail.com>
->  Date:   Thu Jun 3 03:21:52 2010 -0700
->
->    net: use __packed annotation
->
-> makes use of __packed in the userspace code. So we'd better define __packed
-> for the userspace code too.
->
+Axel, Paul,
 
-Oh, sorry. This patch can't work as include/linux/compiler.h isn't
-exported to the userspace. But where should we define __packed for the
-userspace code? include/linux/types.h?
+On Tue, 17 Aug 2010 16:10:48 +0200, Jean Delvare wrote:
+> On Tue, 17 Aug 2010 20:41:24 +0800, Axel Lin wrote:
+> > This patch moves hwmon_device_register() to the end of ads7871_probe().
+> > So we can make sure the device exists and is properly initialized
+> > before the device is exposed to user-space.
+> > 
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > ---
+> >  drivers/hwmon/ads7871.c |   12 ++++++------
+> >  1 files changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
+> > index b300a20..45f5829 100644
+> > --- a/drivers/hwmon/ads7871.c
+> > +++ b/drivers/hwmon/ads7871.c
+> > @@ -176,12 +176,6 @@ static int __devinit ads7871_probe(struct spi_device *spi)
+> >  	if (status < 0)
+> >  		goto error_free;
+> >  
+> > -	pdata->hwmon_dev = hwmon_device_register(&spi->dev);
+> > -	if (IS_ERR(pdata->hwmon_dev)) {
+> > -		err = PTR_ERR(pdata->hwmon_dev);
+> > -		goto error_remove;
+> > -	}
+> > -
+> >  	spi_set_drvdata(spi, pdata);
+> >  
+> >  	/* Configure the SPI bus */
+> > @@ -204,6 +198,12 @@ static int __devinit ads7871_probe(struct spi_device *spi)
+> >  		goto error_remove;
+> >  	}
+> >  
+> > +	pdata->hwmon_dev = hwmon_device_register(&spi->dev);
+> > +	if (IS_ERR(pdata->hwmon_dev)) {
+> > +		err = PTR_ERR(pdata->hwmon_dev);
+> > +		goto error_remove;
+> > +	}
+> > +
+> >  	return 0;
+> >  
+> >  error_remove:
+> 
+> Applied, thanks.
 
+Hmm, looking at the code again as I was about to send the patch to
+Linus, it seems that the above fix isn't sufficient. One problem is
+that it makes little sense to create sysfs attributes for the device if
+the probe is going to fail. So sysfs file creation should be delayed
+until after the device presence check. A second, more important problem
+is that no error code is returned if sysfs_create_group() fails. The
+probe function will return success (0) while the device is not
+registered, which means trouble when the remove function is called
+later.
+
+The second problem is caused by the presence of two local variables
+carrying error values: err and status. The latter should be dropped to
+avoid the confusion, and the former shouldn't be initialized to 0, so
+that the compiler has a chance to warn about such issues.
+
+Axel, Paul, can either of you please send an updated patch as a
+replacement for this one, fixing the two remaining issues? Thanks.
+
+As a side note, I also noticed that struct ads7871_data has an unused
+member "update_lock". Someone familiar with the device and driver
+should check whether it should be used somewhere, or if it can be
+dropped.
 
 -- 
-Regards,
-Changli Gao(xiaosuo@gmail.com)
+Jean Delvare
