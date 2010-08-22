@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab0HVUQr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 16:16:47 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55111 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab0HVUQo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 16:16:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QnLepTMrahZ+ALD/hyX7VBLbviy+6KBgK+WLM2Aiwf8aeugSM+7xOejbOXltGpRQLd
-         ISpH5hJiIZzORLgkoo3M/gag8/o3Qu14MRFA74IjgEc3mKlmFN7KYRuoOZMcYuwAZp4/
-         TnBKPrHrmG6j/JBpiBBKpyt2CVbFnMeML7iac=
-MIME-Version: 1.0
-In-Reply-To: <20100822193819.GA23299@Krystal>
-References: <20100821141750.770348530@efficios.com>
-	<20100821142215.023431313@efficios.com>
-	<20100822192705.GE1771@one.firstfloor.org>
-	<20100822193819.GA23299@Krystal>
-Date: Sun, 22 Aug 2010 23:16:42 +0300
-Message-ID: <AANLkTingCD78PYQN1f-0jNQYAU1v6W5RXHe73FnpmqDA@mail.gmail.com>
-Subject: Re: [PATCH for -tip 1/2] kernel.h: add MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        ltt-dev@lists.casi.polymtl.ca,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
-        Jamie Lokier <jamie@shareable.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752697Ab0HVU3W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 16:29:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44108 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751856Ab0HVU3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 16:29:19 -0400
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	 <1282144271.3035.31.camel@mulgrave.site>
+	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
+	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>
+	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
+	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>
+	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>
+	 <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 Aug 2010 15:29:13 -0500
+Message-ID: <1282508953.3042.102.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think about some test at the last bit if it is on, the number is not
-a power of 2
+On Sun, 2010-08-22 at 09:39 +0200, Bart Van Assche wrote:
+> On Sat, Aug 21, 2010 at 10:43 PM, James Bottomley
+> <James.Bottomley@suse.de> wrote:
+> > On Sat, 2010-08-21 at 22:42 +0400, Vladislav Bolkhovitin wrote:
+> >> [ ... ]
+> >>
+> >> You forgot to mention one small thing. You are going to (re)use current
+> >> STGT interface for user space backend, which in 5 years of being
+> >> mainline has not gained any noticeable interest, because it is
+> >> fundamentally slow.
+> >
+> > That's not exactly what the results of a speed comparison one of your
+> > people did said, now is it?  The results were actually not much
+> > difference on line speeds up to GigE.
+> >
+> > [ ... ]
+> 
+> I assume that you are referring to this message:
+> http://lkml.org/lkml/2008/1/29/387 ? You might have missed the reply
+> that was posted by Roland Dreier, a highly regarded kernel maintainer
+> and InfiniBand expert (http://lkml.org/lkml/2008/1/29/402):
+> 
+> "Maybe I'm all wet, but I think iSER vs. SRP should be roughly
+> comparable.  The exact formatting of various messages etc. is
+> different but the data path using RDMA is pretty much identical.  So
+> the big difference between STGT iSER and SCST SRP hints at some big
+> difference in the efficiency of the two implementations."
 
-On Sun, Aug 22, 2010 at 10:38 PM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
-> * Andi Kleen (andi@firstfloor.org) wrote:
->> > +/* Force a compilation error if condition is constant and not a power of 2 */
->> > +#define MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2(n)               \
->> > +   MAYBE_BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
->>
->> Looks super-ugly. IMHO just writing MAYBE_BUILD_BUG_ON(!n || n & (n - 1)) directly
->> would be clear enough. If you really think that's unclear define a generic
->> is_power_of_two() macro.
->
-> There is already a is_power_of_two macro in log2.h, but I fear it might
-> incorrectly interact with "MAYBE_BUILD_BUG_ON" (for some reason passing the
-> constant result of a static inline is not treated as a constant by the macro,
-> and thus it always "passes" the test).
->
-> So if everyone object to this new macro, I'd be tempted to just go with your
-> suggestion. However the fact that we already have BUILD_BUG_ON_NOT_POWER_OF_2(n)
-> made me think that some people prefer to have it done as a macro.
->
-> Other opinions ?
->
-> Thanks,
->
-> Mathieu
->
->
+So the phrase "up to GigE" was deliberately in the above to exclude the
+disputed infiniband results.  I'm not really interested in re-opening
+the arguments over how to interpret those results.  The fact that SCST
+and STGT were on par up to 1GbE is enough to refute the contention that
+STGT is "fundamentally slow".
+
+James 
+
+> Furthermore, I would like to clarify that Vlad hasn't asked me to
+> start working on the SCST project but that I selected the SCST project
+> myself after an extensive stability and performance comparison of four
+> existing open source storage target projects.
+> 
+> Bart.
 > --
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
