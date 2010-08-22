@@ -1,79 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab0HUMbo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 08:31:44 -0400
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:46383 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751355Ab0HUMbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 08:31:43 -0400
-Subject: Re: [PATCH] ext4: remove alignment padding from ext4_inode_info on
- 64 bit builds
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-In-Reply-To: <4C6EE173.3030204@redhat.com>
-References: <1282144088.2068.16.camel@castor.rsk>
-	 <4C6EE173.3030204@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 Aug 2010 13:31:38 +0100
-Message-ID: <1282393898.1978.18.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+	id S1752046Ab0HUMlm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 08:41:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62536 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363Ab0HUMlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 08:41:39 -0400
+Message-ID: <4C7105A4.5000903@cn.fujitsu.com>
+Date: Sun, 22 Aug 2010 19:10:28 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v7 2/5] KVM: MMU: introduce hva_to_pfn_atomic function
+References: <4C710549.9090704@cn.fujitsu.com>
+In-Reply-To: <4C710549.9090704@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 15:11 -0500, Eric Sandeen wrote:
-> Richard Kennedy wrote:
-> > Reorder structure ext4_inode_info to remove 16 bytes of alignment
-> > padding on 64 bit builds. This shrinks its size from 904 to 888 bytes
-> > with (CONFIG_EXT4_S_XATTR=y && CONFIG_QUOTA=n).
-> >     
-> > This will allow this structure to use one fewer cache lines.
-> > 
-> > Also change type of i_delalloc_reserved_flag to bool to better reflect
-> > its usage.
-> > 
-> > compiled & tested on x86_64
-> 
-> 
-> Looks good to me; there is still a bit of padding at the end:
-> 
->         qsize_t                    i_reserved_quota;     /*   864     8 */
->         struct list_head           i_completed_io_list;  /*   872    16 */
->         spinlock_t                 i_completed_io_lock;  /*   888     4 */
-> 
->         /* XXX 4 bytes hole, try to pack */
-> 
->         /* --- cacheline 14 boundary (896 bytes) --- */
->         ext4_io_end_t *            cur_aio_dio;          /*   896     8 */
->         tid_t                      i_sync_tid;           /*   904     4 */
->         tid_t                      i_datasync_tid;       /*   908     4 */
-> 
-> 
-> but it wouldn't save a cacheline anyway...
-> 
-> -Eric
-> 
-Thanks Eric, yes there is padding but we don't have anything to fill the
-hole with :(
+Introduce hva_to_pfn_atomic(), it's the fast path and can used in atomic
+context, the later patch will use it
 
-If it becomes important to save space, i_state_flags seem to be unused
-in ext4 so we could possibly drop that.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ include/linux/kvm_host.h |    7 +++++++
+ virt/kvm/kvm_main.c      |   30 +++++++++++++++++++-----------
+ 2 files changed, 26 insertions(+), 11 deletions(-)
 
-With my patch applied, under slub I'm getting one more object per slab
-in the ext4_inode_cache
-
-[2.6.35] 17 objects of 960 bytes -- 4 pages per slab
-[+patch] 18 objects of 896 bytes -- 4 pages per slab
-
-So I guess that is where most of the write test performance improvement
-came from.
-
-regards
-Richard
-
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index c13cc48..307d0e2 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -296,6 +296,7 @@ void kvm_release_page_dirty(struct page *page);
+ void kvm_set_page_dirty(struct page *page);
+ void kvm_set_page_accessed(struct page *page);
+ 
++pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr);
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn);
+@@ -518,6 +519,12 @@ static inline void kvm_guest_exit(void)
+ 	current->flags &= ~PF_VCPU;
+ }
+ 
++static inline unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot,
++					       gfn_t gfn)
++{
++	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
++}
++
+ static inline gpa_t gfn_to_gpa(gfn_t gfn)
+ {
+ 	return (gpa_t)gfn << PAGE_SHIFT;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index b78b794..2dc0c18 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -927,11 +927,6 @@ int memslot_id(struct kvm *kvm, gfn_t gfn)
+ 	return memslot - slots->memslots;
+ }
+ 
+-static unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
+-{
+-	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
+-}
+-
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ {
+ 	struct kvm_memory_slot *slot;
+@@ -943,19 +938,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+ 
+-static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
++static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+ {
+ 	struct page *page[1];
+ 	int npages;
+ 	pfn_t pfn;
+ 
+-	might_sleep();
+-
+-	npages = get_user_pages_fast(addr, 1, 1, page);
++	if (atomic)
++		npages = __get_user_pages_fast(addr, 1, 1, page);
++	else {
++		might_sleep();
++		npages = get_user_pages_fast(addr, 1, 1, page);
++	}
+ 
+ 	if (unlikely(npages != 1)) {
+ 		struct vm_area_struct *vma;
+ 
++		if (atomic)
++			goto return_fault_page;
++
+ 		down_read(&current->mm->mmap_sem);
+ 		if (is_hwpoison_address(addr)) {
+ 			up_read(&current->mm->mmap_sem);
+@@ -968,6 +969,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 		if (vma == NULL || addr < vma->vm_start ||
+ 		    !(vma->vm_flags & VM_PFNMAP)) {
+ 			up_read(&current->mm->mmap_sem);
++return_fault_page:
+ 			get_page(fault_page);
+ 			return page_to_pfn(fault_page);
+ 		}
+@@ -981,6 +983,12 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 	return pfn;
+ }
+ 
++pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr)
++{
++	return hva_to_pfn(kvm, addr, true);
++}
++EXPORT_SYMBOL_GPL(hva_to_pfn_atomic);
++
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ {
+ 	unsigned long addr;
+@@ -991,7 +999,7 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ 		return page_to_pfn(bad_page);
+ 	}
+ 
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_pfn);
+ 
+@@ -999,7 +1007,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn)
+ {
+ 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
+-- 
+1.7.0.4
 
