@@ -1,34 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab0HVIMB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 04:12:01 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53912 "EHLO
+	id S1752034Ab0HVIUJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 04:20:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50665 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab0HVIL7 (ORCPT
+	with ESMTP id S1751727Ab0HVIUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 04:11:59 -0400
-Date: Sun, 22 Aug 2010 04:11:57 -0400
+	Sun, 22 Aug 2010 04:20:05 -0400
+Date: Sun, 22 Aug 2010 04:20:03 -0400
 From: Christoph Hellwig <hch@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: callchain sampling bug in perf?
-Message-ID: <20100822081157.GA7365@infradead.org>
-References: <20100815225359.GA32152@infradead.org>
- <20100819005720.GB5324@nowhere>
- <20100819085700.GB8782@infradead.org>
- <20100819150422.GA325@ghostprotocols.net>
- <20100820091645.GA20138@infradead.org>
- <20100821024713.GD7959@nowhere>
- <20100821144239.GA31202@infradead.org>
- <20100821144625.GA19711@infradead.org>
- <20100822052013.GF5258@nowhere>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Add --tui and --stdio to choose the UI
+Message-ID: <20100822082003.GB7365@infradead.org>
+References: <1282412712-3547-1-git-send-email-acme@infradead.org>
+ <1282412712-3547-2-git-send-email-acme@infradead.org>
+ <20100821174754.GA10213@infradead.org>
+ <20100821182658.GH2973@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100822052013.GF5258@nowhere>
+In-Reply-To: <20100821182658.GH2973@ghostprotocols.net>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -36,9 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 07:20:14AM +0200, Frederic Weisbecker wrote:
-> Now does it work with the patch in attachment?
-> It includes the previous one.
+On Sat, Aug 21, 2010 at 03:26:58PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Btw, am I the only one that doesn't find the next interface too helpful?
+> > In general the line oriented interface seem to present the information
+> > much better, and in the cases where it gets too complicated the newt
+> 
+> Much better how, exactly?
 
-It works perfectly thanks!  
+ - it uses the space available in a terminal window much more
+   efficiently.  Output starts in row 0, column 0 and expands all the
+   way that's needed.
+ - it incluses a descruption of what the columns of output mean
+ - it provides percentages for the individual callchains parts after
+   branching out
+ - in graph/fractal modes there are lines that show how the parts
+   are connected, making it possible to read the output, unlinke
+   the TUI mode where the "expanind" nodes are very hard to follow.
+ - just running perf reports gets an overview of all callchains instead
+   of having to expand dozens of things
+ - the colour scheme is the normal shell one (light gray on black for
+   me) instead of one hurting the eyes
+
+
+> > interface doesn't really helper either.  A real gtk/qt interface with
+> > a proper tree widget would seem like the more useful interface for that.
+> 
+> What would a gtk/qt interface buy us that is not present on the TUI
+> right now?
+
+Generally for tree/graph like data structures a real X GUI provides much
+nicer rendering.  It'll allow to render the connected lines just as in
+the line oriented interface, but in a nicer way using real thin lines
+in a tree widget.  It'll also genereally allow better text placement
+in the window compared to the single centered window in the newt
+interface.   Also the GUI programs follow the common color scheme of the
+rest of the desktop instead of hurting your eye.  In addition to that
+scrollbars (horizontal / vertical) are a lot more intuitive in a typical
+X GUI than in newt.
 
