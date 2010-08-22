@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab0HVIUJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 04:20:09 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50665 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab0HVIUF (ORCPT
+	id S1752046Ab0HVI7b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 04:59:31 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:35620 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751855Ab0HVI73 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 04:20:05 -0400
-Date: Sun, 22 Aug 2010 04:20:03 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf tools: Add --tui and --stdio to choose the UI
-Message-ID: <20100822082003.GB7365@infradead.org>
-References: <1282412712-3547-1-git-send-email-acme@infradead.org>
- <1282412712-3547-2-git-send-email-acme@infradead.org>
- <20100821174754.GA10213@infradead.org>
- <20100821182658.GH2973@ghostprotocols.net>
+	Sun, 22 Aug 2010 04:59:29 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18hU5lk2vIh33o10BwoXt6GytCDV7t1rNn1VQBliu
+	3vopkEQxfgYdVz
+From: Toralf =?iso-8859-15?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: /proc/sys/vm/dirty_writeback_centisecs value resetted after suspend2ram
+Date: Sun, 22 Aug 2010 10:59:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.3; KDE/4.4.5; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100821182658.GH2973@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008221059.25291.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 21, 2010 at 03:26:58PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Btw, am I the only one that doesn't find the next interface too helpful?
-> > In general the line oriented interface seem to present the information
-> > much better, and in the cases where it gets too complicated the newt
-> 
-> Much better how, exactly?
+I've this line :
 
- - it uses the space available in a terminal window much more
-   efficiently.  Output starts in row 0, column 0 and expands all the
-   way that's needed.
- - it incluses a descruption of what the columns of output mean
- - it provides percentages for the individual callchains parts after
-   branching out
- - in graph/fractal modes there are lines that show how the parts
-   are connected, making it possible to read the output, unlinke
-   the TUI mode where the "expanind" nodes are very hard to follow.
- - just running perf reports gets an overview of all callchains instead
-   of having to expand dozens of things
- - the colour scheme is the normal shell one (light gray on black for
-   me) instead of one hurting the eyes
+echo 1500 > /proc/sys/vm/dirty_writeback_centisecs
 
+in my Gentoo's startup file /etc/conf.d/local.start. However after suspend2ram 
+this value is set to 500 (default) - wanted behaviour under Kernel 2.6.35.3 ?
 
-> > interface doesn't really helper either.  A real gtk/qt interface with
-> > a proper tree widget would seem like the more useful interface for that.
-> 
-> What would a gtk/qt interface buy us that is not present on the TUI
-> right now?
+-- 
+MfG/Kind regards
+Toralf Förster
 
-Generally for tree/graph like data structures a real X GUI provides much
-nicer rendering.  It'll allow to render the connected lines just as in
-the line oriented interface, but in a nicer way using real thin lines
-in a tree widget.  It'll also genereally allow better text placement
-in the window compared to the single centered window in the newt
-interface.   Also the GUI programs follow the common color scheme of the
-rest of the desktop instead of hurting your eye.  In addition to that
-scrollbars (horizontal / vertical) are a lot more intuitive in a typical
-X GUI than in newt.
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
