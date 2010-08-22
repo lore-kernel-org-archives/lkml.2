@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab0HVVPp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 17:15:45 -0400
+	id S1752782Ab0HVVPv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 17:15:51 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:46134 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab0HVVPo (ORCPT
+	with ESMTP id S1752763Ab0HVVPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 17:15:44 -0400
+	Sun, 22 Aug 2010 17:15:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=BezGM/TzQslKmGzZC42kwfrW7avP+nBTO2Jc5aGrJopyAHZMEscR0cSJGWH3sZHq4L
-         pVNAqB+kyr7dvXCh8o6PZ6HrZLYZot8UOCfOx7wMPLl46wfQ2QvICgDPCuTvevQWlcKA
-         uqocWSb1CVXUN8nLLFGRVRZ4JGBerqTMvJvE4=
+        b=Tt9NGHfPdNnl1rZfRRhUMh7KakkdAL1SOQoIjcbBWkxQqad7zKTZ5sxpPF/ObRR7zU
+         gtbCZh2MGnPe1tI1t16KUwRxaHbPNH5ApUn1Nw67jrAlsfUkLfjOidUvSjFUVvTUxxP3
+         aE57Dsv+BsKsGQZC/YUtcUjSTFh+DB3plHTRg=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH 1/3] perf: Keep track of the max depth of a callchain
-Date: Sun, 22 Aug 2010 23:15:38 +0200
-Message-Id: <1282511740-22631-2-git-send-regression-fweisbec@gmail.com>
+        Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 3/3] perf: Support for callchains merge
+Date: Sun, 22 Aug 2010 23:15:40 +0200
+Message-Id: <1282511740-22631-4-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1282511740-22631-1-git-send-regression-fweisbec@gmail.com>
@@ -33,169 +33,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to implement callchains collapsing, we need to keep
-track of the maximum depth in a histogram tree of callchains.
-This way we'll avoid allocating an arbitrary temporary buffer
-size on callchain merge time.
+If we sort the histograms by comm, which is the default,
+we need to merge some of them, typically different thread
+histograms of a same process, or just same comm. But during
+this merge, we forgot to merge callchains.
 
+So imagine we have three threads (tids: 1000, 1001, 1002) that
+belong to comm "foo".
+
+tid 1000 got 100 events
+tid 1001 got 10 events
+tid 1002 got 3 events
+
+Once we merge these histograms to get a per comm result, we'll
+finally get:
+
+"foo" got 113 events
+
+The problem is if we merge 1000 and 1001 histograms into 1002, then
+the end merge result, wrt callchains, will be only callchains that
+belong to 1002.
+This is because we haven't handled callchains in the merge. Only those
+from one of the threads inside a common comm survive.
+
+It means during this merge, we can lose a lot of callchains.
+
+Fix this by implementing callchains merge and apply it on histograms
+that collapse.
+
+Reported-by: Christoph Hellwig <hch@infradead.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Christoph Hellwig <hch@infradead.org>
 ---
- tools/perf/util/callchain.c |   23 +++++++++++++----------
- tools/perf/util/callchain.h |   22 ++++++++++++++--------
- tools/perf/util/hist.c      |    2 +-
- tools/perf/util/sort.h      |    2 +-
- 4 files changed, 29 insertions(+), 20 deletions(-)
+ tools/perf/util/callchain.c |   56 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/callchain.h |    1 +
+ tools/perf/util/hist.c      |    2 +
+ 3 files changed, 59 insertions(+), 0 deletions(-)
 
 diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index f231f43..f0b23f3 100644
+index 59cc0e1..e12d539 100644
 --- a/tools/perf/util/callchain.c
 +++ b/tools/perf/util/callchain.c
-@@ -86,10 +86,10 @@ __sort_chain_flat(struct rb_root *rb_root, struct callchain_node *node,
-  * sort them by hit
-  */
- static void
--sort_chain_flat(struct rb_root *rb_root, struct callchain_node *node,
-+sort_chain_flat(struct rb_root *rb_root, struct callchain_root *root,
- 		u64 min_hit, struct callchain_param *param __used)
- {
--	__sort_chain_flat(rb_root, node, min_hit);
-+	__sort_chain_flat(rb_root, &root->node, min_hit);
- }
+@@ -28,6 +28,9 @@ bool ip_callchain__valid(struct ip_callchain *chain, const event_t *event)
+ #define chain_for_each_child(child, parent)	\
+ 	list_for_each_entry(child, &parent->children, brothers)
  
- static void __sort_chain_graph_abs(struct callchain_node *node,
-@@ -108,11 +108,11 @@ static void __sort_chain_graph_abs(struct callchain_node *node,
- }
- 
- static void
--sort_chain_graph_abs(struct rb_root *rb_root, struct callchain_node *chain_root,
-+sort_chain_graph_abs(struct rb_root *rb_root, struct callchain_root *chain_root,
- 		     u64 min_hit, struct callchain_param *param __used)
- {
--	__sort_chain_graph_abs(chain_root, min_hit);
--	rb_root->rb_node = chain_root->rb_root.rb_node;
-+	__sort_chain_graph_abs(&chain_root->node, min_hit);
-+	rb_root->rb_node = chain_root->node.rb_root.rb_node;
- }
- 
- static void __sort_chain_graph_rel(struct callchain_node *node,
-@@ -133,11 +133,11 @@ static void __sort_chain_graph_rel(struct callchain_node *node,
- }
- 
- static void
--sort_chain_graph_rel(struct rb_root *rb_root, struct callchain_node *chain_root,
-+sort_chain_graph_rel(struct rb_root *rb_root, struct callchain_root *chain_root,
- 		     u64 min_hit __used, struct callchain_param *param)
- {
--	__sort_chain_graph_rel(chain_root, param->min_percent / 100.0);
--	rb_root->rb_node = chain_root->rb_root.rb_node;
-+	__sort_chain_graph_rel(&chain_root->node, param->min_percent / 100.0);
-+	rb_root->rb_node = chain_root->node.rb_root.rb_node;
- }
- 
- int register_callchain_param(struct callchain_param *param)
-@@ -380,7 +380,7 @@ static void filter_context(struct ip_callchain *old, struct resolved_chain *new,
- }
- 
- 
--int append_chain(struct callchain_node *root, struct ip_callchain *chain,
-+int append_chain(struct callchain_root *root, struct ip_callchain *chain,
- 		 struct map_symbol *syms, u64 period)
- {
- 	struct resolved_chain *filtered;
-@@ -398,7 +398,10 @@ int append_chain(struct callchain_node *root, struct ip_callchain *chain,
- 	if (!filtered->nr)
- 		goto end;
- 
--	__append_chain_children(root, filtered, 0, period);
-+	__append_chain_children(&root->node, filtered, 0, period);
++#define chain_for_each_child_safe(child, next, parent)	\
++	list_for_each_entry_safe(child, next, &parent->children, brothers)
 +
-+	if (filtered->nr > root->max_depth)
-+		root->max_depth = filtered->nr;
- end:
- 	free(filtered);
+ static void
+ rb_insert_callchain(struct rb_root *root, struct callchain_node *chain,
+ 		    enum chain_mode mode)
+@@ -406,3 +409,56 @@ end:
  
+ 	return 0;
+ }
++
++static int
++merge_chain_branch(struct callchain_node *dst, struct callchain_node *src,
++		   struct resolved_chain *chain)
++{
++	struct callchain_node *child, *next_child;
++	struct callchain_list *list, *next_list;
++	int old_pos = chain->nr;
++	int err = 0;
++
++	list_for_each_entry_safe(list, next_list, &src->val, list) {
++		chain->ips[chain->nr].ip = list->ip;
++		chain->ips[chain->nr].ms = list->ms;
++		chain->nr++;
++		list_del(&list->list);
++		free(list);
++	}
++
++	if (src->hit)
++		append_chain_children(dst, chain, 0, src->hit);
++
++	chain_for_each_child_safe(child, next_child, src) {
++		err = merge_chain_branch(dst, child, chain);
++		if (err)
++			break;
++
++		list_del(&child->brothers);
++		free(child);
++	}
++
++	chain->nr = old_pos;
++
++	return err;
++}
++
++int callchain_merge(struct callchain_root *dst, struct callchain_root *src)
++{
++	struct resolved_chain *chain;
++	int err;
++
++	chain = malloc(sizeof(*chain) +
++		       src->max_depth * sizeof(struct resolved_ip));
++	if (!chain)
++		return -ENOMEM;
++
++	chain->nr = 0;
++
++	err = merge_chain_branch(&dst->node, &src->node, chain);
++
++	free(chain);
++
++	return err;
++}
 diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 624a96c..9b93a38 100644
+index 85b50fb..51a8f2b 100644
 --- a/tools/perf/util/callchain.h
 +++ b/tools/perf/util/callchain.h
-@@ -26,9 +26,14 @@ struct callchain_node {
- 	u64			children_hit;
- };
- 
-+struct callchain_root {
-+	u64			max_depth;
-+	struct callchain_node	node;
-+};
-+
- struct callchain_param;
- 
--typedef void (*sort_chain_func_t)(struct rb_root *, struct callchain_node *,
-+typedef void (*sort_chain_func_t)(struct rb_root *, struct callchain_root *,
- 				 u64, struct callchain_param *);
- 
- struct callchain_param {
-@@ -44,14 +49,15 @@ struct callchain_list {
- 	struct list_head	list;
- };
- 
--static inline void callchain_init(struct callchain_node *node)
-+static inline void callchain_init(struct callchain_root *root)
- {
--	INIT_LIST_HEAD(&node->brothers);
--	INIT_LIST_HEAD(&node->children);
--	INIT_LIST_HEAD(&node->val);
-+	INIT_LIST_HEAD(&root->node.brothers);
-+	INIT_LIST_HEAD(&root->node.children);
-+	INIT_LIST_HEAD(&root->node.val);
- 
--	node->parent = NULL;
--	node->hit = 0;
-+	root->node.parent = NULL;
-+	root->node.hit = 0;
-+	root->max_depth = 0;
- }
- 
- static inline u64 cumul_hits(struct callchain_node *node)
-@@ -60,7 +66,7 @@ static inline u64 cumul_hits(struct callchain_node *node)
- }
- 
+@@ -68,6 +68,7 @@ static inline u64 cumul_hits(struct callchain_node *node)
  int register_callchain_param(struct callchain_param *param);
--int append_chain(struct callchain_node *root, struct ip_callchain *chain,
-+int append_chain(struct callchain_root *root, struct ip_callchain *chain,
- 		 struct map_symbol *syms, u64 period);
+ int callchain_append(struct callchain_root *root, struct ip_callchain *chain,
+ 		     struct map_symbol *syms, u64 period);
++int callchain_merge(struct callchain_root *dst, struct callchain_root *src);
  
  bool ip_callchain__valid(struct ip_callchain *chain, const event_t *event);
+ #endif	/* __PERF_CALLCHAIN_H */
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index be22ae6..e77ff77 100644
+index e77ff77..2022e87 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -87,7 +87,7 @@ static void hist_entry__add_cpumode_period(struct hist_entry *self,
+@@ -226,6 +226,8 @@ static bool collapse__insert_entry(struct rb_root *root, struct hist_entry *he)
  
- static struct hist_entry *hist_entry__new(struct hist_entry *template)
- {
--	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_node) : 0;
-+	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
- 	struct hist_entry *self = malloc(sizeof(*self) + callchain_size);
- 
- 	if (self != NULL) {
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 46e531d..0b91053 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -70,7 +70,7 @@ struct hist_entry {
- 		struct hist_entry *pair;
- 		struct rb_root	  sorted_chain;
- 	};
--	struct callchain_node	callchain[0];
-+	struct callchain_root	callchain[0];
- };
- 
- enum sort_type {
+ 		if (!cmp) {
+ 			iter->period += he->period;
++			if (symbol_conf.use_callchain)
++				callchain_merge(iter->callchain, he->callchain);
+ 			hist_entry__free(he);
+ 			return false;
+ 		}
 -- 
 1.6.2.3
 
