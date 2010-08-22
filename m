@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab0HVNrl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 09:47:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55747 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab0HVNr1 convert rfc822-to-8bit (ORCPT
+	id S1752296Ab0HVOLj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 10:11:39 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40553 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab0HVOLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 09:47:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cHEQJcFm5jVRtEOiPrq2nSF6PSFFUM28unqryy0x8Cksnc8gVycMHAuD60fbZ3EEXF
-         Xkfz2ZKF8SJTRm6R7C3a2ecpoA5V19mtS+PT2WFShuGT5EKQKHn716xVWsYVbbCwwdmD
-         S9w/CARr+VQy4vHOmhOmsUDEoa4yFk01AYxig=
+	Sun, 22 Aug 2010 10:11:37 -0400
+Date: Sun, 22 Aug 2010 11:11:23 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Add --tui and --stdio to choose the UI
+Message-ID: <20100822141123.GE19201@ghostprotocols.net>
+References: <1282412712-3547-1-git-send-email-acme@infradead.org>
+ <1282412712-3547-2-git-send-email-acme@infradead.org>
+ <20100821174754.GA10213@infradead.org>
+ <20100821182658.GH2973@ghostprotocols.net>
+ <20100822082003.GB7365@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <201008221507.42023.arnd@arndb.de>
-References: <1282475544-24708-1-git-send-email-xiaosuo@gmail.com>
- <AANLkTin1BOgHBc4sTwFAmQhKFNvZ+90herc4Dsh9P8y2@mail.gmail.com> <201008221507.42023.arnd@arndb.de>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sun, 22 Aug 2010 21:47:06 +0800
-Message-ID: <AANLkTiktOcAvAxcXUxh+4jKh0nBmYCf0OVG0wqRNMb9T@mail.gmail.com>
-Subject: Re: [PATCH] net: define __packed for the userspace code
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100822082003.GB7365@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 9:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 22 August 2010 13:23:42 Changli Gao wrote:
->> On Sun, Aug 22, 2010 at 7:12 PM, Changli Gao <xiaosuo@gmail.com> wrote:
->> > This commit
->> >
->> >  commit bc10502dba37d3b210efd9f3867212298f13b78e
->> >  Author: Eric Dumazet <eric.dumazet@gmail.com>
->> >  Date:   Thu Jun 3 03:21:52 2010 -0700
->> >
->> >    net: use __packed annotation
->> >
->> > makes use of __packed in the userspace code. So we'd better define __packed
->> > for the userspace code too.
->> >
->>
->> Oh, sorry. This patch can't work as include/linux/compiler.h isn't
->> exported to the userspace. But where should we define __packed for the
->> userspace code? include/linux/types.h?
->
-> I would try to avoid making those structures packed to start with.
-> From what I can see, they structures annotated in the above commit
-> mostly don't even require explicit packing because they are already
-> packed. Not marking them packed makes the code portable to non-gcc
-> compilers.
->
+Em Sun, Aug 22, 2010 at 04:20:03AM -0400, Christoph Hellwig escreveu:
+> On Sat, Aug 21, 2010 at 03:26:58PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Btw, am I the only one that doesn't find the next interface too helpful?
+> > > In general the line oriented interface seem to present the information
+> > > much better, and in the cases where it gets too complicated the newt
 
-Maybe __packed is used somewhere to hint that some members of a
-structure maybe unaligned.
+> > Much better how, exactly?
 
--- 
-Regards,
-Changli Gao(xiaosuo@gmail.com)
+>  - it uses the space available in a terminal window much more
+>    efficiently.  Output starts in row 0, column 0 and expands all the
+>    way that's needed.
+>  - it incluses a descruption of what the columns of output mean
+>  - it provides percentages for the individual callchains parts after
+>    branching out
+>  - in graph/fractal modes there are lines that show how the parts
+>    are connected, making it possible to read the output, unlinke
+>    the TUI mode where the "expanind" nodes are very hard to follow.
+>  - just running perf reports gets an overview of all callchains instead
+>    of having to expand dozens of things
+>  - the colour scheme is the normal shell one (light gray on black for
+>    me) instead of one hurting the eyes
+
+All good points, will work on them, thanks for pointing them out!
+ 
+> 
+> > > interface doesn't really helper either.  A real gtk/qt interface with
+> > > a proper tree widget would seem like the more useful interface for that.
+> > 
+> > What would a gtk/qt interface buy us that is not present on the TUI
+> > right now?
+> 
+> Generally for tree/graph like data structures a real X GUI provides much
+> nicer rendering.  It'll allow to render the connected lines just as in
+> the line oriented interface, but in a nicer way using real thin lines
+
+Cool, connected lines is something that indeed has to happen, just like
+mutt in threaded mode, will work on that.
+
+> in a tree widget.  It'll also genereally allow better text placement
+> in the window compared to the single centered window in the newt
+> interface.   Also the GUI programs follow the common color scheme of the
+> rest of the desktop instead of hurting your eye.  In addition to that
+
+Lets stop hurting eyes!
+
+> scrollbars (horizontal / vertical) are a lot more intuitive in a typical
+> X GUI than in newt.
+
+Ok, thanks for the detailed description of the problems.
+
+- Arnaldo
