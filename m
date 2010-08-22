@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab0HVUG4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 16:06:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61095 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab0HVUGy (ORCPT
+	id S1752651Ab0HVUQr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 16:16:47 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55111 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab0HVUQo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 16:06:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH 2/3] ptrace: add __force markup
-Date: Sun, 22 Aug 2010 22:06:18 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.5.0; x86_64; ; )
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-References: <1282472536-7430-2-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1282472536-7430-2-git-send-email-namhyung@gmail.com>
+	Sun, 22 Aug 2010 16:16:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QnLepTMrahZ+ALD/hyX7VBLbviy+6KBgK+WLM2Aiwf8aeugSM+7xOejbOXltGpRQLd
+         ISpH5hJiIZzORLgkoo3M/gag8/o3Qu14MRFA74IjgEc3mKlmFN7KYRuoOZMcYuwAZp4/
+         TnBKPrHrmG6j/JBpiBBKpyt2CVbFnMeML7iac=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008222206.18523.arnd@arndb.de>
-X-Provags-ID: V02:K0:RNpDXQ1JMxflNTfd6/pL9q0b0uEsZxCG8dvGzP9msiC
- bg0dC+bIWMxEOQKKZGpDusBG+MODQJPzRETFe6LLYuC7Z4+lxL
- JxCGQP/cXSt+++RI8UwiVXDbQM5CJ88zWoW26qpoEX2xiso50+
- 7AdIxrHmqtt5j1wYBCDLB2aNet/bshlFfg1ptLyPMh+e7gyQJL
- JyjQc9KwhgroTgf7gYSCg==
+In-Reply-To: <20100822193819.GA23299@Krystal>
+References: <20100821141750.770348530@efficios.com>
+	<20100821142215.023431313@efficios.com>
+	<20100822192705.GE1771@one.firstfloor.org>
+	<20100822193819.GA23299@Krystal>
+Date: Sun, 22 Aug 2010 23:16:42 +0300
+Message-ID: <AANLkTingCD78PYQN1f-0jNQYAU1v6W5RXHe73FnpmqDA@mail.gmail.com>
+Subject: Re: [PATCH for -tip 1/2] kernel.h: add MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        ltt-dev@lists.casi.polymtl.ca,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
+        Jamie Lokier <jamie@shareable.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 22 August 2010 12:22:15 Namhyung Kim wrote:
-> index 4afd9b8..1abbb4d 100644
-> --- a/kernel/ptrace.c
-> +++ b/kernel/ptrace.c
-> @@ -580,18 +580,19 @@ int ptrace_request(struct task_struct *child, long request,
->                 ret = ptrace_setoptions(child, data);
->                 break;
->         case PTRACE_GETEVENTMSG:
-> -               ret = put_user(child->ptrace_message, (unsigned long __user *) data);
-> +               ret = put_user(child->ptrace_message,
-> +                              (unsigned long __user __force *) data);
->                 break;
+I think about some test at the last bit if it is on, the number is not
+a power of 2
 
-Maybe you should introduce a new temporary variable
-
-	void __user *p = (void __user __force*)data;
-
-and get rid of all the other casts instead.
-
-	Arnd
+On Sun, Aug 22, 2010 at 10:38 PM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
+> * Andi Kleen (andi@firstfloor.org) wrote:
+>> > +/* Force a compilation error if condition is constant and not a power of 2 */
+>> > +#define MAYBE_BUILD_BUG_ON_NOT_POWER_OF_2(n)               \
+>> > +   MAYBE_BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
+>>
+>> Looks super-ugly. IMHO just writing MAYBE_BUILD_BUG_ON(!n || n & (n - 1)) directly
+>> would be clear enough. If you really think that's unclear define a generic
+>> is_power_of_two() macro.
+>
+> There is already a is_power_of_two macro in log2.h, but I fear it might
+> incorrectly interact with "MAYBE_BUILD_BUG_ON" (for some reason passing the
+> constant result of a static inline is not treated as a constant by the macro,
+> and thus it always "passes" the test).
+>
+> So if everyone object to this new macro, I'd be tempted to just go with your
+> suggestion. However the fact that we already have BUILD_BUG_ON_NOT_POWER_OF_2(n)
+> made me think that some people prefer to have it done as a macro.
+>
+> Other opinions ?
+>
+> Thanks,
+>
+> Mathieu
+>
+>
+> --
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
