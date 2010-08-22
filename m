@@ -1,95 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab0HVDdI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 23:33:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52134 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab0HVDdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 23:33:05 -0400
-Date: Sat, 21 Aug 2010 20:32:48 -0700
-From: Greg KH <gregkh@suse.de>
-To: Pavan Savoy <pavan_savoy@ti.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "Jain, Naveen" <naveen_jain@ti.com>
-Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-Message-ID: <20100822033248.GA4886@suse.de>
-References: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com> <4C6D6A9A.3010409@oracle.com> <19F8576C6E063C45BE387C64729E7394044F124F7B@dbde02.ent.ti.com> <4C6D6BCB.2090307@oracle.com> <AANLkTi==HVhXcS0Mxv4GJL1rB0nLc3YQ=b5RbzM0iFwG@mail.gmail.com>
+	id S1751939Ab0HVDh3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 23:37:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45282 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab0HVDh1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 23:37:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GRT2SdahhxFWT/99xN2WFqt75q/gbXBm3WDSCtcZKRD+pvc9i6h1j6j5CignjbYxYa
+         H42Un2GG3X0E9EMQK0QOhH62zafErJ2t68h+MD4u3elbVyQFJxnfWMAosKfbqtpLKOG0
+         qj2Ge5o5Samu9Yl3vhxD2aRU3hDR5x3qiz3c8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi==HVhXcS0Mxv4GJL1rB0nLc3YQ=b5RbzM0iFwG@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100821193015.GA16455@opensource.wolfsonmicro.com>
+References: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<AANLkTimggbZqgv=eKe+wx8YvUX5vOppDfmwpLwTgxJFM@mail.gmail.com>
+	<20100821100855.GA5545@opensource.wolfsonmicro.com>
+	<AANLkTikbGR4wWUEHjR74UFu8P-w9us3ZpKgmG+yDukfC@mail.gmail.com>
+	<20100821193015.GA16455@opensource.wolfsonmicro.com>
+Date: Sun, 22 Aug 2010 12:37:25 +0900
+Message-ID: <AANLkTikDj7YsOQXnFGjZCNRYuQQbLRtKiWw5Sm=vkCuq@mail.gmail.com>
+Subject: Re: [spi-devel-general] [PATCH 1/2] spi/spi_s3c64xx: Make probe more
+ robust against missing board config
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 07:20:00AM +0530, Pavan Savoy wrote:
-> Greg,
-> 
-> On Thu, Aug 19, 2010 at 11:07 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > On 08/19/10 10:35, Savoy, Pavan wrote:
-> >> Randy,
-> >>
-> >>
-> >>> -----Original Message-----
-> >>> From: Randy Dunlap [mailto:randy.dunlap@oracle.com]
-> >>> Sent: Thursday, August 19, 2010 12:32 PM
-> >>> To: Savoy, Pavan
-> >>> Cc: gregkh@suse.de; alan@lxorguk.ukuu.org.uk; linux-kernel@vger.kernel.org;
-> >>> devel@driverdev.osuosl.org; Jain, Naveen
-> >>> Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-> >>>
-> >>> On 08/19/10 11:08, pavan_savoy@ti.com wrote:
-> >>>> From: Pavan Savoy <pavan_savoy@ti.com>
-> >>>>
-> >>>> In order to support multiple ST platform devices, a new symbol
-> >>>> 'st_get_plat_device' earlier needed to be exported by the arch/XX/brd-XX.c
-> >>>> file which intends to add the ST platform device.
-> >>>>
-> >>>> On removing this dependency, now inside ST driver maintain the array of
-> >>>> ST platform devices that would be registered.
-> >>>> As of now let id=0, as and when we end up having such platforms
-> >>>> where mutliple ST devices can exist, id would come from
-> >>>> protocol drivers (BT, FM and GPS) as to on which platform device
-> >>>> they want to register to.
-> >>>>
-> >>>> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> >>>
-> >>> Thanks, that builds cleanly. ??I'm OK with it if you are comfortable with a
-> >>> hard limit on the fixed number of devices that can be supported:
-> >>
-> >> Yep, Thanks for pointing out, sort of cleaned up the code.
-> >>
-> >>> +#define MAX_ST_DEVICES ?? ?? ??3 ?? ?? ?? /* Imagine 1 on each UART for now */
-> >>> +struct platform_device *st_kim_devices[MAX_ST_DEVICES];
-> >>>
-> >>> We usually try not to have such limits nor use arrays like that,
-> >>> but if the nature of the device and its platform/environment is like
-> >>> that, so be it.
-> >>>
-> >>
-> >> Actually on all platforms that I have seen there's only 1 such device.
-> >> The device is basically a connectivity chip (with Bluetooth, FM and GPS working
-> >> on a single UART)
-> >>
-> >> The number which I mentioned was out of imagination.
-> >> I don't think we are ever going to have multiple of them either...
-> >
-> > OK, thanks.
-> >
-> > Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> 
-> Can you please merge this patch ? Also please have a look at the driver and
-> suggest what needs to be done to move it out of staging.
+On Sun, Aug 22, 2010 at 4:30 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Sat, Aug 21, 2010 at 10:58:36PM +0900, Jassi Brar wrote:
+>> On Sat, Aug 21, 2010 at 7:08 PM, Mark Brown
+>> > On Sat, Aug 21, 2010 at 10:45:56AM +0900, Jassi Brar wrote:
+>
+>> >>      The movement of sci assignment and check doesn't make any
+>> >> difference because
+>> >>       we already check for presence of platform_data and DMA-Tx,Rx and
+>> >> IO base is
+>> >>       set irrespective of calling s3c64xx_spi_set_info()
+>
+>> > While it does check for those things for at least the 6410 they're all
+>> > unconditionally set up by dev-spi.c so the tests all pass and we make it
+>> > down into to the clk_get() which then falls over horribly.
+>
+>> Those parameters are SoC specific and hence will be always available to
+>> platform devices.
+>> Clock selection and num_cs(number of slaves attached to the SPI bus) are
+>> machine specific and hence responsibility of the machine developer to
+>> set appropriately via s3c64xx_spi_set_info()
+>
+> Sure, the split does make sense - it's just that this means that we need
+> to do something to make sure that s3c64xx_spi_set_info() got called.
+An immediate kernel crash ? :)
+I mean if the developer didn't even run-check the board init code, he ought
+to face a kernel crash.
+On a more lenient note, probably a check like yours or !sci->num_cs
+could be added.
 
-Yes, I will work on it, sorry, been swamped with other work lately.
+>> > The problem with num_cs is that it gets interpreted by a custom function
+>> > provided by the board driver so we really can't say anything about what
+>> > it does.
+>
+>> num_cs is passed on as such to the SPI core to master->num_chipselect
+>> which is strictly checked for before a master is created.
+>
+> Ah, too many variables with similar functions.
+Can't think of a way to go around it.
 
-Don't worry, this patch is in my "to-apply" queue.
+>> > support gpiolib chip selects - my first thought when I saw that stuff
+>> > was that it seemed like something that lots of SPI controllers would be
+>> > able to share but I didn't look at the overall SPI code for long enough
+>> > to figure out what was going on there.
+>
+>> we have common spi bitbanging driver that takes only four gpio pins
+>> and work like a charm.
+>
+> Though it does burn CPU rather a lot which makes them unsuitable for
+> some applications where SPI is used for bulk data transfers or CPU is
+> otherwise tight.  In general if you've got an actual SPI controller it's
+> much nicer to use it.
+of course, and we do use whenever the CLK, MISO and MOSI signals could
+be driven by the controller.
 
-thanks,
-
-greg k-h
+>> In order to enable users use multiple CS per master, in spi_s3c64xx.c
+>> the single CS feature provided by the controller is deliberately left unused
+>> and the driver accepts a gpio per slave and manually controls it. Though
+>> the callbacks and arguments are designed so that a simple gpio number
+>> and gpio_set can be assigned by the machine code.
+>
+> It did occur to me that a nice way of dealing with this would be to have
+> the driver default to using the built in chip select (even if driven as
+> a GPIO for the sake of code simplicity) but leave the current method
+> there as an override.  That way if people are using the IP block in the
+> "natural" manner they'd have less to set up.
+I thought about it but decided against it, for that would complicate the
+driver by having to switch between two mechanism in runtime and there
+are some peculiarities in the controller about clocking and CS'ing.
