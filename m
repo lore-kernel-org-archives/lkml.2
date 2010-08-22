@@ -1,255 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab0HVBuF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 21:50:05 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:33256 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab0HVBuB convert rfc822-to-8bit (ORCPT
+	id S1751894Ab0HVCC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 22:02:29 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33705 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab0HVCC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 21:50:01 -0400
+	Sat, 21 Aug 2010 22:02:27 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Nick Piggin <npiggin@kernel.dk>, Neil Brown <neilb@suse.de>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
+        adilger@sun.com, corbet@lwn.net, npiggin@kernel.dk,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu,
+        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+In-Reply-To: <m3zkwgqp3c.fsf@linux.vnet.ibm.com>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100820083057.GA10039@infradead.org> <20100820195303.20b17210@notabene> <20100820115135.GQ31363@ZenIV.linux.org.uk> <20100821100900.4b15fe08@notabene> <20100821083024.GB3448@amd> <m3zkwgqp3c.fsf@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Sun, 22 Aug 2010 07:32:15 +0530
+Message-ID: <m339u7l80o.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [70.128.164.227]
-In-Reply-To: <4C6D6BCB.2090307@oracle.com>
-References: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com>
-	<4C6D6A9A.3010409@oracle.com>
-	<19F8576C6E063C45BE387C64729E7394044F124F7B@dbde02.ent.ti.com>
-	<4C6D6BCB.2090307@oracle.com>
-Date: Sun, 22 Aug 2010 07:20:00 +0530
-X-Google-Sender-Auth: KQmwo50a2L1qZ_41cLETIJ2IGBc
-Message-ID: <AANLkTi==HVhXcS0Mxv4GJL1rB0nLc3YQ=b5RbzM0iFwG@mail.gmail.com>
-Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-From: Pavan Savoy <pavan_savoy@ti.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>, Greg KH <gregkh@suse.de>
-Cc: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "Jain, Naveen" <naveen_jain@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Sat, 21 Aug 2010 15:12:15 +0530, "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> On Sat, 21 Aug 2010 18:30:24 +1000, Nick Piggin <npiggin@kernel.dk> wrote:
+> > Thanks, I had both of the same concerns as Christoph with API
+> > change and exposing symlink fds last time I looked at the patces,
+> > actually.
+> > 
+> > But they can probably be worked around or avoided. I think the more
+> > important thing is whether it is worth supporting. This is
+> > all restricted to root (or CAP_DAC_READ_SEARCH) only, right, and
+> > what exact semantics they want. I would like to see more discussion
+> > of what this enables and some results.
+> > 
+> > For the case of avoiding expensive network revalidations in path name
+> > lookup, do we even need to open symlinks? Could the security issues be
+> > avoided by always having handle attached to an open fd?
+> > 
+> 
+> For implementing a userspace file server that use handle for
+> representing files (like NFS) we would require to have the ability to do
+> different file system operations that can operate on symlink to work on
+> handle too. 
+> 
 
-On Thu, Aug 19, 2010 at 11:07 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On 08/19/10 10:35, Savoy, Pavan wrote:
->> Randy,
->>
->>
->>> -----Original Message-----
->>> From: Randy Dunlap [mailto:randy.dunlap@oracle.com]
->>> Sent: Thursday, August 19, 2010 12:32 PM
->>> To: Savoy, Pavan
->>> Cc: gregkh@suse.de; alan@lxorguk.ukuu.org.uk; linux-kernel@vger.kernel.org;
->>> devel@driverdev.osuosl.org; Jain, Naveen
->>> Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
->>>
->>> On 08/19/10 11:08, pavan_savoy@ti.com wrote:
->>>> From: Pavan Savoy <pavan_savoy@ti.com>
->>>>
->>>> In order to support multiple ST platform devices, a new symbol
->>>> 'st_get_plat_device' earlier needed to be exported by the arch/XX/brd-XX.c
->>>> file which intends to add the ST platform device.
->>>>
->>>> On removing this dependency, now inside ST driver maintain the array of
->>>> ST platform devices that would be registered.
->>>> As of now let id=0, as and when we end up having such platforms
->>>> where mutliple ST devices can exist, id would come from
->>>> protocol drivers (BT, FM and GPS) as to on which platform device
->>>> they want to register to.
->>>>
->>>> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
->>>
->>> Thanks, that builds cleanly.  I'm OK with it if you are comfortable with a
->>> hard limit on the fixed number of devices that can be supported:
->>
->> Yep, Thanks for pointing out, sort of cleaned up the code.
->>
->>> +#define MAX_ST_DEVICES      3       /* Imagine 1 on each UART for now */
->>> +struct platform_device *st_kim_devices[MAX_ST_DEVICES];
->>>
->>> We usually try not to have such limits nor use arrays like that,
->>> but if the nature of the device and its platform/environment is like
->>> that, so be it.
->>>
->>
->> Actually on all platforms that I have seen there's only 1 such device.
->> The device is basically a connectivity chip (with Bluetooth, FM and GPS working
->> on a single UART)
->>
->> The number which I mentioned was out of imagination.
->> I don't think we are ever going to have multiple of them either...
->
-> OK, thanks.
->
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+linkat change to take NULL path name is needed for regular files
+also. The file server will get a request to create a link with handle
+of oldpath and directory handle of new path and new name.
 
+The changes would also help in the implementation of 9P server in Qemu
+for implementing a fast virtualization passthrough file system (aka
+VirtFS)
 
-Can you please merge this patch ? Also please have a look at the driver and
-suggest what needs to be done to move it out of staging.
+http://thread.gmane.org/gmane.comp.emulators.qemu/68992
 
-
->>
->>>> ---
->>>>  drivers/staging/ti-st/st.h      |    1 -
->>>>  drivers/staging/ti-st/st_core.c |    9 ++++-----
->>>>  drivers/staging/ti-st/st_core.h |    2 +-
->>>>  drivers/staging/ti-st/st_kim.c  |   22 +++++++++++++++++++---
->>>>  4 files changed, 24 insertions(+), 10 deletions(-)
->>>>
->>>> diff --git a/drivers/staging/ti-st/st.h b/drivers/staging/ti-st/st.h
->>>> index 9952579..1b3060e 100644
->>>> --- a/drivers/staging/ti-st/st.h
->>>> +++ b/drivers/staging/ti-st/st.h
->>>> @@ -80,5 +80,4 @@ struct st_proto_s {
->>>>  extern long st_register(struct st_proto_s *);
->>>>  extern long st_unregister(enum proto_type);
->>>>
->>>> -extern struct platform_device *st_get_plat_device(void);
->>>>  #endif /* ST_H */
->>>> diff --git a/drivers/staging/ti-st/st_core.c b/drivers/staging/ti-
->>> st/st_core.c
->>>> index 063c9b1..b85d8bf 100644
->>>> --- a/drivers/staging/ti-st/st_core.c
->>>> +++ b/drivers/staging/ti-st/st_core.c
->>>> @@ -38,7 +38,6 @@
->>>>  #include "st_ll.h"
->>>>  #include "st.h"
->>>>
->>>> -#define VERBOSE
->>>>  /* strings to be used for rfkill entries and by
->>>>   * ST Core to be used for sysfs debug entry
->>>>   */
->>>> @@ -581,7 +580,7 @@ long st_register(struct st_proto_s *new_proto)
->>>>     long err = 0;
->>>>     unsigned long flags = 0;
->>>>
->>>> -   st_kim_ref(&st_gdata);
->>>> +   st_kim_ref(&st_gdata, 0);
->>>>     pr_info("%s(%d) ", __func__, new_proto->type);
->>>>     if (st_gdata == NULL || new_proto == NULL || new_proto->recv == NULL
->>>>         || new_proto->reg_complete_cb == NULL) {
->>>> @@ -713,7 +712,7 @@ long st_unregister(enum proto_type type)
->>>>
->>>>     pr_debug("%s: %d ", __func__, type);
->>>>
->>>> -   st_kim_ref(&st_gdata);
->>>> +   st_kim_ref(&st_gdata, 0);
->>>>     if (type < ST_BT || type >= ST_MAX) {
->>>>             pr_err(" protocol %d not supported", type);
->>>>             return -EPROTONOSUPPORT;
->>>> @@ -767,7 +766,7 @@ long st_write(struct sk_buff *skb)
->>>>  #endif
->>>>     long len;
->>>>
->>>> -   st_kim_ref(&st_gdata);
->>>> +   st_kim_ref(&st_gdata, 0);
->>>>     if (unlikely(skb == NULL || st_gdata == NULL
->>>>             || st_gdata->tty == NULL)) {
->>>>             pr_err("data/tty unavailable to perform write");
->>>> @@ -818,7 +817,7 @@ static int st_tty_open(struct tty_struct *tty)
->>>>     struct st_data_s *st_gdata;
->>>>     pr_info("%s ", __func__);
->>>>
->>>> -   st_kim_ref(&st_gdata);
->>>> +   st_kim_ref(&st_gdata, 0);
->>>>     st_gdata->tty = tty;
->>>>     tty->disc_data = st_gdata;
->>>>
->>>> diff --git a/drivers/staging/ti-st/st_core.h b/drivers/staging/ti-
->>> st/st_core.h
->>>> index e0c32d1..8601320 100644
->>>> --- a/drivers/staging/ti-st/st_core.h
->>>> +++ b/drivers/staging/ti-st/st_core.h
->>>> @@ -117,7 +117,7 @@ int st_core_init(struct st_data_s **);
->>>>  void st_core_exit(struct st_data_s *);
->>>>
->>>>  /* ask for reference from KIM */
->>>> -void st_kim_ref(struct st_data_s **);
->>>> +void st_kim_ref(struct st_data_s **, int);
->>>>
->>>>  #define GPS_STUB_TEST
->>>>  #ifdef GPS_STUB_TEST
->>>> diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
->>>> index b4a6c7f..9e99463 100644
->>>> --- a/drivers/staging/ti-st/st_kim.c
->>>> +++ b/drivers/staging/ti-st/st_kim.c
->>>> @@ -72,11 +72,26 @@ const unsigned char *protocol_names[] = {
->>>>     PROTO_ENTRY(ST_GPS, "GPS"),
->>>>  };
->>>>
->>>> +#define MAX_ST_DEVICES     3       /* Imagine 1 on each UART for now */
->>>> +struct platform_device *st_kim_devices[MAX_ST_DEVICES];
->>>>
->>>>  /**********************************************************************/
->>>>  /* internal functions */
->>>>
->>>>  /**
->>>> + * st_get_plat_device -
->>>> + * function which returns the reference to the platform device
->>>> + * requested by id. As of now only 1 such device exists (id=0)
->>>> + * the context requesting for reference can get the id to be
->>>> + * requested by a. The protocol driver which is registering or
->>>> + * b. the tty device which is opened.
->>>> + */
->>>> +static struct platform_device *st_get_plat_device(int id)
->>>> +{
->>>> +   return st_kim_devices[id];
->>>> +}
->>>> +
->>>> +/**
->>>>   * validate_firmware_response -
->>>>   * function to return whether the firmware response was proper
->>>>   * in case of error don't complete so that waiting for proper
->>>> @@ -353,7 +368,7 @@ void st_kim_chip_toggle(enum proto_type type, enum
->>> kim_gpio_state state)
->>>>     struct kim_data_s       *kim_gdata;
->>>>     pr_info(" %s ", __func__);
->>>>
->>>> -   kim_pdev = st_get_plat_device();
->>>> +   kim_pdev = st_get_plat_device(0);
->>>>     kim_gdata = dev_get_drvdata(&kim_pdev->dev);
->>>>
->>>>     if (kim_gdata->gpios[type] == -1) {
->>>> @@ -574,12 +589,12 @@ static int kim_toggle_radio(void *data, bool blocked)
->>>>   * This would enable multiple such platform devices to exist
->>>>   * on a given platform
->>>>   */
->>>> -void st_kim_ref(struct st_data_s **core_data)
->>>> +void st_kim_ref(struct st_data_s **core_data, int id)
->>>>  {
->>>>     struct platform_device  *pdev;
->>>>     struct kim_data_s       *kim_gdata;
->>>>     /* get kim_gdata reference from platform device */
->>>> -   pdev = st_get_plat_device();
->>>> +   pdev = st_get_plat_device(id);
->>>>     kim_gdata = dev_get_drvdata(&pdev->dev);
->>>>     *core_data = kim_gdata->core_data;
->>>>  }
->>>> @@ -623,6 +638,7 @@ static int kim_probe(struct platform_device *pdev)
->>>>     long *gpios = pdev->dev.platform_data;
->>>>     struct kim_data_s       *kim_gdata;
->>>>
->>>> +   st_kim_devices[pdev->id] = pdev;
->>>>     kim_gdata = kzalloc(sizeof(struct kim_data_s), GFP_ATOMIC);
->>>>     if (!kim_gdata) {
->>>>             pr_err("no mem to allocate");
->>>
->>>
->>> --
->>> ~Randy
->>> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
->
-> --
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
+-aneesh
