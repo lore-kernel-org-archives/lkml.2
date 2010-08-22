@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab0HVUdi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 16:33:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56486 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab0HVUdg (ORCPT
+	id S1752729Ab0HVUsT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 16:48:19 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:39400 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab0HVUsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 16:33:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH 0/4] initramfs: remove sparse warnings
-Date: Sun, 22 Aug 2010 22:33:01 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.5.0; x86_64; ; )
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <1282189064-3904-1-git-send-email-namhyung@gmail.com> <20100820120001.GR31363@ZenIV.linux.org.uk> <1282318601.1626.9.camel@leonhard>
-In-Reply-To: <1282318601.1626.9.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201008222233.01739.arnd@arndb.de>
-X-Provags-ID: V02:K0:oU8pSs9NvncJhKP0PBh5DrTxXAYORHyz2p+cBwIiLvi
- 0EpXpI6mjZnxUUwceYZE2i2uwzsncuCxVQ+x3CB2mJaeEeupHc
- 9mm6/bn7Q45xmi9wNSWr1pw1wL46+XnixCRH65Cs+MbKpEduYO
- Faw3QjtukQs6IKvjjSzVZAtNgbnEFPVxRV/Ok52v1KVSRBkj4W
- WxwP4ZadiyMG5OhxSzIUw==
+	Sun, 22 Aug 2010 16:48:16 -0400
+Date: Sun, 22 Aug 2010 22:48:05 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Thomas <pthomas8589@gmail.com>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] hwmon: (ads7871) Fix ads7871_probe init path
+Message-ID: <20100822224805.0b84d94a@hyperion.delvare>
+In-Reply-To: <1282487126.23014.11.camel@phoenix>
+References: <1282487126.23014.11.camel@phoenix>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 August 2010 17:36:41 Namhyung Kim wrote:
+Hi Axel,
+
+On Sun, 22 Aug 2010 22:25:26 +0800, Axel Lin wrote:
+> >From 81e895683eaecb9e196c57c36b774c0908069d83 Mon Sep 17 00:00:00 2001
+> From: Axel Lin <axel.lin@gmail.com>
+> Date: Sun, 22 Aug 2010 22:10:01 +0800
+> Subject: [PATCH] hwmon: (ads7871) Fix ads7871_probe init path
 > 
-> 2010-08-20 (금), 13:00 +0100, Al Viro:
-> > No.  This code should NOT use the VFS guts, TYVM.  The whole fscking point
-> > is that this puppy is a sequence of plain vanilla syscalls, ideally run
-> > simply in userland thread.  We used to have a magical mystery shite in there
-> > and it had been a huge PITA.
+> This patch includes below fixes:
 > 
-> So is it worth to work on removing the warnings like this patchset does?
-> Or else, how can I improve the code even a bit? Can you please give me a
-> direction?
+> 1. remove 'status' variable
+> 2. remove unneeded initialization of 'err' variable
+> 3. return missing error code if sysfs_create_group fail.
+> 4. fix the init sequence as:
+>    - check hardware existence
+>    - kzalloc for ads7871_data
+>    - sysfs_create_group
+>    - hwmon_device_register
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> 
+> hi Jean,
+> This patch is against linux-next ( on top of previous patch ).
+> Reviews are welcome.
 
-It would be useful to add annotations in those places where they are
-obviously just missing but don't require adding __force.
-Even better would be patches that fix actual bugs found by sparse.
+Looks good. I've folded this patch into the old one, and will send the
+result to Linux shortly.
 
-Simply throwing in extra __force arguments will just make people
-nervous, because it is often a sign of papering over a bug instead
-of fixing it, and warnings in the core kernel are there exactly
-because there is no easy correct fix for them.
+> I think it's ok to call sysfs_create_group() before hwmon_device_register().
+> If hwmon_device_register failed, the device is not working anyway.
+> We just need to make sure all the allocated resources are reclaimed in error path before return error.
 
-Try producing patches that clean up the code and result in using
-fewer annotations and especially few __force where possible.
-Also, in places where you need __force, make sure that a person
-reading that code understands why it's needed and that the use is
-correct (or at least permissable).
+Agreed.
 
-One possible solution in this particular case would be to add
-helper functions like 
-
-/* wrapper for sys_newlstat for use in the init code */
-static inline int kern_newlstat(const char * filename, struct stat * statbuf)
-{
-	mm_segment_t fs = get_fs();
-	int ret;
-
-	set_fs(KERNEL_DS);
-	ret = sys_newlstat((const char __user __force*)filename,
-			   (struct stat __user __force *)statbuf);
-	set_fs(fs);
-
-	return ret;
-}
-
-Such a function makes it clear that it can only accept a kernel pointer,
-and it documents how the conversion to a __user pointer happens (by
-calling set_fs).
-Then again, it adds some bloat, and it may encourage people to do the
-same thing in device drivers, which could be argued against such helpers.
-
-In general, my recommendation would be to leave code alone if you can't
-come up with a patch that clearly improves it. There is enough
-bad code in the kernel that can use some help along the lines of
-your other patches, so you may want to focus on that.
-
-	Arnd
+-- 
+Jean Delvare
