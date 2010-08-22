@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab0HVU3W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 16:29:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44108 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab0HVU3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 16:29:19 -0400
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: James Bottomley <James.Bottomley@suse.de>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
+	id S1752687Ab0HVUdi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 16:33:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56486 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab0HVUdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 16:33:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH 0/4] initramfs: remove sparse warnings
+Date: Sun, 22 Aug 2010 22:33:01 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.5.0; x86_64; ; )
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
-	 <1282144271.3035.31.camel@mulgrave.site>
-	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
-	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>
-	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
-	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
-	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>
-	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>
-	 <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 Aug 2010 15:29:13 -0500
-Message-ID: <1282508953.3042.102.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+References: <1282189064-3904-1-git-send-email-namhyung@gmail.com> <20100820120001.GR31363@ZenIV.linux.org.uk> <1282318601.1626.9.camel@leonhard>
+In-Reply-To: <1282318601.1626.9.camel@leonhard>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201008222233.01739.arnd@arndb.de>
+X-Provags-ID: V02:K0:oU8pSs9NvncJhKP0PBh5DrTxXAYORHyz2p+cBwIiLvi
+ 0EpXpI6mjZnxUUwceYZE2i2uwzsncuCxVQ+x3CB2mJaeEeupHc
+ 9mm6/bn7Q45xmi9wNSWr1pw1wL46+XnixCRH65Cs+MbKpEduYO
+ Faw3QjtukQs6IKvjjSzVZAtNgbnEFPVxRV/Ok52v1KVSRBkj4W
+ WxwP4ZadiyMG5OhxSzIUw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-08-22 at 09:39 +0200, Bart Van Assche wrote:
-> On Sat, Aug 21, 2010 at 10:43 PM, James Bottomley
-> <James.Bottomley@suse.de> wrote:
-> > On Sat, 2010-08-21 at 22:42 +0400, Vladislav Bolkhovitin wrote:
-> >> [ ... ]
-> >>
-> >> You forgot to mention one small thing. You are going to (re)use current
-> >> STGT interface for user space backend, which in 5 years of being
-> >> mainline has not gained any noticeable interest, because it is
-> >> fundamentally slow.
-> >
-> > That's not exactly what the results of a speed comparison one of your
-> > people did said, now is it?  The results were actually not much
-> > difference on line speeds up to GigE.
-> >
-> > [ ... ]
+On Friday 20 August 2010 17:36:41 Namhyung Kim wrote:
 > 
-> I assume that you are referring to this message:
-> http://lkml.org/lkml/2008/1/29/387 ? You might have missed the reply
-> that was posted by Roland Dreier, a highly regarded kernel maintainer
-> and InfiniBand expert (http://lkml.org/lkml/2008/1/29/402):
+> 2010-08-20 (금), 13:00 +0100, Al Viro:
+> > No.  This code should NOT use the VFS guts, TYVM.  The whole fscking point
+> > is that this puppy is a sequence of plain vanilla syscalls, ideally run
+> > simply in userland thread.  We used to have a magical mystery shite in there
+> > and it had been a huge PITA.
 > 
-> "Maybe I'm all wet, but I think iSER vs. SRP should be roughly
-> comparable.  The exact formatting of various messages etc. is
-> different but the data path using RDMA is pretty much identical.  So
-> the big difference between STGT iSER and SCST SRP hints at some big
-> difference in the efficiency of the two implementations."
+> So is it worth to work on removing the warnings like this patchset does?
+> Or else, how can I improve the code even a bit? Can you please give me a
+> direction?
 
-So the phrase "up to GigE" was deliberately in the above to exclude the
-disputed infiniband results.  I'm not really interested in re-opening
-the arguments over how to interpret those results.  The fact that SCST
-and STGT were on par up to 1GbE is enough to refute the contention that
-STGT is "fundamentally slow".
+It would be useful to add annotations in those places where they are
+obviously just missing but don't require adding __force.
+Even better would be patches that fix actual bugs found by sparse.
 
-James 
+Simply throwing in extra __force arguments will just make people
+nervous, because it is often a sign of papering over a bug instead
+of fixing it, and warnings in the core kernel are there exactly
+because there is no easy correct fix for them.
 
-> Furthermore, I would like to clarify that Vlad hasn't asked me to
-> start working on the SCST project but that I selected the SCST project
-> myself after an extensive stability and performance comparison of four
-> existing open source storage target projects.
-> 
-> Bart.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Try producing patches that clean up the code and result in using
+fewer annotations and especially few __force where possible.
+Also, in places where you need __force, make sure that a person
+reading that code understands why it's needed and that the use is
+correct (or at least permissable).
 
+One possible solution in this particular case would be to add
+helper functions like 
 
+/* wrapper for sys_newlstat for use in the init code */
+static inline int kern_newlstat(const char * filename, struct stat * statbuf)
+{
+	mm_segment_t fs = get_fs();
+	int ret;
+
+	set_fs(KERNEL_DS);
+	ret = sys_newlstat((const char __user __force*)filename,
+			   (struct stat __user __force *)statbuf);
+	set_fs(fs);
+
+	return ret;
+}
+
+Such a function makes it clear that it can only accept a kernel pointer,
+and it documents how the conversion to a __user pointer happens (by
+calling set_fs).
+Then again, it adds some bloat, and it may encourage people to do the
+same thing in device drivers, which could be argued against such helpers.
+
+In general, my recommendation would be to leave code alone if you can't
+come up with a patch that clearly improves it. There is enough
+bad code in the kernel that can use some help along the lines of
+your other patches, so you may want to focus on that.
+
+	Arnd
