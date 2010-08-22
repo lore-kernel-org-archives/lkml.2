@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab0HWIBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 04:01:13 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58251 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344Ab0HWIAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 04:00:41 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct reclaim allocation fails
-Date: Mon, 23 Aug 2010 09:00:42 +0100
-Message-Id: <1282550442-15193-4-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282550442-15193-1-git-send-email-mel@csn.ul.ie>
-References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie>
+	id S1753424Ab0HWICU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 04:02:20 -0400
+Received: from santostefano.inria.fr ([193.51.192.151]:39095 "HELO
+	santostefano.inria.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752816Ab0HWICQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 04:02:16 -0400
+Subject: Re: Usage of checkpatch.pl for other projects
+From: Sylvestre Ledru <sylvestre.ledru@scilab.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walker <dwalker@fifo99.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1282062762.24541.98.camel@Joe-Laptop>
+References: <1269337074.12129.4674.camel@korcula.inria.fr>
+	 <20100817160123.GL6193@shadowen.org>  <1282061780.13818.3009.camel@zlarin>
+	 <1282062762.24541.98.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 Aug 2010 22:50:29 +0200
+Message-ID: <1282510229.10764.2972.camel@zlarin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When under significant memory pressure, a process enters direct reclaim
-and immediately afterwards tries to allocate a page. If it fails and no
-further progress is made, it's possible the system will go OOM. However,
-on systems with large amounts of memory, it's possible that a significant
-number of pages are on per-cpu lists and inaccessible to the calling
-process. This leads to a process entering direct reclaim more often than
-it should increasing the pressure on the system and compounding the problem.
+Le mardi 17 août 2010 à 09:32 -0700, Joe Perches a écrit :
+> On Tue, 2010-08-17 at 18:16 +0200, Sylvestre Ledru wrote:
+> > Le mardi 17 août 2010 à 17:01 +0100, Andy Whitcroft a écrit :
+> > > What sort of differences are you thinking about.
+> > At first, mainly basic things like space or not before a brace, if a
+> > brace should be on the same line as the if or not, etc. This kind of
+> > basic things.
+> 
+> It might be better to use a script that uses
+> a combination of patch, indent with some
+> project specific options and diff to highlight
+> how a proposed patch might vary from project
+> coding standards.
+This might be a good way to start. 
+We could also create a configuration file with default being the Linux
+Kernel's coding styles.
 
-This patch notes that if direct reclaim is making progress but
-allocations are still failing that the system is already under heavy
-pressure. In this case, it drains the per-cpu lists and tries the
-allocation a second time before continuing.
+Sylvestre
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/page_alloc.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bbaa959..750e1dc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1847,6 +1847,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	struct page *page = NULL;
- 	struct reclaim_state reclaim_state;
- 	struct task_struct *p = current;
-+	bool drained = false;
- 
- 	cond_resched();
- 
-@@ -1865,14 +1866,25 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 
- 	cond_resched();
- 
--	if (order != 0)
--		drain_all_pages();
-+	if (unlikely(!(*did_some_progress)))
-+		return NULL;
- 
--	if (likely(*did_some_progress))
--		page = get_page_from_freelist(gfp_mask, nodemask, order,
-+retry:
-+	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
- 					alloc_flags, preferred_zone,
- 					migratetype);
-+
-+	/*
-+	 * If an allocation failed after direct reclaim, it could be because
-+	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 */
-+	if (!page && !drained) {
-+		drain_all_pages();
-+		drained = true;
-+		goto retry;
-+	}
-+
- 	return page;
- }
- 
 -- 
-1.7.1
+-------------------------
+Sylvestre Ledru
+-------------------------
+The Scilab Consortium
+Digiteo
+Domaine de Voluceau
+Rocquencourt - B.P. 105
+78153 Le Chesnay Cedex
+France
 
