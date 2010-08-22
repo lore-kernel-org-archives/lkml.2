@@ -1,134 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab0HVGn5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 02:43:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35684 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab0HVGny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 02:43:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VguqlAN0uk85MrXdPQ5eZIxtoSX60fB2CldBDGSzybPxJe5qSt3mHhN3aCTDVsDqDW
-         cyThsdH6v6ggWEucF5d393C4ctGRG5Qmx2wnA9sKdlzTlk6v6Z5yU9wa6e3xM0pb7D+d
-         NhczaCdW575gAC6d4XCdSvnqEdPGakyLwv9Uk=
-Subject: Re: [PATCH] perf tools: Fix linking errors with --as-needed flag
-From: Tom Zanussi <tzanussi@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ozan =?UTF-8?Q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu
-In-Reply-To: <20100821172433.GF2973@ghostprotocols.net>
-References: <1279449937-29115-1-git-send-email-ozan@pardus.org.tr>
-	 <4C42DFC0.1090708@pardus.org.tr> <20100821172433.GF2973@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 Aug 2010 01:43:52 -0500
-Message-ID: <1282459432.11398.53.camel@tropicana>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S1751605Ab0HVGra (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 02:47:30 -0400
+Received: from swm.pp.se ([212.247.200.143]:45138 "EHLO uplift.swm.pp.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290Ab0HVGr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 02:47:27 -0400
+Date: Sun, 22 Aug 2010 08:47:25 +0200 (CEST)
+From: Mikael Abrahamsson <swmike@swm.pp.se>
+To: Stan Hoeppner <stan@hardwarefreak.com>
+cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: 2.6.34.1 page allocation failure
+In-Reply-To: <4C70BFF3.8030507@hardwarefreak.com>
+Message-ID: <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se>
+References: <4C70BFF3.8030507@hardwarefreak.com>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+Organization: People's Front Against WWW
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 22 Aug 2010, Stan Hoeppner wrote:
 
-On Sat, 2010-08-21 at 14:24 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Sun, Jul 18, 2010 at 02:04:32PM +0300, Ozan Çağlayan escreveu:
-> > On 18.07.2010 13:45, Ozan Çağlayan wrote:
-> > > External shared libraries should never be appended to the LDFLAGS as
-> > > this messes the linking order. As EXTLIBS collects those libraries,
-> > > it seems that perl and python libraries  should also be appended
-> > > to EXTLIBS.
-> > > 
-> > > Also fix the broken linking order.
-> > 
-> > Hm actually the PERL_EMBED_LDOPTS may contain LDFLAGS and LIBADD according
-> > to distribution's perl package configuration's goodness/badness. On my system
-> > the return value is crap which bloats the linking process:
-> > 
-> >  -rdynamic -Wl,-rpath,/usr/lib/perl5/5.10.1/i686-linux-thread-multi/CORE  -fstack-protector -L/usr/local/lib  -L/usr/lib/perl5/5.10.1/i686-linux-thread-multi/CORE -lperl -lpthread -lnsl -ldl -lm -lcrypt -lutil -lc
-> > 
-> > PYTHON_EMBED_LDOPTS evaluates python-config --ldflags and adds these to 
-> > ALL_LDFLAGS. (--libs and --ldflags are synonyms for python-config). According
-> > to python-config this code *never* returns LDFLAGS so it's safe to put them in
-> > EXTLIBS.
-> > 
-> > So the cure may be more than this patch for perl stuff, but at least it fixes my
-> > linking problems with -Wl, --as-needed.
-> 
-> Can you refresh this patch? I had it in the back of my mind, remembered
-> it when considering a similar patch by Kirill, but his covers just the
-> python case.
-> 
-> Tom, can you please check Ozan's and Kirill's patches and tell me if I
-> can stick your Acked-by to them?
-> 
+> I'm not subscribed to lkml so please CC me in replies.  First post.
 
-I refreshed Ozan's patch against tip and tried both with and without
--Wl,--as-needed and it worked fine for both Perl and Python, on my
-Ubuntu 9.10 system.  The refreshed patch I used is included below.
+I'm seeing similar problems on older kernels (.24 up to .32).
 
-It wasn't clear to me whether Ozan's PERL_EMBED_LDOPTS output still
-caused link errors; here's mine, which didn't:
+<http://www.spinics.net/lists/linux-mm/msg07808.html>
 
-trz@tropicana:~$ perl -MExtUtils::Embed -e ldopts
--Wl,-E  -L/usr/local/lib  -L/usr/lib/perl/5.10/CORE -lperl -ldl -lm
--lpthread -lc -lcrypt
+I didn't get any response at all, neither on linux-mm or lkml... Our 
+problems seem very similar, but I'm running 64bit and I have 8 gigs of 
+ram.
 
-In any case, since neither ExtUtils::Embed nor python-config seem to
-have a way to get the LDFLAGS and LIBADD components separately, we'll
-have to find some other way to do that if necessary.
+Personally I can avoid this by tuning down my TCP settings so TCP uses 
+less memory, but I don't think that workaround is very good, this 
+shouldn't happen. My machine also freezes up (pressing caps lock doesn't 
+work) sometimes, sometimes it just logs the error.
 
-trz@tropicana:~$ python-config --libs
--lpthread -ldl -lutil -lm -lpython2.6
-trz@tropicana:~$ python-config --ldflags
--L/usr/lib/python2.6/config -lpthread -ldl -lutil -lm -lpython2.6
+> Mobo:    Abit BP6, dual Celeron 366@500, i440BX chipset, 384MB PC100
+> Disk:    SiI 3512 PCI (sata_sil, libata), 1 x WD5000AAKS 500 GB SATAII
+> Kernel:  vanilla 2.6.34.1, 32 bit x86, SMP, Celeron pre Coppermine
+> OS:      Debian 5.0.5 (Stable)
+> Build:   kernel configured via make menuconfig
+>         no modules, no initrd
+>         built via "make KDEB_PKGVERSION="
+>         installed via dpkg, bootloader is LILO
+> Role:    headless SOHO server, run level 2, _very_ light load
+>         Postfix, pdns-recursor, Dovecot, Lighttpd, Roundcube, Samba
+>         bulk of system memory (>300MB) is consumed by buffers/cache
+> Issue:   AFAIK, these errors never occurred with any revisions of
+>         2.6.26, .31, or .32.  After installing 2.6.34.1 I've noticed
+>         the following errors in dmesg.  I see 6 of these, including
+>         two errors each for kswapd0, lighttpd, and smtpd, all not
+>         tainted.  AFAICT everything is still running fine.  Are these
+>         critical errors?  If so, how do I fix?
+>
+> kswapd0: page allocation failure. order:1, mode:0x20
+> Pid: 139, comm: kswapd0 Not tainted 2.6.34.1 #1
+> Call Trace:
+> [<c104b6b3>] ? __alloc_pages_nodemask+0x448/0x48a
+> [<c1062ffb>] ? cache_alloc_refill+0x22f/0x422
+> [<c11a9a73>] ? tcp_v4_send_check+0x6e/0xa4
+> [<c10632c3>] ? kmem_cache_alloc+0x41/0x6a
+> [<c11773a5>] ? sk_prot_alloc+0x19/0x55
+> [<c117744b>] ? sk_clone+0x16/0x1cc
+> [<c119a71d>] ? inet_csk_clone+0xf/0x80
+> [<c11ac0e3>] ? tcp_create_openreq_child+0x1a/0x3c8
+> [<c11aaf0a>] ? tcp_v4_syn_recv_sock+0x4b/0x151
+> [<c11abf9d>] ? tcp_check_req+0x209/0x335
+> [<c11aa892>] ? tcp_v4_do_rcv+0x8d/0x14d
+> [<c11aacd5>] ? tcp_v4_rcv+0x383/0x56d
+> [<c1193ba4>] ? ip_local_deliver+0x76/0xc0
+> [<c1193b10>] ? ip_rcv+0x3dc/0x3fa
+> [<c103655e>] ? ktime_get_real+0xf/0x2b
+> [<c117f8d3>] ? netif_receive_skb+0x219/0x234
+> [<c115ff46>] ? e100_poll+0x1d0/0x47e
+> [<c117fa98>] ? net_rx_action+0x58/0xf8
+> [<c102539c>] ? __do_softirq+0x78/0xe5
+> [<c102542c>] ? do_softirq+0x23/0x27
+> [<c1003955>] ? do_IRQ+0x7d/0x8e
+> [<c1002aa9>] ? common_interrupt+0x29/0x30
+> [<c1062870>] ? kmem_cache_free+0xbd/0xc5
+> [<c10fa7d1>] ? __xfs_inode_set_reclaim_tag+0x29/0x2f
+> [<c1075215>] ? destroy_inode+0x1c/0x2b
+> [<c10752ce>] ? dispose_list+0xaa/0xd0
+> [<c107548c>] ? shrink_icache_memory+0x198/0x1c5
+> [<c104f76b>] ? shrink_slab+0xda/0x12f
+> [<c104fc28>] ? kswapd+0x468/0x63b
+> [<c104dca3>] ? isolate_pages_global+0x0/0x1bc
+> [<c10304d6>] ? autoremove_wake_function+0x0/0x2d
+> [<c1018faf>] ? complete+0x28/0x36
+> [<c104f7c0>] ? kswapd+0x0/0x63b
+> [<c10301cd>] ? kthread+0x61/0x66
+> [<c103016c>] ? kthread+0x0/0x66
+> [<c1002ab6>] ? kernel_thread_helper+0x6/0x10
+> Mem-Info:
+> DMA per-cpu:
+> CPU    0: hi:    0, btch:   1 usd:   0
+> CPU    1: hi:    0, btch:   1 usd:   0
+> Normal per-cpu:
+> CPU    0: hi:  186, btch:  31 usd: 180
+> CPU    1: hi:  186, btch:  31 usd:  29
+> active_anon:646 inactive_anon:4337 isolated_anon:0
+> active_file:27189 inactive_file:35957 isolated_file:0
+> unevictable:0 dirty:56 writeback:0 unstable:0
+> free:1142 slab_reclaimable:25495 slab_unreclaimable:1020
+> mapped:3116 shmem:143 pagetables:123 bounce:0
+> DMA free:1568kB min:100kB low:124kB high:148kB active_anon:0kB
+> inactive_anon:4kB active_file:5704kB inactive_file:7732kB
+> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15868kB
+> mlocked:0kB dirty:0kB writeback:0kB mapped:28kB shmem:0kB
+> slab_reclaimable:912kB slab_unreclaimable:52kB kernel_stack:0kB
+> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+> all_unreclaimable? no
+> lowmem_reserve[]: 0 365 365
+> Normal free:3000kB min:2392kB low:2988kB high:3588kB active_anon:2584kB
+> inactive_anon:17344kB active_file:103052kB inactive_file:136096kB
+> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:373888kB
+> mlocked:0kB dirty:224kB writeback:0kB mapped:12436kB shmem:572kB
+> slab_reclaimable:101068kB slab_unreclaimable:4028kB kernel_stack:520kB
+> pagetables:492kB unstable:0kB bounce:0kB writeback_tmp:0kB
+> pages_scanned:0 all_unreclaimable? no
+> lowmem_reserve[]: 0 0 0
+> DMA: 391*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB
+> 0*2048kB 0*4096kB = 1564kB
+> Normal: 750*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+> 0*1024kB 0*2048kB 0*4096kB = 3000kB
+> 63342 total pagecache pages
+> 23 pages in swap cache
+> Swap cache stats: add 159, delete 136, find 401/412
+> Free swap  = 995636kB
+> Total swap = 995992kB
+> 98303 pages RAM
+> 1638 pages reserved
+> 22416 pages shared
+> 76947 pages non-shared
+>
+> Thanks.
+>
+> -- 
+> Stan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-
-Acked-by: Tom Zanussi <tzanussi@gmail.com>
-
----
- tools/perf/Makefile |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4f1fa77..f35e784 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -595,7 +595,7 @@ else
- 	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED)),y)
- 		BASIC_CFLAGS += -DNO_LIBPERL
- 	else
--		ALL_LDFLAGS += $(PERL_EMBED_LDOPTS)
-+		EXTLIBS += $(PERL_EMBED_LDOPTS)
- 		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
- 		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
- 	endif
-@@ -610,7 +610,7 @@ else
- 	ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
- 		BASIC_CFLAGS += -DNO_LIBPYTHON
- 	else
--		ALL_LDFLAGS += $(PYTHON_EMBED_LDOPTS)
-+		EXTLIBS += $(PYTHON_EMBED_LDOPTS)
- 		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
- 		LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
- 	endif
-@@ -910,8 +910,8 @@ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 		$(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
- 
- $(OUTPUT)perf$X: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
--	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(OUTPUT)perf.o \
--		$(BUILTIN_OBJS) $(ALL_LDFLAGS) $(LIBS)
-+	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
-+		$(BUILTIN_OBJS) $(LIBS) -o $@
- 
- $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
 -- 
-1.6.4.GIT
-
-
-
+Mikael Abrahamsson    email: swmike@swm.pp.se
