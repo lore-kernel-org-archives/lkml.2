@@ -1,47 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab0HVOU0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 10:20:26 -0400
-Received: from fed1rmmtai103.cox.net ([68.230.241.57]:51825 "EHLO
-	fed1rmmtai103.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab0HVOUQ (ORCPT
+	id S1752175Ab0HVOZH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 10:25:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47873 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab0HVOZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 10:20:16 -0400
-X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Aug 2010 10:20:15 EDT
-X-VR-Score: 130.00
-X-Authority-Analysis: v=1.1 cv=b7HAPzpwzCQJ8M2itpcNPfPnPyOS+ZwahxMwALWFHgU=
- c=1 sm=1 a=M58Ut_zYM0YA:10 a=l-mjcx2A0XsA:10 a=IkcTkHD0fZMA:10
- a=40W+Lnb4GQCKcVHw9Z7S9g==:17 a=IuR5XPxDKaDV6yzigNkA:9
- a=A55pZ54xZHGYAhaM_ImfXfSOuSYA:4 a=QEXdDO2ut3YA:10 a=QiC3TwnRIw9dpzN2:21
- a=dbAtiG3zXJQWaVnA:21 a=40W+Lnb4GQCKcVHw9Z7S9g==:117
-X-CM-Score: 0.00
-Message-ID: <20100822101114.LUJDI.552092.imail@fed1rmwml35>
-Date: Sun, 22 Aug 2010 7:11:14 -0700
-From: wins <rdsgea@cox.net>
-Reply-To: ba025@aol.com
-Subject: Legitimate Winner
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Sun, 22 Aug 2010 10:25:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=JVSZxeyt8yBSdzc99FUSzPr1KvqAKbRHR+pmS5Mh9IM6hSFYhOjBIbcowh+MXTcYWE
+         dDLSCA3zvXvyuvcqYE24tB6Ws2RH6K7/HEdSc1ZMCYtUmMzfo9F5spP/Vew7hA44IrDa
+         mWb2G6jI2J2IhENq17VAuxz/NVHbZXNmJUono=
+Subject: [PATCH] hwmon: (ads7871) Fix ads7871_probe init path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Paul Thomas <pthomas8589@gmail.com>, Jean Delvare <khali@linux-fr.org>,
+        lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 Aug 2010 22:25:26 +0800
+Message-ID: <1282487126.23014.11.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your e mail address was choosed  in the UK Award  2010 that was held
-August 18th, and you are to claim the
-sum  of $1,000 000 USD.that means you are one of our five(5) lucky
-recipents . Your winning number is: (CT-222-6747,FGN/P-900-56).
+>From 81e895683eaecb9e196c57c36b774c0908069d83 Mon Sep 17 00:00:00 2001
+From: Axel Lin <axel.lin@gmail.com>
+Date: Sun, 22 Aug 2010 22:10:01 +0800
+Subject: [PATCH] hwmon: (ads7871) Fix ads7871_probe init path
+
+This patch includes below fixes:
+
+1. remove 'status' variable
+2. remove unneeded initialization of 'err' variable
+3. return missing error code if sysfs_create_group fail.
+4. fix the init sequence as:
+   - check hardware existence
+   - kzalloc for ads7871_data
+   - sysfs_create_group
+   - hwmon_device_register
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+
+hi Jean,
+This patch is against linux-next ( on top of previous patch ).
+Reviews are welcome.
+
+I think it's ok to call sysfs_create_group() before hwmon_device_register().
+If hwmon_device_register failed, the device is not working anyway.
+We just need to make sure all the allocated resources are reclaimed in error path before return error.
+
+Regards,
+Axel
+
+ drivers/hwmon/ads7871.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
+index 45f5829..5231934 100644
+--- a/drivers/hwmon/ads7871.c
++++ b/drivers/hwmon/ads7871.c
+@@ -160,24 +160,12 @@ static const struct attribute_group ads7871_group = {
+ 
+ static int __devinit ads7871_probe(struct spi_device *spi)
+ {
+-	int status, ret, err = 0;
++	int ret, err;
+ 	uint8_t val;
+ 	struct ads7871_data *pdata;
+ 
+ 	dev_dbg(&spi->dev, "probe\n");
+ 
+-	pdata = kzalloc(sizeof(struct ads7871_data), GFP_KERNEL);
+-	if (!pdata) {
+-		err = -ENOMEM;
+-		goto exit;
+-	}
+-
+-	status = sysfs_create_group(&spi->dev.kobj, &ads7871_group);
+-	if (status < 0)
+-		goto error_free;
+-
+-	spi_set_drvdata(spi, pdata);
+-
+ 	/* Configure the SPI bus */
+ 	spi->mode = (SPI_MODE_0);
+ 	spi->bits_per_word = 8;
+@@ -195,9 +183,21 @@ static int __devinit ads7871_probe(struct spi_device *spi)
+ 	we need to make sure we really have a chip*/
+ 	if (val != ret) {
+ 		err = -ENODEV;
+-		goto error_remove;
++		goto exit;
+ 	}
+ 
++	pdata = kzalloc(sizeof(struct ads7871_data), GFP_KERNEL);
++	if (!pdata) {
++		err = -ENOMEM;
++		goto exit;
++	}
++
++	err = sysfs_create_group(&spi->dev.kobj, &ads7871_group);
++	if (err < 0)
++		goto error_free;
++
++	spi_set_drvdata(spi, pdata);
++
+ 	pdata->hwmon_dev = hwmon_device_register(&spi->dev);
+ 	if (IS_ERR(pdata->hwmon_dev)) {
+ 		err = PTR_ERR(pdata->hwmon_dev);
+-- 
+1.7.0.4
 
 
-You are to send us this details
 
-NAME IN FULL: 
-DELIVERY ADDRESS: 
-AGE:
-NATIONALITY: 
-OCCUPATION:
-PHONE:
-SEX:
