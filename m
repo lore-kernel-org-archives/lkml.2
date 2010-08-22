@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab0HVHdP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 03:33:15 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:10878 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751855Ab0HVHdN (ORCPT
+	id S1751914Ab0HVHjH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 03:39:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49788 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286Ab0HVHjE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 03:33:13 -0400
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg KH <gregkh@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-In-Reply-To: <1282460275.11348.865.camel@localhost.localdomain>
-References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
-	 <1282391770.29609.1223.camel@localhost.localdomain>
-	 <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
-	 <1282460275.11348.865.camel@localhost.localdomain>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-KuyM1442DnPTbvU7MFge"
-Date: Sun, 22 Aug 2010 08:33:06 +0100
-Message-ID: <1282462386.11348.871.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-SA-Exim-Connect-IP: 192.168.1.7
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [RFC] mlock/stack guard interaction fixup
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
-X-Cloudmark-Analysis: v=1.1 cv=4QByPj+6Iq2k/6L54d+eVKTdgQxdscpRskJJReCfdXo= c=1 sm=0 a=zI1UDiXOKOEA:10 a=AZfGcq7nAAAA:8 a=tKiBhGKe5aNQgzrFFswA:9 a=7Hm9BcdWHtC3l7y71wJTwQ_0FqwA:4 a=wPNLvfGTeEIA:10 a=X4IATRswnmP5DeIo1voA:9 a=2cAGClRep4Viyl-ngvenyUC9RLQA:4 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Sun, 22 Aug 2010 03:39:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Jw+UOHu2v3Jfpni/yLY1kvuPY6/36GbdOFNkmwQ42/y6AveWzBxSaXOeXxqDimlPdY
+         vDAB5nbIQwgD7+3c3QaC7esZ9bea3EAZi0Yb2yotyVOMVSwdONsHt8ya94NIARCUhjBZ
+         Zf8Z5aePDMr8UtNdNg/1t3EarbX8ewD1S7UG4=
+MIME-Version: 1.0
+In-Reply-To: <1282423398.3015.39.camel@mulgrave.site>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	<1282144271.3035.31.camel@mulgrave.site>
+	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
+	<1282148296.3035.49.camel@mulgrave.site>
+	<4C6C1D70.7020502@vlnb.net>
+	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
+	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>
+	<4C701E08.2020005@vlnb.net>
+	<1282423398.3015.39.camel@mulgrave.site>
+Date: Sun, 22 Aug 2010 09:39:03 +0200
+X-Google-Sender-Auth: OS5nWxhkX8cnkIlHfaoi6LpKjec
+Message-ID: <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: Bart Van Assche <bvanassche@acm.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 21, 2010 at 10:43 PM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+> On Sat, 2010-08-21 at 22:42 +0400, Vladislav Bolkhovitin wrote:
+>> [ ... ]
+>>
+>> You forgot to mention one small thing. You are going to (re)use current
+>> STGT interface for user space backend, which in 5 years of being
+>> mainline has not gained any noticeable interest, because it is
+>> fundamentally slow.
+>
+> That's not exactly what the results of a speed comparison one of your
+> people did said, now is it?  The results were actually not much
+> difference on line speeds up to GigE.
+>
+> [ ... ]
 
---=-KuyM1442DnPTbvU7MFge
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: quoted-printable
+I assume that you are referring to this message:
+http://lkml.org/lkml/2008/1/29/387 ? You might have missed the reply
+that was posted by Roland Dreier, a highly regarded kernel maintainer
+and InfiniBand expert (http://lkml.org/lkml/2008/1/29/402):
 
-On Sun, 2010-08-22 at 07:57 +0100, Ian Campbell wrote:
-> On Sat, 2010-08-21 at 08:48 -0700, Linus Torvalds wrote:
-> > On Sat, Aug 21, 2010 at 4:56 AM, Ian Campbell <ijc@hellion.org.uk> wrot=
-e:
-> > >
-> > > I don't know that they are particularly good tests for this change bu=
-t I
-> > > also ran allmodconfig kernel build and ltp on 2.6.35.3+fixes without
-> > > issue. Are there any good mlock heavy workloads?
-> >=20
-> > mlock itself isn't very interesting, I think more interesting is
-> > testing that the doubly linked list handles all the cases correctly.
-> > Something that splits mappings, unmaps partial ones etc etc. Running
-> > something like Electric Fence is probably a good idea.
->=20
-> EF_DISABLE_BANNER=3D1 EF_ALLOW_MALLOC_0=3D1 LD_PRELOAD=3Dlibefence.so.0.0=
- make
->=20
-> craps out pretty quickly with:
->=20
->           CC      init/main.o
->        =20
->         ElectricFence Exiting: mprotect() failed: Cannot allocate memory
->         make[1]: *** [init/main.o] Error 255
->         make: *** [init] Error 2
->=20
-> but it does that with 2.6.35.3, 2.6.35.2, 2.6.35.1 and 2.6.35 too so it
-> doesn't seem to be breakage relating to any of the stack guard stuff
+"Maybe I'm all wet, but I think iSER vs. SRP should be roughly
+comparable.  The exact formatting of various messages etc. is
+different but the data path using RDMA is pretty much identical.  So
+the big difference between STGT iSER and SCST SRP hints at some big
+difference in the efficiency of the two implementations."
 
-I increased the vm.max_map_count sysctl and now things are rolling
-along. Will let you know how I get on.
+Furthermore, I would like to clarify that Vlad hasn't asked me to
+start working on the SCST project but that I selected the SCST project
+myself after an extensive stability and performance comparison of four
+existing open source storage target projects.
 
---=20
-Ian Campbell
-
-Arithmetic:
-	An obscure art no longer practiced in the world's developed countries.
-
---=-KuyM1442DnPTbvU7MFge
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkxw0rIACgkQM0+0qS9rzVnjnwCg5Y++SrwxhiRRkuPRbJuyGNNC
-3nUAoI7+vaym4gJFO8E3d5XVPUPvgRCf
-=5S8g
------END PGP SIGNATURE-----
-
---=-KuyM1442DnPTbvU7MFge--
-
+Bart.
