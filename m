@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab0HULJY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Aug 2010 07:09:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62853 "EHLO song.cn.fujitsu.com"
+	id S1751975Ab0HULVs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Aug 2010 07:21:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65526 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab0HULJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Aug 2010 07:09:22 -0400
-Message-ID: <4C71065D.80806@cn.fujitsu.com>
-Date: Sun, 22 Aug 2010 19:13:33 +0800
+	id S1751682Ab0HULVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Aug 2010 07:21:46 -0400
+Message-ID: <4C710949.3060200@cn.fujitsu.com>
+Date: Sun, 22 Aug 2010 19:26:01 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v7 5/5] KVM: MMU: combine guest pte read between fetch and
- pte prefetch
+Subject: [PATCH v7 2/5] KVM: MMU: introduce hva_to_pfn_atomic function
 References: <4C710549.9090704@cn.fujitsu.com>
 In-Reply-To: <4C710549.9090704@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -24,93 +23,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Combine guest pte read between guest pte check in the fetch path and pte prefetch
+Introduce hva_to_pfn_atomic(), it's the fast path and can used in atomic
+context, the later patch will use it
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   40 +++++++++++++++++++++-------------------
- 1 files changed, 21 insertions(+), 19 deletions(-)
+ include/linux/kvm_host.h |    7 +++++++
+ virt/kvm/kvm_main.c      |   30 +++++++++++++++++++-----------
+ 2 files changed, 26 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 9e6acc9..2f4925e 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -67,6 +67,7 @@ struct guest_walker {
- 	int level;
- 	gfn_t table_gfn[PT_MAX_FULL_LEVELS];
- 	pt_element_t ptes[PT_MAX_FULL_LEVELS];
-+	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
- 	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
- 	unsigned pt_access;
- 	unsigned pte_access;
-@@ -302,21 +303,33 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- static bool FNAME(gpte_changed)(struct kvm_vcpu *vcpu,
- 				struct guest_walker *gw, int level)
- {
--	int r;
- 	pt_element_t curr_pte;
--
--	r = kvm_read_guest_atomic(vcpu->kvm, gw->pte_gpa[level - 1],
-+	gpa_t base_gpa, pte_gpa = gw->pte_gpa[level - 1];
-+	u64 mask;
-+	int r, index;
-+
-+	if (level == PT_PAGE_TABLE_LEVEL) {
-+		mask = PTE_PREFETCH_NUM * sizeof(pt_element_t) - 1;
-+		base_gpa = pte_gpa & ~mask;
-+		index = (pte_gpa - base_gpa) / sizeof(pt_element_t);
-+
-+		r = kvm_read_guest_atomic(vcpu->kvm, base_gpa,
-+				gw->prefetch_ptes, sizeof(gw->prefetch_ptes));
-+		curr_pte = gw->prefetch_ptes[index];
-+	} else
-+		r = kvm_read_guest_atomic(vcpu->kvm, pte_gpa,
- 				  &curr_pte, sizeof(curr_pte));
-+
- 	return r || curr_pte != gw->ptes[level - 1];
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index c13cc48..307d0e2 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -296,6 +296,7 @@ void kvm_release_page_dirty(struct page *page);
+ void kvm_set_page_dirty(struct page *page);
+ void kvm_set_page_accessed(struct page *page);
+ 
++pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr);
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn);
+@@ -518,6 +519,12 @@ static inline void kvm_guest_exit(void)
+ 	current->flags &= ~PF_VCPU;
  }
  
--static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
-+static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
-+				u64 *sptep)
++static inline unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot,
++					       gfn_t gfn)
++{
++	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
++}
++
+ static inline gpa_t gfn_to_gpa(gfn_t gfn)
  {
- 	struct kvm_mmu_page *sp;
--	pt_element_t gptep[PTE_PREFETCH_NUM];
--	gpa_t first_pte_gpa;
--	int offset = 0, i;
-+	pt_element_t *gptep = gw->prefetch_ptes;
- 	u64 *spte;
-+	int i;
+ 	return (gpa_t)gfn << PAGE_SHIFT;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index b78b794..2dc0c18 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -927,11 +927,6 @@ int memslot_id(struct kvm *kvm, gfn_t gfn)
+ 	return memslot - slots->memslots;
+ }
  
- 	sp = page_header(__pa(sptep));
- 
-@@ -327,17 +340,6 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
- 		return __direct_pte_prefetch(vcpu, sp, sptep);
- 
- 	i = (sptep - sp->spt) & ~(PTE_PREFETCH_NUM - 1);
+-static unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
+-{
+-	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
+-}
 -
--	if (PTTYPE == 32)
--		offset = sp->role.quadrant << PT64_LEVEL_BITS;
--
--	first_pte_gpa = gfn_to_gpa(sp->gfn) +
--				(offset + i) * sizeof(pt_element_t);
--
--	if (kvm_read_guest_atomic(vcpu->kvm, first_pte_gpa, gptep,
--					sizeof(gptep)) < 0)
--		return;
--
- 	spte = sp->spt + i;
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ {
+ 	struct kvm_memory_slot *slot;
+@@ -943,19 +938,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
  
- 	for (i = 0; i < PTE_PREFETCH_NUM; i++, spte++) {
-@@ -462,7 +464,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access & access,
- 		     user_fault, write_fault, dirty, ptwrite, it.level,
- 		     gw->gfn, pfn, false, true);
--	FNAME(pte_prefetch)(vcpu, it.sptep);
-+	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
+-static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
++static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+ {
+ 	struct page *page[1];
+ 	int npages;
+ 	pfn_t pfn;
  
- 	return it.sptep;
+-	might_sleep();
+-
+-	npages = get_user_pages_fast(addr, 1, 1, page);
++	if (atomic)
++		npages = __get_user_pages_fast(addr, 1, 1, page);
++	else {
++		might_sleep();
++		npages = get_user_pages_fast(addr, 1, 1, page);
++	}
  
+ 	if (unlikely(npages != 1)) {
+ 		struct vm_area_struct *vma;
+ 
++		if (atomic)
++			goto return_fault_page;
++
+ 		down_read(&current->mm->mmap_sem);
+ 		if (is_hwpoison_address(addr)) {
+ 			up_read(&current->mm->mmap_sem);
+@@ -968,6 +969,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 		if (vma == NULL || addr < vma->vm_start ||
+ 		    !(vma->vm_flags & VM_PFNMAP)) {
+ 			up_read(&current->mm->mmap_sem);
++return_fault_page:
+ 			get_page(fault_page);
+ 			return page_to_pfn(fault_page);
+ 		}
+@@ -981,6 +983,12 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 	return pfn;
+ }
+ 
++pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr)
++{
++	return hva_to_pfn(kvm, addr, true);
++}
++EXPORT_SYMBOL_GPL(hva_to_pfn_atomic);
++
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ {
+ 	unsigned long addr;
+@@ -991,7 +999,7 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ 		return page_to_pfn(bad_page);
+ 	}
+ 
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_pfn);
+ 
+@@ -999,7 +1007,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn)
+ {
+ 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
 -- 
 1.7.0.4
 
