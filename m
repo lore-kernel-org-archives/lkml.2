@@ -1,35 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab0HVXGY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 19:06:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47629 "EHLO mx2.suse.de"
+	id S1752326Ab0HVXR1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 19:17:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45679 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324Ab0HVXGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 19:06:22 -0400
-Date: Mon, 23 Aug 2010 09:06:04 +1000
+	id S1751506Ab0HVXRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 19:17:23 -0400
+Date: Mon, 23 Aug 2010 09:17:08 +1000
 From: Neil Brown <neilb@suse.de>
-To: Andreas Dilger <andreas.dilger@oracle.com>
+To: Nick Piggin <npiggin@kernel.dk>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
-        "philippe.deniel@CEA.FR" <philippe.deniel@CEA.FR>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, adilger@sun.com,
+        corbet@lwn.net, hooanon05@yahoo.co.jp, bfields@fieldses.org,
+        miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-Message-ID: <20100823090604.6c735c80@notabene>
-In-Reply-To: <17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
+Message-ID: <20100823091708.6f03c42b@notabene>
+In-Reply-To: <20100821083024.GB3448@amd>
 References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 	<20100820083057.GA10039@infradead.org>
 	<20100820195303.20b17210@notabene>
 	<20100820115135.GQ31363@ZenIV.linux.org.uk>
 	<20100821100900.4b15fe08@notabene>
-	<17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
+	<20100821083024.GB3448@amd>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -38,10 +32,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Aug 2010 01:13:52 -0600
-Andreas Dilger <andreas.dilger@oracle.com> wrote:
+On Sat, 21 Aug 2010 18:30:24 +1000
+Nick Piggin <npiggin@kernel.dk> wrote:
 
-> On 2010-08-20, at 18:09, Neil Brown <neilb@suse.de> wrote:
+> Thanks, I had both of the same concerns as Christoph with API
+> change and exposing symlink fds last time I looked at the patces,
+> actually.
+> 
+> But they can probably be worked around or avoided. I think the more
+> important thing is whether it is worth supporting. This is
+> all restricted to root (or CAP_DAC_READ_SEARCH) only, right, and
+> what exact semantics they want. I would like to see more discussion
+> of what this enables and some results.
+
+They allow a credible user-space implementation of the server for some
+network filesystem protocols such as NFS and apparently 9P.
+
+> 
+> For the case of avoiding expensive network revalidations in path name
+> lookup, do we even need to open symlinks? Could the security issues be
+> avoided by always having handle attached to an open fd?
+
+I don't see what you are getting at here... which particular security isses,
+and what fd would you use?
+
+As I understand it there are only two security issues that have been noted.
+1/ lookup-by-filehandle can bypass any 'search' permission tests on ancestor
+   directories.  I cannot see any way to avoid this except require
+   CAP_DAC_READ_SEARCH
+2/ Creating a hardlink to an 'fd'  allows a process that was given an 'fd'
+   that it could not have opened itself to prevent that file from being
+   removed (and space reclaimed) by creating a private hardlink.
+   This could be avoided by requiring CAP_DAC_READ_SEARCH for that particular
+   operation (and probably requiring i_nlink > 0 anyway) but that feels like
+   a very special-case restriction.
+
+Was it one of these that you were referring to?
+
+Thanks,
+NeilBrown
+
+
+> 
+> On Sat, Aug 21, 2010 at 10:09:00AM +1000, Neil Brown wrote:
+> > [[email address for Nick Piggin changed to npiggin@kernel.dk]]
+> > 
+> > On Fri, 20 Aug 2010 12:51:35 +0100
+> > Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> > 
+> > > On Fri, Aug 20, 2010 at 07:53:03PM +1000, Neil Brown wrote:
+> > > > On Fri, 20 Aug 2010 04:30:57 -0400
+> > > > Christoph Hellwig <hch@infradead.org> wrote:
+> > > > 
+> > > > > Suddenly getting an file pointer for a symlink which could never happen
+> > > > > before is a really bad idea.  Just add a proper readlink_by_handle
+> > > > > system call, similar to what's done in the XFS interface.
+> > > > 
+> > > > Why is that?
+> > > > With futexes we suddenly get a file descriptor for something we could never
+> > > > get a file descriptor on before and that doesn't seem to be a problem.
+> > > > 
+> > > > Why should symlinks be special as the only thing that you cannot have a file
+> > > > descriptor for?  Uniformity of interface is a very valuable property.
+> > > 
+> > > You are welcome to review the codepaths around pathname resolution for
+> > > assumptions of presense of ->follow_link() and friends; there _are_
+> > > subtle cases and dumping your "opened symlinks" in there is far from
+> > > a trivial change.  Note that it affects more than just the starting
+> > > points of lookups; /proc/*/fd/* stuff is also involved.
+> > 
+> > So as I understand it you aren't rejecting the concept in principle, but you
+> > believe non-trivial code review is required before it can be considered an
+> > acceptable change?
+> > That's quite reasonable.  I hope to find time to have a look at the code.
+> > 
+> > > 
+> > > BTW, speaking of NULL pathname, linkat() variant that allows creating a link
+> > > to an opened file is also a very dubious thing; at the very least, you get
+> > > non-trivial security implications, since now a process that got an opened
+> > > descriptor passed to it by somebody else may create hardlinks to the sucker.
+> > 
+> > Fair comment, and while one could imagine ways around this (such as requiring
+> > some Capability to link an fd) they wouldn't be very elegant.
+> > But then nor is inventing a pile of new syscalls for doing different things
+> > with handles such as the list Aneesh posted.
+> > 
+> > Maybe a different approach is needed.
+> > 
 > > How about a new AT flag:  AT_FILE_HANDLE
 > > 
 > > Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
@@ -50,50 +127,15 @@ Andreas Dilger <andreas.dilger@oracle.com> wrote:
 > > 
 > > One problem is that there is no way to pass the length...
 > > Options:
-> >   fragment is at most 64 bytes nul padded at the end
-> >   fragment is hex encoded and nul terminated
-> >   ??
+> >    fragment is at most 64 bytes nul padded at the end
+> >    fragment is hex encoded and nul terminated
+> >    ??
 > > 
 > > I think I prefer the hex encoding, but I'm hoping someone else has a better
 > > idea.
-> 
-> That makes it ugly for the kernel to stringify and parse the file handles. 
-
-We already parse filenames into components separated by '/'.  Is HEX decoding
-that much more ugly.
-
-Filehandles are currently passed between the kernel and mountd as HEX
-strings, so at least there is some precedent.
-
-> 
-> How about for AT_FILE_HANDLE THE FIRST __u32 (maybe with an extra __u32 for alignment) is the length and the rest of the binary file handle follows this?  In fact, doesn't the handle itself already encode the length in the header?
-
-That part of a filehandle that nfsd gives to the filesystem is one byte out
-of a 4-byte header, plus the tail of the filehandle after the part that
-identifies the filesystem.
-This 'one byte' does imply the length, but it doesn't necessarily encode it.
-Rather it is a 'type'.  So it cannot really be used to determine the length
-at the point when the filehandle would need to be copied from userspace into
-the kernel.
-
-
-I don't think there is any precedent for passing a 4-byte length followed by
-a binary string, while there is plenty of precedent for passing a
-nul-terminated ASCII string.
-
-[[ Following this approach I would like to avoid any filehandle-specific
-syscalls altogether.
-Just use a *at syscall with AT_FILE_HANDLE for filehandle lookup, and use
-getxattr('system:linux.file_handle') to get the filehandle for a given path.
-
-Ofcourse we would need to at *at versions of the *xattr syscalls, but that is
-probably a good idea anyway.
-]]
-
-NeilBrown
-
-> 
-> Cheers, Andreas--
+> > 
+> > NeilBrown
+> --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
