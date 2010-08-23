@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab0HWNJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:09:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55652 "EHLO mx1.redhat.com"
+	id S1752873Ab0HWNK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:10:56 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38072 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab0HWNJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:09:38 -0400
-Date: Mon, 23 Aug 2010 09:09:32 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
-        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] btrfs: update stats when allocating from a cluster
-Message-ID: <20100823130932.GD2404@localhost.localdomain>
-References: <4C71CD4B.10606@cn.fujitsu.com> <4C71CD91.4050703@cn.fujitsu.com>
+	id S1751480Ab0HWNKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:10:53 -0400
+Date: Mon, 23 Aug 2010 15:10:52 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Thomas Weber <weber@corscience.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix typo in Kconfig help text
+In-Reply-To: <1282555234-3196-1-git-send-email-weber@corscience.de>
+Message-ID: <alpine.LNX.2.00.1008231510410.1019@pobox.suse.cz>
+References: <1282555234-3196-1-git-send-email-weber@corscience.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C71CD91.4050703@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 09:23:29AM +0800, Li Zefan wrote:
-> When allocating extent entry from a cluster, we should update
-> the free_space and free_extents fields of the block group.
+On Mon, 23 Aug 2010, Thomas Weber wrote:
+
+> Fix the name of the sensor: BMP086 => BMP085
 > 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> Signed-off-by: Thomas Weber <weber@corscience.de>
 > ---
->  fs/btrfs/free-space-cache.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
+>  drivers/misc/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
-> index 631e14f..20f3141 100644
-> --- a/fs/btrfs/free-space-cache.c
-> +++ b/fs/btrfs/free-space-cache.c
-> @@ -1090,15 +1090,26 @@ u64 btrfs_alloc_from_cluster(struct btrfs_block_group_cache *block_group,
->  		entry->offset += bytes;
->  		entry->bytes -= bytes;
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 0b591b6..9df5b75 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -385,7 +385,7 @@ config BMP085
+>  	depends on I2C && SYSFS
+>  	help
+>  	  If you say yes here you get support for the Bosch Sensortec
+> -	  BMP086 digital pressure sensor.
+> +	  BMP085 digital pressure sensor.
 >  
-> -		if (entry->bytes == 0) {
-> +		if (entry->bytes == 0)
->  			rb_erase(&entry->offset_index, &cluster->root);
-> -			kfree(entry);
-> -		}
->  		break;
->  	}
->  out:
->  	spin_unlock(&cluster->lock);
->  
-> +	if (!ret)
-> +		return 0;
-> +
-> +	spin_lock(&block_group->tree_lock);
-> +
-> +	block_group->free_space -= bytes;
-> +	if (entry->bytes == 0) {
-> +		block_group->free_extents--;
-> +		kfree(entry);
-> +	}
-> +
-> +	spin_unlock(&block_group->tree_lock);
-> +
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called bmp085.
 
-Move this part up so we don't drop the spinlock and then re-grab it.  Thanks,
+Seems correct, applied, thanks.
 
-Josef
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
