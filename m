@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab0HWMlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 08:41:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35026 "EHLO hera.kernel.org"
+	id S1752893Ab0HWMmj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 08:42:39 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48640 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab0HWMlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 08:41:46 -0400
-Message-ID: <4C726B55.80503@kernel.org>
-Date: Mon, 23 Aug 2010 14:36:37 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100820132214.GA6184@lst.de>
-In-Reply-To: <20100820132214.GA6184@lst.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 Aug 2010 12:41:24 +0000 (UTC)
+	id S1751397Ab0HWMmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 08:42:36 -0400
+Date: Mon, 23 Aug 2010 06:42:33 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Cc: Joseph Chan <JosephChan@via.com.tw>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Erik-Jan Post <ej.lfs@xs4all.nl>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 1/2] drivers/video: Removing dead FB_VIA_CAMERA config
+ option
+Message-ID: <20100823064233.51889684@bike.lwn.net>
+In-Reply-To: <896537c6f9bd2e4babcb9ff4681bb4db72daf544.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<896537c6f9bd2e4babcb9ff4681bb4db72daf544.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 23 Aug 2010 11:59:41 +0200
+Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de> wrote:
 
-On 08/20/2010 03:22 PM, Christoph Hellwig wrote:
-> Many storage devices, especially in the consumer market, come with volatile
-> write back caches.  That means the devices signal I/O completion to the
-> operating system before data actually has hit the physical medium.
+> CONFIG_FB_VIA_CAMERA doesn't exist in Kconfig, therefore removing
+> all references to it from the source.
 
-A bit nit picky but flash devices can also have writeback caches and
-the term physical medium sounds a bit off for those cases.  Maybe just
-saying "non-volatile media" is better?
+The driver using this option has been posted to the lists a few times.
+I have been unforgivably slow in dealing with some review comments, and
+so missed the 2.6.36 merge window.  I don't plan to let that happen
+again, though.  So my preference would be to leave this code in place;
+if it goes away, I'll just have to put it back.
 
-> Implementation details for filesystems
-> --------------------------------------
-> 
-> Filesystem can simply set the REQ_FLUSH and REQ_FUA bits and do not have to
-> worry if the underlying devices need any explicit cache flushing and how
-> the Forced Unit Access is implemented.  The REQ_FLUSH and REQ_FUA flags
-> may both be set on a single bio.
+Thanks,
 
-It may be worthwhile to explain the sequence of operations when
-REQ_FLUSH + data + REQ_FUA is executed.  It can be extrapolated from
-the previous two descriptions but I think giving examples of different
-sequences depending on FLUSH/FUA configuration would be helpful to
-help understanding the overall picture of things.
-
-Other than those, looks good to me.
-
-Thanks.
-
--- 
-tejun
+jon
