@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab0HWNr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:47:27 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59587 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab0HWNrY (ORCPT
+	id S1753372Ab0HWNsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:48:12 -0400
+Received: from adsl-99-17-64-89.dsl.sfldmi.sbcglobal.net ([99.17.64.89]:40328
+	"EHLO crunch.scalableinformatics.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753193Ab0HWNsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:47:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=cxPlBCLYKxFZa9g75LqFxoDb0d6LT+ZppBHNJUubuZ1igE2zuhpr+MLO9odaogjbqk
-         lRG5SwV0jZPpVwfYBz40HqJlwHZ9u6ok8vbf0PPSsfrtDQv1+8eL4+6TQOdW/kAK0SAC
-         0Hno8DcIj8wSKCq9iys3QT6LkzGFKj5KyWbeI=
-MIME-Version: 1.0
-In-Reply-To: <20100823030340.GA14007@suse.de>
-References: <AANLkTi=wyG13QOU3EQwaO3qBxY=aR=ftiP4s7YpemrPp@mail.gmail.com>
-	<4C6F4BBB.5040207@zytor.com>
-	<AANLkTi=sKH95tLee+H03ah=8dF6LV9hpw+1esGSZuHRS@mail.gmail.com>
-	<4C71CF5B.3090505@zytor.com>
-	<AANLkTi=PWY=n2nvDcZM4SB7Jo2DRadRSoNYT1unfJvZ9@mail.gmail.com>
-	<20100823030340.GA14007@suse.de>
+	Mon, 23 Aug 2010 09:48:11 -0400
+Message-ID: <4C727BEB.9020100@scalableinformatics.com>
 Date: Mon, 23 Aug 2010 09:47:23 -0400
-Message-ID: <AANLkTi=Dp90i24pm41=nM2ontGT-QJ9Ju+CJzN1mLCXv@mail.gmail.com>
-Subject: Re: Linux 2.6.35.3
-From: Mark Stanovich <mrktimber@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+From: Joe Landman <landman@scalableinformatics.com>
+Reply-To: landman@scalableinformatics.com
+Organization: Scalable Informatics
+User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Bart Van Assche <bvanassche@acm.org>, Vladislav Bolkhovitin <vst@vlnb.net>,
+        linux-scsi@vger.kernel.org, Chetan Loke <chetanloke@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	<1282144271.3035.31.camel@mulgrave.site>	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>	<1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>	<4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>	<AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com> <1282508953.3042.102.camel@mulgrave.site>
+In-Reply-To: <1282508953.3042.102.camel@mulgrave.site>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 11:03 PM, Greg KH <gregkh@suse.de> wrote:
-> On Sun, Aug 22, 2010 at 09:56:19PM -0400, Mark Stanovich wrote:
->> On Sun, Aug 22, 2010 at 9:31 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> > On 08/20/2010 09:06 PM, Mark Stanovich wrote:
->> >>>>
->> >>>> I noticed that the latest version pulled from Linus's git tree did not
->> >>>> have the problem. ?After looking at the changes to
->> >>>> arch/x86/include/asm/cmpxchg_32.h, I cherry-picked two patches from
->> >>>> Linus's tree that seemed to make a difference, namely:
->> >>>>
->> >>>> 69309a05907546fb686b251d4ab041c26afe1e1d
->> >>>> 4532b305e8f0c238dd73048068ff8a6dd1380291
->> >>>>
->> >>>> Applying these patches solved the rebooting problem on 2.6.35.3
->> >>>>
->> >>>> I believe the same problem also happens for the latest stable version of
->> >>>> 2.6.34, but did not verify the fix worked for the 2.6.34 stable releases.
->> >>>>
->> >>>> I don't know if this is helpful, but I thought I would let you know in
->> >>>> case someone else is having the same problem.
->> >>>>
->> >>>> If you need any further information, just let me know.
->> >>>>
->> >>>
->> >>> Yes, as a matter of fact, we have been trying to root-cause this
->> >>> problem; please see:
->> >>>
->> >>> https://bugzilla.kernel.org/show_bug.cgi?id=16612
->> >>>
->> >>> If you could try the one-liner in there and see if it solves your
->> >>> problem, it would be great.
->> >>
->> >> The patch for __set_64bit on top of 2.6.35.3 solves the rebooting problem!
->> >>
->> >>
->> >
->> > By the way, I think only 69309a05907546fb686b251d4ab041c26afe1e1d should
->> > solve the problem. ?Mark, could you try only this patch?
->> >
->>
->> Tested 69309a05907546fb686b251d4ab041c26afe1e1d on top of 2.6.35.3 and
->> this does solve the rebooting problem.
->
+James Bottomley wrote:
 
-69309a05907546fb686b251d4ab041c26afe1e1d is also needed on top of
-2.6.34.5 in order for my machine to boot properly.
+> So the phrase "up to GigE" was deliberately in the above to exclude the
+> disputed infiniband results.  I'm not really interested in re-opening
+> the arguments over how to interpret those results.  The fact that SCST
+> and STGT were on par up to 1GbE is enough to refute the contention that
+> STGT is "fundamentally slow".
 
-    - Mark
+We haven't tested this in at least 6 months, but we did test iSCSI over 
+10GbE using SCST and STGT.  This was one of the reasons we wound up 
+going with SCST.  For the past several years, our performance on SCST 
+was much higher than on STGT.
+
+If it helps, we can redo these tests with a modern kernel (2.6.35.x) and 
+same backend/frontend.  We've been switching most of our IO performance 
+testing to Jens Axboe's excellent fio tool.  I'd be happy to share our 
+testing decks with anyone (and collaborate on generating a good useful 
+set for general use)
+
+This said, I have to add in my support to SCST and its developers. 
+Vlad, Bart, and the rest of the community have been very helpful to us. 
+  We have been a consumer rather than a developer to date, so we have 
+less of a dog in this fight than others.  We have nothing against LIO or 
+STGT.  We will try them and see if they meet our needs.  SRP is a hard 
+requirement, and it exists and works great in SCST.  So for us, a 
+solution which gives us the best of all worlds would be one where we 
+don't have to give up what works well for us, and gets us new 
+capabilities/features.  This is more of a wish-list ... we have to keep 
+using what works well for us.
+
+Our interest in STGT is that we would like a working iSER.  Vlad has 
+suggested a method that we will explore a little later on (next
+month).  The LIO folks do look like they have some interesting 
+capabilities beyond this, so we will look.  But without SRP, and a fast 
+iSCSI, their really isn't much choice for us in the near term.
+
+Regards,
+
+Joe
+
+-- 
+Joseph Landman, Ph.D
+Founder and CEO
+Scalable Informatics Inc.
+email: landman@scalableinformatics.com
+web  : http://scalableinformatics.com
+        http://scalableinformatics.com/jackrabbit
+phone: +1 734 786 8423 x121
+fax  : +1 866 888 3112
+cell : +1 734 612 4615
