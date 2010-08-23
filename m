@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab0HWSb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 14:31:27 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39952 "EHLO e9.ny.us.ibm.com"
+	id S1753674Ab0HWSnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 14:43:16 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:55329 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618Ab0HWSbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 14:31:24 -0400
-Date: Mon, 23 Aug 2010 11:31:19 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, hch@lst.de
-Subject: Performance testing of various barrier reduction patches [was: Re:
-	[RFC v4] ext4: Coordinate fsync requests]
-Message-ID: <20100823183119.GA28105@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com>
+	id S1752805Ab0HWSnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 14:43:14 -0400
+Message-ID: <4C72C139.9090601@us.ibm.com>
+Date: Mon, 23 Aug 2010 11:43:05 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100819021441.GM2109@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ian Jackson <ijackson@chiark.greenend.org.uk>,
+        Greg KH <gregkh@suse.de>, Ian Campbell <ijc@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [RFC] mlock/stack guard interaction fixup
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com> <1282391770.29609.1223.camel@localhost.localdomain> <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com> <1282460275.11348.865.camel@localhost.localdomain> <1282462386.11348.871.camel@localhost.localdomain> <1282470917.11348.891.camel@localhost.localdomain> <20100822172548.GB8957@suse.de> <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com> <19570.38608.79434.179797@chiark.greenend.org.uk> <1282580751.2605.1997.camel@laptop> <19570.44367.719276.128881@chiark.greenend.org.uk> <AANLkTi=+O8wKZV6XT5wGJbfZdgC9kxTxvtEZMD+M+pZn@mail.gmail.com> <1282586385.2605.2119.camel@laptop>
+In-Reply-To: <1282586385.2605.2119.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 08/23/2010 10:59 AM, Peter Zijlstra wrote:
+> On Mon, 2010-08-23 at 10:34 -0700, Linus Torvalds wrote:
+>> I suspect that if you use mlock for _any_ other reason than protecting
+>> a particular very sensitive piece of information, you should use
+>> mlockall(MCL_FUTURE). IOW, if you use mlock because you have realtime
+>> issues, there is no excuse to ever use anything else, imho. And even
+>> then, I guarantee that things like copy-on-write is going to be
+>> "interesting".
+>>
+>> I realize that people hate mlockall() (and particularly MCL_FUTURE),
+>> and yes, it's a bloated thing that you can't reasonably use on a large
+>> process. But dammit, if you have RT issues, you shouldn't _have_ some
+>> big bloated process. You should have a small statically linked server
+>> that is RT, and nothing else.
+>
+> Us real-time people have been telling people to not use mlockall() at
+> all.
 
-I retested the ext4 barrier mitigation patchset against a base of 2.6.36-rc1 +
-Tejun's flush_fua tree + Christoph's patches to change FS barrier semantics,
-and came up with this new spreadsheet:
-http://bit.ly/bWpbsT
+Well, we have at least two camps of people here I guess. When people 
+come to me with unexplainable latencies, paging is one of the things we 
+check for, and mlockall() is a good way to test if avoiding that paging 
+will help them - so I have been known to recommend it on occasion.
 
-Here are the previous 2.6.35 results for convenience: http://bit.ly/c22grd
+> While small !glibc statically linked RT components using shared memory
+> interfaces to !RT apps could work its not how people actually write
+> their apps. They write big monolithic threaded apps where some threads
+> are RT.
+>
+> [ in part because there doesn't seem to be a usable !glibc
+> libpthread/librt implementation out there, in part because people use
+> crap like Java-RT ]
 
-The machine configurations are the same as with the previous (2.6.35)
-spreadsheet.  It appears to be the case that Tejun and Christoph's patches to
-change barrier use into simpler cache flushes generally improve the speed of
-the fsync-happy workload in buffered I/O mode ... if you have a bunch of
-spinning disks.  Results for the SSD array (elm3c44) and the single disk
-systems (elm3c65/elm3c75) decreased slightly.  For the case where direct I/O
-was used, the patchset improved the results in nearly all cases.  The speed
-with barriers on is getting closer to the speed with barriers off, thankfully!
+Which is also missing some performance and functionality due to the lack 
+of complete pthread support for priority inheritance (and the complete 
+disinterest in fixing it by certain maintainers).
 
-Unfortunately, one thing that became /much/ less clear in these new results is
-the impact of the other patch sets that we've been working on to make ext4
-smarter with regards to barrier/flush use.  In most cases I don't really see
-the fsync-delay patch having much effect for directio, and it seems to have
-wild effects when buffered mode is used.  Jan Kara's barrier generation patch
-still generally helps with directio loads.  I've also concluded that my really
-old dirty-flag patchset from ages ago no longer has any effect.
-
-What does everyone else think of these results?
-
---D
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
