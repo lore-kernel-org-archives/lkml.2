@@ -1,347 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab0HWIQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 04:16:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43990 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab0HWIQU (ORCPT
+	id S1753492Ab0HWISv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 04:18:51 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:39500 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753457Ab0HWISs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 04:16:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rIFczCacxWLh/PzyzAFnJhg48AE9fINlSKMmJftjLetguZUxZikDfQr1n+ql4iwUqy
-         DYG3iMIw3CQM1TitAW/7f3vCXpXfI0F0cazSa4mjZ+2tGlEyYgVU+I3TPRy1lopuzald
-         S792Snc+4ch0INwG+26WHJE6hSiElyt3HhPCs=
-Date: Mon, 23 Aug 2010 10:16:33 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] posix clocks: introduce syscall for clock tuning.
-Message-ID: <e253843e07ce5d15c2c8d11ce786bf979ed85ca5.1282550649.git.richard.cochran@omicron.at>
-References: <cover.1282550649.git.richard.cochran@omicron.at>
+	Mon, 23 Aug 2010 04:18:48 -0400
+Message-ID: <4C722ECF.5020706@euromail.se>
+Date: Mon, 23 Aug 2010 10:18:23 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1282550649.git.richard.cochran@omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Hutterer <peter.hutterer@who-t.net>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pinglinux@gmail.com
+Subject: Re: [PATCH 3/3] input: add multitouch slot support to w8001.
+References: <1282280135-15942-1-git-send-email-peter.hutterer@who-t.net> <1282280135-15942-4-git-send-email-peter.hutterer@who-t.net>
+In-Reply-To: <1282280135-15942-4-git-send-email-peter.hutterer@who-t.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OnSEj-0001kt-7D.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OnSEj-0001kt-7D 6402603fa264e0cd2eba5c0e3142e911
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new syscall is introduced that allows tuning of a POSIX clock. The
-syscall is implemented for four architectures: arm, blackfin, powerpc,
-and x86.
+Hi Peter,
 
-The new syscall, clock_adjtime, takes two parameters, a frequency
-adjustment in parts per billion, and a pointer to a struct timespec
-containing the clock offset. If the pointer is NULL, a frequency
-adjustment is performed. Otherwise, the clock offset is immediately
-corrected by skipping to the new time value.
+thanks for the patches. Comments inline.
 
-In addtion, the patch provides way to unregister a posix clock. This
-function is need to support posix clocks implemented as modules.
+> Some serial wacom devices support two-finger touch. Test for this during
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
----
- arch/arm/include/asm/unistd.h      |    1 +
- arch/arm/kernel/calls.S            |    1 +
- arch/blackfin/include/asm/unistd.h |    3 +-
- arch/blackfin/mach-common/entry.S  |    1 +
- arch/powerpc/include/asm/systbl.h  |    1 +
- arch/powerpc/include/asm/unistd.h  |    3 +-
- arch/x86/ia32/ia32entry.S          |    1 +
- arch/x86/include/asm/unistd_32.h   |    3 +-
- arch/x86/include/asm/unistd_64.h   |    2 +
- arch/x86/kernel/syscall_table_32.S |    1 +
- include/linux/posix-timers.h       |    5 ++++
- include/linux/syscalls.h           |    3 ++
- kernel/compat.c                    |   20 ++++++++++++++++++
- kernel/posix-cpu-timers.c          |    5 ++++
- kernel/posix-timers.c              |   38 ++++++++++++++++++++++++++++++++++++
- 15 files changed, 85 insertions(+), 3 deletions(-)
+> init and parse the touch packets accordingly. Touch packets are
+> processed using Protocol B (MT Slots).
+> 
+> Note: there are several wacom versions that do touch but not two-finger
+> touch. These are not catered for here, touch events for these are simply
+> discarded.
+> 
+> Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+> CC: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/input/touchscreen/wacom_w8001.c |   99 ++++++++++++++++++++++++++++++-
+>  1 files changed, 96 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/wacom_w8001.c b/drivers/input/touchscreen/wacom_w8001.c
+> index c302cc3..a38a3aa 100644
+> --- a/drivers/input/touchscreen/wacom_w8001.c
+> +++ b/drivers/input/touchscreen/wacom_w8001.c
+> @@ -60,6 +60,17 @@ struct w8001_coord {
+>  	u8 tilt_y;
+>  };
+>  
+> +/* touch data packet */
+> +struct w8001_touch {
+> +	u8 f1_status;
+> +	u16 f1_x;
+> +	u16 f1_y;
+> +	/* only some tablets have 2FG info */
+> +	u8 f2_status;
+> +	u16 f2_x;
+> +	u16 f2_y;
+> +};
 
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index dd2bf53..6bea0b7 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -392,6 +392,7 @@
- #define __NR_rt_tgsigqueueinfo		(__NR_SYSCALL_BASE+363)
- #define __NR_perf_event_open		(__NR_SYSCALL_BASE+364)
- #define __NR_recvmmsg			(__NR_SYSCALL_BASE+365)
-+#define __NR_clock_adjtime		(__NR_SYSCALL_BASE+366)
- 
- /*
-  * The following SWIs are ARM private.
-diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
-index 37ae301..8a22fdd 100644
---- a/arch/arm/kernel/calls.S
-+++ b/arch/arm/kernel/calls.S
-@@ -375,6 +375,7 @@
- 		CALL(sys_rt_tgsigqueueinfo)
- 		CALL(sys_perf_event_open)
- /* 365 */	CALL(sys_recvmmsg)
-+		CALL(sys_clock_adjtime)
- #ifndef syscalls_counted
- .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
- #define syscalls_counted
-diff --git a/arch/blackfin/include/asm/unistd.h b/arch/blackfin/include/asm/unistd.h
-index 22886cb..6671913 100644
---- a/arch/blackfin/include/asm/unistd.h
-+++ b/arch/blackfin/include/asm/unistd.h
-@@ -389,8 +389,9 @@
- #define __NR_rt_tgsigqueueinfo	368
- #define __NR_perf_event_open	369
- #define __NR_recvmmsg		370
-+#define __NR_clock_adjtime	371
- 
--#define __NR_syscall		371
-+#define __NR_syscall		372
- #define NR_syscalls		__NR_syscall
- 
- /* Old optional stuff no one actually uses */
-diff --git a/arch/blackfin/mach-common/entry.S b/arch/blackfin/mach-common/entry.S
-index a5847f5..252f2fa 100644
---- a/arch/blackfin/mach-common/entry.S
-+++ b/arch/blackfin/mach-common/entry.S
-@@ -1628,6 +1628,7 @@ ENTRY(_sys_call_table)
- 	.long _sys_rt_tgsigqueueinfo
- 	.long _sys_perf_event_open
- 	.long _sys_recvmmsg		/* 370 */
-+	.long _sys_clock_adjtime
- 
- 	.rept NR_syscalls-(.-_sys_call_table)/4
- 	.long _sys_ni_syscall
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index a5ee345..e7dce86 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -326,3 +326,4 @@ SYSCALL_SPU(perf_event_open)
- COMPAT_SYS_SPU(preadv)
- COMPAT_SYS_SPU(pwritev)
- COMPAT_SYS(rt_tgsigqueueinfo)
-+COMPAT_SYS_SPU(clock_adjtime)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index f0a1026..7d4d9c8 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -345,10 +345,11 @@
- #define __NR_preadv		320
- #define __NR_pwritev		321
- #define __NR_rt_tgsigqueueinfo	322
-+#define __NR_clock_adjtime	323
- 
- #ifdef __KERNEL__
- 
--#define __NR_syscalls		323
-+#define __NR_syscalls		324
- 
- #define __NR__exit __NR_exit
- #define NR_syscalls	__NR_syscalls
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index e790bc1..8237c8d 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -842,4 +842,5 @@ ia32_sys_call_table:
- 	.quad compat_sys_rt_tgsigqueueinfo	/* 335 */
- 	.quad sys_perf_event_open
- 	.quad compat_sys_recvmmsg
-+	.quad compat_sys_clock_adjtime
- ia32_syscall_end:
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index beb9b5f..79cbef6 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -343,10 +343,11 @@
- #define __NR_rt_tgsigqueueinfo	335
- #define __NR_perf_event_open	336
- #define __NR_recvmmsg		337
-+#define __NR_clock_adjtime	338
- 
- #ifdef __KERNEL__
- 
--#define NR_syscalls 338
-+#define NR_syscalls 339
- 
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index ff4307b..3ee70cd 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -663,6 +663,8 @@ __SYSCALL(__NR_rt_tgsigqueueinfo, sys_rt_tgsigqueueinfo)
- __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
- #define __NR_recvmmsg				299
- __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
-+#define __NR_clock_adjtime			300
-+__SYSCALL(__NR_clock_adjtime, sys_clock_adjtime)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index 8b37293..3569859 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -337,3 +337,4 @@ ENTRY(sys_call_table)
- 	.long sys_rt_tgsigqueueinfo	/* 335 */
- 	.long sys_perf_event_open
- 	.long sys_recvmmsg
-+	.long sys_clock_adjtime
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 4f71bf4..534c12d 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -71,6 +71,8 @@ struct k_clock {
- 	int (*clock_getres) (const clockid_t which_clock, struct timespec *tp);
- 	int (*clock_set) (const clockid_t which_clock, struct timespec * tp);
- 	int (*clock_get) (const clockid_t which_clock, struct timespec * tp);
-+	int (*clock_adj) (const clockid_t which_clock, int ppb,
-+			  struct timespec *tp);
- 	int (*timer_create) (struct k_itimer *timer);
- 	int (*nsleep) (const clockid_t which_clock, int flags,
- 		       struct timespec *, struct timespec __user *);
-@@ -85,6 +87,7 @@ struct k_clock {
- };
- 
- void register_posix_clock(const clockid_t clock_id, struct k_clock *new_clock);
-+void unregister_posix_clock(const clockid_t clock_id);
- 
- /* error handlers for timer_create, nanosleep and settime */
- int do_posix_clock_nonanosleep(const clockid_t, int flags, struct timespec *,
-@@ -97,6 +100,8 @@ int posix_timer_event(struct k_itimer *timr, int si_private);
- int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *ts);
- int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *ts);
- int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *ts);
-+int posix_cpu_clock_adj(const clockid_t which_clock, int ppb,
-+			struct timespec *tp);
- int posix_cpu_timer_create(struct k_itimer *timer);
- int posix_cpu_nsleep(const clockid_t which_clock, int flags,
- 		     struct timespec *rqtp, struct timespec __user *rmtp);
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 13ebb54..f641cc5 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -314,6 +314,9 @@ asmlinkage long sys_clock_settime(clockid_t which_clock,
- 				const struct timespec __user *tp);
- asmlinkage long sys_clock_gettime(clockid_t which_clock,
- 				struct timespec __user *tp);
-+asmlinkage long sys_clock_adjtime(clockid_t which_clock,
-+				int ppb,
-+				const struct timespec __user *tp);
- asmlinkage long sys_clock_getres(clockid_t which_clock,
- 				struct timespec __user *tp);
- asmlinkage long sys_clock_nanosleep(clockid_t which_clock, int flags,
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 5adab05..df1e469 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -628,6 +628,26 @@ long compat_sys_clock_gettime(clockid_t which_clock,
- 	return err;
- }
- 
-+long compat_sys_clock_adjtime(clockid_t which_clock, int ppb,
-+		struct compat_timespec __user *tp)
-+{
-+	long err;
-+	mm_segment_t oldfs;
-+	struct timespec ts, *ptr = NULL;
-+
-+	if (tp) {
-+		if (get_compat_timespec(&ts, tp))
-+			return -EFAULT;
-+		ptr = &ts;
-+	}
-+	oldfs = get_fs();
-+	set_fs(KERNEL_DS);
-+	err = sys_clock_adjtime(which_clock, ppb,
-+				(struct timespec __user *) ptr);
-+	set_fs(oldfs);
-+	return err;
-+}
-+
- long compat_sys_clock_getres(clockid_t which_clock,
- 		struct compat_timespec __user *tp)
- {
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 9829646..5843f5a 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -207,6 +207,11 @@ int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
- 	return error;
- }
- 
-+int posix_cpu_clock_adj(const clockid_t which_clock, int ppb,
-+			struct timespec *tp)
-+{
-+	return -EOPNOTSUPP;
-+}
- 
- /*
-  * Sample a per-thread clock for the given task.
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index ad72342..089b0d1 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -197,6 +197,12 @@ static int common_timer_create(struct k_itimer *new_timer)
- 	return 0;
- }
- 
-+static inline int common_clock_adj(const clockid_t which_clock, int ppb,
-+				   struct timespec *tp)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- static int no_timer_create(struct k_itimer *new_timer)
- {
- 	return -EOPNOTSUPP;
-@@ -488,6 +494,21 @@ void register_posix_clock(const clockid_t clock_id, struct k_clock *new_clock)
- }
- EXPORT_SYMBOL_GPL(register_posix_clock);
- 
-+void unregister_posix_clock(const clockid_t clock_id)
-+{
-+	struct k_clock *clock;
-+
-+	if ((unsigned) clock_id >= MAX_CLOCKS) {
-+		pr_err("POSIX clock unregister failed for clock_id %d\n",
-+		       clock_id);
-+		return;
-+	}
-+
-+	clock = &posix_clocks[clock_id];
-+	memset(clock, 0, sizeof(*clock));
-+}
-+EXPORT_SYMBOL_GPL(unregister_posix_clock);
-+
- static struct k_itimer * alloc_posix_timer(void)
- {
- 	struct k_itimer *tmr;
-@@ -968,6 +989,23 @@ SYSCALL_DEFINE2(clock_gettime, const clockid_t, which_clock,
- 
- }
- 
-+SYSCALL_DEFINE3(clock_adjtime, const clockid_t, which_clock,
-+		int, ppb, const struct timespec __user *, tp)
-+{
-+	struct timespec new_tp, *ts = NULL;
-+
-+	if (invalid_clockid(which_clock))
-+		return -EINVAL;
-+
-+	if (tp) {
-+		if (copy_from_user(&new_tp, tp, sizeof(*tp)))
-+			return -EFAULT;
-+		ts = &new_tp;
-+	}
-+
-+	return CLOCK_DISPATCH(which_clock, clock_adj, (which_clock, ppb, ts));
-+}
-+
- SYSCALL_DEFINE2(clock_getres, const clockid_t, which_clock,
- 		struct timespec __user *, tp)
- {
--- 
-1.7.0.4
 
+No pressure information from this device?
+
+> +
+>  /* touch query reply packet */
+>  struct w8001_touch_query {
+>  	u8 panel_res;
+> @@ -85,8 +96,18 @@ struct w8001 {
+>  	char phys[32];
+>  	int type;
+>  	unsigned int pktlen;
+> +	unsigned char tracking_id[2];
+>  };
+>  
+> +static int get_next_tracking_id(void)
+> +{
+> +	static unsigned char next_tracking_id;
+> +	next_tracking_id = (next_tracking_id + 1) % 256;
+> +	if (next_tracking_id == 0)
+> +		next_tracking_id = 1;
+> +	return next_tracking_id;
+> +}
+
+
+Zero is part of the valid range from 2.6.36. Can be implemented simply as
+(tracking_id++ & 0xfff), see recent MT slots patches.
+
+> +
+>  static void parse_data(u8 *data, struct w8001_coord *coord)
+>  {
+>  	memset(coord, 0, sizeof(*coord));
+> @@ -111,6 +132,26 @@ static void parse_data(u8 *data, struct w8001_coord *coord)
+>  	coord->tilt_y = data[8] & 0x7F;
+>  }
+>  
+> +static void parse_touch(u8 *data,
+> +			unsigned int pktlen, struct w8001_touch *touch)
+> +{
+> +	memset(touch, 0, sizeof(*touch));
+> +
+> +	touch->f1_status = data[0] & 0x1;
+> +	touch->f1_x = data[1] << 7;
+> +	touch->f1_x |= data[2];
+> +	touch->f1_y = data[3] << 7;
+> +	touch->f1_y |= data[4];
+
+
+What are data[5] and data[6]? Why is f1_x/y split into several lines?
+
+> +
+> +	if (pktlen >= W8001_PKTLEN_TOUCH2FG) {
+> +		touch->f2_status = (data[0] & 0x2) >> 1;
+> +		touch->f2_x = data[7] << 7;
+> +		touch->f2_x |= data[8];
+> +		touch->f2_y = data[9] << 7;
+> +		touch->f2_y |= data[10];
+> +	}
+
+
+What are data[11] and data[12]?
+
+Since all needed information is available here, there seems to be little reason
+for the w8001_touch structure. Why not complete the report in this function?
+
+> +}
+> +
+>  static void parse_touchquery(u8 *data, struct w8001_touch_query *query)
+>  {
+>  	memset(query, 0, sizeof(*query));
+> @@ -128,6 +169,46 @@ static void parse_touchquery(u8 *data, struct w8001_touch_query *query)
+>  	query->y |= (data[2] >> 3) & 0x3;
+>  }
+>  
+> +static void w8001_mt_event(struct input_dev *dev,
+> +			   int slot, int tid, int x, int y)
+> +{
+> +	input_mt_slot(dev, slot);
+> +	if (tid != 0) {
+> +		input_report_abs(dev, ABS_MT_POSITION_X, x);
+> +		input_report_abs(dev, ABS_MT_POSITION_Y, y);
+> +	}
+> +	input_report_abs(dev, ABS_MT_TRACKING_ID, tid);
+> +	input_report_abs(dev, ABS_MT_TOOL_TYPE, MT_TOOL_FINGER);
+> +	input_mt_sync(dev);
+> +}
+
+> +
+> +static void w8001_track_fingers(struct w8001 *w8001, struct w8001_touch *touch)
+> +{
+> +	struct input_dev *dev = w8001->dev;
+> +
+> +	if (touch->f1_status) {
+> +		if (!w8001->tracking_id[0])
+> +			w8001->tracking_id[0] = get_next_tracking_id();
+> +		w8001_mt_event(dev, 0, w8001->tracking_id[0],
+> +			       touch->f1_x, touch->f1_y);
+> +	} else if (w8001->tracking_id[0]) {
+> +		w8001->tracking_id[0] = 0;
+> +		w8001_mt_event(dev, 0, 0, touch->f1_x, touch->f1_y);
+> +	}
+
+> +
+> +	if (touch->f2_status) {
+> +		if (!w8001->tracking_id[1])
+> +			w8001->tracking_id[1] = get_next_tracking_id();
+> +		w8001_mt_event(dev, 1, w8001->tracking_id[1],
+> +			       touch->f2_x, touch->f2_y);
+> +	} else if (w8001->tracking_id[1]) {
+> +		w8001->tracking_id[1] = 0;
+> +		w8001_mt_event(dev, 1, 0, touch->f2_x, touch->f2_y);
+> +	}
+> +
+> +	input_sync(dev);
+> +}
+
+
+Apparently, f1 and f2 represent the slots themselves, i.e., the device uses
+slots internally. Please simplify the logic accordingly. There is an example in
+the recent patch for the Bamboo Touch.
+
+> +
+>  static void report_pen_events(struct w8001 *w8001, struct w8001_coord *coord)
+>  {
+>  	struct input_dev *dev = w8001->dev;
+> @@ -172,6 +253,7 @@ static irqreturn_t w8001_interrupt(struct serio *serio,
+>  {
+>  	struct w8001 *w8001 = serio_get_drvdata(serio);
+>  	struct w8001_coord coord;
+> +	struct w8001_touch touch;
+>  	unsigned char tmp;
+>  
+>  	w8001->data[w8001->idx] = data;
+> @@ -217,10 +299,11 @@ static irqreturn_t w8001_interrupt(struct serio *serio,
+>  		complete(&w8001->cmd_done);
+>  		break;
+>  
+> +	/* 2 finger touch packet */
+>  	case W8001_PKTLEN_TOUCH2FG - 1:
+> -		/* ignore two-finger touch packet. */
+> -		if (w8001->pktlen == w8001->idx)
+> -			w8001->idx = 0;
+> +		w8001->idx = 0;
+> +		parse_touch(w8001->data, w8001->pktlen, &touch);
+> +		w8001_track_fingers(w8001, &touch);
+>  		break;
+>  	}
+>  
+> @@ -282,6 +365,16 @@ static int w8001_setup(struct w8001 *w8001)
+>  			break;
+>  		case 5:
+>  			w8001->pktlen = W8001_PKTLEN_TOUCH2FG;
+> +
+> +			input_mt_create_slots(dev, 2);
+> +			input_set_abs_params(dev, ABS_MT_TRACKING_ID,
+> +						0, 255, 0, 0);
+> +			input_set_abs_params(dev, ABS_MT_POSITION_X,
+> +						0, touch.x, 0, 0);
+> +			input_set_abs_params(dev, ABS_MT_POSITION_Y,
+> +						0, touch.y, 0, 0);
+> +			input_set_abs_params(dev, ABS_MT_TOOL_TYPE,
+> +						0, 0, 0, 0);
+>  			break;
+>  		}
+>  	}
+
+
+No information about signal-to-noise ratio (fuzz) for this device?
+
+Thanks,
+Henrik
