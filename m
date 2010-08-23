@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab0HWNoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:44:30 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59314 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab0HWNo1 convert rfc822-to-8bit (ORCPT
+	id S1753424Ab0HWNo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:44:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50375 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab0HWNoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:44:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lcjEFhN0UDVGDdq4/20/Sp5ed0Bp6Reuv8M0b96K+cLnjsRsNeTJ50gLcjZ5YZtdwI
-         5S0lge5iU9RNlheFxwDgutvLxQHKrrOtvcu6ajtIJm1bbFz123uDEIw22vfLh0IeZ5B8
-         eURZ+u5mShWr87XO47xZEQEAdCpT/CW16VtME=
+	Mon, 23 Aug 2010 09:44:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linuxppc-dev@lists.ozlabs.org
+Subject: Re: 64-bit ppc rwsem
+Date: Mon, 23 Aug 2010 15:44:16 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: David Miller <davem@davemloft.net>, benh@kernel.crashing.org,
+        torvalds@linux-foundation.org, paulus@au.ibm.com,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        akpm@linux-foundation.org
+References: <1282107803.22370.173.camel@pasglop> <1282195403.22370.296.camel@pasglop> <20100818.222925.233689776.davem@davemloft.net>
+In-Reply-To: <20100818.222925.233689776.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <1282569477.2605.1798.camel@laptop>
-References: <1282373834.4080.79.camel@aijazbaig1-desktop>
-	<1282540448.4080.86.camel@aijazbaig1-desktop>
-	<AANLkTimtNOyJCbLxAW8Ebsftb58EWoNFW7Xkevqb6oGo@mail.gmail.com>
-	<1282569477.2605.1798.camel@laptop>
-Date: Mon, 23 Aug 2010 09:44:26 -0400
-Message-ID: <AANLkTinq5APN4CXWAGj9sTFiTf4Cn1_mDaJSrAOh=t+N@mail.gmail.com>
-Subject: Re: help needed with EXPORT_SYMBOL
-From: Brian Gerst <brgerst@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: aijazbaig1@gmail.com, netfilter-devel@vger.kernel.org, jengelh@medozas.de,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008231544.16422.arnd@arndb.de>
+X-Provags-ID: V02:K0:+gMr5qLPTsFbNGcOT2ugxpf0ptubz24453tO4E9rHE6
+ j6bkIR3eFcDLnXVeLADJaM7vuXHtQXaxVx6hpphkflKStbMMMW
+ RLERog5WvTQOKldqepdU3YxF6wShW239PbadxmGWitFBRZslcQ
+ FfkIQP8eNO1WP56R96gT97PGvh2xqJnpro/f/R/XWf0wbYQ6TU
+ ub/urGYV5x4tnKR60PTpQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 9:17 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-08-23 at 07:48 -0400, Brian Gerst wrote:
->>
->> Use an exported function pointer in the main kernel as a hook that the
->> module sets when it is loaded.  Note, you must use module_get and
->> module_put around the call to the module to prevent it from unloading
->> while in use.
->
-> Please don't do any such thing, its impossible to use correctly.
->
-> Suppose there are two modular users, A and B.
->
-> Both have something like:
->
-> extern void (*fptr)(void);
->
-> static void (*old_fptr)(void);
->
-> static void func(void)
-> {
->        /* foo */
->        if (old_fptr)
->                old_fptr();
-> }
->
-> module_init()
-> {
->        old_fptr = fptr;
->        fptr = A_func;
-> }
->
-> Then you load A, load B and unload A, then guess what happens?
->
+On Thursday 19 August 2010, David Miller wrote:
+> From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date: Thu, 19 Aug 2010 15:23:23 +1000
+> 
+> > Similar here, but using atomic_long_t instead so it works for 32-bit too
+> > for me. I suppose we could make that part common indeed.
+> > 
+> > What about asm-generic/rwsem-atomic.h  or rwsem-cmpxchg.h ?
+> 
+> Using rwsem-cmpxchg.h sounds best I guess.
 
-The assumption was that there was a single module using that hook.
-For multiple users you'd need to use a register function that adds the
-module to a linked list.
+The implementation looks good for asm-generic, but there is now an asymmetry
+between the spinlock and the atomic_long_t based version.
 
---
-Brian Gerst
+Maybe we can make them both do the same thing, either of
+
+1. create include/linux/rwsem-cmpxchg.h and add an
+   #elif defined(CONFIG_RWSEM_GENERIC_ATOMIC) to include/linux/rwsem.h
+
+2. move include/linux/rwsem-spinlock.h to include/asm-generic/ and
+   include that from all architectures that want the spinlock based version.
+
+Further comments:
+
+* Alpha has an optimization for the uniprocessor case, where the atomic
+instructions get turned into nonatomic additions. The spinlock based
+version uses no locks on UP but disables interrupts for reasons I don't
+understand (nothing running at interrupt time should try to access an rwsem).
+Should the generic version do the same as Alpha?
+
+* Is there any architecture that would still benefit from having a separate
+rwsem implementation? AFAICT all the remaining ones are just variations of
+the same concept of using cmpxchg (or xadd in case of x86), which is what
+atomics typically end up doing anyway.
+
+	Arnd
