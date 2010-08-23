@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab0HWIjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 04:39:49 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:57198 "EHLO smtp.gentoo.org"
+	id S1752173Ab0HWImf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 04:42:35 -0400
+Received: from peer.zerties.org ([188.40.33.175]:41324 "EHLO peer.zerties.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688Ab0HWIjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 04:39:47 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: uclinux-dist-devel@blackfin.uclinux.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] Blackfin: fix hweight breakage
-Date: Mon, 23 Aug 2010 04:40:03 -0400
-Message-Id: <1282552805-18989-2-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1282552805-18989-1-git-send-email-vapier@gentoo.org>
-References: <1282552805-18989-1-git-send-email-vapier@gentoo.org>
+	id S1751688Ab0HWImd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 04:42:33 -0400
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: Peppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vamos-dev\@i4.informatik.uni-erlangen.de" 
+	<vamos-dev@i4.informatik.uni-erlangen.de>
+Subject: Re: Dead Config Option STMMAC_ETH?
+References: <86r5i6vegw.fsf@peer.zerties.org>
+	<107012446AC13D4C90B85672EAF5FB0E9E0FB3CC9C@SAFEX1MAIL3.st.com>
+Date: Mon, 23 Aug 2010 10:42:26 +0200
+In-Reply-To: <107012446AC13D4C90B85672EAF5FB0E9E0FB3CC9C@SAFEX1MAIL3.st.com>
+	(Peppe CAVALLARO's message of "Mon, 23 Aug 2010 09:13:38 +0200")
+Message-ID: <86bp8tu3d9.fsf@peer.zerties.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent commit to add constant optimization to hweight implicitly broke
-the Blackfin arch.  Seems we were missed when all the other arches were
-fixed with renames.
+Peppe CAVALLARO <peppe.cavallaro@st.com> writes:
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- arch/blackfin/include/asm/bitops.h |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+[...]
 
-diff --git a/arch/blackfin/include/asm/bitops.h b/arch/blackfin/include/asm/bitops.h
-index d5872cd..3f7ef4d 100644
---- a/arch/blackfin/include/asm/bitops.h
-+++ b/arch/blackfin/include/asm/bitops.h
-@@ -22,7 +22,9 @@
- 
- #include <asm-generic/bitops/sched.h>
- #include <asm-generic/bitops/ffs.h>
-+#include <asm-generic/bitops/const_hweight.h>
- #include <asm-generic/bitops/lock.h>
-+
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-@@ -115,7 +117,7 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
-  * of bits set) of a N-bit word
-  */
- 
--static inline unsigned int hweight32(unsigned int w)
-+static inline unsigned int __arch_hweight32(unsigned int w)
- {
- 	unsigned int res;
- 
-@@ -125,19 +127,20 @@ static inline unsigned int hweight32(unsigned int w)
- 	return res;
- }
- 
--static inline unsigned int hweight64(__u64 w)
-+static inline unsigned int __arch_hweight64(__u64 w)
- {
--	return hweight32((unsigned int)(w >> 32)) + hweight32((unsigned int)w);
-+	return __arch_hweight32((unsigned int)(w >> 32)) +
-+	       __arch_hweight32((unsigned int)w);
- }
- 
--static inline unsigned int hweight16(unsigned int w)
-+static inline unsigned int __arch_hweight16(unsigned int w)
- {
--	return hweight32(w & 0xffff);
-+	return __arch_hweight32(w & 0xffff);
- }
- 
--static inline unsigned int hweight8(unsigned int w)
-+static inline unsigned int __arch_hweight8(unsigned int w)
- {
--	return hweight32(w & 0xff);
-+	return __arch_hweight32(w & 0xff);
- }
- 
- #endif				/* _BLACKFIN_BITOPS_H */
+> There is effort on this driver: currently the driver fully works on
+> STM platforms and starts working on ARM (SPEAr Kernels).  The driver
+> Kconfig actually depends on the CPU_SUBTYPE_ST40 but it built on x86
+> if remove this dependency (just verified).  In the past, I added this
+> dependency because the driver was initially tested on ST kernels
+> (where we continue to have the CPU_SUBTYPE_ST40) but I can review it
+> if you like.
+
+Hm, i think it would be good if this dependency is removed, if it isn't
+needed, because then a allyes config would compile test this peace of
+code, and it can't die silently with changes around it.
+
+greetz didi
 -- 
-1.7.2
-
+(λ x . x x) (λ x . x x) -- See how beatiful the lambda is
+No documentation is better than bad documentation
+-- Das Ausdrucken dieser Mail wird urheberrechtlich verfolgt.
