@@ -1,115 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab0HWAhi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 20:37:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47322 "EHLO mx1.redhat.com"
+	id S1751455Ab0HWAnd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 20:43:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57276 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab0HWAhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 20:37:24 -0400
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Paris <eparis@redhat.com>, Andreas Gruenbacher <agruen@suse.de>
-Subject: [PATCH 1/4] fanotify: flush outstanding perm requests on group destroy
-Date: Sun, 22 Aug 2010 20:37:07 -0400
-Message-Id: <1282523830-27751-1-git-send-email-eparis@redhat.com>
+	id S1751285Ab0HWAnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 20:43:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,254,1280732400"; 
+   d="scan'208";a="547671244"
+Date: Mon, 23 Aug 2010 08:43:28 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [patch]x86: avoid unnecessary tlb flush
+Message-ID: <20100823004328.GA9766@sli10-desk.sh.intel.com>
+References: <1281065308.29094.5.camel@sli10-desk.sh.intel.com>
+ <20100805221913.4da0f8be.akpm@linux-foundation.org>
+ <1281660475.21194.1.camel@sli10-desk.sh.intel.com>
+ <alpine.DEB.1.00.1008131222110.26182@tigran.mtv.corp.google.com>
+ <4C65B449.4010905@zytor.com>
+ <1281740437.2704.65.camel@sbsiddha-MOBL3.sc.intel.com>
+ <20100816011655.GA362@sli10-desk.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816011655.GA362@sli10-desk.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an fanotify listener is closing it may cause a deadlock between the
-listener and the original task doing an fs operation.  If the original task
-is waiting for a permissions response it will be holding the srcu lock.  The
-listener cannot clean up and exit until after that srcu lock is syncronized.
-Thus deadlock.  The fix introduced here is to stop accepting new permissions
-events when a listener is shutting down and to grant permission for all
-outstanding events.  Thus the original task will eventually release the srcu
-lock and the listener can complete shutdown.
+On Mon, Aug 16, 2010 at 09:16:55AM +0800, Shaohua Li wrote:
+> On Sat, Aug 14, 2010 at 07:00:37AM +0800, Siddha, Suresh B wrote:
+> > On Fri, 2010-08-13 at 14:08 -0700, H. Peter Anvin wrote:
+> > > On 08/13/2010 12:29 PM, Hugh Dickins wrote:
+> > > > 
+> > > > Just added Andrea to the Cc list: he did that TLB flush in 1a44e149,
+> > > > I'd feel more comfortable noop-ing it on x86 if you've convinced him.
+> > > > 
+> > > > Hugh
+> > > 
+> > > Andrea is probably on his way back from LinuxCon, but looking at the
+> > > original patch it might be something that non-x86 architectures need,
+> > > but which can be optimized specifically on x86, since x86 has explicit
+> > > "no flush needed when going to more permissive" semantics.
+> > 
+> > Yes. I don't see a problem with the proposed patch. This is the case of
+> > parallel thread execution getting spurious write protection faults for
+> > the same page for which the pte entry is already up to date and the
+> > fault has already flushed the existing spurious TLB entry in the case of
+> > x86.
+> > 
+> > I prefer a better name for the new flush_tlb_nonprotect_page() to
+> > reflect the above. something like tlb_fix_spurious_fault() or something?
+> this name is better.
+Hi Andrea,
+can you look at this patch?
 
-Reported-by: Andreas Gruenbacher <agruen@suse.de>
-Cc: Andreas Gruenbacher <agruen@suse.de>
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
- fs/notify/fanotify/fanotify_user.c |   27 +++++++++++++++++++++++++++
- include/linux/fanotify.h           |    7 -------
- include/linux/fsnotify_backend.h   |    1 +
- 3 files changed, 28 insertions(+), 7 deletions(-)
-
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 032b837..b966b72 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -195,6 +195,14 @@ static int prepare_for_access_response(struct fsnotify_group *group,
- 	re->fd = fd;
+Thanks,
+Shaohua
  
- 	mutex_lock(&group->fanotify_data.access_mutex);
-+
-+	if (group->fanotify_data.bypass_perm) {
-+		mutex_unlock(&group->fanotify_data.access_mutex);
-+		kmem_cache_free(fanotify_response_event_cache, re);
-+		event->response = FAN_ALLOW;
-+		return 0;
-+	}
-+		
- 	list_add_tail(&re->list, &group->fanotify_data.access_list);
- 	mutex_unlock(&group->fanotify_data.access_mutex);
- 
-@@ -364,9 +372,28 @@ static ssize_t fanotify_write(struct file *file, const char __user *buf, size_t
- static int fanotify_release(struct inode *ignored, struct file *file)
- {
- 	struct fsnotify_group *group = file->private_data;
-+	struct fanotify_response_event *re, *lre;
- 
- 	pr_debug("%s: file=%p group=%p\n", __func__, file, group);
- 
-+#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-+	mutex_lock(&group->fanotify_data.access_mutex);
-+
-+	group->fanotify_data.bypass_perm = true;
-+
-+	list_for_each_entry_safe(re, lre, &group->fanotify_data.access_list, list) {
-+		pr_debug("%s: found group=%p re=%p event=%p\n", __func__, group,
-+			 re, re->event);
-+
-+		list_del_init(&re->list);
-+		re->event->response = FAN_ALLOW;
-+
-+		kmem_cache_free(fanotify_response_event_cache, re);
-+	}
-+	mutex_unlock(&group->fanotify_data.access_mutex);
-+
-+	wake_up(&group->fanotify_data.access_waitq);
-+#endif
- 	/* matches the fanotify_init->fsnotify_alloc_group */
- 	fsnotify_put_group(group);
- 
-diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
-index f0949a5..9854356 100644
---- a/include/linux/fanotify.h
-+++ b/include/linux/fanotify.h
-@@ -95,11 +95,4 @@ struct fanotify_response {
- 				(long)(meta)->event_len >= (long)FAN_EVENT_METADATA_LEN && \
- 				(long)(meta)->event_len <= (long)(len))
- 
--#ifdef __KERNEL__
--
--struct fanotify_wait {
--	struct fsnotify_event *event;
--	__s32 fd;
--};
--#endif /* __KERNEL__ */
- #endif /* _LINUX_FANOTIFY_H */
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index ed36fb5..e40190d 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -156,6 +156,7 @@ struct fsnotify_group {
- 			struct mutex access_mutex;
- 			struct list_head access_list;
- 			wait_queue_head_t access_waitq;
-+			bool bypass_perm; /* protected by access_mutex */
- #endif /* CONFIG_FANOTIFY_ACCESS_PERMISSIONS */
- 			int f_flags;
- 		} fanotify_data;
--- 
-1.6.5.3
-
+> In x86, access and dirty bits are set automatically by CPU when CPU accesses
+> memory. When we go into the code path of below flush_tlb_fix_spurious_fault(),
+> we already set dirty bit for pte and don't need flush tlb. This might mean
+> tlb entry in some CPUs hasn't dirty bit set, but this doesn't matter. When
+> the CPUs do page write, they will automatically check the bit and no software
+> involved. 
+> 
+> On the other hand, flush tlb in below position is harmful. Test creates CPU
+> number of threads, each thread writes to a same but random address in same vma
+> range and we measure the total time. Under a 4 socket system, original time is
+> 1.96s, while with the patch, the time is 0.8s. Under a 2 socket system, there is
+> 20% time cut too. perf shows a lot of time are taking to send ipi/handle ipi for
+> tlb flush.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> 
+> ---
+>  arch/x86/include/asm/pgtable.h |    2 ++
+>  include/asm-generic/pgtable.h  |    4 ++++
+>  mm/memory.c                    |    2 +-
+>  3 files changed, 7 insertions(+), 1 deletion(-)
+> 
+> Index: linux/arch/x86/include/asm/pgtable.h
+> ===================================================================
+> --- linux.orig/arch/x86/include/asm/pgtable.h	2010-08-16 09:00:02.000000000 +0800
+> +++ linux/arch/x86/include/asm/pgtable.h	2010-08-16 09:03:41.000000000 +0800
+> @@ -603,6 +603,8 @@ static inline void ptep_set_wrprotect(st
+>  	pte_update(mm, addr, ptep);
+>  }
+>  
+> +#define flush_tlb_fix_spurious_fault(vma, address)
+> +
+>  /*
+>   * clone_pgd_range(pgd_t *dst, pgd_t *src, int count);
+>   *
+> Index: linux/include/asm-generic/pgtable.h
+> ===================================================================
+> --- linux.orig/include/asm-generic/pgtable.h	2010-08-16 09:00:02.000000000 +0800
+> +++ linux/include/asm-generic/pgtable.h	2010-08-16 09:03:41.000000000 +0800
+> @@ -129,6 +129,10 @@ static inline void ptep_set_wrprotect(st
+>  #define move_pte(pte, prot, old_addr, new_addr)	(pte)
+>  #endif
+>  
+> +#ifndef flush_tlb_fix_spurious_fault
+> +#define flush_tlb_fix_spurious_fault(vma, address) flush_tlb_page(vma, address)
+> +#endif
+> +
+>  #ifndef pgprot_noncached
+>  #define pgprot_noncached(prot)	(prot)
+>  #endif
+> Index: linux/mm/memory.c
+> ===================================================================
+> --- linux.orig/mm/memory.c	2010-08-16 09:03:08.000000000 +0800
+> +++ linux/mm/memory.c	2010-08-16 09:03:41.000000000 +0800
+> @@ -3140,7 +3140,7 @@ static inline int handle_pte_fault(struc
+>  		 * with threads.
+>  		 */
+>  		if (flags & FAULT_FLAG_WRITE)
+> -			flush_tlb_page(vma, address);
+> +			flush_tlb_fix_spurious_fault(vma, address);
+>  	}
+>  unlock:
+>  	pte_unmap_unlock(pte, ptl);
