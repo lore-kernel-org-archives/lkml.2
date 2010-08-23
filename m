@@ -1,122 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab0HWUVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:21:49 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:48956 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754307Ab0HWUVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:21:47 -0400
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-From: john stultz <johnstul@us.ibm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>
-In-Reply-To: <20100819153847.GA10695@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
-	 <1282176776.2865.100.camel@localhost.localdomain>
-	 <20100819055518.GA4084@riccoc20.at.omicron.at>
-	 <201008191428.04546.arnd@arndb.de>
-	 <20100819153847.GA10695@riccoc20.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 13:21:39 -0700
-Message-ID: <1282594899.3111.358.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754663Ab0HWUWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:22:12 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:41754 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab0HWUWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 16:22:06 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] tty: Remove __GFP_NOFAIL from tty_add_file()
+Date: Mon, 23 Aug 2010 23:21:55 +0300
+Message-Id: <1282594915-2480-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-19 at 17:38 +0200, Richard Cochran wrote:
-> On Thu, Aug 19, 2010 at 02:28:04PM +0200, Arnd Bergmann wrote:
-> > My point was that a syscall is better than an ioctl based interface here,
-> > which I definitely still think. Given that John knows much more about
-> > clocks than I do, we still need to get agreement on the question that
-> > he raised, which is whether we actually need to expose this clock to the
-> > user or not.
-> > 
-> > If we can find a way to sync system time accurate enough with PTP and
-> > PPS, user applications may not need to see two separate clocks at all.
-> 
-> At the very least, one user application (the PTPd) needs to see the
-> PTP clock.
-> 
-> > > SYSCALL_DEFINE3(clock_adjtime, const clockid_t, clkid,
-> > > 		int, ppb, struct timespec __user *, ts)
-> > > 
-> > > ppb - desired frequency adjustment in parts per billion
-> > > ts  - desired time step (or jump) in <sec,nsec> to correct
-> > >       a measured offset
-> > > 
-> > > Arguably, this syscall might be useful for other clocks, too.
-> > 
-> > This is a mix of adjtime and adjtimex with the addition of
-> > the clkid parameter, right?
-> 
-> Sort of, but not really. ADJTIME(3) takes an offset and slowly
-> corrects the clock using a servo in the kernel, over hours.
-> 
-> For this function, the offset passed in the 'ts' parameter will be
-> immediately corrected, by jumping to the new time. This reflects the
-> way that PTP works. After the first few samples, the PTPd has an
-> estimate of the offset to the master and the rate difference. The PTPd
-> can proceed in one of two ways.
-> 
-> 1. If resetting the clock is not desired, then the clock is set to the
->    maximum adjustment (in the right direction) until the clock time is
->    close to the master's time.
-> 
-> 2. The estimated offset is added to the current time, resulting in a
->    jump in time.
-> 
-> We need clock_adjtime(id, 0, ts) for the second case.
->
-> > Have you considered passing a struct timex instead of ppb and ts?
-> 
-> Yes, but the timex is not suitable, IMHO.
+This patch removes __GFP_NOFAIL use from tty_add_file() and adds proper error
+handling to the call-sites of the function.
 
-Could you expand on this?
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/char/pty.c    |    4 +++-
+ drivers/char/tty_io.c |   15 +++++++++++----
+ include/linux/tty.h   |    2 +-
+ 3 files changed, 15 insertions(+), 6 deletions(-)
 
-Could we not add a adjustment mode ADJ_SETOFFSET or something that would
-provide the instantaneous offset correction?
-
-> > Is using ppb instead of the timex ppm required to get the accuracy
-> > you want?
-> 
-> That is one very good reason.
-> 
-> Another is this: can you explain what the 20+ fields mean?
-> 
-> Consider the field, freq. The comment says "frequency offset (scaled
-> ppm)."  To what is it scaled? The only way I know of to find out is to
-> read the NTP code (which is fairly complex) and see what the unit
-> really is meant to be. Ditto for the other fields.
-> 
-> The timex structure reveals, AFAICT, the inner workings of the kernel
-> clock servo. For PTP, we don't need or want the kernel servo. The PTPd
-> has its own clock servo in user space.
-
-You're right that the timex is a little crufty. But its legacy that we
-will support indefinitely. So following the established interface helps
-maintainability.
-
-So if the clock_adjtime interface is needed, it would seem best for it
-to be generic enough to support not only PTP, but also the NTP kernel
-PLL. 
-
-In effect, this would make clock_adjtime(or clock_adjtimex) identical to
-adjtimex, but only applicable to different CLOCK_ids. Additionally, it
-would simplify the code for the CLOCK_REALTIME case as you could just
-call directly into do_adjtimex(). 
-
-Of course, extending adjtimex for ADJ_SETOFFSET would be needed first,
-but that seems like a reasonable expansion of the interface that could
-be used by more then just PTP.
-
-thanks
--john
-
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index c350d01..bc577ac 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -676,7 +676,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+ 
+ 	set_bit(TTY_PTY_LOCK, &tty->flags); /* LOCK THE SLAVE */
+ 
+-	tty_add_file(tty, filp);
++	retval = tty_add_file(tty, filp);
++	if (retval)
++		goto out1;
+ 
+ 	retval = devpts_pty_new(inode, tty->link);
+ 	if (retval)
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 949067a..1587f93 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -194,12 +194,13 @@ static inline struct tty_struct *file_tty(struct file *file)
+ }
+ 
+ /* Associate a new file with the tty structure */
+-void tty_add_file(struct tty_struct *tty, struct file *file)
++int tty_add_file(struct tty_struct *tty, struct file *file)
+ {
+ 	struct tty_file_private *priv;
+ 
+-	/* XXX: must implement proper error handling in callers */
+-	priv = kmalloc(sizeof(*priv), GFP_KERNEL|__GFP_NOFAIL);
++	priv = kmalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
+ 
+ 	priv->tty = tty;
+ 	priv->file = file;
+@@ -208,6 +209,8 @@ void tty_add_file(struct tty_struct *tty, struct file *file)
+ 	spin_lock(&tty_files_lock);
+ 	list_add(&priv->list, &tty->tty_files);
+ 	spin_unlock(&tty_files_lock);
++
++	return 0;
+ }
+ 
+ /* Delete file from its tty */
+@@ -1875,7 +1878,11 @@ got_driver:
+ 		return PTR_ERR(tty);
+ 	}
+ 
+-	tty_add_file(tty, filp);
++	retval = tty_add_file(tty, filp);
++	if (retval) {
++		tty_unlock();
++		return retval;
++	}
+ 
+ 	check_tty_count(tty, "tty_open");
+ 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 67d64e6..a3f4388 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -465,7 +465,7 @@ extern void proc_clear_tty(struct task_struct *p);
+ extern struct tty_struct *get_current_tty(void);
+ extern void tty_default_fops(struct file_operations *fops);
+ extern struct tty_struct *alloc_tty_struct(void);
+-extern void tty_add_file(struct tty_struct *tty, struct file *file);
++extern int tty_add_file(struct tty_struct *tty, struct file *file);
+ extern void free_tty_struct(struct tty_struct *tty);
+ extern void initialize_tty_struct(struct tty_struct *tty,
+ 		struct tty_driver *driver, int idx);
+-- 
+1.6.3.3
 
