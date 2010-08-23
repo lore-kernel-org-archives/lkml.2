@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab0HWPBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:01:10 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60112 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab0HWPBJ (ORCPT
+	id S1754022Ab0HWPB2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 11:01:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50561 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab0HWPBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:01:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=l7LnpxOSBajCBmAA6m34yzjJNmTkimA5QLNtit5t76Vd/EkaUFvbbeLsElvwnABhym
-         Tb4NVNFbmb54Crft9Kr0G11Z+zcm1mGvnZ9G8C0L9Bdv8bV/csqOe41i7TVCwKjkhfg6
-         HDgVdDmic5lCm80pdxV0PTUtn+QF0aRf5uDN4=
-Subject: Re: [PATCH 2/2] workqueue: mark lock acquisition on
- worker_maybe_bind_and_lock()
-From: Namhyung Kim <namhyung@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4C72423E.3000402@kernel.org>
-References: <1282486783-4573-2-git-send-email-namhyung@gmail.com>
-	 <4C72423E.3000402@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Aug 2010 00:01:01 +0900
-Message-ID: <1282575661.1659.6.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 23 Aug 2010 11:01:25 -0400
+Date: Mon, 23 Aug 2010 11:00:23 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, npiggin@kernel.dk
+Subject: Re: aio: bump i_count instead of using igrab
+Message-ID: <20100823150023.GR21975@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+	npiggin@kernel.dk
+References: <20100823144755.GP21975@think>
+ <20100823145031.GA1279@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100823145031.GA1279@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-08-23 (월), 11:41 +0200, Tejun Heo:
-> Also, please considering putting related patches into a thread.  For
-> short series, just chaining them is good enough (ie. patch n+1 is
-> reply to patch n).  For longer series, writing up a head message with
-> overall description, diffstat and other general info about the patch
-> series and making all patches reaplies to the head message is a good
-> idea.
+On Mon, Aug 23, 2010 at 10:50:31AM -0400, Christoph Hellwig wrote:
+> On Mon, Aug 23, 2010 at 10:47:55AM -0400, Chris Mason wrote:
+> > The aio batching code is using igrab to get an extra reference on the
+> > inode so it can safely batch.  igrab will go ahead and take the global
+> > inode spinlock, which can be a bottleneck on large machines doing lots
+> > of AIO.
+> > 
+> > In this case, igrab isn't required because we already have a reference
+> > on the file handle.  It is safe to just bump the i_count directly
+> > on the inode.
+> > 
+> > Benchmarking shows this patch brings IOP/s on tons of flash up by about
+> > 2.5X.
 > 
-> Thanks.
+> There's some places in XFS where we do the same, and it showed up as a
+> bottle neck before.  Instead of open coding the increment we have
+> a wrapper that includes and assert that the numbers is always positive.
+> 
+> I think we really want a proper helper for general use instead of
+> completly opencoding it.
 > 
 
-OK. I see. Thank you for the advice.
+Nick, this is about a 1 liner to fs/aio.c replacing igrab with
+atomic_inc directly on the inode reference count.
 
--- 
-Regards,
-Namhyung Kim
+I know your scalability tree gets rid of the global, but in this case I
+think it still makes sense to avoid the locking completely when the
+caller knows it is safe.  Do you already have something similar hiding
+in the scalability tree?
 
-
+-chris
