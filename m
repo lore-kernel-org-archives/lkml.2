@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab0HWRDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 13:03:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35681 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab0HWRDs (ORCPT
+	id S1753988Ab0HWRGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 13:06:18 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49048 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab0HWRGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 13:03:48 -0400
+	Mon, 23 Aug 2010 13:06:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=mIm7lfDf6Ny6He0CKZgUea/Pzyxt7lPThAkYHFYV2/iYwOVZ3LXnP6yyk2Xl1cSh6T
-         2WVvJjTsxKRFODGIZ4xhkJSBXFlFq/Rq5VL5/ER0cV1Lia5TfNNWptKag0SaNEMTSk6E
-         7GUAiijZ79gW4sps3Dh8+bA0NToPfddZ3dV38=
-Date: Tue, 24 Aug 2010 02:03:40 +0900
+        b=NEWnCzb6zA/qE8agHlpMCP+poqRUz56OCqk7C41c1T8xd9qt2oG+pOMbxZ9WZsd/av
+         yzgHVhRrJUH9OL7IvjMrlehHjm+PmJFdK9iCzXNhhhzS3FZROoe3V6XOIUqnYQZkQWtC
+         3SOYd2puRoo3U4iH5RcFF4LXK75A/DLFlvdkQ=
+Date: Tue, 24 Aug 2010 02:06:10 +0900
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Christoph Lameter <cl@linux.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -22,7 +22,7 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
         Mel Gorman <mel@csn.ul.ie>
 Subject: Re: [PATCH] compaction: fix COMPACTPAGEFAILED counting
-Message-ID: <20100823170340.GA2304@barrios-desktop>
+Message-ID: <20100823170610.GB2304@barrios-desktop>
 References: <1282580114-2136-1-git-send-email-minchan.kim@gmail.com>
  <alpine.DEB.2.00.1008231140320.9496@router.home>
 MIME-Version: 1.0
@@ -43,16 +43,11 @@ On Mon, Aug 23, 2010 at 11:41:49AM -0500, Christoph Lameter wrote:
 > > the pages.
 > 
 > Could we simply make migrate_pages simply not do any cleanup?
-
-If migrate_pages always return number of pages not migrated, it's possible.
-But now it can return the number of pages not migrated or error code. 
-In case of returning error code, caller has a complex routine to know count the 
-number of success.
-
 > Caller has to call putback_lru_pages()?
 > 
-Hmm. yes it's not good. At least we can help some NOTE.
-migrate_pages isn't generic kernel API so i think documentation is enough. 
+Hmm. maybe I misunderstood your point. 
+Your point is that let's make whole caller of migrate_pagse has a responsibility
+of clean up the list?
 
 -- 
 Kind regards,
