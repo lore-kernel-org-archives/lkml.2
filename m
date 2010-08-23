@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab0HWXbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 19:31:53 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:23370 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab0HWXbv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 19:31:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=pC1mxs/nn4wS6C7vsnMTR3IkocrSTzDEzFUAoa3h4RvvXHybua0fnQU5aQBC9pPa2u
-         gMw9XMn6o2RNfpr4A0Cw==
-MIME-Version: 1.0
-In-Reply-To: <20100811054814.GC8743@ghc17.ghc.andrew.cmu.edu>
-References: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
-	<20100811054604.GA8743@ghc17.ghc.andrew.cmu.edu>
-	<20100811054814.GC8743@ghc17.ghc.andrew.cmu.edu>
-Date: Mon, 23 Aug 2010 16:31:47 -0700
-Message-ID: <AANLkTind=V+V8vz1PGWiB8bCGVmfPJgC1q_XRmi5t_Eq@mail.gmail.com>
-Subject: Re: [PATCH v5 2/3] cgroups: add can_attach callback for checking all
- threads in a group
-From: Paul Menage <menage@google.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-        matthltc@us.ibm.com, oleg@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1752590Ab0HWXc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 19:32:28 -0400
+Received: from tex.lwn.net ([70.33.254.29]:36257 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab0HWXc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 19:32:27 -0400
+Date: Mon, 23 Aug 2010 17:32:25 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Eric Anholt <eric@anholt.net>
+Subject: Re: [now bisected] i915: 2.6.36-rc2 hoses my Intel display
+Message-ID: <20100823173225.2bda6f78@bike.lwn.net>
+In-Reply-To: <8u3s8d$jcc0rr@orsmga001.jf.intel.com>
+References: <20100823110145.08eb72fd@bike.lwn.net>
+ <20100823151708.6b242599@bike.lwn.net>
+ <8u3s8d$jcc0rr@orsmga001.jf.intel.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 10:48 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
->
-> Add cgroup wrapper for safely calling can_attach on all threads in a threadgroup
->
-> From: Ben Blum <bblum@andrew.cmu.edu>
->
-> This patch adds a function cgroup_can_attach_per_thread which handles iterating
-> over each thread in a threadgroup safely with respect to the invariants that
-> will be used in cgroup_attach_proc. Also, subsystems whose can_attach calls
-> require per-thread validation are modified to use the per_thread wrapper to
-> avoid duplicating cgroup-internal code.
->
-> This is a pre-patch for cgroup-procs-writable.patch.
->
-> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+On Mon, 23 Aug 2010 23:36:55 +0100
+Chris Wilson <chris@chris-wilson.co.uk> wrote:
 
-Acked-by: Paul Menage <menage@google.com>
+> Taking the patch at face value, the cause should be a mistake in error
+> handling. So the first step would be to identify which i2c_transfer()
+> failed.
 
-Some of the can_attach() methods could be simplified slightly by
-directly returning the result of cgroup_can_attach_per_thread()
+OK, I tried it, but neither warning triggers.
 
-Paul
+Don't know if it helps or not, but I tried booting with
+drm.debug=0x05.  The result was truly vast amounts of stuff like this:
+
+Aug 23 17:20:59 bike kernel: m:drm_ioctl], pid=2032, cmd=0x6458
+nm:drm_ioctl], pid=2032, cmd=0x6458, nm:drm_ioctl], pid=2032, cmd=0x645
+m:drm_ioctl], pid=2032, cmd=0x6458 m:drm_ioctl], pid=2032, cmd=0x6458,
+m:drm_ioctl], pid=2032, cmd=0x6458, nm:drm_ioctl], pid=2032, cmd=0x6458
+nm:drm_ioctl], pid=2032, cmd=0x6458 m:drm_ioctl], pid=2032, cmd=0x6458
+nm:drm_ioctl], pid=2032, cmd=0x6458 nm:drm_ioctl], pid=2032, cmd=0x6458,
+nm:drm_ioctl], pid=2032, cmd=0x6458, nm:drm_ioctl], pid=2032, cmd=0x6458
+nm:drm_ioctl], pid=2032, cmd=0x6458 m:drm_ioctl], pid=2032, cmd=0x6458
+nm:drm_ioctl], pid=2032, cmd=0x6458, nm:drm_ioctl], pid=2032, cmd=0x6458
+m:drm_ioctl], pid=2032, cmd=0x6458 nm:drm_ioctl], pid=2032, cmd=0x6458,
+nm:drm_ioctl], pid=2032, cmd=0x6458 m:drm_ioctl], pid=2032, cmd=0x6458
+nm:drm_ioctl], pid=2032, cmd=0x6458 nm:drm_ioctl], pid=2032, cmd=0x6458,
+nm:drm_ioctl], pid=2032, cmd=0x6458, m:drm_ioctl], pid=2032, cmd=0x6458,
+nm:drm_ioctl], pid=2032, cmd=0x6458 nm:drm_ioctl], pid=2032, cmd=0x6458
+nm:drm_ioctl], pid=2032, c
+
+The above is one line from the system log; I took the liberty of wrapping
+it for readability.  
+
+jon
