@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0HWNcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:32:07 -0400
-Received: from borg.medozas.de ([188.40.89.202]:39052 "EHLO borg.medozas.de"
+	id S1753205Ab0HWNcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:32:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20608 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab0HWNcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:32:05 -0400
-Date: Mon, 23 Aug 2010 15:32:03 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Brian Gerst <brgerst@gmail.com>, aijazbaig1@gmail.com,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: help needed with EXPORT_SYMBOL
-In-Reply-To: <1282569477.2605.1798.camel@laptop>
-Message-ID: <alpine.LNX.2.01.1008231527390.21000@obet.zrqbmnf.qr>
-References: <1282373834.4080.79.camel@aijazbaig1-desktop>  <1282540448.4080.86.camel@aijazbaig1-desktop>  <AANLkTimtNOyJCbLxAW8Ebsftb58EWoNFW7Xkevqb6oGo@mail.gmail.com> <1282569477.2605.1798.camel@laptop>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1752586Ab0HWNcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:32:21 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] arch/mn10300/mm: eliminate NULL dereference
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia@diku.dk>,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 23 Aug 2010 14:31:34 +0100
+Message-ID: <20100823133134.25674.77240.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 2010-08-23 15:17, Peter Zijlstra wrote:
+From: Julia Lawall <julia@diku.dk>
 
->On Mon, 2010-08-23 at 07:48 -0400, Brian Gerst wrote:
->> 
->> Use an exported function pointer in the main kernel as a hook that the
->> module sets when it is loaded.  Note, you must use module_get and
->> module_put around the call to the module to prevent it from unloading
->> while in use. 
->
->Please don't do any such thing, its impossible to use correctly.
->
->Suppose there are two modular users, A and B.
+dev_name always dereferences its argument, so it should not be called if
+the argument is NULL.  The function indeed later tests the argument for
+being NULL.
 
-Though in case there is just a single user it can work out.
-Just like bridge.c, and the bunch of nf_nat_*.c. :-)
-Though yeah. Bad bad.
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-This is starting to sound pretty much like an XY problem: XY problem: 
-You want to do X, but don't know how. You think you can solve it using 
-Y, but don't know how to do that, either. You ask about Y, which is a 
-strange thing to want to do. Just ask about X.
+// <smpl>
+@@
+expression dev,E;
+@@
 
-(And then there is still the "good idea to do X in the first place" 
-thing.) Like what's so important to have as a module when you can build 
-it in, given that the caller is built-in (obj-y) itself.
+*dev_name(dev)
+... when != dev = E
+(
+*dev == NULL
+|
+*dev != NULL
+)
+// </smpl>
 
->module_init()
->{
->	old_fptr = fptr;
->	fptr = A_func;
->}
->
->Then you load A, load B and unload A, then guess what happens?
->
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/mn10300/mm/dma-alloc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+
+diff --git a/arch/mn10300/mm/dma-alloc.c b/arch/mn10300/mm/dma-alloc.c
+index 4e34880..159acb0 100644
+--- a/arch/mn10300/mm/dma-alloc.c
++++ b/arch/mn10300/mm/dma-alloc.c
+@@ -25,7 +25,8 @@ void *dma_alloc_coherent(struct device *dev, size_t size,
+ 	unsigned long addr;
+ 	void *ret;
+ 
+-	printk("dma_alloc_coherent(%s,%zu,,%x)\n", dev_name(dev), size, gfp);
++	pr_debug("dma_alloc_coherent(%s,%zu,%x)\n",
++		 dev ? dev_name(dev) : "?", size, gfp);
+ 
+ 	if (0xbe000000 - pci_sram_allocated >= size) {
+ 		size = (size + 255) & ~255;
 
