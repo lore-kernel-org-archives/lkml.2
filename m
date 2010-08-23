@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab0HWUM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:12:57 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:39544 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab0HWUMw (ORCPT
+	id S1754723Ab0HWUN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:13:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3400 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704Ab0HWUNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:12:52 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6083"; a="51829543"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 3/5] msm: convert 8x50 to gpiomux.
-Date: Mon, 23 Aug 2010 13:12:46 -0700
-Message-Id: <1282594368-5791-3-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
-References: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
+	Mon, 23 Aug 2010 16:13:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=GZMUEUBcBnCWnwMalwZYm8la5Fsa7JMeZTaNbqZRcfaHZ8Vsc4Z99eyCiCEwbN8oI
+	8vfKEx9EEn0RdqC/JJPBg==
+Date: Mon, 23 Aug 2010 13:13:12 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/6] md: remove dependency on __GFP_NOFAIL
+In-Reply-To: <AANLkTikpTZfUE-XFCXJV6FdZy0ZTWeoPLF_qErvvjGOy@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008231310100.17716@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com> <alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com> <20100823122606.47524cef.akpm@linux-foundation.org> <alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
+ <20100823130109.6da43a58.akpm@linux-foundation.org> <AANLkTikpTZfUE-XFCXJV6FdZy0ZTWeoPLF_qErvvjGOy@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1584180509-1282594394=:17716"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the gpio-init code from deprecated gpio_tlmm_config
-to the new gpiomux api.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/board-qsd8x50.c |   12 ------------
- arch/arm/mach-msm/gpiomux-8x50.c  |   11 ++++++++++-
- 2 files changed, 10 insertions(+), 13 deletions(-)
+--531368966-1584180509-1282594394=:17716
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
-index e3cc807..fb0fe67 100644
---- a/arch/arm/mach-msm/board-qsd8x50.c
-+++ b/arch/arm/mach-msm/board-qsd8x50.c
-@@ -35,21 +35,10 @@
- 
- extern struct sys_timer msm_timer;
- 
--static struct msm_gpio uart3_config_data[] = {
--	{ GPIO_CFG(86, 1, GPIO_INPUT,   GPIO_PULL_DOWN, GPIO_2MA), "UART2_Rx"},
--	{ GPIO_CFG(87, 1, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_Tx"},
--};
--
- static struct platform_device *devices[] __initdata = {
- 	&msm_device_uart3,
- };
- 
--static void msm8x50_init_uart3(void)
--{
--	msm_gpios_request_enable(uart3_config_data,
--				ARRAY_SIZE(uart3_config_data));
--}
--
- static void __init qsd8x50_map_io(void)
- {
- 	msm_map_qsd8x50_io();
-@@ -64,7 +53,6 @@ static void __init qsd8x50_init_irq(void)
- 
- static void __init qsd8x50_init(void)
- {
--	msm8x50_init_uart3();
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
- }
- 
-diff --git a/arch/arm/mach-msm/gpiomux-8x50.c b/arch/arm/mach-msm/gpiomux-8x50.c
-index 7b380b3..4406e0f 100644
---- a/arch/arm/mach-msm/gpiomux-8x50.c
-+++ b/arch/arm/mach-msm/gpiomux-8x50.c
-@@ -16,4 +16,13 @@
-  */
- #include "gpiomux.h"
- 
--struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {};
-+struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
-+	[86] = { /* UART3 RX */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_1 | GPIOMUX_VALID,
-+	},
-+	[87] = { /* UART3 TX */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_1 | GPIOMUX_VALID,
-+	},
-+};
--- 
-1.7.0.4
+On Mon, 23 Aug 2010, Pekka Enberg wrote:
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> > Hows about you add a helper function
+> >
+> >        void *[kmalloc|alloc_page]_retrying_forever_because_i_suck(lots of args)
+> >
+> > then convert the callsites to use that, then nuke __GFP_NOFAIL?
+> 
+> I'd prefer killing off __GFP_NOFAIL properly :-)
+> 
+
+And how is this not done properly if it's not even needed for any of the 
+allocations in this patchset since the page allocator loops forever for 
+their orders and context?  (This is why we don't need to add __GFP_NOWARN 
+in its place.)
+
+This is a cleanup patchset to remove the unnecessary use of __GFP_NOFAIL, 
+there _are_ GFP_KERNEL | __GFP_NOFAIL allocations that need to be 
+addressed in phase three.
+--531368966-1584180509-1282594394=:17716--
