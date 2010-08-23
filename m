@@ -1,98 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0HWPF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:05:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55330 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab0HWPFw (ORCPT
+	id S1754024Ab0HWPG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 11:06:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40669 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680Ab0HWPG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:05:52 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: linux-kernel@vger.kernen.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH] driver core: platform_bus: allow runtime override of dev_pm_ops
-Date: Mon, 23 Aug 2010 08:05:48 -0700
-Message-Id: <1282575949-27826-1-git-send-email-khilman@deeprootsystems.com>
-X-Mailer: git-send-email 1.7.2.1
+	Mon, 23 Aug 2010 11:06:58 -0400
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linux-i2c@vger.kernel.org
+Cc: Jean Delvare <khali@linux-fr.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Mack <daniel@caiaq.de>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Hemanth V <hemanthv@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Paul Gortmaker <p_gortmaker@yahoo.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Roy Zang <tie-fei.zang@freescale.com>,
+        Jingchang Lu <b22599@freescale.com>,
+        Mingkai Hu <Mingkai.hu@freescale.com>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: [PATCH] i2c: remove obsolete cleanup for clientdata
+Date: Mon, 23 Aug 2010 17:05:08 +0200
+Message-Id: <1282575908-16555-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@ti.com>
+A few new i2c-drivers came into the kernel which clear the clientdata-pointer
+on exit. This is obsolete meanwhile, so fix it and hope the word will spread.
 
-Currently, the platform_bus allows customization of several of the
-busses dev_pm_ops methods by using weak symbols so that platform code
-can override them.  The weak-symbol approach is not scalable when
-wanting to support multiple platforms in a single kernel binary.
-
-Instead, provide __init methods for platform code to customize the
-dev_pm_ops methods at runtime.
-
-NOTE: after these dynamic methods are merged, the weak symbols should
-      be removed from drivers/base/platform.c.  AFAIK, this will only
-      affect SH and sh-mobile which should be converted to use this
-      runtime approach instead of the weak symbols.  After SH &
-      sh-mobile are converted, the weak symobols could be removed.
-
-Tested on OMAP3.
-
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- drivers/base/platform.c         |   16 ++++++++++++++++
- include/linux/platform_device.h |    3 +++
- 2 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index c6c933f..a7d8a00 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -976,6 +976,22 @@ struct bus_type platform_bus_type = {
- };
- EXPORT_SYMBOL_GPL(platform_bus_type);
+Jean, I dunno if it fits for 2.6.36. It is not precisely a regression.
+Though, if it enters with the next merge window, the next set of "faulty"
+drivers may come in at the same time...
+
+ drivers/misc/bh1780gli.c               |    1 -
+ drivers/regulator/ad5398.c             |    1 -
+ drivers/regulator/isl6271a-regulator.c |    2 --
+ drivers/rtc/rtc-ds3232.c               |    2 --
+ 4 files changed, 0 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
+index 714c6b4..d5f3a3f 100644
+--- a/drivers/misc/bh1780gli.c
++++ b/drivers/misc/bh1780gli.c
+@@ -190,7 +190,6 @@ static int __devexit bh1780_remove(struct i2c_client *client)
  
-+const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
-+{
-+	struct bus_type *bus = &platform_bus_type;
-+
-+	return bus->pm;
-+}
-+
-+int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm)
-+{
-+	struct bus_type *bus = &platform_bus_type;
-+
-+	bus->pm = pm;
-+
-+	return 0;
-+}
-+
- int __init platform_bus_init(void)
- {
- 	int error;
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index d7ecad0..4bce2c9 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -138,6 +138,9 @@ extern struct platform_device *platform_create_bundle(struct platform_driver *dr
- 					struct resource *res, unsigned int n_res,
- 					const void *data, size_t size);
+ 	ddata = i2c_get_clientdata(client);
+ 	sysfs_remove_group(&client->dev.kobj, &bh1780_attr_group);
+-	i2c_set_clientdata(client, NULL);
+ 	kfree(ddata);
  
-+extern const struct dev_pm_ops * __init platform_bus_get_pm_ops(void);
-+extern int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm);
-+
- /* early platform driver interface */
- struct early_platform_driver {
- 	const char *class_str;
+ 	return 0;
+diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
+index d59d2f2..15ff61d 100644
+--- a/drivers/regulator/ad5398.c
++++ b/drivers/regulator/ad5398.c
+@@ -256,7 +256,6 @@ static int __devexit ad5398_remove(struct i2c_client *client)
+ 
+ 	regulator_unregister(&chip->rdev);
+ 	kfree(chip);
+-	i2c_set_clientdata(client, NULL);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
+index e49d2bd..65ecd82 100644
+--- a/drivers/regulator/isl6271a-regulator.c
++++ b/drivers/regulator/isl6271a-regulator.c
+@@ -191,8 +191,6 @@ static int __devexit isl6271a_remove(struct i2c_client *i2c)
+ 	struct isl_pmic *pmic = i2c_get_clientdata(i2c);
+ 	int i;
+ 
+-	i2c_set_clientdata(i2c, NULL);
+-
+ 	for (i = 0; i < 3; i++)
+ 		regulator_unregister(pmic->rdev[i]);
+ 
+diff --git a/drivers/rtc/rtc-ds3232.c b/drivers/rtc/rtc-ds3232.c
+index 9daed8d..9de8516 100644
+--- a/drivers/rtc/rtc-ds3232.c
++++ b/drivers/rtc/rtc-ds3232.c
+@@ -268,7 +268,6 @@ out_irq:
+ 		free_irq(client->irq, client);
+ 
+ out_free:
+-	i2c_set_clientdata(client, NULL);
+ 	kfree(ds3232);
+ 	return ret;
+ }
+@@ -287,7 +286,6 @@ static int __devexit ds3232_remove(struct i2c_client *client)
+ 	}
+ 
+ 	rtc_device_unregister(ds3232->rtc);
+-	i2c_set_clientdata(client, NULL);
+ 	kfree(ds3232);
+ 	return 0;
+ }
 -- 
-1.7.2.1
+1.7.1
 
