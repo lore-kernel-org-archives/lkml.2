@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab0HWP2e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:28:34 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43727 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab0HWP2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:28:32 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org
-Subject: [PATCH] driver core: platform_bus: allow runtime override of dev_pm_ops
-Date: Mon, 23 Aug 2010 08:28:16 -0700
-Message-Id: <1282577310-10430-1-git-send-email-khilman@deeprootsystems.com>
-X-Mailer: git-send-email 1.7.2.1
+	id S1754110Ab0HWPaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 11:30:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523Ab0HWPaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 11:30:07 -0400
+Date: Mon, 23 Aug 2010 18:29:17 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v5 02/12] Add PV MSR to enable asynchronous page faults
+ delivery.
+Message-ID: <20100823152917.GT10499@redhat.com>
+References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
+ <1279553462-7036-3-git-send-email-gleb@redhat.com>
+ <4C72921A.8000308@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C72921A.8000308@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@ti.com>
+On Mon, Aug 23, 2010 at 06:22:02PM +0300, Avi Kivity wrote:
+>  On 07/19/2010 06:30 PM, Gleb Natapov wrote:
+> >Guess enables async PF vcpu functionality using this MSR.
+> >
+> >
+> >
+> >+static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+> >+{
+> >+	u64 gpa = data&  ~0x3f;
+> >+	int offset = offset_in_page(gpa);
+> >+	unsigned long addr;
+> >+
+> >+	/* Bits 1:5 are resrved, Should be zero */
+> >+	if (data&  0x3e)
+> >+		return 1;
+> >+
+> >+	vcpu->arch.apf_msr_val = data;
+> >+
+> >+	if (!(data&  KVM_ASYNC_PF_ENABLED)) {
+> >+		vcpu->arch.apf_data = NULL;
+> >+		return 0;
+> >+	}
+> >+
+> >+	addr = gfn_to_hva(vcpu->kvm, gpa>>  PAGE_SHIFT);
+> >+	if (kvm_is_error_hva(addr))
+> >+		return 1;
+> >+
+> >+	vcpu->arch.apf_data = (u32 __user*)(addr + offset);
+> 
+> This can be invalidated by host userspace playing with memory
+> regions.  It needs to be recalculated on memory map changes, and it
+> may disappear from under the guest's feet (in which case we're
+> allowed to KVM_REQ_TRIPLE_FAULT it).
+> 
+> (note: this is a much better approach than kvmclock's and vapic's,
+> we should copy it there)
+> 
+apf_put_user() tracks memory slot changes and revalidate the address if
+needed.
 
-Currently, the platform_bus allows customization of several of the
-busses dev_pm_ops methods by using weak symbols so that platform code
-can override them.  The weak-symbol approach is not scalable when
-wanting to support multiple platforms in a single kernel binary.
+> >+
+> >+	/* check if address is mapped */
+> >+	if (get_user(offset, vcpu->arch.apf_data)) {
+> >+		vcpu->arch.apf_data = NULL;
+> >+		return 1;
+> >+	}
+> 
+> So, this check can succeed today but fail tomorrow.
+> 
 
-Instead, provide __init methods for platform code to customize the
-dev_pm_ops methods at runtime.
+> >+	return 0;
+> >+}
+> >+
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
 
-NOTE: after these dynamic methods are merged, the weak symbols should
-      be removed from drivers/base/platform.c.  AFAIK, this will only
-      affect SH and sh-mobile which should be converted to use this
-      runtime approach instead of the weak symbols.  After SH &
-      sh-mobile are converted, the weak symobols could be removed.
-
-Tested on OMAP3.
-
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
----
-Apolgies for duplicate mails.  I fat-fingered the LKML list addr the first try.
-
- drivers/base/platform.c         |   16 ++++++++++++++++
- include/linux/platform_device.h |    3 +++
- 2 files changed, 19 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index c6c933f..a7d8a00 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -976,6 +976,22 @@ struct bus_type platform_bus_type = {
- };
- EXPORT_SYMBOL_GPL(platform_bus_type);
- 
-+const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
-+{
-+	struct bus_type *bus = &platform_bus_type;
-+
-+	return bus->pm;
-+}
-+
-+int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm)
-+{
-+	struct bus_type *bus = &platform_bus_type;
-+
-+	bus->pm = pm;
-+
-+	return 0;
-+}
-+
- int __init platform_bus_init(void)
- {
- 	int error;
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index d7ecad0..4bce2c9 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -138,6 +138,9 @@ extern struct platform_device *platform_create_bundle(struct platform_driver *dr
- 					struct resource *res, unsigned int n_res,
- 					const void *data, size_t size);
- 
-+extern const struct dev_pm_ops * __init platform_bus_get_pm_ops(void);
-+extern int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm);
-+
- /* early platform driver interface */
- struct early_platform_driver {
- 	const char *class_str;
--- 
-1.7.2.1
-
+--
+			Gleb.
