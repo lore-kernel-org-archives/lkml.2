@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0HWPNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:13:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40792 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab0HWPNF (ORCPT
+	id S1754058Ab0HWPRk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 11:17:40 -0400
+Received: from p-mail1.rd.francetelecom.com ([195.101.245.15]:32409 "EHLO
+	p-mail1.rd.francetelecom.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753901Ab0HWPRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:13:05 -0400
-X-User-Agent: K-9 Mail for Android
-References: <1282575949-27826-1-git-send-email-khilman@deeprootsystems.com>
-In-Reply-To: <1282575949-27826-1-git-send-email-khilman@deeprootsystems.com>
+	Mon, 23 Aug 2010 11:17:38 -0400
+X-Greylist: delayed 2114 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Aug 2010 11:17:38 EDT
+Message-ID: <4C728145.4030808@Free.fr>
+Date: Mon, 23 Aug 2010 16:10:13 +0200
+From: Eric Valette <Eric.Valette@Free.fr>
+Reply-To: Eric.Valette@Free.fr
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Lightning/1.0b2 Icedove/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] driver core: platform_bus: allow runtime override of dev_pm_ops
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 23 Aug 2010 09:12:06 -0600
-To: Kevin Hilman <khilman@deeprootsystems.com>, linux-kernel@vger.kernen.org
-CC: Magnus Damm <magnus.damm@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
-        Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Message-ID: <4cb3d19e-ab7a-495f-b48c-70e3ec9f3b9b@email.android.com>
+To: linux-kernel@vger.kernel.org
+Subject: Please add generic support for root=UUID= at kernel parameter command
+ line (LABEL, BYID maybe also)
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Aug 2010 14:10:13.0774 (UTC) FILETIME=[E7ABAAE0:01CB42CC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+
+I just bought an new external disk enclosure with e-sata/USB2 connector 
+to replace an old USB2 only external disk enclosure.
+
+My internal drive is a small SSD because I use the small factor PC as a 
+home theater and do want silence and fast boot. I build my own kernel to 
+put only what I need in and also boot somehow faster.
+
+I use grub2 (up to date) as a loader. As soon as I power on the external 
+sata disk, the system does not boot because hardware designer add the 
+great idea to put the internal sata connector on ata3 whereas the 
+external e-sata is wired on ata2.
+
+consequence is that root file system is on sda1 when no external drive 
+is connected and sdb1 when the external drive is connected.
+
+As my grub setup was having a root=/dev/sda1 command line parameter and 
+it was advertised everywhere that root=UUID=xxxxx was now supported, I 
+changed the line to discover that this only work if an initramfs was 
+loaded because support is done entirely in used space! Reading 
+init/do_mounts.c made it very clear.
+
+I find it extremely curious to have to add an initramfs to support 
+dynamic drive identification, especially when the BYID value is 
+displayed during boot message.
+
+The boot loader cannot do a better job than the kernel and its life may 
+be even worse as bios value for the same disk may change according to 
+boot disk priorities.
+
+Any hint comment? Any other way to avoid using a ramdisk? Please CC me 
+as I'm not subscribed.
+
+-- eric
 
 
-"Kevin Hilman" <khilman@deeprootsystems.com> wrote:
 
->From: Kevin Hilman <khilman@ti.com>
->
->Currently, the platform_bus allows customization of several of the
->busses dev_pm_ops methods by using weak symbols so that platform code
->can override them.  The weak-symbol approach is not scalable when
->wanting to support multiple platforms in a single kernel binary.
->
->Instead, provide __init methods for platform code to customize the
->dev_pm_ops methods at runtime.
->
->NOTE: after these dynamic methods are merged, the weak symbols should
->      be removed from drivers/base/platform.c.  AFAIK, this will only
->      affect SH and sh-mobile which should be converted to use this
->      runtime approach instead of the weak symbols.  After SH &
->      sh-mobile are converted, the weak symobols could be removed.
->
->Tested on OMAP3.
->
->Cc: Grant Likely <grant.likely@secretlab.ca>
->Cc: Magnus Damm <magnus.damm@gmail.com>
->Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
->---
-> drivers/base/platform.c         |   16 ++++++++++++++++
-> include/linux/platform_device.h |    3 +++
-> 2 files changed, 19 insertions(+), 0 deletions(-)
->
->diff --git a/drivers/base/platform.c b/drivers/base/platform.c
->index c6c933f..a7d8a00 100644
->--- a/drivers/base/platform.c
->+++ b/drivers/base/platform.c
->@@ -976,6 +976,22 @@ struct bus_type platform_bus_type = {
-> };
-> EXPORT_SYMBOL_GPL(platform_bus_type);
-> 
->+const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
->+{
->+	struct bus_type *bus = &platform_bus_type;
->+
->+	return bus->pm;
->+}
->+
->+int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm)
->+{
->+	struct bus_type *bus = &platform_bus_type;
->+
->+	bus->pm = pm;
->+
->+	return 0;
->+}
->+
-
-Looks okay to me,  but these functions should have kerneldoc headers describing what they are, and more importantly, the constraints and what the acceptable use case is.
-
-g.
-
-> int __init platform_bus_init(void)
-> {
-> 	int error;
->diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
->index d7ecad0..4bce2c9 100644
->--- a/include/linux/platform_device.h
->+++ b/include/linux/platform_device.h
->@@ -138,6 +138,9 @@ extern struct platform_device *platform_create_bundle(struct platform_driver *dr
-> 					struct resource *res, unsigned int n_res,
-> 					const void *data, size_t size);
-> 
->+extern const struct dev_pm_ops * __init platform_bus_get_pm_ops(void);
->+extern int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm);
->+
-> /* early platform driver interface */
-> struct early_platform_driver {
-> 	const char *class_str;
->-- 
->1.7.2.1
->
-
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
