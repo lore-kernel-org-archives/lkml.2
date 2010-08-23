@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab0HWGCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 02:02:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52730 "EHLO mx1.suse.de"
+	id S1753281Ab0HWGNg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 02:13:36 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52953 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab0HWGCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 02:02:44 -0400
-Date: Mon, 23 Aug 2010 08:02:42 +0200
-Message-ID: <s5hzkwddfy5.wl%tiwai@suse.de>
+	id S1753031Ab0HWGNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 02:13:34 -0400
+Date: Mon, 23 Aug 2010 08:13:33 +0200
+Message-ID: <s5hocctdfg2.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Zhenyu Wang <zhenyuw@linux.intel.com>
 Cc: Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
         dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] agp/intel: Fix dma mask for Sandybridge
-In-Reply-To: <20100823054303.GC29442@zhen-devel.sh.intel.com>
+In-Reply-To: <s5hzkwddfy5.wl%tiwai@suse.de>
 References: <s5hlj81cn4n.wl%tiwai@suse.de>
 	<20100823013507.GA29442@zhen-devel.sh.intel.com>
 	<s5h62z1ew1y.wl%tiwai@suse.de>
 	<20100823054303.GC29442@zhen-devel.sh.intel.com>
+	<s5hzkwddfy5.wl%tiwai@suse.de>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,41 +28,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 23 Aug 2010 13:43:03 +0800,
-Zhenyu Wang wrote:
+At Mon, 23 Aug 2010 08:02:42 +0200,
+I wrote:
 > 
-> On 2010.08.23 07:29:29 +0200, Takashi Iwai wrote:
-> > > Sandybridge can do 40-bit dma mask. This has been fixed upstream now.
+> At Mon, 23 Aug 2010 13:43:03 +0800,
+> Zhenyu Wang wrote:
 > > 
-> > Could you point where is the upstream GIT tree and the corresponding
-> > commit id?
+> > On 2010.08.23 07:29:29 +0200, Takashi Iwai wrote:
+> > > > Sandybridge can do 40-bit dma mask. This has been fixed upstream now.
+> > > 
+> > > Could you point where is the upstream GIT tree and the corresponding
+> > > commit id?
+> > > 
 > > 
+> > Linus's tree:
+> > 
+> > commit 877fdacf8291d7627f339885b5ae52c2f6061734
+> > Author: Zhenyu Wang <zhenyuw@linux.intel.com>
+> > Date:   Thu Aug 19 09:46:13 2010 +0800
+> > 
+> > agp/intel: set 40-bit dma mask on Sandybridge
+> >         
+> > Signed-off-by: Zhenyu Wang <zhenyuw@linux.intel.com>
+> > Signed-off-by: Eric Anholt <eric@anholt.net>
 > 
-> Linus's tree:
+> Thanks.
 > 
-> commit 877fdacf8291d7627f339885b5ae52c2f6061734
-> Author: Zhenyu Wang <zhenyuw@linux.intel.com>
-> Date:   Thu Aug 19 09:46:13 2010 +0800
+> But, isn't it better to add .dma_mask field to struct
+> agp_bridge_driver?
 > 
-> agp/intel: set 40-bit dma mask on Sandybridge
->         
-> Signed-off-by: Zhenyu Wang <zhenyuw@linux.intel.com>
-> Signed-off-by: Eric Anholt <eric@anholt.net>
+> Also, I don't understand the logic of 40bit addr calculation:
+> 
+> > static unsigned long intel_gen6_mask_memory(struct agp_bridge_data *bridge,
+> >                                             dma_addr_t addr, int type)
+> > {
+> >         /* Shift high bits down */
+> >        addr |= (addr >> 28) & 0xff;
+> 
+> Isn't it 0xff0?
 
-Thanks.
+Or, it's rather meant (addr >> 32) & 0xff?
+If so, better to be upper_32_bits(addr) & 0xff...
 
-But, isn't it better to add .dma_mask field to struct
-agp_bridge_driver?
 
-Also, I don't understand the logic of 40bit addr calculation:
-
-> static unsigned long intel_gen6_mask_memory(struct agp_bridge_data *bridge,
->                                             dma_addr_t addr, int type)
-> {
->         /* Shift high bits down */
->        addr |= (addr >> 28) & 0xff;
-
-Isn't it 0xff0?
-
+thanks,
 
 Takashi
