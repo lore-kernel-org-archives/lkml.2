@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805Ab0HWL2y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 07:28:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55984 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab0HWL2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 07:28:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=RceV/zLghCjbMPlw/LkIa7iWKjMV5VEvHjdmQ63k/I5CX/52lbTnMG8GkkFiuuuYwn
-         Jh995KfP7ATEeWbrlCfaKsQXrl0ph0sppgrixo9NJ4RHPqp3Lse0utgxQF5FrUd8ZvkX
-         cQEDsF15Li716xdYAgUA9prIa3DxXakyVVWUk=
-Date: Mon, 23 Aug 2010 13:28:28 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: David Airlie <airlied@linux.ie>
-Cc: Eric Anholt <eric@anholt.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Zhenyu Wang <zhenyuw@linux.intel.com>,
-        Zhao Yakui <yakui.zhao@intel.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] i915: remove unneed NULL checks
-Message-ID: <20100823112828.GK6674@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	David Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Zhenyu Wang <zhenyuw@linux.intel.com>,
-	Zhao Yakui <yakui.zhao@intel.com>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <20100623170426.GB15424@bicker>
+	id S1752385Ab0HWL3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 07:29:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751904Ab0HWL27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 07:28:59 -0400
+Message-ID: <4C725B75.9000106@redhat.com>
+Date: Mon, 23 Aug 2010 14:28:53 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100623170426.GB15424@bicker>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Xiaotian Feng <xtfeng@gmail.com>
+CC: Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Subject: Re: [PATCH 0/4 v2] kvm: rework KVM mmu_shrink() code
+References: <20100820011054.GA11297@tpepper-t61p.dolavim.us>	<4C724BDB.8020604@redhat.com>	<4C724D13.6000807@redhat.com> <AANLkTi=7HdLqm-g1F+ezhDN4n+vPo2jAo2cgn-M6_wMJ@mail.gmail.com>
+In-Reply-To: <AANLkTi=7HdLqm-g1F+ezhDN4n+vPo2jAo2cgn-M6_wMJ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 07:06:22PM +0200, Dan Carpenter wrote:
-> We don't need to check the list cursor in a list_for_each_entry().  It's
-> always non-null.
-> 
+  On 08/23/2010 02:11 PM, Xiaotian Feng wrote:
+> On Mon, Aug 23, 2010 at 6:27 PM, Avi Kivity<avi@redhat.com>  wrote:
+>>   On 08/23/2010 01:22 PM, Avi Kivity wrote:
+>>>
+>>> I see a lot of soft lockups with this patchset:
+>> This is running the emulator.flat test case, with shadow paging.  This test
+>> triggers a lot (millions) of mmu mode switches.
+>>
+> Does following patch fix your issue?
+>
 
-Here is another one that never got applied.  I has a sad face.  :(
+It does indeed!
 
-regards,
-dan carpenter
+-- 
+error compiling committee.c: too many arguments to function
 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index cc8131f..8a2bdfc 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -745,7 +745,7 @@ bool intel_pipe_has_type (struct drm_crtc *crtc, int type)
->      struct drm_encoder *l_entry;
->  
->      list_for_each_entry(l_entry, &mode_config->encoder_list, head) {
-> -	    if (l_entry && l_entry->crtc == crtc) {
-> +	    if (l_entry->crtc == crtc) {
->  		    struct intel_encoder *intel_encoder = enc_to_intel_encoder(l_entry);
->  		    if (intel_encoder->type == type)
->  			    return true;
-> @@ -3322,7 +3322,7 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
->  
->  	list_for_each_entry(encoder, &mode_config->encoder_list, head) {
->  
-> -		if (!encoder || encoder->crtc != crtc)
-> +		if (encoder->crtc != crtc)
->  			continue;
->  
->  		intel_encoder = enc_to_intel_encoder(encoder);
