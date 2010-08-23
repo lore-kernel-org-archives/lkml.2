@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab0HWSAC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 14:00:02 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52949 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab0HWSAB convert rfc822-to-8bit (ORCPT
+	id S1754168Ab0HWSAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 14:00:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41069 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab0HWSAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 14:00:01 -0400
-Subject: Re: [RFC] mlock/stack guard interaction fixup
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ian Jackson <ijackson@chiark.greenend.org.uk>, Greg KH <gregkh@suse.de>,
-        Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeremy Fitzhardinge <jeremy@goop.org>
-In-Reply-To: <AANLkTi=+O8wKZV6XT5wGJbfZdgC9kxTxvtEZMD+M+pZn@mail.gmail.com>
-References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
-	 <1282391770.29609.1223.camel@localhost.localdomain>
-	 <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
-	 <1282460275.11348.865.camel@localhost.localdomain>
-	 <1282462386.11348.871.camel@localhost.localdomain>
-	 <1282470917.11348.891.camel@localhost.localdomain>
-	 <20100822172548.GB8957@suse.de>
-	 <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
-	 <19570.38608.79434.179797@chiark.greenend.org.uk>
-	 <1282580751.2605.1997.camel@laptop>
-	 <19570.44367.719276.128881@chiark.greenend.org.uk>
-	 <AANLkTi=+O8wKZV6XT5wGJbfZdgC9kxTxvtEZMD+M+pZn@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 23 Aug 2010 19:59:45 +0200
-Message-ID: <1282586385.2605.2119.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 23 Aug 2010 14:00:04 -0400
+Message-ID: <4C72B6F7.8010706@kernel.org>
+Date: Mon, 23 Aug 2010 10:59:19 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Daniel Kiper <dkiper@net-space.pl>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, apic: Fix apic=debug boot crash
+References: <20100819224616.GB9967@router-fw-old.local.net-space.pl> <tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org> <AANLkTim9kjBp68LqieU3MDLbkRDiWLNQjtUvjEbc9Hca@mail.gmail.com> <20100823081212.GA13297@router-fw-old.local.net-space.pl> <9cca0990-1b78-40e7-a71d-f550b4f504aa@email.android.com>
+In-Reply-To: <9cca0990-1b78-40e7-a71d-f550b4f504aa@email.android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-23 at 10:34 -0700, Linus Torvalds wrote:
-> I suspect that if you use mlock for _any_ other reason than protecting
-> a particular very sensitive piece of information, you should use
-> mlockall(MCL_FUTURE). IOW, if you use mlock because you have realtime
-> issues, there is no excuse to ever use anything else, imho. And even
-> then, I guarantee that things like copy-on-write is going to be
-> "interesting".
+On 08/23/2010 07:54 AM, H. Peter Anvin wrote:
+> It's already applied.
 > 
-> I realize that people hate mlockall() (and particularly MCL_FUTURE),
-> and yes, it's a bloated thing that you can't reasonably use on a large
-> process. But dammit, if you have RT issues, you shouldn't _have_ some
-> big bloated process. You should have a small statically linked server
-> that is RT, and nothing else. 
+> "Daniel Kiper" <dkiper@net-space.pl> wrote:
+> 
+>> Hi,
+>>
+>> On Fri, Aug 20, 2010 at 12:24:20PM -0700, Yinghai Lu wrote:
+>>> On Fri, Aug 20, 2010 at 5:41 AM, tip-bot for Daniel Kiper
+>>> <dkiper@net-space.pl> wrote:
+>>>> Commit-ID: ?05e407603e527f9d808dd3866d3a17c2ce4dfcc5
+>>>> Gitweb: ? ? http://git.kernel.org/tip/05e407603e527f9d808dd3866d3a17c2ce4dfcc5
+>>>> Author: ? ? Daniel Kiper <dkiper@net-space.pl>
+>>>> AuthorDate: Fri, 20 Aug 2010 00:46:16 +0200
+>>>> Committer: ?Ingo Molnar <mingo@elte.hu>
+>>>> CommitDate: Fri, 20 Aug 2010 10:18:28 +0200
+>>>>
+>>>> x86, apic: Fix apic=debug boot crash
+>>>>
+>>>> Fix a boot crash when apic=debug is used and the APIC is
+>>>> not properly initialized.
+>>>>
+>>>> This issue appears during Xen Dom0 kernel boot but the
+>>>> fix is generic and the crash could occur on real hardware
+>>>> as well.
+>>>
+>>> Do you have any report on real hardware?
+>>> that could not happen on real hardware.
+>>
+>> Till now no, however I think it is good idea
+>> to apply this patch now. It is not worth to wait
+>> for another null pointer dereference.
 
-Us real-time people have been telling people to not use mlockall() at
-all.
+no, we should add BUG_ON() etc debug info there to see why that null cfg could happen.
 
-While small !glibc statically linked RT components using shared memory
-interfaces to !RT apps could work its not how people actually write
-their apps. They write big monolithic threaded apps where some threads
-are RT.
+because according to code, we should have null there.
 
-[ in part because there doesn't seem to be a usable !glibc
-libpthread/librt implementation out there, in part because people use
-crap like Java-RT ]
-
-
+Yinghai
