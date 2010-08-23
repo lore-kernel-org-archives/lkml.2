@@ -1,139 +1,1208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab0HWGYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 02:24:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9323 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab0HWGYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 02:24:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,255,1280732400"; 
-   d="scan'208";a="547730870"
-Date: Mon, 23 Aug 2010 14:23:59 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Con Kolivas <kernel@kolivas.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "david@fromorbit.com" <david@fromorbit.com>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH] writeback: remove the internal 5% low bound on
- dirty_ratio
-Message-ID: <20100823062359.GA19586@localhost>
-References: <20100820032506.GA6662@localhost>
- <20100820131249.5FF4.A69D9226@jp.fujitsu.com>
- <201008201550.54164.kernel@kolivas.org>
- <20100823144248.15fbb700@notabene>
+	id S1753277Ab0HWG2B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 02:28:01 -0400
+Received: from smtpauth.tellcom.com.tr ([92.45.6.164]:31185 "EHLO
+	smtpout1.superonline.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751327Ab0HWG16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 02:27:58 -0400
+Message-ID: <4C7214DD.30500@superonline.com>
+Date: Mon, 23 Aug 2010 09:27:41 +0300
+From: "M. Vefa Bicakci" <bicave@superonline.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Icedove/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100823144248.15fbb700@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
+References: <4C677A49.4030904@superonline.com> <20100820115449.5FF1.A69D9226@jp.fujitsu.com> <20100823091948.6029.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100823091948.6029.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
+X-SurGATE-Result: Clean (Content eval: -7.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 12:42:48PM +0800, Neil Brown wrote:
-> On Fri, 20 Aug 2010 15:50:54 +1000
-> Con Kolivas <kernel@kolivas.org> wrote:
+Hello,
+
+On 23/08/10 03:22 AM, KOSAKI Motohiro wrote:
 > 
-> > On Fri, 20 Aug 2010 02:13:25 pm KOSAKI Motohiro wrote:
-> > > > The dirty_ratio was silently limited to >= 5%. This is not a user
-> > > > expected behavior. Let's rip it.
-> > > >
-> > > > It's not likely the user space will depend on the old behavior.
-> > > > So the risk of breaking user space is very low.
-> > > >
-> > > > CC: Jan Kara <jack@suse.cz>
-> > > > CC: Neil Brown <neilb@suse.de>
-> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > >
-> > > Thank you.
-> > > 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > 
-> > I have tried to do this in the past, and setting this value to 0 on some 
-> > machines caused the machine to come to a complete standstill with small 
-> > writes to disk. It seemed there was some kind of "minimum" amount of data 
-> > required by the VM before anything would make it to the disk and I never 
-> > quite found out where that blockade occurred. This was some time ago (3 years 
-> > ago) so I'm not sure if the problem has since been fixed in the VM since 
-> > then. I suggest you do some testing with this value set to zero before 
-> > approving this change.
-
-You are right, vm.dirty_ratio=0 will block applications for ever..
-
+> sorry, my last mail has some mistake.
 > 
->  If it is appropriate to have a lower limit, that should be imposed where
->  the sysctl is defined in kernel/sysctl.c, not imposed after the fact where
->  the value is used.
-> 
->  As we now have dirty_bytes which over-rides dirty_ratio, there is little
->  cost in having a lower_limit for dirty_ratio - it could even stay at 5% -
->  but it really shouldn't be silent.  Writing a number below the limit to the
->  sysctl file should fail.
 
-How about imposing an explicit bound of 1%? That's more natural and
-its risk of breaking user space should be lower than 5%.
+No problem. I did the tests again according to your new instructions,
+and I am appending the results.
 
-Thanks,
-Fengguang
----
-writeback: remove the internal 5% low bound on dirty_ratio
+Regards,
 
-The dirty_ratio was silently limited in global_dirty_limits() to >= 5%. This
-is not a user expected behavior. And it's inconsistent with calc_period_shift(),
-which uses the plain vm_dirty_ratio value. So let's rip the internal bound.
+M. Vefa Bicakci
 
-At the same time, force a user visible low bound of 1% for the vm.dirty_ratio
-interface. Applications trying to write 0 will be rejected with -EINVAL. This
-will break user space applications if they
-1) try to write 0 to vm.dirty_ratio
-2) and check the return value
-That is very weird combination, so the risk of breaking user space is low.
+> 1. Please let me know your machine & test script
+>
 
-CC: Jan Kara <jack@suse.cz>
-CC: Neil Brown <neilb@suse.de>
-CC: Rik van Riel <riel@redhat.com>
-CC: Con Kolivas <kernel@kolivas.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- kernel/sysctl.c     |    2 +-
- mm/page-writeback.c |   10 ++--------
- 2 files changed, 3 insertions(+), 9 deletions(-)
+% ./your-fills-up-the-tmpfs-script   (i.e. run your script)
 
---- linux-next.orig/mm/page-writeback.c	2010-08-20 20:14:11.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-08-23 10:31:01.000000000 +0800
-@@ -415,14 +415,8 @@ void global_dirty_limits(unsigned long *
- 
- 	if (vm_dirty_bytes)
- 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
--	else {
--		int dirty_ratio;
--
--		dirty_ratio = vm_dirty_ratio;
--		if (dirty_ratio < 5)
--			dirty_ratio = 5;
--		dirty = (dirty_ratio * available_memory) / 100;
--	}
-+	else
-+		dirty = (vm_dirty_ratio * available_memory) / 100;
- 
- 	if (dirty_background_bytes)
- 		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
---- linux-next.orig/kernel/sysctl.c	2010-08-23 14:06:11.000000000 +0800
-+++ linux-next/kernel/sysctl.c	2010-08-23 14:07:30.000000000 +0800
-@@ -1029,7 +1029,7 @@ static struct ctl_table vm_table[] = {
- 		.maxlen		= sizeof(vm_dirty_ratio),
- 		.mode		= 0644,
- 		.proc_handler	= dirty_ratio_handler,
--		.extra1		= &zero,
-+		.extra1		= &one,
- 		.extra2		= &one_hundred,
- 	},
- 	{
+> % cat /proc/meminfo
+
+MemTotal:        3104484 kB
+MemFree:         1258780 kB
+Buffers:           30820 kB
+Cached:          1693836 kB
+SwapCached:            0 kB
+Active:          1670344 kB
+Inactive:         137960 kB
+Active(anon):    1633940 kB
+Inactive(anon):    26224 kB
+Active(file):      36404 kB
+Inactive(file):   111736 kB
+Unevictable:          32 kB
+Mlocked:              32 kB
+HighTotal:       2226632 kB
+HighFree:         437684 kB
+LowTotal:         877852 kB
+LowFree:          821096 kB
+SwapTotal:       1999540 kB
+SwapFree:        1999540 kB
+Dirty:                28 kB
+Writeback:             0 kB
+AnonPages:         83676 kB
+Mapped:            44220 kB
+Shmem:           1576520 kB
+Slab:              17136 kB
+SReclaimable:       9480 kB
+SUnreclaim:         7656 kB
+KernelStack:        1832 kB
+PageTables:         2440 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     3551780 kB
+Committed_AS:    1892636 kB
+VmallocTotal:     122880 kB
+VmallocUsed:       16308 kB
+VmallocChunk:      92764 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       4096 kB
+DirectMap4k:       24568 kB
+DirectMap4M:      884736 kB
+
+
+> % cat /proc/vmstat
+
+nr_free_pages 314850
+nr_inactive_anon 6480
+nr_active_anon 408485
+nr_inactive_file 27935
+nr_active_file 9101
+nr_unevictable 8
+nr_mlock 8
+nr_anon_pages 20919
+nr_mapped 11055
+nr_file_pages 431089
+nr_dirty 8
+nr_writeback 0
+nr_slab_reclaimable 2370
+nr_slab_unreclaimable 1914
+nr_page_table_pages 610
+nr_kernel_stack 229
+nr_unstable 0
+nr_bounce 0
+nr_vmscan_write 0
+nr_writeback_temp 0
+nr_isolated_anon 0
+nr_isolated_file 0
+nr_shmem 394054
+pgpgin 150719
+pgpgout 5312
+pswpin 0
+pswpout 0
+pgalloc_dma 2
+pgalloc_normal 116354
+pgalloc_high 2637682
+pgalloc_movable 0
+pgfree 3069531
+pgactivate 2339016
+pgdeactivate 160
+pgfault 699155
+pgmajfault 1082
+pgrefill_dma 0
+pgrefill_normal 0
+pgrefill_high 160
+pgrefill_movable 0
+pgsteal_dma 0
+pgsteal_normal 0
+pgsteal_high 29
+pgsteal_movable 0
+pgscan_kswapd_dma 0
+pgscan_kswapd_normal 0
+pgscan_kswapd_high 0
+pgscan_kswapd_movable 0
+pgscan_direct_dma 0
+pgscan_direct_normal 0
+pgscan_direct_high 32
+pgscan_direct_movable 0
+pginodesteal 0
+slabs_scanned 0
+kswapd_steal 0
+kswapd_inodesteal 0
+kswapd_low_wmark_hit_quickly 0
+kswapd_high_wmark_hit_quickly 0
+kswapd_skip_congestion_wait 0
+pageoutrun 0
+allocstall 1
+pgrotated 0
+htlb_buddy_alloc_success 0
+htlb_buddy_alloc_fail 0
+unevictable_pgs_culled 7832
+unevictable_pgs_scanned 0
+unevictable_pgs_rescued 7046
+unevictable_pgs_mlocked 8562
+unevictable_pgs_munlocked 8554
+unevictable_pgs_cleared 0
+unevictable_pgs_stranded 0
+unevictable_pgs_mlockfreed 0
+
+> % cat /proc/zoneinfo
+
+Node 0, zone      DMA
+  pages free     2614
+        min      16
+        low      20
+        high     24
+        scanned  0
+        spanned  4080
+        present  3951
+    nr_free_pages 2614
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 0
+    nr_active_file 0
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    0
+    nr_file_pages 0
+    nr_dirty     0
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 2
+    nr_page_table_pages 0
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 865, 3022, 3022)
+  pagesets
+    cpu: 0
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+    cpu: 1
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         16
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 0
+ recent_file_scanned: 0
+ anon_ratio:          30
+Node 0, zone   Normal
+  pages free     202722
+        min      932
+        low      1165
+        high     1398
+        scanned  0
+        spanned  223230
+        present  221486
+    nr_free_pages 202722
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 5792
+    nr_active_file 1970
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    1
+    nr_file_pages 7761
+    nr_dirty     7
+    nr_writeback 0
+    nr_slab_reclaimable 2370
+    nr_slab_unreclaimable 1912
+    nr_page_table_pages 0
+    nr_kernel_stack 229
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 0, 17259, 17259)
+  pagesets
+    cpu: 0
+              count: 155
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+    cpu: 1
+              count: 173
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         4096
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 272
+ recent_file_scanned: 1385
+ anon_ratio:          7
+Node 0, zone  HighMem
+  pages free     109607
+        min      128
+        low      709
+        high     1290
+        scanned  0
+        spanned  556658
+        present  552309
+    nr_free_pages 109607
+    nr_inactive_anon 6482
+    nr_active_anon 408478
+    nr_inactive_file 22146
+    nr_active_file 7131
+    nr_unevictable 8
+    nr_mlock     8
+    nr_anon_pages 20919
+    nr_mapped    11054
+    nr_file_pages 423333
+    nr_dirty     2
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 0
+    nr_page_table_pages 610
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     394056
+        protection: (0, 0, 0, 0)
+  pagesets
+    cpu: 0
+              count: 107
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+    cpu: 1
+              count: 129
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         227326
+  inactive_ratio:    4
+ recent_anon_rotated: 1259857
+ recent_anon_scanned: 2522124
+ recent_file_rotated: 1269
+ recent_file_scanned: 5591
+ anon_ratio:          16
+
+> % df
+
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/sda15            10317828   7309436   2484276  75% /
+tmpfs                  1552240         8   1552232   1% /lib/init/rw
+udev                   1549148       220   1548928   1% /dev
+tmpfs                  1552240         4   1552236   1% /dev/shm
+tmpfs                  1552240   1552240         0 100% /tmp
+
+> % cat your-fills-up-the-tmpfs-script
+
+#!/bin/bash
+
+rm -vf /tmp/tmp
+dd if=/dev/zero of=/tmp/tmp bs=1024k count=1600
+shred -vn1 /tmp/tmp
+
+exit 0 ### removed when testing hibernation
+
+read -p "Press enter to hibernate..."
+
+echo -n reboot > /sys/power/disk
+echo -n disk > /sys/power/state
+
+echo "Exit code: $?"
+
+rm -vf /tmp/tmp
+
+
+>
+> 2. call shrink_all_memory() forcely and show result
+>
+
+% ./your-fills-up-the-tmpfs-script
+
+> % cat /proc/meminfo
+
+MemTotal:        3104484 kB
+MemFree:         1259400 kB
+Buffers:           30836 kB
+Cached:          1693572 kB
+SwapCached:            0 kB
+Active:          1670356 kB
+Inactive:         137708 kB
+Active(anon):    1633948 kB
+Inactive(anon):    25944 kB
+Active(file):      36408 kB
+Inactive(file):   111764 kB
+Unevictable:          32 kB
+Mlocked:              32 kB
+HighTotal:       2226632 kB
+HighFree:         438056 kB
+LowTotal:         877852 kB
+LowFree:          821344 kB
+SwapTotal:       1999540 kB
+SwapFree:        1999540 kB
+Dirty:                36 kB
+Writeback:             0 kB
+AnonPages:         83684 kB
+Mapped:            44236 kB
+Shmem:           1576240 kB
+Slab:              17136 kB
+SReclaimable:       9480 kB
+SUnreclaim:         7656 kB
+KernelStack:        1832 kB
+PageTables:         2440 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     3551780 kB
+Committed_AS:    1892412 kB
+VmallocTotal:     122880 kB
+VmallocUsed:       16308 kB
+VmallocChunk:      92764 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       4096 kB
+DirectMap4k:       24568 kB
+DirectMap4M:      884736 kB
+
+> % cat /proc/zoneinfo
+
+Node 0, zone      DMA
+  pages free     2614
+        min      16
+        low      20
+        high     24
+        scanned  0
+        spanned  4080
+        present  3951
+    nr_free_pages 2614
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 0
+    nr_active_file 0
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    0
+    nr_file_pages 0
+    nr_dirty     0
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 2
+    nr_page_table_pages 0
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 865, 3022, 3022)
+  pagesets
+    cpu: 0
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+    cpu: 1
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         16
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 0
+ recent_file_scanned: 0
+ anon_ratio:          30
+Node 0, zone   Normal
+  pages free     202691
+        min      932
+        low      1165
+        high     1398
+        scanned  0
+        spanned  223230
+        present  221486
+    nr_free_pages 202691
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 5796
+    nr_active_file 1970
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    1
+    nr_file_pages 7765
+    nr_dirty     7
+    nr_writeback 0
+    nr_slab_reclaimable 2370
+    nr_slab_unreclaimable 1912
+    nr_page_table_pages 0
+    nr_kernel_stack 229
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 0, 17259, 17259)
+  pagesets
+    cpu: 0
+              count: 161
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+    cpu: 1
+              count: 170
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         4096
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 272
+ recent_file_scanned: 1389
+ anon_ratio:          7
+Node 0, zone  HighMem
+  pages free     109514
+        min      128
+        low      709
+        high     1290
+        scanned  0
+        spanned  556658
+        present  552309
+    nr_free_pages 109514
+    nr_inactive_anon 6484
+    nr_active_anon 408487
+    nr_inactive_file 22148
+    nr_active_file 7132
+    nr_unevictable 8
+    nr_mlock     8
+    nr_anon_pages 20921
+    nr_mapped    11058
+    nr_file_pages 423338
+    nr_dirty     3
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 0
+    nr_page_table_pages 610
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     394058
+        protection: (0, 0, 0, 0)
+  pagesets
+    cpu: 0
+              count: 167
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+    cpu: 1
+              count: 156
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         227326
+  inactive_ratio:    4
+ recent_anon_rotated: 1650360
+ recent_anon_scanned: 3304957
+ recent_file_rotated: 1270
+ recent_file_scanned: 5595
+ anon_ratio:          16
+
+> # echo 1 > /proc/sys/vm/shrink_all_memory
+
+> # tail /var/log/messages
+
+[  439.165652] shrink_all_memory start
+[  439.165960] shrink_all_memory: req:1 reclaimed:32 free:313765
+
+> % cat /proc/meminfo
+
+MemTotal:        3104484 kB
+MemFree:         1259516 kB
+Buffers:           30852 kB
+Cached:          1693672 kB
+SwapCached:            0 kB
+Active:          1669728 kB
+Inactive:         138456 kB
+Active(anon):    1633320 kB
+Inactive(anon):    26800 kB
+Active(file):      36408 kB
+Inactive(file):   111656 kB
+Unevictable:          32 kB
+Mlocked:              32 kB
+HighTotal:       2226632 kB
+HighFree:         438180 kB
+LowTotal:         877852 kB
+LowFree:          821336 kB
+SwapTotal:       1999540 kB
+SwapFree:        1999540 kB
+Dirty:                40 kB
+Writeback:             0 kB
+AnonPages:         83696 kB
+Mapped:            44236 kB
+Shmem:           1576460 kB
+Slab:              17140 kB
+SReclaimable:       9484 kB
+SUnreclaim:         7656 kB
+KernelStack:        1840 kB
+PageTables:         2440 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     3551780 kB
+Committed_AS:    1892540 kB
+VmallocTotal:     122880 kB
+VmallocUsed:       16308 kB
+VmallocChunk:      92764 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       4096 kB
+DirectMap4k:       24568 kB
+DirectMap4M:      884736 kB
+
+> % cat /proc/zoneinfo
+
+Node 0, zone      DMA
+  pages free     2614
+        min      16
+        low      20
+        high     24
+        scanned  0
+        spanned  4080
+        present  3951
+    nr_free_pages 2614
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 0
+    nr_active_file 0
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    0
+    nr_file_pages 0
+    nr_dirty     0
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 2
+    nr_page_table_pages 0
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 865, 3022, 3022)
+  pagesets
+    cpu: 0
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+    cpu: 1
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         16
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 0
+ recent_file_scanned: 0
+ anon_ratio:          30
+Node 0, zone   Normal
+  pages free     202720
+        min      932
+        low      1165
+        high     1398
+        scanned  0
+        spanned  223230
+        present  221486
+    nr_free_pages 202720
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 5798
+    nr_active_file 1970
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    1
+    nr_file_pages 7767
+    nr_dirty     0
+    nr_writeback 0
+    nr_slab_reclaimable 2371
+    nr_slab_unreclaimable 1912
+    nr_page_table_pages 0
+    nr_kernel_stack 230
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 0, 17259, 17259)
+  pagesets
+    cpu: 0
+              count: 139
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+    cpu: 1
+              count: 165
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         4096
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 272
+ recent_file_scanned: 1391
+ anon_ratio:          7
+Node 0, zone  HighMem
+  pages free     109576
+        min      128
+        low      709
+        high     1290
+        scanned  0
+        spanned  556658
+        present  552309
+    nr_free_pages 109576
+    nr_inactive_anon 6642
+    nr_active_anon 408330
+    nr_inactive_file 22118
+    nr_active_file 7132
+    nr_unevictable 8
+    nr_mlock     8
+    nr_anon_pages 20924
+    nr_mapped    11058
+    nr_file_pages 423306
+    nr_dirty     3
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 0
+    nr_page_table_pages 610
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     394056
+        protection: (0, 0, 0, 0)
+  pagesets
+    cpu: 0
+              count: 158
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+    cpu: 1
+              count: 133
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         227326
+  inactive_ratio:    4
+ recent_anon_rotated: 103467
+ recent_anon_scanned: 207085
+ recent_file_rotated: 1270
+ recent_file_scanned: 5629
+ anon_ratio:          16
+
+> 3. reset zone_reclaim_stat and rerun shrink_all_memory
+>
+
+% ./your-fills-up-the-tmpfs-script
+
+> # echo 1 > /proc/sys/vm/reset_reclaim_stat
+> % cat /proc/meminfo
+
+MemTotal:        3104484 kB
+MemFree:         1260012 kB
+Buffers:           30884 kB
+Cached:          1693496 kB
+SwapCached:            0 kB
+Active:          1669736 kB
+Inactive:         138316 kB
+Active(anon):    1633324 kB
+Inactive(anon):    26616 kB
+Active(file):      36412 kB
+Inactive(file):   111700 kB
+Unevictable:          32 kB
+Mlocked:              32 kB
+HighTotal:       2226632 kB
+HighFree:         438304 kB
+LowTotal:         877852 kB
+LowFree:          821708 kB
+SwapTotal:       1999540 kB
+SwapFree:        1999540 kB
+Dirty:                12 kB
+Writeback:             0 kB
+AnonPages:         83700 kB
+Mapped:            44240 kB
+Shmem:           1576272 kB
+Slab:              17140 kB
+SReclaimable:       9484 kB
+SUnreclaim:         7656 kB
+KernelStack:        1840 kB
+PageTables:         2440 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     3551780 kB
+Committed_AS:    1892440 kB
+VmallocTotal:     122880 kB
+VmallocUsed:       16308 kB
+VmallocChunk:      92764 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       4096 kB
+DirectMap4k:       24568 kB
+DirectMap4M:      884736 kB
+
+> % cat /proc/zoneinfo
+
+
+Node 0, zone      DMA
+  pages free     2614
+        min      16
+        low      20
+        high     24
+        scanned  0
+        spanned  4080
+        present  3951
+    nr_free_pages 2614
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 0
+    nr_active_file 0
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    0
+    nr_file_pages 0
+    nr_dirty     0
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 2
+    nr_page_table_pages 0
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 865, 3022, 3022)
+  pagesets
+    cpu: 0
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+    cpu: 1
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         16
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 0
+ recent_file_scanned: 0
+ anon_ratio:          30
+Node 0, zone   Normal
+  pages free     202844
+        min      932
+        low      1165
+        high     1398
+        scanned  0
+        spanned  223230
+        present  221486
+    nr_free_pages 202844
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 5808
+    nr_active_file 1970
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    1
+    nr_file_pages 7777
+    nr_dirty     5
+    nr_writeback 0
+    nr_slab_reclaimable 2371
+    nr_slab_unreclaimable 1912
+    nr_page_table_pages 0
+    nr_kernel_stack 230
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 0, 17259, 17259)
+  pagesets
+    cpu: 0
+              count: 153
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+    cpu: 1
+              count: 39
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         4096
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 0
+ recent_file_scanned: 2
+ anon_ratio:          12
+Node 0, zone  HighMem
+  pages free     109607
+        min      128
+        low      709
+        high     1290
+        scanned  0
+        spanned  556658
+        present  552309
+    nr_free_pages 109607
+    nr_inactive_anon 6638
+    nr_active_anon 408331
+    nr_inactive_file 22120
+    nr_active_file 7133
+    nr_unevictable 8
+    nr_mlock     8
+    nr_anon_pages 20925
+    nr_mapped    11057
+    nr_file_pages 423305
+    nr_dirty     1
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 0
+    nr_page_table_pages 610
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     394052
+        protection: (0, 0, 0, 0)
+  pagesets
+    cpu: 0
+              count: 157
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+    cpu: 1
+              count: 94
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+  all_unreclaimable: 0
+  prev_priority:     9
+  start_pfn:         227326
+  inactive_ratio:    4
+ recent_anon_rotated: 896
+ recent_anon_scanned: 1078
+ recent_file_rotated: 0
+ recent_file_scanned: 1
+ anon_ratio:          20
+
+> # echo 1 > /proc/sys/vm/shrink_all_memory
+> # tail /var/log/messages
+
+[  504.609297] shrink_all_memory start
+[  504.609537] shrink_all_memory: req:1 reclaimed:31 free:315005
+
+> % cat /proc/meminfo
+
+
+MemTotal:        3104484 kB
+MemFree:         1255796 kB
+Buffers:           30788 kB
+Cached:          1697944 kB
+SwapCached:            0 kB
+Active:          1669480 kB
+Inactive:         143044 kB
+Active(anon):    1633064 kB
+Inactive(anon):    31432 kB
+Active(file):      36416 kB
+Inactive(file):   111612 kB
+Unevictable:          32 kB
+Mlocked:              32 kB
+HighTotal:       2226632 kB
+HighFree:         433964 kB
+LowTotal:         877852 kB
+LowFree:          821832 kB
+SwapTotal:       1999540 kB
+SwapFree:        1999540 kB
+Dirty:                40 kB
+Writeback:             0 kB
+AnonPages:         83852 kB
+Mapped:            44220 kB
+Shmem:           1580704 kB
+Slab:              17140 kB
+SReclaimable:       9484 kB
+SUnreclaim:         7656 kB
+KernelStack:        1840 kB
+PageTables:         2440 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     3551780 kB
+Committed_AS:    1896832 kB
+VmallocTotal:     122880 kB
+VmallocUsed:       16308 kB
+VmallocChunk:      92764 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       4096 kB
+DirectMap4k:       24568 kB
+DirectMap4M:      884736 kB
+
+> % cat /proc/zoneinfo
+
+Node 0, zone      DMA
+  pages free     2614
+        min      16
+        low      20
+        high     24
+        scanned  0
+        spanned  4080
+        present  3951
+    nr_free_pages 2614
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 0
+    nr_active_file 0
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    0
+    nr_file_pages 0
+    nr_dirty     0
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 2
+    nr_page_table_pages 0
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 865, 3022, 3022)
+  pagesets
+    cpu: 0
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+    cpu: 1
+              count: 0
+              high:  0
+              batch: 1
+  vm stats threshold: 4
+  all_unreclaimable: 0
+  prev_priority:     10
+  start_pfn:         16
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 0
+ recent_file_scanned: 0
+ anon_ratio:          30
+Node 0, zone   Normal
+  pages free     202844
+        min      932
+        low      1165
+        high     1398
+        scanned  0
+        spanned  223230
+        present  221486
+    nr_free_pages 202844
+    nr_inactive_anon 0
+    nr_active_anon 0
+    nr_inactive_file 5778
+    nr_active_file 1971
+    nr_unevictable 0
+    nr_mlock     0
+    nr_anon_pages 0
+    nr_mapped    1
+    nr_file_pages 7749
+    nr_dirty     5
+    nr_writeback 0
+    nr_slab_reclaimable 2371
+    nr_slab_unreclaimable 1912
+    nr_page_table_pages 0
+    nr_kernel_stack 230
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     0
+        protection: (0, 0, 17259, 17259)
+  pagesets
+    cpu: 0
+              count: 102
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+    cpu: 1
+              count: 63
+              high:  186
+              batch: 31
+  vm stats threshold: 16
+  all_unreclaimable: 0
+  prev_priority:     10
+  start_pfn:         4096
+  inactive_ratio:    1
+ recent_anon_rotated: 0
+ recent_anon_scanned: 0
+ recent_file_rotated: 1
+ recent_file_scanned: 38
+ anon_ratio:          2
+Node 0, zone  HighMem
+  pages free     109545
+        min      128
+        low      709
+        high     1290
+        scanned  96
+        spanned  556658
+        present  552309
+    nr_free_pages 109545
+    nr_inactive_anon 6797
+    nr_active_anon 408235
+    nr_inactive_file 22122
+    nr_active_file 7133
+    nr_unevictable 8
+    nr_mlock     8
+    nr_anon_pages 20925
+    nr_mapped    11054
+    nr_file_pages 423370
+    nr_dirty     5
+    nr_writeback 0
+    nr_slab_reclaimable 0
+    nr_slab_unreclaimable 0
+    nr_page_table_pages 610
+    nr_kernel_stack 0
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     394115
+        protection: (0, 0, 0, 0)
+  pagesets
+    cpu: 0
+              count: 137
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+    cpu: 1
+              count: 119
+              high:  186
+              batch: 31
+  vm stats threshold: 24
+  all_unreclaimable: 0
+  prev_priority:     10
+  start_pfn:         227326
+  inactive_ratio:    4
+ recent_anon_rotated: 1358
+ recent_anon_scanned: 1730
+ recent_file_rotated: 0
+ recent_file_scanned: 3
+ anon_ratio:          11
+
