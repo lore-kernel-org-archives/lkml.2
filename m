@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab0HWEnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 00:43:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53852 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618Ab0HWEnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 00:43:05 -0400
-Date: Mon, 23 Aug 2010 14:42:48 +1000
-From: Neil Brown <neilb@suse.de>
-To: Con Kolivas <kernel@kolivas.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, riel@redhat.com, david@fromorbit.com, hch@lst.de,
-        axboe@kernel.dk
-Subject: Re: [PATCH] writeback: remove the internal 5% low bound on
- dirty_ratio
-Message-ID: <20100823144248.15fbb700@notabene>
-In-Reply-To: <201008201550.54164.kernel@kolivas.org>
-References: <20100820032506.GA6662@localhost>
-	<20100820131249.5FF4.A69D9226@jp.fujitsu.com>
-	<201008201550.54164.kernel@kolivas.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753068Ab0HWEn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 00:43:59 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:49895 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751933Ab0HWEn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 00:43:57 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
+Subject: [PATCH] writeback: write_cache_pages doesn't terminate at nr_to_write <= 0
+Date: Mon, 23 Aug 2010 14:43:40 +1000
+Message-Id: <1282538620-10824-1-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 15:50:54 +1000
-Con Kolivas <kernel@kolivas.org> wrote:
+From: Dave Chinner <dchinner@redhat.com>
 
-> On Fri, 20 Aug 2010 02:13:25 pm KOSAKI Motohiro wrote:
-> > > The dirty_ratio was silently limited to >= 5%. This is not a user
-> > > expected behavior. Let's rip it.
-> > >
-> > > It's not likely the user space will depend on the old behavior.
-> > > So the risk of breaking user space is very low.
-> > >
-> > > CC: Jan Kara <jack@suse.cz>
-> > > CC: Neil Brown <neilb@suse.de>
-> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> >
-> > Thank you.
-> > 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> I have tried to do this in the past, and setting this value to 0 on some 
-> machines caused the machine to come to a complete standstill with small 
-> writes to disk. It seemed there was some kind of "minimum" amount of data 
-> required by the VM before anything would make it to the disk and I never 
-> quite found out where that blockade occurred. This was some time ago (3 years 
-> ago) so I'm not sure if the problem has since been fixed in the VM since 
-> then. I suggest you do some testing with this value set to zero before 
-> approving this change.
-> 
+I noticed XFS writeback in 2.6.36-rc1 was much slower than it should have
+been. Enabling writeback tracing showed:
 
- If it is appropriate to have a lower limit, that should be imposed where
- the sysctl is defined in kernel/sysctl.c, not imposed after the fact where
- the value is used.
+    flush-253:16-8516  [007] 1342952.351608: wbc_writepage: bdi 253:16: towrt=1024 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [007] 1342952.351654: wbc_writepage: bdi 253:16: towrt=1023 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [000] 1342952.369520: wbc_writepage: bdi 253:16: towrt=0 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [000] 1342952.369542: wbc_writepage: bdi 253:16: towrt=-1 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [000] 1342952.369549: wbc_writepage: bdi 253:16: towrt=-2 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
 
- As we now have dirty_bytes which over-rides dirty_ratio, there is little
- cost in having a lower_limit for dirty_ratio - it could even stay at 5% -
- but it really shouldn't be silent.  Writing a number below the limit to the
- sysctl file should fail.
+Writeback is not terminating in background writeback if ->writepage is
+returning with wbc->nr_to_write == 0, resulting in sub-optimal single page
+writeback on XFS.
 
-NeilBrown
+Fix the write_cache_pages loop to terminate correctly when this situation
+occurs and so prevent this sub-optimal background writeback pattern. This
+improves sustained sequential buffered write performance from around
+250MB/s to 750MB/s for a 100GB file on an XFS filesystem on my 8p test VM.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ mm/page-writeback.c |   26 ++++++++++----------------
+ 1 files changed, 10 insertions(+), 16 deletions(-)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 7262aac..f069782 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -984,22 +984,16 @@ continue_unlock:
+ 				}
+ 			}
+ 
+-			if (wbc->nr_to_write > 0) {
+-				if (--wbc->nr_to_write == 0 &&
+-				    wbc->sync_mode == WB_SYNC_NONE) {
+-					/*
+-					 * We stop writing back only if we are
+-					 * not doing integrity sync. In case of
+-					 * integrity sync we have to keep going
+-					 * because someone may be concurrently
+-					 * dirtying pages, and we might have
+-					 * synced a lot of newly appeared dirty
+-					 * pages, but have not synced all of the
+-					 * old dirty pages.
+-					 */
+-					done = 1;
+-					break;
+-				}
++			/*
++			 * We stop writing back only if we are not doing
++			 * integrity sync. In case of integrity sync we have to
++			 * keep going until we have written all the pages
++			 * we tagged for writeback prior to entering this loop.
++			 */
++			if (--wbc->nr_to_write <= 0 &&
++			    wbc->sync_mode == WB_SYNC_NONE) {
++				done = 1;
++				break;
+ 			}
+ 		}
+ 		pagevec_release(&pvec);
+-- 
+1.7.1
+
