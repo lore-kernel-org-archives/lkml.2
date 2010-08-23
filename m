@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab0HWUL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:11:27 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54020 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab0HWULX convert rfc822-to-8bit (ORCPT
+	id S1754696Ab0HWUM6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:12:58 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:45103 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab0HWUMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:11:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ELzKhWwlxhk4FzLK2cJVsRwjca+RZQlw/ExKOAFSmzucNn/vCPUyh2QXiBxYarqvrg
-         bDqKZOyI0vjl+zVXBoO30bcu0goNbPJgmzUozVDLimh7tLR0HzHnZ47RxkpMUs3gZb3x
-         cc5HyqtnQXtLmafDRkq94tQjMCvPG/aSO4YTg=
-MIME-Version: 1.0
-In-Reply-To: <1282586336.11194.30.camel@mulgrave.site>
-References: <4C69653E.6050808@vlnb.net>
-	<1282077040.16098.47.camel@mulgrave.site>
-	<4C6C1DC1.8090208@vlnb.net>
-	<1282164188.10878.22.camel@mulgrave.site>
-	<4C702030.2070306@vlnb.net>
-	<1282423128.3015.35.camel@mulgrave.site>
-	<AANLkTin9STqUz440fCOEWW=YmedVQtQWU2JLO2wZCt5j@mail.gmail.com>
-	<1282582740.11194.17.camel@mulgrave.site>
-	<AANLkTinkYCPA-ZdWFhdriCyrK7J8Okj5HWqg7JsGZ7ry@mail.gmail.com>
-	<1282586336.11194.30.camel@mulgrave.site>
-Date: Mon, 23 Aug 2010 22:11:22 +0200
-X-Google-Sender-Auth: zi-7lM3T5x3NQiNw1roe47TXWbI
-Message-ID: <AANLkTinTg3oHmc6N-zu_Czg7s5dPwvxwgLa-eBuHwSBe@mail.gmail.com>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: Bart Van Assche <bvanassche@acm.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Gennadiy Nerubayev <parakie@gmail.com>,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Aug 2010 16:12:52 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6083"; a="51829544"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH 4/5] msm: convert 7x30 to gpiomux.
+Date: Mon, 23 Aug 2010 13:12:47 -0700
+Message-Id: <1282594368-5791-4-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
+References: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 7:58 PM, James Bottomley
-<James.Bottomley@suse.de> wrote:
-> On Mon, 2010-08-23 at 19:44 +0200, Bart Van Assche wrote:
->> On Mon, Aug 23, 2010 at 6:59 PM, James Bottomley
->> <James.Bottomley@suse.de> wrote:
->> >
->> > My basic conclusion was that there's no incredible discriminator between
->> > LIO and STGT (although there are reams written on which performs better
->> > in which circumsances, is useful for clustering, supports ALUA, etc.
->> > each with partisans for the features).  If the two communities can't
->> > work together (as seems to be the case) and I have to choose one, I'll
->> > go by what helps me which, as I've said before, are:
->> >
->> >     1. That it would be a drop in replacement for STGT (our current
->> >        in-kernel target mode driver), since he only wanted a single
->> >        SCSI target infrastructure.
->> >
->> >     2. That it used a modern sysfs based control and configuration
->> >        plane.
->> >
->> >     3. That the code was reviewed as clean enough for inclusion.
+Change deprecated gpio_tlmm_config calls to gpiomux calls.
 
-Let us return to the three acceptance criteria. At this time none of
-the existing kernel-based target frameworks support ibmvstgt and hence
-none of them satisfy criterion [1]. Yet these criteria have been used
-to decide that one kernel-based target framework will be accepted and
-that the other will not be accepted. I'm afraid that I missed
-something ?
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ arch/arm/mach-msm/board-msm7x30.c |   20 --------------------
+ arch/arm/mach-msm/gpiomux-7x30.c  |   21 ++++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 21 deletions(-)
 
-Also, you write that you, as a kernel maintainer, might become in a
-position that you have to choose a target framework. I would
-appreciate it if you would take the time to reread the document
-Documentation/ManagementStyle. This document was written by Linus
-Torvalds and explains that a kernel maintainer should try to avoid
-having to take such decisions. The whole first chapter of that
-document is devoted to this subject.
+diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+index e329819..74abb74 100644
+--- a/arch/arm/mach-msm/board-msm7x30.c
++++ b/arch/arm/mach-msm/board-msm7x30.c
+@@ -39,22 +39,6 @@
+ 
+ extern struct sys_timer msm_timer;
+ 
+-#ifdef CONFIG_SERIAL_MSM_CONSOLE
+-static struct msm_gpio uart2_config_data[] = {
+-	{ GPIO_CFG(49, 2, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_RFR"},
+-	{ GPIO_CFG(50, 2, GPIO_INPUT,   GPIO_PULL_DOWN, GPIO_2MA), "UART2_CTS"},
+-	{ GPIO_CFG(51, 2, GPIO_INPUT,   GPIO_PULL_DOWN, GPIO_2MA), "UART2_Rx"},
+-	{ GPIO_CFG(52, 2, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_Tx"},
+-};
+-
+-static void msm7x30_init_uart2(void)
+-{
+-	msm_gpios_request_enable(uart2_config_data,
+-			ARRAY_SIZE(uart2_config_data));
+-
+-}
+-#endif
+-
+ static struct platform_device *devices[] __initdata = {
+ #if defined(CONFIG_SERIAL_MSM) || defined(CONFIG_MSM_SERIAL_DEBUGGER)
+         &msm_device_uart2,
+@@ -70,10 +54,6 @@ static void __init msm7x30_init_irq(void)
+ static void __init msm7x30_init(void)
+ {
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
+-#ifdef CONFIG_SERIAL_MSM_CONSOLE
+-	msm7x30_init_uart2();
+-#endif
+-
+ }
+ 
+ static void __init msm7x30_map_io(void)
+diff --git a/arch/arm/mach-msm/gpiomux-7x30.c b/arch/arm/mach-msm/gpiomux-7x30.c
+index 7b380b3..6ce41c5 100644
+--- a/arch/arm/mach-msm/gpiomux-7x30.c
++++ b/arch/arm/mach-msm/gpiomux-7x30.c
+@@ -16,4 +16,23 @@
+  */
+ #include "gpiomux.h"
+ 
+-struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {};
++struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
++#ifdef CONFIG_SERIAL_MSM_CONSOLE
++	[49] = { /* UART2 RFR */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
++	},
++	[50] = { /* UART2 CTS */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
++	},
++	[51] = { /* UART2 RX */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
++	},
++	[52] = { /* UART2 TX */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
++	},
++#endif
++};
+-- 
+1.7.0.4
 
-I regret that you got involved personally in this discussion. It would
-have been a lot easier for everyone if you would have been able to
-keep a neutral position.
-
-Bart.
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
