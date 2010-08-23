@@ -1,86 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab0HWSDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 14:03:30 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49638 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab0HWSD1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 14:03:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZQYC3IW+Az+3/oObzLwW2i4wXF0RQ6nJeXlCiu2EQUnbToM4odDUhkSS/XU5Dn94VG
-         IbdkJLWwvgFvLHrEqB9NuICLhDiKVvCh4IoGMA2f+IW78tztFJxnvwH0EEX+S+OMBpki
-         logUq8iXaUmZ5fhSfFUjsbNBU49zGKzsn58oE=
+	id S1754156Ab0HWSDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 14:03:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32963 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751681Ab0HWSDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 14:03:40 -0400
+Date: Mon, 23 Aug 2010 13:47:55 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Manu Abraham <abraham.manu@gmail.com>, Scott Davilla <davilla@4pi.com>,
+        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/18 v2] staging: crystalhd: call disable_pci_device()
+ if pci_probe() failed
+Message-ID: <20100823174755.GG28475@redhat.com>
+References: <1281383506-14438-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinDY8hEABHaPsCC+3wGMCn0ZLcyfDa9U9jXJ3d4@mail.gmail.com>
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
-	<1282144271.3035.31.camel@mulgrave.site>
-	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
-	<1282148296.3035.49.camel@mulgrave.site>
-	<4C6C1D70.7020502@vlnb.net>
-	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
-	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
-	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>
-	<4C701E08.2020005@vlnb.net>
-	<1282423398.3015.39.camel@mulgrave.site>
-	<AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
-	<1282508953.3042.102.camel@mulgrave.site>
-	<4C727BEB.9020100@scalableinformatics.com>
-	<AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com>
-	<AANLkTinDY8hEABHaPsCC+3wGMCn0ZLcyfDa9U9jXJ3d4@mail.gmail.com>
-Date: Mon, 23 Aug 2010 14:03:26 -0400
-Message-ID: <AANLkTim+fj-OL+Bixfbrxv6AgSVv_NpT-KdG6vrc6ub-@mail.gmail.com>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: Chetan Loke <chetanloke@gmail.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: landman@scalableinformatics.com, James Bottomley <James.Bottomley@suse.de>,
-        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281383506-14438-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I actually received 3+ off-post emails asking whether I was talking
-about initiator or target in the 100K IOPS case below and what did I
-mean by the ACKs.
-I was referring to the 'Initiator' side.
-ACKs == When scsi-ML down-calls the LLD via the queue-command, process
-the sgl's(if you like) and then trigger the scsi_done up-call path.
+On Mon, Aug 09, 2010 at 11:51:44PM +0400, Kulikov Vasiliy wrote:
+> Driver should call disable_pci_device() if it returns from pci_probe()
+> with error.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 
-Chetan Loke
+Looks fine by me.
 
-On Mon, Aug 23, 2010 at 12:07 PM, Chetan Loke <chetanloke@gmail.com> wrote:
-> On Mon, Aug 23, 2010 at 11:11 AM, Bart Van Assche <bvanassche@acm.org> wrote:
->
->>
->> There is an important design difference between SCST and LIO: SCST by
->> defaults creates multiple threads to process the I/O operations for a
->> storage target, while LIO only creates a single thread per storage target.
->> This makes SCST perform measurably faster.
->>
->
-> Forget that. You could have discussed this if there were code reviews
-> or other mainline inclusion emails from James B. From what I have
-> heard, the decision was taken around 8-9 months back.
-> Would anyone like to either comment/validate/refute this please?  If
-> not then I would kindly request these guys to stop taking us for a
-> test drive. And also I'm not sure when was the last time James B.
-> bench-marked our scsi-stack. Even if I ACK in the xmit-path then I
-> can't push more than 100K IOPs. But other folks have re-engineered our
-> linux-scsi stack and from what I've heard they can push > 300K+ IOPs.
-> So I would just ignore performance discussion because I don't think
-> folks have done even simple lame experiments in the last 1 year. Or
-> may be I'm completely wrong and so please enlighten me so that I can
-> re-run the tests.
->
->
->> Bart.
->>
-> Chetan Loke
->
+Acked-by: Jarod Wilson <jarod@redhat.com>
+
+-- 
+Jarod Wilson
+jarod@redhat.com
+
