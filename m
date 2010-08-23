@@ -1,131 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab0HWJmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:42:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40495 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab0HWJmp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:42:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C724298.4050509@jp.fujitsu.com>
-Date: Mon, 23 Aug 2010 18:42:48 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+	id S1753794Ab0HWJnU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:43:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55922 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753715Ab0HWJnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 05:43:17 -0400
+Message-ID: <4C724199.5070200@kernel.org>
+Date: Mon, 23 Aug 2010 11:38:33 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
-        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: [PATCH v4 1/5] irq: add tracepoint to softirq_raise
-References: <4C72422C.5070102@jp.fujitsu.com>
-In-Reply-To: <4C72422C.5070102@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] workqueue: annotate lock context change
+References: <1282486783-4573-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1282486783-4573-1-git-send-email-namhyung@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 Aug 2010 09:43:17 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+On 08/22/2010 04:19 PM, Namhyung Kim wrote:
+> Some of internal functions called within gcwq->lock context releases and
+> regrabs the lock but were missing proper annotations. Add it.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
-Add a tracepoint for tracing when softirq action is raised.
+applied to wq#for-linus.  Thanks.
 
-It and the existed tracepoints complete softirq's tracepoints:
-softirq_raise, softirq_entry and softirq_exit.
-
-And when this tracepoint is used in combination with
-the softirq_entry tracepoint we can determine
-the softirq raise latency.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-[ factorize softirq events with DECLARE_EVENT_CLASS ]
-Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
----
- include/linux/interrupt.h  |    8 +++++++-
- include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
- 2 files changed, 31 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index a0384a4..d3e8e90 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -18,6 +18,7 @@
- #include <asm/atomic.h>
- #include <asm/ptrace.h>
- #include <asm/system.h>
-+#include <trace/events/irq.h>
- 
- /*
-  * These correspond to the IORESOURCE_IRQ_* defines in
-@@ -407,7 +408,12 @@ asmlinkage void do_softirq(void);
- asmlinkage void __do_softirq(void);
- extern void open_softirq(int nr, void (*action)(struct softirq_action *));
- extern void softirq_init(void);
--#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
-+static inline void __raise_softirq_irqoff(unsigned int nr)
-+{
-+	trace_softirq_raise((struct softirq_action *)&nr, NULL);
-+	or_softirq_pending(1UL << nr);
-+}
-+
- extern void raise_softirq_irqoff(unsigned int nr);
- extern void raise_softirq(unsigned int nr);
- extern void wakeup_softirqd(void);
-diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-index 0e4cfb6..3ddda02 100644
---- a/include/trace/events/irq.h
-+++ b/include/trace/events/irq.h
-@@ -5,7 +5,9 @@
- #define _TRACE_IRQ_H
- 
- #include <linux/tracepoint.h>
--#include <linux/interrupt.h>
-+
-+struct irqaction;
-+struct softirq_action;
- 
- #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
- #define show_softirq_name(val)				\
-@@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
- 	),
- 
- 	TP_fast_assign(
--		__entry->vec = (int)(h - vec);
-+		if (vec)
-+			__entry->vec = (int)(h - vec);
-+		else
-+			__entry->vec = *((int *)h);
- 	),
- 
- 	TP_printk("vec=%d [action=%s]", __entry->vec,
-@@ -136,6 +141,23 @@ DEFINE_EVENT(softirq, softirq_exit,
- 	TP_ARGS(h, vec)
- );
- 
-+/**
-+ * softirq_raise - called immediately when a softirq is raised
-+ * @h: pointer to struct softirq_action
-+ * @vec: pointer to first struct softirq_action in softirq_vec array
-+ *
-+ * The @h parameter contains a pointer to the softirq vector number which is
-+ * raised. @vec is NULL and it means @h includes vector number not
-+ * softirq_action. When used in combination with the softirq_entry tracepoint
-+ * we can determine the softirq raise latency.
-+ */
-+DEFINE_EVENT(softirq, softirq_raise,
-+
-+	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
-+
-+	TP_ARGS(h, vec)
-+);
-+
- #endif /*  _TRACE_IRQ_H */
- 
- /* This part must be outside protection */
-
+-- 
+tejun
