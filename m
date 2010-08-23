@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab0HWOuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 10:50:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36812 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab0HWOub (ORCPT
+	id S1754010Ab0HWOyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 10:54:01 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42233 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab0HWOx5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 10:50:31 -0400
-Date: Mon, 23 Aug 2010 10:50:31 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: aio: bump i_count instead of using igrab
-Message-ID: <20100823145031.GA1279@infradead.org>
-References: <20100823144755.GP21975@think>
+	Mon, 23 Aug 2010 10:53:57 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "Moffett\, Kyle D" <Kyle.D.Moffett@boeing.com>,
+        Patrick Pannuto <ppannuto@codeaurora.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "magnus.damm\@gmail.com" <magnus.damm@gmail.com>,
+        "gregkh\@suse.de" <gregkh@suse.de>, Paul Mundt <lethal@linux-sh.org>,
+        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        Kyle D Moffett <kyle@moffetthome.net>
+Subject: Re: [PATCH 2/2] platform: Facilitate the creation of pseudo-platform buses
+Organization: Deep Root Systems, LLC
+References: <1281484174-32174-1-git-send-email-ppannuto@codeaurora.org>
+	<1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
+	<3F978429-F916-42E5-8B36-6AC02DAC8CA2@boeing.com>
+	<AANLkTi=Pm8BL+Ksq1o7MYpV7mMH10bEPu1=Am9EgT-Kk@mail.gmail.com>
+	<87hbiql89d.fsf@deeprootsystems.com>
+	<AANLkTinaddiPAcokH3fRVYAFf3N-Gz--U5Jd1iyNsi+m@mail.gmail.com>
+	<87hbip9kxx.fsf@deeprootsystems.com>
+	<AANLkTine=VLLm4+ReKeMKBdbV1JsunNagwKxGMDhEe8e@mail.gmail.com>
+	<87y6c03jxj.fsf@deeprootsystems.com>
+	<AANLkTi=WKcb59jJQuLVfqJG07Et+cU75GOC5Lrr_dXR4@mail.gmail.com>
+Date: Mon, 23 Aug 2010 07:53:40 -0700
+In-Reply-To: <AANLkTi=WKcb59jJQuLVfqJG07Et+cU75GOC5Lrr_dXR4@mail.gmail.com>
+	(Grant Likely's message of "Sat, 21 Aug 2010 01:10:05 -0600")
+Message-ID: <87tyml1itn.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100823144755.GP21975@think>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 10:47:55AM -0400, Chris Mason wrote:
-> The aio batching code is using igrab to get an extra reference on the
-> inode so it can safely batch.  igrab will go ahead and take the global
-> inode spinlock, which can be a bottleneck on large machines doing lots
-> of AIO.
-> 
-> In this case, igrab isn't required because we already have a reference
-> on the file handle.  It is safe to just bump the i_count directly
-> on the inode.
-> 
-> Benchmarking shows this patch brings IOP/s on tons of flash up by about
-> 2.5X.
+Grant Likely <grant.likely@secretlab.ca> writes:
 
-There's some places in XFS where we do the same, and it showed up as a
-bottle neck before.  Instead of open coding the increment we have
-a wrapper that includes and assert that the numbers is always positive.
+>>> If the override is global to the platform_bus_type, then the model
+>>> will not scale.
+>>
+>> It will not scale any more (or less) than the current functionality of
+>> the driver model which handles this globally.  Again, if scalabilty
+>> becomes a problem down the road, lets fix it then.
+>
+> Alright, I can agree to that.  I do agree that the runtime override is
+> far and away better than the weak symbol approach.  However, there
+> needs to be some very clear rules in place for users of the override,
+> namely that users must understand that they are stewards of the
+> platform_bus_type, and must take care to preserve the default
+> behaviour for "uninteresting" devices.
 
-I think we really want a proper helper for general use instead of
-completly opencoding it.
+Completely agree here.
 
+Any overrides of the dev_pm_ops functions that do not also call the
+pm_generic_* functions (or their equivalents) should be suspect.
+
+I'll post a proposal for a runtime override shortly.
+
+> Also, the expectation should be that it is a temporary measure until a
+> better abstraction is implemented.  It might be that a separate
+> bus_type is the way to go (if the multiple driver registration problem
+> can be solved) or it might be a way to differentiate pm_ops either
+> per-device or per-parent.  I'm not sure, but I'm starting on an OMAP
+> project soon, so I may very well end up working on this.
+
+Yes, I'll be glad to work on this too, but first I need to get through
+reviewing the backlog of all the OMAP drivers we're converting to
+runtime PM.
+
+Kevin
