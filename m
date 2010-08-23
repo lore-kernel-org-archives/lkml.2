@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab0HWLts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 07:49:48 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44130 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab0HWLtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 07:49:47 -0400
-Date: Mon, 23 Aug 2010 12:49:38 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, jlee@novell.com,
-        Dennis.Jansen@web.de, linux-acpi@vger.kernel.org, trenn@suse.de
-Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
-	detect
-Message-ID: <20100823114938.GA19879@srcf.ucam.org>
-References: <1282563648-21935-1-git-send-email-jlee@novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752594Ab0HWLyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 07:54:50 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:9287 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751455Ab0HWLyt (ORCPT
+	<rfc822;groupwise-jlee@novell.com:3:1>);
+	Mon, 23 Aug 2010 07:54:49 -0400
+Message-Id: <4C72EE25020000230001F28F@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Mon, 23 Aug 2010 05:54:45 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>
+Cc: <gregkh@suse.de>, <trenn@suse.de>, <linux-kernel@vger.kernel.org>,
+        <platform-driver-x86@vger.kernel.org>, <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Support MSI Poulsbo netbook U110/U115
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <1282563648-21935-1-git-send-email-jlee@novell.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 07:40:48PM +0800, Lee, Chun-Yi wrote:
-> There have some machines not support by i915 drm driver, e.g. MSI U110/U150,
-> there are use poulsbo chip and drm driver not support it because legal issue.
-> Those machines's acpi backlight control actually work fine and don't need apply
-> the intel opregion support.
-> So, add intel drm blacklist to intel_opregion_present, it can enable the acpi
-> brightness interface on Poulsbo/Morrestown.
+Hi Matthew, 
 
-I'm still kind of reluctant about this - doing the blacklisting here 
-means that there's no way for a native driver to inhibit registration 
-from occuring until after opregion setup has taken place, and we found 
-that that was necessary on some 915 so I suspect it is on gma500 as 
-well. Perhaps it should just be done as a module option, and then 
-distributions who want to deal with this case could set it by default?
+於 二，2010-08-17 於 08:56 -0600，Joey Lee 提到：
+> > I've thought about this a bit more and now lean towards thinking that 
+> > putting the PCI IDs in the ACPI video driver is the best way to go. The 
+> > alternative is to only fix it for MSI, which isn't the best option. On 
+> 
+> OK! Got it!
+> I will try to put the PCI IDs in ACPI video driver then send out the
+> patch for review ASAP.
+> 
 
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_0) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_1) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_2) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_3) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_4) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_5) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_6) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_7) },
+I just sand the "Add intel drm blacklist to intel_opregion_present
+detect" patch to you and I put all Poulsbo/Morrestown PCI IDs in
+blacklist in the patch.
 
-Moorestown doesn't have ACPI, so I don't think there's any need to 
-include these.
+> > the other hand, I looked at adding support to the Poulsbo driver and it 
+> > actually seems pretty easy, so to be honest I'd prefer it if that got 
+> > done instead.
+> > 
+> 
+> I am not good for video driver, but will also try to look at it.
+> 
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I readed the following mail loop for Poulsbo drm driver:
+
+http://sourceforge.net/mailarchive/message.php?msg_name=49C3CB88.2000202%40shipmail.org
+
+Looks like GregKH is working on extract 2D video driver for
+Poulsbo/Morrestown. We will need the 2D driver then add the opregion
+support in Poulsbo 2D dirver like the Ironlake.
+
+
+Thank's a lot!
+Joey Lee
+
