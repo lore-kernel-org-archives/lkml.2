@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab0HWQOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 12:14:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56482 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab0HWQOQ (ORCPT
+	id S1754496Ab0HWQOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 12:14:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43473 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022Ab0HWQOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 12:14:16 -0400
+	Mon, 23 Aug 2010 12:14:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=HOtn4O0Lo2z39O+i0LbCYPAVpG04xiWtKGZLSUkuYwAb58U3/okrGF89GiK2wTgPoF
-         0Ls5FsJakVNykyg03QeCE2ceFBc/h+IpY95RMyzDbetv/VZEKUD7KpWrZk4ycP8j2VHm
-         FWA2r4nhSN2E+CPuDNj1/7FWkwFsnMHAaVHaQ=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Iram Shahzad <iram.shahzad@jp.fujitsu.com>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH] compaction: handle active and inactive fairly in too_many_isolated
-Date: Tue, 24 Aug 2010 01:13:48 +0900
-Message-Id: <1282580028-1940-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=jrmObjVg5P0SIDdF1y+r6yyHloaUxRr89vPp6XxUDVtatMT+K1cscROFuz/VoNBB9P
+         N7gBlcuErT0ieSeZpvb1qzNVtnO7hmTJiGWcXBHE+NKkI4XJ2myWIa+IjBK82SGai0GE
+         QVff58tZxEZj72opcg8ZM3ebOjDRBNTCJl5tg=
+Date: Mon, 23 Aug 2010 18:14:07 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: David Airlie <airlied@linux.ie>
+Cc: Eric Anholt <eric@anholt.net>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Zou Nan hai <nanhai.zou@intel.com>,
+        Xiang Hai hao <haihao.xiang@intel.com>,
+        Zhenyu Wang <zhenyuw@linux.intel.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] i915: signedness bugs in i915 ring buffer
+Message-ID: <20100823161407.GB19909@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	David Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Zou Nan hai <nanhai.zou@intel.com>,
+	Xiang Hai hao <haihao.xiang@intel.com>,
+	Zhenyu Wang <zhenyuw@linux.intel.com>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iram reported compaction's too_many_isolated loops forever.
-(http://www.spinics.net/lists/linux-mm/msg08123.html)
+"ring->space" is unsigned so it's never less than zero.
 
-The meminfo of situation happened was inactive anon is zero.
-That's because the system has no memory pressure until then.
-While all anon pages was in active lru, compaction could select
-active lru as well as inactive lru. That's different things
-with vmscan's isolated. So we has been two too_many_isolated.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-While compaction can isolated pages in both active and inactive,
-current implementation of too_many_isolated only considers inactive.
-It made Iram's problem.
-
-This patch handles active and inactive with fair.
-That's because we can't expect where from and how many compaction would
-isolated pages.
-
-This patch changes (nr_isolated > nr_inactive) with
-nr_isolated > (nr_active + nr_inactive) / 2.
-
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/compaction.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 94cce51..4d709ee 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -214,15 +214,16 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
- /* Similar to reclaim, but different enough that they don't share logic */
- static bool too_many_isolated(struct zone *zone)
- {
--
--	unsigned long inactive, isolated;
-+	unsigned long active, inactive, isolated;
- 
- 	inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
- 					zone_page_state(zone, NR_INACTIVE_ANON);
-+	active = zone_page_state(zone, NR_ACTIVE_FILE) +
-+					zone_page_state(zone, NR_ACTIVE_ANON);
- 	isolated = zone_page_state(zone, NR_ISOLATED_FILE) +
- 					zone_page_state(zone, NR_ISOLATED_ANON);
- 
--	return isolated > inactive;
-+	return isolated > (inactive + active) / 2;
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 51e9c9e..a331898 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -208,9 +208,10 @@ static int init_ring_common(struct drm_device *dev,
+ 	else {
+ 		ring->head = ring->get_head(dev, ring);
+ 		ring->tail = ring->get_tail(dev, ring);
+-		ring->space = ring->head - (ring->tail + 8);
+-		if (ring->space < 0)
+-			ring->space += ring->size;
++		if (ring->head >= ring->tail + 8)
++			ring->space = ring->head - (ring->tail + 8);
++		else
++			ring->space = ring->head - (ring->tail + 8) + ring->size;
+ 	}
+ 	return 0;
  }
+@@ -666,9 +667,10 @@ int intel_init_ring_buffer(struct drm_device *dev,
+ 	else {
+ 		ring->head = ring->get_head(dev, ring);
+ 		ring->tail = ring->get_tail(dev, ring);
+-		ring->space = ring->head - (ring->tail + 8);
+-		if (ring->space < 0)
+-			ring->space += ring->size;
++		if (ring->head >= ring->tail + 8)
++			ring->space = ring->head - (ring->tail + 8);
++		else
++			ring->space = ring->head - (ring->tail + 8) + ring->size;
+ 	}
+ 	INIT_LIST_HEAD(&ring->active_list);
+ 	INIT_LIST_HEAD(&ring->request_list);
+@@ -735,9 +737,10 @@ int intel_wait_ring_buffer(struct drm_device *dev,
+ 	end = jiffies + 3 * HZ;
+ 	do {
+ 		ring->head = ring->get_head(dev, ring);
+-		ring->space = ring->head - (ring->tail + 8);
+-		if (ring->space < 0)
+-			ring->space += ring->size;
++		if (ring->head >= ring->tail + 8)
++			ring->space = ring->head - (ring->tail + 8);
++		else
++			ring->space = ring->head - (ring->tail + 8) + ring->size;
+ 		if (ring->space >= n) {
+ 			trace_i915_ring_wait_end (dev);
+ 			return 0;
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 44af317..707f32f 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -109,9 +109,10 @@ void i915_kernel_lost_context(struct drm_device * dev)
  
- /*
--- 
-1.7.0.5
-
+ 	ring->head = I915_READ(PRB0_HEAD) & HEAD_ADDR;
+ 	ring->tail = I915_READ(PRB0_TAIL) & TAIL_ADDR;
+-	ring->space = ring->head - (ring->tail + 8);
+-	if (ring->space < 0)
+-		ring->space += ring->size;
++	if (ring->head >= ring->tail + 8)
++		ring->space = ring->head - (ring->tail + 8);
++	else
++		ring->space = ring->head - (ring->tail + 8) + ring->size;
+ 
+ 	if (!dev->primary->master)
+ 		return;
