@@ -1,40 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab0HWJhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:37:09 -0400
-Received: from freeflow.nu ([178.79.134.28]:60086 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087Ab0HWJhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:37:07 -0400
-Message-ID: <4C724141.8060000@kernel.org>
-Date: Mon, 23 Aug 2010 12:37:05 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753719Ab0HWJlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:41:05 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34223 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab0HWJlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 05:41:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C72422C.5070102@jp.fujitsu.com>
+Date: Mon, 23 Aug 2010 18:41:00 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Mikael Abrahamsson <swmike@swm.pp.se>,
-        Stan Hoeppner <stan@hardwarefreak.com>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: 2.6.34.1 page allocation failure
-References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home>
-In-Reply-To: <alpine.DEB.2.00.1008221734410.21916@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: [PATCH v4 0/5] netdev: show a process of packets
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 8/23/10 1:40 AM, Christoph Lameter wrote:
-> On Sun, 22 Aug 2010, Pekka Enberg wrote:
->
->> In Stan's case, it's a order-1 GFP_ATOMIC allocation but there are
->> only order-0 pages available. Mel, any recent page allocator fixes in
->> 2.6.35 or 2.6.36-rc1 that Stan/Mikael should test?
-> This is the TCP slab? Best fix would be in the page allocator. However,
-> in this particular case the slub allocator would be able to fall back to
-> an order 0 allocation and still satisfy the request.
->
-Looking at the stack trace of the oops, I think Stan has CONFIG_SLAB 
-which doesn't have order-0 fallback.
+Rebase to the latest net-next.
+
+CHANGE-LOG since v3:
+    1) change arguments of softirq tracepoint into original one.
+    2) remove tracepoint of dev_kfree_skb_irq and skb_free_datagram_locked
+       and add trace_kfree_skb before __kfree_skb instead of them.
+    3) add tracepoint to netif_rx and display it by netdev-times script.
+
+These patch-set adds tracepoints to show us a process of packets.
+Using these tracepoints and existing points, we can get the time when
+packet passes through some points in transmit or receive sequence.
+For example, this is an output of perf script which is attached by patch 5/5.
+
+106133.171439sec cpu=0
+  irq_entry(+0.000msec irq=24:eth4)
+         |
+  softirq_entry(+0.006msec)
+         |
+         |---netif_receive_skb(+0.010msec skb=f2d15900 len=100)
+         |            |
+         |      skb_copy_datagram_iovec(+0.039msec 10291::10291)
+         |
+  napi_poll_exit(+0.022msec eth4)
+
+106134.175634sec cpu=1
+  irq_entry(+0.000msec irq=28:eth1)
+         |
+         |---netif_rx(+0.009msec skb=f3ef0a00)
+         |
+  softirq_entry(+0.018msec)
+         |
+         |---netif_receive_skb(+0.021msec skb=f3ef0a00 len=84)
+         |            |
+         |      skb_copy_datagram_iovec(+0.033msec 0:swapper)
+         |
+  napi_poll_exit(+0.035msec (no_device))
+
+The above is a receive side(eth4 is NAPI. eth1 is non-NAPI). Like this, it can
+show receive sequence frominterrupt(irq_entry) to application
+(skb_copy_datagram_iovec). 
+This script shows one NET_RX softirq and events related to it. All relative
+time bases on first irq_entry which raise NET_RX softirq.
+
+   dev    len      Qdisc               netdevice             free
+   eth4    74 106125.030004sec        0.006msec             0.009msec
+   eth4    87 106125.041020sec        0.007msec             0.023msec
+   eth4    66 106125.042291sec        0.003msec             0.012msec
+   eth4    66 106125.043274sec        0.006msec             0.004msec
+   eth4   850 106125.044283sec        0.007msec             0.018msec
+
+The above is a transmit side. There are three check-time-points.
+Point1 is before putting a packet to Qdisc. point2 is after ndo_start_xmit in
+dev_hard_start_xmit. It indicates finishing putting a packet to driver.
+point3 is in consume_skb and kfree_skb. It indicates freeing a transmitted packet.
+Values of this script are, from left, device name, length of a packet, a time of
+point1, an interval time between point1 and point2 and an interval time between
+point2 and point3.
+
+These times are useful to analyze a performance or to detect a point where
+packet delays. For example,
+- NET_RX softirq calling is late.
+- Application is late to take a packet.
+- It takes much time to put a transmitting packet to driver
+  (It may be caused by packed queue)
+
+And also, these tracepoint help us to investigate a network driver's trouble
+from memory dump because ftrace records it to memory. And ftrace is so light
+even if always trace on. So, in a case investigating a problem which doesn't
+reproduce, it is useful.
+
+Thanks,
+Koki Sanagi.
 
