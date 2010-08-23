@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab0HWRv0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 13:51:26 -0400
-Received: from [12.19.149.2] ([12.19.149.2]:62266 "EHLO mail.atheros.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab0HWRvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 13:51:23 -0400
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Aug 2010 13:51:23 EDT
-Date: Mon, 23 Aug 2010 10:46:20 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: Bastien Nocera <hadess@hadess.net>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Kevin Hayes <kevin@atheros.com>, David Quan <David.Quan@atheros.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "geoclue@lists.freedesktop.org" <geoclue@lists.freedesktop.org>
-Subject: Re: [PATCH 0/2] iw: add GeoClue support
-Message-ID: <20100823174620.GA12375@tux>
-References: <1282350556-16523-1-git-send-email-lrodriguez@atheros.com>
- <1282572681.3813.3.camel@jlt3.sipsolutions.net>
- <AANLkTimrtWQKycuAcZ3SjDaOqJ6Z-pPNauRfh+2aZ=ge@mail.gmail.com>
- <1282579507.3405.130.camel@localhost.localdomain>
+	id S1752259Ab0HWRva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 13:51:30 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56462 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab0HWRv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 13:51:28 -0400
+Date: Mon, 23 Aug 2010 18:51:18 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, linux-kernel@vger.kernel.org,
+        gregkh@suse.de, jlee@novell.com, Dennis.Jansen@web.de,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
+	detect
+Message-ID: <20100823175118.GA28319@srcf.ucam.org>
+References: <1282563648-21935-1-git-send-email-jlee@novell.com> <20100823114938.GA19879@srcf.ucam.org> <201008231953.22459.trenn@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282579507.3405.130.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201008231953.22459.trenn@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 09:05:07AM -0700, Bastien Nocera wrote:
-> On Mon, 2010-08-23 at 08:44 -0700, Luis R. Rodriguez wrote:
-> > 
-> > > What use is a command line tool that has to talk to a whole bunch of
-> > > daemons etc.?
-> > 
-> > The current implementation doesn't talk to deamons. The hostip
-> > provider within GeoClue and it will just trigger a URL get. If
-> > desktops start implementing a master server though then the query
-> > would simply be a cached response. 
-> 
-> Note that this error carries on in the mail. There is a master provider
-> for Geoclue that can make use of whatever providers are available, but
-> it's not in too good a shape.
+On Mon, Aug 23, 2010 at 07:53:21PM +0200, Thomas Renninger wrote:
 
-I see, can you elaborate on that a little?
+> Hm, needing a module option to get a system running is not what the user expects.
+> By default, the system should run fine and a module option should be added
+> as a workaround or for debugging only.
 
-> I'd rather somebody started fixing the Geoclue master provider rather
-> than relying on a particular service, especially when the D-Bus API for
-> the providers themselves is something we don't want to support in the
-> longer term.
+How about we do this instead: add a psb stub driver that does nothing 
+other than call acpi_backlight_register()?
 
-Would the master provider not use Dbus for gypsy, for example?
-
-  Luis
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
