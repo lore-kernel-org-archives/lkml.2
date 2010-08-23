@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab0HWICU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 04:02:20 -0400
-Received: from santostefano.inria.fr ([193.51.192.151]:39095 "HELO
-	santostefano.inria.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752816Ab0HWICQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 04:02:16 -0400
-Subject: Re: Usage of checkpatch.pl for other projects
-From: Sylvestre Ledru <sylvestre.ledru@scilab.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walker <dwalker@fifo99.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1282062762.24541.98.camel@Joe-Laptop>
-References: <1269337074.12129.4674.camel@korcula.inria.fr>
-	 <20100817160123.GL6193@shadowen.org>  <1282061780.13818.3009.camel@zlarin>
-	 <1282062762.24541.98.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 Aug 2010 22:50:29 +0200
-Message-ID: <1282510229.10764.2972.camel@zlarin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1753426Ab0HWIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 04:04:29 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:7200 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752955Ab0HWIE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 04:04:28 -0400
+X-Greylist: delayed 1337 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Aug 2010 04:04:27 EDT
+Message-ID: <4C72264A.3030302@parallels.com>
+Date: Mon, 23 Aug 2010 11:42:02 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: ye janboe <janboe.ye@gmail.com>
+CC: davem@davemloft.net, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Is it possible for addrconf_init_net to kfree no-heap address?
+References: <AANLkTinxVG=X-ncpF21kxh+XifUOtLHBfsP2FJ-Cgx6U@mail.gmail.com>
+In-Reply-To: <AANLkTinxVG=X-ncpF21kxh+XifUOtLHBfsP2FJ-Cgx6U@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 août 2010 à 09:32 -0700, Joe Perches a écrit :
-> On Tue, 2010-08-17 at 18:16 +0200, Sylvestre Ledru wrote:
-> > Le mardi 17 août 2010 à 17:01 +0100, Andy Whitcroft a écrit :
-> > > What sort of differences are you thinking about.
-> > At first, mainly basic things like space or not before a brace, if a
-> > brace should be on the same line as the if or not, etc. This kind of
-> > basic things.
+On 08/19/2010 08:15 AM, ye janboe wrote:
+> hi, Pavel and David
 > 
-> It might be better to use a script that uses
-> a combination of patch, indent with some
-> project specific options and diff to highlight
-> how a proposed patch might vary from project
-> coding standards.
-This might be a good way to start. 
-We could also create a configuration file with default being the Linux
-Kernel's coding styles.
+> addrconf_init_net make me a little confused.
+> 
+> if all and dflt are not allocated by kmemdup and sysctl_register
+> failed, this function will try to kfree dftl which points to
+> ipv6_devconf_dfl which is not a heap address. AFAIK, kfree will panic
+> if the address does not belong to slab page.
+> 
+> Is there any special reason for these codes?
 
-Sylvestre
+This situation can only occur for the init namespace, i.e. early at host
+boot so the sysctl registration will not fail for sure.
 
--- 
--------------------------
-Sylvestre Ledru
--------------------------
-The Scilab Consortium
-Digiteo
-Domaine de Voluceau
-Rocquencourt - B.P. 105
-78153 Le Chesnay Cedex
-France
+On the other hand, since the ipv6 can be built as module this code can be
+executed later run-time ...
+
+Can you send a fixing patch?
+
+> many thanks!
+> 
 
