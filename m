@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0HWS3n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 14:29:43 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51686 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab0HWS3m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 14:29:42 -0400
-Date: Mon, 23 Aug 2010 14:29:03 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: ath5k problem with 2.6.35
-Message-ID: <20100823182903.GE2609@tuxdriver.com>
-References: <201008220005.38969.tfjellstrom@strangesoft.net>
- <201008220153.41678.thomas@fjellstrom.ca>
+	id S1754083Ab0HWSb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 14:31:27 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39952 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618Ab0HWSbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 14:31:24 -0400
+Date: Mon, 23 Aug 2010 11:31:19 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, hch@lst.de
+Subject: Performance testing of various barrier reduction patches [was: Re:
+	[RFC v4] ext4: Coordinate fsync requests]
+Message-ID: <20100823183119.GA28105@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201008220153.41678.thomas@fjellstrom.ca>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100819021441.GM2109@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 01:53:41AM -0600, Thomas Fjellstrom wrote:
-> On August 22, 2010, Thomas Fjellstrom wrote:
-> > Hi, I'm running 2.6.35, and my wireless card fails to initialize properly
-> > on boot. I get the following messages in dmesg:
-> 
-> Probably important, but I missed a couple lines:
->  
-> > [    0.866525] ath5k 0000:02:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ
-> > 17 [    0.866536] ath5k 0000:02:00.0: setting latency timer to 64
-> > [    0.866571] ath5k 0000:02:00.0: registered as 'phy0'
-> > [    1.358241] ath: EEPROM regdomain: 0x67
-> > [    1.358242] ath: EEPROM indicates we should expect a direct regpair map
-> > [    1.358245] ath: Country alpha2 being used: 00
-> > [    1.358247] ath: Regpair used: 0x67
->    [    1.360589] phy0: Failed to initialize wep: -2
-> > [    1.372021] ath5k phy0: can't register ieee80211 hw
-> > [    1.372080] ath5k 0000:02:00.0: PCI INT A disabled
-> > [    1.372084] ath5k: probe of 0000:02:00.0 failed with error -2
+Hi all,
 
-Did you enable fips mode?
+I retested the ext4 barrier mitigation patchset against a base of 2.6.36-rc1 +
+Tejun's flush_fua tree + Christoph's patches to change FS barrier semantics,
+and came up with this new spreadsheet:
+http://bit.ly/bWpbsT
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Here are the previous 2.6.35 results for convenience: http://bit.ly/c22grd
+
+The machine configurations are the same as with the previous (2.6.35)
+spreadsheet.  It appears to be the case that Tejun and Christoph's patches to
+change barrier use into simpler cache flushes generally improve the speed of
+the fsync-happy workload in buffered I/O mode ... if you have a bunch of
+spinning disks.  Results for the SSD array (elm3c44) and the single disk
+systems (elm3c65/elm3c75) decreased slightly.  For the case where direct I/O
+was used, the patchset improved the results in nearly all cases.  The speed
+with barriers on is getting closer to the speed with barriers off, thankfully!
+
+Unfortunately, one thing that became /much/ less clear in these new results is
+the impact of the other patch sets that we've been working on to make ext4
+smarter with regards to barrier/flush use.  In most cases I don't really see
+the fsync-delay patch having much effect for directio, and it seems to have
+wild effects when buffered mode is used.  Jan Kara's barrier generation patch
+still generally helps with directio loads.  I've also concluded that my really
+old dirty-flag patchset from ages ago no longer has any effect.
+
+What does everyone else think of these results?
+
+--D
