@@ -1,53 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab0HWNO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:14:26 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:45588 "EHLO fanny.its.uu.se"
+	id S1752966Ab0HWNPN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:15:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56492 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab0HWNOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:14:24 -0400
+	id S1751993Ab0HWNPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:15:12 -0400
+Date: Mon, 23 Aug 2010 09:15:05 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
+        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] btrfs: check mergeable free space when removing a
+	cluster
+Message-ID: <20100823131504.GE2404@localhost.localdomain>
+References: <4C71CD4B.10606@cn.fujitsu.com> <4C71CDB7.6000602@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19570.29741.746144.453539@pilspetsen.it.uu.se>
-Date: Mon, 23 Aug 2010 15:14:21 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: Florian Westphal <fw@strlen.de>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, Jan Engelhardt <jengelh@medozas.de>
-Subject: Re: [BISECTED][2.6.35 regression] iptables busted on Mac G5
-In-Reply-To: <20100823121644.GH1727@Chamillionaire.breakpoint.cc>
-References: <19546.53659.970308.750410@pilspetsen.it.uu.se>
-	<19570.25954.196694.563887@pilspetsen.it.uu.se>
-	<20100823121644.GH1727@Chamillionaire.breakpoint.cc>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+Content-Disposition: inline
+In-Reply-To: <4C71CDB7.6000602@cn.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Florian Westphal writes:
- > Mikael Pettersson <mikpe@it.uu.se> wrote:
- > >  > I'll try to narrow it down further next week when I'm at the
- > >  > machine's location again.  Meanwhile I would be grateful if
- > >  > anyone has any ideas about what the issue might be.  I'll add
- > >  > that a Mac G4 (ppc32) with similar kernel configuration and
- > >  > user-space works fine with 2.6.35 and iptables.
- > > 
- > > The bug is still present in 2.6.36-rc2.
- > 
- > sigh.
- > Do you run 64 bit kernel with 32bit userland?
+On Mon, Aug 23, 2010 at 09:24:07AM +0800, Li Zefan wrote:
+> After returing extents from a cluster to the block group, some
+> extents in the block group may be mergeable.
+> 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  fs/btrfs/free-space-cache.c |   26 ++++++++++++++++++++------
+>  1 files changed, 20 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+> index faeec8f..c11f4f7 100644
+> --- a/fs/btrfs/free-space-cache.c
+> +++ b/fs/btrfs/free-space-cache.c
+> @@ -234,11 +234,18 @@ tree_search_offset(struct btrfs_block_group_cache *block_group,
+>  	return entry;
+>  }
+>  
+> -static void unlink_free_space(struct btrfs_block_group_cache *block_group,
+> -			      struct btrfs_free_space *info)
+> +static inline void
+> +__unlink_free_space(struct btrfs_block_group_cache *block_group,
+> +		    struct btrfs_free_space *info)
+>  {
+>  	rb_erase(&info->offset_index, &block_group->free_space_offset);
+>  	block_group->free_extents--;
+> +}
+> +
+> +static void unlink_free_space(struct btrfs_block_group_cache *block_group,
+> +			      struct btrfs_free_space *info)
+> +{
+> +	__unlink_free_space(block_group, info);
+>  	block_group->free_space -= info->bytes;
+>  }
+>  
+> @@ -611,7 +618,7 @@ out:
+>  }
+>  
+>  bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
+> -			  struct btrfs_free_space *info)
+> +			  struct btrfs_free_space *info, bool update_stat)
+>  {
+>  	struct btrfs_free_space *left_info;
+>  	struct btrfs_free_space *right_info;
+> @@ -632,7 +639,10 @@ bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
+>  		left_info = tree_search_offset(block_group, offset - 1, 0, 0);
+>  
+>  	if (right_info && !right_info->bitmap) {
+> -		unlink_free_space(block_group, right_info);
+> +		if (update_stat)
+> +			unlink_free_space(block_group, right_info);
+> +		else
+> +			__unlink_free_space(block_group, right_info);
+>  		info->bytes += right_info->bytes;
+>  		kfree(right_info);
+>  		merged = true;
+> @@ -640,7 +650,10 @@ bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
+>  
+>  	if (left_info && !left_info->bitmap &&
+>  	    left_info->offset + left_info->bytes == offset) {
+> -		unlink_free_space(block_group, left_info);
+> +		if (update_stat)
+> +			unlink_free_space(block_group, left_info);
+> +		else
+> +			__unlink_free_space(block_group, left_info);
+>  		info->offset = left_info->offset;
+>  		info->bytes += left_info->bytes;
+>  		kfree(left_info);
+> @@ -665,7 +678,7 @@ int btrfs_add_free_space(struct btrfs_block_group_cache *block_group,
+>  
+>  	spin_lock(&block_group->tree_lock);
+>  
+> -	if (try_merge_free_space(block_group, info))
+> +	if (try_merge_free_space(block_group, info, true))
+>  		goto link;
+>  
+>  	/*
+> @@ -883,6 +896,7 @@ __btrfs_return_cluster_to_free_space(
+>  		node = rb_next(&entry->offset_index);
+>  		rb_erase(&entry->offset_index, &cluster->root);
+>  		BUG_ON(entry->bitmap);
+> +		try_merge_free_space(block_group, entry, false);
+>  		tree_insert_offset(&block_group->free_space_offset,
+>  				   entry->offset, &entry->offset_index, 0);
 
-Yes.
+It's early in the morning here, so forgive me if I'm missing something obvious,
+but if try_merge_free_space() succeeds here, then won't tree_insert_offset()
+then add an entry that overlaps the same spot?  Should we do something like
 
- > If so, yes, thats broken since 2.6.35. I submitted a fix
- > (http://marc.info/?l=netfilter-devel&m=128116762801769&w=2),
- > but it was not yet applied.
- > 
- > Will resend it later today.
+merged = try_merge_free_space();
+if (!merged)
+	tree_insert_offset();
 
-That patch applied to 2.6.35 fixed the problem on my G5.  Thanks!
+?  Thanks,
 
-Tested-by: Mikael Pettersson <mikpe@it.uu.se>
-
-/Mikael
+Josef
