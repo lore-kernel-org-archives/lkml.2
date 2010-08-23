@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab0HWNBn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:01:43 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34647 "EHLO gir.skynet.ie"
+	id S1752873Ab0HWNCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:02:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab0HWNBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:01:41 -0400
-Date: Mon, 23 Aug 2010 14:01:27 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 0/3] Reduce watermark-related problems with the per-cpu
-	allocator V2
-Message-ID: <20100823130127.GP19797@csn.ul.ie>
-References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1008230742300.4094@router.home>
+	id S1751805Ab0HWNCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:02:36 -0400
+Date: Mon, 23 Aug 2010 09:02:25 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
+        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] btrfs: fix threshold calculation for block groups
+	smaller than 1GB
+Message-ID: <20100823130224.GA2404@localhost.localdomain>
+References: <4C71CD4B.10606@cn.fujitsu.com> <4C71CD60.5050507@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008230742300.4094@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4C71CD60.5050507@cn.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 07:45:25AM -0500, Christoph Lameter wrote:
-> On Mon, 23 Aug 2010, Mel Gorman wrote:
+On Mon, Aug 23, 2010 at 09:22:40AM +0800, Li Zefan wrote:
+> If a block group is smaller than 1GB, the extent entry threadhold
+> calculation will always set the threshold to 0.
 > 
-> > Internal IBM test teams beta testing distribution kernels have reported
-> > problems on machines with a large number of CPUs whereby page allocator
-> > failure messages show huge differences between the nr_free_pages vmstat
-> > counter and what is available on the buddy lists. In an extreme example,
-> > nr_free_pages was above the min watermark but zero pages were on the buddy
-> > lists allowing the system to potentially livelock unable to make forward
-> > progress unless an allocation succeeds. There is no reason why the problems
-> > would not affect mainline so the following series mitigates the problems
-> > in the page allocator related to to per-cpu counter drift and lists.
+> So as free space gets fragmented, btrfs will switch to use bitmap
+> to manage free space, but then will never switch back to extents
+> due to this bug.
 > 
-> The maximum time for which the livelock can exists is the vm stat
-> interval. By default the counters are brought up to date at least once per
-> second or if a certain delta was violated. Drifts are controlled by the
-> delta configuration.
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  fs/btrfs/free-space-cache.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+> index f488fac..7edbef6 100644
+> --- a/fs/btrfs/free-space-cache.c
+> +++ b/fs/btrfs/free-space-cache.c
+> @@ -263,14 +263,18 @@ static void recalculate_thresholds(struct btrfs_block_group_cache *block_group)
+>  	u64 max_bytes;
+>  	u64 bitmap_bytes;
+>  	u64 extent_bytes;
+> +	u64 size = block_group->key.offset;
+>  
+>  	/*
+>  	 * The goal is to keep the total amount of memory used per 1gb of space
+>  	 * at or below 32k, so we need to adjust how much memory we allow to be
+>  	 * used by extent based free space tracking
+>  	 */
+> -	max_bytes = MAX_CACHE_BYTES_PER_GIG *
+> -		(div64_u64(block_group->key.offset, 1024 * 1024 * 1024));
+> +	if (size < 1024 * 1024 * 1024)
+> +		max_bytes = MAX_CACHE_BYTES_PER_GIG;
+> +	else
+> +		max_bytes = MAX_CACHE_BYTES_PER_GIG *
+> +			div64_u64(size, 1024 * 1024 * 1024);
+>  
+>  	/*
+>  	 * we want to account for 1 more bitmap than what we have so we can make
+> -- 
+> 1.7.0.1
 > 
 
-While there is a maximum time (2 seconds I think) the drift can exist
-in, a machine under enough pressure can make a mess of the watermarks
-during that time. If it wasn't the case, these livelocks with 0 pages
-free wouldn't be happening.
+Reviewed-by: Josef Bacik <josef@redhat.com>
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Thanks,
+
+Josef
