@@ -1,139 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab0HWP4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:56:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55212 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753909Ab0HWP4A (ORCPT
+	id S1754337Ab0HWQAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 12:00:49 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65431 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab0HWQAp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:56:00 -0400
-Subject: Re: [PATCH 0/3] Generalise ARM perf-events backend for oprofile
-From: Will Deacon <will.deacon@arm.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <1282560381-7700-1-git-send-email-matt@console-pimps.org>
-References: <1282560381-7700-1-git-send-email-matt@console-pimps.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 16:51:17 +0100
-Message-ID: <1282578677.17710.14.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Aug 2010 15:51:21.0940 (UTC) FILETIME=[08945140:01CB42DB]
+	Mon, 23 Aug 2010 12:00:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=dKXXg7rKyAsb63t5k36owhdljUYeZFAlw66kII0Yz//BsF4z+38G5sF6Aw4/W/2D2O
+         BHLf7ZRgdm7vRzURtOoKMfEmee1LlMShRpQQLSG6W0F1wNw2XUIaD3VG6zgOhw6607zu
+         TzVgEN7fkesuK/UEDYptlqiD4ZOcEiJlSt1co=
+MIME-Version: 1.0
+Reply-To: trapdoor6@gmail.com
+In-Reply-To: <AANLkTim1fAiqwU9v4B1F+rG91kjV4fkkLPKX0UwBe0Vq@mail.gmail.com>
+References: <AANLkTi=_XQfC7wGHKWHp7jtYPMKTOwHJkNnvkTddoLK5@mail.gmail.com>
+	<AANLkTim1fAiqwU9v4B1F+rG91kjV4fkkLPKX0UwBe0Vq@mail.gmail.com>
+Date: Mon, 23 Aug 2010 17:00:44 +0100
+Message-ID: <AANLkTimRDFvFWTtmBkF+KumORX3PY241YpF1K+9d63TK@mail.gmail.com>
+Subject: Re: [REGRESSION, Radeon-KMS] 2.6.36-rc1 - graphic issues in 0. A.D.
+From: trapDoor <trapdoor6@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: airlied@linux.ie, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        trapDoor <trapdoor6@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
+On Mon, Aug 23, 2010 at 6:12 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Sun, Aug 22, 2010 at 3:41 PM, trapDoor <trapdoor6@gmail.com> wrote:
+>> Hello,
+>> Just wanted to let you know about this before bisecting which
+>> hopefully I will be able to start tomorrow. Please take a look at the
+>> screenshots in below links to see the difference with rendering
+>> textures in 0 A.D. alpha1 on kernel 2.6.35.3 and 2.6.36-rc1-git3. [0
+>> A.D. - strategic game, OS clone of Age of Empires; home page:
+>> http://wildfiregames.com/0ad/]
+>>
+>> 0 A.D. on kernel 2.6.35.3 [good]:
+>> http://picasaweb.google.co.uk/104351852606666221362/0ad?authkey=Gv1sRgCMne0NqXpuzR_gE#5508312214769142226
+>>
+>> 0 A.D. on kernel 2.6.36-rc1-git3:
+>> http://picasaweb.google.co.uk/104351852606666221362/0ad?authkey=Gv1sRgCMne0NqXpuzR_gE#5508312218519295058
+>>
+>> Please note that in both cases only kernel was different. The other
+>> components [including hardware] were in the same versions and had the
+>> same options (like the game itself, xorg-ati drivers, mesa, libdrm
+>> [S3TC disabled], etc.). So it must be kernel then.
+>
+> What card?  Anything in your dmesg?
+>
+> Alex
+>
 
-On Mon, 2010-08-23 at 11:46 +0100, Matt Fleming wrote:
-> The perf-events backend for OProfile that Will Deacon wrote in
-> 8c1fc96f6fd1f361428ba805103af0d0eee65179 ("ARM: 6072/1: oprofile: use
-> perf-events framework as backend") is of use to more architectures
-> than just ARM. Move the code into drivers/oprofile/ so that SH can use
-> it instead of the nearly identical copy of its OProfile code.
-> 
-> The benefit of the backend is that it becomes necessary to only
-> maintain one copy of the PMU accessor functions for each architecture,
-> with bug fixes and new features benefiting both OProfile and perf.
-> 
-The downside is that it's only really applicable if all the subarch
-targets which have OProfile support have equivalent perf support. I know
-this is the case for SH and ARM, but I'm not sure about other
-architectures.
+Hi Alex,
+Sorry for lack of details in my first e-mail. I was hoping to send you
+the logs together with bisecting results. Unfortunately there are
+other issues between 2.6.35-git2 - the last 'good' kernel (which
+doesn't include the first drm pull for 2.6.36 window merge) - and
+2.6.36-rc1. Due to those issues I can't bisect.
 
-> Note that I haven't been able to test these patches on an ARM board to
-> see if I've caused any regressions. If anyone else could do that I'd
-> appreciate it.
-> 
-I tried to test them but they don't compile:
+For example:
+1) First I tried to narrow the problem down to the closest affected
+kernel snapshot. So I marked 2.6.35-git2 as good and I was expecting
+that 2.6.35-git3 will be a bad one (as -git3 is the first snapshot
+that includes drm patches from the first drm pull). But on -git3 0
+A.D. even fails to start.
 
-arch/arm/oprofile/common.c: In function 'oprofile_arch_exit':
-arch/arm/oprofile/common.c:234: error: 'perf_events' undeclared (first use in this function)
-arch/arm/oprofile/common.c:234: error: (Each undeclared identifier is reported only once
-arch/arm/oprofile/common.c:234: error: for each function it appears in.)
-arch/arm/oprofile/common.c:237: error: 'perf_num_counters' undeclared (first use in this function)
-arch/arm/oprofile/common.c:246: error: 'counter_config' undeclared (first use in this function)
+2) Then I was hoping to do bisecting between 2.6.35-git11 and
+2.6.35-git12 (-git12 is the first snapshot that includes patches from
+the second drm pull). But these both snapshots won't even compile for
+me. It stops suddenly at the second stage of making modules without
+giving any errors (despite kernel debugging enabled in .config). I
+remember I had this problem for a while, AFAIR since around
+2.6.35-git5 to -git15 - between these I couldn't compile any snapshot
+I had tried.
 
-This is because the oprofile_arch_exit implementation for ARM frees
-data structures that were previously allocated in oprofile_arch_init.
-Since this is now done in op_perf_create_files, I'm not sure where the
-freeing should be done. OProfile can be compiled as a module, so this
-does need to be implemented somewhere (plus, if oprofile_arch_init fails
-oprofile_arch_exit is called immediately). Perhaps an op_perf_exit()
-function could be called from the arch code?
-
-Looking at the existing ARM implementation, it's not entirely safe in
-the case that oprofile_arch_init fails and needs something like:
-
-diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index 0691176..15d379f 100644
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -275,10 +275,12 @@ out:
-        return ret;
- }
- 
--static void  exit_driverfs(void)
-+static void __exit exit_driverfs(void)
- {
--       platform_device_unregister(oprofile_pdev);
--       platform_driver_unregister(&oprofile_driver);
-+       if (!IS_ERR_OR_NULL(oprofile_pdev)) {
-+               platform_device_unregister(oprofile_pdev);
-+               platform_driver_unregister(&oprofile_driver);
-+       }
- }
- #else
- static int __init init_driverfs(void) { return 0; }
-@@ -363,10 +365,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
-        }
- 
-        ret = init_driverfs();
--       if (ret) {
--               kfree(counter_config);
-+       if (ret)
-                return ret;
--       }
- 
-        for_each_possible_cpu(cpu) {
-                perf_events[cpu] = kcalloc(perf_num_counters,
-@@ -396,13 +396,14 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
-        return ret;
- }
- 
--void oprofile_arch_exit(void)
-+void __exit oprofile_arch_exit(void)
- {
-        int cpu, id;
-        struct perf_event *event;
- 
-+       exit_driverfs();
-+
-        if (*perf_events) {
--               exit_driverfs();
-                for_each_possible_cpu(cpu) {
-                        for (id = 0; id < perf_num_counters; ++id) {
-                                event = perf_events[cpu][id];
-@@ -422,5 +423,5 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
-        pr_info("oprofile: hardware counters not available\n");
-        return -ENODEV;
- }
--void oprofile_arch_exit(void) {}
-+void __exit oprofile_arch_exit(void) {}
- #endif /* CONFIG_HW_PERF_EVENTS */
+It's very likely that the issue I wanted to bisect is related to one
+of or both drm pulls . So doing bisect between e.g. these kernels:
+2.6.35-git16 (which includes both drm pulls; assuming it's the first
+snapshot since -git5 I could compile) and 2.6.36-rc1 would be
+pointless - they both will be bad.
 
 
-I can submit this as a separate patch or you can fold it into your changes
-to avoid any conflicts.
+------------
+Now, this is my card:
 
-Cheers,
+Asus ATI Radeon HD3650 Silent 512MB
+some glxinfo details:
+	OpenGL vendor string: Advanced Micro Devices, Inc.
+	OpenGL renderer string: Mesa DRI R600 (RV635 9598) 20090101  TCL DRI2
+	OpenGL version string: 2.1 Mesa 7.9-devel
+	OpenGL shading language version string: 1.20
 
-Will
 
+------------
+About the logs. It happens that 0 A.D. does produce really huge logs.
+Running the game just for about 10 SECONDS (counting after chosen map
+has been loaded) relulted in these:
+
+On a 'good' kernel 2.6.35.3
+	60K	./Xorg.0.log
+	48K	./dmesg
+	27M	./kern.log
+	27M	./syslog
+	27M	./messages
+	81M	[total]
+
+on a bad kernel 2.6.36-rc1
+	60K	./Xorg.0.log
+	52K	./dmesg
+	21M	./kern.log
+	21M	./syslog
+	21M	./messages
+	63M	[total]
+
+There's no mistake above: 3 logs had been blown up to over 20M during
+only the little time when the game was running.
+How I did it: deleted all those logs completely, re-booted from the
+'good' kernel, run the game and stopped. Then archived the logs,
+deleted again and repeated the same on the 'bad' kernel.
+
+So it looks like 99,999% of all lines in: kern.log, messages in syslog
+were produced on both kernels when 0 A.D. was running. Before I first
+time run it, I had never seen kern.log and messages in /var/log at
+all, and syslog was never bigger than around 1,5M (with logs collected
+from several boots and during a couple of days). Running 0 A.D. for a
+couple of minutes results in about 1G for each of those 3 logs.
+
+After compressing, the archive files are relatively small:
+	2.0M	./2.6.35.3_0ad-logs.tar.bz2
+	680K	./2.6.35.3_0ad-logs.tar.lzma
+
+	1.6M	./2.6.36-rc1-00159-g36423a5_0ad-logs.tar.bz2
+	748K	./2.6.36-rc1-00159-g36423a5_0ad-logs.tar.lzma [yes, somehow this
+came up bigger than 2.6.35.3(...).lzma]
+
+
+Do you mind if I send the .lzma's to you (unless you prefer .bz2)? I
+won't cc LKML or anyone of course, they will be sent only to you.
+Please let me know.
+
+
+-- 
+Regards
+Tomasz B.
