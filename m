@@ -1,129 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab0HWPol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:44:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54920 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117Ab0HWPok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:44:40 -0400
-From: Partha Basak <p-basak2@ti.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Basak, Partha" <p-basak2@ti.com>, Charulatha V <charu@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: [PATCH] OMAP: HWMOD: Handle opt clocks using clk_add_alias
-Date: Mon, 23 Aug 2010 21:14:29 +0530
-Message-Id: <1282578269-8835-1-git-send-email-p-basak2@ti.com>
-X-Mailer: git-send-email 1.5.6.6
+	id S1754172Ab0HWPpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 11:45:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43054 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754117Ab0HWPpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 11:45:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=ELyfMbct0LESyjjCyUKdV1etkEYcwOWGFgZ9+bDkHQStQSWqGB+ng9INsUZDk80EIZ
+         gQoKs3ZOxI65TvgWI2/lJc0xjXmNj2YL+SWte7dZNNBbAb1s5BHg5YkrM/LUBdrfG+hd
+         cEZYu5szIUfr/TgYCJhK3Jj0DyzRdE+W3OG38=
+MIME-Version: 1.0
+In-Reply-To: <1282572681.3813.3.camel@jlt3.sipsolutions.net>
+References: <1282350556-16523-1-git-send-email-lrodriguez@atheros.com> <1282572681.3813.3.camel@jlt3.sipsolutions.net>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Mon, 23 Aug 2010 08:44:49 -0700
+X-Google-Sender-Auth: iPEYgkhQDKUseA21yAae2MINEoQ
+Message-ID: <AANLkTimrtWQKycuAcZ3SjDaOqJ6Z-pPNauRfh+2aZ=ge@mail.gmail.com>
+Subject: Re: [PATCH 0/2] iw: add GeoClue support
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-wireless@vger.kernel.org, geoclue@lists.freedesktop.org,
+        David.Quan@atheros.com, kevin@atheros.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Basak, Partha <p-basak2@ti.com>
+On Mon, Aug 23, 2010 at 7:11 AM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Fri, 2010-08-20 at 20:29 -0400, Luis R. Rodriguez wrote:
+>> This series adds GeoClue support to iw.
+>
+> Quite frankly, I don't see the point?
 
-For every optional clock present per hwmod per omap-device, this function
-adds an entry in the clocks list of the form <dev-id=dev_name, con-id=role>,
-if an entry is already present in the list of the form <dev-id=NULL, con-id=role>.
+To help us move forward to automate location awareness information
+into the kernel. I don't think we can unify all possible solutions for
+the different distributions out there so best is to make available
+whatever utilities we can and allow the distribution implementors to
+embrace whatever they want.
 
-The function is called from within the framework inside omap_device_build_ss(),
-after omap_device_register.
+I'll explain some more below.
 
-This allows drivers to get a pointer to its optional clocks based on its role
-by calling clk_get(<dev*>, <role>).
+> What use is a command line tool that has to talk to a whole bunch of
+> daemons etc.?
 
-Link to discussions related to this patch:
-http://www.spinics.net/lists/linux-omap/msg34809.html
+The current implementation doesn't talk to deamons. The hostip
+provider within GeoClue and it will just trigger a URL get. If
+desktops start implementing a master server though then the query
+would simply be a cached response.
 
-Signed-off-by: Charulatha V <charu@ti.com>
-Signed-off-by: Basak, Partha <p-basak2@ti.com>
-Signed-off-by: Benoit Cousson <b-cousson@ti.com>
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+> I could see using say NM to connect it all,
 
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
----
- arch/arm/plat-omap/omap_device.c |   31 ++++++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
+GeoClue has some initial connectivity support now. It allows your
+connectivity managers to provide back things like status of your
+connection, your AP's MAC address, router MAC address, and a list of
+APs. The last one can be used by Plazes and Skyhook for example.
+GeoClue now supports this connection interface with Network Manager
+and as of recently for Connman. Technically Connman and Network
+Manager then can seed GeoClue with bits of info for providers. For
+example I can forsee a GeoClue http://wigle.net provider implemented
+where the provider can make use of the existing connection manager
+services to query APs and eventually provide clients its location.
 
-Index: linux-omap-pm/arch/arm/plat-omap/omap_device.c
-===================================================================
---- linux-omap-pm.orig/arch/arm/plat-omap/omap_device.c	2010-08-18 02:48:30.789079550 +0530
-+++ linux-omap-pm/arch/arm/plat-omap/omap_device.c	2010-08-24 07:19:43.637080138 +0530
-@@ -82,6 +82,7 @@
- #include <linux/slab.h>
- #include <linux/err.h>
- #include <linux/io.h>
-+#include <linux/clk.h>
- 
- #include <plat/omap_device.h>
- #include <plat/omap_hwmod.h>
-@@ -243,7 +244,6 @@ static inline struct omap_device *_find_
- 	return container_of(pdev, struct omap_device, pdev);
- }
- 
--
- /* Public functions for use by core code */
- 
- /**
-@@ -271,6 +271,47 @@ int omap_device_count_resources(struct o
- }
- 
- /**
-+ * omap_device_add_opt_clk_alias - Add alias for optional clocks in the
-+ * clocks list.
-+ *
-+ * @od: struct omap_device *od
-+ *
-+ * For every optional clock present per hwmod per omap-device, this function
-+ * adds an entry in the clocks list of the form <dev-id=dev_name, con-id=role>
-+ * if an entry is already present in it with the form <dev-id=NULL,con-id=role>
-+ *
-+ * The function is called from inside omap_device_build_ss(),
-+ * after omap_device_register.
-+ *
-+ * This allows drivers to get a pointer to its optional clocks based on its role
-+ * by calling clk_get(<dev*>, <role>).
-+ */
-+
-+static void omap_device_add_opt_clk_alias(struct omap_device *od)
-+{
-+	int i, j;
-+	struct omap_hwmod_opt_clk *oc;
-+	struct omap_hwmod *oh;
-+
-+	for (i = 0, oh = *od->hwmods; i < od->hwmods_cnt; i++, oh++)
-+		/* Add Clock alias for all optional clocks*/
-+		for (j = oh->opt_clks_cnt, oc = oh->opt_clks;
-+			j > 0; j--, oc++) {
-+			if ((oc->_clk) &&
-+			(IS_ERR(clk_get(&od->pdev.dev, oc->role)))) {
-+				int ret;
-+
-+				ret = clk_add_alias(oc->role,
-+					dev_name(&od->pdev.dev),
-+					(char *)oc->clk, NULL);
-+				if (ret)
-+					dev_err(&od->pdev.dev, "omap_device:\
-+					clk_add_alias for %s failed\n",
-+					oc->role);
-+			}
-+		}
-+}
-+/**
-  * omap_device_fill_resources - fill in array of struct resource
-  * @od: struct omap_device *
-  * @res: pointer to an array of struct resource to be filled in
-@@ -424,6 +465,12 @@ struct omap_device *omap_device_build_ss
- 	for (i = 0; i < oh_cnt; i++)
- 		hwmods[i]->od = od;
- 
-+	/*
-+	 * Add Clock alias for all optional
-+	 * clocks present in the hwmod
-+	 */
-+	omap_device_add_opt_clk_alias(od);
-+
- 	if (ret)
- 		goto odbs_exit4;
- 
+So clients are the ones querying GeoClue, and its up to them to
+implement support. Network Manager and Connman can add support for
+GeoClue by doing a similar query but then the question arises if all
+distributions will also be providing a master provider. The GeoClue
+master provider caches queries based on all supported and available
+providers so that clients do not have to wait for a provider to do its
+work on an independent query. If not master provider is installed on a
+system, each GeoClue client will have to poke at the respective
+provider to do its own work. In the case of the hostip provider a
+simple URL query is made and parsed (http://api.hostip.info). For
+other providers like gypsy Dbus will be used to get gypsy to do its
+thing and give back information. I should also note GeoClue depends on
+Glib and Dbus so there are also size considerations embedded
+distributions must make if they are not supporting Glib and/or Dbus.
+
+For distributions then the question of the master provider and
+overhead library support remains. The iw patch I provide simply
+provides an example of how to do this in userspace applications and I
+would like to expand on it to use other providers first like Gpysy and
+Gpsd until the desktop catches up. This may mean we end up handling
+this in wpa_supplicant -- not sure, this would be a good time to
+review this or we can also review this at the upcoming summit. For
+embedded distributions like openwrt it also provides a sample of what
+can be equivalently done, I doubt Glib support will be integrated.
+
+> or maybe put it into geoclue directly,
+
+GeoClue provides clients an API to query geolocation information. Its
+up to the different distributions to decide if they want to implement
+support for the master provider, which providers they want to handle.
+Client software then just queries GeoClue, what we need then is
+different userspace clients being capable of querying this information
+if GeoClue is supported to send it off to the kernel.
+
+> but a command line to trigger it all seems
+> like a wrong approach?
+
+Its an option which can be made available to distributions, right now
+we have no other except a set of bash scripts to for example query
+timezone and things like that. Piggy backing this on top of iw lets
+distributions eventually replace those scripts with a simple iw call.
+That should also get distributions to consider implementing the master
+GeoClue provider.
+
+The last mile IMHO, will be to figure out how the different desktops /
+connection managers like Network Manager and Connman, and embedded
+systems ultimately use some of this or use alternatives.
+
+ Luis
