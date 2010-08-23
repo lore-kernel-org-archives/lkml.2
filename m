@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab0HWEq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 00:46:58 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:20263 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab0HWEq5 (ORCPT
+	id S1753031Ab0HWE7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 00:59:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33413 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752682Ab0HWE73 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 00:46:57 -0400
-Date: Mon, 23 Aug 2010 13:46:49 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH v2] MFD: LP3974 PMIC support
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, m.szyprowski@samsung.com,
-        broonie@opensource.wolfsonmicro.com, jy0922.shim@samsung.com,
-        kernel@jic23.retrosnub.co.uk, myungjoo.ham@samsung.com
-Message-id: <20100823044649.GA5356@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 23 Aug 2010 04:46:54.0382 (UTC)
- FILETIME=[35A9BCE0:01CB427E]
+	Mon, 23 Aug 2010 00:59:29 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "byron.bbradley@gmail.com" <byron.bbradley@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Mon, 23 Aug 2010 10:28:42 +0530
+Subject: RE: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
+Thread-Topic: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
+Thread-Index: ActBOgPpuEku45dESo6B8nCMpj/mvABRDLeQ
+Message-ID: <19F8576C6E063C45BE387C64729E7394044F1252C6@dbde02.ent.ti.com>
+References: <hvaibhav@ti.com>
+ <1282393829-7326-2-git-send-email-hvaibhav@ti.com>
+ <20100821140541.GA31697@nokia.com>
+In-Reply-To: <20100821140541.GA31697@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+> -----Original Message-----
+> From: Felipe Balbi [mailto:felipe.balbi@nokia.com]
+> Sent: Saturday, August 21, 2010 7:36 PM
+> To: Hiremath, Vaibhav
+> Cc: linux-kernel@vger.kernel.org; akpm@linux-foundation.org;
+> byron.bbradley@gmail.com; linux-omap@vger.kernel.org; Balbi Felipe (Nokia-
+> MS/Helsinki)
+> Subject: Re: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
+> 
+> Hi,
+> 
+> On Sat, Aug 21, 2010 at 02:30:27PM +0200, ext hvaibhav@ti.com wrote:
+> >+static irqreturn_t s35390a_irq_thread(int irq, void *handle)
+> >+{
+> >+	char buf[1];
+> >+	struct s35390a *s35390a = handle;
+> >+	struct i2c_client *client = s35390a->client[0];
+> 
+> don't you need some locking on the irq handler ? a mutex maybe ? Just
+> wondering...
+> 
+[Hiremath, Vaibhav] Yes definitely we do need locking here, I thought of adding locking mechanism in subsequent patch, does it makes sense?
 
-LP3974 PMIC support. It has same functionality with max8998.
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-Changelog v1:
-	Only change the Kconfig and add the lp3974
+> >@@ -261,15 +424,30 @@ static int s35390a_probe(struct i2c_client *client,
+> > 	if (s35390a_get_datetime(client, &tm) < 0)
+> > 		dev_warn(&client->dev, "clock needs to be set\n");
+> >
+> >+	if (client->irq >= 0) {
+> >+		err = request_threaded_irq(client->irq, NULL,
+> >+				s35390a_irq_thread,
+> >+				IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+> >+				client->name, s35390a);
+> >+		if (err) {
+> >+			dev_err(&client->dev, "unable to request IRQ\n");
+> >+			goto exit_dummy;
+> >+		}
+> >+	}
+> >+
+> > 	s35390a->rtc = rtc_device_register(s35390a_driver.driver.name,
+> > 				&client->dev, &s35390a_rtc_ops, THIS_MODULE);
+> >
+> > 	if (IS_ERR(s35390a->rtc)) {
+> > 		err = PTR_ERR(s35390a->rtc);
+> >-		goto exit_dummy;
+> >+		goto exit_intr;
+> > 	}
+> >+
+> > 	return 0;
+> >
+> >+exit_intr:
+> >+	free_irq(client->irq, client);
+> 
+> free_irq() won't behave correctly, I believe since you're passing
+> different dev_id parameters. If you look at the implementation of
+> free_irq() you'll see it uses dev_id to find the correct struct
+> irqaction pointer.
+> 
+[Hiremath, Vaibhav] Overlooked, my bad. Thanks for pointing this to me ,will fix.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index db51ea1..fcab5f1 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -294,14 +294,15 @@ config MFD_MAX8925
- 	  to use the functionality of the device.
- 
- config MFD_MAX8998
--	bool "Maxim Semiconductor MAX8998 PMIC Support"
-+	bool "Maxim Semiconductor MAX8998/National LP3974 PMIC Support"
- 	depends on I2C=y
- 	select MFD_CORE
- 	help
--	  Say yes here to support for Maxim Semiconductor MAX8998. This is
--	  a Power Management IC. This driver provies common support for
--	  accessing the device, additional drivers must be enabled in order
--	  to use the functionality of the device.
-+	  Say yes here to support for Maxim Semiconductor MAX8998 and
-+	  National Semiconductor LP3974. This is a Power Management IC.
-+	  This driver provies common support for accessing the device,
-+	  additional drivers must be enabled in order to use the functionality
-+	  of the device.
- 
- config MFD_WM8400
- 	tristate "Support Wolfson Microelectronics WM8400"
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index 73e6f5c..f1c9289 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -125,8 +125,9 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
- }
- 
- static const struct i2c_device_id max8998_i2c_id[] = {
--       { "max8998", 0 },
--       { }
-+	{ "max8998", 0 },
-+	{ "lp3974", 0 },
-+	{ }
- };
- MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
- 
+
+Thanks,
+Vaibhav
+> --
+> balbi
+> 
+> DefectiveByDesign.org
