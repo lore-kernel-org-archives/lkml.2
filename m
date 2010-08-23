@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab0HWNhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:37:46 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40185 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab0HWNho (ORCPT
+	id S1753288Ab0HWNii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:38:38 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:37409 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752730Ab0HWNig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:37:44 -0400
-Message-ID: <4C7279A4.5040606@in.ibm.com>
-Date: Mon, 23 Aug 2010 19:07:40 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	Mon, 23 Aug 2010 09:38:36 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: mxjz8mwVM1mVl.cUcRZNdRHxYmmZSidSezii1MlmStShDXm
+ smhZv5IR.3rftEetdW9gp3vpqwhAPxzagEtkZTMdM9cZtlLQ8jdADnl_wKDj
+ SucHNC9a4W.8tS5okun6gbHSe5If65j3tkN94O.mGGMA21zhdajrgE6HK_S7
+ WLHVBE3CRoMRPnMbx2.Z22IZMi9yJHkdN5gNoFc7o73F0.z2wAVeW5QMdp53
+ h
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 23 Aug 2010 08:38:25 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 0/3] Reduce watermark-related problems with the per-cpu
+ allocator V2
+In-Reply-To: <20100823130127.GP19797@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1008230835220.5750@router.home>
+References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1008230742300.4094@router.home> <20100823130127.GP19797@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: linux-s390@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, dhowells@redhat.com
-Subject: Re: [s390] Build failure with latest 2.6.36-rc1 git (sys_execve)
-References: <4C6CBA56.9020909@in.ibm.com> <20100819094444.28e7b2e4@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20100819094444.28e7b2e4@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Schwidefsky wrote:
-> On Thu, 19 Aug 2010 10:30:06 +0530
-> Sachin Sant <sachinp@in.ibm.com> wrote:
+On Mon, 23 Aug 2010, Mel Gorman wrote:
+
+> > The maximum time for which the livelock can exists is the vm stat
+> > interval. By default the counters are brought up to date at least once per
+> > second or if a certain delta was violated. Drifts are controlled by the
+> > delta configuration.
+> >
 >
->   
->> Latest 2.6.36-rc1 git fails to build on a s390 with
->>
->> arch/s390/kernel/process.c:272: error: conflicting types for 'sys_execve'
->> arch/s390/kernel/entry.h:45: error: previous declaration of 'sys_execve' was here
->> make[1]: *** [arch/s390/kernel/process.o] Error 1
->>
->> This error was introduced via commit :
->>
->> commit d7627467b7a8dd6944885290a03a07ceb28c10eb
->> Make do_execve() take a const filename pointer
->>
->> I guess the corresponding definition of sys_execve()
->> in arch/s390/kernel/entry.h also needs an update.
->>     
->
-> Fix is uploaded to git390. Tomorrows -next tree should work again.
->   
-The patch is still missing from Linus's tree.
-2.6.36-rc2-git1 (9ee4747..) fails with the same error.
+> While there is a maximum time (2 seconds I think) the drift can exist
+> in, a machine under enough pressure can make a mess of the watermarks
+> during that time. If it wasn't the case, these livelocks with 0 pages
+> free wouldn't be happening.
 
-Thanks
--Sachin
+So because we go way beyond the watermarks we reach a state in which a
+livelock exists that does not go away when the counters are finally
+updated?
 
-
--- 
-
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
 
