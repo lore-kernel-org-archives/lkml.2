@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab0HWVjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 17:39:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38179 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754130Ab0HWVjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 17:39:01 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] ACPI: Don't report current_now if battery reports in mWh
-Date: Mon, 23 Aug 2010 23:37:19 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, cbou@mail.ru,
-        dwmw2@infradead.org, lenb@kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Alexey Starikovskiy <astarikovskiy@suse.de>
-References: <1282595132-5026-1-git-send-email-mjg@redhat.com>
-In-Reply-To: <1282595132-5026-1-git-send-email-mjg@redhat.com>
+	id S1754802Ab0HWVjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 17:39:11 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:45527 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754130Ab0HWVjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 17:39:07 -0400
+Date: Mon, 23 Aug 2010 23:39:01 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Dan Carpenter <error27@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] pda_power: remove unneeded assignment
+Message-ID: <20100823213901.GJ17833@buzzloop.caiaq.de>
+References: <20100823212103.GA7340@bicker>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008232337.19715.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100823212103.GA7340@bicker>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 23, 2010, Matthew Garrett wrote:
-> ACPI batteries can report in units of either current or energy. Right
-> now we expose the current_now file even if the battery is reporting
-> energy units, resulting in a file that should contain mA instead
-> containing mW. Don't expose this value unless the battery is reporting
-> current.
+On Mon, Aug 23, 2010 at 11:21:03PM +0200, Dan Carpenter wrote:
+> We never use the "ret" value from this assignment, and also
+> PTR_ERR(NULL) is zero.  I looked at it and this driver is designed to
+> accept a NULL value for "ac_draw".  So there isn't a bug in the original
+> code and we can just remove this confusing assignment.
 > 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Looks reasonable.
 
-> ---
->  drivers/acpi/battery.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-> index dc58402..9841720 100644
-> --- a/drivers/acpi/battery.c
-> +++ b/drivers/acpi/battery.c
-> @@ -273,7 +273,6 @@ static enum power_supply_property energy_battery_props[] = {
->  	POWER_SUPPLY_PROP_CYCLE_COUNT,
->  	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
->  	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-> -	POWER_SUPPLY_PROP_CURRENT_NOW,
->  	POWER_SUPPLY_PROP_POWER_NOW,
->  	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
->  	POWER_SUPPLY_PROP_ENERGY_FULL,
-> 
+Acked-by: Daniel Mack <daniel@caiaq.de>
 
+> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+> index 69f8aa3..63a6a4d 100644
+> --- a/drivers/power/pda_power.c
+> +++ b/drivers/power/pda_power.c
+> @@ -279,7 +279,6 @@ static int pda_power_probe(struct platform_device *pdev)
+>  	if (IS_ERR(ac_draw)) {
+>  		dev_dbg(dev, "couldn't get ac_draw regulator\n");
+>  		ac_draw = NULL;
+> -		ret = PTR_ERR(ac_draw);
+>  	}
+>  
+>  	if (pdata->is_ac_online) {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
