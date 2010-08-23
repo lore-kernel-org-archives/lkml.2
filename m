@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab0HWJ51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:57:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58297 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751551Ab0HWJ5Z (ORCPT
+	id S1753827Ab0HWJ7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:59:47 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:56984 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751869Ab0HWJ7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:57:25 -0400
-Date: Mon, 23 Aug 2010 10:57:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [spi-devel-general] [PATCH 1/2] spi/spi_s3c64xx: Make probe
- more robust against missing board config
-Message-ID: <20100823095722.GA6061@rakim.wolfsonmicro.main>
-References: <1282321028-32196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <AANLkTimggbZqgv=eKe+wx8YvUX5vOppDfmwpLwTgxJFM@mail.gmail.com>
- <20100821100855.GA5545@opensource.wolfsonmicro.com>
- <AANLkTikbGR4wWUEHjR74UFu8P-w9us3ZpKgmG+yDukfC@mail.gmail.com>
- <20100821193015.GA16455@opensource.wolfsonmicro.com>
- <AANLkTikDj7YsOQXnFGjZCNRYuQQbLRtKiWw5Sm=vkCuq@mail.gmail.com>
+	Mon, 23 Aug 2010 05:59:44 -0400
+Date: Mon, 23 Aug 2010 11:59:41 +0200
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: Joseph Chan <JosephChan@via.com.tw>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Erik-Jan Post <ej.lfs@xs4all.nl>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 1/2] drivers/video: Removing dead FB_VIA_CAMERA config
+ option
+Message-ID: <896537c6f9bd2e4babcb9ff4681bb4db72daf544.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikDj7YsOQXnFGjZCNRYuQQbLRtKiWw5Sm=vkCuq@mail.gmail.com>
-X-Cookie: Advancement in position.
+In-Reply-To: <cover.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 12:37:25PM +0900, Jassi Brar wrote:
+CONFIG_FB_VIA_CAMERA doesn't exist in Kconfig, therefore removing
+all references to it from the source.
 
-> An immediate kernel crash ? :)
-> I mean if the developer didn't even run-check the board init code, he ought
-> to face a kernel crash.
-> On a more lenient note, probably a check like yours or !sci->num_cs
-> could be added.
+Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+---
+ drivers/video/via/accel.c |   16 ----------------
+ include/linux/via-core.h  |    5 +----
+ 2 files changed, 1 insertions(+), 20 deletions(-)
 
-I'd personally not actually be that upset with a BUG_ON(), my main
-reason for changing the code was that it was non-obvious what the source
-of the error was rather than the fact that things fell over.
+diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
+index e44893e..43d4f30 100644
+--- a/drivers/video/via/accel.c
++++ b/drivers/video/via/accel.c
+@@ -370,22 +370,6 @@ int viafb_init_engine(struct fb_info *info)
+ 	viapar->shared->vq_vram_addr = viapar->fbmem_free;
+ 	viapar->fbmem_used += VQ_SIZE;
+ 
+-#if defined(CONFIG_FB_VIA_CAMERA) || defined(CONFIG_FB_VIA_CAMERA_MODULE)
+-	/*
+-	 * Set aside a chunk of framebuffer memory for the camera
+-	 * driver.  Someday this driver probably needs a proper allocator
+-	 * for fbmem; for now, we just have to do this before the
+-	 * framebuffer initializes itself.
+-	 *
+-	 * As for the size: the engine can handle three frames,
+-	 * 16 bits deep, up to VGA resolution.
+-	 */
+-	viapar->shared->vdev->camera_fbmem_size = 3*VGA_HEIGHT*VGA_WIDTH*2;
+-	viapar->fbmem_free -= viapar->shared->vdev->camera_fbmem_size;
+-	viapar->fbmem_used += viapar->shared->vdev->camera_fbmem_size;
+-	viapar->shared->vdev->camera_fbmem_offset = viapar->fbmem_free;
+-#endif
+-
+ 	/* Init AGP and VQ regs */
+ 	switch (chip_name) {
+ 	case UNICHROME_K8M890:
+diff --git a/include/linux/via-core.h b/include/linux/via-core.h
+index 7ffb521..7fc611e 100644
+--- a/include/linux/via-core.h
++++ b/include/linux/via-core.h
+@@ -81,10 +81,7 @@ struct viafb_dev {
+ 	unsigned long fbmem_start;
+ 	long fbmem_len;
+ 	void __iomem *fbmem;
+-#if defined(CONFIG_FB_VIA_CAMERA) || defined(CONFIG_FB_VIA_CAMERA_MODULE)
+-	long camera_fbmem_offset;
+-	long camera_fbmem_size;
+-#endif
++
+ 	/*
+ 	 * The MMIO region for device registers.
+ 	 */
+-- 
+1.7.0.4
 
-> > It did occur to me that a nice way of dealing with this would be to have
-> > the driver default to using the built in chip select (even if driven as
-> > a GPIO for the sake of code simplicity) but leave the current method
-> > there as an override.  That way if people are using the IP block in the
-> > "natural" manner they'd have less to set up.
-
-> I thought about it but decided against it, for that would complicate the
-> driver by having to switch between two mechanism in runtime and there
-> are some peculiarities in the controller about clocking and CS'ing.
-
-Yeah, that's why I suggested driving it as a GPIO for simplicity - from
-the user point of view it doesn't matter if that's what the controller
-does so long as the driver figures out the chip select without external
-help.
