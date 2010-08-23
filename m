@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab0HWNAU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:00:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37579 "EHLO mx1.suse.de"
+	id S1752792Ab0HWNBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:01:43 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34647 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab0HWNAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:00:18 -0400
-Date: Mon, 23 Aug 2010 15:00:14 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stephane Chatty <chatty@enac.fr>, Michael Poole <mdpoole@troilus.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Bastien Nocera <hadess@hadess.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] Get and Set Feature Reports on HIDRAW (USB and
- Bluetooth)
-In-Reply-To: <1281990059-3562-1-git-send-email-alan@signal11.us>
-Message-ID: <alpine.LNX.2.00.1008231459370.1019@pobox.suse.cz>
-References: <1281442367.12579.206.camel@localhost.localdomain> <1281990059-3562-1-git-send-email-alan@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751805Ab0HWNBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:01:41 -0400
+Date: Mon, 23 Aug 2010 14:01:27 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 0/3] Reduce watermark-related problems with the per-cpu
+	allocator V2
+Message-ID: <20100823130127.GP19797@csn.ul.ie>
+References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1008230742300.4094@router.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1008230742300.4094@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Aug 2010, Alan Ott wrote:
-
-> This is version 4. Built against 2.6.35+ revision 320b2b8de12698 .
+On Mon, Aug 23, 2010 at 07:45:25AM -0500, Christoph Lameter wrote:
+> On Mon, 23 Aug 2010, Mel Gorman wrote:
 > 
-> Alan Ott (2):
->   HID: Add Support for Setting and Getting Feature Reports from hidraw
->   Bluetooth: hidp: Add support for hidraw  HIDIOCGFEATURE  and
->     HIDIOCSFEATURE
+> > Internal IBM test teams beta testing distribution kernels have reported
+> > problems on machines with a large number of CPUs whereby page allocator
+> > failure messages show huge differences between the nr_free_pages vmstat
+> > counter and what is available on the buddy lists. In an extreme example,
+> > nr_free_pages was above the min watermark but zero pages were on the buddy
+> > lists allowing the system to potentially livelock unable to make forward
+> > progress unless an allocation succeeds. There is no reason why the problems
+> > would not affect mainline so the following series mitigates the problems
+> > in the page allocator related to to per-cpu counter drift and lists.
 > 
->  drivers/hid/hidraw.c          |  105 ++++++++++++++++++++++++++++++++++++--
->  drivers/hid/usbhid/hid-core.c |   37 +++++++++++++-
->  include/linux/hid.h           |    3 +
->  include/linux/hidraw.h        |    3 +
->  net/bluetooth/hidp/core.c     |  114 +++++++++++++++++++++++++++++++++++++++--
->  net/bluetooth/hidp/hidp.h     |    8 +++
->  6 files changed, 260 insertions(+), 10 deletions(-)
+> The maximum time for which the livelock can exists is the vm stat
+> interval. By default the counters are brought up to date at least once per
+> second or if a certain delta was violated. Drifts are controlled by the
+> delta configuration.
+> 
 
-Marcel, as per our previous discussion -- what is your word on this? I'd 
-be glad taking it once you Ack the bluetooth bits (which, as far as I 
-understood from your last mail, don't have strong objections against any 
-more).
-
-Thanks,
+While there is a maximum time (2 seconds I think) the drift can exist
+in, a machine under enough pressure can make a mess of the watermarks
+during that time. If it wasn't the case, these livelocks with 0 pages
+free wouldn't be happening.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
