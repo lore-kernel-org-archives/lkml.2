@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0HWHPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 03:15:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2265 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105Ab0HWHPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 03:15:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,256,1280732400"; 
-   d="scan'208";a="315726168"
-Date: Mon, 23 Aug 2010 15:15:35 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Con Kolivas <kernel@kolivas.org>
-Cc: Neil Brown <neilb@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "david@fromorbit.com" <david@fromorbit.com>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH] writeback: remove the internal 5% low bound on
- dirty_ratio
-Message-ID: <20100823071534.GA24566@localhost>
-References: <20100820032506.GA6662@localhost>
- <20100823144248.15fbb700@notabene>
- <20100823062359.GA19586@localhost>
- <201008231630.40892.kernel@kolivas.org>
+	id S1753391Ab0HWHRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 03:17:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40523 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab0HWHRJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 03:17:09 -0400
+Date: Mon, 23 Aug 2010 09:17:07 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/3] dmaengine: add wrapper functions for dmaengine
+Message-ID: <20100823071707.GT27749@pengutronix.de>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de> <1281956870-12463-3-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201008231630.40892.kernel@kolivas.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1281956870-12463-3-git-send-email-s.hauer@pengutronix.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:16:30 up 50 days, 22:27, 32 users,  load average: 9.55, 3.37,
+	1.72
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 02:30:40PM +0800, Con Kolivas wrote:
-> On Mon, 23 Aug 2010 04:23:59 pm Wu Fengguang wrote:
-> > On Mon, Aug 23, 2010 at 12:42:48PM +0800, Neil Brown wrote:
-> > > On Fri, 20 Aug 2010 15:50:54 +1000
-> > >
-> > > Con Kolivas <kernel@kolivas.org> wrote:
-> > > > On Fri, 20 Aug 2010 02:13:25 pm KOSAKI Motohiro wrote:
-> > > > > > The dirty_ratio was silently limited to >= 5%. This is not a user
-> > > > > > expected behavior. Let's rip it.
-> > > > > >
-> > > > > > It's not likely the user space will depend on the old behavior.
-> > > > > > So the risk of breaking user space is very low.
-> > > > > >
-> > > > > > CC: Jan Kara <jack@suse.cz>
-> > > > > > CC: Neil Brown <neilb@suse.de>
-> > > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > >
-> > > > > Thank you.
-> > > > > 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > >
-> > > > I have tried to do this in the past, and setting this value to 0 on
-> > > > some machines caused the machine to come to a complete standstill with
-> > > > small writes to disk. It seemed there was some kind of "minimum" amount
-> > > > of data required by the VM before anything would make it to the disk
-> > > > and I never quite found out where that blockade occurred. This was some
-> > > > time ago (3 years ago) so I'm not sure if the problem has since been
-> > > > fixed in the VM since then. I suggest you do some testing with this
-> > > > value set to zero before approving this change.
-> >
-> > You are right, vm.dirty_ratio=0 will block applications for ever..
+On Mon, Aug 16, 2010 at 01:07:49PM +0200, Sascha Hauer wrote:
+> Currently dmaengine users have to explicitely dereference function
+> pointers in struct dma_device. For the convenience of drivers and
+> to be more flexible when changing the dmaengine later add static
+> inline wrapper functions for the dma commands.
 > 
-> Indeed. And while you shouldn't set the lower limit to zero to avoid this 
-> problem, it doesn't answer _why_ this happens. What is this "minimum write" 
-> that blocks everything, will 1% be enough, and is it hiding another real bug 
-> somewhere in the VM?
+> This patch is not complete yet. If there's consensus on this patch
+> I'll provide an updated patch with the missing functions.
 
-Good question.
-This simple change will unblock the application even with vm_dirty_ratio=0.
+Dan,
 
-# echo 0 > /proc/sys/vm/dirty_ratio
-# echo 0 > /proc/sys/vm/dirty_background_ratio                                               
-# vmmon nr_dirty nr_writeback nr_unstable
+Any comment on this one?
 
-        nr_dirty     nr_writeback      nr_unstable
-               0              444             1369
-              37               37              326
-               0                0               37
-              74              772              694
-               0                0               19
-               0                0             1406
-               0                0               23
-               0                0                0
-               0              370              186
-              74             1073             1221
-               0               12               26
-               0              703             1147
-              37                0              999
-              37               37             1517
-               0              888               63
-               0                0                0
-               0                0               20
-              37                0                0
-              37               74             1776
-               0                0                8
-              37              629              333
-               0               12               19
+Sascha
 
-Even with it, the 1% explicit bound still looks reasonable for me.
-Who will want to set it to 0%? That would destroy IO inefficient.
+> 
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> ---
+>  include/linux/dmaengine.h |   41 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 41 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 0df7864..635c60b 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -491,6 +491,47 @@ struct dma_device {
+>  	void (*device_issue_pending)(struct dma_chan *chan);
+>  };
+>  
+> +static inline int dmaengine_device_control(struct dma_chan *chan,
+> +					   enum dma_ctrl_cmd cmd,
+> +					   unsigned long arg)
+> +{
+> +	return chan->device->device_control(chan, cmd, arg);
+> +}
+> +
+> +static inline int dmaengine_slave_config(struct dma_chan *chan,
+> +					  struct dma_slave_config *config)
+> +{
+> +	return dmaengine_device_control(chan, DMA_SLAVE_CONFIG,
+> +			(unsigned long)config);
+> +}
+> +
+> +static inline int dmaengine_terminate_all(struct dma_chan *chan)
+> +{
+> +	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+> +}
+> +
+> +static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
+> +		struct dma_chan *chan, struct scatterlist *sgl,
+> +		unsigned int sg_len, enum dma_data_direction direction,
+> +		unsigned long flags)
+> +{
+> +	return chan->device->device_prep_slave_sg(chan, sgl, sg_len, direction,
+> +			flags);
+> +}
+> +
+> +static inline struct dma_async_tx_descriptor *dmaengine_prep_cyclic(
+> +		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+> +		size_t period_len, enum dma_data_direction direction)
+> +{
+> +	return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
+> +			period_len, direction);
+> +}
+> +
+> +static inline int dmaengine_tx_submit(struct dma_async_tx_descriptor *desc)
+> +{
+> +	return desc->tx_submit(desc);
+> +}
+> +
+>  static inline bool dmaengine_check_align(u8 align, size_t off1, size_t off2, size_t len)
+>  {
+>  	size_t mask;
+> -- 
+> 1.7.1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-Thanks,
-Fengguang
----
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -542,8 +536,8 @@ static void balance_dirty_pages(struct address_space *mapping,
- 		 * the last resort safeguard.
- 		 */
- 		dirty_exceeded =
--			(bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh)
--			|| (nr_reclaimable + nr_writeback >= dirty_thresh);
-+			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
-+			|| (nr_reclaimable + nr_writeback > dirty_thresh);
- 
- 		if (!dirty_exceeded)
- 			break;
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
