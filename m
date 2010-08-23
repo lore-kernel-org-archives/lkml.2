@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab0HWA0j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 20:26:39 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12324 "EHLO mga14.intel.com"
+	id S1751542Ab0HWAhZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 20:37:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6596 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249Ab0HWA0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 20:26:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,254,1280732400"; 
-   d="scan'208";a="315635202"
-Subject: Re: [PATCH 1/4] [Patch-next] ACPI, APEI, ERST Fix the wrong
- checking of Serialization Header's length
-From: Huang Ying <ying.huang@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andi Kleen <andi@firstfloor.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C6ED6CD.4010002@kernel.org>
-References: <4C69DDB5.6060103@np.css.fujitsu.com>
-	 <1282008836.2744.1490.camel@yhuang-dev>
-	 <4C69F094.1040607@np.css.fujitsu.com>
-	 <1282015344.2744.1500.camel@yhuang-dev> <4C6A139D.20507@np.css.fujitsu.com>
-	 <1282109696.2744.1553.camel@yhuang-dev>  <4C6ED6CD.4010002@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 08:26:32 +0800
-Message-ID: <1282523192.2744.1609.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1751249Ab0HWAhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 20:37:24 -0400
+From: Eric Paris <eparis@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH 2/4] fanotify: drop duplicate pr_debug statement
+Date: Sun, 22 Aug 2010 20:37:08 -0400
+Message-Id: <1282523830-27751-2-git-send-email-eparis@redhat.com>
+In-Reply-To: <1282523830-27751-1-git-send-email-eparis@redhat.com>
+References: <1282523830-27751-1-git-send-email-eparis@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-21 at 03:26 +0800, Yinghai Lu wrote:
-> On 08/17/2010 10:34 PM, Huang Ying wrote:
-> > On Tue, 2010-08-17 at 12:44 +0800, Jin Dongming wrote:
-> >> (2010/08/17 12:22), Huang Ying wrote:
-> >>> On Tue, 2010-08-17 at 10:14 +0800, Jin Dongming wrote:
-> >>>>> I don't think it is necessary to change the header definition, and
-> >>>>> seri_header is not a good name for me.
-> >>>> Why I added this structure here is that I don't want to do following checking.
-> >>>> For example,
-> >>>> 	if (header_length != 0x0c) {
-> >>>> 		...
-> >>>> 	}
-> >>>
-> >>> This can be:
-> >>>
-> >>>  static int erst_check_table(struct acpi_table_erst *erst_tab)
-> >>>  {
-> >>> -       if (erst_tab->header_length != sizeof(struct acpi_table_erst))
-> >>> +       if (erst_tab->header_length !=
-> >>> +           (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
-> >>>
-> >>> like Yinghai has been done.
-> >>>
-> >> Yes. It looks good. And I am sorry I am unaware of Yinghai' patch. 
-> > 
-> > Maybe you can help push this fix in, it seems that Yinghai is busy on
-> > something else?
-> > 
-> > Hi, Yinghai,
-> > 
-> > Do you mind for Dongming to push this fix?
-> > 
-> do you mean this one?
-> 
-> [PATCH] acpi: fix apei related table size checking
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Huang Ying <ying.huang@intel.com>
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
 
+This reminded me... you have two pr_debugs in fanotify_should_send_event
+which output redundant information. Maybe you intended it like that so
+it is selectable how much log spam you want, or if not you may want to
+apply this patch.
+
+Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
+ fs/notify/fanotify/fanotify.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+index 756566f..85366c7 100644
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -165,9 +165,6 @@ static bool fanotify_should_send_event(struct fsnotify_group *group,
+ 		 "mask=%x data=%p data_type=%d\n", __func__, group, to_tell,
+ 		 inode_mark, vfsmnt_mark, event_mask, data, data_type);
+ 
+-	pr_debug("%s: group=%p vfsmount_mark=%p inode_mark=%p mask=%x\n",
+-		 __func__, group, vfsmnt_mark, inode_mark, event_mask);
+-
+ 	/* sorry, fanotify only gives a damn about files and dirs */
+ 	if (!S_ISREG(to_tell->i_mode) &&
+ 	    !S_ISDIR(to_tell->i_mode))
+-- 
+1.6.5.3
 
