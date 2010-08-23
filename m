@@ -1,126 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab0HWM5i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 08:57:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53553 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab0HWM5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 08:57:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Cochran <richardcochran@gmail.com>,
-        john stultz <johnstul@us.ibm.com>, linux-api@vger.kernel.org
-Subject: Re: [PATCH 1/1] posix clocks: introduce syscall for clock tuning.
-Date: Mon, 23 Aug 2010 14:57:26 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <cover.1282550649.git.richard.cochran@omicron.at> <e253843e07ce5d15c2c8d11ce786bf979ed85ca5.1282550649.git.richard.cochran@omicron.at>
-In-Reply-To: <e253843e07ce5d15c2c8d11ce786bf979ed85ca5.1282550649.git.richard.cochran@omicron.at>
+	id S1752437Ab0HWNAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:00:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37579 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751805Ab0HWNAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:00:18 -0400
+Date: Mon, 23 Aug 2010 15:00:14 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>
+Cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stephane Chatty <chatty@enac.fr>, Michael Poole <mdpoole@troilus.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Bastien Nocera <hadess@hadess.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] Get and Set Feature Reports on HIDRAW (USB and
+ Bluetooth)
+In-Reply-To: <1281990059-3562-1-git-send-email-alan@signal11.us>
+Message-ID: <alpine.LNX.2.00.1008231459370.1019@pobox.suse.cz>
+References: <1281442367.12579.206.camel@localhost.localdomain> <1281990059-3562-1-git-send-email-alan@signal11.us>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008231457.26690.arnd@arndb.de>
-X-Provags-ID: V02:K0:u0zi1mzPzHU387xVW9NztyOMahSC/zOOAWumQsH0mhG
- zX+PuVWb7EdS24xB+Kbsygvgs5LIVyO4J3lPvX+6mZRxyH8QuM
- IloSJxtOGNFiQgLz6ojUk0CvDXFuL5/XXKLePrXz1OkQcxh9D2
- ddjjjxelNS2ZE6t5kKX7nwCQWjyXXcTMzNwZoP+ktP2BEtimn8
- smZxwHpSzdbCRm4GT45EQ==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 August 2010, Richard Cochran wrote:
-> A new syscall is introduced that allows tuning of a POSIX clock. The
-> syscall is implemented for four architectures: arm, blackfin, powerpc,
-> and x86.
+On Mon, 16 Aug 2010, Alan Ott wrote:
+
+> This is version 4. Built against 2.6.35+ revision 320b2b8de12698 .
 > 
-> The new syscall, clock_adjtime, takes two parameters, a frequency
-> adjustment in parts per billion, and a pointer to a struct timespec
-> containing the clock offset. If the pointer is NULL, a frequency
-> adjustment is performed. Otherwise, the clock offset is immediately
-> corrected by skipping to the new time value.
+> Alan Ott (2):
+>   HID: Add Support for Setting and Getting Feature Reports from hidraw
+>   Bluetooth: hidp: Add support for hidraw  HIDIOCGFEATURE  and
+>     HIDIOCSFEATURE
+> 
+>  drivers/hid/hidraw.c          |  105 ++++++++++++++++++++++++++++++++++++--
+>  drivers/hid/usbhid/hid-core.c |   37 +++++++++++++-
+>  include/linux/hid.h           |    3 +
+>  include/linux/hidraw.h        |    3 +
+>  net/bluetooth/hidp/core.c     |  114 +++++++++++++++++++++++++++++++++++++++--
+>  net/bluetooth/hidp/hidp.h     |    8 +++
+>  6 files changed, 260 insertions(+), 10 deletions(-)
 
-It looks well-implemented, and seems to be a reasonable extension
-to the clock API. I'm looking forward to your ptp patches on top
-of this to see how it all fits together.
+Marcel, as per our previous discussion -- what is your word on this? I'd 
+be glad taking it once you Ack the bluetooth bits (which, as far as I 
+understood from your last mail, don't have strong objections against any 
+more).
 
-For new syscalls, it's best to take linux-api on Cc. I also added
-John, since he participated in the discussion.
+Thanks,
 
-> In addtion, the patch provides way to unregister a posix clock. This
-> function is need to support posix clocks implemented as modules.
-
-This part should probably be a separate patch, and you need to add
-some form of serialization here to avoid races between the clock
-system calls and the unregistration.
-
-> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-> index 9829646..5843f5a 100644
-> --- a/kernel/posix-cpu-timers.c
-> +++ b/kernel/posix-cpu-timers.c
-> @@ -207,6 +207,11 @@ int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
->  	return error;
->  }
->  
-> +int posix_cpu_clock_adj(const clockid_t which_clock, int ppb,
-> +			struct timespec *tp)
-> +{
-> +	return -EOPNOTSUPP;
-> +}
-
-EOPNOTSUPP is specific to sockets, better use -EINVAL here.
-
-Where do you use this function?
-
->  /*
->   * Sample a per-thread clock for the given task.
-> diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-> index ad72342..089b0d1 100644
-> --- a/kernel/posix-timers.c
-> +++ b/kernel/posix-timers.c
-> @@ -197,6 +197,12 @@ static int common_timer_create(struct k_itimer *new_timer)
->  	return 0;
->  }
->  
-> +static inline int common_clock_adj(const clockid_t which_clock, int ppb,
-> +				   struct timespec *tp)
-> +{
-> +	return -EOPNOTSUPP;
-> +}
-> +
->  static int no_timer_create(struct k_itimer *new_timer)
->  {
->  	return -EOPNOTSUPP;
-
-So we already return -EOPNOTSUPP in some cases? The man page does not document this.
-I wonder if we should change that to -EINVAL as well.
-
-> @@ -488,6 +494,21 @@ void register_posix_clock(const clockid_t clock_id, struct k_clock *new_clock)
->  }
->  EXPORT_SYMBOL_GPL(register_posix_clock);
->  
-> +void unregister_posix_clock(const clockid_t clock_id)
-> +{
-> +	struct k_clock *clock;
-> +
-> +	if ((unsigned) clock_id >= MAX_CLOCKS) {
-> +		pr_err("POSIX clock unregister failed for clock_id %d\n",
-> +		       clock_id);
-> +		return;
-> +	}
-> +
-> +	clock = &posix_clocks[clock_id];
-> +	memset(clock, 0, sizeof(*clock));
-> +}
-> +EXPORT_SYMBOL_GPL(unregister_posix_clock);
-> +
-
-It would be possible to add locks here to serialize unregistration of a clock against
-dereferencing members of posix_clocks[], but that would cause noticable overhead.
-A better alternative might be to make it an RCU-protected array of pointers, and
-use a rcu_assign_pointer/rcu_syncronize/kfree or call_rcu sequence in unregister_posix_clock.
-
-Or you just live with not being able to unload this module.
-
-	Arnd
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
