@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab0HWOij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 10:38:39 -0400
-Received: from smtp11.hushmail.com ([65.39.178.133]:43669 "EHLO
-	smtp11.hushmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab0HWOii (ORCPT
+	id S1753931Ab0HWOjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 10:39:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64712 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849Ab0HWOjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 10:38:38 -0400
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Aug 2010 10:38:38 EDT
-X-Hush-Verified-Domain: hushmail.com
-MIME-Version: 1.0
-Date: Mon, 23 Aug 2010 17:32:51 +0300
-To: maciej.rutecki@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: No subject
-From: auto595907@hushmail.com
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Aug 2010 10:39:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=LDCmg5oOKzihLYzRJtj4z5gSfhZ6siM6elk5n2G5Zze7GSDTsQ+x3r7eqnpdJCQB63
+         3MfM/Si81YqFlwMyBCtAlQelZr/98mnnsDMYpjjN8PMywZdWaYzX+25KZRpKE2wF33+O
+         0lrjSPpUelVLmgORreIM3xTpyyJsIb/41/X34=
+Subject: amanda study and so so
+From: runcoderen <runcoderzhcn@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Message-Id: <20100823143251.96F782804F@smtp.hushmail.com>
+Date: Mon, 23 Aug 2010 22:39:14 +0800
+Message-ID: <1282574354.1638.8.camel@bencharluo-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->I created a Bugzilla entry at 
->https://bugzilla.kernel.org/show_bug.cgi?id=16423
->for your bug report, please add your address to the CC list in 
->there, thanks!
->
->-- 
->Maciej Rutecki
->http://www.maciek.unixy.pl
+hi all:
+how about studying amanda at home?
 
+I want to study a project which can extensive myself.
+but I don't know which project it's suitable...
+could anyone give me advises?
 
-this patch fixes the bug above
-(http://marc.info/?l=netfilter-devel&m=128116762801769&w=2)
+-- 
 
-
-thanks.
+/****************************************
+http://runcoderen.wordpress.com/
+****************************************/
 
