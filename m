@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab0HWEn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 00:43:59 -0400
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:49895 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751933Ab0HWEn5 (ORCPT
+	id S1753190Ab0HWEq6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 00:46:58 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20263 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab0HWEq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 00:43:57 -0400
-From: Dave Chinner <david@fromorbit.com>
+	Mon, 23 Aug 2010 00:46:57 -0400
+Date: Mon, 23 Aug 2010 13:46:49 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+Subject: [PATCH v2] MFD: LP3974 PMIC support
 To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
-Subject: [PATCH] writeback: write_cache_pages doesn't terminate at nr_to_write <= 0
-Date: Mon, 23 Aug 2010 14:43:40 +1000
-Message-Id: <1282538620-10824-1-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.1
+Cc: sameo@linux.intel.com, m.szyprowski@samsung.com,
+        broonie@opensource.wolfsonmicro.com, jy0922.shim@samsung.com,
+        kernel@jic23.retrosnub.co.uk, myungjoo.ham@samsung.com
+Message-id: <20100823044649.GA5356@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-OriginalArrivalTime: 23 Aug 2010 04:46:54.0382 (UTC)
+ FILETIME=[35A9BCE0:01CB427E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-I noticed XFS writeback in 2.6.36-rc1 was much slower than it should have
-been. Enabling writeback tracing showed:
+LP3974 PMIC support. It has same functionality with max8998.
 
-    flush-253:16-8516  [007] 1342952.351608: wbc_writepage: bdi 253:16: towrt=1024 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
-    flush-253:16-8516  [007] 1342952.351654: wbc_writepage: bdi 253:16: towrt=1023 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
-    flush-253:16-8516  [000] 1342952.369520: wbc_writepage: bdi 253:16: towrt=0 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
-    flush-253:16-8516  [000] 1342952.369542: wbc_writepage: bdi 253:16: towrt=-1 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
-    flush-253:16-8516  [000] 1342952.369549: wbc_writepage: bdi 253:16: towrt=-2 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
-
-Writeback is not terminating in background writeback if ->writepage is
-returning with wbc->nr_to_write == 0, resulting in sub-optimal single page
-writeback on XFS.
-
-Fix the write_cache_pages loop to terminate correctly when this situation
-occurs and so prevent this sub-optimal background writeback pattern. This
-improves sustained sequential buffered write performance from around
-250MB/s to 750MB/s for a 100GB file on an XFS filesystem on my 8p test VM.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- mm/page-writeback.c |   26 ++++++++++----------------
- 1 files changed, 10 insertions(+), 16 deletions(-)
+Changelog v1:
+	Only change the Kconfig and add the lp3974
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 7262aac..f069782 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -984,22 +984,16 @@ continue_unlock:
- 				}
- 			}
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index db51ea1..fcab5f1 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -294,14 +294,15 @@ config MFD_MAX8925
+ 	  to use the functionality of the device.
  
--			if (wbc->nr_to_write > 0) {
--				if (--wbc->nr_to_write == 0 &&
--				    wbc->sync_mode == WB_SYNC_NONE) {
--					/*
--					 * We stop writing back only if we are
--					 * not doing integrity sync. In case of
--					 * integrity sync we have to keep going
--					 * because someone may be concurrently
--					 * dirtying pages, and we might have
--					 * synced a lot of newly appeared dirty
--					 * pages, but have not synced all of the
--					 * old dirty pages.
--					 */
--					done = 1;
--					break;
--				}
-+			/*
-+			 * We stop writing back only if we are not doing
-+			 * integrity sync. In case of integrity sync we have to
-+			 * keep going until we have written all the pages
-+			 * we tagged for writeback prior to entering this loop.
-+			 */
-+			if (--wbc->nr_to_write <= 0 &&
-+			    wbc->sync_mode == WB_SYNC_NONE) {
-+				done = 1;
-+				break;
- 			}
- 		}
- 		pagevec_release(&pvec);
--- 
-1.7.1
-
+ config MFD_MAX8998
+-	bool "Maxim Semiconductor MAX8998 PMIC Support"
++	bool "Maxim Semiconductor MAX8998/National LP3974 PMIC Support"
+ 	depends on I2C=y
+ 	select MFD_CORE
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX8998. This is
+-	  a Power Management IC. This driver provies common support for
+-	  accessing the device, additional drivers must be enabled in order
+-	  to use the functionality of the device.
++	  Say yes here to support for Maxim Semiconductor MAX8998 and
++	  National Semiconductor LP3974. This is a Power Management IC.
++	  This driver provies common support for accessing the device,
++	  additional drivers must be enabled in order to use the functionality
++	  of the device.
+ 
+ config MFD_WM8400
+ 	tristate "Support Wolfson Microelectronics WM8400"
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index 73e6f5c..f1c9289 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -125,8 +125,9 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
+ }
+ 
+ static const struct i2c_device_id max8998_i2c_id[] = {
+-       { "max8998", 0 },
+-       { }
++	{ "max8998", 0 },
++	{ "lp3974", 0 },
++	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
+ 
