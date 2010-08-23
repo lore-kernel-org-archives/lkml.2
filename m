@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab0HWXiT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 19:38:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55329 "EHLO mga09.intel.com"
+	id S1752877Ab0HWXkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 19:40:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53659 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab0HWXiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 19:38:16 -0400
-Message-Id: <8u3s94$gak083@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,260,1280732400"; 
-   d="scan'208";a="548012291"
-Date: Tue, 24 Aug 2010 00:37:52 +0100
-To: Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [now bisected] i915: 2.6.36-rc2 hoses my Intel display
-Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        Eric Anholt <eric@anholt.net>
-References: <20100823110145.08eb72fd@bike.lwn.net> <20100823151708.6b242599@bike.lwn.net> <8u3s8d$jcc0rr@orsmga001.jf.intel.com> <20100823173225.2bda6f78@bike.lwn.net>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <20100823173225.2bda6f78@bike.lwn.net>
+	id S1751397Ab0HWXk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 19:40:29 -0400
+Message-ID: <4C7306AF.4030202@zytor.com>
+Date: Mon, 23 Aug 2010 16:39:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: akataria@vmware.com
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, virtualization@lists.osdl.org,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Removing VMI kernel support from 2.6.37
+References: <1282600151.19396.22.camel@ank32.eng.vmware.com>
+In-Reply-To: <1282600151.19396.22.camel@ank32.eng.vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 17:32:25 -0600, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Mon, 23 Aug 2010 23:36:55 +0100
-> Chris Wilson <chris@chris-wilson.co.uk> wrote:
+On 08/23/2010 02:49 PM, Alok Kataria wrote:
+> Hi Peter,
 > 
-> > Taking the patch at face value, the cause should be a mistake in error
-> > handling. So the first step would be to identify which i2c_transfer()
-> > failed.
+> Removal of VMI(VMware's para-virtualization technique) is scheduled for
+> 2.6.37, I was wondering what would be the right time frame for
+> submitting a patch which does that. Does the x86-tip tree have any next
+> branch where we can park this patch ?
 > 
-> OK, I tried it, but neither warning triggers.
-
-Sigh, that sounds like I screwed the patch up instead.
-Thanks.
-
-> Don't know if it helps or not, but I tried booting with
-> drm.debug=0x05.  The result was truly vast amounts of stuff like this:
+> Below is the patch for your reference which just removes VMI specific
+> bits, applies on top of x86-tip.
 > 
-> Aug 23 17:20:59 bike kernel: m:drm_ioctl], pid=2032, cmd=0x6458
-> nm:drm_ioctl], pid=2032, cmd=0x6458, nm:drm_ioctl], pid=2032, cmd=0x645
-[snip]
+> There is also an opportunity to remove the alloc_pmd_clone hook from
+> paravirt side of the things. This interface is only used for VMI, will
+> send a follow-on patch later on to do that though.
 > 
-> The above is one line from the system log; I took the liberty of wrapping
-> it for readability.  
 
-Hmm, probably bailing out of the ioctl before hitting the newline.
-drm.debug=0x4 should print the right information for this bug.
+That would be nice.  In the meantime I have queued up your patch.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+	-hpa
