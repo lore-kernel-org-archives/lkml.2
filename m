@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab0HWUXg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:23:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52155 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752155Ab0HWUXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:23:32 -0400
-Date: Mon, 23 Aug 2010 13:23:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/6] md: remove dependency on __GFP_NOFAIL
-Message-Id: <20100823132315.6906ddbe.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1008231303410.17716@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com>
-	<20100823122606.47524cef.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
-	<20100823130109.6da43a58.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1008231303410.17716@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754680Ab0HWUXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:23:41 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:44173 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754357Ab0HWUXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 16:23:35 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Pull request blackfin.git (for-linus branch)
+Date: Mon, 23 Aug 2010 16:23:34 -0400
+Message-Id: <1282595014-16881-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1282552805-18989-1-git-send-email-vapier@gentoo.org>
+References: <1282552805-18989-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 13:08:53 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
+The following changes since commit 9ee47476d6734c9deb9ae9ab05d963302f6b6150:
 
-> On Mon, 23 Aug 2010, Andrew Morton wrote:
-> 
-> > Hows about you add a helper function
-> > 
-> > 	void *[kmalloc|alloc_page]_retrying_forever_because_i_suck(lots of args)
-> > 
-> > then convert the callsites to use that, then nuke __GFP_NOFAIL?
-> > 
-> 
-> That would only serve as documentation
+  Merge branch 'radix-tree' of git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev (2010-08-22 19:55:14 -0700)
 
-Is that bad?
+are available in the git repository at:
 
-> of a caller that could potentially 
-> loop forever waiting for memory (which I did by adding "/* FIXME: this may 
-> potentially loop forever */")
+  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
-A helper function could check that appropriate gfp flags are being set.
+Mike Frysinger (3):
+      Blackfin: fix hweight breakage
+      ADI/ASoC: add MAINTAINERS entries
+      Blackfin: wire up new fanotify/prlimit64 syscalls
 
-> since all of the allocations in this 
-> patchset never loop in the code that was added, they already loop forever 
-> in the page allocator doing the same thing.  The hope is that kswapd will 
-> eventually be able to free memory since direct reclaim will usually fail 
-> for GFP_NOFS and we simply need to wait long enough for there to be 
-> memory.
-
-While holding locks which will prevent kswapd from doing anything useful.
-
+ MAINTAINERS                        |   11 +++++++++++
+ arch/blackfin/include/asm/bitops.h |   17 ++++++++++-------
+ arch/blackfin/include/asm/unistd.h |    5 ++++-
+ arch/blackfin/mach-common/entry.S  |    3 +++
+ 4 files changed, 28 insertions(+), 8 deletions(-)
