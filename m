@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab0HWXXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 19:23:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62346 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab0HWXXl (ORCPT
+	id S1751995Ab0HWX0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 19:26:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33473 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab0HWX0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 19:23:41 -0400
+	Mon, 23 Aug 2010 19:26:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:x-url:user-agent;
-        b=sfJKbxGCHobVPnENo7Q8KodTxQMFhHlATUmfhTlqsx65Sog9r6m13WM5GJ41UpLiJD
-         am2nzvuGNK5kyZJfEdILjitoL9PlhJKNMF/0/SZlKhuTM5rFu9Mwkk9k1Smm/QKU9ydW
-         m4kebtf25xiZoK50URs+QMsoOU40Ah9R7PAy0=
-Date: Mon, 23 Aug 2010 20:23:34 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu
-Subject: Re: [PATCH] perf tools: Fix linking errors with --as-needed flag
-Message-ID: <20100823232334.GE2761@ghostprotocols.net>
-References: <1279449937-29115-1-git-send-email-ozan@pardus.org.tr>
- <4C42DFC0.1090708@pardus.org.tr>
- <20100821172433.GF2973@ghostprotocols.net>
- <1282459432.11398.53.camel@tropicana>
- <1282531453.30047.8.camel@tropicana>
- <20100823143839.GA2761@ghostprotocols.net>
- <4C72E6AF.9060102@pardus.org.tr>
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=ZIIew7ptTh/SESzH4X9zw7RsevcW+HHupcrLU3+P0ThWwv5/Kl78rDYB9gI6GTQyR6
+         h6q8aZRsQH7Qrn2BzYf4ICPuQGnEOeDtYZevjZZ/l7SpK/XuSZchenrxNHxbmaMEeU0+
+         kiWIPe/UCfqjVg0HjkH+ipTkWoWcGb+48lyGw=
+Date: Tue, 24 Aug 2010 00:27:08 +0100 (BST)
+From: Nikitas Angelinas <nikitasangelinas@gmail.com>
+X-X-Sender: nikitas@localhost.localdomain
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Nikitas Angelinas <nikitasangelinas@googlemail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "21cnbao@gmail.com" <21cnbao@gmail.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: time: use ARRAY_SIZE macro in timecompare.c
+In-Reply-To: <815E5C3B-CAB4-4BA0-8D41-301F512D13D3@gmail.com>
+Message-ID: <alpine.LNX.2.00.1008240024360.2452@localhost.localdomain>
+References: <1282520629-6542-1-git-send-email-nikitasangelinas@googlemail.com> <815E5C3B-CAB4-4BA0-8D41-301F512D13D3@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C72E6AF.9060102@pardus.org.tr>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 24, 2010 at 12:22:55AM +0300, Ozan Çağlayan escreveu:
-> On 23.08.2010 17:38, Arnaldo Carvalho de Melo wrote:
-> > Em Sun, Aug 22, 2010 at 09:44:13PM -0500, Tom Zanussi escreveu:
-> >> Looking into it a bit further, both ExtUtils::Embed -e ldopts and
-> >> python-config --ldflags put the libs at the end, so we should be able to
-> >> parse the output of those and take only the parts we need for each
-> >> component.  How about something like this instead?
-> > 
-> > Ozan, Kirill, can you please test Tom's patch and see if it fixes the
-> > problems you noticed so that I can add Tested-by tags and apply this
-> > patch?
-> 
-> Hi,
-> 
-> I won't be able to test anything for at least 1 week, sorry.
 
-np, take your time.
 
-- Arnaldo
+On Sun, 22 Aug 2010, Dmitry Torokhov wrote:
+
+> On Aug 22, 2010, at 4:43 PM, Nikitas Angelinas
+> <nikitasangelinas@googlemail.com> wrote:
+> 
+> >Replace sizeof(buffer)/sizeof(buffer[0]) with ARRAY_SIZE(buffer) in
+> >kernel/time/timecompare.c
+> >
+> >Signed-off-by: Nikitas Angelinas <nikitasangelinas@googlemail.com>
+> >---
+> >kernel/time/timecompare.c |    5 +++--
+> >1 files changed, 3 insertions(+), 2 deletions(-)
+> >
+> >diff --git a/kernel/time/timecompare.c b/kernel/time/timecompare.c
+> >index ac38fbb..a9ae369 100644
+> >--- a/kernel/time/timecompare.c
+> >+++ b/kernel/time/timecompare.c
+> >@@ -21,6 +21,7 @@
+> >#include <linux/module.h>
+> >#include <linux/slab.h>
+> >#include <linux/math64.h>
+> >+#include <linux/kernel.h>
+> >
+> >/*
+> >* fixed point arithmetic scale factor for skew
+> >@@ -57,11 +58,11 @@ int timecompare_offset(struct timecompare *sync,
+> >   int index;
+> >   int num_samples = sync->num_samples;
+> >
+> >-    if (num_samples > sizeof(buffer)/sizeof(buffer[0])) {
+> >+    if (num_samples > ARRAY_SIZE(buffer)) {
+> >       samples = kmalloc(sizeof(*samples) * num_samples, GFP_ATOMIC);
+> 
+> That should be kcalloc while you are at it.
+> 
+> Thanks.
+> 
+> -- 
+> Dmitry
+> 
+> 
+
+Thanks for pointing that out; however, the code as is does not do a
+memset to 0; is it worth using kcalloc in this case considering it has
+to go through an 'unlikely' and a subsequent memset?
+
+If required, I guess I should post a patch on a separate thread so that
+Git picks up the correct patch title?
+
+Kind Regards,
+Nikitas
