@@ -1,144 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab0HWTBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 15:01:42 -0400
-Received: from mail.perches.com ([173.55.12.10]:1296 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753674Ab0HWTBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 15:01:39 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sonic Zhang <sonic.zhang@analog.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCH 2/2] drivers/serial/bfin_5xx.c: Use pr_<level> and pr_<fmt>
-Date: Mon, 23 Aug 2010 12:01:37 -0700
-Message-Id: <08a2d7676742798de74d69e34b6c175a17d4f96d.1282589920.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.2.19.g9a302
-In-Reply-To: <6028a858f4eb3f07cc5cdddebf5af64fb0e6204e.1282589920.git.joe@perches.com>
-References: <6028a858f4eb3f07cc5cdddebf5af64fb0e6204e.1282589920.git.joe@perches.com>
+	id S1754228Ab0HWTDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 15:03:55 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34344 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419Ab0HWTDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 15:03:53 -0400
+Date: Mon, 23 Aug 2010 21:03:36 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Mack <daniel@caiaq.de>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Hemanth V <hemanthv@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Paul Gortmaker <p_gortmaker@yahoo.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Roy Zang <tie-fei.zang@freescale.com>,
+        Jingchang Lu <b22599@freescale.com>,
+        Mingkai Hu <Mingkai.hu@freescale.com>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH] i2c: remove obsolete cleanup for clientdata
+Message-ID: <20100823210336.6bdc8e2a@hyperion.delvare>
+In-Reply-To: <1282575908-16555-1-git-send-email-w.sang@pengutronix.de>
+References: <1282575908-16555-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also fix typo of length.
+On Mon, 23 Aug 2010 17:05:08 +0200, Wolfram Sang wrote:
+> A few new i2c-drivers came into the kernel which clear the clientdata-pointer
+> on exit. This is obsolete meanwhile, so fix it and hope the word will spread.
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> ---
+> 
+> Jean, I dunno if it fits for 2.6.36. It is not precisely a regression.
+> Though, if it enters with the next merge window, the next set of "faulty"
+> drivers may come in at the same time...
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/serial/bfin_5xx.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+Applied, and queued for 2.6.36. I agree that this kind of cleanup fits
+well as an exception to the bugfix-only rule.
 
-diff --git a/drivers/serial/bfin_5xx.c b/drivers/serial/bfin_5xx.c
-index 4e38f99..4c01ee6 100644
---- a/drivers/serial/bfin_5xx.c
-+++ b/drivers/serial/bfin_5xx.c
-@@ -8,6 +8,8 @@
-  * Licensed under the GPL-2 or later.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #if defined(CONFIG_SERIAL_BFIN_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
- #define SUPPORT_SYSRQ
- #endif
-@@ -631,12 +633,12 @@ static int bfin_serial_startup(struct uart_port *port)
- 	dma_addr_t dma_handle;
- 
- 	if (request_dma(uart->rx_dma_channel, "BFIN_UART_RX") < 0) {
--		printk(KERN_NOTICE "Unable to attach Blackfin UART RX DMA channel\n");
-+		pr_notice("Unable to attach Blackfin UART RX DMA channel\n");
- 		return -EBUSY;
- 	}
- 
- 	if (request_dma(uart->tx_dma_channel, "BFIN_UART_TX") < 0) {
--		printk(KERN_NOTICE "Unable to attach Blackfin UART TX DMA channel\n");
-+		pr_notice("Unable to attach Blackfin UART TX DMA channel\n");
- 		free_dma(uart->rx_dma_channel);
- 		return -EBUSY;
- 	}
-@@ -674,14 +676,14 @@ static int bfin_serial_startup(struct uart_port *port)
- # endif
- 	if (request_irq(uart->port.irq, bfin_serial_rx_int, IRQF_DISABLED,
- 	     "BFIN_UART_RX", uart)) {
--		printk(KERN_NOTICE "Unable to attach BlackFin UART RX interrupt\n");
-+		pr_notice("Unable to attach BlackFin UART RX interrupt\n");
- 		return -EBUSY;
- 	}
- 
- 	if (request_irq
- 	    (uart->port.irq+1, bfin_serial_tx_int, IRQF_DISABLED,
- 	     "BFIN_UART_TX", uart)) {
--		printk(KERN_NOTICE "Unable to attach BlackFin UART TX interrupt\n");
-+		pr_notice("Unable to attach BlackFin UART TX interrupt\n");
- 		free_irq(uart->port.irq, uart);
- 		return -EBUSY;
- 	}
-@@ -706,14 +708,14 @@ static int bfin_serial_startup(struct uart_port *port)
- 
- 		if (uart_dma_ch_rx &&
- 			request_dma(uart_dma_ch_rx, "BFIN_UART_RX") < 0) {
--			printk(KERN_NOTICE"Fail to attach UART interrupt\n");
-+			pr_notice("Fail to attach UART interrupt\n");
- 			free_irq(uart->port.irq, uart);
- 			free_irq(uart->port.irq + 1, uart);
- 			return -EBUSY;
- 		}
- 		if (uart_dma_ch_tx &&
- 			request_dma(uart_dma_ch_tx, "BFIN_UART_TX") < 0) {
--			printk(KERN_NOTICE "Fail to attach UART interrupt\n");
-+			pr_notice("Fail to attach UART interrupt\n");
- 			free_dma(uart_dma_ch_rx);
- 			free_irq(uart->port.irq, uart);
- 			free_irq(uart->port.irq + 1, uart);
-@@ -734,8 +736,7 @@ static int bfin_serial_startup(struct uart_port *port)
- 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
- 			IRQF_DISABLED, "BFIN_UART_CTS", uart)) {
- 			uart->cts_pin = -1;
--			pr_info("Unable to attach BlackFin UART CTS interrupt. "
--				"So, disable it.\n");
-+			pr_info("Unable to attach BlackFin UART CTS interrupt. So, disable it.\n");
- 		}
- 	}
- 	if (uart->rts_pin >= 0) {
-@@ -747,8 +748,7 @@ static int bfin_serial_startup(struct uart_port *port)
- 	if (request_irq(uart->status_irq,
- 		bfin_serial_mctrl_cts_int,
- 		IRQF_DISABLED, "BFIN_UART_MODEM_STATUS", uart)) {
--		pr_info("Unable to attach BlackFin UART Modem "
--			"Status interrupt.\n");
-+		pr_info("Unable to attach BlackFin UART Modem Status interrupt\n");
- 	}
- 
- 	/* CTS RTS PINs are negative assertive. */
-@@ -825,8 +825,7 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
- 		lcr = WLS(5);
- 		break;
- 	default:
--		printk(KERN_ERR "%s: word lengh not supported\n",
--			__func__);
-+		pr_err("%s: word length not supported\n", __func__);
- 	}
- 
- 	/* Anomaly notes:
-@@ -834,8 +833,7 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
- 	 */
- 	if (termios->c_cflag & CSTOPB) {
- 		if (ANOMALY_05000231)
--			printk(KERN_WARNING "STOP bits other than 1 is not "
--				"supported in case of anomaly 05000231.\n");
-+			pr_warning("STOP bits other than 1 is not supported in case of anomaly 05000231\n");
- 		else
- 			lcr |= STB;
- 	}
-@@ -1188,7 +1186,8 @@ bfin_serial_console_get_options(struct bfin_serial_port *uart, int *baud,
- 
- 		*baud = get_sclk() / (16*(dll | dlh << 8));
- 	}
--	pr_debug("%s:baud = %d, parity = %c, bits= %d\n", __func__, *baud, *parity, *bits);
-+	pr_debug("%s:baud = %d, parity = %c, bits= %d\n",
-+		 __func__, *baud, *parity, *bits);
- }
- 
- static struct uart_driver bfin_serial_reg;
 -- 
-1.7.2.19.g9a302
-
+Jean Delvare
