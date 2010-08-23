@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0HWNsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:48:12 -0400
-Received: from adsl-99-17-64-89.dsl.sfldmi.sbcglobal.net ([99.17.64.89]:40328
-	"EHLO crunch.scalableinformatics.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753193Ab0HWNsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:48:11 -0400
-Message-ID: <4C727BEB.9020100@scalableinformatics.com>
-Date: Mon, 23 Aug 2010 09:47:23 -0400
-From: Joe Landman <landman@scalableinformatics.com>
-Reply-To: landman@scalableinformatics.com
-Organization: Scalable Informatics
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
+	id S1753045Ab0HWN4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:56:15 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:44175 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993Ab0HWN4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:56:14 -0400
+Date: Mon, 23 Aug 2010 14:55:59 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
+	NR_FREE_PAGES when memory is low and kswapd is awake
+Message-ID: <20100823135559.GS19797@csn.ul.ie>
+References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie> <1282550442-15193-3-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1008230750380.4094@router.home> <20100823130315.GQ19797@csn.ul.ie> <alpine.DEB.2.00.1008230838320.5750@router.home>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Bart Van Assche <bvanassche@acm.org>, Vladislav Bolkhovitin <vst@vlnb.net>,
-        linux-scsi@vger.kernel.org, Chetan Loke <chetanloke@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	<1282144271.3035.31.camel@mulgrave.site>	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>	<1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>	<4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>	<AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com> <1282508953.3042.102.camel@mulgrave.site>
-In-Reply-To: <1282508953.3042.102.camel@mulgrave.site>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1008230838320.5750@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley wrote:
+On Mon, Aug 23, 2010 at 08:41:56AM -0500, Christoph Lameter wrote:
+> On Mon, 23 Aug 2010, Mel Gorman wrote:
+> 
+> > > The delta of the counters could also be reduced to increase accuracy.
+> > > See refresh_zone_stat_thresholds().
+> > True, but I thought that would introduce a constant performance penalty
+> > for a corner case which I didn't like.
+> 
+> Sure, an increased frequency of updates would increase the chance of
+> bouncing cachelines. But the bouncing cacheline scenario for the vm
+> counters was tuned for applications that continually allocate pages in
+> parallel.
+> 
+> When the vm gets into a state where continual reclaim is necessary then
+> the counters are not that frequently updated. If the machine is already
+> slowing down due to reclaim then the vm can likely affort more frequent
+> counter updates.
+> 
 
-> So the phrase "up to GigE" was deliberately in the above to exclude the
-> disputed infiniband results.  I'm not really interested in re-opening
-> the arguments over how to interpret those results.  The fact that SCST
-> and STGT were on par up to 1GbE is enough to refute the contention that
-> STGT is "fundamentally slow".
-
-We haven't tested this in at least 6 months, but we did test iSCSI over 
-10GbE using SCST and STGT.  This was one of the reasons we wound up 
-going with SCST.  For the past several years, our performance on SCST 
-was much higher than on STGT.
-
-If it helps, we can redo these tests with a modern kernel (2.6.35.x) and 
-same backend/frontend.  We've been switching most of our IO performance 
-testing to Jens Axboe's excellent fio tool.  I'd be happy to share our 
-testing decks with anyone (and collaborate on generating a good useful 
-set for general use)
-
-This said, I have to add in my support to SCST and its developers. 
-Vlad, Bart, and the rest of the community have been very helpful to us. 
-  We have been a consumer rather than a developer to date, so we have 
-less of a dog in this fight than others.  We have nothing against LIO or 
-STGT.  We will try them and see if they meet our needs.  SRP is a hard 
-requirement, and it exists and works great in SCST.  So for us, a 
-solution which gives us the best of all worlds would be one where we 
-don't have to give up what works well for us, and gets us new 
-capabilities/features.  This is more of a wish-list ... we have to keep 
-using what works well for us.
-
-Our interest in STGT is that we would like a working iSER.  Vlad has 
-suggested a method that we will explore a little later on (next
-month).  The LIO folks do look like they have some interesting 
-capabilities beyond this, so we will look.  But without SRP, and a fast 
-iSCSI, their really isn't much choice for us in the near term.
-
-Regards,
-
-Joe
+Ok, but is that better than this patch? Decreasing the size of the window by
+reducing the threshold still leaves a window. There is still a small amount
+of drift by summing up all the deltas but you get a much more accurate count
+at the point of time it was important to know.
 
 -- 
-Joseph Landman, Ph.D
-Founder and CEO
-Scalable Informatics Inc.
-email: landman@scalableinformatics.com
-web  : http://scalableinformatics.com
-        http://scalableinformatics.com/jackrabbit
-phone: +1 734 786 8423 x121
-fax  : +1 866 888 3112
-cell : +1 734 612 4615
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
