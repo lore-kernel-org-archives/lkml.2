@@ -1,241 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab0HWXyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 19:54:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53290 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab0HWXyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 19:54:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 24 Aug 2010 08:49:16 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: linux-mm@kvack.org,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kamezawa.hiroyuki@gmail.com
-Subject: Re: [PATCH 4/5] memcg: lockless update of file_mapped
-Message-Id: <20100824084916.078d6a82.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100823175015.8d834645.nishimura@mxp.nes.nec.co.jp>
-References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100820190256.531af759.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100823175015.8d834645.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752787Ab0HWX4C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 19:56:02 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62716 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751847Ab0HWXz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 19:55:59 -0400
+Message-Id: <8u3s94$gak45q@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,260,1280732400"; 
+   d="scan'208";a="548016314"
+Date: Tue, 24 Aug 2010 00:55:54 +0100
+To: Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [now bisected] i915: 2.6.36-rc2 hoses my Intel display
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Eric Anholt <eric@anholt.net>
+References: <20100823110145.08eb72fd@bike.lwn.net> <20100823151708.6b242599@bike.lwn.net> <8u3s8d$jcc0rr@orsmga001.jf.intel.com> <20100823173225.2bda6f78@bike.lwn.net> <8u3s94$gak083@orsmga002.jf.intel.com> <20100823174641.4ba58bfe@bike.lwn.net>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100823174641.4ba58bfe@bike.lwn.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 17:50:15 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-
-> This patch looks good to me, but I have one question.
+On Mon, 23 Aug 2010 17:46:41 -0600, Jonathan Corbet <corbet@lwn.net> wrote:
+> On Tue, 24 Aug 2010 00:37:52 +0100
+> Chris Wilson <chris@chris-wilson.co.uk> wrote:
 > 
-> Why do we need to acquire sc.lock inside mem_cgroup_(start|end)_move() ?
-> These functions doesn't access mc.*.
+> > drm.debug=0x4 should print the right information for this bug.
 > 
-
-just reusing a lock to update status. If you don't like, I'll add a new lock.
-
-Thanks,
--Kame
-
-> Thanks,
-> Daisuke Nishimura.
+> That doesn't seem to give me any output at all.
 > 
-> On Fri, 20 Aug 2010 19:02:56 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> One thing I noticed, though, is that I occasionally get something like:
 > 
-> > No changes from v4.
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > At accounting file events per memory cgroup, we need to find memory cgroup
-> > via page_cgroup->mem_cgroup. Now, we use lock_page_cgroup().
-> > 
-> > But, considering the context which page-cgroup for files are accessed,
-> > we can use alternative light-weight mutual execusion in the most case.
-> > At handling file-caches, the only race we have to take care of is "moving"
-> > account, IOW, overwriting page_cgroup->mem_cgroup. Because file status
-> > update is done while the page-cache is in stable state, we don't have to
-> > take care of race with charge/uncharge.
-> > 
-> > Unlike charge/uncharge, "move" happens not so frequently. It happens only when
-> > rmdir() and task-moving (with a special settings.)
-> > This patch adds a race-checker for file-cache-status accounting v.s. account
-> > moving. The new per-cpu-per-memcg counter MEM_CGROUP_ON_MOVE is added.
-> > The routine for account move 
-> >   1. Increment it before start moving
-> >   2. Call synchronize_rcu()
-> >   3. Decrement it after the end of moving.
-> > By this, file-status-counting routine can check it needs to call
-> > lock_page_cgroup(). In most case, I doesn't need to call it.
-> > 
-> > 
-> > Changelog: 20100804
-> >  - added a comment for possible optimization hint.
-> > Changelog: 20100730
-> >  - some cleanup.
-> > Changelog: 20100729
-> >  - replaced __this_cpu_xxx() with this_cpu_xxx
-> >    (because we don't call spinlock)
-> >  - added VM_BUG_ON().
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |   79 +++++++++++++++++++++++++++++++++++++++++++++++---------
-> >  1 file changed, 67 insertions(+), 12 deletions(-)
-> > 
-> > Index: mmotm-0811/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0811.orig/mm/memcontrol.c
-> > +++ mmotm-0811/mm/memcontrol.c
-> > @@ -90,6 +90,7 @@ enum mem_cgroup_stat_index {
-> >  	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
-> >  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
-> >  	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
-> > +	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
-> >  
-> >  	MEM_CGROUP_STAT_NSTATS,
-> >  };
-> > @@ -1086,7 +1087,50 @@ static unsigned int get_swappiness(struc
-> >  	return swappiness;
-> >  }
-> >  
-> > -/* A routine for testing mem is not under move_account */
-> > +static void mem_cgroup_start_move(struct mem_cgroup *mem)
-> > +{
-> > +	int cpu;
-> > +	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
-> > +	spin_lock(&mc.lock);
-> > +	/* TODO: Can we optimize this by for_each_online_cpu() ? */
-> > +	for_each_possible_cpu(cpu)
-> > +		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) += 1;
-> > +	spin_unlock(&mc.lock);
-> > +
-> > +	synchronize_rcu();
-> > +}
-> > +
-> > +static void mem_cgroup_end_move(struct mem_cgroup *mem)
-> > +{
-> > +	int cpu;
-> > +
-> > +	if (!mem)
-> > +		return;
-> > +	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
-> > +	spin_lock(&mc.lock);
-> > +	for_each_possible_cpu(cpu)
-> > +		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) -= 1;
-> > +	spin_unlock(&mc.lock);
-> > +}
-> > +
-> > +/*
-> > + * mem_cgroup_is_moved -- checking a cgroup is mc.from target or not.
-> > + *                          used for avoiding race.
-> > + * mem_cgroup_under_move -- checking a cgroup is mc.from or mc.to or
-> > + *			    under hierarchy of them. used for waiting at
-> > + *			    memory pressure.
-> > + * Result of is_moved can be trusted until the end of rcu_read_unlock().
-> > + * The caller must do
-> > + *	rcu_read_lock();
-> > + *	result = mem_cgroup_is_moved();
-> > + *	.....make use of result here....
-> > + *	rcu_read_unlock();
-> > + */
-> > +static bool mem_cgroup_is_moved(struct mem_cgroup *mem)
-> > +{
-> > +	VM_BUG_ON(!rcu_read_lock_held());
-> > +	return this_cpu_read(mem->stat->count[MEM_CGROUP_ON_MOVE]) > 0;
-> > +}
-> >  
-> >  static bool mem_cgroup_under_move(struct mem_cgroup *mem)
-> >  {
-> > @@ -1502,29 +1546,36 @@ void mem_cgroup_update_file_mapped(struc
-> >  {
-> >  	struct mem_cgroup *mem;
-> >  	struct page_cgroup *pc;
-> > +	bool need_lock = false;
-> >  
-> >  	pc = lookup_page_cgroup(page);
-> >  	if (unlikely(!pc))
-> >  		return;
-> > -
-> > -	lock_page_cgroup(pc);
-> > +	rcu_read_lock();
-> >  	mem = id_to_memcg(pc->mem_cgroup, true);
-> > -	if (!mem || !PageCgroupUsed(pc))
-> > +	if (likely(mem)) {
-> > +		if (mem_cgroup_is_moved(mem)) {
-> > +			/* need to serialize with move_account */
-> > +			lock_page_cgroup(pc);
-> > +			need_lock = true;
-> > +			mem = id_to_memcg(pc->mem_cgroup, true);
-> > +			if (unlikely(!mem))
-> > +				goto done;
-> > +		}
-> > +	}
-> > +	if (unlikely(!PageCgroupUsed(pc)))
-> >  		goto done;
-> > -
-> > -	/*
-> > -	 * Preemption is already disabled. We can use __this_cpu_xxx
-> > -	 */
-> >  	if (val > 0) {
-> > -		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> > +		this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> >  		SetPageCgroupFileMapped(pc);
-> >  	} else {
-> > -		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> > +		this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> >  		ClearPageCgroupFileMapped(pc);
-> >  	}
-> > -
-> >  done:
-> > -	unlock_page_cgroup(pc);
-> > +	if (need_lock)
-> > +		unlock_page_cgroup(pc);
-> > +	rcu_read_unlock();
-> >  }
-> >  
-> >  /*
-> > @@ -3064,6 +3115,7 @@ move_account:
-> >  		lru_add_drain_all();
-> >  		drain_all_stock_sync();
-> >  		ret = 0;
-> > +		mem_cgroup_start_move(mem);
-> >  		for_each_node_state(node, N_HIGH_MEMORY) {
-> >  			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
-> >  				enum lru_list l;
-> > @@ -3077,6 +3129,7 @@ move_account:
-> >  			if (ret)
-> >  				break;
-> >  		}
-> > +		mem_cgroup_end_move(mem);
-> >  		memcg_oom_recover(mem);
-> >  		/* it seems parent cgroup doesn't have enough mem */
-> >  		if (ret == -ENOMEM)
-> > @@ -4563,6 +4616,7 @@ static void mem_cgroup_clear_mc(void)
-> >  	mc.to = NULL;
-> >  	mc.moving_task = NULL;
-> >  	spin_unlock(&mc.lock);
-> > +	mem_cgroup_end_move(from);
-> >  	memcg_oom_recover(from);
-> >  	memcg_oom_recover(to);
-> >  	wake_up_all(&mc.waitq);
-> > @@ -4593,6 +4647,7 @@ static int mem_cgroup_can_attach(struct 
-> >  			VM_BUG_ON(mc.moved_charge);
-> >  			VM_BUG_ON(mc.moved_swap);
-> >  			VM_BUG_ON(mc.moving_task);
-> > +			mem_cgroup_start_move(from);
-> >  			spin_lock(&mc.lock);
-> >  			mc.from = from;
-> >  			mc.to = mem;
-> > 
+> Aug 23 17:43:14 bike kernel: [  142.920185] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, expect flickering: entries required = 51, available = 28.
 > 
+> They seem to come in threes, for whatever that's worth.
 
+In threes. Hmm, one for primary, cursor and self-refresh. drm.debug=0xe
+would be interesting to see what the pixel clock is.
+
+Can you grab one before the bad commit and one after? If there is a change
+that may help pin-point the mistake. Or indicate further problems...
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
