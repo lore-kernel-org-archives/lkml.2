@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab0HWMec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 08:34:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41256 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab0HWMe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 08:34:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=oE2jLPpt4s+wL7gsoQUy7v2/rx0vW9RNodEdtTKNcdKxOEXC6vRzbJYhKn2mVnPQEf
-         TBPu+Nh0Q/3wF9SWElHZB7awJFu93fHXDCqUk70EZg16+S+bbXEEGOfAe2c+dggva4Wt
-         IxQ8hD/KM+9nUvrZX33GyP682xjpnrW07odKQ=
-Subject: Re: [BISECTED][2.6.35 regression] iptables busted on Mac G5
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Florian Westphal <fw@strlen.de>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, Jan Engelhardt <jengelh@medozas.de>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <20100823121644.GH1727@Chamillionaire.breakpoint.cc>
-References: <19546.53659.970308.750410@pilspetsen.it.uu.se>
-	 <19570.25954.196694.563887@pilspetsen.it.uu.se>
-	 <20100823121644.GH1727@Chamillionaire.breakpoint.cc>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 14:34:22 +0200
-Message-ID: <1282566862.2486.29.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1751912Ab0HWMfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 08:35:53 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56164 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab0HWMft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 08:35:49 -0400
+Message-ID: <4C7269E9.9070304@kernel.org>
+Date: Mon, 23 Aug 2010 14:30:33 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Ric Wheeler <rwheeler@redhat.com>
+CC: Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        jack@suse.cz, hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100820132214.GA6184@lst.de> <4C6E9CAF.5010202@redhat.com>
+In-Reply-To: <4C6E9CAF.5010202@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 Aug 2010 12:35:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 23 août 2010 à 14:16 +0200, Florian Westphal a écrit :
-> Mikael Pettersson <mikpe@it.uu.se> wrote:
-> >  > I'll try to narrow it down further next week when I'm at the
-> >  > machine's location again.  Meanwhile I would be grateful if
-> >  > anyone has any ideas about what the issue might be.  I'll add
-> >  > that a Mac G4 (ppc32) with similar kernel configuration and
-> >  > user-space works fine with 2.6.35 and iptables.
-> > 
-> > The bug is still present in 2.6.36-rc2.
+Hello,
+
+On 08/20/2010 05:18 PM, Ric Wheeler wrote:
+> On 08/20/2010 09:22 AM, Christoph Hellwig wrote:
+>> FYI: here's a little writeup to document the new cache flushing scheme,
+>> intended to replace Documentation/block/barriers.txt.  Any good
+>> suggestion for a filename in the kernel tree?
+>>
 > 
-> sigh.
-> Do you run 64 bit kernel with 32bit userland?
-> If so, yes, thats broken since 2.6.35. I submitted a fix
-> (http://marc.info/?l=netfilter-devel&m=128116762801769&w=2),
-> but it was not yet applied.
+> I was thinking that we might be better off using the "durable
+> writes" term more since it is well documented (at least in the
+> database world, where it is the "D" in ACID properties).  Maybe
+> "durable_writes_support.txt" ?
+
+The term is very foreign to people outside of enterprise / database
+loop.  writeback-cache.txt or write-cache-control.txt sounds good
+enough to me.
+
+>> The Linux block layer provides a two simple mechanism that lets filesystems
+>> control the caching behavior of the storage device.  These mechanisms are
+>> a forced cache flush, and the Force Unit Access (FUA) flag for requests.
+>>
 > 
-> Will resend it later today.
+> Should we mention that users can also disable the write cache on the
+> target device?
+> 
+> It might also be worth mentioning that storage needs to be properly
+> configured - i.e., an internal hardware RAID card with battery
+> backing needs can expose itself as a writethrough cache *only if* it
+> actually has control over all of the backend disks and can
+> flush/disable their write caches.
 
-CC netdev
+It might be useful to give several example configurations with
+different cache configurations.  I don't have much experience with
+battery backed arrays but aren't they suppose to report write through
+cache automatically?
 
-Please send this patch to netdev@vger.kernel.org and David S. Miller,
-because it seems Patrick is on vacation or something.
+Thanks.
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-Thanks
-
-
+-- 
+tejun
