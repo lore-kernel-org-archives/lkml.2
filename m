@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab0HWK1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 06:27:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42757 "EHLO mx1.redhat.com"
+	id S1753894Ab0HWKbX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 06:31:23 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51857 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab0HWK1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 06:27:37 -0400
-Message-ID: <4C724D13.6000807@redhat.com>
-Date: Mon, 23 Aug 2010 13:27:31 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1753700Ab0HWKbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 06:31:21 -0400
+Message-ID: <4C724DFB.2060707@kernel.dk>
+Date: Mon, 23 Aug 2010 12:31:23 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: Re: [PATCH 0/4 v2] kvm: rework KVM mmu_shrink() code
-References: <20100820011054.GA11297@tpepper-t61p.dolavim.us> <4C724BDB.8020604@redhat.com>
-In-Reply-To: <4C724BDB.8020604@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Xiaotian Feng <dfeng@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Teigland <teigland@redhat.com>
+Subject: Re: [PATCH] blk-fs: put dev->kobj in blk_register_queue fail path
+References: <1281696292-5746-1-git-send-email-dfeng@redhat.com>
+In-Reply-To: <1281696292-5746-1-git-send-email-dfeng@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/23/2010 01:22 PM, Avi Kivity wrote:
->
->
-> I see a lot of soft lockups with this patchset:
+On 2010-08-13 12:44, Xiaotian Feng wrote:
+> kernel needs to kobject_put on dev->kobj if elv_register_queue fails.
+> 
+> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Nikanth Karthikesan <knikanth@suse.de>
+> Cc: David Teigland <teigland@redhat.com>
+> ---
+>  block/blk-sysfs.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+> index 001ab18..0749b89 100644
+> --- a/block/blk-sysfs.c
+> +++ b/block/blk-sysfs.c
+> @@ -511,6 +511,7 @@ int blk_register_queue(struct gendisk *disk)
+>  		kobject_uevent(&q->kobj, KOBJ_REMOVE);
+>  		kobject_del(&q->kobj);
+>  		blk_trace_remove_sysfs(disk_to_dev(disk));
+> +		kobject_put(&dev->kobj);
+>  		return ret;
+>  	}
+>  
 
-This is running the emulator.flat test case, with shadow paging.  This 
-test triggers a lot (millions) of mmu mode switches.
+Looks correct. Thanks, applied.
 
 -- 
-error compiling committee.c: too many arguments to function
+Jens Axboe
 
