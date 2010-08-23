@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab0HWQG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 12:06:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35568 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab0HWQGZ (ORCPT
+	id S1754415Ab0HWQH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 12:07:28 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36919 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab0HWQHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 12:06:25 -0400
+	Mon, 23 Aug 2010 12:07:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DsivMpqRCm0NXzvr2fkr37u1BiLSjgNtBupnvdmYIXNIi0LFgtrVDZbys1XX7+OE1R
-         +sfAtPujgK/NSlfDtbuTXUGchqI6mWYsfmEXp5yGwRQynu9E18l+wJgEygMDV4/LaUCN
-         HMF691NxAvbuWao7M+ql0LarCImVErF3VKa7w=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3 RESEND] ptrace: cleanup address space conversion on ptrace_request()
-Date: Tue, 24 Aug 2010 01:06:15 +0900
-Message-Id: <1282579575-9189-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <201008222206.18523.arnd@arndb.de>
-References: <201008222206.18523.arnd@arndb.de>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=hiDFaQtM2wugttbKFm/TypUHxr/W4vE7nmd9vgBo7ZFRWV/xu6Q7HNPLw4VuueLz6W
+         kTNo1IWpq3SlM5ayqjWsy7x4nIj8jvH1yjZwpVef3LBPgk3bwN6nVP2Gbk1bGgo775Za
+         5xj0we78GhCC4+iTa7jYnsYebXit00gUMpMsg=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	<1282144271.3035.31.camel@mulgrave.site>
+	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
+	<1282148296.3035.49.camel@mulgrave.site>
+	<4C6C1D70.7020502@vlnb.net>
+	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
+	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>
+	<4C701E08.2020005@vlnb.net>
+	<1282423398.3015.39.camel@mulgrave.site>
+	<AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
+	<1282508953.3042.102.camel@mulgrave.site>
+	<4C727BEB.9020100@scalableinformatics.com>
+	<AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com>
+Date: Mon, 23 Aug 2010 12:07:23 -0400
+Message-ID: <AANLkTinDY8hEABHaPsCC+3wGMCn0ZLcyfDa9U9jXJ3d4@mail.gmail.com>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: Chetan Loke <chetanloke@gmail.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: landman@scalableinformatics.com, James Bottomley <James.Bottomley@suse.de>,
+        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases 'data' should be considered as a user pointer but it requires
-cast with additional __force markup which was missing. Rather than add the
-markups wherever needed, make use of a temporary variable of user pointer.
-This patch is based on compat_ptrace_request() implementation.
+On Mon, Aug 23, 2010 at 11:11 AM, Bart Van Assche <bvanassche@acm.org> wrote:
 
-Suggested-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- kernel/ptrace.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+>
+> There is an important design difference between SCST and LIO: SCST by
+> defaults creates multiple threads to process the I/O operations for a
+> storage target, while LIO only creates a single thread per storage target.
+> This makes SCST perform measurably faster.
+>
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 4afd9b8..7547b1c 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -564,6 +564,7 @@ int ptrace_request(struct task_struct *child, long request,
- {
- 	int ret = -EIO;
- 	siginfo_t siginfo;
-+	unsigned long __user *datap = (unsigned long __user __force *) data;
- 
- 	switch (request) {
- 	case PTRACE_PEEKTEXT:
-@@ -580,18 +581,18 @@ int ptrace_request(struct task_struct *child, long request,
- 		ret = ptrace_setoptions(child, data);
- 		break;
- 	case PTRACE_GETEVENTMSG:
--		ret = put_user(child->ptrace_message, (unsigned long __user *) data);
-+		ret = put_user(child->ptrace_message, datap);
- 		break;
- 
- 	case PTRACE_GETSIGINFO:
- 		ret = ptrace_getsiginfo(child, &siginfo);
- 		if (!ret)
--			ret = copy_siginfo_to_user((siginfo_t __user *) data,
-+			ret = copy_siginfo_to_user((siginfo_t __user *) datap,
- 						   &siginfo);
- 		break;
- 
- 	case PTRACE_SETSIGINFO:
--		if (copy_from_user(&siginfo, (siginfo_t __user *) data,
-+		if (copy_from_user(&siginfo, (siginfo_t __user *) datap,
- 				   sizeof siginfo))
- 			ret = -EFAULT;
- 		else
-@@ -623,7 +624,7 @@ int ptrace_request(struct task_struct *child, long request,
- 		}
- 		mmput(mm);
- 
--		ret = put_user(tmp, (unsigned long __user *) data);
-+		ret = put_user(tmp, datap);
- 		break;
- 	}
- #endif
-@@ -652,7 +653,7 @@ int ptrace_request(struct task_struct *child, long request,
- 	case PTRACE_SETREGSET:
- 	{
- 		struct iovec kiov;
--		struct iovec __user *uiov = (struct iovec __user *) data;
-+		struct iovec __user *uiov = (struct iovec __user *) datap;
- 
- 		if (!access_ok(VERIFY_WRITE, uiov, sizeof(*uiov)))
- 			return -EFAULT;
-@@ -742,7 +743,7 @@ int generic_ptrace_peekdata(struct task_struct *tsk, long addr, long data)
- 	copied = access_process_vm(tsk, addr, &tmp, sizeof(tmp), 0);
- 	if (copied != sizeof(tmp))
- 		return -EIO;
--	return put_user(tmp, (unsigned long __user *)data);
-+	return put_user(tmp, (unsigned long __user __force *)data);
- }
- 
- int generic_ptrace_pokedata(struct task_struct *tsk, long addr, long data)
--- 
-1.7.0.4
+Forget that. You could have discussed this if there were code reviews
+or other mainline inclusion emails from James B. From what I have
+heard, the decision was taken around 8-9 months back.
+Would anyone like to either comment/validate/refute this please?  If
+not then I would kindly request these guys to stop taking us for a
+test drive. And also I'm not sure when was the last time James B.
+bench-marked our scsi-stack. Even if I ACK in the xmit-path then I
+can't push more than 100K IOPs. But other folks have re-engineered our
+linux-scsi stack and from what I've heard they can push > 300K+ IOPs.
+So I would just ignore performance discussion because I don't think
+folks have done even simple lame experiments in the last 1 year. Or
+may be I'm completely wrong and so please enlighten me so that I can
+re-run the tests.
 
+
+> Bart.
+>
+Chetan Loke
