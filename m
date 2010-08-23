@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab0HWGxy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 02:53:54 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39385 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab0HWGxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 02:53:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=p8e6UNImLtrE9lYsM0R14sD9qbD8DG7yh397Vbp7971XRLb0nXW/H73ex/fdNqRmTD
-         g1oWByj+hTMbG7cjbs4grpoqfnU+k0Yh25Zq27wToBcFV7ZLYuIODGS13UXHIukWpwEA
-         5eUeSD2nC3S59c4rWyp7kJZ4RGIr7vELT1FhQ=
+	id S1753397Ab0HWG61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 02:58:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24535 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751807Ab0HWG60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 02:58:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,256,1280732400"; 
+   d="scan'208";a="547738050"
+Date: Mon, 23 Aug 2010 14:58:22 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [2.6.35-rc1, bug] mm: minute-long livelocks in memory reclaim
+Message-ID: <20100823065822.GA22707@localhost>
+References: <20100822234811.GF31488@dastard>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinuFrE0ZpTpgaEQr5GYFXzGjHYq7FC-sY-UiVFi@mail.gmail.com>
-References: <20100818083346.GA6308@july>
-	<AANLkTinuFrE0ZpTpgaEQr5GYFXzGjHYq7FC-sY-UiVFi@mail.gmail.com>
-Date: Mon, 23 Aug 2010 15:53:49 +0900
-X-Google-Sender-Auth: XZQRkvnV6Fa0WksBc9zDTGeMIm4
-Message-ID: <AANLkTimyC2PcTgEbeKNQTCobxEKj-+wMViEOhNfE6JTg@mail.gmail.com>
-Subject: Re: [PATCH] Ramoops: use the platform data structure instead of
- module params
-From: Kyungmin Park <kmpark@infradead.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100822234811.GF31488@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 3:48 PM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> 2010/8/18 Kyungmin Park <kmpark@infradead.org>:
->> From: Kyungmin Park <kyungmin.park@samsung.com>
->>
->> As each board and system has different memory for ramoops. It's better to define the platform data instead of module params.
->>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->
-> It seems good. Currently there isn't any code that register a ramoops
-> device, isn't it?
+On Mon, Aug 23, 2010 at 09:48:11AM +1000, Dave Chinner wrote:
+> Folks,
+> 
+> I've been testing parallel create workloads over the weekend, and
+> I've seen this a couple of times now under 8 thread parallel creates
+> with XFS. I'm running on an 8p VM with 4GB RAM and a fast disk
+> subsystem. Basically I am seeing the create rate drop to zero
+> with all 8 CPUs stuck spinning for up to 2 minutes. 'echo t >
+> /proc/sysrq-trigger' while this is occurring gives the following
+> trace for all the fs-mark processes:
+> 
+> [49506.624018] fs_mark       R  running task        0  8376   7917 0x00000008
+> [49506.624018]  0000000000000000 ffffffff81b94590 00000000000008fc 0000000000000002
+> [49506.624018]  0000000000000000 0000000000000286 0000000000000297 ffffffffffffff10
+> [49506.624018]  ffffffff810b3d02 0000000000000010 0000000000000202 ffff88011df777a8
+> [49506.624018] Call Trace:
+> [49506.624018]  [<ffffffff810b3d02>] ? smp_call_function_many+0x1a2/0x210
+> [49506.624018]  [<ffffffff810b3ce5>] ? smp_call_function_many+0x185/0x210
+> [49506.624018]  [<ffffffff81109170>] ? drain_local_pages+0x0/0x20
+> [49506.624018]  [<ffffffff810b3d92>] ? smp_call_function+0x22/0x30
+> [49506.624018]  [<ffffffff810849a4>] ? on_each_cpu+0x24/0x50
+> [49506.624018]  [<ffffffff81107bec>] ? drain_all_pages+0x1c/0x20
+> [49506.624018]  [<ffffffff8110825a>] ? __alloc_pages_nodemask+0x57a/0x730
+> [49506.624018]  [<ffffffff8113c6d2>] ? kmem_getpages+0x62/0x160
+> [49506.624018]  [<ffffffff8113d2b2>] ? fallback_alloc+0x192/0x240
+> [49506.624018]  [<ffffffff8113cce1>] ? cache_grow+0x2d1/0x300
+> [49506.624018]  [<ffffffff8113d04a>] ? ____cache_alloc_node+0x9a/0x170
+> [49506.624018]  [<ffffffff8113cf6c>] ? cache_alloc_refill+0x25c/0x2a0
+> [49506.624018]  [<ffffffff8113ddb3>] ? __kmalloc+0x193/0x230
+> [49506.624018]  [<ffffffff812f59af>] ? kmem_alloc+0x8f/0xe0
+> [49506.624018]  [<ffffffff812f59af>] ? kmem_alloc+0x8f/0xe0
+> [49506.624018]  [<ffffffff812f5a9e>] ? kmem_zalloc+0x1e/0x50
+> [49506.624018]  [<ffffffff812e2f4d>] ? xfs_log_commit_cil+0x9d/0x440
+> [49506.624018]  [<ffffffff812eeec6>] ? _xfs_trans_commit+0x1e6/0x2b0
+> [49506.624018]  [<ffffffff812f2b6f>] ? xfs_create+0x51f/0x690
+> [49506.624018]  [<ffffffff812ffdb7>] ? xfs_vn_mknod+0xa7/0x1c0
+> [49506.624018]  [<ffffffff812fff00>] ? xfs_vn_create+0x10/0x20
+> [49506.624018]  [<ffffffff811510b8>] ? vfs_create+0xb8/0xf0
+> [49506.624018]  [<ffffffff81151d2c>] ? do_last+0x4dc/0x5d0
+> [49506.624018]  [<ffffffff81153bd7>] ? do_filp_open+0x207/0x5e0
+> [49506.624018]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
+> [49506.624018]  [<ffffffff8115eaca>] ? alloc_fd+0x10a/0x150
+> [49506.624018]  [<ffffffff81144005>] ? do_sys_open+0x65/0x130
+> [49506.624018]  [<ffffffff81144110>] ? sys_open+0x20/0x30
+> [49506.624018]  [<ffffffff81036072>] ? system_call_fastpath+0x16/0x1b
+> 
+> Eventually the problem goes away, and the system goes back to
+> performing at the normal rate. Any ideas on how to avoid this
+> problem? I'm using CONFIG_SLAB=y is that is relevant....
 
-At this time
+zone->lock contention? Try rip the following two lines. The change
+might be a bit aggressive though :)
 
-I wrote it below
+Thanks,
+Fengguang
 
-static struct ramoops_platform_data goni_ramoops_data = {
-        .mem_size               = SZ_16K,
-        .mem_address            = 0xED000000,   /* MODEM SRAM */
-};
-
-static struct platform_device goni_ramoops = {
-        .name = "ramoops",
-        .dev = {
-                .platform_data = &goni_ramoops_data,
-        },
-};
-
-Thank you,
-Kyungmin Park
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1bb327a..c08b8d3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1864,9 +1864,6 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 
+ 	cond_resched();
+ 
+-	if (order != 0)
+-		drain_all_pages();
+-
+ 	if (likely(*did_some_progress))
+ 		page = get_page_from_freelist(gfp_mask, nodemask, order,
+ 					zonelist, high_zoneidx,
