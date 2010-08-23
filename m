@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab0HWOjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 10:39:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64712 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab0HWOjW (ORCPT
+	id S1753713Ab0HWOn1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 10:43:27 -0400
+Received: from r-mail1.rd.francetelecom.com ([217.108.152.41]:35891 "EHLO
+	r-mail1.rd.francetelecom.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753080Ab0HWOnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 10:39:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=LDCmg5oOKzihLYzRJtj4z5gSfhZ6siM6elk5n2G5Zze7GSDTsQ+x3r7eqnpdJCQB63
-         3MfM/Si81YqFlwMyBCtAlQelZr/98mnnsDMYpjjN8PMywZdWaYzX+25KZRpKE2wF33+O
-         0lrjSPpUelVLmgORreIM3xTpyyJsIb/41/X34=
-Subject: amanda study and so so
-From: runcoderen <runcoderzhcn@gmail.com>
+	Mon, 23 Aug 2010 10:43:25 -0400
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Aug 2010 10:43:24 EDT
+Message-ID: <4C728790.7050805@Free.fr>
+Date: Mon, 23 Aug 2010 16:37:04 +0200
+From: Eric Valette <Eric.Valette@Free.fr>
+Reply-To: Eric.Valette@Free.fr
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Lightning/1.0b2 Icedove/3.1.2
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 22:39:14 +0800
-Message-ID: <1282574354.1638.8.camel@bencharluo-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Subject: Please add generic support for root=UUID= at kernel parameter command
+ line (LABEL, BYID maybe also)
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Aug 2010 14:37:04.0649 (UTC) FILETIME=[A7D3AF90:01CB42D0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi all:
-how about studying amanda at home?
+Hi,
 
-I want to study a project which can extensive myself.
-but I don't know which project it's suitable...
-could anyone give me advises?
+I just bought an new external disk enclosure with e-sata/USB2 connector 
+to replace an old USB2 only external disk enclosure.
 
--- 
+My internal drive is a small SSD because I use the small factor PC as a 
+home theater and do want silence and fast boot. I build my own kernel to 
+put only what I need in and also boot somehow faster.
 
-/****************************************
-http://runcoderen.wordpress.com/
-****************************************/
+I use grub2 (up to date) as a loader. As soon as I power on the external 
+sata disk, the system does not boot because hardware designer add the 
+great idea to put the internal sata connector on ata3 whereas the 
+external e-sata is wired on ata2.
+
+consequence is that root file system is on sda1 when no external drive 
+is connected and sdb1 when the external drive is connected.
+
+As my grub setup was having a root=/dev/sda1 command line parameter and 
+it was advertised everywhere that root=UUID=xxxxx was now supported, I 
+changed the line to discover that this only work if an initramfs was 
+loaded because support is done entirely in used space! Reading 
+init/do_mounts.c made it very clear.
+
+I find it extremely curious to have to add an initramfs to support 
+dynamic drive identification, especially when the BYID value is 
+displayed during boot message.
+
+The boot loader cannot do a better job than the kernel and its life may 
+be even worse as bios value for the same disk may change according to 
+boot disk priorities.
+
+Any hint comment? Any other way to avoid using a ramdisk? Please CC me 
+as I'm not subscribed.
+
+-- eric
+
+
 
