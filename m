@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab0HWJXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:23:38 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:44391 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab0HWJXf (ORCPT
+	id S1753568Ab0HWJ0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:26:04 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:35849 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab0HWJ0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:23:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Q1S8ZVWLNpHzBkBx8EK2LYuK4qBEBFvYaLGdlm8bJG+uCC2sbsQQavaamTWR1d9w7
-	U6vGBznHq89Mv88++a++w==
-Date: Mon, 23 Aug 2010 02:23:27 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
+	Mon, 23 Aug 2010 05:26:00 -0400
+Date: Mon, 23 Aug 2010 18:24:49 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Wu Fengguang <fengguang.wu@intel.com>
-cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [2.6.35-rc1, bug] mm: minute-long livelocks in memory reclaim
-In-Reply-To: <20100823065822.GA22707@localhost>
-Message-ID: <alpine.DEB.2.00.1008230219480.13384@chino.kir.corp.google.com>
-References: <20100822234811.GF31488@dastard> <20100823065822.GA22707@localhost>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/9] HWPOISON, hugetlb: move PG_HWPoison bit check
+Message-ID: <20100823092449.GC3769@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1281432464-14833-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100818001842.GC6928@localhost>
+ <20100819075543.GA4125@spritzera.linux.bs1.fc.nec.co.jp>
+ <20100819092828.GA20863@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100819092828.GA20863@localhost>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010, Wu Fengguang wrote:
-
-> > I've been testing parallel create workloads over the weekend, and
-> > I've seen this a couple of times now under 8 thread parallel creates
-> > with XFS. I'm running on an 8p VM with 4GB RAM and a fast disk
-> > subsystem. Basically I am seeing the create rate drop to zero
-> > with all 8 CPUs stuck spinning for up to 2 minutes. 'echo t >
-> > /proc/sysrq-trigger' while this is occurring gives the following
-> > trace for all the fs-mark processes:
+On Thu, Aug 19, 2010 at 05:28:28PM +0800, Wu Fengguang wrote:
+> On Thu, Aug 19, 2010 at 03:55:43PM +0800, Naoya Horiguchi wrote:
+> > On Wed, Aug 18, 2010 at 08:18:42AM +0800, Wu Fengguang wrote:
+> > > On Tue, Aug 10, 2010 at 05:27:36PM +0800, Naoya Horiguchi wrote:
+> > > > In order to handle metadatum correctly, we should check whether the hugepage
+> > > > we are going to access is HWPOISONed *before* incrementing mapcount,
+> > > > adding the hugepage into pagecache or constructing anon_vma.
+> > > > This patch also adds retry code when there is a race between
+> > > > alloc_huge_page() and memory failure.
+> > > 
+> > > This duplicates the PageHWPoison() test into 3 places without really
+> > > address any problem. For example, there are still _unavoidable_ races
+> > > between PageHWPoison() and add_to_page_cache().
+> > > 
+> > > What's the problem you are trying to resolve here? If there are
+> > > data structure corruption, we may need to do it in some other ways.
 > > 
-> > [49506.624018] fs_mark       R  running task        0  8376   7917 0x00000008
-> > [49506.624018]  0000000000000000 ffffffff81b94590 00000000000008fc 0000000000000002
-> > [49506.624018]  0000000000000000 0000000000000286 0000000000000297 ffffffffffffff10
-> > [49506.624018]  ffffffff810b3d02 0000000000000010 0000000000000202 ffff88011df777a8
-> > [49506.624018] Call Trace:
-> > [49506.624018]  [<ffffffff810b3d02>] ? smp_call_function_many+0x1a2/0x210
-> > [49506.624018]  [<ffffffff810b3ce5>] ? smp_call_function_many+0x185/0x210
-> > [49506.624018]  [<ffffffff81109170>] ? drain_local_pages+0x0/0x20
-> > [49506.624018]  [<ffffffff810b3d92>] ? smp_call_function+0x22/0x30
-> > [49506.624018]  [<ffffffff810849a4>] ? on_each_cpu+0x24/0x50
-> > [49506.624018]  [<ffffffff81107bec>] ? drain_all_pages+0x1c/0x20
-> > [49506.624018]  [<ffffffff8110825a>] ? __alloc_pages_nodemask+0x57a/0x730
-> > [49506.624018]  [<ffffffff8113c6d2>] ? kmem_getpages+0x62/0x160
-> > [49506.624018]  [<ffffffff8113d2b2>] ? fallback_alloc+0x192/0x240
-> > [49506.624018]  [<ffffffff8113cce1>] ? cache_grow+0x2d1/0x300
-> > [49506.624018]  [<ffffffff8113d04a>] ? ____cache_alloc_node+0x9a/0x170
-> > [49506.624018]  [<ffffffff8113cf6c>] ? cache_alloc_refill+0x25c/0x2a0
-> > [49506.624018]  [<ffffffff8113ddb3>] ? __kmalloc+0x193/0x230
-> > [49506.624018]  [<ffffffff812f59af>] ? kmem_alloc+0x8f/0xe0
-> > [49506.624018]  [<ffffffff812f59af>] ? kmem_alloc+0x8f/0xe0
-> > [49506.624018]  [<ffffffff812f5a9e>] ? kmem_zalloc+0x1e/0x50
-> > [49506.624018]  [<ffffffff812e2f4d>] ? xfs_log_commit_cil+0x9d/0x440
-> > [49506.624018]  [<ffffffff812eeec6>] ? _xfs_trans_commit+0x1e6/0x2b0
-> > [49506.624018]  [<ffffffff812f2b6f>] ? xfs_create+0x51f/0x690
-> > [49506.624018]  [<ffffffff812ffdb7>] ? xfs_vn_mknod+0xa7/0x1c0
-> > [49506.624018]  [<ffffffff812fff00>] ? xfs_vn_create+0x10/0x20
-> > [49506.624018]  [<ffffffff811510b8>] ? vfs_create+0xb8/0xf0
-> > [49506.624018]  [<ffffffff81151d2c>] ? do_last+0x4dc/0x5d0
-> > [49506.624018]  [<ffffffff81153bd7>] ? do_filp_open+0x207/0x5e0
-> > [49506.624018]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> > [49506.624018]  [<ffffffff8115eaca>] ? alloc_fd+0x10a/0x150
-> > [49506.624018]  [<ffffffff81144005>] ? do_sys_open+0x65/0x130
-> > [49506.624018]  [<ffffffff81144110>] ? sys_open+0x20/0x30
-> > [49506.624018]  [<ffffffff81036072>] ? system_call_fastpath+0x16/0x1b
-> > 
-> > Eventually the problem goes away, and the system goes back to
-> > performing at the normal rate. Any ideas on how to avoid this
-> > problem? I'm using CONFIG_SLAB=y is that is relevant....
+> > The problem I tried to resolve in this patch is the corruption of
+> > data structures when memory failure occurs between alloc_huge_page()
+> > and lock_page().
+> > The corruption occurs because page fault can fail with metadata changes
+> > remained (such as refcount, mapcount, etc.) 
+> > Since the PageHWPoison() check is for avoiding hwpoisoned page remained
+> > in pagecache mapping to the process, it should be done in
+> > "found in pagecache" branch, not in the common path.
+> > This patch moves the check to "found in pagecache" branch.
 > 
-> zone->lock contention? Try rip the following two lines. The change
-> might be a bit aggressive though :)
+> That's good stuff to put in the changelog.
+
+OK.
+
+> > In addition to that, I added 2 PageHWPoison checks in "new allocation" branches
+> > to enhance the possiblity to recover from memory failures on pages under allocation.
+> > But it's a different point from the original one, so I drop these retry checks.
 > 
-> Thanks,
-> Fengguang
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 1bb327a..c08b8d3 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1864,9 +1864,6 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
->  
->  	cond_resched();
->  
-> -	if (order != 0)
-> -		drain_all_pages();
-> -
->  	if (likely(*did_some_progress))
->  		page = get_page_from_freelist(gfp_mask, nodemask, order,
->  					zonelist, high_zoneidx,
+> So you'll remove the first two chunks and retain the 3rd chunk?
 
-You may be interested in Mel's patchset that he just proposed for -mm 
-which identifies watermark variations on machines with high cpu counts 
-(perhaps even eight, as in this report).  The last patch actually reworks 
-this hunk of the code as well.
+Yes.
 
-	http://marc.info/?l=linux-mm&m=128255044912938
-	http://marc.info/?l=linux-mm&m=128255045312950
-	http://marc.info/?l=linux-mm&m=128255045012942
-	http://marc.info/?l=linux-mm&m=128255045612954
+> That makes it a small bug-fix patch suitable for 2.6.36 and I'll
+> happily ACK it :)
 
-Dave, it would be interesting to see if this fixes your problem.
+Thank you!
+
+Naoya Horiguchi
