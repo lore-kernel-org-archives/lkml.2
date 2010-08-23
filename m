@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab0HWLLP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 07:11:15 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52992 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab0HWLLN convert rfc822-to-8bit (ORCPT
+	id S1752102Ab0HWLM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 07:12:59 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46104 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab0HWLM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 07:11:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DT2G2ts2GdCLQ+oFZPfJt9x1mLgi6NiwJbarGCp1cnVwV0TcQiLVzeM29Xx6NrXXS1
-         /P0bv0JpPZPEvicUawpdUHDH9zdapWZByhAXqewDxGDDe9pyY9ftvCzExpozyPo/c64c
-         icH/WUDvYrm8JPUb+I2HZh1NVI29EMzs7FzrY=
+	Mon, 23 Aug 2010 07:12:57 -0400
+Date: Mon, 23 Aug 2010 07:07:19 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>
+Subject: Re: [RFC PATCH v3] core_pattern: fix long parameters was truncated
+ by core_pattern handler
+Message-ID: <20100823110719.GA12906@hmsreliant.think-freely.org>
+References: <20100803105941.GA2996@hmsreliant.think-freely.org>
+ <1282296958-2427-1-git-send-email-dfeng@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4C724D13.6000807@redhat.com>
-References: <20100820011054.GA11297@tpepper-t61p.dolavim.us>
-	<4C724BDB.8020604@redhat.com>
-	<4C724D13.6000807@redhat.com>
-Date: Mon, 23 Aug 2010 19:11:11 +0800
-Message-ID: <AANLkTi=7HdLqm-g1F+ezhDN4n+vPo2jAo2cgn-M6_wMJ@mail.gmail.com>
-Subject: Re: [PATCH 0/4 v2] kvm: rework KVM mmu_shrink() code
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282296958-2427-1-git-send-email-dfeng@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 6:27 PM, Avi Kivity <avi@redhat.com> wrote:
->  On 08/23/2010 01:22 PM, Avi Kivity wrote:
->>
->>
->> I see a lot of soft lockups with this patchset:
->
-> This is running the emulator.flat test case, with shadow paging.  This test
-> triggers a lot (millions) of mmu mode switches.
->
+On Fri, Aug 20, 2010 at 05:35:58PM +0800, Xiaotian Feng wrote:
+> We met a parameter truncated issue, consider following:
+> > echo "|/root/core_pattern_pipe_test %p /usr/libexec/blah-blah-blah \
+> %s %c %p %u %g 11 12345678901234567890123456789012345678 %t" > \
+> /proc/sys/kernel/core_pattern
+> 
+> This is okay because the strings is less than CORENAME_MAX_SIZE.
+> "cat /proc/sys/kernel/core_pattern" shows the whole string. but
+> after we run core_pattern_pipe_test in man page, we found last
+> parameter was truncated like below:
+>         argc[10]=<12807486>
+> 
+> The root cause is core_pattern allows % specifiers, which need to be
+> replaced during parse time, but the replace may expand the strings
+> to larger than CORENAME_MAX_SIZE. So if the last parameter is %
+> specifiers, the replace code is using snprintf(out_ptr, out_end - out_ptr, ...),
+> this will write out of corename array.
+> 
+> Changes since v2:
+> Introduced generic function cn_printf and make format_corename remember the time
+> has been expanded.
+> 
+> Changes since v1:
+> This patch allocates corename at runtime, if the replace doesn't have enough
+> memory, expand the corename dynamically.
+> 
+> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Roland McGrath <roland@redhat.com>
+> ---
+>  fs/exec.c |  180 ++++++++++++++++++++++++++++++++++++++++--------------------
+>  1 files changed, 120 insertions(+), 60 deletions(-)
+> 
+This looks alot cleaner.  Thanks!
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
 
-Does following patch fix your issue?
-
-Latest kvm mmu_shrink code rework makes kernel changes
-kvm->arch.n_used_mmu_pages/
-kvm->arch.n_max_mmu_pages at kvm_mmu_free_page/kvm_mmu_alloc_page,
-which is called
-by kvm_mmu_commit_zap_page. So the kvm->arch.n_used_mmu_pages or
-kvm_mmu_available_pages(vcpu->kvm) is unchanged after kvm_mmu_commit_zap_page(),
-This caused kvm_mmu_change_mmu_pages/__kvm_mmu_free_some_pages looping forever.
-Moving kvm_mmu_commit_zap_page would make the while loop performs as normal.
-
----
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index f52a965..7e09a21 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1726,8 +1726,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm,
-unsigned int goal_nr_mmu_pages)
-                                            struct kvm_mmu_page, link);
-                        kvm_mmu_prepare_zap_page(kvm, page,
-                                                               &invalid_list);
-+                       kvm_mmu_commit_zap_page(kvm, &invalid_list);
-                }
--               kvm_mmu_commit_zap_page(kvm, &invalid_list);
-                goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
-        }
-
-@@ -2976,9 +2976,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
-                sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
-                                  struct kvm_mmu_page, link);
-                kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
-+               kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
-                ++vcpu->kvm->stat.mmu_recycled;
-        }
--       kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- }
-
- int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code)
-
-
-> --
-> error compiling committee.c: too many arguments to function
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
