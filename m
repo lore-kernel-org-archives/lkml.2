@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab0HWJb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:31:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45344 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab0HWJby convert rfc822-to-8bit (ORCPT
+	id S1753660Ab0HWJe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:34:57 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:55948 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab0HWJez convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:31:54 -0400
-Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Matt Fleming <matt@console-pimps.org>, Zhang Rui <rui.zhang@intel.com>,
-        "Lin, Ming M" <ming.m.lin@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "acme@redhat.com" <acme@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-In-Reply-To: <20100821011803.GB7959@nowhere>
-References: <1282118350.5181.115.camel@rui>
-	 <1282134329.1926.3918.camel@laptop>
-	 <20100818124116.GA17957@console-pimps.org>
-	 <1282188497.11858.94.camel@minggr.sh.intel.com>
-	 <20100819075410.GA25755@console-pimps.org> <1282206714.5181.552.camel@rui>
-	 <20100819083218.GB25755@console-pimps.org>
-	 <1282211085.1926.4598.camel@laptop>  <20100821011803.GB7959@nowhere>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 23 Aug 2010 05:34:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OKdkUHSsEwOqAmm5XueELlNA177JlzRwNGAqOsKw9dXdK+OJqsiij4kV29GlR+giAE
+         9a80dlReZUA9wSx4c+eyOU4ICeCSFbCGXTRBG2ePXhVlA0i+92xjzcuwgwrwh1n5525I
+         q3QIgmUYEchvDHdM/eq9OpNQrISOXHy7oKTI4=
+MIME-Version: 1.0
+In-Reply-To: <201008231009.55037.arnd@arndb.de>
+References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
+	<201008211908.03705.arnd@arndb.de>
+	<4C70D72E.2040605@gmail.com>
+	<201008231009.55037.arnd@arndb.de>
+Date: Mon, 23 Aug 2010 11:34:54 +0200
+Message-ID: <AANLkTi=8BqWJj6CEdm5QxvTSB+JiJCkEBFU4LDmHGwfX@mail.gmail.com>
+Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
+From: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: =?UTF-8?Q?Miloslav_Trma=C4=8D?= <mitr@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 23 Aug 2010 11:31:36 +0200
-Message-ID: <1282555896.2605.1534.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-21 at 03:18 +0200, Frederic Weisbecker wrote:
-> On Thu, Aug 19, 2010 at 11:44:45AM +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-08-19 at 09:32 +0100, Matt Fleming wrote:
-> > > 
-> > > 
-> > > How big is the hardware counter? The problem comes when the process is
-> > > scheduled in and runs for a long time, e.g. so long that the energy
-> > > hardware counter wraps. This is why it's necessary to periodically
-> > > sample the counter.
-> > > 
-> > Long running processes aren't the only case, you could associate an
-> > event with a CPU.
+On Mon, Aug 23, 2010 at 10:09 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-> I don't understand what you mean.
+>> This is an alternative design. There quite some reasons against that,
+>> such as the auditing features. For me the main reason was  that there
+>> was no way to make it as fast (zero-copy) as this design, for the
+>> requirements we had (interface with existing crypto libraries through
+>> pkcs11). Zero-copy is important since crypto operations might involve
+>> large chunks of data.
+> You mean using a shared memory segment would not be possible without changing
+> the libpkcs11 interface?
 
-perf_event_open(.pid = -1, .cpu = n);
+Indeed. The pkcs11 backend would have to copy the data to the shared
+segment, thus high-performance applications requiring zero-copy, would
+avoid to use this interface. Moreover if more than one applications
+are using the interface, the shared segment it is going to be a
+bottleneck. Having multiple shared segments might help, but I don't
+know how practical is something like that with the posix ipc.
 
-> > Right, short counters (like SH when not chained) need something to
-> > accumulate deltas into the larger u64. You can indeed use timers for
-> > that, hr or otherwise, but you don't need the swcounter hrtimer
-> > infrastructure for that.
-> 
-> 
-> So what is the point in simulating a PMI using an hrtimer? It won't be
-> based on periods on the interesting counter but on time periods. This
-> is not how we want the samples. If we want timer based samples, we can
-> just launch a seperate software timer based event.
-
-*sigh* that's exactly what we're doing, we're creating a separate
-software hrtimer to create samples, the only thing that's different is
-that we put this hrtimer and the hw-counter in a group and let the
-hrtimer sample include the hw-counter's value.
-
-If you then weight the samples by the hw-counter delta, you get
-something that's more or less related to the thing the hw-counter is
-counting.
-
-For counter's that do no provide overflow interrupts this is the only
-possible way to get anything.
-
-> In the case of SH where we need to flush to avoid wraps, I understand, but
-> oterwise?
-
-The wrap issue it totally unrelated.
-
-
+regards,
+Nikos
