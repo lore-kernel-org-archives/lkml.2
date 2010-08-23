@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab0HWWEd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 18:04:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58117 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754002Ab0HWWEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 18:04:31 -0400
-Date: Tue, 24 Aug 2010 00:03:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, David Rientjes <rientjes@google.com>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/6] jbd: remove dependency on __GFP_NOFAIL
-Message-ID: <20100823220347.GB3380@quack.suse.cz>
-References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1008161956190.17924@chino.kir.corp.google.com>
- <20100817095103.GA3557@quack.suse.cz>
- <20100823122813.1ffa3f2e.akpm@linux-foundation.org>
+	id S1754832Ab0HWWLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 18:11:23 -0400
+Received: from [12.19.149.2] ([12.19.149.2]:27331 "EHLO mail.atheros.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754309Ab0HWWLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 18:11:20 -0400
+Date: Mon, 23 Aug 2010 15:11:19 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Bastien Nocera <hadess@hadess.net>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Kevin Hayes <kevin@atheros.com>, David Quan <David.Quan@atheros.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "geoclue@lists.freedesktop.org" <geoclue@lists.freedesktop.org>
+Subject: Re: [PATCH 0/2] iw: add GeoClue support
+Message-ID: <20100823221119.GC2206@tux>
+References: <1282350556-16523-1-git-send-email-lrodriguez@atheros.com>
+ <1282572681.3813.3.camel@jlt3.sipsolutions.net>
+ <AANLkTimrtWQKycuAcZ3SjDaOqJ6Z-pPNauRfh+2aZ=ge@mail.gmail.com>
+ <1282579507.3405.130.camel@localhost.localdomain>
+ <20100823174620.GA12375@tux>
+ <1282597556.3405.135.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100823122813.1ffa3f2e.akpm@linux-foundation.org>
+In-Reply-To: <1282597556.3405.135.camel@localhost.localdomain>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 23-08-10 12:28:13, Andrew Morton wrote:
-> On Tue, 17 Aug 2010 11:51:03 +0200
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> > On Mon 16-08-10 19:58:01, David Rientjes wrote:
-> > > Removes the dependency on __GFP_NOFAIL by looping indefinitely in the
-> > > caller.
+On Mon, Aug 23, 2010 at 02:05:56PM -0700, Bastien Nocera wrote:
+> On Mon, 2010-08-23 at 10:46 -0700, Luis R. Rodriguez wrote:
+> > On Mon, Aug 23, 2010 at 09:05:07AM -0700, Bastien Nocera wrote:
+> > > On Mon, 2010-08-23 at 08:44 -0700, Luis R. Rodriguez wrote:
+> > > > 
+> > > > > What use is a command line tool that has to talk to a whole bunch of
+> > > > > daemons etc.?
+> > > > 
+> > > > The current implementation doesn't talk to deamons. The hostip
+> > > > provider within GeoClue and it will just trigger a URL get. If
+> > > > desktops start implementing a master server though then the query
+> > > > would simply be a cached response. 
 > > > 
-> > > The error handling when kzalloc() returns NULL in start_this_handle()
-> > > was removed since it was unreachable.
-> >   Thanks! I've added the patch to my tree.
+> > > Note that this error carries on in the mail. There is a master provider
+> > > for Geoclue that can make use of whatever providers are available, but
+> > > it's not in too good a shape.
+> > 
+> > I see, can you elaborate on that a little?
 > 
-> Please unadd it.  JBD should be fixed so that it can appropriately
-> handle out-of-memory conditions.  Until that time we shouldn't hide its
-> shortcomings with this open-coded equivalent.
-  Well, I wanted to make it easy for David so that he can proceed with his
-removal of __GFP_NOFAIL. I agree that pushing the looping from the
-allocator to the callers seems of a disputable value to me as well.  So do
-you think that we should keep __GFP_NOFAIL as long as all callers are not
-able to handle allocation failures in more reasonable way?
+> See the bugzillas filed against Geoclue, most of them are due to bugs in
+> the Geoclue master provider.
+> 
+> > > I'd rather somebody started fixing the Geoclue master provider rather
+> > > than relying on a particular service, especially when the D-Bus API for
+> > > the providers themselves is something we don't want to support in the
+> > > longer term.
+> > 
+> > Would the master provider not use Dbus for gypsy, for example?
+> 
+> No, I'm talking about what's exported by the providers. I don't really
+> care if they talk to other parts of the system using D-Bus though. I'm
+> talking about link 2) here.
+> 
+> [App] <-1-> [Geoclue master] <-2-> [Gypsy provider] <-3-> [Gypsy daemon]
 
-								Honza
+Sorry I do not follow yet. Is the idea that you would prefer if
+client applications would never talk to providers directly and instead
+always used the master provider?
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+ Luis
