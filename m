@@ -1,36 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab0HWKdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 06:33:31 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51877 "EHLO kernel.dk"
+	id S1753905Ab0HWKfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 06:35:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51496 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753855Ab0HWKd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 06:33:28 -0400
-Message-ID: <4C724E79.2080804@kernel.dk>
-Date: Mon, 23 Aug 2010 12:33:29 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752720Ab0HWKfK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 06:35:10 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "byron.bbradley@gmail.com" <byron.bbradley@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Mon, 23 Aug 2010 16:04:19 +0530
+Subject: RE: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
+Thread-Topic: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
+Thread-Index: ActCjLDP5hpbcTeNRce4Z3RMqyggZgAIPRXQ
+Message-ID: <19F8576C6E063C45BE387C64729E7394044F12543F@dbde02.ent.ti.com>
+References: <hvaibhav@ti.com>
+ <1282393829-7326-2-git-send-email-hvaibhav@ti.com>
+ <20100821140541.GA31697@nokia.com>
+ <19F8576C6E063C45BE387C64729E7394044F1252C6@dbde02.ent.ti.com>
+ <20100823062957.GA1068@nokia.com>
+In-Reply-To: <20100823062957.GA1068@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: akpm@linux-foundation.org, linux-raid@vger.kernel.org,
-        linux-scsi@vger.kernel.org, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH v2] BLOCK: fix bio.bi_rw handling
-References: <1281616266-4709-1-git-send-email-jslaby@suse.cz> <1281616266-4709-3-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1281616266-4709-3-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-12 14:31, Jiri Slaby wrote:
-> Return of the bi_rw tests is no longer bool after commit 74450be1. But
-> results of such tests are stored in bools. This doesn't fit in there
-> for some compilers (gcc 4.5 here), so either use !! magic to get real
-> bools or use ulong where the result is assigned somewhere.
 
-Added, sorry for the delay!
+> -----Original Message-----
+> From: Felipe Balbi [mailto:felipe.balbi@nokia.com]
+> Sent: Monday, August 23, 2010 12:00 PM
+> To: Hiremath, Vaibhav
+> Cc: Balbi Felipe (Nokia-MS/Helsinki); linux-kernel@vger.kernel.org;
+> akpm@linux-foundation.org; byron.bbradley@gmail.com; linux-
+> omap@vger.kernel.org
+> Subject: Re: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
+> 
+> Hi,
+> 
+> please break your lines at 80-characters. 
 
--- 
-Jens Axboe
+Normally I do take care of this, but missed this time. I will be more careful in the future.
 
+> Also the [Hiremath, Vaibhav]
+> is unnecessary.
+> 
+> On Mon, Aug 23, 2010 at 06:58:42AM +0200, ext Hiremath, Vaibhav wrote:
+> >> don't you need some locking on the irq handler ? a mutex maybe ? Just
+> >> wondering...
+> >>
+> >[Hiremath, Vaibhav] Yes definitely we do need locking here, I thought
+> >of adding locking mechanism in subsequent patch, does it makes sense?
+> 
+> so you add a buggy patch and fix it later ? If you already know it's
+> buggy, why not changing the patch that adds the bug ?
+> 
+[Hiremath, Vaibhav] Nothing to argue here, I have to admit/accept and fix this.
+
+Thanks,
+Vaibhav
+
+> --
+> balbi
+> 
+> DefectiveByDesign.org
