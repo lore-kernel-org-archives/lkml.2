@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab0HWN4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:56:15 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44175 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab0HWN4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:56:14 -0400
-Date: Mon, 23 Aug 2010 14:55:59 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
-	NR_FREE_PAGES when memory is low and kswapd is awake
-Message-ID: <20100823135559.GS19797@csn.ul.ie>
-References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie> <1282550442-15193-3-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1008230750380.4094@router.home> <20100823130315.GQ19797@csn.ul.ie> <alpine.DEB.2.00.1008230838320.5750@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008230838320.5750@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753362Ab0HWN4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:56:21 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:28225 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303Ab0HWN4T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:56:19 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bn@niasdigital.com, ryan@bluewatersys.com, david-b@pacbell.net
+Cc: avictor.za@gmail.com, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] pio: add arch specific gpio_is_valid() function
+Date: Mon, 23 Aug 2010 17:01:09 +0200
+Message-Id: <1282575669-24501-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <20091107122002.1ecf6483@hskinnemoen-d830>
+References: <20091107122002.1ecf6483@hskinnemoen-d830>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 08:41:56AM -0500, Christoph Lameter wrote:
-> On Mon, 23 Aug 2010, Mel Gorman wrote:
-> 
-> > > The delta of the counters could also be reduced to increase accuracy.
-> > > See refresh_zone_stat_thresholds().
-> > True, but I thought that would introduce a constant performance penalty
-> > for a corner case which I didn't like.
-> 
-> Sure, an increased frequency of updates would increase the chance of
-> bouncing cachelines. But the bouncing cacheline scenario for the vm
-> counters was tuned for applications that continually allocate pages in
-> parallel.
-> 
-> When the vm gets into a state where continual reclaim is necessary then
-> the counters are not that frequently updated. If the machine is already
-> slowing down due to reclaim then the vm can likely affort more frequent
-> counter updates.
-> 
+Add a simple gpio_is_valid() function to replace
+the standard one. It introduces the __HAVE_ARCH_GPIO_IS_VALID
+macro to overload the generic code.
+As an implementation example, it takes into account the AT91
+pio numbering to check if a proper value is used.
 
-Ok, but is that better than this patch? Decreasing the size of the window by
-reducing the threshold still leaves a window. There is still a small amount
-of drift by summing up all the deltas but you get a much more accurate count
-at the point of time it was important to know.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Hi all,
 
+I come back on this thread as I would like to implement the gpio_is_valid()
+function for AT91. I have based this piece of code on comments from Ben and
+Haavard and chose the  __HAVE_ARCH_* macro definition as it seems wide spread
+in kernel code.
+Please make comments and if it is ok for you, eventually accept for merging...
+
+
+ arch/arm/mach-at91/include/mach/gpio.h |    9 +++++++++
+ include/asm-generic/gpio.h             |    4 ++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-at91/include/mach/gpio.h b/arch/arm/mach-at91/include/mach/gpio.h
+index 5cce2ed..103486d 100644
+--- a/arch/arm/mach-at91/include/mach/gpio.h
++++ b/arch/arm/mach-at91/include/mach/gpio.h
+@@ -188,6 +188,15 @@
+ #define	AT91_PIN_PE31	(PIN_BASE + 0x80 + 31)
+ 
+ #ifndef __ASSEMBLY__
++static inline int gpio_is_valid(int number)
++{
++	if (number >= PIN_BASE)
++		return 1;
++	return 0;
++}
++#define __HAVE_ARCH_GPIO_IS_VALID 1
++
++
+ /* setup setup routines, called from board init or driver probe() */
+ extern int __init_or_module at91_set_GPIO_periph(unsigned pin, int use_pullup);
+ extern int __init_or_module at91_set_A_periph(unsigned pin, int use_pullup);
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index 4f3d75e..2840f35 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -22,11 +22,13 @@
+ #define ARCH_NR_GPIOS		256
+ #endif
+ 
++#ifndef __HAVE_ARCH_GPIO_IS_VALID
+ static inline int gpio_is_valid(int number)
+ {
+ 	/* only some non-negative numbers are valid */
+ 	return ((unsigned)number) < ARCH_NR_GPIOS;
+ }
++#endif
+ 
+ struct device;
+ struct seq_file;
+@@ -185,11 +187,13 @@ extern void gpio_unexport(unsigned gpio);
+ 
+ #else	/* !CONFIG_HAVE_GPIO_LIB */
+ 
++#ifndef __HAVE_ARCH_GPIO_IS_VALID
+ static inline int gpio_is_valid(int number)
+ {
+ 	/* only non-negative numbers are valid */
+ 	return number >= 0;
+ }
++#endif
+ 
+ /* platforms that don't directly support access to GPIOs through I2C, SPI,
+  * or other blocking infrastructure can use these wrappers.
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.5.6.5
+
