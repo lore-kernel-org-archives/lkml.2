@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab0HWMn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 08:43:29 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:29118 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751978Ab0HWMn2 (ORCPT
-	<rfc822;groupwise-jlee@novell.com:3:2>);
-	Mon, 23 Aug 2010 08:43:28 -0400
-Message-Id: <4C72F987020000230001F296@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 23 Aug 2010 06:43:19 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <mjg59@srcf.ucam.org>
-Cc: <gregkh@suse.de>, <trenn@suse.de>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
-Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
- detect
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1752896Ab0HWMpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 08:45:32 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:21491 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751674Ab0HWMpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 08:45:30 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: m3_mKnMVM1nECzzkOU1uAqm_NDQQmaV5Z58O8Od7WDbaa1x
+ rdmAhL0EQ4LYBoza_rX6smbuJJuMfkP0.Ofi2yxNwT8xKa3RXXEHZUe.IGcW
+ 3o8LlHXSv4byNxnXfeMJgUwrLTIQUbfpuGcSs5NhuRlSS7Tm4moNUDtSQRtr
+ 31P0kcXmVDtkOdD0NH.0H7OuoqVFl8mYIezYViZRNvndQPtq5XdZDXk7gVXc
+ 3
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 23 Aug 2010 07:45:25 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 0/3] Reduce watermark-related problems with the per-cpu
+ allocator V2
+In-Reply-To: <1282550442-15193-1-git-send-email-mel@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1008230742300.4094@router.home>
+References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew, 
+On Mon, 23 Aug 2010, Mel Gorman wrote:
 
-於 一，2010-08-23 於 12:49 +0100，Matthew Garrett 提到：
-> On Mon, Aug 23, 2010 at 07:40:48PM +0800, Lee, Chun-Yi wrote:
-> > There have some machines not support by i915 drm driver, e.g. MSI U110/U150,
-> > there are use poulsbo chip and drm driver not support it because legal issue.
-> > Those machines's acpi backlight control actually work fine and don't need apply
-> > the intel opregion support.
-> > So, add intel drm blacklist to intel_opregion_present, it can enable the acpi
-> > brightness interface on Poulsbo/Morrestown.
-> 
-> I'm still kind of reluctant about this - doing the blacklisting here 
-> means that there's no way for a native driver to inhibit registration 
-> from occuring until after opregion setup has taken place, and we found 
-> that that was necessary on some 915 so I suspect it is on gma500 as
+> Internal IBM test teams beta testing distribution kernels have reported
+> problems on machines with a large number of CPUs whereby page allocator
+> failure messages show huge differences between the nr_free_pages vmstat
+> counter and what is available on the buddy lists. In an extreme example,
+> nr_free_pages was above the min watermark but zero pages were on the buddy
+> lists allowing the system to potentially livelock unable to make forward
+> progress unless an allocation succeeds. There is no reason why the problems
+> would not affect mainline so the following series mitigates the problems
+> in the page allocator related to to per-cpu counter drift and lists.
 
-I read the bug:
- https://bugzilla.kernel.org/show_bug.cgi?id=11259#c28
-And your patch comment:
- https://patchwork.kernel.org/patch/13147/
-
-I think there have some machines implement _BCL by using opregion, so
-causes the issues. But, there sill have many machines implement _BCL by
-using EC to control backlight.
-Unfortunately, there have no way can detect the difference.
-
->  
-> well. Perhaps it should just be done as a module option, and then 
-> distributions who want to deal with this case could set it by default?
-> 
-
-OK, I put a module option also a way to fix the issue for those machines
-that were implemented acpi method by call EC. I will put a module option
-in acpi video driver then send to you after testing finished.
-
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_0) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_1) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_2) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_3) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_4) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_5) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_6) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_7) },
-> 
-> Moorestown doesn't have ACPI, so I don't think there's any need to 
-> include these.
-> 
-
-OH! OK, thank's  for your review!
-
-Joey Lee
+The maximum time for which the livelock can exists is the vm stat
+interval. By default the counters are brought up to date at least once per
+second or if a certain delta was violated. Drifts are controlled by the
+delta configuration.
 
