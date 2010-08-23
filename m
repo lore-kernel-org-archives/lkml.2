@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab0HWUhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:37:55 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17093 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab0HWUhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:37:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=fhcZfyd+eJOiAbxktl2LTgVXJWTulxnZvn6FTczLhGKwzMx7RDfT6iP7QEYQeet00
-	6mnq30SVXzLeQzyF1Z3pA==
-Date: Mon, 23 Aug 2010 13:37:45 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/6] md: remove dependency on __GFP_NOFAIL
-In-Reply-To: <20100823132315.6906ddbe.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1008231326500.20535@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com> <alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com> <20100823122606.47524cef.akpm@linux-foundation.org> <alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
- <20100823130109.6da43a58.akpm@linux-foundation.org> <alpine.DEB.2.00.1008231303410.17716@chino.kir.corp.google.com> <20100823132315.6906ddbe.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1754688Ab0HWUiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:38:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56031 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753949Ab0HWUiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 16:38:51 -0400
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: Gennadiy Nerubayev <parakie@gmail.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+In-Reply-To: <4C72CEC5.4080204@vlnb.net>
+References: <4C69653E.6050808@vlnb.net>
+	 <1282077040.16098.47.camel@mulgrave.site> <4C6C1DC1.8090208@vlnb.net>
+	 <1282164188.10878.22.camel@mulgrave.site> <4C702030.2070306@vlnb.net>
+	 <1282423128.3015.35.camel@mulgrave.site>
+	 <AANLkTin9STqUz440fCOEWW=YmedVQtQWU2JLO2wZCt5j@mail.gmail.com>
+	 <1282582740.11194.17.camel@mulgrave.site>  <4C72CEC5.4080204@vlnb.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Aug 2010 15:38:47 -0500
+Message-ID: <1282595927.11194.78.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010, Andrew Morton wrote:
-
-> > > Hows about you add a helper function
-> > > 
-> > > 	void *[kmalloc|alloc_page]_retrying_forever_because_i_suck(lots of args)
-> > > 
-> > > then convert the callsites to use that, then nuke __GFP_NOFAIL?
-> > > 
-> > 
-> > That would only serve as documentation
+On Mon, 2010-08-23 at 23:40 +0400, Vladislav Bolkhovitin wrote:
+> James Bottomley, on 08/23/2010 08:59 PM wrote:
+> > My basic conclusion was that there's no incredible discriminator between
+> > LIO and STGT (although there are reams written on which performs better
+> > in which circumsances, is useful for clustering, supports ALUA, etc.
+> > each with partisans for the features).
 > 
-> Is that bad?
-> 
+> Here is a comprehensive features comparison I prepared some time ago: 
+> http://scst.sourceforge.net/comparison.html. It's a bit outdated at the 
+> moment, but I'm going to make it completely up do date in the next few days.
 
-It implies that these calls are special in some way, basically to mean 
-we have no sane error handling for failures, when in reality this is only 
-a function of the allocation order when the context does not have 
-__GFP_FS.  You may as well just add BUG_ON(!nreg) here instead.
+That's not really going to help ... I don't really want another 500 mail
+thread of partisan yelling about which is better.  I'm happy to concede
+that either could beat the other on a given set of well chosen tests ...
+but knowing that is completely useless to me.  I can also guess, given
+the antipathy, that neither of you would agree on a definitive set of
+comparison tests.
 
-I thought my "/* FIXME: this may potentially loop forever */" was 
-sufficient to mean that the allocation must succeed independent of the 
-page allocator's implementation, but perhaps you find greping for 
-[kmalloc|alloc_page.*]_nofail easier?
+So it comes down to a community test instead: which works better with
+the community.  This is important to me because it's an indication of
+what might ensue once code goes upstream and thus moves outside the
+exclusive province of the project to become a community resource. STGT
+is a community too and so far what you seem to have told me is:
 
-I'm not sure what flags such a function would be checking for since the 
-page allocator determines whether the oom killer is called or not.  If 
-current is killed, an order-0 allocation will succeed because of 
-TIF_MEMDIE, and if another task is killed, we must still loop waiting for 
-the free memory even with __GFP_FS.
+      * STGT users should just migrate to scst_local
+      * STGT doesn't have enough users to bother with
+      * STGT has fundamental design flaws which makes its pass through
+        architecture unusable and its ABI flawed.
+
+I'm sure STGT appreciates the frank assessments, but it doesn't seem to
+merit too many "plays well with others" points.
+
+James
+
+
