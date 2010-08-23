@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab0HWUdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:33:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38682 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab0HWUd3 (ORCPT
+	id S1754391Ab0HWUhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:37:55 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:17093 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab0HWUhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:33:29 -0400
-Date: Mon, 23 Aug 2010 21:33:24 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: [GIT] platform driver fixes
-Message-ID: <20100823203324.GA31550@srcf.ucam.org>
+	Mon, 23 Aug 2010 16:37:53 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=fhcZfyd+eJOiAbxktl2LTgVXJWTulxnZvn6FTczLhGKwzMx7RDfT6iP7QEYQeet00
+	6mnq30SVXzLeQzyF1Z3pA==
+Date: Mon, 23 Aug 2010 13:37:45 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/6] md: remove dependency on __GFP_NOFAIL
+In-Reply-To: <20100823132315.6906ddbe.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1008231326500.20535@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com> <alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com> <20100823122606.47524cef.akpm@linux-foundation.org> <alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
+ <20100823130109.6da43a58.akpm@linux-foundation.org> <alpine.DEB.2.00.1008231303410.17716@chino.kir.corp.google.com> <20100823132315.6906ddbe.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 23 Aug 2010, Andrew Morton wrote:
 
-One fix from Jon to deal with a missing dependency in Kconfig, and one 
-from me to handle some breakage in the hp-wmi driver that leaves the 
-rfkill interface broken on some hardware
+> > > Hows about you add a helper function
+> > > 
+> > > 	void *[kmalloc|alloc_page]_retrying_forever_because_i_suck(lots of args)
+> > > 
+> > > then convert the callsites to use that, then nuke __GFP_NOFAIL?
+> > > 
+> > 
+> > That would only serve as documentation
+> 
+> Is that bad?
+> 
 
-The following changes since commit 9ee47476d6734c9deb9ae9ab05d963302f6b6150:
+It implies that these calls are special in some way, basically to mean 
+we have no sane error handling for failures, when in reality this is only 
+a function of the allocation order when the context does not have 
+__GFP_FS.  You may as well just add BUG_ON(!nreg) here instead.
 
-  Merge branch 'radix-tree' of git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev (2010-08-22 19:55:14 -0700)
+I thought my "/* FIXME: this may potentially loop forever */" was 
+sufficient to mean that the allocation must succeed independent of the 
+page allocator's implementation, but perhaps you find greping for 
+[kmalloc|alloc_page.*]_nofail easier?
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
-
-Jonathan Corbet (1):
-      ACPI_TOSHIBA needs LEDS support
-
-Matthew Garrett (1):
-      hp-wmi: Fix query interface
-
- drivers/platform/x86/Kconfig  |    4 ++-
- drivers/platform/x86/hp-wmi.c |   64 ++++++++++++++++-------------------------
- 2 files changed, 28 insertions(+), 40 deletions(-)
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I'm not sure what flags such a function would be checking for since the 
+page allocator determines whether the oom killer is called or not.  If 
+current is killed, an order-0 allocation will succeed because of 
+TIF_MEMDIE, and if another task is killed, we must still loop waiting for 
+the free memory even with __GFP_FS.
