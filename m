@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab0HWJmc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:42:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58314 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753501Ab0HWJma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:42:30 -0400
-Date: Sat, 21 Aug 2010 22:13:50 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: JBeulich@novell.com, amwang@redhat.com, mmarek@suse.cz, sam@ravnborg.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild fixes for 2.6.36-rc2
-Message-ID: <20100821201350.GA9144@sepie.suse.cz>
+	id S1753770Ab0HWJmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:42:47 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40495 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684Ab0HWJmp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 05:42:45 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C724298.4050509@jp.fujitsu.com>
+Date: Mon, 23 Aug 2010 18:42:48 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: [PATCH v4 1/5] irq: add tracepoint to softirq_raise
+References: <4C72422C.5070102@jp.fujitsu.com>
+In-Reply-To: <4C72422C.5070102@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-there are some post-rc1 kbuild fixes:
-* Two kconfig fixes by Sam.
-* A fix for new make version by Jan (this is technically no a rc1
-  regression, but we should fix it sooner rather than later).
-* Two setlocalversion fixes, one by Amerigo, one by me.
+Add a tracepoint for tracing when softirq action is raised.
 
-Thanks,
-Michal
+It and the existed tracepoints complete softirq's tracepoints:
+softirq_raise, softirq_entry and softirq_exit.
 
+And when this tracepoint is used in combination with
+the softirq_entry tracepoint we can determine
+the softirq raise latency.
 
-The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-  Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
+[ factorize softirq events with DECLARE_EVENT_CLASS ]
+Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+---
+ include/linux/interrupt.h  |    8 +++++++-
+ include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
+ 2 files changed, 31 insertions(+), 3 deletions(-)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index a0384a4..d3e8e90 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -18,6 +18,7 @@
+ #include <asm/atomic.h>
+ #include <asm/ptrace.h>
+ #include <asm/system.h>
++#include <trace/events/irq.h>
+ 
+ /*
+  * These correspond to the IORESOURCE_IRQ_* defines in
+@@ -407,7 +408,12 @@ asmlinkage void do_softirq(void);
+ asmlinkage void __do_softirq(void);
+ extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+ extern void softirq_init(void);
+-#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
++static inline void __raise_softirq_irqoff(unsigned int nr)
++{
++	trace_softirq_raise((struct softirq_action *)&nr, NULL);
++	or_softirq_pending(1UL << nr);
++}
++
+ extern void raise_softirq_irqoff(unsigned int nr);
+ extern void raise_softirq(unsigned int nr);
+ extern void wakeup_softirqd(void);
+diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+index 0e4cfb6..3ddda02 100644
+--- a/include/trace/events/irq.h
++++ b/include/trace/events/irq.h
+@@ -5,7 +5,9 @@
+ #define _TRACE_IRQ_H
+ 
+ #include <linux/tracepoint.h>
+-#include <linux/interrupt.h>
++
++struct irqaction;
++struct softirq_action;
+ 
+ #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
+ #define show_softirq_name(val)				\
+@@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->vec = (int)(h - vec);
++		if (vec)
++			__entry->vec = (int)(h - vec);
++		else
++			__entry->vec = *((int *)h);
+ 	),
+ 
+ 	TP_printk("vec=%d [action=%s]", __entry->vec,
+@@ -136,6 +141,23 @@ DEFINE_EVENT(softirq, softirq_exit,
+ 	TP_ARGS(h, vec)
+ );
+ 
++/**
++ * softirq_raise - called immediately when a softirq is raised
++ * @h: pointer to struct softirq_action
++ * @vec: pointer to first struct softirq_action in softirq_vec array
++ *
++ * The @h parameter contains a pointer to the softirq vector number which is
++ * raised. @vec is NULL and it means @h includes vector number not
++ * softirq_action. When used in combination with the softirq_entry tracepoint
++ * we can determine the softirq raise latency.
++ */
++DEFINE_EVENT(softirq, softirq_raise,
++
++	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
++
++	TP_ARGS(h, vec)
++);
++
+ #endif /*  _TRACE_IRQ_H */
+ 
+ /* This part must be outside protection */
 
-Amerigo Wang (1):
-      makefile: not need to regenerate kernel.release file when make kernelrelease
-
-Jan Beulich (1):
-      fixes for using make 3.82
-
-Michal Marek (2):
-      Merge commit 'v2.6.36-rc1' into kbuild/rc-fixes
-      setlocalversion: Ignote SCMs above the linux source tree
-
-Sam Ravnborg (2):
-      kconfig: fix savedefconfig with choice marked optional
-      kconfig: fix segfault when detecting recursive dependency
-
- Makefile                   |    4 ++--
- firmware/Makefile          |    2 +-
- scripts/kconfig/confdata.c |    6 ++++--
- scripts/kconfig/symbol.c   |    2 ++
- scripts/mkmakefile         |    4 +++-
- scripts/setlocalversion    |    4 ++--
- 6 files changed, 14 insertions(+), 8 deletions(-)
