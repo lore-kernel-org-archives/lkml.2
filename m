@@ -1,41 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab0HWGsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 02:48:12 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:39033 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab0HWGsK (ORCPT
+	id S1753372Ab0HWGsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 02:48:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43503 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab0HWGsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 02:48:10 -0400
+	Mon, 23 Aug 2010 02:48:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=p9IA6vS/TL2gnyOwOCYG+Af9bqRJEcib142bysfaqXMYh2m+X0MRguEIVZ8lgVUnye
-         iRvs+AffXj2ZAM6oZQ10+K25vQ5I+Csxwa2ZKA2ZUhVOO69WU1hVIAM17vHVnQ4Hu++L
-         bme1NxwVq6+hhHevowMnSOZELH6T1dJ+WLdUw=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RKNgHKCUOTT+5LpQexC47pzrSd9Z1PgnDO+oRH5yXQR5fr98EMaQ6l1Ydrurplm6nD
+         JjbbAvihlRsDUR8RMN43JVEFuQOumb3lxSSHdG+OY+t0bDaAGxRUEFQlW1J5Z0H+QjNL
+         6PZR0oOZKmInKp6JQJx6W6hsIzhNXuYJQdr3s=
+Date: Mon, 23 Aug 2010 14:52:33 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH][resend] scripts/mod/modpost.c: fix commentary
+ accordingly to last changes
+Message-ID: <20100823065233.GM5168@cr0.nay.redhat.com>
+References: <1282041400-32667-1-git-send-email-ext-andriy.shevchenko@nokia.com>
 MIME-Version: 1.0
-In-Reply-To: <20100818083346.GA6308@july>
-References: <20100818083346.GA6308@july>
-Date: Mon, 23 Aug 2010 08:48:09 +0200
-Message-ID: <AANLkTinuFrE0ZpTpgaEQr5GYFXzGjHYq7FC-sY-UiVFi@mail.gmail.com>
-Subject: Re: [PATCH] Ramoops: use the platform data structure instead of
- module params
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282041400-32667-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/18 Kyungmin Park <kmpark@infradead.org>:
-> From: Kyungmin Park <kyungmin.park@samsung.com>
+On Tue, Aug 17, 2010 at 01:36:40PM +0300, Andy Shevchenko wrote:
+>The last commits
+> 37ed19d5cce35a40d3913cf9aa208ce9f60db3d7
+> 5003bab82d56754b27be01eef24495a02e00039d
+>have introduced new behaviour of sec2annotation() method. However, the
+>commentary inside the method was left as before. Let's fix it accordingly.
 >
-> As each board and system has different memory for ramoops. It's better to define the platform data instead of module params.
->
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
+>Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+>Cc: Rusty Russell <rusty@rustcorp.com.au>
+>Cc: Andrew Morton <akpm@linux-foundation.org>
 
-It seems good. Currently there isn't any code that register a ramoops
-device, isn't it?
+
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+>---
+> scripts/mod/modpost.c |    5 ++++-
+> 1 files changed, 4 insertions(+), 1 deletions(-)
+>
+>diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+>index 1ec7158..33122ca 100644
+>--- a/scripts/mod/modpost.c
+>+++ b/scripts/mod/modpost.c
+>@@ -1208,6 +1208,9 @@ static Elf_Sym *find_elf_symbol2(struct elf_info *elf, Elf_Addr addr,
+>  * .cpuinit.data => __cpudata
+>  * .memexitconst => __memconst
+>  * etc.
+>+ *
+>+ * The memory of returned value has been allocated on a heap. The user of this
+>+ * method should free it after usage.
+> */
+> static char *sec2annotation(const char *s)
+> {
+>@@ -1230,7 +1233,7 @@ static char *sec2annotation(const char *s)
+> 			strcat(p, "data ");
+> 		else
+> 			strcat(p, " ");
+>-		return r; /* we leak her but we do not care */
+>+		return r;
+> 	} else {
+> 		return strdup("");
+> 	}
+>-- 
+>1.6.3.3
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
