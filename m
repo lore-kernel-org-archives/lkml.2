@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab0HWHVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 03:21:51 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52540 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab0HWHVt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 03:21:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AQ6bL6pJYsTTHWUSAfEhfjQuWRLefx6eG8q5X83j8ZbQps1Kk+luTvKhVHfS/x22pN
-         Lzupa0/W8xaQZdmrbrhOHulz8498WumISyrYlIoRV6azLwnIHBRig+vpFka8TO8lxP1Y
-         WnJvimK9Usf4alNaBTkSpIm0MDk/wrsSBVSbE=
-MIME-Version: 1.0
-In-Reply-To: <m3pqxbsibq.fsf@pullcord.laptop.org>
-References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com>
-	<AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com>
-	<m3pqxbsibq.fsf@pullcord.laptop.org>
-Date: Mon, 23 Aug 2010 09:21:47 +0200
-Message-ID: <AANLkTi=w2Yr55DR8zrXam6EPueT0GYRHr2XWQqDZKpJ5@mail.gmail.com>
-Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        Hanumath Prasad <hanumath.prasad@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753385Ab0HWHa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 03:30:26 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:47702 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753277Ab0HWHaZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 03:30:25 -0400
+From: Linus WALLEIJ <linus.walleij@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Date: Mon, 23 Aug 2010 09:30:06 +0200
+Subject: RE: [PATCH] MFD: Align AB8500 with the abx500.h interface
+Thread-Topic: [PATCH] MFD: Align AB8500 with the abx500.h interface
+Thread-Index: ActBGVTC83zYcadWTv+3z6rZyapXUgBe2HJw
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A026AEC6DED@EXDCVYMBSTM006.EQ1STM.local>
+References: <1282382428-10389-1-git-send-email-linus.walleij@stericsson.com>
+ <20100821101213.GC5545@opensource.wolfsonmicro.com>
+In-Reply-To: <20100821101213.GC5545@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/22 Chris Ball <cjb@laptop.org>:
+[Mark]
 
-> I'd like to dedicate more time to mmc/.  Do you think it'd be useful
-> for me to catch all the patches sent to linux-mmc@ into a public Git
-> tree, and periodically report on what went upstream via akpm and
-> what's still waiting?
+> Subject: Re: [PATCH] MFD: Align AB8500 with the abx500.h interface
+> (...)
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-That sounds very close to getting it participate in linux-next.
+Thanks Mark!
 
-Which in turn would make it convenient for you to issue pull
-requests to Linus (Torvalds) directly.
+> >  static struct mfd_cell ab8500_devs[] = {
+> > +#ifdef CONFIG_DEBUG_FS
+> > +	{
+> > +		.name = "ab8500-debug",
+> > +	},
+> > +#endif
+> 
+> This one looks like it slipped in from a separate change, though?
 
-Which would make you the MMC subsystem maintainer...
+Yeahm,  it doesn't hurt och break git-bisect but if it's disturbing
+I can spin it over to the other patch.
 
-So why not :-)
+Right now I'm just awaiting Sams reply to if he wants per-subsystem
+patches or not, so I'll make a final version if there are more
+changes required.
 
 Yours,
 Linus Walleij
