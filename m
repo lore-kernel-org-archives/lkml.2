@@ -1,93 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab0HWTfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 15:35:41 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:47003 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab0HWTfh (ORCPT
+	id S1754416Ab0HWTku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 15:40:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52031 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab0HWTkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 15:35:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Z6HWAosM0exXtd//yrkKX3wFpoUT/kVGDx9a6Mahb2eCO74WEZ3QknEVS9bZjZjhz
-	jNTTehcXnZLdKj3E2pG/g==
-Date: Mon, 23 Aug 2010 12:35:22 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/6] md: remove dependency on __GFP_NOFAIL
-In-Reply-To: <20100823122606.47524cef.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com> <alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com> <20100823122606.47524cef.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 23 Aug 2010 15:40:47 -0400
+Message-ID: <4C72CEB9.4000008@vlnb.net>
+Date: Mon, 23 Aug 2010 23:40:41 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Gennadiy Nerubayev <parakie@gmail.com>
+CC: James Bottomley <James.Bottomley@suse.de>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+References: <4C69653E.6050808@vlnb.net>	<1282077040.16098.47.camel@mulgrave.site>	<4C6C1DC1.8090208@vlnb.net>	<1282164188.10878.22.camel@mulgrave.site>	<4C702030.2070306@vlnb.net>	<1282423128.3015.35.camel@mulgrave.site> <AANLkTin9STqUz440fCOEWW=YmedVQtQWU2JLO2wZCt5j@mail.gmail.com>
+In-Reply-To: <AANLkTin9STqUz440fCOEWW=YmedVQtQWU2JLO2wZCt5j@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:RgDUWKkr3OjaLFe2bnhCzbvRXnbTErNjEz7kIg8kdVq
+ qlot6aNN4rRUqBzZS2hzCce5LsA3OEigxzjxqbncN9Wlu8/1/5
+ Q5jrnkxv1OFRtln/NJV1ByJ84NlXqeVwGXUMHt67wDTbVTyBv1
+ gBx/dLq6B67USzMD8snUM6Clpl3S6qhRR/6d8czCrKfIkHMP7B
+ TXpZywSuoCWzt06LFWOHg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010, Andrew Morton wrote:
+Gennadiy Nerubayev, on 08/23/2010 02:10 AM wrote:
+> I'm not sure if I understand why there is a need for a replacement
+> target to reuse existing code, and would definitely appreciate a brief
+> explanation or a pointer to an earlier one. But even that aside, I'm
+> curious if the criteria for what a replacement target must have for
+> (at least potential) inclusion into the kernel were ever clearly
+> outlined in the past. If they were, then there probably would have
+> been things like interested contenders, deadlines, feature
+> comparisons, code reviews, and so on, right?
 
-> > diff --git a/drivers/md/dm-region-hash.c b/drivers/md/dm-region-hash.c
-> > --- a/drivers/md/dm-region-hash.c
-> > +++ b/drivers/md/dm-region-hash.c
-> > @@ -289,8 +289,12 @@ static struct dm_region *__rh_alloc(struct dm_region_hash *rh, region_t region)
-> >  	struct dm_region *reg, *nreg;
-> >  
-> >  	nreg = mempool_alloc(rh->region_pool, GFP_ATOMIC);
-> > -	if (unlikely(!nreg))
-> > -		nreg = kmalloc(sizeof(*nreg), GFP_NOIO | __GFP_NOFAIL);
-> > +	if (unlikely(!nreg)) {
-> > +		/* FIXME: this may potentially loop forever */
-> > +		do {
-> > +			nreg = kmalloc(sizeof(*nreg), GFP_NOIO);
-> > +		} while (!nreg);
-> > +	}
-> >  
-> >  	nreg->state = rh->log->type->in_sync(rh->log, region, 1) ?
-> >  		      DM_RH_CLEAN : DM_RH_NOSYNC;
-> 
-> erm.
-> 
-> The reason for adding GFP_NOFAIL in the first place was my observation
-> that the kernel contained lots of open-coded retry-for-ever loops.
-> 
-> All of these are wrong, bad, buggy and mustfix.  So we consolidated the
-> wrongbadbuggymustfix concept into the core MM so that miscreants could
-> be easily identified and hopefully fixed.
-> 
+A fair public review of SCST code with a fair _public_ comparison 
+without any deals and conspiracy behind our back is, basically, all we 
+are asking. Let the best code win.
 
-That consolidation would have been unnecessary, then, since all 
-allocations with order < PAGE_ALLOC_COSTLY_ORDER automatically loop 
-indefinitely in the page allocator.  struct dm_region allocations would 
-already do that.
-
-So this retry loop doesn't actually do anything that the page allocator 
-already doesn't, with or without __GFP_NOFAIL.  The difference here is 
-that
-
- - it doesn't depend on the page allocator's implementation, which may
-   change over time, and
-
- - it adds documentation so that the subsystems doing these loops can
-   (hopefully) fix these problems later, although their appear to be
-   geniune cases where little other options are available.
-
-> I think that simply undoing that change is a bad idea - it allows the
-> wrongbadbuggymustfix code to hide from view.
-> 
-
-It removes several branches from the page allocator.
-
-> The correct way to remove __GFP_NOFAIL is to fix the
-> wrongbadbuggymustfix code properly.
-> 
-
-If the prerequisite for removing __GFP_NOFAIL is that nobody must ever 
-loop indefinitely looking for memory or smaller order allocations don't 
-implicitly retry, then there's little chance it'll ever get removed since 
-they've existed for years without anybody cleaning them up.
+Vlad
