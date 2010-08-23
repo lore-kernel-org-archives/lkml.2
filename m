@@ -1,106 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab0HWR6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 13:58:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45652 "EHLO hera.kernel.org"
+	id S1752584Ab0HWR7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 13:59:05 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50757 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab0HWR6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 13:58:00 -0400
-Date: Mon, 23 Aug 2010 17:57:45 GMT
-From: tip-bot for Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        aarcange@redhat.com, suresh.b.siddha@intel.com, shaohua.li@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        aarcange@redhat.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        shaohua.li@intel.com
-In-Reply-To: <20100816011655.GA362@sli10-desk.sh.intel.com>
-References: <20100816011655.GA362@sli10-desk.sh.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: Avoid unnecessary TLB flush
-Message-ID: <tip-61c77326d1df079f202fa79403c3ccd8c5966a81@git.kernel.org>
-Git-Commit-ID: 61c77326d1df079f202fa79403c3ccd8c5966a81
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 Aug 2010 17:57:46 +0000 (UTC)
+	id S1751447Ab0HWR7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 13:59:02 -0400
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Bart Van Assche <bart.vanassche@gmail.com>
+Cc: Gennadiy Nerubayev <parakie@gmail.com>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+In-Reply-To: <AANLkTinkYCPA-ZdWFhdriCyrK7J8Okj5HWqg7JsGZ7ry@mail.gmail.com>
+References: <4C69653E.6050808@vlnb.net>
+	 <1282077040.16098.47.camel@mulgrave.site> <4C6C1DC1.8090208@vlnb.net>
+	 <1282164188.10878.22.camel@mulgrave.site> <4C702030.2070306@vlnb.net>
+	 <1282423128.3015.35.camel@mulgrave.site>
+	 <AANLkTin9STqUz440fCOEWW=YmedVQtQWU2JLO2wZCt5j@mail.gmail.com>
+	 <1282582740.11194.17.camel@mulgrave.site>
+	 <AANLkTinkYCPA-ZdWFhdriCyrK7J8Okj5HWqg7JsGZ7ry@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Aug 2010 12:58:56 -0500
+Message-ID: <1282586336.11194.30.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  61c77326d1df079f202fa79403c3ccd8c5966a81
-Gitweb:     http://git.kernel.org/tip/61c77326d1df079f202fa79403c3ccd8c5966a81
-Author:     Shaohua Li <shaohua.li@intel.com>
-AuthorDate: Mon, 16 Aug 2010 09:16:55 +0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 23 Aug 2010 10:04:57 -0700
+On Mon, 2010-08-23 at 19:44 +0200, Bart Van Assche wrote:
+> On Mon, Aug 23, 2010 at 6:59 PM, James Bottomley
+> <James.Bottomley@suse.de> wrote:
+> >
+> > On Sun, 2010-08-22 at 18:10 -0400, Gennadiy Nerubayev wrote:
+> > > [ ... ]
+> > > Hi James,
+> > >
+> > > (disclaimer: I'm a hoi polloi SCST user)
+> > >
+> > > I'm not sure if I understand why there is a need for a replacement
+> > > target to reuse existing code, and would definitely appreciate a brief
+> > > explanation or a pointer to an earlier one.
+> >
+> > The best thread on the topic is this massive one:
+> >
+> > http://marc.info/?t=120109820100005
+> >
+> > I want replacement because evidence suggests that multiple things doing
+> > the same thing don't get as much attention as a single one.  We need to
+> > support STGT because it's the one that has the in-kernel user base.
+> > Just breaking them constitutes an ABI problem under the new kernel
+> > rules.
+> >
+> > > But even that aside, I'm
+> > > curious if the criteria for what a replacement target must have for
+> > > (at least potential) inclusion into the kernel were ever clearly
+> > > outlined in the past. If they were, then there probably would have
+> > > been things like interested contenders, deadlines, feature
+> > > comparisons, code reviews, and so on, right?
+> >
+> > Yes, in that thread.
+> >
+> > My basic conclusion was that there's no incredible discriminator between
+> > LIO and STGT (although there are reams written on which performs better
+> > in which circumsances, is useful for clustering, supports ALUA, etc.
+> > each with partisans for the features).  If the two communities can't
+> > work together (as seems to be the case) and I have to choose one, I'll
+> > go by what helps me which, as I've said before, are:
+> >
+> >     1. That it would be a drop in replacement for STGT (our current
+> >        in-kernel target mode driver), since he only wanted a single
+> >        SCSI target infrastructure.
+> >
+> >     2. That it used a modern sysfs based control and configuration
+> >        plane.
+> >
+> >     3. That the code was reviewed as clean enough for inclusion.
+> >
+> >
+> > > Now, I can't claim familiarity with the kernel development process, or
+> > > any "political" workings in it. The aforementioned however would seem
+> > > like a logical way of doing this since I assume that for whatever
+> > > reason, there is a strict limit to only one generic SCSI target in the
+> > > Linux kernel, and obviously as per this thread the current one is
+> > > being replaced.
+> >
+> > Well, my preference would be to keep STGT.  However, I indicated to both
+> > target infrastructures that if they could satisfy the above, I'd be OK
+> > with replacing STGT, so I'm not about to go back on that after causing
+> > quite a large amount of work.
+> 
+> And when did you indicate that ?
 
-x86, mm: Avoid unnecessary TLB flush
+So 1. comes directly from what you quote below.  The sysfs thing is
+buried in another long thread that I can't be bothered to dig through
+and 3. is a basic requirement from anything for inclusion.
 
-In x86, access and dirty bits are set automatically by CPU when CPU accesses
-memory. When we go into the code path of below flush_tlb_fix_spurious_fault(),
-we already set dirty bit for pte and don't need flush tlb. This might mean
-tlb entry in some CPUs hasn't dirty bit set, but this doesn't matter. When
-the CPUs do page write, they will automatically check the bit and no software
-involved.
+> Sorry James, but the above looks to me like an interesting attempt to
+> rewrite history. What you repeated a few times in that thread from
+> January 2008 is that you were not convinced that a kernel-based
+> storage target could outperform a user-space target implementation. So
+> at least the impression was created that you were not going to accept
+> a kernel-based storage target for inclusion in the Linux kernel. In
+> another thread from December 2008 you repeated that view . A literal
+> quote from http://lkml.indiana.edu/hypermail/linux/kernel/0812.1/02168.html:
 
-On the other hand, flush tlb in below position is harmful. Test creates CPU
-number of threads, each thread writes to a same but random address in same vma
-range and we measure the total time. Under a 4 socket system, original time is
-1.96s, while with the patch, the time is 0.8s. Under a 2 socket system, there is
-20% time cut too. perf shows a lot of time are taking to send ipi/handle ipi for
-tlb flush.
+To be honest, I can't see how you arrive at that interpretation from the
+quote below.  It specifically says "what it comes down to is that if we
+had a kernel side protocol accelerator for STGT, the project would no
+longer suffer from this theoretical failing. *Both* of you have such a
+thing embedded in your respective submissions (all 74k LOC of them) so
+can't you just enhance STGT with whichever one is better?"  That's
+reluctant acceptance, not the blanket refusal you ascribe to it.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-LKML-Reference: <20100816011655.GA362@sli10-desk.sh.intel.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Andrea Archangeli <aarcange@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/pgtable.h |    2 ++
- include/asm-generic/pgtable.h  |    4 ++++
- mm/memory.c                    |    2 +-
- 3 files changed, 7 insertions(+), 1 deletions(-)
+James
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index a34c785..2d0a33b 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -603,6 +603,8 @@ static inline void ptep_set_wrprotect(struct mm_struct *mm,
- 	pte_update(mm, addr, ptep);
- }
- 
-+#define flush_tlb_fix_spurious_fault(vma, address)
-+
- /*
-  * clone_pgd_range(pgd_t *dst, pgd_t *src, int count);
-  *
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index e2bd73e..f4d4120 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -129,6 +129,10 @@ static inline void ptep_set_wrprotect(struct mm_struct *mm, unsigned long addres
- #define move_pte(pte, prot, old_addr, new_addr)	(pte)
- #endif
- 
-+#ifndef flush_tlb_fix_spurious_fault
-+#define flush_tlb_fix_spurious_fault(vma, address) flush_tlb_page(vma, address)
-+#endif
-+
- #ifndef pgprot_noncached
- #define pgprot_noncached(prot)	(prot)
- #endif
-diff --git a/mm/memory.c b/mm/memory.c
-index 2ed2267..a40da69 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3147,7 +3147,7 @@ static inline int handle_pte_fault(struct mm_struct *mm,
- 		 * with threads.
- 		 */
- 		if (flags & FAULT_FLAG_WRITE)
--			flush_tlb_page(vma, address);
-+			flush_tlb_fix_spurious_fault(vma, address);
- 	}
- unlock:
- 	pte_unmap_unlock(pte, ptl);
+
+> <quote>
+> The only identified failing of STGT (and it's theoretical, not
+> demonstrated, although I can agree the theory looks correct) is that the
+> user space packet processing may cause performance problems on high
+> speed networks. We know from practical tests that these networks have
+> to be above 1Gbit because the results were identical for STGT and SCST
+> on a 1G network, so it's infiniband or 10Gbit ethernet.
+> 
+> So, what it comes down to is that if we had a kernel side protocol
+> accelerator for STGT, the project would no longer suffer from this
+> theoretical failing. *Both* of you have such a thing embedded in your
+> respective submissions (all 74k LOC of them) so can't you just enhance
+> STGT with whichever one is better ... actually, if you'd both bury the
+> hatchet and work on the enhancement together taking the best of each
+> project, we'd have something that worked much better and a unified user
+> base and neither side would be able to claim sole credit ... just a
+> thought.
+> </quote>
+> 
+> While about two years ago you were not convinced that a kernel-based
+> storage target could outperform a user-space based storage target,
+> recently you announced that a kernel-based storage target is going to
+> be integrated. I have no problem that someone changes his opinion, but
+> you should not try to make people believe that you have always been in
+> favor of a kernel-based storage target.
+> 
+> Bart.
+
+
