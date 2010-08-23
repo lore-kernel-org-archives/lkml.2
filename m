@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab0HWKJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 06:09:56 -0400
-Received: from compulab.co.il ([67.18.134.219]:54113 "EHLO compulab.co.il"
+	id S1753787Ab0HWKLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 06:11:31 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:58379 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173Ab0HWKJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 06:09:54 -0400
-Message-ID: <4C7248C3.9040304@compulab.co.il>
-Date: Mon, 23 Aug 2010 13:09:07 +0300
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
+	id S1752730Ab0HWKLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 06:11:30 -0400
+Message-ID: <4C724952.3050002@kernel.dk>
+Date: Mon, 23 Aug 2010 12:11:30 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Gary King <gking@nvidia.com>
-CC: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 2/2] regulator: tps6586x-regulator - fix bit_mask parameter
- for tps6586x_set_bits()
-References: <1282487895.23014.19.camel@phoenix> <1282488162.23014.24.camel@phoenix> <20100823100248.GG6061@rakim.wolfsonmicro.main>
-In-Reply-To: <20100823100248.GG6061@rakim.wolfsonmicro.main>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Kevin Vigor <kevin@vigor.nu>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH: dangling pointer when switching to noop elevator in obscure
+  block drivers.
+References: <20100820212510.GB29022@jimi.int.fusionio.com>
+In-Reply-To: <20100820212510.GB29022@jimi.int.fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Sun, Aug 22, 2010 at 10:42:42PM +0800, Axel Lin wrote:
->> The third parameter of tps6586x_set_bits() is the bit_mask,
->> thus we should use (1 << ri->go_bit) instead of ri->go_bit.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On 2010-08-20 23:25, Kevin Vigor wrote:
+> Linux 2.6.35 introduced a test in the beginning of elevator_init(), like
+> so:
 > 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>      if (unlikely(q->elevator))
+>          return 0;
 > 
-> but I'd be much happier if someone who actually has the hardware could
-> verify that this is OK.
+> So the following code sequence, which appears in two (obscure) block
+> drivers is now a serious error:
+> 
+>         elevator_exit(q);
+>         elevator_init(q, "noop");
+> 
+> The intent is to cleanup the default system elevator and replace it with
+> the noop elevator. Instead, elevator_exit() frees the existing elevator
+> object, but leaves q->elevator pointing to it; elevator_init() then
+> silently fails since q->elevator is non-NULL, and the queue is left with
+> the elevator pointer invalid, This leads to untold woe and segfaults
+> later.
+> 
+> The fix is trivial: zero the q->elevator pointer before calling
+> elevator_init(). Note that drivers/s390/block/dasd.c already follows
+> this pattern.
+> 
+> I do not have the hardware to actually test either of the two afflicted 
+> drivers, but I believe the fix to be sufficiently obvious. The following
+> patches are against the current version of Linus' tree.
 
-I don't have the hardware handy at the moment.
-Gary, can you please verify the fix?
+Thanks, this was also posted last week. I think the best course of
+action is to provide an API for switching the scheduler, instead of
+having drivers rely on doing it manually.
 
 -- 
-Sincerely yours,
-Mike.
+Jens Axboe
+
