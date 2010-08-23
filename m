@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab0HWMQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 08:16:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35712 "EHLO mx1.suse.de"
+	id S1752768Ab0HWMTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 08:19:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36574 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab0HWMQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 08:16:43 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH] Per file dirty limit throttling
-Date: Mon, 23 Aug 2010 17:49:19 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Bill Davidsen <davidsen@tmr.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-References: <201008160949.51512.knikanth@suse.de> <201008181452.05047.knikanth@suse.de> <1282125536.1926.3675.camel@laptop>
-In-Reply-To: <1282125536.1926.3675.camel@laptop>
+	id S1751976Ab0HWMTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 08:19:32 -0400
+Message-ID: <4C72660A.7070009@kernel.org>
+Date: Mon, 23 Aug 2010 14:14:02 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+CC: Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com>
+In-Reply-To: <4C6E3C1A.50205@ct.jp.nec.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008231749.19836.knikanth@suse.de>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 Aug 2010 12:18:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 August 2010 15:28:56 Peter Zijlstra wrote:
-> On Wed, 2010-08-18 at 14:52 +0530, Nikanth Karthikesan wrote:
-> > On Tuesday 17 August 2010 13:54:35 Peter Zijlstra wrote:
-> > > On Tue, 2010-08-17 at 10:39 +0530, Nikanth Karthikesan wrote:
-> > > > Oh, nice.  Per-task limit is an elegant solution, which should help
-> > > > during most of the common cases.
-> > > >
-> > > > But I just wonder what happens, when
-> > > > 1. The dirtier is multiple co-operating processes
-> > > > 2. Some app like a shell script, that repeatedly calls dd with seek
-> > > > and skip? People do this for data deduplication, sparse skipping
-> > > > etc.. 3. The app dies and comes back again. Like a VM that is
-> > > > rebooted, and continues writing to a disk backed by a file on the
-> > > > host.
-> > > >
-> > > > Do you think, in those cases this might still be useful?
-> > >
-> > > Those cases do indeed defeat the current per-task-limit, however I
-> > > think the solution to that is to limit the amount of writeback done by
-> > > each blocked process.
-> >
-> > Blocked on what? Sorry, I do not understand.
-> 
-> balance_dirty_pages(), by limiting the work done there (or actually, the
-> amount of page writeback completions you wait for -- starting IO isn't
-> that expensive), you can also affect the time it takes, and therefore
-> influence the impact.
-> 
+Hello,
 
-But this has nothing special to do with the cases like multi-threaded dirtier, 
-which is why I was confused. :)
+On 08/20/2010 10:26 AM, Kiyoshi Ueda wrote:
+> I think that's correct and changing the priority of DM_ENDIO_REQUEUE
+> for REQ_FLUSH down to the lowest should be fine.
+> (I didn't know that FLUSH failure implies data loss possibility.)
 
-Thanks
-Nikanth
+At least on ATA, FLUSH failure implies that data is already lost, so
+the error can't be ignored or retried.
+
+> But the patch is not enough, you have to change target drivers, too.
+> E.g. As for multipath, you need to change
+>      drivers/md/dm-mpath.c:do_end_io() to return error for REQ_FLUSH
+>      like the REQ_DISCARD support included in 2.6.36-rc1.
+
+I'll take a look but is there an easy to test mpath other than having
+fancy hardware?
+
+> By the way, if these patch-set with the change above are included,
+> even one path failure for REQ_FLUSH on multipath configuration will
+> be reported to upper layer as error, although it's retried using
+> other paths currently.
+> Then, if an upper layer won't take correct recovery action for the error,
+> it would be seen as a regression for users. (e.g. Frequent EXT3-error
+> resulting in read-only mount on multipath configuration.)
+> 
+> Although I think the explicit error is fine rather than implicit data
+> corruption, please check upper layers carefully so that users won't see
+> such errors as much as possible.
+
+Argh... then it will have to discern why FLUSH failed.  It can retry
+for transport errors but if it got aborted by the device it should
+report upwards.  Maybe just turn off barrier support in mpath for now?
+
+Thanks.
+
+-- 
+tejun
