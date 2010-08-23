@@ -1,88 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab0HWUVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:21:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53939 "EHLO mx1.suse.de"
+	id S1754648Ab0HWUVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:21:49 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:48956 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab0HWUVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:21:06 -0400
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: James Bottomley <James.Bottomley@suse.de>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Gennadiy Nerubayev <parakie@gmail.com>,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-In-Reply-To: <AANLkTinTg3oHmc6N-zu_Czg7s5dPwvxwgLa-eBuHwSBe@mail.gmail.com>
-References: <4C69653E.6050808@vlnb.net>
-	 <1282077040.16098.47.camel@mulgrave.site> <4C6C1DC1.8090208@vlnb.net>
-	 <1282164188.10878.22.camel@mulgrave.site> <4C702030.2070306@vlnb.net>
-	 <1282423128.3015.35.camel@mulgrave.site>
-	 <AANLkTin9STqUz440fCOEWW=YmedVQtQWU2JLO2wZCt5j@mail.gmail.com>
-	 <1282582740.11194.17.camel@mulgrave.site>
-	 <AANLkTinkYCPA-ZdWFhdriCyrK7J8Okj5HWqg7JsGZ7ry@mail.gmail.com>
-	 <1282586336.11194.30.camel@mulgrave.site>
-	 <AANLkTinTg3oHmc6N-zu_Czg7s5dPwvxwgLa-eBuHwSBe@mail.gmail.com>
+	id S1754307Ab0HWUVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 16:21:47 -0400
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+From: john stultz <johnstul@us.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>
+In-Reply-To: <20100819153847.GA10695@riccoc20.at.omicron.at>
+References: <cover.1281956490.git.richard.cochran@omicron.at>
+	 <1282176776.2865.100.camel@localhost.localdomain>
+	 <20100819055518.GA4084@riccoc20.at.omicron.at>
+	 <201008191428.04546.arnd@arndb.de>
+	 <20100819153847.GA10695@riccoc20.at.omicron.at>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 15:21:01 -0500
-Message-ID: <1282594861.11194.60.camel@mulgrave.site>
+Date: Mon, 23 Aug 2010 13:21:39 -0700
+Message-ID: <1282594899.3111.358.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-23 at 22:11 +0200, Bart Van Assche wrote:
-> On Mon, Aug 23, 2010 at 7:58 PM, James Bottomley
-> <James.Bottomley@suse.de> wrote:
-> > On Mon, 2010-08-23 at 19:44 +0200, Bart Van Assche wrote:
-> >> On Mon, Aug 23, 2010 at 6:59 PM, James Bottomley
-> >> <James.Bottomley@suse.de> wrote:
-> >> >
-> >> > My basic conclusion was that there's no incredible discriminator between
-> >> > LIO and STGT (although there are reams written on which performs better
-> >> > in which circumsances, is useful for clustering, supports ALUA, etc.
-> >> > each with partisans for the features).  If the two communities can't
-> >> > work together (as seems to be the case) and I have to choose one, I'll
-> >> > go by what helps me which, as I've said before, are:
-> >> >
-> >> >     1. That it would be a drop in replacement for STGT (our current
-> >> >        in-kernel target mode driver), since he only wanted a single
-> >> >        SCSI target infrastructure.
-> >> >
-> >> >     2. That it used a modern sysfs based control and configuration
-> >> >        plane.
-> >> >
-> >> >     3. That the code was reviewed as clean enough for inclusion.
+On Thu, 2010-08-19 at 17:38 +0200, Richard Cochran wrote:
+> On Thu, Aug 19, 2010 at 02:28:04PM +0200, Arnd Bergmann wrote:
+> > My point was that a syscall is better than an ioctl based interface here,
+> > which I definitely still think. Given that John knows much more about
+> > clocks than I do, we still need to get agreement on the question that
+> > he raised, which is whether we actually need to expose this clock to the
+> > user or not.
+> > 
+> > If we can find a way to sync system time accurate enough with PTP and
+> > PPS, user applications may not need to see two separate clocks at all.
 > 
-> Let us return to the three acceptance criteria. At this time none of
-> the existing kernel-based target frameworks support ibmvstgt and hence
-> none of them satisfy criterion [1]. Yet these criteria have been used
-> to decide that one kernel-based target framework will be accepted and
-> that the other will not be accepted. I'm afraid that I missed
-> something ?
+> At the very least, one user application (the PTPd) needs to see the
+> PTP clock.
 > 
-> Also, you write that you, as a kernel maintainer, might become in a
-> position that you have to choose a target framework. I would
-> appreciate it if you would take the time to reread the document
-> Documentation/ManagementStyle. This document was written by Linus
-> Torvalds and explains that a kernel maintainer should try to avoid
-> having to take such decisions. The whole first chapter of that
-> document is devoted to this subject.
-
-I have avoided this decision for several years in the vain hope that
-some accommodation could be found.  However, since I foresee a mergeable
-patch in my inbox in the very near future, it's shortly becoming
-unavoidable.
-
-James
-
-
-> I regret that you got involved personally in this discussion. It would
-> have been a lot easier for everyone if you would have been able to
-> keep a neutral position.
+> > > SYSCALL_DEFINE3(clock_adjtime, const clockid_t, clkid,
+> > > 		int, ppb, struct timespec __user *, ts)
+> > > 
+> > > ppb - desired frequency adjustment in parts per billion
+> > > ts  - desired time step (or jump) in <sec,nsec> to correct
+> > >       a measured offset
+> > > 
+> > > Arguably, this syscall might be useful for other clocks, too.
+> > 
+> > This is a mix of adjtime and adjtimex with the addition of
+> > the clkid parameter, right?
 > 
-> Bart.
+> Sort of, but not really. ADJTIME(3) takes an offset and slowly
+> corrects the clock using a servo in the kernel, over hours.
+> 
+> For this function, the offset passed in the 'ts' parameter will be
+> immediately corrected, by jumping to the new time. This reflects the
+> way that PTP works. After the first few samples, the PTPd has an
+> estimate of the offset to the master and the rate difference. The PTPd
+> can proceed in one of two ways.
+> 
+> 1. If resetting the clock is not desired, then the clock is set to the
+>    maximum adjustment (in the right direction) until the clock time is
+>    close to the master's time.
+> 
+> 2. The estimated offset is added to the current time, resulting in a
+>    jump in time.
+> 
+> We need clock_adjtime(id, 0, ts) for the second case.
+>
+> > Have you considered passing a struct timex instead of ppb and ts?
+> 
+> Yes, but the timex is not suitable, IMHO.
+
+Could you expand on this?
+
+Could we not add a adjustment mode ADJ_SETOFFSET or something that would
+provide the instantaneous offset correction?
+
+> > Is using ppb instead of the timex ppm required to get the accuracy
+> > you want?
+> 
+> That is one very good reason.
+> 
+> Another is this: can you explain what the 20+ fields mean?
+> 
+> Consider the field, freq. The comment says "frequency offset (scaled
+> ppm)."  To what is it scaled? The only way I know of to find out is to
+> read the NTP code (which is fairly complex) and see what the unit
+> really is meant to be. Ditto for the other fields.
+> 
+> The timex structure reveals, AFAICT, the inner workings of the kernel
+> clock servo. For PTP, we don't need or want the kernel servo. The PTPd
+> has its own clock servo in user space.
+
+You're right that the timex is a little crufty. But its legacy that we
+will support indefinitely. So following the established interface helps
+maintainability.
+
+So if the clock_adjtime interface is needed, it would seem best for it
+to be generic enough to support not only PTP, but also the NTP kernel
+PLL. 
+
+In effect, this would make clock_adjtime(or clock_adjtimex) identical to
+adjtimex, but only applicable to different CLOCK_ids. Additionally, it
+would simplify the code for the CLOCK_REALTIME case as you could just
+call directly into do_adjtimex(). 
+
+Of course, extending adjtimex for ADJ_SETOFFSET would be needed first,
+but that seems like a reasonable expansion of the interface that could
+be used by more then just PTP.
+
+thanks
+-john
 
 
