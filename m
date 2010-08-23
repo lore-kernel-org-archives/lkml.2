@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab0HWSYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 14:24:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43451 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab0HWSYC (ORCPT
+	id S1754065Ab0HWS3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 14:29:43 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51686 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab0HWS3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 14:24:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=uXfmtEihgMynNxcHSMfQuX4MzvrkUJ+oayxXvGAVkNJykZeVNubZuR1CB+V3ff/aGH
-         5sVWofj80YcTxrZ50HKLrgMXOt2kl2VTz0uj/pSSheEBMKkwfZe6VzhbZseWMMkwIO+L
-         fM2OeD08qMfXyD3ND5wty++Ffx0OHa4730ris=
+	Mon, 23 Aug 2010 14:29:42 -0400
+Date: Mon, 23 Aug 2010 14:29:03 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: ath5k problem with 2.6.35
+Message-ID: <20100823182903.GE2609@tuxdriver.com>
+References: <201008220005.38969.tfjellstrom@strangesoft.net>
+ <201008220153.41678.thomas@fjellstrom.ca>
 MIME-Version: 1.0
-In-Reply-To: <20100822.203404.242143197.davem@davemloft.net>
-References: <cover.1282531322.git.joe@perches.com>
-	<c4222d22591d5d656a62384fd9f00e911629f49a.1282531322.git.joe@perches.com>
-	<20100822.203404.242143197.davem@davemloft.net>
-Date: Mon, 23 Aug 2010 11:24:00 -0700
-X-Google-Sender-Auth: PhcSeOmSayXPg1BgYnxFomAzsms
-Message-ID: <AANLkTin_KHSH0ts_YNhL05Wb03JcFJh7_i5ydMFfrMrA@mail.gmail.com>
-Subject: Re: [PATCH net-next 1/3] drivers/net/ixgbe/ixgbe_main.c: Checkpatch cleanups
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, netdev@vger.kernel.org, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
-        peter.p.waskiewicz.jr@intel.com, john.ronciak@intel.com,
-        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008220153.41678.thomas@fjellstrom.ca>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 20:34, David Miller <davem@davemloft.net> wrote:
->
-> I'll let the Intel folks integrate these 3 patches.
->
-> Thanks Joe.
-> --
+On Sun, Aug 22, 2010 at 01:53:41AM -0600, Thomas Fjellstrom wrote:
+> On August 22, 2010, Thomas Fjellstrom wrote:
+> > Hi, I'm running 2.6.35, and my wireless card fails to initialize properly
+> > on boot. I get the following messages in dmesg:
+> 
+> Probably important, but I missed a couple lines:
+>  
+> > [    0.866525] ath5k 0000:02:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ
+> > 17 [    0.866536] ath5k 0000:02:00.0: setting latency timer to 64
+> > [    0.866571] ath5k 0000:02:00.0: registered as 'phy0'
+> > [    1.358241] ath: EEPROM regdomain: 0x67
+> > [    1.358242] ath: EEPROM indicates we should expect a direct regpair map
+> > [    1.358245] ath: Country alpha2 being used: 00
+> > [    1.358247] ath: Regpair used: 0x67
+>    [    1.360589] phy0: Failed to initialize wep: -2
+> > [    1.372021] ath5k phy0: can't register ieee80211 hw
+> > [    1.372080] ath5k 0000:02:00.0: PCI INT A disabled
+> > [    1.372084] ath5k: probe of 0000:02:00.0 failed with error -2
 
-Thanks Joe, I have added the patches to my queue.
+Did you enable fips mode?
 
+John
 -- 
-Cheers,
-Jeff
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
