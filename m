@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab0HWJ0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:26:04 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:35849 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab0HWJ0A (ORCPT
+	id S1753653Ab0HWJb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:31:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45344 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab0HWJby convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:26:00 -0400
-Date: Mon, 23 Aug 2010 18:24:49 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/9] HWPOISON, hugetlb: move PG_HWPoison bit check
-Message-ID: <20100823092449.GC3769@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1281432464-14833-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20100818001842.GC6928@localhost>
- <20100819075543.GA4125@spritzera.linux.bs1.fc.nec.co.jp>
- <20100819092828.GA20863@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <20100819092828.GA20863@localhost>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Mon, 23 Aug 2010 05:31:54 -0400
+Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Matt Fleming <matt@console-pimps.org>, Zhang Rui <rui.zhang@intel.com>,
+        "Lin, Ming M" <ming.m.lin@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "acme@redhat.com" <acme@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+In-Reply-To: <20100821011803.GB7959@nowhere>
+References: <1282118350.5181.115.camel@rui>
+	 <1282134329.1926.3918.camel@laptop>
+	 <20100818124116.GA17957@console-pimps.org>
+	 <1282188497.11858.94.camel@minggr.sh.intel.com>
+	 <20100819075410.GA25755@console-pimps.org> <1282206714.5181.552.camel@rui>
+	 <20100819083218.GB25755@console-pimps.org>
+	 <1282211085.1926.4598.camel@laptop>  <20100821011803.GB7959@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 Aug 2010 11:31:36 +0200
+Message-ID: <1282555896.2605.1534.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 05:28:28PM +0800, Wu Fengguang wrote:
-> On Thu, Aug 19, 2010 at 03:55:43PM +0800, Naoya Horiguchi wrote:
-> > On Wed, Aug 18, 2010 at 08:18:42AM +0800, Wu Fengguang wrote:
-> > > On Tue, Aug 10, 2010 at 05:27:36PM +0800, Naoya Horiguchi wrote:
-> > > > In order to handle metadatum correctly, we should check whether the hugepage
-> > > > we are going to access is HWPOISONed *before* incrementing mapcount,
-> > > > adding the hugepage into pagecache or constructing anon_vma.
-> > > > This patch also adds retry code when there is a race between
-> > > > alloc_huge_page() and memory failure.
+On Sat, 2010-08-21 at 03:18 +0200, Frederic Weisbecker wrote:
+> On Thu, Aug 19, 2010 at 11:44:45AM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-08-19 at 09:32 +0100, Matt Fleming wrote:
 > > > 
-> > > This duplicates the PageHWPoison() test into 3 places without really
-> > > address any problem. For example, there are still _unavoidable_ races
-> > > between PageHWPoison() and add_to_page_cache().
 > > > 
-> > > What's the problem you are trying to resolve here? If there are
-> > > data structure corruption, we may need to do it in some other ways.
-> > 
-> > The problem I tried to resolve in this patch is the corruption of
-> > data structures when memory failure occurs between alloc_huge_page()
-> > and lock_page().
-> > The corruption occurs because page fault can fail with metadata changes
-> > remained (such as refcount, mapcount, etc.) 
-> > Since the PageHWPoison() check is for avoiding hwpoisoned page remained
-> > in pagecache mapping to the process, it should be done in
-> > "found in pagecache" branch, not in the common path.
-> > This patch moves the check to "found in pagecache" branch.
+> > > How big is the hardware counter? The problem comes when the process is
+> > > scheduled in and runs for a long time, e.g. so long that the energy
+> > > hardware counter wraps. This is why it's necessary to periodically
+> > > sample the counter.
+> > > 
+> > Long running processes aren't the only case, you could associate an
+> > event with a CPU.
+
+> I don't understand what you mean.
+
+perf_event_open(.pid = -1, .cpu = n);
+
+> > Right, short counters (like SH when not chained) need something to
+> > accumulate deltas into the larger u64. You can indeed use timers for
+> > that, hr or otherwise, but you don't need the swcounter hrtimer
+> > infrastructure for that.
 > 
-> That's good stuff to put in the changelog.
-
-OK.
-
-> > In addition to that, I added 2 PageHWPoison checks in "new allocation" branches
-> > to enhance the possiblity to recover from memory failures on pages under allocation.
-> > But it's a different point from the original one, so I drop these retry checks.
 > 
-> So you'll remove the first two chunks and retain the 3rd chunk?
+> So what is the point in simulating a PMI using an hrtimer? It won't be
+> based on periods on the interesting counter but on time periods. This
+> is not how we want the samples. If we want timer based samples, we can
+> just launch a seperate software timer based event.
 
-Yes.
+*sigh* that's exactly what we're doing, we're creating a separate
+software hrtimer to create samples, the only thing that's different is
+that we put this hrtimer and the hw-counter in a group and let the
+hrtimer sample include the hw-counter's value.
 
-> That makes it a small bug-fix patch suitable for 2.6.36 and I'll
-> happily ACK it :)
+If you then weight the samples by the hw-counter delta, you get
+something that's more or less related to the thing the hw-counter is
+counting.
 
-Thank you!
+For counter's that do no provide overflow interrupts this is the only
+possible way to get anything.
 
-Naoya Horiguchi
+> In the case of SH where we need to flush to avoid wraps, I understand, but
+> oterwise?
+
+The wrap issue it totally unrelated.
+
+
