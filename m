@@ -1,96 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab0HWRJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 13:09:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51273 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab0HWRI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 13:08:58 -0400
-Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
-From: James Bottomley <James.Bottomley@suse.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@lst.de" <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-In-Reply-To: <4C7238CD.5070700@fusionio.com>
-References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>
-	 <20100817223145.GC4641@Krystal>  <4C6BC72E.6040607@gmail.com>
-	 <1282141930.3035.9.camel@mulgrave.site>  <4C6BEFD1.8010200@gmail.com>
-	 <1282142498.3035.17.camel@mulgrave.site>  <4C6C5561.5040302@fusionio.com>
-	 <1282171834.13811.51.camel@mulgrave.site>  <4C6C9E10.9030202@fusionio.com>
-	 <1282229572.8139.16.camel@mulgrave.site>  <4C7238CD.5070700@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 12:08:52 -0500
-Message-ID: <1282583332.11194.22.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1753901Ab0HWRRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 13:17:19 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:52640 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab0HWRRS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 13:17:18 -0400
+Message-ID: <4C72AD0D.7040100@cs.helsinki.fi>
+Date: Mon, 23 Aug 2010 20:17:01 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [S+Q Cleanup4 0/6] SLUB: Cleanups V4
+References: <20100820173711.136529149@linux.com>
+In-Reply-To: <20100820173711.136529149@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-23 at 11:01 +0200, Jens Axboe wrote:
-> On 2010-08-19 16:52, James Bottomley wrote:
-> > On Wed, 2010-08-18 at 22:59 -0400, Jens Axboe wrote:
-> >> On 08/18/2010 06:50 PM, James Bottomley wrote:
-> >>> On Wed, 2010-08-18 at 17:49 -0400, Jens Axboe wrote:
-> >>>> On 08/18/2010 10:41 AM, James Bottomley wrote:
-> >>>>> On Wed, 2010-08-18 at 16:36 +0200, Jiri Slaby wrote:
-> >>>>>> On 08/18/2010 04:32 PM, James Bottomley wrote:
-> >>>>>>>> James and Jens, could you take the two remaining (SCSI and BLOCK)?
-> >>>>>>>
-> >>>>>>> Sure ... could you identify the email by subject, please? lkml.org seems
-> >>>>>>> to be down this morning.
-> >>>>>>
-> >>>>>> Sure:
-> >>>>>> [PATCH v2] BLOCK: fix bio.bi_rw handling
-> >>>>>> and
-> >>>>>> [PATCH v2] SCSI: fix bio.bi_rw handling
-> >>>>>>
-> >>>>>> You should have received one copy to your suse.de inbox, if everything
-> >>>>>> worked.
-> >>>>>
-> >>>>> Got it.  One of life's little ironies is that I couldn't immediately
-> >>>>> locate it in the SCSI list because it was already queued for inclusion.
-> >>>>
-> >>>> Please add my acked-by to both of them.
-> >>>
-> >>> OK.
-> >>>
-> >>>>  I'm away on vacation, so if
-> >>>> you James could queue them up, I would appreciate it. Thanks!
-> >>>
-> >>> Certainly sir ... and would you like your patches served to your table
-> >>> or by the pool?
-> >>
-> >> Pool, please. With that first name and the British accent, it's hard
-> >> not to boss you around.
-> > 
-> > Well, sir, the wait staff and I thought we'd just write to ask how your
-> > convalescence was going.  Sorry about spilling the patch down your
-> > front, sir, but the glass was slippery.  Who could have foreseen that
-> > you'd step backwards, fall over the pool boy and upset a flaming bananas
-> > foster on to the front of your shorts.  I did get a commendation for my
-> > quick action with a high pressure hose to the affected area (thank you,
-> > sir, for your shocked but grateful expression).  I must say I didn't
-> > foresee the force of the blast catapulting you against the pool steps,
-> > but a concussion is a small price to pay for avoiding fried nuts with
-> > the bananas, eh, sir? It's funny how things turn out, and I bet if you
-> > could do it over again, you'd have got off your arse to fetch your own
-> > damn patch now, wouldn't you, sir?
-> 
-> It's so hard to find decent staff these days, the things I have to
-> put up with...
-> 
-> I'm back now. Have you queued it up, or should I get off my hiney
-> and add it to the mix?
+On 20.8.2010 20.37, Christoph Lameter wrote:
+> I think it may be best to first try to merge these and make sure that
+> they are fine before we go step by step through the unification patches.
+> I hope they can go into -next.
 
-It's in my email queue, but not in a git tree, yet ... you can take it
-back if you want ...
-
-James
-
-
-
+I've applied these patches and queued them for -next. Thanks guys!
