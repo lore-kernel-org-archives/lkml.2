@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab0HWSDm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 14:03:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32963 "EHLO mx1.redhat.com"
+	id S1752957Ab0HWSLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 14:11:46 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:34143 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab0HWSDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 14:03:40 -0400
-Date: Mon, 23 Aug 2010 13:47:55 -0400
-From: Jarod Wilson <jarod@redhat.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Manu Abraham <abraham.manu@gmail.com>, Scott Davilla <davilla@4pi.com>,
-        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/18 v2] staging: crystalhd: call disable_pci_device()
- if pci_probe() failed
-Message-ID: <20100823174755.GG28475@redhat.com>
-References: <1281383506-14438-1-git-send-email-segooon@gmail.com>
+	id S1751559Ab0HWSLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 14:11:44 -0400
+X-Greylist: delayed 433 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Aug 2010 14:11:43 EDT
+Message-ID: <4C72B82C.7060707@msgid.tls.msk.ru>
+Date: Mon, 23 Aug 2010 22:04:28 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281383506-14438-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Mark Stanovich <mrktimber@gmail.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.35.3
+References: <AANLkTi=wyG13QOU3EQwaO3qBxY=aR=ftiP4s7YpemrPp@mail.gmail.com> <4C6F4BBB.5040207@zytor.com>
+In-Reply-To: <4C6F4BBB.5040207@zytor.com>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 11:51:44PM +0400, Kulikov Vasiliy wrote:
-> Driver should call disable_pci_device() if it returns from pci_probe()
-> with error.
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+21.08.2010 07:44, H. Peter Anvin wrote:
+> On 08/20/2010 08:40 PM, Mark Stanovich wrote:
+>> After updating to the 2.6.35.3 stable release, my machine was rebooting
+>> automatically during the first few seconds of boot.
+>>
+>> I bisected to the first bad commit of
+>>
+>> commit 568132624386f53e87575195d868db
+>> 9afb2e9316
+>> Author: H. Peter Anvin <hpa@zytor.com <mailto:hpa@zytor.com>>
+>> Date:   Tue Jul 27 17:01:49 2010 -0700
+>>
+>>     x86: Add memory modify constraints to xchg() and cmpxchg()
 
-Looks fine by me.
+This commit also present in 2.6.32.stable (since 2.6.32.19).
+Should it be fixed there as well?
 
-Acked-by: Jarod Wilson <jarod@redhat.com>
+Thanks!
 
--- 
-Jarod Wilson
-jarod@redhat.com
-
+/mjt
