@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab0HWV6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 17:58:40 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48357 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab0HWV6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 17:58:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=DIHHURIHKstlCet1qQxK4iR/2LfEC+1syuZPGNrHK+7z0g19W6T7KnE+wxHkPp1xJE
-         5bBdUJU4cGNxAKKciayiS6PFOGLDuaEgxLvDEVLgSzjn1XXAarEV20lxpkbdXKYgKtLk
-         hyqMlhyWZQZoyVo4HhJezLbuU6hHWX9w7w9+w=
-MIME-Version: 1.0
-In-Reply-To: <1282575908-16555-1-git-send-email-w.sang@pengutronix.de>
-References: <1282575908-16555-1-git-send-email-w.sang@pengutronix.de>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 23 Aug 2010 17:58:17 -0400
-X-Google-Sender-Auth: Sk1KjU1wVAsr2SqBsESQfZTVLz0
-Message-ID: <AANLkTikupuVAhC9Dj-9QgDzMVBd6vfh5OjFXGsXnwnFK@mail.gmail.com>
-Subject: Re: [PATCH] i2c: remove obsolete cleanup for clientdata
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Mack <daniel@caiaq.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Hemanth V <hemanthv@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Paul Gortmaker <p_gortmaker@yahoo.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Roy Zang <tie-fei.zang@freescale.com>,
-        Jingchang Lu <b22599@freescale.com>,
-        Mingkai Hu <Mingkai.hu@freescale.com>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=UTF-8
+	id S1754511Ab0HWWCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 18:02:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42083 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754235Ab0HWWCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 18:02:17 -0400
+Subject: Re: 64-bit ppc rwsem
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        torvalds@linux-foundation.org, paulus@au.ibm.com,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        akpm@linux-foundation.org
+In-Reply-To: <201008231544.16422.arnd@arndb.de>
+References: <1282107803.22370.173.camel@pasglop>
+	 <1282195403.22370.296.camel@pasglop>
+	 <20100818.222925.233689776.davem@davemloft.net>
+	 <201008231544.16422.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 08:01:25 +1000
+Message-ID: <1282600885.22370.453.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 11:05, Wolfram Sang <wrote:
-> A few new i2c-drivers came into the kernel which clear the clientdata-pointer
-> on exit. This is obsolete meanwhile, so fix it and hope the word will spread.
+On Mon, 2010-08-23 at 15:44 +0200, Arnd Bergmann wrote:
+> 
+> * Alpha has an optimization for the uniprocessor case, where the atomic
+> instructions get turned into nonatomic additions. The spinlock based
+> version uses no locks on UP but disables interrupts for reasons I don't
+> understand (nothing running at interrupt time should try to access an rwsem).
+> Should the generic version do the same as Alpha?
 
-on a related note, do we need to clear it when erroring at probe time
-?  doesnt seem like that is necessary either ...
--mike
+I've seen drivers in the past do trylocks at interrupt time ... tho I
+agree it sucks.
+
+> * Is there any architecture that would still benefit from having a separate
+> rwsem implementation? AFAICT all the remaining ones are just variations of
+> the same concept of using cmpxchg (or xadd in case of x86), which is what
+> atomics typically end up doing anyway.
+
+It depends how sensitive rwsems are. 
+
+The "generic" variant based on atomic's and cmpxchg on powerpc is
+sub-optimal in the sense that it has stronger memory barriers that would
+be necessary (atomic_inc_return for example has both acquire and
+release).
+
+But that vs. one more pile of inline asm, we decided it wasn't hot
+enough a spot for us to care back then.
+
+Cheers,
+Ben.
+
