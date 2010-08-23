@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab0HWKJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 06:09:04 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52490 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab0HWKJC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 06:09:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=J7MRdz4q0ItmszrVbBsUbKoDhHgztBZBWlX/NO9/aA6EmKkiDGbFXMP1pYHAemKRnU
-         OnNzCb/ZXWcFeXmjdQ8nUFCD9AseCgtOx2GfqlrCN28n6Z25tEYFfxjPugaLc6uViZjI
-         /zB1v1AsgTPNijgOLXhtyR8mlFz1tQOj5xVq0=
+	id S1753637Ab0HWKJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 06:09:56 -0400
+Received: from compulab.co.il ([67.18.134.219]:54113 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752173Ab0HWKJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 06:09:54 -0400
+Message-ID: <4C7248C3.9040304@compulab.co.il>
+Date: Mon, 23 Aug 2010 13:09:07 +0300
+From: Mike Rapoport <mike@compulab.co.il>
+User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinAqJdEPpTFsmY8rWYqy84qGsWVbL9VphOur+PT@mail.gmail.com>
-References: <AANLkTinAqJdEPpTFsmY8rWYqy84qGsWVbL9VphOur+PT@mail.gmail.com>
-Date: Mon, 23 Aug 2010 13:09:01 +0300
-Message-ID: <AANLkTim_Mu8PiOM+kD3y3Zejr+u=Fqutk9d7SafDEsdH@mail.gmail.com>
-Subject: Re: Ubuntu 10.10 Kernel compile error
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: linux-kernel@vger.kernel.org, apw@canonical.com, Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Gary King <gking@nvidia.com>
+CC: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 2/2] regulator: tps6586x-regulator - fix bit_mask parameter
+ for tps6586x_set_bits()
+References: <1282487895.23014.19.camel@phoenix> <1282488162.23014.24.camel@phoenix> <20100823100248.GG6061@rakim.wolfsonmicro.main>
+In-Reply-To: <20100823100248.GG6061@rakim.wolfsonmicro.main>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC to apw@canonical.com, if there are orher people, let me know.
+Mark Brown wrote:
+> On Sun, Aug 22, 2010 at 10:42:42PM +0800, Axel Lin wrote:
+>> The third parameter of tps6586x_set_bits() is the bit_mask,
+>> thus we should use (1 << ri->go_bit) instead of ri->go_bit.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> but I'd be much happier if someone who actually has the hardware could
+> verify that this is OK.
 
-On Sun, Aug 22, 2010 at 3:24 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> Steps to reproduce on Ubuntu 10.10
->
-> 1. sudo apt-get install git-core kernel-package fakeroot
-> build-essential ncurses-dev
-> 2. git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-> 3. cd linux-2.6
-> 4. cp /boot/config-`uname -r` .config
-> 5. yes '' | make oldconfig
-> 6. make nconfig
-> and select to not make the staging drivers
-> 7. make-kpkg clean
-> 8. CONCURRENCY_LEVEL=`getconf _NPROCESSORS_ONLN` fakeroot make-kpkg
-> --initrd --append-to-version=-c kernel_image kernel_headers
->
-> result:
->
-> dpkg-gencontrol: error: package linux-image-2.6.36-rc1-c+ not in control info
-> make[2]: *** [debian/stamp/binary/linux-image-2.6.36-rc1-c+] Error 255
-> make[2]: Leaving directory `/home/username/linux-2.6'
-> make[1]: *** [debian/stamp/binary/pre-linux-image-2.6.36-rc1-c+] Error 2
-> make[1]: Leaving directory `/home/username/linux-2.6'
-> make: *** [kernel_image] Error 2
->
+I don't have the hardware handy at the moment.
+Gary, can you please verify the fix?
 
-yes you have some patches, why don't you upstream them ?
-Gregh, what is so hard to publish some compiler paches ? only becouse
-you are suse ?
-It is rc2 time an you did not publish, or asked Linus to pull the
-fixes in your tree
+-- 
+Sincerely yours,
+Mike.
