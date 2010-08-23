@@ -1,85 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab0HWJBE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:01:04 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51718 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab0HWJBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:01:01 -0400
-Message-ID: <4C7238CD.5070700@fusionio.com>
-Date: Mon, 23 Aug 2010 11:01:01 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@lst.de" <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
-References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>	 <20100817223145.GC4641@Krystal>  <4C6BC72E.6040607@gmail.com>	 <1282141930.3035.9.camel@mulgrave.site>  <4C6BEFD1.8010200@gmail.com>	 <1282142498.3035.17.camel@mulgrave.site>  <4C6C5561.5040302@fusionio.com>	 <1282171834.13811.51.camel@mulgrave.site>  <4C6C9E10.9030202@fusionio.com> <1282229572.8139.16.camel@mulgrave.site>
-In-Reply-To: <1282229572.8139.16.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753610Ab0HWJBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:01:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49617 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab0HWJBK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 05:01:10 -0400
+Subject: Re: [RFC] mlock/stack guard interaction fixup
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@suse.de>
+In-Reply-To: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 Aug 2010 11:00:34 +0200
+Message-ID: <1282554034.2605.1496.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-19 16:52, James Bottomley wrote:
-> On Wed, 2010-08-18 at 22:59 -0400, Jens Axboe wrote:
->> On 08/18/2010 06:50 PM, James Bottomley wrote:
->>> On Wed, 2010-08-18 at 17:49 -0400, Jens Axboe wrote:
->>>> On 08/18/2010 10:41 AM, James Bottomley wrote:
->>>>> On Wed, 2010-08-18 at 16:36 +0200, Jiri Slaby wrote:
->>>>>> On 08/18/2010 04:32 PM, James Bottomley wrote:
->>>>>>>> James and Jens, could you take the two remaining (SCSI and BLOCK)?
->>>>>>>
->>>>>>> Sure ... could you identify the email by subject, please? lkml.org seems
->>>>>>> to be down this morning.
->>>>>>
->>>>>> Sure:
->>>>>> [PATCH v2] BLOCK: fix bio.bi_rw handling
->>>>>> and
->>>>>> [PATCH v2] SCSI: fix bio.bi_rw handling
->>>>>>
->>>>>> You should have received one copy to your suse.de inbox, if everything
->>>>>> worked.
->>>>>
->>>>> Got it.  One of life's little ironies is that I couldn't immediately
->>>>> locate it in the SCSI list because it was already queued for inclusion.
->>>>
->>>> Please add my acked-by to both of them.
->>>
->>> OK.
->>>
->>>>  I'm away on vacation, so if
->>>> you James could queue them up, I would appreciate it. Thanks!
->>>
->>> Certainly sir ... and would you like your patches served to your table
->>> or by the pool?
->>
->> Pool, please. With that first name and the British accent, it's hard
->> not to boss you around.
+On Fri, 2010-08-20 at 16:59 -0700, Linus Torvalds wrote:
 > 
-> Well, sir, the wait staff and I thought we'd just write to ask how your
-> convalescence was going.  Sorry about spilling the patch down your
-> front, sir, but the glass was slippery.  Who could have foreseen that
-> you'd step backwards, fall over the pool boy and upset a flaming bananas
-> foster on to the front of your shorts.  I did get a commendation for my
-> quick action with a high pressure hose to the affected area (thank you,
-> sir, for your shocked but grateful expression).  I must say I didn't
-> foresee the force of the blast catapulting you against the pool steps,
-> but a concussion is a small price to pay for avoiding fried nuts with
-> the bananas, eh, sir? It's funny how things turn out, and I bet if you
-> could do it over again, you'd have got off your arse to fetch your own
-> damn patch now, wouldn't you, sir?
+> Comments? Fixes? Braindamage? 
 
-It's so hard to find decent staff these days, the things I have to
-put up with...
+Running User Mode Linux (if it still builds) is a terrific test case for
+the vma code. I remember that that was the thing that caused most
+explosions back when I was poking at this code.
 
-I'm back now. Have you queued it up, or should I get off my hiney
-and add it to the mix?
-
--- 
-Jens Axboe
-
+/me goes look at the actual patches..
