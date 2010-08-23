@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab0HWX0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 19:26:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33473 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab0HWX0b (ORCPT
+	id S1752160Ab0HWXbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 19:31:53 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:23370 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab0HWXbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 19:26:31 -0400
+	Mon, 23 Aug 2010 19:31:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=ZIIew7ptTh/SESzH4X9zw7RsevcW+HHupcrLU3+P0ThWwv5/Kl78rDYB9gI6GTQyR6
-         h6q8aZRsQH7Qrn2BzYf4ICPuQGnEOeDtYZevjZZ/l7SpK/XuSZchenrxNHxbmaMEeU0+
-         kiWIPe/UCfqjVg0HjkH+ipTkWoWcGb+48lyGw=
-Date: Tue, 24 Aug 2010 00:27:08 +0100 (BST)
-From: Nikitas Angelinas <nikitasangelinas@gmail.com>
-X-X-Sender: nikitas@localhost.localdomain
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Nikitas Angelinas <nikitasangelinas@googlemail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "21cnbao@gmail.com" <21cnbao@gmail.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: time: use ARRAY_SIZE macro in timecompare.c
-In-Reply-To: <815E5C3B-CAB4-4BA0-8D41-301F512D13D3@gmail.com>
-Message-ID: <alpine.LNX.2.00.1008240024360.2452@localhost.localdomain>
-References: <1282520629-6542-1-git-send-email-nikitasangelinas@googlemail.com> <815E5C3B-CAB4-4BA0-8D41-301F512D13D3@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=pC1mxs/nn4wS6C7vsnMTR3IkocrSTzDEzFUAoa3h4RvvXHybua0fnQU5aQBC9pPa2u
+         gMw9XMn6o2RNfpr4A0Cw==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100811054814.GC8743@ghc17.ghc.andrew.cmu.edu>
+References: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
+	<20100811054604.GA8743@ghc17.ghc.andrew.cmu.edu>
+	<20100811054814.GC8743@ghc17.ghc.andrew.cmu.edu>
+Date: Mon, 23 Aug 2010 16:31:47 -0700
+Message-ID: <AANLkTind=V+V8vz1PGWiB8bCGVmfPJgC1q_XRmi5t_Eq@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] cgroups: add can_attach callback for checking all
+ threads in a group
+From: Paul Menage <menage@google.com>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+        matthltc@us.ibm.com, oleg@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 10, 2010 at 10:48 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
+>
+> Add cgroup wrapper for safely calling can_attach on all threads in a threadgroup
+>
+> From: Ben Blum <bblum@andrew.cmu.edu>
+>
+> This patch adds a function cgroup_can_attach_per_thread which handles iterating
+> over each thread in a threadgroup safely with respect to the invariants that
+> will be used in cgroup_attach_proc. Also, subsystems whose can_attach calls
+> require per-thread validation are modified to use the per_thread wrapper to
+> avoid duplicating cgroup-internal code.
+>
+> This is a pre-patch for cgroup-procs-writable.patch.
+>
+> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
 
+Acked-by: Paul Menage <menage@google.com>
 
-On Sun, 22 Aug 2010, Dmitry Torokhov wrote:
+Some of the can_attach() methods could be simplified slightly by
+directly returning the result of cgroup_can_attach_per_thread()
 
-> On Aug 22, 2010, at 4:43 PM, Nikitas Angelinas
-> <nikitasangelinas@googlemail.com> wrote:
-> 
-> >Replace sizeof(buffer)/sizeof(buffer[0]) with ARRAY_SIZE(buffer) in
-> >kernel/time/timecompare.c
-> >
-> >Signed-off-by: Nikitas Angelinas <nikitasangelinas@googlemail.com>
-> >---
-> >kernel/time/timecompare.c |    5 +++--
-> >1 files changed, 3 insertions(+), 2 deletions(-)
-> >
-> >diff --git a/kernel/time/timecompare.c b/kernel/time/timecompare.c
-> >index ac38fbb..a9ae369 100644
-> >--- a/kernel/time/timecompare.c
-> >+++ b/kernel/time/timecompare.c
-> >@@ -21,6 +21,7 @@
-> >#include <linux/module.h>
-> >#include <linux/slab.h>
-> >#include <linux/math64.h>
-> >+#include <linux/kernel.h>
-> >
-> >/*
-> >* fixed point arithmetic scale factor for skew
-> >@@ -57,11 +58,11 @@ int timecompare_offset(struct timecompare *sync,
-> >   int index;
-> >   int num_samples = sync->num_samples;
-> >
-> >-    if (num_samples > sizeof(buffer)/sizeof(buffer[0])) {
-> >+    if (num_samples > ARRAY_SIZE(buffer)) {
-> >       samples = kmalloc(sizeof(*samples) * num_samples, GFP_ATOMIC);
-> 
-> That should be kcalloc while you are at it.
-> 
-> Thanks.
-> 
-> -- 
-> Dmitry
-> 
-> 
-
-Thanks for pointing that out; however, the code as is does not do a
-memset to 0; is it worth using kcalloc in this case considering it has
-to go through an 'unlikely' and a subsequent memset?
-
-If required, I guess I should post a patch on a separate thread so that
-Git picks up the correct patch title?
-
-Kind Regards,
-Nikitas
+Paul
