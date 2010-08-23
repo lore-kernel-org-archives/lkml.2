@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab0HWWS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 18:18:57 -0400
-Received: from bld12.srv.portugalmail.net ([195.170.168.139]:52940 "EHLO
-	bld12.srv.portugalmail.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754824Ab0HWWSz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 18:18:55 -0400
-Message-ID: <20100823231733.d2ukdpa334g0cskc@correio.portugalmail.pt>
-X-Priority: 3 (Normal)
-Date: Mon, 23 Aug 2010 23:17:33 +0100
-From: "Mrs.Tsang Siu" <d.silva@portugalmail.pt>
-Reply-to: mrs.tsangsiu1@gmail.com
-To: undisclosed-recipients:;
-Subject: Re: Business Proposal
+	id S1754900Ab0HWWVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 18:21:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56656 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753953Ab0HWWVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 18:21:44 -0400
+Date: Tue, 24 Aug 2010 00:21:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, David Rientjes <rientjes@google.com>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/6] jbd: remove dependency on __GFP_NOFAIL
+Message-ID: <20100823222100.GE3380@quack.suse.cz>
+References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1008161956190.17924@chino.kir.corp.google.com>
+ <20100817095103.GA3557@quack.suse.cz>
+ <20100823122813.1ffa3f2e.akpm@linux-foundation.org>
+ <20100823220347.GB3380@quack.suse.cz>
+ <20100823151129.433875d9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+In-Reply-To: <20100823151129.433875d9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 23-08-10 15:11:29, Andrew Morton wrote:
+> On Tue, 24 Aug 2010 00:03:47 +0200
+> Jan Kara <jack@suse.cz> wrote:
+> 
+> > So do
+> > you think that we should keep __GFP_NOFAIL as long as all callers are not
+> > able to handle allocation failures in more reasonable way?
+> 
+> The concept should be encapsulated in _some_ centralised fashion.
+> 
+> Helper functions would work as well as __GFP_NOFAIL, and will move any
+> runtime cost away from the good code and push it onto the bad code.
+  Makes sense. Removed the patch.
 
+  David, could you provide a function for non-failing allocation and then
+use this from JBD and whatever else code is also affected? That looks like
+a cleaner solution as Andrew points out...
 
-Good Day,
-    With great pleasure, I write you this letter ,which I hope it will meet you
-in good condition of health, I am Mrs.Tsang Siu, a staff of Lloyd's TSB Group
-Plc. here in Hong Kong; I request for urgent business relationship, May I use
-this medium to seek for your co-operation and assistance in a business, that
-requires high maximum confidentiality. If you are interested please  
-reach me on
-my private email address below: (mrs.tsangsiu1@yahoo.com.hk) for more details
-of my Business Proposal.
-   Your earliest response to this letter will be appreciated.
-Yours Sincerely,
-Mrs.Tsang Siu.
-
-________________________________________________________________________________
-O email é um dos seus instrumentos de trabalho?
-http://www.portugalmail.net/profissional
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
