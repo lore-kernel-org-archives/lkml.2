@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab0HWQH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 12:07:28 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36919 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab0HWQHZ (ORCPT
+	id S1754420Ab0HWQIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 12:08:13 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:24837 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754331Ab0HWQIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 12:07:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=hiDFaQtM2wugttbKFm/TypUHxr/W4vE7nmd9vgBo7ZFRWV/xu6Q7HNPLw4VuueLz6W
-         kTNo1IWpq3SlM5ayqjWsy7x4nIj8jvH1yjZwpVef3LBPgk3bwN6nVP2Gbk1bGgo775Za
-         5xj0we78GhCC4+iTa7jYnsYebXit00gUMpMsg=
+	Mon, 23 Aug 2010 12:08:10 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 1szymjYVM1lyshl1aGoJVTJueP4DU6N9RnW8VFaa1ScJjAR
+ o.K54ApJqeRzM96nczbZJ6BVItB2erMXFFWZERuHTZWDQyTHy6qf9it8xxyh
+ tKU_8B2fRzIBCk.v0qH9uY7BiH45yJ3YmjPpnXFMPSX9T1Zk49CTcdK9NXd1
+ dYhh3XCFWwyq5c1lDi.p3aFS5O8_A5dheeIEmh3G_U9We3284YpelrzhNTO_
+ pGvr9fTCGGyZE93jZC6fbebPcuX5I
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 23 Aug 2010 11:08:06 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Gleb Natapov <gleb@redhat.com>
+cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v5 03/12] Add async PF initialization to PV guest.
+In-Reply-To: <20100823153549.GU10499@redhat.com>
+Message-ID: <alpine.DEB.2.00.1008231105230.8601@router.home>
+References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-4-git-send-email-gleb@redhat.com> <4C729342.6070205@redhat.com> <20100823153549.GU10499@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com>
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
-	<1282144271.3035.31.camel@mulgrave.site>
-	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
-	<1282148296.3035.49.camel@mulgrave.site>
-	<4C6C1D70.7020502@vlnb.net>
-	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
-	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
-	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>
-	<4C701E08.2020005@vlnb.net>
-	<1282423398.3015.39.camel@mulgrave.site>
-	<AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
-	<1282508953.3042.102.camel@mulgrave.site>
-	<4C727BEB.9020100@scalableinformatics.com>
-	<AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com>
-Date: Mon, 23 Aug 2010 12:07:23 -0400
-Message-ID: <AANLkTinDY8hEABHaPsCC+3wGMCn0ZLcyfDa9U9jXJ3d4@mail.gmail.com>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: Chetan Loke <chetanloke@gmail.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: landman@scalableinformatics.com, James Bottomley <James.Bottomley@suse.de>,
-        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 11:11 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+On Mon, 23 Aug 2010, Gleb Natapov wrote:
 
+> > The guest will have to align this on a 64 byte boundary, should this
+> > be marked __aligned(64) here?
+> >
+> I do __aligned(64) when I declare variable of that type:
 >
-> There is an important design difference between SCST and LIO: SCST by
-> defaults creates multiple threads to process the I/O operations for a
-> storage target, while LIO only creates a single thread per storage target.
-> This makes SCST perform measurably faster.
->
+> static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
 
-Forget that. You could have discussed this if there were code reviews
-or other mainline inclusion emails from James B. From what I have
-heard, the decision was taken around 8-9 months back.
-Would anyone like to either comment/validate/refute this please?  If
-not then I would kindly request these guys to stop taking us for a
-test drive. And also I'm not sure when was the last time James B.
-bench-marked our scsi-stack. Even if I ACK in the xmit-path then I
-can't push more than 100K IOPs. But other folks have re-engineered our
-linux-scsi stack and from what I've heard they can push > 300K+ IOPs.
-So I would just ignore performance discussion because I don't think
-folks have done even simple lame experiments in the last 1 year. Or
-may be I'm completely wrong and so please enlighten me so that I can
-re-run the tests.
+64 byte boundary: You mean cacheline aligned? We have a special define for
+that.
 
+DEFINE_PER_CPU_SHARED_ALIGNED
 
-> Bart.
->
-Chetan Loke
