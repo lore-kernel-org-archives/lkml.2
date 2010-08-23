@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab0HWJV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:21:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61119 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab0HWJV6 (ORCPT
+	id S1753608Ab0HWJWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:22:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40931 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab0HWJWm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:21:58 -0400
-From: Thomas Weber <weber@corscience.de>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Weber <weber@corscience.de>
-Subject: [PATCH] Fix typo in Kconfig help text
-Date: Mon, 23 Aug 2010 11:20:34 +0200
-Message-Id: <1282555234-3196-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.2
-X-Provags-ID: V02:K0:M+0vmA7v5DYdulke/etVv9cx3AsOg+lAAz6wF17nMwb
- QtysZ8RLsUC1XZ9gOih3o32Ik/+Bl5r7nGeXau64QGLHgeU0IW
- Q/3o1NLhaZrcWpHsqZSlf/M+KyPK2mmTPCgmuuR3mJSB05Dwb/
- j9Bhk1dXvSqhYxKQ38sDXrtHoUW2W99Z7LFAHjdFDSCbkjXaky
- ECbWLAbKTfzsDxeZ7FhxA==
+	Mon, 23 Aug 2010 05:22:42 -0400
+Subject: Re: [RFC] mlock/stack guard interaction fixup
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg KH <gregkh@suse.de>, Ian Campbell <ijc@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jeremy Fitzhardinge <jeremy@goop.org>
+In-Reply-To: <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+	 <1282391770.29609.1223.camel@localhost.localdomain>
+	 <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
+	 <1282460275.11348.865.camel@localhost.localdomain>
+	 <1282462386.11348.871.camel@localhost.localdomain>
+	 <1282470917.11348.891.camel@localhost.localdomain>
+	 <20100822172548.GB8957@suse.de>
+	 <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 Aug 2010 11:22:25 +0200
+Message-ID: <1282555345.2605.1520.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the name of the sensor: BMP086 => BMP085
+On Sun, 2010-08-22 at 11:21 -0700, Linus Torvalds wrote:
+> Doing hypercalls from user space on stuff that is on the stack,
+> rather than just copying it to some stable area is dodgy. And I
+> guarantee that doing the crazy mlock dance is slower than the copy, so
+> it's complex, fragile, _and_ slow.
+> 
+That sounds broken too, not having read the initial problem and such, it
+sounds like the hypercall would expect the pages to stay pinned and
+mlock doesn't actually guarantee that at all.
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
----
- drivers/misc/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 0b591b6..9df5b75 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -385,7 +385,7 @@ config BMP085
- 	depends on I2C && SYSFS
- 	help
- 	  If you say yes here you get support for the Bosch Sensortec
--	  BMP086 digital pressure sensor.
-+	  BMP085 digital pressure sensor.
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called bmp085.
--- 
-1.7.2
 
