@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab0HWTvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 15:51:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37835 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751971Ab0HWTvr (ORCPT
+	id S1754463Ab0HWTxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 15:53:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48300 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab0HWTxE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 15:51:47 -0400
-Date: Mon, 23 Aug 2010 12:51:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/6] md: remove dependency on __GFP_NOFAIL
-Message-Id: <20100823125100.75a9de56.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com>
-	<20100823122606.47524cef.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Aug 2010 15:53:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=DVbH+6aQIm37lbIgEBmJACJ0xQ9H3s+U0NvXGcCLiQPRMKH6ROTat3uMvNgJdvy24P
+         heE1maLTt1Zts+CcZigeVVwDGnDEUQJPTVmBdpfeorQnjWlFuaO5EJ1mASnD49xGWy+a
+         NIcxjtLQaBnTKyNg+96kbUSSdv8qTSidjG8IU=
+MIME-Version: 1.0
+In-Reply-To: <4C725B75.9000106@redhat.com>
+References: <20100820011054.GA11297@tpepper-t61p.dolavim.us>
+	<4C724BDB.8020604@redhat.com>
+	<4C724D13.6000807@redhat.com>
+	<AANLkTi=7HdLqm-g1F+ezhDN4n+vPo2jAo2cgn-M6_wMJ@mail.gmail.com>
+	<4C725B75.9000106@redhat.com>
+Date: Mon, 23 Aug 2010 12:53:00 -0700
+X-Google-Sender-Auth: wKCf-A6uIqjFBgEb3P7BVNSFsOQ
+Message-ID: <AANLkTindpNLN+xeDPhuFWrktqZZafgQ+gK_F1sF5Gwh8@mail.gmail.com>
+Subject: Re: [PATCH 0/4 v2] kvm: rework KVM mmu_shrink() code
+From: Tim Pepper <lnxninja@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 12:35:22 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
+On Mon, Aug 23, 2010 at 4:28 AM, Avi Kivity <avi@redhat.com> wrote:
+>  On 08/23/2010 02:11 PM, Xiaotian Feng wrote:
+>>
+>> On Mon, Aug 23, 2010 at 6:27 PM, Avi Kivity<avi@redhat.com>  wrote:
+>>>
+>>>  On 08/23/2010 01:22 PM, Avi Kivity wrote:
+>>>>
+>>>> I see a lot of soft lockups with this patchset:
+>>>
+>>> This is running the emulator.flat test case, with shadow paging.  This
+>>> test
+>>> triggers a lot (millions) of mmu mode switches.
+>>>
+>> Does following patch fix your issue?
+>>
+>
+> It does indeed!
 
-> On Mon, 23 Aug 2010, Andrew Morton wrote:
-> 
-> > > diff --git a/drivers/md/dm-region-hash.c b/drivers/md/dm-region-hash.c
-> > > --- a/drivers/md/dm-region-hash.c
-> > > +++ b/drivers/md/dm-region-hash.c
-> > > @@ -289,8 +289,12 @@ static struct dm_region *__rh_alloc(struct dm_region_hash *rh, region_t region)
-> > >  	struct dm_region *reg, *nreg;
-> > >  
-> > >  	nreg = mempool_alloc(rh->region_pool, GFP_ATOMIC);
-> > > -	if (unlikely(!nreg))
-> > > -		nreg = kmalloc(sizeof(*nreg), GFP_NOIO | __GFP_NOFAIL);
-> > > +	if (unlikely(!nreg)) {
-> > > +		/* FIXME: this may potentially loop forever */
-> > > +		do {
-> > > +			nreg = kmalloc(sizeof(*nreg), GFP_NOIO);
-> > > +		} while (!nreg);
-> > > +	}
-> > >  
-> > >  	nreg->state = rh->log->type->in_sync(rh->log, region, 1) ?
-> > >  		      DM_RH_CLEAN : DM_RH_NOSYNC;
-> > 
-> > erm.
-> > 
-> > The reason for adding GFP_NOFAIL in the first place was my observation
-> > that the kernel contained lots of open-coded retry-for-ever loops.
-> > 
-> > All of these are wrong, bad, buggy and mustfix.  So we consolidated the
-> > wrongbadbuggymustfix concept into the core MM so that miscreants could
-> > be easily identified and hopefully fixed.
-> > 
-> 
-> That consolidation would have been unnecessary, then, since all 
-> allocations with order < PAGE_ALLOC_COSTLY_ORDER automatically loop 
-> indefinitely in the page allocator.
+Thanks Xiaotian Feng!
 
-The difference is that an order-0 !__GFP_NOFAIL allocation attempt can
-fail due to oom-killing.  Unless someone broke that.
+Avi: here's also a minor whitespace fixup on top of the previous.
 
->  struct dm_region allocations would 
-> already do that.
-> 
-> So this retry loop doesn't actually do anything that the page allocator 
-> already doesn't, with or without __GFP_NOFAIL.  The difference here is 
-> that
-> 
->  - it doesn't depend on the page allocator's implementation, which may
->    change over time, and
-> 
->  - it adds documentation so that the subsystems doing these loops can
->    (hopefully) fix these problems later, although their appear to be
->    geniune cases where little other options are available.
-> 
-> > I think that simply undoing that change is a bad idea - it allows the
-> > wrongbadbuggymustfix code to hide from view.
-> > 
-> 
-> It removes several branches from the page allocator.
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+         index f83b941..0c56484 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1696,8 +1696,7 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm,
+unsigned in
+                        page = container_of(kvm->arch.active_mmu_pages.prev,
+                                            struct kvm_mmu_page, link);
+-                       kvm_mmu_prepare_zap_page(kvm, page,
+-                                                              &invalid_list);
++                       kvm_mmu_prepare_zap_page(kvm, page, &invalid_list);
+                        kvm_mmu_commit_zap_page(kvm, &invalid_list);
+                }
+                goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
 
-None on the fast path.
 
-> > The correct way to remove __GFP_NOFAIL is to fix the
-> > wrongbadbuggymustfix code properly.
-> > 
-> 
-> If the prerequisite for removing __GFP_NOFAIL is that nobody must ever 
-> loop indefinitely looking for memory or smaller order allocations don't 
-> implicitly retry, then there's little chance it'll ever get removed since 
-> they've existed for years without anybody cleaning them up.
 
-The JBD one is hard - I haven't looked at the others.
-
-We should fix them.
+Tim
