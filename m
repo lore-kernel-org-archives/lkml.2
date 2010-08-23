@@ -1,75 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab0HWBgJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 21:36:09 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44874
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751589Ab0HWBgH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 21:36:07 -0400
-Date: Sun, 22 Aug 2010 18:36:24 -0700 (PDT)
-Message-Id: <20100822.183624.28802617.davem@davemloft.net>
-To: xiaosuo@gmail.com
-Cc: arnd@arndb.de, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: define __packed for the userspace code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTiktOcAvAxcXUxh+4jKh0nBmYCf0OVG0wqRNMb9T@mail.gmail.com>
-References: <AANLkTin1BOgHBc4sTwFAmQhKFNvZ+90herc4Dsh9P8y2@mail.gmail.com>
-	<201008221507.42023.arnd@arndb.de>
-	<AANLkTiktOcAvAxcXUxh+4jKh0nBmYCf0OVG0wqRNMb9T@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1752524Ab0HWBxF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 21:53:05 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48503 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290Ab0HWBxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 21:53:03 -0400
+Date: Mon, 23 Aug 2010 11:52:47 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andreas Dilger <andreas.dilger@oracle.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>,
+        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
+        "philippe.deniel@CEA.FR" <philippe.deniel@CEA.FR>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+Message-ID: <20100823115247.1f38c154@notabene>
+In-Reply-To: <m3wrrijf4c.fsf@linux.vnet.ibm.com>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100820083057.GA10039@infradead.org>
+	<20100820195303.20b17210@notabene>
+	<20100820115135.GQ31363@ZenIV.linux.org.uk>
+	<20100821100900.4b15fe08@notabene>
+	<17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
+	<20100823090604.6c735c80@notabene>
+	<m3wrrijf4c.fsf@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sun, 22 Aug 2010 21:47:06 +0800
+On Mon, 23 Aug 2010 06:54:03 +0530
+"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-> On Sun, Aug 22, 2010 at 9:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Sunday 22 August 2010 13:23:42 Changli Gao wrote:
->>> On Sun, Aug 22, 2010 at 7:12 PM, Changli Gao <xiaosuo@gmail.com> wrote:
->>> > This commit
->>> >
->>> >  commit bc10502dba37d3b210efd9f3867212298f13b78e
->>> >  Author: Eric Dumazet <eric.dumazet@gmail.com>
->>> >  Date:   Thu Jun 3 03:21:52 2010 -0700
->>> >
->>> >    net: use __packed annotation
->>> >
->>> > makes use of __packed in the userspace code. So we'd better define __packed
->>> > for the userspace code too.
->>> >
->>>
->>> Oh, sorry. This patch can't work as include/linux/compiler.h isn't
->>> exported to the userspace. But where should we define __packed for the
->>> userspace code? include/linux/types.h?
->>
->> I would try to avoid making those structures packed to start with.
->> From what I can see, they structures annotated in the above commit
->> mostly don't even require explicit packing because they are already
->> packed. Not marking them packed makes the code portable to non-gcc
->> compilers.
->>
+> On Mon, 23 Aug 2010 09:06:04 +1000, Neil Brown <neilb@suse.de> wrote:
+> > On Sat, 21 Aug 2010 01:13:52 -0600
+> > Andreas Dilger <andreas.dilger@oracle.com> wrote:
+> > 
+> > > On 2010-08-20, at 18:09, Neil Brown <neilb@suse.de> wrote:
+> > > > How about a new AT flag:  AT_FILE_HANDLE
+> > > > 
+> > > > Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
+> > > > the 'name' pointer actually points to a filehandle fragment interpreted in
+> > > > that filesystem.
+> > > > 
+> > > > One problem is that there is no way to pass the length...
+> > > > Options:
+> > > >   fragment is at most 64 bytes nul padded at the end
+> > > >   fragment is hex encoded and nul terminated
+> > > >   ??
+> > > > 
+> > > > I think I prefer the hex encoding, but I'm hoping someone else has a better
+> > > > idea.
+> > > 
+> > > That makes it ugly for the kernel to stringify and parse the file handles. 
+> > 
+> > We already parse filenames into components separated by '/'.  Is HEX decoding
+> > that much more ugly.
+> > 
+> > Filehandles are currently passed between the kernel and mountd as HEX
+> > strings, so at least there is some precedent.
+> > 
+> > > 
+> > > How about for AT_FILE_HANDLE THE FIRST __u32 (maybe with an extra __u32 for alignment) is the length and the rest of the binary file handle follows this?  In fact, doesn't the handle itself already encode the length in the header?
+> > 
+> > That part of a filehandle that nfsd gives to the filesystem is one byte out
+> > of a 4-byte header, plus the tail of the filehandle after the part that
+> > identifies the filesystem.
+> > This 'one byte' does imply the length, but it doesn't necessarily encode it.
+> > Rather it is a 'type'.  So it cannot really be used to determine the length
+> > at the point when the filehandle would need to be copied from userspace into
+> > the kernel.
+> > 
+> > 
+> > I don't think there is any precedent for passing a 4-byte length followed by
+> > a binary string, while there is plenty of precedent for passing a
+> > nul-terminated ASCII string.
+> > 
+> > [[ Following this approach I would like to avoid any filehandle-specific
+> > syscalls altogether.
+> > Just use a *at syscall with AT_FILE_HANDLE for filehandle lookup, and use
+> > getxattr('system:linux.file_handle') to get the filehandle for a given path.
+> > 
+> > Ofcourse we would need to at *at versions of the *xattr syscalls, but that is
+> > probably a good idea anyway.
+> > ]]
 > 
-> Maybe __packed is used somewhere to hint that some members of a
-> structure maybe unaligned.
+> There are at* syscalls that doesn't take the additional flags as the
+> argument, like openat, readlinkat. How will handle based open and
+> readlink work with the above interface ?
+>
 
-I don't think this it the reason it was being used here.
+Bother... you are right.
 
-Any, for one thing, we definitely cannot remove the existing packed
-markers or else we will break every single userland tool out there
-using these socket address structures.
+I had remembered that at the time that all that *at calls were added there was
+discussion about how you always need some flags, particularly in the context
+of adding O_CLOEXEC and (I thought) a flag to allow non-sequential allocation
+of fds.
+I had thought that they all got 'flags' arguments as a result, but it seems
+not.
+For openat you could squeeze something into the current 'flags' arg
+(O_FILE_HANDLE), but for readlinkat, symlinkat at least there is no such
+option.  Sad really.
 
-Even the first two members (sa_family_t and unsigned int) will be
-positioned differently if we remove the marker.
-
-I suspect the packed attribute is there to make sure the pppo* socket
-address structures fit within the generic socket address object size.
-(see struct __kernel_sockaddr_storage and struct sockaddr).
-
-As to the problem at-hand, I think we need to use __attribute__((packed))
-here.  And that's what I'll commit into net-2.6 and net-next-2.6
+NeilBrown
