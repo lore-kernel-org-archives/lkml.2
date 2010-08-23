@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab0HWOyB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 10:54:01 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42233 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab0HWOx5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 10:53:57 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "Moffett\, Kyle D" <Kyle.D.Moffett@boeing.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "magnus.damm\@gmail.com" <magnus.damm@gmail.com>,
-        "gregkh\@suse.de" <gregkh@suse.de>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        Kyle D Moffett <kyle@moffetthome.net>
-Subject: Re: [PATCH 2/2] platform: Facilitate the creation of pseudo-platform buses
-Organization: Deep Root Systems, LLC
-References: <1281484174-32174-1-git-send-email-ppannuto@codeaurora.org>
-	<1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
-	<3F978429-F916-42E5-8B36-6AC02DAC8CA2@boeing.com>
-	<AANLkTi=Pm8BL+Ksq1o7MYpV7mMH10bEPu1=Am9EgT-Kk@mail.gmail.com>
-	<87hbiql89d.fsf@deeprootsystems.com>
-	<AANLkTinaddiPAcokH3fRVYAFf3N-Gz--U5Jd1iyNsi+m@mail.gmail.com>
-	<87hbip9kxx.fsf@deeprootsystems.com>
-	<AANLkTine=VLLm4+ReKeMKBdbV1JsunNagwKxGMDhEe8e@mail.gmail.com>
-	<87y6c03jxj.fsf@deeprootsystems.com>
-	<AANLkTi=WKcb59jJQuLVfqJG07Et+cU75GOC5Lrr_dXR4@mail.gmail.com>
-Date: Mon, 23 Aug 2010 07:53:40 -0700
-In-Reply-To: <AANLkTi=WKcb59jJQuLVfqJG07Et+cU75GOC5Lrr_dXR4@mail.gmail.com>
-	(Grant Likely's message of "Sat, 21 Aug 2010 01:10:05 -0600")
-Message-ID: <87tyml1itn.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1754019Ab0HWOzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 10:55:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55648 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753680Ab0HWOzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 10:55:07 -0400
+X-User-Agent: K-9 Mail for Android
+References: <20100819224616.GB9967@router-fw-old.local.net-space.pl> <tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org> <AANLkTim9kjBp68LqieU3MDLbkRDiWLNQjtUvjEbc9Hca@mail.gmail.com> <20100823081212.GA13297@router-fw-old.local.net-space.pl>
+In-Reply-To: <20100823081212.GA13297@router-fw-old.local.net-space.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [tip:x86/urgent] x86, apic: Fix apic=debug boot crash
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 23 Aug 2010 07:54:34 -0700
+To: Daniel Kiper <dkiper@net-space.pl>, Yinghai Lu <yinghai@kernel.org>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Message-ID: <9cca0990-1b78-40e7-a71d-f550b4f504aa@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> writes:
+It's already applied.
 
->>> If the override is global to the platform_bus_type, then the model
->>> will not scale.
->>
->> It will not scale any more (or less) than the current functionality of
->> the driver model which handles this globally.  Again, if scalabilty
->> becomes a problem down the road, lets fix it then.
+"Daniel Kiper" <dkiper@net-space.pl> wrote:
+
+>Hi,
 >
-> Alright, I can agree to that.  I do agree that the runtime override is
-> far and away better than the weak symbol approach.  However, there
-> needs to be some very clear rules in place for users of the override,
-> namely that users must understand that they are stewards of the
-> platform_bus_type, and must take care to preserve the default
-> behaviour for "uninteresting" devices.
+>On Fri, Aug 20, 2010 at 12:24:20PM -0700, Yinghai Lu wrote:
+>> On Fri, Aug 20, 2010 at 5:41 AM, tip-bot for Daniel Kiper
+>> <dkiper@net-space.pl> wrote:
+>> > Commit-ID: ?05e407603e527f9d808dd3866d3a17c2ce4dfcc5
+>> > Gitweb: ? ? http://git.kernel.org/tip/05e407603e527f9d808dd3866d3a17c2ce4dfcc5
+>> > Author: ? ? Daniel Kiper <dkiper@net-space.pl>
+>> > AuthorDate: Fri, 20 Aug 2010 00:46:16 +0200
+>> > Committer: ?Ingo Molnar <mingo@elte.hu>
+>> > CommitDate: Fri, 20 Aug 2010 10:18:28 +0200
+>> >
+>> > x86, apic: Fix apic=debug boot crash
+>> >
+>> > Fix a boot crash when apic=debug is used and the APIC is
+>> > not properly initialized.
+>> >
+>> > This issue appears during Xen Dom0 kernel boot but the
+>> > fix is generic and the crash could occur on real hardware
+>> > as well.
+>>
+>> Do you have any report on real hardware?
+>> that could not happen on real hardware.
+>
+>Till now no, however I think it is good idea
+>to apply this patch now. It is not worth to wait
+>for another null pointer dereference.
+>
+>Daniel
 
-Completely agree here.
-
-Any overrides of the dev_pm_ops functions that do not also call the
-pm_generic_* functions (or their equivalents) should be suspect.
-
-I'll post a proposal for a runtime override shortly.
-
-> Also, the expectation should be that it is a temporary measure until a
-> better abstraction is implemented.  It might be that a separate
-> bus_type is the way to go (if the multiple driver registration problem
-> can be solved) or it might be a way to differentiate pm_ops either
-> per-device or per-parent.  I'm not sure, but I'm starting on an OMAP
-> project soon, so I may very well end up working on this.
-
-Yes, I'll be glad to work on this too, but first I need to get through
-reviewing the backlog of all the OMAP drivers we're converting to
-runtime PM.
-
-Kevin
+-- 
+Sent from my mobile phone.  Please pardon any lack of formatting.
