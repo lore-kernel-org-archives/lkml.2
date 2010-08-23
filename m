@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab0HWRRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 13:17:36 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:39779 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753947Ab0HWRRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 13:17:35 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: b1XOl1sVM1no7kB02y1BENdMjRqds8OoW7ioGjoYMx69YR.
- xcjyGshYNIIEzmmB3YgSxlsvLEIIojG6KhjFdZ1DoIwEdHNmuB8tn7_wDWdm
- P0U.bO8T0XXmUePcKRelMyXRTNWieWRgJTrHARuTiusFvvSgBc7AlmbyrZl0
- lKIYH3tl1hQfUL8UBcP3tVD_WyVgGp9ybcvixwYHLZyKQhR057w4gjDxU8H1
- u
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 23 Aug 2010 12:17:31 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] compaction: fix COMPACTPAGEFAILED counting
-In-Reply-To: <20100823170610.GB2304@barrios-desktop>
-Message-ID: <alpine.DEB.2.00.1008231217100.9840@router.home>
-References: <1282580114-2136-1-git-send-email-minchan.kim@gmail.com> <alpine.DEB.2.00.1008231140320.9496@router.home> <20100823170610.GB2304@barrios-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752829Ab0HWRSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 13:18:07 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56322 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab0HWRSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 13:18:05 -0400
+Message-ID: <4C72AD51.8090708@fusionio.com>
+Date: Mon, 23 Aug 2010 19:18:09 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "hch@lst.de" <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
+References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>	 <20100817223145.GC4641@Krystal>  <4C6BC72E.6040607@gmail.com>	 <1282141930.3035.9.camel@mulgrave.site>  <4C6BEFD1.8010200@gmail.com>	 <1282142498.3035.17.camel@mulgrave.site>  <4C6C5561.5040302@fusionio.com>	 <1282171834.13811.51.camel@mulgrave.site>  <4C6C9E10.9030202@fusionio.com>	 <1282229572.8139.16.camel@mulgrave.site>  <4C7238CD.5070700@fusionio.com> <1282583332.11194.22.camel@mulgrave.site>
+In-Reply-To: <1282583332.11194.22.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010, Minchan Kim wrote:
+On 2010-08-23 19:08, James Bottomley wrote:
+> On Mon, 2010-08-23 at 11:01 +0200, Jens Axboe wrote:
+>> On 2010-08-19 16:52, James Bottomley wrote:
+>>> On Wed, 2010-08-18 at 22:59 -0400, Jens Axboe wrote:
+>>>> On 08/18/2010 06:50 PM, James Bottomley wrote:
+>>>>> On Wed, 2010-08-18 at 17:49 -0400, Jens Axboe wrote:
+>>>>>> On 08/18/2010 10:41 AM, James Bottomley wrote:
+>>>>>>> On Wed, 2010-08-18 at 16:36 +0200, Jiri Slaby wrote:
+>>>>>>>> On 08/18/2010 04:32 PM, James Bottomley wrote:
+>>>>>>>>>> James and Jens, could you take the two remaining (SCSI and BLOCK)?
+>>>>>>>>>
+>>>>>>>>> Sure ... could you identify the email by subject, please? lkml.org seems
+>>>>>>>>> to be down this morning.
+>>>>>>>>
+>>>>>>>> Sure:
+>>>>>>>> [PATCH v2] BLOCK: fix bio.bi_rw handling
+>>>>>>>> and
+>>>>>>>> [PATCH v2] SCSI: fix bio.bi_rw handling
+>>>>>>>>
+>>>>>>>> You should have received one copy to your suse.de inbox, if everything
+>>>>>>>> worked.
+>>>>>>>
+>>>>>>> Got it.  One of life's little ironies is that I couldn't immediately
+>>>>>>> locate it in the SCSI list because it was already queued for inclusion.
+>>>>>>
+>>>>>> Please add my acked-by to both of them.
+>>>>>
+>>>>> OK.
+>>>>>
+>>>>>>  I'm away on vacation, so if
+>>>>>> you James could queue them up, I would appreciate it. Thanks!
+>>>>>
+>>>>> Certainly sir ... and would you like your patches served to your table
+>>>>> or by the pool?
+>>>>
+>>>> Pool, please. With that first name and the British accent, it's hard
+>>>> not to boss you around.
+>>>
+>>> Well, sir, the wait staff and I thought we'd just write to ask how your
+>>> convalescence was going.  Sorry about spilling the patch down your
+>>> front, sir, but the glass was slippery.  Who could have foreseen that
+>>> you'd step backwards, fall over the pool boy and upset a flaming bananas
+>>> foster on to the front of your shorts.  I did get a commendation for my
+>>> quick action with a high pressure hose to the affected area (thank you,
+>>> sir, for your shocked but grateful expression).  I must say I didn't
+>>> foresee the force of the blast catapulting you against the pool steps,
+>>> but a concussion is a small price to pay for avoiding fried nuts with
+>>> the bananas, eh, sir? It's funny how things turn out, and I bet if you
+>>> could do it over again, you'd have got off your arse to fetch your own
+>>> damn patch now, wouldn't you, sir?
+>>
+>> It's so hard to find decent staff these days, the things I have to
+>> put up with...
+>>
+>> I'm back now. Have you queued it up, or should I get off my hiney
+>> and add it to the mix?
+> 
+> It's in my email queue, but not in a git tree, yet ... you can take it
+> back if you want ...
 
-> On Mon, Aug 23, 2010 at 11:41:49AM -0500, Christoph Lameter wrote:
-> > On Tue, 24 Aug 2010, Minchan Kim wrote
-> >
-> > > This patch introude new argument 'cleanup' to migrate_pages.
-> > > Only if we set 1 to 'cleanup', migrate_page will clean up the lists.
-> > > Otherwise, caller need to clean up the lists so it has a chance to postprocess
-> > > the pages.
-> >
-> > Could we simply make migrate_pages simply not do any cleanup?
-> > Caller has to call putback_lru_pages()?
-> >
-> Hmm. maybe I misunderstood your point.
-> Your point is that let's make whole caller of migrate_pagse has a responsibility
-> of clean up the list?
+Will do!
 
-Yes. All callers would be responsible for cleanup.
-
+-- 
+Jens Axboe
 
