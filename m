@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab0HWXWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 19:22:45 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:46929 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751541Ab0HWXWo (ORCPT
+	id S1752579Ab0HWXXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 19:23:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62346 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab0HWXXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 19:22:44 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=UxascKPbKp905lmUUmnpWWbH8dmVFp3/10ErlZ70wY243LdPWxt/mK44mGyGvFSbHVH6y2tV9J4G0XdoOm58R0OQvYtAHxm+/QgFLciUYqS4vRBG+2lia7xI3FLd9HF5;
-Date: Mon, 23 Aug 2010 16:22:41 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Carlos R. Mafra" <crmafra2@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.36-rc2 drm compilation failure
-Message-ID: <20100823162241.12fd48f4@virtuousgeek.org>
-In-Reply-To: <20100823113248.GA18594@Pilar.aei.mpg.de>
-References: <20100823113248.GA18594@Pilar.aei.mpg.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Mon, 23 Aug 2010 19:23:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:x-url:user-agent;
+        b=sfJKbxGCHobVPnENo7Q8KodTxQMFhHlATUmfhTlqsx65Sog9r6m13WM5GJ41UpLiJD
+         am2nzvuGNK5kyZJfEdILjitoL9PlhJKNMF/0/SZlKhuTM5rFu9Mwkk9k1Smm/QKU9ydW
+         m4kebtf25xiZoK50URs+QMsoOU40Ah9R7PAy0=
+Date: Mon, 23 Aug 2010 20:23:34 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu
+Subject: Re: [PATCH] perf tools: Fix linking errors with --as-needed flag
+Message-ID: <20100823232334.GE2761@ghostprotocols.net>
+References: <1279449937-29115-1-git-send-email-ozan@pardus.org.tr>
+ <4C42DFC0.1090708@pardus.org.tr>
+ <20100821172433.GF2973@ghostprotocols.net>
+ <1282459432.11398.53.camel@tropicana>
+ <1282531453.30047.8.camel@tropicana>
+ <20100823143839.GA2761@ghostprotocols.net>
+ <4C72E6AF.9060102@pardus.org.tr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C72E6AF.9060102@pardus.org.tr>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 13:32:48 +0200
-"Carlos R. Mafra" <crmafra2@gmail.com> wrote:
+Em Tue, Aug 24, 2010 at 12:22:55AM +0300, Ozan Çağlayan escreveu:
+> On 23.08.2010 17:38, Arnaldo Carvalho de Melo wrote:
+> > Em Sun, Aug 22, 2010 at 09:44:13PM -0500, Tom Zanussi escreveu:
+> >> Looking into it a bit further, both ExtUtils::Embed -e ldopts and
+> >> python-config --ldflags put the libs at the end, so we should be able to
+> >> parse the output of those and take only the parts we need for each
+> >> component.  How about something like this instead?
+> > 
+> > Ozan, Kirill, can you please test Tom's patch and see if it fixes the
+> > problems you noticed so that I can add Tested-by tags and apply this
+> > patch?
+> 
+> Hi,
+> 
+> I won't be able to test anything for at least 1 week, sorry.
 
-> The compilation of 2.6.36-rc2 fails with the following error
-> 
->   LD      .tmp_vmlinux1
-> drivers/built-in.o: In function `vga_get_uninterruptible':
-> /home/mafra/linux-2.6/include/linux/vgaarb.h:120: undefined reference to `vga_get'
-> drivers/built-in.o: In function `i915_disable_vga':
-> /home/mafra/linux-2.6/drivers/gpu/drm/i915/intel_display.c:5990: undefined reference to `vga_put'
-> make[1]: *** [.tmp_vmlinux1] Fehler 1
-> make: *** [sub-make] Fehler 2
-> 
-> but 2.6.36-rc1 compiled fine. 
-> 
-> The machine is a Vaio 64-bit laptop with
-> 
-> VGA compatible controller: Intel Corporation Mobile GM965/GL960 Integrated Graphics Controller
-> 
-> and my .config has
-> 
-> CONFIG_DRM_I915=y
-> CONFIG_DRM_I915_KMS=y
-> 
-> but also
-> 
-> # CONFIG_VGA_ARB is not set
-> 
-> I guess the following commit introduced the error 9cce37f4855a30cc 
-> ("drm/i915: fix VGA plane disable for Ironlake+").
-> 
-> If there's any other information I should provide, please let me know.
+np, take your time.
 
-Oh I see Chris already posted a patch for this.  Should be upstream
-soon.
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+- Arnaldo
