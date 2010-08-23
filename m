@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab0HWXR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 19:17:57 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52607 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab0HWXRz (ORCPT
+	id S1752501Ab0HWXWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 19:22:45 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:46929 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751541Ab0HWXWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 19:17:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct reclaim allocation fails
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1282550442-15193-4-git-send-email-mel@csn.ul.ie>
-References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie> <1282550442-15193-4-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100824081531.6035.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 23 Aug 2010 19:22:44 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=UxascKPbKp905lmUUmnpWWbH8dmVFp3/10ErlZ70wY243LdPWxt/mK44mGyGvFSbHVH6y2tV9J4G0XdoOm58R0OQvYtAHxm+/QgFLciUYqS4vRBG+2lia7xI3FLd9HF5;
+Date: Mon, 23 Aug 2010 16:22:41 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Carlos R. Mafra" <crmafra2@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.36-rc2 drm compilation failure
+Message-ID: <20100823162241.12fd48f4@virtuousgeek.org>
+In-Reply-To: <20100823113248.GA18594@Pilar.aei.mpg.de>
+References: <20100823113248.GA18594@Pilar.aei.mpg.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 24 Aug 2010 08:17:51 +0900 (JST)
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> When under significant memory pressure, a process enters direct reclaim
-> and immediately afterwards tries to allocate a page. If it fails and no
-> further progress is made, it's possible the system will go OOM. However,
-> on systems with large amounts of memory, it's possible that a significant
-> number of pages are on per-cpu lists and inaccessible to the calling
-> process. This leads to a process entering direct reclaim more often than
-> it should increasing the pressure on the system and compounding the problem.
+On Mon, 23 Aug 2010 13:32:48 +0200
+"Carlos R. Mafra" <crmafra2@gmail.com> wrote:
+
+> The compilation of 2.6.36-rc2 fails with the following error
 > 
-> This patch notes that if direct reclaim is making progress but
-> allocations are still failing that the system is already under heavy
-> pressure. In this case, it drains the per-cpu lists and tries the
-> allocation a second time before continuing.
+>   LD      .tmp_vmlinux1
+> drivers/built-in.o: In function `vga_get_uninterruptible':
+> /home/mafra/linux-2.6/include/linux/vgaarb.h:120: undefined reference to `vga_get'
+> drivers/built-in.o: In function `i915_disable_vga':
+> /home/mafra/linux-2.6/drivers/gpu/drm/i915/intel_display.c:5990: undefined reference to `vga_put'
+> make[1]: *** [.tmp_vmlinux1] Fehler 1
+> make: *** [sub-make] Fehler 2
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/page_alloc.c |   20 ++++++++++++++++----
->  1 files changed, 16 insertions(+), 4 deletions(-)
+> but 2.6.36-rc1 compiled fine. 
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index bbaa959..750e1dc 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1847,6 +1847,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
->  	struct page *page = NULL;
->  	struct reclaim_state reclaim_state;
->  	struct task_struct *p = current;
-> +	bool drained = false;
->  
->  	cond_resched();
->  
-> @@ -1865,14 +1866,25 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
->  
->  	cond_resched();
->  
-> -	if (order != 0)
-> -		drain_all_pages();
-> +	if (unlikely(!(*did_some_progress)))
-> +		return NULL;
->  
-> -	if (likely(*did_some_progress))
-> -		page = get_page_from_freelist(gfp_mask, nodemask, order,
-> +retry:
-> +	page = get_page_from_freelist(gfp_mask, nodemask, order,
->  					zonelist, high_zoneidx,
->  					alloc_flags, preferred_zone,
->  					migratetype);
-> +
-> +	/*
-> +	 * If an allocation failed after direct reclaim, it could be because
-> +	 * pages are pinned on the per-cpu lists. Drain them and try again
-> +	 */
-> +	if (!page && !drained) {
-> +		drain_all_pages();
-> +		drained = true;
-> +		goto retry;
-> +	}
-> +
->  	return page;
+> The machine is a Vaio 64-bit laptop with
+> 
+> VGA compatible controller: Intel Corporation Mobile GM965/GL960 Integrated Graphics Controller
+> 
+> and my .config has
+> 
+> CONFIG_DRM_I915=y
+> CONFIG_DRM_I915_KMS=y
+> 
+> but also
+> 
+> # CONFIG_VGA_ARB is not set
+> 
+> I guess the following commit introduced the error 9cce37f4855a30cc 
+> ("drm/i915: fix VGA plane disable for Ironlake+").
+> 
+> If there's any other information I should provide, please let me know.
 
-I haven't read all of this patch series. (iow, this mail is luckly on top
-of my mail box now) but at least I think this one is correct and good.
+Oh I see Chris already posted a patch for this.  Should be upstream
+soon.
 
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
-
-
-
-
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
