@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab0HWIpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 04:45:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61676 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab0HWIpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 04:45:21 -0400
-Message-ID: <4C723644.4040708@cn.fujitsu.com>
-Date: Mon, 23 Aug 2010 16:50:12 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1752454Ab0HWIpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 04:45:30 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:41488 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752086Ab0HWIpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 04:45:23 -0400
+From: Peppe CAVALLARO <peppe.cavallaro@st.com>
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vamos-dev@i4.informatik.uni-erlangen.de" 
+	<vamos-dev@i4.informatik.uni-erlangen.de>
+Date: Mon, 23 Aug 2010 10:44:55 +0200
+Subject: RE: Dead Config Option STMMAC_ETH?
+Thread-Topic: Dead Config Option STMMAC_ETH?
+Thread-Index: ActCnx73fpTAzF9oQ9CfHoZYfNsMqQAAD91A
+Message-ID: <107012446AC13D4C90B85672EAF5FB0E9E0FB3CCC0@SAFEX1MAIL3.st.com>
+References: <86r5i6vegw.fsf@peer.zerties.org>
+	<107012446AC13D4C90B85672EAF5FB0E9E0FB3CC9C@SAFEX1MAIL3.st.com>
+ <86bp8tu3d9.fsf@peer.zerties.org>
+In-Reply-To: <86bp8tu3d9.fsf@peer.zerties.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] tracing: Fix a race in function profile
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7N8jYA9011767
 
-While we are reading trace_stat/functionX and someone just
-disabled function_profile at that time, we can trigger this:
+Hi Christian,
 
-	divide error: 0000 [#1] PREEMPT SMP
-	...
-	EIP is at function_stat_show+0x90/0x230
-	...
+> -----Original Message-----
+> From: Christian Dietrich [mailto:qy03fugy@stud.informatik.uni-erlangen.de]
+> Sent: Monday, August 23, 2010 10:42 AM
+> To: Peppe CAVALLARO
+> Cc: Christian Dietrich; David S. Miller; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; vamos-dev@i4.informatik.uni-erlangen.de
+> Subject: Re: Dead Config Option STMMAC_ETH?
+> 
+> Peppe CAVALLARO <peppe.cavallaro@st.com> writes:
+> 
+> [...]
+> 
+> > There is effort on this driver: currently the driver fully works on
+> > STM platforms and starts working on ARM (SPEAr Kernels).  The driver
+> > Kconfig actually depends on the CPU_SUBTYPE_ST40 but it built on x86
+> > if remove this dependency (just verified).  In the past, I added this
+> > dependency because the driver was initially tested on ST kernels
+> > (where we continue to have the CPU_SUBTYPE_ST40) but I can review it
+> > if you like.
+> 
+> Hm, i think it would be good if this dependency is removed, if it isn't
+> needed, because then a allyes config would compile test this peace of
+> code, and it can't die silently with changes around it.
 
-This fix just takes the ftrace_profile_lock and checks if
-rec->counter is 0. If it's 0, we know the profile buffer
-has been reset.
+No problem. I'll remove it and review the Kconfig asap.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- kernel/trace/ftrace.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+Peppe
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 0d88ce9..7cb1f45 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -381,12 +381,19 @@ static int function_stat_show(struct seq_file *m, void *v)
- {
- 	struct ftrace_profile *rec = v;
- 	char str[KSYM_SYMBOL_LEN];
-+	int ret = 0;
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
--	static DEFINE_MUTEX(mutex);
- 	static struct trace_seq s;
- 	unsigned long long avg;
- 	unsigned long long stddev;
- #endif
-+	mutex_lock(&ftrace_profile_lock);
-+
-+	/* we raced with function_profile_reset() */
-+	if (unlikely(rec->counter == 0)) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	kallsyms_lookup(rec->ip, NULL, NULL, NULL, str);
- 	seq_printf(m, "  %-30.30s  %10lu", str, rec->counter);
-@@ -408,7 +415,6 @@ static int function_stat_show(struct seq_file *m, void *v)
- 		do_div(stddev, (rec->counter - 1) * 1000);
- 	}
- 
--	mutex_lock(&mutex);
- 	trace_seq_init(&s);
- 	trace_print_graph_duration(rec->time, &s);
- 	trace_seq_puts(&s, "    ");
-@@ -416,11 +422,12 @@ static int function_stat_show(struct seq_file *m, void *v)
- 	trace_seq_puts(&s, "    ");
- 	trace_print_graph_duration(stddev, &s);
- 	trace_print_seq(m, &s);
--	mutex_unlock(&mutex);
- #endif
- 	seq_putc(m, '\n');
-+out:
-+	mutex_unlock(&ftrace_profile_lock);
- 
--	return 0;
-+	return ret;
- }
- 
- static void ftrace_profile_reset(struct ftrace_profile_stat *stat)
--- 
-1.7.0.1
-
+> 
+> greetz didi
+> --
+> (Î» x . x x) (Î» x . x x) -- See how beatiful the lambda is
+> No documentation is better than bad documentation
+> -- Das Ausdrucken dieser Mail wird urheberrechtlich verfolgt.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
