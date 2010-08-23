@@ -1,81 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab0HWGT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 02:19:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36196 "EHLO mga11.intel.com"
+	id S1753254Ab0HWGYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 02:24:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9323 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab0HWGTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 02:19:24 -0400
+	id S1751327Ab0HWGYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 02:24:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,255,1280732400"; 
-   d="asc'?scan'208";a="599184350"
-Date: Mon, 23 Aug 2010 14:19:22 +0800
-From: Zhenyu Wang <zhenyuw@linux.intel.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] agp/intel: Fix dma mask for Sandybridge
-Message-ID: <20100823061922.GD29442@zhen-devel.sh.intel.com>
-Reply-To: Zhenyu Wang <zhenyuw@linux.intel.com>
-Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
-	Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <s5hlj81cn4n.wl%tiwai@suse.de>
- <20100823013507.GA29442@zhen-devel.sh.intel.com>
- <s5h62z1ew1y.wl%tiwai@suse.de>
- <20100823054303.GC29442@zhen-devel.sh.intel.com>
- <s5hzkwddfy5.wl%tiwai@suse.de>
+   d="scan'208";a="547730870"
+Date: Mon, 23 Aug 2010 14:23:59 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Con Kolivas <kernel@kolivas.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "david@fromorbit.com" <david@fromorbit.com>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [PATCH] writeback: remove the internal 5% low bound on
+ dirty_ratio
+Message-ID: <20100823062359.GA19586@localhost>
+References: <20100820032506.GA6662@localhost>
+ <20100820131249.5FF4.A69D9226@jp.fujitsu.com>
+ <201008201550.54164.kernel@kolivas.org>
+ <20100823144248.15fbb700@notabene>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sfyO1m2EN8ZOtJL6"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5hzkwddfy5.wl%tiwai@suse.de>
+In-Reply-To: <20100823144248.15fbb700@notabene>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 23, 2010 at 12:42:48PM +0800, Neil Brown wrote:
+> On Fri, 20 Aug 2010 15:50:54 +1000
+> Con Kolivas <kernel@kolivas.org> wrote:
+> 
+> > On Fri, 20 Aug 2010 02:13:25 pm KOSAKI Motohiro wrote:
+> > > > The dirty_ratio was silently limited to >= 5%. This is not a user
+> > > > expected behavior. Let's rip it.
+> > > >
+> > > > It's not likely the user space will depend on the old behavior.
+> > > > So the risk of breaking user space is very low.
+> > > >
+> > > > CC: Jan Kara <jack@suse.cz>
+> > > > CC: Neil Brown <neilb@suse.de>
+> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > >
+> > > Thank you.
+> > > 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > 
+> > I have tried to do this in the past, and setting this value to 0 on some 
+> > machines caused the machine to come to a complete standstill with small 
+> > writes to disk. It seemed there was some kind of "minimum" amount of data 
+> > required by the VM before anything would make it to the disk and I never 
+> > quite found out where that blockade occurred. This was some time ago (3 years 
+> > ago) so I'm not sure if the problem has since been fixed in the VM since 
+> > then. I suggest you do some testing with this value set to zero before 
+> > approving this change.
 
---sfyO1m2EN8ZOtJL6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You are right, vm.dirty_ratio=0 will block applications for ever..
 
-On 2010.08.23 08:02:42 +0200, Takashi Iwai wrote:
->=20
-> Also, I don't understand the logic of 40bit addr calculation:
->=20
-> > static unsigned long intel_gen6_mask_memory(struct agp_bridge_data *bri=
-dge,
-> >                                             dma_addr_t addr, int type)
-> > {
-> >         /* Shift high bits down */
-> >        addr |=3D (addr >> 28) & 0xff;
->=20
-> Isn't it 0xff0?
->=20
+> 
+>  If it is appropriate to have a lower limit, that should be imposed where
+>  the sysctl is defined in kernel/sysctl.c, not imposed after the fact where
+>  the value is used.
+> 
+>  As we now have dirty_bytes which over-rides dirty_ratio, there is little
+>  cost in having a lower_limit for dirty_ratio - it could even stay at 5% -
+>  but it really shouldn't be silent.  Writing a number below the limit to the
+>  sysctl file should fail.
 
-No. This depends on hw 32bit PTE format for sandybridge.
+How about imposing an explicit bound of 1%? That's more natural and
+its risk of breaking user space should be lower than 5%.
 
-bit 31			 bit 11			 bit 4			bit 0
-   |<-physical addr 31:12->|<-physical addr 39:32->|<-cache ctl 3:1->|valid|
+Thanks,
+Fengguang
+---
+writeback: remove the internal 5% low bound on dirty_ratio
 
---=20
-Open Source Technology Center, Intel ltd.
+The dirty_ratio was silently limited in global_dirty_limits() to >= 5%. This
+is not a user expected behavior. And it's inconsistent with calc_period_shift(),
+which uses the plain vm_dirty_ratio value. So let's rip the internal bound.
 
-$gpg --keyserver wwwkeys.pgp.net --recv-keys 4D781827
+At the same time, force a user visible low bound of 1% for the vm.dirty_ratio
+interface. Applications trying to write 0 will be rejected with -EINVAL. This
+will break user space applications if they
+1) try to write 0 to vm.dirty_ratio
+2) and check the return value
+That is very weird combination, so the risk of breaking user space is low.
 
---sfyO1m2EN8ZOtJL6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+CC: Jan Kara <jack@suse.cz>
+CC: Neil Brown <neilb@suse.de>
+CC: Rik van Riel <riel@redhat.com>
+CC: Con Kolivas <kernel@kolivas.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ kernel/sysctl.c     |    2 +-
+ mm/page-writeback.c |   10 ++--------
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkxyEuoACgkQsQQaM014GCf1YwCgj5rUQFUV8MlM1vV6owKVHoOt
-hQIAnieiUgTUv6SsPgjNNfyoTKCL/V8G
-=bsQQ
------END PGP SIGNATURE-----
-
---sfyO1m2EN8ZOtJL6--
+--- linux-next.orig/mm/page-writeback.c	2010-08-20 20:14:11.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-08-23 10:31:01.000000000 +0800
+@@ -415,14 +415,8 @@ void global_dirty_limits(unsigned long *
+ 
+ 	if (vm_dirty_bytes)
+ 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+-	else {
+-		int dirty_ratio;
+-
+-		dirty_ratio = vm_dirty_ratio;
+-		if (dirty_ratio < 5)
+-			dirty_ratio = 5;
+-		dirty = (dirty_ratio * available_memory) / 100;
+-	}
++	else
++		dirty = (vm_dirty_ratio * available_memory) / 100;
+ 
+ 	if (dirty_background_bytes)
+ 		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+--- linux-next.orig/kernel/sysctl.c	2010-08-23 14:06:11.000000000 +0800
++++ linux-next/kernel/sysctl.c	2010-08-23 14:07:30.000000000 +0800
+@@ -1029,7 +1029,7 @@ static struct ctl_table vm_table[] = {
+ 		.maxlen		= sizeof(vm_dirty_ratio),
+ 		.mode		= 0644,
+ 		.proc_handler	= dirty_ratio_handler,
+-		.extra1		= &zero,
++		.extra1		= &one,
+ 		.extra2		= &one_hundred,
+ 	},
+ 	{
