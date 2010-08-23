@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab0HWGal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 02:30:41 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:36548 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab0HWGai (ORCPT
+	id S1753303Ab0HWGb3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 02:31:29 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:51235 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751327Ab0HWGb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 02:30:38 -0400
-Date: Mon, 23 Aug 2010 09:29:57 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: "ext Hiremath, Vaibhav" <hvaibhav@ti.com>
-Cc: "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
+	Mon, 23 Aug 2010 02:31:27 -0400
+From: Con Kolivas <kernel@kolivas.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] writeback: remove the internal 5% low bound on dirty_ratio
+Date: Mon, 23 Aug 2010 16:30:40 +1000
+User-Agent: KMail/1.9.9
+Cc: Neil Brown <neilb@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "byron.bbradley@gmail.com" <byron.bbradley@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH-V2 1/3] RTC:s35390a: Add Alarm interrupt support
-Message-ID: <20100823062957.GA1068@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <hvaibhav@ti.com>
- <1282393829-7326-2-git-send-email-hvaibhav@ti.com>
- <20100821140541.GA31697@nokia.com>
- <19F8576C6E063C45BE387C64729E7394044F1252C6@dbde02.ent.ti.com>
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "david@fromorbit.com" <david@fromorbit.com>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+References: <20100820032506.GA6662@localhost> <20100823144248.15fbb700@notabene> <20100823062359.GA19586@localhost>
+In-Reply-To: <20100823062359.GA19586@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <19F8576C6E063C45BE387C64729E7394044F1252C6@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 23 Aug 2010 06:30:25.0022 (UTC) FILETIME=[AB7E31E0:01CB428C]
-X-Nokia-AV: Clean
+Message-Id: <201008231630.40892.kernel@kolivas.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 23 Aug 2010 04:23:59 pm Wu Fengguang wrote:
+> On Mon, Aug 23, 2010 at 12:42:48PM +0800, Neil Brown wrote:
+> > On Fri, 20 Aug 2010 15:50:54 +1000
+> >
+> > Con Kolivas <kernel@kolivas.org> wrote:
+> > > On Fri, 20 Aug 2010 02:13:25 pm KOSAKI Motohiro wrote:
+> > > > > The dirty_ratio was silently limited to >= 5%. This is not a user
+> > > > > expected behavior. Let's rip it.
+> > > > >
+> > > > > It's not likely the user space will depend on the old behavior.
+> > > > > So the risk of breaking user space is very low.
+> > > > >
+> > > > > CC: Jan Kara <jack@suse.cz>
+> > > > > CC: Neil Brown <neilb@suse.de>
+> > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > >
+> > > > Thank you.
+> > > > 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > >
+> > > I have tried to do this in the past, and setting this value to 0 on
+> > > some machines caused the machine to come to a complete standstill with
+> > > small writes to disk. It seemed there was some kind of "minimum" amount
+> > > of data required by the VM before anything would make it to the disk
+> > > and I never quite found out where that blockade occurred. This was some
+> > > time ago (3 years ago) so I'm not sure if the problem has since been
+> > > fixed in the VM since then. I suggest you do some testing with this
+> > > value set to zero before approving this change.
+>
+> You are right, vm.dirty_ratio=0 will block applications for ever..
 
-please break your lines at 80-characters. Also the [Hiremath, Vaibhav] 
-is unnecessary.
+Indeed. And while you shouldn't set the lower limit to zero to avoid this 
+problem, it doesn't answer _why_ this happens. What is this "minimum write" 
+that blocks everything, will 1% be enough, and is it hiding another real bug 
+somewhere in the VM?
 
-On Mon, Aug 23, 2010 at 06:58:42AM +0200, ext Hiremath, Vaibhav wrote:
->> don't you need some locking on the irq handler ? a mutex maybe ? Just
->> wondering...
->>
->[Hiremath, Vaibhav] Yes definitely we do need locking here, I thought 
->of adding locking mechanism in subsequent patch, does it makes sense?
-
-so you add a buggy patch and fix it later ? If you already know it's 
-buggy, why not changing the patch that adds the bug ?
-
--- 
-balbi
-
-DefectiveByDesign.org
+Regards,
+Con
+--
+-ck
