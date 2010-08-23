@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab0HWRfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 13:35:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41484 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751107Ab0HWRfU (ORCPT
+	id S1753821Ab0HWRkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 13:40:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34563 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab0HWRkk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 13:35:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <19570.44367.719276.128881@chiark.greenend.org.uk>
-References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
- <1282391770.29609.1223.camel@localhost.localdomain> <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
- <1282460275.11348.865.camel@localhost.localdomain> <1282462386.11348.871.camel@localhost.localdomain>
- <1282470917.11348.891.camel@localhost.localdomain> <20100822172548.GB8957@suse.de>
- <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
- <19570.38608.79434.179797@chiark.greenend.org.uk> <1282580751.2605.1997.camel@laptop>
- <19570.44367.719276.128881@chiark.greenend.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 23 Aug 2010 10:34:12 -0700
-Message-ID: <AANLkTi=+O8wKZV6XT5wGJbfZdgC9kxTxvtEZMD+M+pZn@mail.gmail.com>
+	Mon, 23 Aug 2010 13:40:40 -0400
 Subject: Re: [RFC] mlock/stack guard interaction fixup
+From: Peter Zijlstra <peterz@infradead.org>
 To: Ian Jackson <ijackson@chiark.greenend.org.uk>
-Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <gregkh@suse.de>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
         Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
         stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Jeremy Fitzhardinge <jeremy@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <19570.44367.719276.128881@chiark.greenend.org.uk>
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+	 <1282391770.29609.1223.camel@localhost.localdomain>
+	 <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
+	 <1282460275.11348.865.camel@localhost.localdomain>
+	 <1282462386.11348.871.camel@localhost.localdomain>
+	 <1282470917.11348.891.camel@localhost.localdomain>
+	 <20100822172548.GB8957@suse.de>
+	 <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
+	 <19570.38608.79434.179797@chiark.greenend.org.uk>
+	 <1282580751.2605.1997.camel@laptop>
+	 <19570.44367.719276.128881@chiark.greenend.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 Aug 2010 19:40:21 +0200
+Message-ID: <1282585221.2605.2088.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 10:18 AM, Ian Jackson
-<ijackson@chiark.greenend.org.uk> wrote:
->
+On Mon, 2010-08-23 at 18:18 +0100, Ian Jackson wrote:
+> Peter Zijlstra writes ("Re: [RFC] mlock/stack guard interaction fixup"):
+> > On Mon, 2010-08-23 at 16:42 +0100, ijackson@chiark.greenend.org.uk
+> > wrote:
+> > > mlocking the stack is entirely sensible and normal for a real-time
+> > > program.  Most such programs use mlockall but there is no particular
+> > > reason why a program that has some more specific requirements should
+> > > use mlock to lock only a part of the stack.  (Perhaps it has only one
+> > > real-time thread?) 
+> > 
+> > RT apps should pre-allocate and mlock their stack in advance (and
+> > pre-fault too for the paranoid).
+> 
+> Are you allowed to mlock a stack page which has not yet been faulted
+> in ?  What effect does it have ?  I wasn't able to find a convincing
+> de jure answer to this question.
+
+mlock() seems to call make_pages_present(), so its a moot point.
+
 > But you seem, like me, to be disagreeing with Linus's assertion that
 > calling mlock() on the stack is something no sane programs does ?
 
-Note: I don't think it's generally sane to mlock() a _part_ of the stack.
+I think the case that Linus called daft is splitting the stack vma
+through mlock/mprotect, which is indeed something rarely done.
 
-I think it's entirely sane to lock the whole stack (and that includes
-expanding it to some expected maximum value). That makes sense as a
-"we cannot afford to run out of memory" or "we must not allow the
-pages to hit disk" kind of protection.
+> > mlockall is a very bad interface and should really not be used.
+> 
+> You are directly contradicting the advice in SuS, to which I just gave
+> a reference.  You're free to do so of course but it might be worth
+> explaining in a bit more detail why the advice in SuS is wrong.
 
-However, using mlock on part of the stack is dubious. It's also
-dubious as a way to pin particular pages in the page tables, because
-it's not necessarily something that the semantics guarantee
-(historically mlock just guarantees that they won't be swapped out,
-not that they will necessarily maintain some particular mapping).
+Because a real RT program will have a significant !RT part, and calling
+mlock on everything is a massive resource waste.
 
-There's also a difference between "resident in RAM" and "that physical
-page is guaranteed to be mapped at that virtual address".
+Furthermore, mlockall gives the false impression that everything is good
+to go for RT, disregarding pretty much everything that makes a RT app.
 
-Quite frankly, I personally believe that people who play games with
-mlock are misguided. The _one_ special case is for protecting keys or
-private data that you do not want to hit the disk in some unencrypted
-mode, and quite frankly, you should strive to handle those way more
-specially than just putting them in some random place ("on the stack"
-or "in some malloc()'ed area"). The sane model for doing that is
-generally to explicitly mmap() and mlock the area, so that you get a
-very controlled access pattern, and never have to worry about things
-like COW etc.
+There's lots more to RT than sched_setscheduler() and
+mlockall(MCL_FUTURE).
 
-Because trust me, COW and mlock() is _interesting_. As in "I suspect
-lots of systems have bugs", and "the semantics don't really guarantee
-that you won't have to wait for somethign to be paged out in order for
-the allocation for the COW to be satisfied".
+If a library is RT suited, it will already mlock() all relevant memory
+allocations (or provide an option to do so, or strictly work on
+externally allocated memory, which the user will then have mlock()'ed).
 
-I suspect that if you use mlock for _any_ other reason than protecting
-a particular very sensitive piece of information, you should use
-mlockall(MCL_FUTURE). IOW, if you use mlock because you have realtime
-issues, there is no excuse to ever use anything else, imho. And even
-then, I guarantee that things like copy-on-write is going to be
-"interesting".
 
-I realize that people hate mlockall() (and particularly MCL_FUTURE),
-and yes, it's a bloated thing that you can't reasonably use on a large
-process. But dammit, if you have RT issues, you shouldn't _have_ some
-big bloated process. You should have a small statically linked server
-that is RT, and nothing else.
-
-People who use mlock any other way tend to be the people who can't be
-bothered to do it right, so they do some hacky half-way crap.
-
-                      Linus
