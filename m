@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0HWGsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 02:48:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43503 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab0HWGsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 02:48:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RKNgHKCUOTT+5LpQexC47pzrSd9Z1PgnDO+oRH5yXQR5fr98EMaQ6l1Ydrurplm6nD
-         JjbbAvihlRsDUR8RMN43JVEFuQOumb3lxSSHdG+OY+t0bDaAGxRUEFQlW1J5Z0H+QjNL
-         6PZR0oOZKmInKp6JQJx6W6hsIzhNXuYJQdr3s=
-Date: Mon, 23 Aug 2010 14:52:33 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][resend] scripts/mod/modpost.c: fix commentary
- accordingly to last changes
-Message-ID: <20100823065233.GM5168@cr0.nay.redhat.com>
-References: <1282041400-32667-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+	id S1753378Ab0HWGs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 02:48:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16458 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751978Ab0HWGs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 02:48:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,256,1280732400"; 
+   d="asc'?scan'208";a="650232580"
+Date: Mon, 23 Aug 2010 14:48:54 +0800
+From: Zhenyu Wang <zhenyuw@linux.intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] agp/intel: Fix dma mask for Sandybridge
+Message-ID: <20100823064854.GE29442@zhen-devel.sh.intel.com>
+Reply-To: Zhenyu Wang <zhenyuw@linux.intel.com>
+Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
+	Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <s5hlj81cn4n.wl%tiwai@suse.de>
+ <20100823013507.GA29442@zhen-devel.sh.intel.com>
+ <s5h62z1ew1y.wl%tiwai@suse.de>
+ <20100823054303.GC29442@zhen-devel.sh.intel.com>
+ <s5hzkwddfy5.wl%tiwai@suse.de>
+ <20100823061922.GD29442@zhen-devel.sh.intel.com>
+ <s5hiq31delt.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QXO0/MSS4VvK6f+D"
 Content-Disposition: inline
-In-Reply-To: <1282041400-32667-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+In-Reply-To: <s5hiq31delt.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 01:36:40PM +0300, Andy Shevchenko wrote:
->The last commits
-> 37ed19d5cce35a40d3913cf9aa208ce9f60db3d7
-> 5003bab82d56754b27be01eef24495a02e00039d
->have introduced new behaviour of sec2annotation() method. However, the
->commentary inside the method was left as before. Let's fix it accordingly.
->
->Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
->Cc: Rusty Russell <rusty@rustcorp.com.au>
->Cc: Andrew Morton <akpm@linux-foundation.org>
 
+--QXO0/MSS4VvK6f+D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+On 2010.08.23 08:31:42 +0200, Takashi Iwai wrote:
+> > bit 31			 bit 11			 bit 4			bit 0
+> >    |<-physical addr 31:12->|<-physical addr 39:32->|<-cache ctl 3:1->|v=
+alid|
+>=20
+> Then I really don't understand why it works.
+> You shift 28bit and mask with 0xff.  Obviously it overwrite bits 0:3
+> with original 28:31 bits.  Masking 0xff0 fixes the issue.
+>=20
 
->---
-> scripts/mod/modpost.c |    5 ++++-
-> 1 files changed, 4 insertions(+), 1 deletions(-)
->
->diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
->index 1ec7158..33122ca 100644
->--- a/scripts/mod/modpost.c
->+++ b/scripts/mod/modpost.c
->@@ -1208,6 +1208,9 @@ static Elf_Sym *find_elf_symbol2(struct elf_info *elf, Elf_Addr addr,
->  * .cpuinit.data => __cpudata
->  * .memexitconst => __memconst
->  * etc.
->+ *
->+ * The memory of returned value has been allocated on a heap. The user of this
->+ * method should free it after usage.
-> */
-> static char *sec2annotation(const char *s)
-> {
->@@ -1230,7 +1233,7 @@ static char *sec2annotation(const char *s)
-> 			strcat(p, "data ");
-> 		else
-> 			strcat(p, " ");
->-		return r; /* we leak her but we do not care */
->+		return r;
-> 	} else {
-> 		return strdup("");
-> 	}
->-- 
->1.6.3.3
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+ah, sorry, my stupid. Thanks for catching this!
+
+Subject: [PATCH] agp/intel: fix physical address mask bits for sandybridge
+
+It should shift bit 39-32 into pte's bit 11-4.
+
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Zhenyu Wang <zhenyuw@linux.intel.com>
+---
+ drivers/char/agp/intel-gtt.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+index d22ffb8..0edfc87 100644
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -1333,8 +1333,8 @@ static unsigned long intel_i965_mask_memory(struct ag=
+p_bridge_data *bridge,
+ static unsigned long intel_gen6_mask_memory(struct agp_bridge_data *bridge,
+ 					    dma_addr_t addr, int type)
+ {
+-	/* Shift high bits down */
+-	addr |=3D (addr >> 28) & 0xff;
++	/* gen6 has bit11-4 for physical addr bit39-32 */
++	addr |=3D (addr >> 28) & 0xff0;
+=20
+ 	/* Type checking must be done elsewhere */
+ 	return addr | bridge->driver->masks[type].mask;
+--=20
+1.7.0.4
+
+--=20
+Open Source Technology Center, Intel ltd.
+
+$gpg --keyserver wwwkeys.pgp.net --recv-keys 4D781827
+
+--QXO0/MSS4VvK6f+D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkxyGdYACgkQsQQaM014GCeQfACgmL8JvmFYh1ud1pv/3rtC1sLt
+G5kAnR9ix7NmtRlk6Mc1OqNs8NGQKS34
+=Rvh6
+-----END PGP SIGNATURE-----
+
+--QXO0/MSS4VvK6f+D--
