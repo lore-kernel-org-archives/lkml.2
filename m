@@ -1,117 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab0HWBxF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 21:53:05 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48503 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290Ab0HWBxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 21:53:03 -0400
-Date: Mon, 23 Aug 2010 11:52:47 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andreas Dilger <andreas.dilger@oracle.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
-        "philippe.deniel@CEA.FR" <philippe.deniel@CEA.FR>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-Message-ID: <20100823115247.1f38c154@notabene>
-In-Reply-To: <m3wrrijf4c.fsf@linux.vnet.ibm.com>
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<20100820083057.GA10039@infradead.org>
-	<20100820195303.20b17210@notabene>
-	<20100820115135.GQ31363@ZenIV.linux.org.uk>
-	<20100821100900.4b15fe08@notabene>
-	<17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
-	<20100823090604.6c735c80@notabene>
-	<m3wrrijf4c.fsf@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752782Ab0HWB4W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 21:56:22 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45652 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab0HWB4U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 21:56:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=As024MQUgRLcGbBX8W3lE8z8kCfndxqKTkHWL+th9psKgiqTruhZOSDnuXPenz4eAz
+         FkNWtRZVM1qUGe1Y/mzByaovBjxj5X7wso91vctmfOi4nA88RD/znRwO+nPDjb6zQEw3
+         EFv/KmnYf7EpAQrOtMmp9bn8w1fibUUfmsPO4=
+MIME-Version: 1.0
+In-Reply-To: <4C71CF5B.3090505@zytor.com>
+References: <AANLkTi=wyG13QOU3EQwaO3qBxY=aR=ftiP4s7YpemrPp@mail.gmail.com>
+	<4C6F4BBB.5040207@zytor.com>
+	<AANLkTi=sKH95tLee+H03ah=8dF6LV9hpw+1esGSZuHRS@mail.gmail.com>
+	<4C71CF5B.3090505@zytor.com>
+Date: Sun, 22 Aug 2010 21:56:19 -0400
+Message-ID: <AANLkTi=PWY=n2nvDcZM4SB7Jo2DRadRSoNYT1unfJvZ9@mail.gmail.com>
+Subject: Re: Linux 2.6.35.3
+From: Mark Stanovich <mrktimber@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: torvalds@linux-foundation.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 06:54:03 +0530
-"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-
-> On Mon, 23 Aug 2010 09:06:04 +1000, Neil Brown <neilb@suse.de> wrote:
-> > On Sat, 21 Aug 2010 01:13:52 -0600
-> > Andreas Dilger <andreas.dilger@oracle.com> wrote:
-> > 
-> > > On 2010-08-20, at 18:09, Neil Brown <neilb@suse.de> wrote:
-> > > > How about a new AT flag:  AT_FILE_HANDLE
-> > > > 
-> > > > Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
-> > > > the 'name' pointer actually points to a filehandle fragment interpreted in
-> > > > that filesystem.
-> > > > 
-> > > > One problem is that there is no way to pass the length...
-> > > > Options:
-> > > >   fragment is at most 64 bytes nul padded at the end
-> > > >   fragment is hex encoded and nul terminated
-> > > >   ??
-> > > > 
-> > > > I think I prefer the hex encoding, but I'm hoping someone else has a better
-> > > > idea.
-> > > 
-> > > That makes it ugly for the kernel to stringify and parse the file handles. 
-> > 
-> > We already parse filenames into components separated by '/'.  Is HEX decoding
-> > that much more ugly.
-> > 
-> > Filehandles are currently passed between the kernel and mountd as HEX
-> > strings, so at least there is some precedent.
-> > 
-> > > 
-> > > How about for AT_FILE_HANDLE THE FIRST __u32 (maybe with an extra __u32 for alignment) is the length and the rest of the binary file handle follows this?  In fact, doesn't the handle itself already encode the length in the header?
-> > 
-> > That part of a filehandle that nfsd gives to the filesystem is one byte out
-> > of a 4-byte header, plus the tail of the filehandle after the part that
-> > identifies the filesystem.
-> > This 'one byte' does imply the length, but it doesn't necessarily encode it.
-> > Rather it is a 'type'.  So it cannot really be used to determine the length
-> > at the point when the filehandle would need to be copied from userspace into
-> > the kernel.
-> > 
-> > 
-> > I don't think there is any precedent for passing a 4-byte length followed by
-> > a binary string, while there is plenty of precedent for passing a
-> > nul-terminated ASCII string.
-> > 
-> > [[ Following this approach I would like to avoid any filehandle-specific
-> > syscalls altogether.
-> > Just use a *at syscall with AT_FILE_HANDLE for filehandle lookup, and use
-> > getxattr('system:linux.file_handle') to get the filehandle for a given path.
-> > 
-> > Ofcourse we would need to at *at versions of the *xattr syscalls, but that is
-> > probably a good idea anyway.
-> > ]]
-> 
-> There are at* syscalls that doesn't take the additional flags as the
-> argument, like openat, readlinkat. How will handle based open and
-> readlink work with the above interface ?
+On Sun, Aug 22, 2010 at 9:31 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 08/20/2010 09:06 PM, Mark Stanovich wrote:
+>>>>
+>>>> I noticed that the latest version pulled from Linus's git tree did not
+>>>> have the problem.  After looking at the changes to
+>>>> arch/x86/include/asm/cmpxchg_32.h, I cherry-picked two patches from
+>>>> Linus's tree that seemed to make a difference, namely:
+>>>>
+>>>> 69309a05907546fb686b251d4ab041c26afe1e1d
+>>>> 4532b305e8f0c238dd73048068ff8a6dd1380291
+>>>>
+>>>> Applying these patches solved the rebooting problem on 2.6.35.3
+>>>>
+>>>> I believe the same problem also happens for the latest stable version of
+>>>> 2.6.34, but did not verify the fix worked for the 2.6.34 stable releases.
+>>>>
+>>>> I don't know if this is helpful, but I thought I would let you know in
+>>>> case someone else is having the same problem.
+>>>>
+>>>> If you need any further information, just let me know.
+>>>>
+>>>
+>>> Yes, as a matter of fact, we have been trying to root-cause this
+>>> problem; please see:
+>>>
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=16612
+>>>
+>>> If you could try the one-liner in there and see if it solves your
+>>> problem, it would be great.
+>>
+>> The patch for __set_64bit on top of 2.6.35.3 solves the rebooting problem!
+>>
+>>
+>
+> By the way, I think only 69309a05907546fb686b251d4ab041c26afe1e1d should
+> solve the problem.  Mark, could you try only this patch?
 >
 
-Bother... you are right.
+Tested 69309a05907546fb686b251d4ab041c26afe1e1d on top of 2.6.35.3 and
+this does solve the rebooting problem.
 
-I had remembered that at the time that all that *at calls were added there was
-discussion about how you always need some flags, particularly in the context
-of adding O_CLOEXEC and (I thought) a flag to allow non-sequential allocation
-of fds.
-I had thought that they all got 'flags' arguments as a result, but it seems
-not.
-For openat you could squeeze something into the current 'flags' arg
-(O_FILE_HANDLE), but for readlinkat, symlinkat at least there is no such
-option.  Sad really.
-
-NeilBrown
+    - Mark
