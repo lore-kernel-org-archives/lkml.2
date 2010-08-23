@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0HWP1z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:27:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab0HWP1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:27:52 -0400
-Message-ID: <4C729342.6070205@redhat.com>
-Date: Mon, 23 Aug 2010 18:26:58 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 03/12] Add async PF initialization to PV guest.
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-4-git-send-email-gleb@redhat.com>
-In-Reply-To: <1279553462-7036-4-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754101Ab0HWP2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 11:28:34 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43727 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab0HWP2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 11:28:32 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org
+Subject: [PATCH] driver core: platform_bus: allow runtime override of dev_pm_ops
+Date: Mon, 23 Aug 2010 08:28:16 -0700
+Message-Id: <1282577310-10430-1-git-send-email-khilman@deeprootsystems.com>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/19/2010 06:30 PM, Gleb Natapov wrote:
-> Enable async PF in a guest if async PF capability is discovered.
->
-> Signed-off-by: Gleb Natapov<gleb@redhat.com>
-> ---
->   arch/x86/include/asm/kvm_para.h |    5 +++
->   arch/x86/kernel/kvm.c           |   68 +++++++++++++++++++++++++++++++++++++++
->   2 files changed, 73 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index 5b05e9f..f1662d7 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -65,6 +65,11 @@ struct kvm_mmu_op_release_pt {
->   	__u64 pt_phys;
->   };
->
-> +struct kvm_vcpu_pv_apf_data {
-> +	__u32 reason;
-> +	__u32 enabled;
-> +};
-> +
+From: Kevin Hilman <khilman@ti.com>
 
-The guest will have to align this on a 64 byte boundary, should this be 
-marked __aligned(64) here?
+Currently, the platform_bus allows customization of several of the
+busses dev_pm_ops methods by using weak symbols so that platform code
+can override them.  The weak-symbol approach is not scalable when
+wanting to support multiple platforms in a single kernel binary.
 
-> @@ -231,12 +235,72 @@ static void __init paravirt_ops_setup(void)
->   #endif
->   }
->
-> +void __cpuinit kvm_guest_cpu_init(void)
-> +{
-> +	if (!kvm_para_available())
-> +		return;
-> +
-> +	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF)) {
-> +		u64 pa = __pa(&__get_cpu_var(apf_reason));
-> +
-> +		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
-> +					  pa | KVM_ASYNC_PF_ENABLED, pa>>  32))
-> +			return;
-> +		__get_cpu_var(apf_reason).enabled = 1;
-> +		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
-> +		       smp_processor_id());
-> +	}
-> +}
+Instead, provide __init methods for platform code to customize the
+dev_pm_ops methods at runtime.
 
-Need a way to disable apf from the guest kernel command line.
+NOTE: after these dynamic methods are merged, the weak symbols should
+      be removed from drivers/base/platform.c.  AFAIK, this will only
+      affect SH and sh-mobile which should be converted to use this
+      runtime approach instead of the weak symbols.  After SH &
+      sh-mobile are converted, the weak symobols could be removed.
 
-> +
-> +static int __cpuinit kvm_cpu_notify(struct notifier_block *self,
-> +				    unsigned long action, void *hcpu)
-> +{
-> +	switch (action) {
-> +	case CPU_ONLINE:
-> +	case CPU_ONLINE_FROZEN:
-> +		kvm_guest_cpu_init();
-> +		break;
-> +	default:
-> +		break;
+Tested on OMAP3.
 
-Should we disable apf if the cpu is dying here?
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+---
+Apolgies for duplicate mails.  I fat-fingered the LKML list addr the first try.
 
-> +	}
-> +	return NOTIFY_OK;
-> +}
-> +
+ drivers/base/platform.c         |   16 ++++++++++++++++
+ include/linux/platform_device.h |    3 +++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index c6c933f..a7d8a00 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -976,6 +976,22 @@ struct bus_type platform_bus_type = {
+ };
+ EXPORT_SYMBOL_GPL(platform_bus_type);
+ 
++const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
++{
++	struct bus_type *bus = &platform_bus_type;
++
++	return bus->pm;
++}
++
++int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm)
++{
++	struct bus_type *bus = &platform_bus_type;
++
++	bus->pm = pm;
++
++	return 0;
++}
++
+ int __init platform_bus_init(void)
+ {
+ 	int error;
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index d7ecad0..4bce2c9 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -138,6 +138,9 @@ extern struct platform_device *platform_create_bundle(struct platform_driver *dr
+ 					struct resource *res, unsigned int n_res,
+ 					const void *data, size_t size);
+ 
++extern const struct dev_pm_ops * __init platform_bus_get_pm_ops(void);
++extern int __init platform_bus_set_pm_ops(struct dev_pm_ops *pm);
++
+ /* early platform driver interface */
+ struct early_platform_driver {
+ 	const char *class_str;
 -- 
-error compiling committee.c: too many arguments to function
+1.7.2.1
 
