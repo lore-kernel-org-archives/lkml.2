@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab0HWQUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 12:20:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19944 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320Ab0HWQUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 12:20:06 -0400
-Message-ID: <4C729F9E.1060907@redhat.com>
-Date: Mon, 23 Aug 2010 19:19:42 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1754216Ab0HWQVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 12:21:08 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45440 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab0HWQVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 12:21:07 -0400
+Date: Mon, 23 Aug 2010 12:21:05 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3 RESEND] ptrace: cleanup address space conversion on
+ ptrace_request()
+Message-ID: <20100823162105.GA19164@infradead.org>
+References: <201008222206.18523.arnd@arndb.de>
+ <1282579575-9189-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 03/12] Add async PF initialization to PV guest.
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-4-git-send-email-gleb@redhat.com> <4C729342.6070205@redhat.com> <20100823153549.GU10499@redhat.com> <alpine.DEB.2.00.1008231105230.8601@router.home>
-In-Reply-To: <alpine.DEB.2.00.1008231105230.8601@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282579575-9189-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/23/2010 07:08 PM, Christoph Lameter wrote:
-> On Mon, 23 Aug 2010, Gleb Natapov wrote:
->
->>> The guest will have to align this on a 64 byte boundary, should this
->>> be marked __aligned(64) here?
->>>
->> I do __aligned(64) when I declare variable of that type:
->>
->> static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
-> 64 byte boundary: You mean cacheline aligned? We have a special define for
-> that.
->
-> DEFINE_PER_CPU_SHARED_ALIGNED
->
+On Tue, Aug 24, 2010 at 01:06:15AM +0900, Namhyung Kim wrote:
+> In some cases 'data' should be considered as a user pointer but it requires
+> cast with additional __force markup which was missing. Rather than add the
+> markups wherever needed, make use of a temporary variable of user pointer.
+> This patch is based on compat_ptrace_request() implementation.
+> 
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  kernel/ptrace.c |   13 +++++++------
+>  1 files changed, 7 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+> index 4afd9b8..7547b1c 100644
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -564,6 +564,7 @@ int ptrace_request(struct task_struct *child, long request,
+>  {
+>  	int ret = -EIO;
+>  	siginfo_t siginfo;
+> +	unsigned long __user *datap = (unsigned long __user __force *) data;
 
-It's an ABI, so we can't use something that might change when Intel 
-releases a cpu with 75.2 byte cache lines.
+Just make this a
 
--- 
-error compiling committee.c: too many arguments to function
+	void __user *datap = (void __user *)data;
 
+and you can pass it around withjout additional casts.  Also no need
+for the force here I think.
+
+You'll still need a cast for the put_user calls, or you could just
+convert them to copy_to_user which is fine with a void pointer.
