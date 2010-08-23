@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab0HWU0Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:26:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752155Ab0HWU0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:26:23 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org,
-        lenb@kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: [PATCH] ACPI: Don't report current_now if battery reports in mWh
-Date: Mon, 23 Aug 2010 16:25:32 -0400
-Message-Id: <1282595132-5026-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.234.200
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1754550Ab0HWU2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:28:10 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:49369 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab0HWU2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 16:28:08 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: clemens@ladisch.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] HPET: unmap unused I/O space
+Date: Mon, 23 Aug 2010 22:27:58 +0200
+Message-Id: <1282595278-22226-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.2.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI batteries can report in units of either current or energy. Right
-now we expose the current_now file even if the battery is reporting
-energy units, resulting in a file that should contain mA instead
-containing mW. Don't expose this value unless the battery is reporting
-current.
+When the initialization code in hpet founds a memory resource and does
+not found IRQ, it does not unmap the memory resource previously
+mapped.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
+There are buggy BIOSes which report resources exactly like this and
+what is worse the memory region bases point to normal RAM. This
+normally would not matter since the space is not touched. But when PAT
+is turned on, ioremap causes the page to be uncached and sets this bit
+in page->flags.
+
+Then when the page is about to be used by the allocator, it is
+reported as:
+BUG: Bad page state in process md5sum  pfn:3ed00
+page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
+page flags: 0x20000001000000(uncached)
+Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
+Call Trace:
+ [<ffffffff810df851>] bad_page+0xb1/0x100
+ [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
+ [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
+ [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
+...
+
+In this particular case:
+
+1) HPET returns 3ed00000 as memory region base, but it is not in
+reserved ranges reported by the BIOS (excerpt):
+ BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
+ BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
+
+2) there is no IRQ resource reported by HPET method. On the other
+hand, the Intel HPET specs (1.0a) says (3.2.5.1):
+_CRS (
+  // Report 1K of memory consumed by this Timer Block
+  memory range consumed
+  // Optional: only used if BIOS allocates Interrupts [1]
+  IRQs consumed
+)
+
+[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
+Legacy 8254/Legacy RTC hardware still exists, the device objects
+associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
+“consumed resources.”
+
+So in theory we should check whether if it is the case and use those
+interrupts instead.
+
+Anyway the address reported by the BIOS here is bogus, so non-presence
+of IRQ doesn't mean the "optional" part in point 2).
+
+Since I got no reply previously, fix this by simply unmapping the
+space when IRQ is not found and memory region was mapped previously.
+It would be probably more safe to walk the resources again and unmap
+appropriately depending on type.  But as we now use only ioremap for
+both 2 memory resource types, it is not necessarily needed right now.
+
+References: https://bugzilla.novell.com/show_bug.cgi?id=629908
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Clemens Ladisch <clemens@ladisch.de>
 ---
- drivers/acpi/battery.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/char/hpet.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index dc58402..9841720 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -273,7 +273,6 @@ static enum power_supply_property energy_battery_props[] = {
- 	POWER_SUPPLY_PROP_CYCLE_COUNT,
- 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
- 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
--	POWER_SUPPLY_PROP_CURRENT_NOW,
- 	POWER_SUPPLY_PROP_POWER_NOW,
- 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
- 	POWER_SUPPLY_PROP_ENERGY_FULL,
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index 8372a34..e3e184b 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -1017,6 +1017,8 @@ static int hpet_acpi_add(struct acpi_device *device)
+ 		return -ENODEV;
+ 
+ 	if (!data.hd_address || !data.hd_nirqs) {
++		if (data.hd_address)
++			iounmap(data.hd_address);
+ 		printk("%s: no address or irqs in _CRS\n", __func__);
+ 		return -ENODEV;
+ 	}
 -- 
 1.7.2.1
+
 
