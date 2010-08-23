@@ -1,157 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab0HWNQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:16:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab0HWNQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:16:05 -0400
-Date: Mon, 23 Aug 2010 09:15:59 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
-        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] btrfs: add a helper try_merge_free_space()
-Message-ID: <20100823131559.GF2404@localhost.localdomain>
-References: <4C71CD4B.10606@cn.fujitsu.com> <4C71CDA0.5010107@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C71CDA0.5010107@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752916Ab0HWNSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:18:03 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33745 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab0HWNSC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:18:02 -0400
+Subject: Re: help needed with EXPORT_SYMBOL
+From: Peter Zijlstra <peterz@infradead.org>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: aijazbaig1@gmail.com, netfilter-devel@vger.kernel.org, jengelh@medozas.de,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTimtNOyJCbLxAW8Ebsftb58EWoNFW7Xkevqb6oGo@mail.gmail.com>
+References: <1282373834.4080.79.camel@aijazbaig1-desktop>
+	 <1282540448.4080.86.camel@aijazbaig1-desktop>
+	 <AANLkTimtNOyJCbLxAW8Ebsftb58EWoNFW7Xkevqb6oGo@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 Aug 2010 15:17:57 +0200
+Message-ID: <1282569477.2605.1798.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 09:23:44AM +0800, Li Zefan wrote:
-> When adding a new extent, we'll firstly see if we can merge
-> this extent to the left or/and right extent. Extract this as
-> a helper try_merge_free_space().
+On Mon, 2010-08-23 at 07:48 -0400, Brian Gerst wrote:
 > 
-> As a side effect, we fix a small bug that if the new extent
-> has non-bitmap left entry but is unmergeble, we'll directly
-> link the extent without trying to drop it into bitmap.
-> 
-> This also prepares for the next patch.
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  fs/btrfs/free-space-cache.c |   75 ++++++++++++++++++++++++------------------
->  1 files changed, 43 insertions(+), 32 deletions(-)
-> 
-> diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
-> index 20f3141..faeec8f 100644
-> --- a/fs/btrfs/free-space-cache.c
-> +++ b/fs/btrfs/free-space-cache.c
-> @@ -610,22 +610,14 @@ out:
->  	return ret;
->  }
->  
-> -int btrfs_add_free_space(struct btrfs_block_group_cache *block_group,
-> -			 u64 offset, u64 bytes)
-> +bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
-> +			  struct btrfs_free_space *info)
->  {
-> -	struct btrfs_free_space *right_info = NULL;
-> -	struct btrfs_free_space *left_info = NULL;
-> -	struct btrfs_free_space *info = NULL;
-> -	int ret = 0;
-> -
-> -	info = kzalloc(sizeof(struct btrfs_free_space), GFP_NOFS);
-> -	if (!info)
-> -		return -ENOMEM;
-> -
-> -	info->offset = offset;
-> -	info->bytes = bytes;
-> -
-> -	spin_lock(&block_group->tree_lock);
-> +	struct btrfs_free_space *left_info;
-> +	struct btrfs_free_space *right_info;
-> +	bool merged = false;
-> +	u64 offset = info->offset;
-> +	u64 bytes = info->bytes;
->  
->  	/*
->  	 * first we want to see if there is free space adjacent to the range we
-> @@ -639,27 +631,11 @@ int btrfs_add_free_space(struct btrfs_block_group_cache *block_group,
->  	else
->  		left_info = tree_search_offset(block_group, offset - 1, 0, 0);
->  
-> -	/*
-> -	 * If there was no extent directly to the left or right of this new
-> -	 * extent then we know we're going to have to allocate a new extent, so
-> -	 * before we do that see if we need to drop this into a bitmap
-> -	 */
-> -	if ((!left_info || left_info->bitmap) &&
-> -	    (!right_info || right_info->bitmap)) {
-> -		ret = insert_into_bitmap(block_group, info);
-> -
-> -		if (ret < 0) {
-> -			goto out;
-> -		} else if (ret) {
-> -			ret = 0;
-> -			goto out;
-> -		}
-> -	}
-> -
->  	if (right_info && !right_info->bitmap) {
->  		unlink_free_space(block_group, right_info);
->  		info->bytes += right_info->bytes;
->  		kfree(right_info);
-> +		merged = true;
->  	}
->  
->  	if (left_info && !left_info->bitmap &&
-> @@ -668,8 +644,43 @@ int btrfs_add_free_space(struct btrfs_block_group_cache *block_group,
->  		info->offset = left_info->offset;
->  		info->bytes += left_info->bytes;
->  		kfree(left_info);
-> +		merged = true;
->  	}
->  
-> +	return merged;
-> +}
-> +
-> +int btrfs_add_free_space(struct btrfs_block_group_cache *block_group,
-> +			 u64 offset, u64 bytes)
-> +{
-> +	struct btrfs_free_space *info;
-> +	int ret = 0;
-> +
-> +	info = kzalloc(sizeof(struct btrfs_free_space), GFP_NOFS);
-> +	if (!info)
-> +		return -ENOMEM;
-> +
-> +	info->offset = offset;
-> +	info->bytes = bytes;
-> +
-> +	spin_lock(&block_group->tree_lock);
-> +
-> +	if (try_merge_free_space(block_group, info))
-> +		goto link;
-> +
-> +	/*
-> +	 * There was no extent directly to the left or right of this new
-> +	 * extent then we know we're going to have to allocate a new extent, so
-> +	 * before we do that see if we need to drop this into a bitmap
-> +	 */
-> +	ret = insert_into_bitmap(block_group, info);
-> +	if (ret < 0) {
-> +		goto out;
-> +	} else if (ret) {
-> +		ret = 0;
-> +		goto out;
-> +	}
-> +link:
->  	ret = link_free_space(block_group, info);
->  	if (ret)
->  		kfree(info);
-> -- 
-> 1.7.0.1
-> 
+> Use an exported function pointer in the main kernel as a hook that the
+> module sets when it is loaded.  Note, you must use module_get and
+> module_put around the call to the module to prevent it from unloading
+> while in use. 
 
-Reviewed-by: Josef Bacik <josef@redhat.com>
+Please don't do any such thing, its impossible to use correctly.
 
-Thanks,
+Suppose there are two modular users, A and B.
 
-Josef
+Both have something like:
+
+extern void (*fptr)(void);
+
+static void (*old_fptr)(void);
+
+static void func(void)
+{
+	/* foo */
+	if (old_fptr)
+		old_fptr();
+}
+
+module_init()
+{
+	old_fptr = fptr;
+	fptr = A_func;
+}
+
+Then you load A, load B and unload A, then guess what happens?
