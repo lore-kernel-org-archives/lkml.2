@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab0HWRSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 13:18:07 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56322 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab0HWRSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 13:18:05 -0400
-Message-ID: <4C72AD51.8090708@fusionio.com>
-Date: Mon, 23 Aug 2010 19:18:09 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754075Ab0HWRSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 13:18:21 -0400
+Received: from chiark.greenend.org.uk ([212.13.197.229]:48701 "EHLO
+	chiark.greenend.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab0HWRSS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 13:18:18 -0400
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@lst.de" <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
-References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>	 <20100817223145.GC4641@Krystal>  <4C6BC72E.6040607@gmail.com>	 <1282141930.3035.9.camel@mulgrave.site>  <4C6BEFD1.8010200@gmail.com>	 <1282142498.3035.17.camel@mulgrave.site>  <4C6C5561.5040302@fusionio.com>	 <1282171834.13811.51.camel@mulgrave.site>  <4C6C9E10.9030202@fusionio.com>	 <1282229572.8139.16.camel@mulgrave.site>  <4C7238CD.5070700@fusionio.com> <1282583332.11194.22.camel@mulgrave.site>
-In-Reply-To: <1282583332.11194.22.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <19570.44367.719276.128881@chiark.greenend.org.uk>
+Date: Mon, 23 Aug 2010 18:18:07 +0100
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
+        Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [RFC] mlock/stack guard interaction fixup
+In-Reply-To: <1282580751.2605.1997.camel@laptop>
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+	<1282391770.29609.1223.camel@localhost.localdomain>
+	<AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
+	<1282460275.11348.865.camel@localhost.localdomain>
+	<1282462386.11348.871.camel@localhost.localdomain>
+	<1282470917.11348.891.camel@localhost.localdomain>
+	<20100822172548.GB8957@suse.de>
+	<AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
+	<19570.38608.79434.179797@chiark.greenend.org.uk>
+	<1282580751.2605.1997.camel@laptop>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+From: Ian Jackson <ijackson@chiark.greenend.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-23 19:08, James Bottomley wrote:
-> On Mon, 2010-08-23 at 11:01 +0200, Jens Axboe wrote:
->> On 2010-08-19 16:52, James Bottomley wrote:
->>> On Wed, 2010-08-18 at 22:59 -0400, Jens Axboe wrote:
->>>> On 08/18/2010 06:50 PM, James Bottomley wrote:
->>>>> On Wed, 2010-08-18 at 17:49 -0400, Jens Axboe wrote:
->>>>>> On 08/18/2010 10:41 AM, James Bottomley wrote:
->>>>>>> On Wed, 2010-08-18 at 16:36 +0200, Jiri Slaby wrote:
->>>>>>>> On 08/18/2010 04:32 PM, James Bottomley wrote:
->>>>>>>>>> James and Jens, could you take the two remaining (SCSI and BLOCK)?
->>>>>>>>>
->>>>>>>>> Sure ... could you identify the email by subject, please? lkml.org seems
->>>>>>>>> to be down this morning.
->>>>>>>>
->>>>>>>> Sure:
->>>>>>>> [PATCH v2] BLOCK: fix bio.bi_rw handling
->>>>>>>> and
->>>>>>>> [PATCH v2] SCSI: fix bio.bi_rw handling
->>>>>>>>
->>>>>>>> You should have received one copy to your suse.de inbox, if everything
->>>>>>>> worked.
->>>>>>>
->>>>>>> Got it.  One of life's little ironies is that I couldn't immediately
->>>>>>> locate it in the SCSI list because it was already queued for inclusion.
->>>>>>
->>>>>> Please add my acked-by to both of them.
->>>>>
->>>>> OK.
->>>>>
->>>>>>  I'm away on vacation, so if
->>>>>> you James could queue them up, I would appreciate it. Thanks!
->>>>>
->>>>> Certainly sir ... and would you like your patches served to your table
->>>>> or by the pool?
->>>>
->>>> Pool, please. With that first name and the British accent, it's hard
->>>> not to boss you around.
->>>
->>> Well, sir, the wait staff and I thought we'd just write to ask how your
->>> convalescence was going.  Sorry about spilling the patch down your
->>> front, sir, but the glass was slippery.  Who could have foreseen that
->>> you'd step backwards, fall over the pool boy and upset a flaming bananas
->>> foster on to the front of your shorts.  I did get a commendation for my
->>> quick action with a high pressure hose to the affected area (thank you,
->>> sir, for your shocked but grateful expression).  I must say I didn't
->>> foresee the force of the blast catapulting you against the pool steps,
->>> but a concussion is a small price to pay for avoiding fried nuts with
->>> the bananas, eh, sir? It's funny how things turn out, and I bet if you
->>> could do it over again, you'd have got off your arse to fetch your own
->>> damn patch now, wouldn't you, sir?
->>
->> It's so hard to find decent staff these days, the things I have to
->> put up with...
->>
->> I'm back now. Have you queued it up, or should I get off my hiney
->> and add it to the mix?
+Peter Zijlstra writes ("Re: [RFC] mlock/stack guard interaction fixup"):
+> On Mon, 2010-08-23 at 16:42 +0100, ijackson@chiark.greenend.org.uk
+> wrote:
+> > mlocking the stack is entirely sensible and normal for a real-time
+> > program.  Most such programs use mlockall but there is no particular
+> > reason why a program that has some more specific requirements should
+> > use mlock to lock only a part of the stack.  (Perhaps it has only one
+> > real-time thread?) 
 > 
-> It's in my email queue, but not in a git tree, yet ... you can take it
-> back if you want ...
+> RT apps should pre-allocate and mlock their stack in advance (and
+> pre-fault too for the paranoid).
 
-Will do!
+Are you allowed to mlock a stack page which has not yet been faulted
+in ?  What effect does it have ?  I wasn't able to find a convincing
+de jure answer to this question.
 
--- 
-Jens Axboe
+But you seem, like me, to be disagreeing with Linus's assertion that
+calling mlock() on the stack is something no sane programs does ?
 
+> mlockall is a very bad interface and should really not be used.
+
+You are directly contradicting the advice in SuS, to which I just gave
+a reference.  You're free to do so of course but it might be worth
+explaining in a bit more detail why the advice in SuS is wrong.
+
+Ian.
