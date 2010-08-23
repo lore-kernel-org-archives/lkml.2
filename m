@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab0HWMa4 (ORCPT <rfc822;w@1wt.eu>);
+	id S1752853Ab0HWMa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 08:30:58 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29796 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752752Ab0HWMa4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Aug 2010 08:30:56 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60837 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442Ab0HWMaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 08:30:55 -0400
-Message-ID: <4C726A00.2070703@kernel.dk>
-Date: Mon, 23 Aug 2010 14:30:56 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Karel Zak <kzak@redhat.com>
-CC: Kay Sievers <kay.sievers@vrfy.org>, Milan Broz <mbroz@redhat.com>,
-        util-linux-ng@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] loop: add some basic read-only sysfs attributes
-References: <AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> <4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> <20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com> <20100729195616.GF1981@nb.net.home> <4C51E36F.6060906@redhat.com> <AANLkTimq0UVtR-ooutKTfOOE=cS-vxR4gR-aVc1feOzJ@mail.gmail.com> <4C52E013.7010105@redhat.com> <AANLkTik7DZ6-4UOTZnJiFJ5c19wGd4ko4Kc6zE7UMG8U@mail.gmail.com> <20100823122926.GC13712@nb.net.home>
-In-Reply-To: <20100823122926.GC13712@nb.net.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <000401cb42bf$07e201f0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Greg KH" <gregkh@suse.de>
+Cc: "Morinaga" <morinaga526@dsn.okisemi.com>, <margie.foster@intel.com>,
+        <alan@linux.intel.com>, <arjan@linux.intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, "LKML" <linux-kernel@vger.kernel.org>,
+        <meego-dev@meego.com>
+References: <4C6BA385.80409@dsn.okisemi.com> <20100818131401.GA5861@suse.de> <000601cb3f99$8f5a0a20$66f8800a@maildom.okisemi.com> <20100819152214.GD2562@suse.de>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+Date: Mon, 23 Aug 2010 21:30:51 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-23 14:29, Karel Zak wrote:
-> On Fri, Jul 30, 2010 at 04:34:43PM +0200, Kay Sievers wrote:
->> On Fri, Jul 30, 2010 at 16:22, Milan Broz <mbroz@redhat.com> wrote:
->>> On 07/30/2010 06:36 AM, Kay Sievers wrote:
->>>
->>>> Alternatively, these attributes could be created and removed/created
->>>> with the ioctl, and before the 'change' event, only if there is an
->>>> active backing file, but I would expect the attribute group at the
->>>> device to work just fine.
->>> I have no idea how you can add attribute group before add_disk() which
->>> initializes kobj (it ends with BUG_ON in internal_create_group
->>> - because !kobj->sd). Perhaps I missed something?
->>
->> Attribute groups handle the creation of a kobject (subdir) for you,
->> you only supply a name to the group. Without a name, they will put all
->> the attributes in the root of the device.
->>
->> The 'struct device' has a member **groups, and that can have a list of
->> attribute groups assigned. You assign them before you register the
->> device, and the core will take care of everything.
->>
->>> Anyway, second approach works - now is loop attributes available only
->>> when loop is configured and before CHANGE uevent is sent.
->>>
->>> Ok with that?
->>
->> Sounds good, nothing to complain from a sysfs timing perspective.
-> 
-> Jens, ping... it would be really really nice to have this feature in 
-> kernel. 
-> 
-> The ioctls are useless and I'd like to minimize number of situations
-> where mount(8) behaviour depends on /etc/mtab.
+----- Original Message ----- 
+From: "Greg KH" <gregkh@suse.de>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <yong.y.wang@intel.com>; <qi.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <alan@linux.intel.com>; <margie.foster@intel.com>;
+"Morinaga" <morinaga526@dsn.okisemi.com>
+Sent: Friday, August 20, 2010 12:22 AM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
 
-Looks good to me as well and agree on the ioctls. Care to resend
-a fresh patch and I will queue it up for 2.6.37.
 
--- 
-Jens Axboe
+> On Thu, Aug 19, 2010 at 09:25:03PM +0900, Masayuki Ohtake wrote:
+> > Please find <MASA>
+>
+> If someone takes the time to review your code and ask questions, it is
+> considered common courtesy to at least answer them all and not ignore
+> some of them.  Please do so.
+>
+> > > >  drivers/misc/Kconfig    |    9 +
+> > > >  drivers/misc/Makefile   |    1 +
+> > > >  drivers/misc/pch_phub.c |  722 +++++++++++++++++++++++++++++++++++++++++++++++
+> > > >  3 files changed, 732 insertions(+), 0 deletions(-)
+> > > >  create mode 100755 drivers/misc/pch_phub.c
+> > >
+> > > You forgot to add documentation for your sysfs files in
+> > > Documentation/ABI/ which is a requiremend when you add new ones.
+> >
+> > <MASA>
+> > Which folder should we put stable/ or testing/ ?
+>
+> Which do you feel it should be in?
+I think 'testing' is appropriate.
+
+>
+> > > > +};
+> > > > +
+> > > > +/* SROM SPEC for MAC address assignment offset */
+> > > > +static const int pch_phub_mac_offset[ETH_ALEN] = {0x3, 0x2, 0x1, 0x0, 0xb, 0xa};
+> > > > +
+> > > > +static DEFINE_MUTEX(pch_phub_mutex);
+> > > > +static struct pch_phub_reg pch_phub_reg;
+> > >
+> > > So you can only have one of these devices in a system at the same time?
+> > > What happens when a machine ships with two of them?
+> >
+> > <MASA>
+> > I can't understand the above questioin meaning.
+> > Give me more information, please.
+> > What's does the above "these devices" mean?
+>
+> The device the driver is controlling.  What happens when this driver
+> runs on a system that has 2 of these devices?  You need to be able to
+> handle multiple devices, and that doesn't happen with a single variable,
+> right?  Please dynamically allocate it and make the lock associated to
+> the actual device, not the whole driver, if possible.
+I can understand your saying.
+But our driver for Topcliff doesn't support multiple device but single device only.
+>From LSI structure point of view, I think, it is impossible that topcliff is used as multiple devices.
+None the less, should our driver support multiple device ?
+
+Thanks, Ohtake(OKISEMI)
+
 
