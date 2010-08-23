@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab0HWWrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 18:47:05 -0400
-Received: from kroah.org ([198.145.64.141]:38447 "EHLO coco.kroah.org"
+	id S1754896Ab0HWWrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 18:47:12 -0400
+Received: from kroah.org ([198.145.64.141]:38464 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754199Ab0HWWrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 18:47:04 -0400
-Date: Mon, 23 Aug 2010 15:27:26 -0700
+	id S1754199Ab0HWWrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 18:47:10 -0400
+Date: Mon, 23 Aug 2010 15:43:04 -0700
 From: Greg KH <greg@kroah.com>
-To: Thomas Backlund <tmb@mandriva.org>
-Cc: Greg KH <gregkh@suse.de>, "Gabor Z. Papp" <gzp@papp.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.27.52 stable review
-Message-ID: <20100823222726.GE13371@kroah.com>
-References: <20100813214704.GA18960@kroah.com>
- <x6r5i1o3dc@gzp>
- <20100814210135.GA7745@suse.de>
- <4C671497.4050701@mandriva.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Christian Samsel <Christian.Samsel@rwth-aachen.de>,
+        LKML <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [stable] runaway loop modprobe char-major-5-1 has returned?
+Message-ID: <20100823224304.GJ13371@kroah.com>
+References: <201008181143.04629.Christian.Samsel@rwth-aachen.de>
+ <4C6C2DE9.2000509@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C671497.4050701@mandriva.org>
+In-Reply-To: <4C6C2DE9.2000509@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 01:11:35AM +0300, Thomas Backlund wrote:
-> Greg KH skrev 15.8.2010 00:01:
-> >On Sat, Aug 14, 2010 at 01:11:43PM +0200, Gabor Z. Papp wrote:
-> >>* Greg KH<gregkh@suse.de>:
-> >>
-> >>| If I could get some people to please test this -rc release?
-> >>
-> >>BTW seems like 2.6.27 no more combatible with GNU Make 3.82:
-> >>
-> >>$ make oldconfig
-> >>Makefile:443: *** mixed implicit and normal rules.  Stop.
-> >>
-> >>Same with line 1609.
-> >
-> >Nothing has changed with the main Makefile with the exception of
-> >changing the version number for a very long time.
-> >
-> >Did something else change on your system?
-> >
-> >odd,
-> >
+On Wed, Aug 18, 2010 at 09:00:57PM +0200, Jiri Slaby wrote:
+> On 08/18/2010 11:43 AM, Christian Samsel wrote:
+> > Hi,
+> > I wanted to build a minimal kernel as Xen DomU, but stumbled across
+> > 
+> > [    0.029457] VFS: Disk quotas dquot_6.5.2
+> > [    0.029559] Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
+> > [    0.029973] Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+> > [    0.030662] msgmni has been set to 243
+> > [    0.099708] request_module: runaway loop modprobe char-major-5-1
+> > [    0.100482] request_module: runaway loop modprobe char-major-5-1
+> > [    0.101851] request_module: runaway loop modprobe char-major-5-1
+> > [    0.102534] request_module: runaway loop modprobe char-major-5-1
+> > [    0.106311] request_module: runaway loop modprobe char-major-5-1
+> > (hangs)
+> > 
+> > after reading http://lwn.net/Articles/310472/ and comparing the output after 
+> > msgmni of a working kernel on a other machine i found the config option change 
+> > which breaks it:
 > 
-> 2.6.27 needs this wich went in after 2.6.28-rc8:
+> Hi, you may want this:
+> 31d1d48e199e99077fb30f6fb9a793be7bec756f
 > 
-> kbuild: fix make incompatibility
-> author	Sam Ravnborg <sam@ravnborg.org>	
-> 	Sat, 13 Dec 2008 22:00:45 +0000 (23:00 +0100)
-> committer	Sam Ravnborg <sam@ravnborg.org>	
-> 	Sat, 13 Dec 2008 22:00:45 +0000 (23:00 +0100)
-> commit	31110ebbec8688c6e9597b641101afc94e1c762a
+> Adding stable to consider it for inclusion in .35 stable too.
 
-Now applied.
+Now queued up for the next .35-stable kernel release.
 
 thanks,
 
