@@ -1,36 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab0HWJnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 05:43:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55922 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715Ab0HWJnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 05:43:17 -0400
-Message-ID: <4C724199.5070200@kernel.org>
-Date: Mon, 23 Aug 2010 11:38:33 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753821Ab0HWJnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 05:43:49 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40519 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab0HWJnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 05:43:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C7242D7.4050009@jp.fujitsu.com>
+Date: Mon, 23 Aug 2010 18:43:51 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] workqueue: annotate lock context change
-References: <1282486783-4573-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1282486783-4573-1-git-send-email-namhyung@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: [PATCH v4 2/5] napi: convert trace_napi_poll to TRACE_EVENT
+References: <4C72422C.5070102@jp.fujitsu.com>
+In-Reply-To: <4C72422C.5070102@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 Aug 2010 09:43:17 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2010 04:19 PM, Namhyung Kim wrote:
-> Some of internal functions called within gcwq->lock context releases and
-> regrabs the lock but were missing proper annotations. Add it.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-applied to wq#for-linus.  Thanks.
+This patch converts trace_napi_poll from DECLARE_EVENT to TRACE_EVENT to improve
+the usability of napi_poll tracepoint.
 
--- 
-tejun
+          <idle>-0     [001] 241302.750777: napi_poll: napi poll on napi struct f6acc480 for device eth3
+          <idle>-0     [000] 241302.852389: napi_poll: napi poll on napi struct f5d0d70c for device eth1
+
+An original patch is below.
+http://marc.info/?l=linux-kernel&m=126021713809450&w=2
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+
+And add a fix by Steven Rostedt.
+http://marc.info/?l=linux-kernel&m=126150506519173&w=2
+
+Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+---
+ include/trace/events/napi.h |   25 +++++++++++++++++++++++--
+ 1 files changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/include/trace/events/napi.h b/include/trace/events/napi.h
+index 188deca..8fe1e93 100644
+--- a/include/trace/events/napi.h
++++ b/include/trace/events/napi.h
+@@ -6,10 +6,31 @@
+ 
+ #include <linux/netdevice.h>
+ #include <linux/tracepoint.h>
++#include <linux/ftrace.h>
++
++#define NO_DEV "(no_device)"
++
++TRACE_EVENT(napi_poll,
+ 
+-DECLARE_TRACE(napi_poll,
+ 	TP_PROTO(struct napi_struct *napi),
+-	TP_ARGS(napi));
++
++	TP_ARGS(napi),
++
++	TP_STRUCT__entry(
++		__field(	struct napi_struct *,	napi)
++		__string(	dev_name, napi->dev ? napi->dev->name : NO_DEV)
++	),
++
++	TP_fast_assign(
++		__entry->napi = napi;
++		__assign_str(dev_name, napi->dev ? napi->dev->name : NO_DEV);
++	),
++
++	TP_printk("napi poll on napi struct %p for device %s",
++		__entry->napi, __get_str(dev_name))
++);
++
++#undef NO_DEV
+ 
+ #endif /* _TRACE_NAPI_H_ */
+ 
+
