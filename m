@@ -1,50 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab0HWTld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 15:41:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60821 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab0HWTlc (ORCPT
+	id S1754361Ab0HWTvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 15:51:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37835 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751971Ab0HWTvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 15:41:32 -0400
-Message-ID: <4C72CEE4.7020104@vlnb.net>
-Date: Mon, 23 Aug 2010 23:41:24 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Bart Van Assche <bvanassche@acm.org>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>	 <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com> <1282508953.3042.102.camel@mulgrave.site>
-In-Reply-To: <1282508953.3042.102.camel@mulgrave.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 23 Aug 2010 15:51:47 -0400
+Date: Mon, 23 Aug 2010 12:51:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/6] md: remove dependency on __GFP_NOFAIL
+Message-Id: <20100823125100.75a9de56.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com>
+	<20100823122606.47524cef.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1008231229410.14622@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:SmDURXAUN/4IDaBEoy77cRRLZDB71c1GThx8xpga8R3
- vq0p2JlukR1eBsrd6QekjIlbv8uCakbDP9ejrc/tCtIEZiI/gS
- y37Wh5Kscj0PF4LI+MW8Cm2+648+nHorJ+g2Y/YN647NIj0QF+
- 4ZRM8/0Wa82MmOfJIj61dn2FSHCK8KlKGLkUSKm8kQTOgt9Xtp
- gcy5mFY/r63EmhU8/QJ5Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley, on 08/23/2010 12:29 AM wrote:
-> So the phrase "up to GigE" was deliberately in the above to exclude the
-> disputed infiniband results.  I'm not really interested in re-opening
-> the arguments over how to interpret those results.  The fact that SCST
-> and STGT were on par up to 1GbE is enough to refute the contention that
-> STGT is "fundamentally slow".
+On Mon, 23 Aug 2010 12:35:22 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-Well, James, why not 100MbE? If you want a comparison of target 
-implementations you need a fast hardware with minimal latency. 
-Otherwise, the difference between the implementations can drown in the 
-overhead of the accompanying processing. 1GbE is a nearly 10 years ago 
-interface. Or are we going to stay ten years behind progress?
+> On Mon, 23 Aug 2010, Andrew Morton wrote:
+> 
+> > > diff --git a/drivers/md/dm-region-hash.c b/drivers/md/dm-region-hash.c
+> > > --- a/drivers/md/dm-region-hash.c
+> > > +++ b/drivers/md/dm-region-hash.c
+> > > @@ -289,8 +289,12 @@ static struct dm_region *__rh_alloc(struct dm_region_hash *rh, region_t region)
+> > >  	struct dm_region *reg, *nreg;
+> > >  
+> > >  	nreg = mempool_alloc(rh->region_pool, GFP_ATOMIC);
+> > > -	if (unlikely(!nreg))
+> > > -		nreg = kmalloc(sizeof(*nreg), GFP_NOIO | __GFP_NOFAIL);
+> > > +	if (unlikely(!nreg)) {
+> > > +		/* FIXME: this may potentially loop forever */
+> > > +		do {
+> > > +			nreg = kmalloc(sizeof(*nreg), GFP_NOIO);
+> > > +		} while (!nreg);
+> > > +	}
+> > >  
+> > >  	nreg->state = rh->log->type->in_sync(rh->log, region, 1) ?
+> > >  		      DM_RH_CLEAN : DM_RH_NOSYNC;
+> > 
+> > erm.
+> > 
+> > The reason for adding GFP_NOFAIL in the first place was my observation
+> > that the kernel contained lots of open-coded retry-for-ever loops.
+> > 
+> > All of these are wrong, bad, buggy and mustfix.  So we consolidated the
+> > wrongbadbuggymustfix concept into the core MM so that miscreants could
+> > be easily identified and hopefully fixed.
+> > 
+> 
+> That consolidation would have been unnecessary, then, since all 
+> allocations with order < PAGE_ALLOC_COSTLY_ORDER automatically loop 
+> indefinitely in the page allocator.
 
-Thanks,
-Vlad
+The difference is that an order-0 !__GFP_NOFAIL allocation attempt can
+fail due to oom-killing.  Unless someone broke that.
+
+>  struct dm_region allocations would 
+> already do that.
+> 
+> So this retry loop doesn't actually do anything that the page allocator 
+> already doesn't, with or without __GFP_NOFAIL.  The difference here is 
+> that
+> 
+>  - it doesn't depend on the page allocator's implementation, which may
+>    change over time, and
+> 
+>  - it adds documentation so that the subsystems doing these loops can
+>    (hopefully) fix these problems later, although their appear to be
+>    geniune cases where little other options are available.
+> 
+> > I think that simply undoing that change is a bad idea - it allows the
+> > wrongbadbuggymustfix code to hide from view.
+> > 
+> 
+> It removes several branches from the page allocator.
+
+None on the fast path.
+
+> > The correct way to remove __GFP_NOFAIL is to fix the
+> > wrongbadbuggymustfix code properly.
+> > 
+> 
+> If the prerequisite for removing __GFP_NOFAIL is that nobody must ever 
+> loop indefinitely looking for memory or smaller order allocations don't 
+> implicitly retry, then there's little chance it'll ever get removed since 
+> they've existed for years without anybody cleaning them up.
+
+The JBD one is hard - I haven't looked at the others.
+
+We should fix them.
