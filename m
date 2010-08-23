@@ -1,276 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab0HWUNr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:13:47 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10165 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab0HWUMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:12:53 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6083"; a="51955978"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 5/5] msm: gpio: Remove tlmm routines obsoleted by gpiomux.
-Date: Mon, 23 Aug 2010 13:12:48 -0700
-Message-Id: <1282594368-5791-5-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
-References: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
+	id S1753938Ab0HWUOp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:14:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40787 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab0HWUOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 16:14:43 -0400
+Message-ID: <4C72D6AC.3060509@ti.com>
+Date: Mon, 23 Aug 2010 22:14:36 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: "Basak, Partha" <p-basak2@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Varadarajan, Charulatha" <charu@ti.com>,
+        "Nayak, Rajendra" <rnayak@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: [PATCH] OMAP: HWMOD: Handle opt clocks using clk_add_alias
+References: <1282578269-8835-1-git-send-email-p-basak2@ti.com>
+In-Reply-To: <1282578269-8835-1-git-send-email-p-basak2@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all supported gpio_tlmm_config-using boards
-are using gpiomux, remove the deprecated code.
+Hi Partha,
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/Makefile            |    1 -
- arch/arm/mach-msm/gpio.c              |   85 -----------------------
- arch/arm/mach-msm/include/mach/gpio.h |  123 ---------------------------------
- 3 files changed, 0 insertions(+), 209 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpio.c
+On 8/23/2010 5:44 PM, Basak, Partha wrote:
+> From: Basak, Partha<p-basak2@ti.com>
+>
+> For every optional clock present per hwmod per omap-device, this function
+> adds an entry in the clocks list of the form<dev-id=dev_name, con-id=role>,
+> if an entry is already present in the list of the form<dev-id=NULL, con-id=role>.
+>
+> The function is called from within the framework inside omap_device_build_ss(),
+> after omap_device_register.
+>
+> This allows drivers to get a pointer to its optional clocks based on its role
+> by calling clk_get(<dev*>,<role>).
+>
+> Link to discussions related to this patch:
+> http://www.spinics.net/lists/linux-omap/msg34809.html
+>
+> Signed-off-by: Charulatha V<charu@ti.com>
+> Signed-off-by: Basak, Partha<p-basak2@ti.com>
+> Signed-off-by: Benoit Cousson<b-cousson@ti.com>
+> Signed-off-by: Rajendra Nayak<rnayak@ti.com>
+>
+> Cc: Paul Walmsley<paul@pwsan.com>
+> Cc: Kevin Hilman<khilman@deeprootsystems.com>
+> ---
+>   arch/arm/plat-omap/omap_device.c |   31 ++++++++++++++++++++++++++++++-
+>   1 files changed, 30 insertions(+), 1 deletions(-)
+>
+> Index: linux-omap-pm/arch/arm/plat-omap/omap_device.c
+> ===================================================================
+> --- linux-omap-pm.orig/arch/arm/plat-omap/omap_device.c	2010-08-18 02:48:30.789079550 +0530
+> +++ linux-omap-pm/arch/arm/plat-omap/omap_device.c	2010-08-24 07:19:43.637080138 +0530
+> @@ -82,6 +82,7 @@
+>   #include<linux/slab.h>
+>   #include<linux/err.h>
+>   #include<linux/io.h>
+> +#include<linux/clk.h>
+>
+>   #include<plat/omap_device.h>
+>   #include<plat/omap_hwmod.h>
+> @@ -243,7 +244,6 @@ static inline struct omap_device *_find_
+>   	return container_of(pdev, struct omap_device, pdev);
+>   }
+>
+> -
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 1850942..faeb1f9 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -3,7 +3,6 @@ obj-y += io.o idle.o timer.o dma.o
- obj-y += vreg.o
- obj-y += acpuclock-arm11.o
- obj-y += clock.o clock-pcom.o
--obj-y += gpio.o
- 
- ifdef CONFIG_MSM_VIC
- obj-y += irq-vic.o
-diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
-deleted file mode 100644
-index bc32c84..0000000
---- a/arch/arm/mach-msm/gpio.c
-+++ /dev/null
-@@ -1,85 +0,0 @@
--/* linux/arch/arm/mach-msm/gpio.c
-- *
-- * Copyright (C) 2007 Google, Inc.
-- * Copyright (c) 2009, Code Aurora Forum. All rights reserved.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/module.h>
--#include <mach/gpio.h>
--#include "proc_comm.h"
--
--int gpio_tlmm_config(unsigned config, unsigned disable)
--{
--	return msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &config, &disable);
--}
--EXPORT_SYMBOL(gpio_tlmm_config);
--
--int msm_gpios_enable(const struct msm_gpio *table, int size)
--{
--	int rc;
--	int i;
--	const struct msm_gpio *g;
--	for (i = 0; i < size; i++) {
--		g = table + i;
--		rc = gpio_tlmm_config(g->gpio_cfg, GPIO_ENABLE);
--		if (rc) {
--			pr_err("gpio_tlmm_config(0x%08x, GPIO_ENABLE)"
--			       " <%s> failed: %d\n",
--			       g->gpio_cfg, g->label ?: "?", rc);
--			pr_err("pin %d func %d dir %d pull %d drvstr %d\n",
--			       GPIO_PIN(g->gpio_cfg), GPIO_FUNC(g->gpio_cfg),
--			       GPIO_DIR(g->gpio_cfg), GPIO_PULL(g->gpio_cfg),
--			       GPIO_DRVSTR(g->gpio_cfg));
--			goto err;
--		}
--	}
--	return 0;
--err:
--	msm_gpios_disable(table, i);
--	return rc;
--}
--EXPORT_SYMBOL(msm_gpios_enable);
--
--void msm_gpios_disable(const struct msm_gpio *table, int size)
--{
--	int rc;
--	int i;
--	const struct msm_gpio *g;
--	for (i = size-1; i >= 0; i--) {
--		g = table + i;
--		rc = gpio_tlmm_config(g->gpio_cfg, GPIO_DISABLE);
--		if (rc) {
--			pr_err("gpio_tlmm_config(0x%08x, GPIO_DISABLE)"
--			       " <%s> failed: %d\n",
--			       g->gpio_cfg, g->label ?: "?", rc);
--			pr_err("pin %d func %d dir %d pull %d drvstr %d\n",
--			       GPIO_PIN(g->gpio_cfg), GPIO_FUNC(g->gpio_cfg),
--			       GPIO_DIR(g->gpio_cfg), GPIO_PULL(g->gpio_cfg),
--			       GPIO_DRVSTR(g->gpio_cfg));
--		}
--	}
--}
--EXPORT_SYMBOL(msm_gpios_disable);
--
--int msm_gpios_request_enable(const struct msm_gpio *table, int size)
--{
--	int rc = msm_gpios_enable(table, size);
--	return rc;
--}
--EXPORT_SYMBOL(msm_gpios_request_enable);
--
--void msm_gpios_disable_free(const struct msm_gpio *table, int size)
--{
--	msm_gpios_disable(table, size);
--}
--EXPORT_SYMBOL(msm_gpios_disable_free);
-diff --git a/arch/arm/mach-msm/include/mach/gpio.h b/arch/arm/mach-msm/include/mach/gpio.h
-index 83e47c0..36ad50d 100644
---- a/arch/arm/mach-msm/include/mach/gpio.h
-+++ b/arch/arm/mach-msm/include/mach/gpio.h
-@@ -23,127 +23,4 @@
- #define gpio_cansleep   __gpio_cansleep
- #define gpio_to_irq     __gpio_to_irq
- 
--/**
-- * struct msm_gpio - GPIO pin description
-- * @gpio_cfg - configuration bitmap, as per gpio_tlmm_config()
-- * @label - textual label
-- *
-- * Usually, GPIO's are operated by sets.
-- * This struct accumulate all GPIO information in single source
-- * and facilitete group operations provided by msm_gpios_xxx()
-- */
--struct msm_gpio {
--	u32 gpio_cfg;
--	const char *label;
--};
--
--/**
-- * msm_gpios_request_enable() - request and enable set of GPIOs
-- *
-- * Request and configure set of GPIO's
-- * In case of error, all operations rolled back.
-- * Return error code.
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--int msm_gpios_request_enable(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_disable_free() - disable and free set of GPIOs
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--void msm_gpios_disable_free(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_request() - request set of GPIOs
-- * In case of error, all operations rolled back.
-- * Return error code.
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--int msm_gpios_request(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_free() - free set of GPIOs
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--void msm_gpios_free(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_enable() - enable set of GPIOs
-- * In case of error, all operations rolled back.
-- * Return error code.
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--int msm_gpios_enable(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_disable() - disable set of GPIOs
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--void msm_gpios_disable(const struct msm_gpio *table, int size);
--
--/* GPIO TLMM (Top Level Multiplexing) Definitions */
--
--/* GPIO TLMM: Function -- GPIO specific */
--
--/* GPIO TLMM: Direction */
--enum {
--	GPIO_INPUT,
--	GPIO_OUTPUT,
--};
--
--/* GPIO TLMM: Pullup/Pulldown */
--enum {
--	GPIO_NO_PULL,
--	GPIO_PULL_DOWN,
--	GPIO_KEEPER,
--	GPIO_PULL_UP,
--};
--
--/* GPIO TLMM: Drive Strength */
--enum {
--	GPIO_2MA,
--	GPIO_4MA,
--	GPIO_6MA,
--	GPIO_8MA,
--	GPIO_10MA,
--	GPIO_12MA,
--	GPIO_14MA,
--	GPIO_16MA,
--};
--
--enum {
--	GPIO_ENABLE,
--	GPIO_DISABLE,
--};
--
--#define GPIO_CFG(gpio, func, dir, pull, drvstr) \
--	((((gpio) & 0x3FF) << 4)        |	  \
--	 ((func) & 0xf)                  |	  \
--	 (((dir) & 0x1) << 14)           |	  \
--	 (((pull) & 0x3) << 15)          |	  \
--	 (((drvstr) & 0xF) << 17))
--
--/**
-- * extract GPIO pin from bit-field used for gpio_tlmm_config
-- */
--#define GPIO_PIN(gpio_cfg)    (((gpio_cfg) >>  4) & 0x3ff)
--#define GPIO_FUNC(gpio_cfg)   (((gpio_cfg) >>  0) & 0xf)
--#define GPIO_DIR(gpio_cfg)    (((gpio_cfg) >> 14) & 0x1)
--#define GPIO_PULL(gpio_cfg)   (((gpio_cfg) >> 15) & 0x3)
--#define GPIO_DRVSTR(gpio_cfg) (((gpio_cfg) >> 17) & 0xf)
--
--int gpio_tlmm_config(unsigned config, unsigned disable);
--
- #endif /* __ASM_ARCH_MSM_GPIO_H */
--- 
-1.7.0.4
+That fix is not related to the patch subject.
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>   /* Public functions for use by core code */
+>
+>   /**
+> @@ -271,6 +271,47 @@ int omap_device_count_resources(struct o
+>   }
+
+This is not a public function, so you should move it before the /* 
+Public functions for use by core code */
+
+>   /**
+> + * omap_device_add_opt_clk_alias - Add alias for optional clocks in the
+> + * clocks list.
+> + *
+> + * @od: struct omap_device *od
+> + *
+> + * For every optional clock present per hwmod per omap-device, this function
+> + * adds an entry in the clocks list of the form<dev-id=dev_name, con-id=role>
+> + * if an entry is already present in it with the form<dev-id=NULL,con-id=role>
+> + *
+> + * The function is called from inside omap_device_build_ss(),
+> + * after omap_device_register.
+> + *
+> + * This allows drivers to get a pointer to its optional clocks based on its role
+> + * by calling clk_get(<dev*>,<role>).
+> + */
+> +
+> +static void omap_device_add_opt_clk_alias(struct omap_device *od)
+> +{
+> +	int i, j;
+> +	struct omap_hwmod_opt_clk *oc;
+> +	struct omap_hwmod *oh;
+> +
+> +	for (i = 0, oh = *od->hwmods; i<  od->hwmods_cnt; i++, oh++)
+
+You can avoid that iteration and the extra level of indentation by 
+re-using the iteration done before the call to that function.
+
+> +		/* Add Clock alias for all optional clocks*/
+> +		for (j = oh->opt_clks_cnt, oc = oh->opt_clks;
+> +			j>  0; j--, oc++) {
+> +			if ((oc->_clk)&&
+> +			(IS_ERR(clk_get(&od->pdev.dev, oc->role)))) {
+> +				int ret;
+
+You can avoid the indentation by returning in case of error.
+You can avoid as well 2 pairs of parens.
+
+> +
+> +				ret = clk_add_alias(oc->role,
+> +					dev_name(&od->pdev.dev),
+> +					(char *)oc->clk, NULL);
+
+The indentation is not align with the inner parameters... which is not 
+easy in your case due to the too many indentation level you have in this 
+function.
+
+> +				if (ret)
+> +					dev_err(&od->pdev.dev, "omap_device:\
+
+This is not correct way of splitting long string, use "omap_device:" 
+instead.
+
+Even if dev_err is usable because you have the dev pointer, it is in 
+fact an error from the omap_device code code, so using pr_err is 
+probably more appropriate (TBC).
+
+> +					clk_add_alias for %s failed\n",
+> +					oc->role);
+> +			}
+> +		}
+> +}
+> +/**
+>    * omap_device_fill_resources - fill in array of struct resource
+>    * @od: struct omap_device *
+>    * @res: pointer to an array of struct resource to be filled in
+> @@ -424,6 +465,12 @@ struct omap_device *omap_device_build_ss
+>   	for (i = 0; i<  oh_cnt; i++)
+>   		hwmods[i]->od = od;
+
+You can call a per hwmod API here in order to avoid the iteration inside 
+the function.
+
+>
+> +	/*
+> +	 * Add Clock alias for all optional
+> +	 * clocks present in the hwmod
+> +	 */
+
+That comment is not bringing any new information, the function is 
+already documented in the kernel doc comment.
+
+> +	omap_device_add_opt_clk_alias(od);
+> +
+>   	if (ret)
+>   		goto odbs_exit4;
+>
+
+Regards,
+Benoit
+
