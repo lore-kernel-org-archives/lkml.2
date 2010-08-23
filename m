@@ -1,111 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab0HWBTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 21:19:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58632 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674Ab0HWBTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 21:19:13 -0400
-Message-ID: <4C71CDB7.6000602@cn.fujitsu.com>
-Date: Mon, 23 Aug 2010 09:24:07 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1752110Ab0HWBYS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 21:24:18 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:60919 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab0HWBYO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 21:24:14 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Neil Brown <neilb@suse.de>, Andreas Dilger <andreas.dilger@oracle.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
+        "adilger\@sun.com" <adilger@sun.com>,
+        "corbet\@lwn.net" <corbet@lwn.net>,
+        "npiggin\@kernel.dk" <npiggin@kernel.dk>,
+        "hooanon05\@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
+        "bfields\@fieldses.org" <bfields@fieldses.org>,
+        "miklos\@szeredi.hu" <miklos@szeredi.hu>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "sfrench\@us.ibm.com" <sfrench@us.ibm.com>,
+        "philippe.deniel\@CEA.FR" <philippe.deniel@CEA.FR>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+In-Reply-To: <20100823090604.6c735c80@notabene>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100820083057.GA10039@infradead.org> <20100820195303.20b17210@notabene> <20100820115135.GQ31363@ZenIV.linux.org.uk> <20100821100900.4b15fe08@notabene> <17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com> <20100823090604.6c735c80@notabene>
+User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Mon, 23 Aug 2010 06:54:03 +0530
+Message-ID: <m3wrrijf4c.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] btrfs: check mergeable free space when removing a cluster
-References: <4C71CD4B.10606@cn.fujitsu.com>
-In-Reply-To: <4C71CD4B.10606@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After returing extents from a cluster to the block group, some
-extents in the block group may be mergeable.
+On Mon, 23 Aug 2010 09:06:04 +1000, Neil Brown <neilb@suse.de> wrote:
+> On Sat, 21 Aug 2010 01:13:52 -0600
+> Andreas Dilger <andreas.dilger@oracle.com> wrote:
+> 
+> > On 2010-08-20, at 18:09, Neil Brown <neilb@suse.de> wrote:
+> > > How about a new AT flag:  AT_FILE_HANDLE
+> > > 
+> > > Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
+> > > the 'name' pointer actually points to a filehandle fragment interpreted in
+> > > that filesystem.
+> > > 
+> > > One problem is that there is no way to pass the length...
+> > > Options:
+> > >   fragment is at most 64 bytes nul padded at the end
+> > >   fragment is hex encoded and nul terminated
+> > >   ??
+> > > 
+> > > I think I prefer the hex encoding, but I'm hoping someone else has a better
+> > > idea.
+> > 
+> > That makes it ugly for the kernel to stringify and parse the file handles. 
+> 
+> We already parse filenames into components separated by '/'.  Is HEX decoding
+> that much more ugly.
+> 
+> Filehandles are currently passed between the kernel and mountd as HEX
+> strings, so at least there is some precedent.
+> 
+> > 
+> > How about for AT_FILE_HANDLE THE FIRST __u32 (maybe with an extra __u32 for alignment) is the length and the rest of the binary file handle follows this?  In fact, doesn't the handle itself already encode the length in the header?
+> 
+> That part of a filehandle that nfsd gives to the filesystem is one byte out
+> of a 4-byte header, plus the tail of the filehandle after the part that
+> identifies the filesystem.
+> This 'one byte' does imply the length, but it doesn't necessarily encode it.
+> Rather it is a 'type'.  So it cannot really be used to determine the length
+> at the point when the filehandle would need to be copied from userspace into
+> the kernel.
+> 
+> 
+> I don't think there is any precedent for passing a 4-byte length followed by
+> a binary string, while there is plenty of precedent for passing a
+> nul-terminated ASCII string.
+> 
+> [[ Following this approach I would like to avoid any filehandle-specific
+> syscalls altogether.
+> Just use a *at syscall with AT_FILE_HANDLE for filehandle lookup, and use
+> getxattr('system:linux.file_handle') to get the filehandle for a given path.
+> 
+> Ofcourse we would need to at *at versions of the *xattr syscalls, but that is
+> probably a good idea anyway.
+> ]]
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- fs/btrfs/free-space-cache.c |   26 ++++++++++++++++++++------
- 1 files changed, 20 insertions(+), 6 deletions(-)
+There are at* syscalls that doesn't take the additional flags as the
+argument, like openat, readlinkat. How will handle based open and
+readlink work with the above interface ?
 
-diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
-index faeec8f..c11f4f7 100644
---- a/fs/btrfs/free-space-cache.c
-+++ b/fs/btrfs/free-space-cache.c
-@@ -234,11 +234,18 @@ tree_search_offset(struct btrfs_block_group_cache *block_group,
- 	return entry;
- }
- 
--static void unlink_free_space(struct btrfs_block_group_cache *block_group,
--			      struct btrfs_free_space *info)
-+static inline void
-+__unlink_free_space(struct btrfs_block_group_cache *block_group,
-+		    struct btrfs_free_space *info)
- {
- 	rb_erase(&info->offset_index, &block_group->free_space_offset);
- 	block_group->free_extents--;
-+}
-+
-+static void unlink_free_space(struct btrfs_block_group_cache *block_group,
-+			      struct btrfs_free_space *info)
-+{
-+	__unlink_free_space(block_group, info);
- 	block_group->free_space -= info->bytes;
- }
- 
-@@ -611,7 +618,7 @@ out:
- }
- 
- bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
--			  struct btrfs_free_space *info)
-+			  struct btrfs_free_space *info, bool update_stat)
- {
- 	struct btrfs_free_space *left_info;
- 	struct btrfs_free_space *right_info;
-@@ -632,7 +639,10 @@ bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
- 		left_info = tree_search_offset(block_group, offset - 1, 0, 0);
- 
- 	if (right_info && !right_info->bitmap) {
--		unlink_free_space(block_group, right_info);
-+		if (update_stat)
-+			unlink_free_space(block_group, right_info);
-+		else
-+			__unlink_free_space(block_group, right_info);
- 		info->bytes += right_info->bytes;
- 		kfree(right_info);
- 		merged = true;
-@@ -640,7 +650,10 @@ bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
- 
- 	if (left_info && !left_info->bitmap &&
- 	    left_info->offset + left_info->bytes == offset) {
--		unlink_free_space(block_group, left_info);
-+		if (update_stat)
-+			unlink_free_space(block_group, left_info);
-+		else
-+			__unlink_free_space(block_group, left_info);
- 		info->offset = left_info->offset;
- 		info->bytes += left_info->bytes;
- 		kfree(left_info);
-@@ -665,7 +678,7 @@ int btrfs_add_free_space(struct btrfs_block_group_cache *block_group,
- 
- 	spin_lock(&block_group->tree_lock);
- 
--	if (try_merge_free_space(block_group, info))
-+	if (try_merge_free_space(block_group, info, true))
- 		goto link;
- 
- 	/*
-@@ -883,6 +896,7 @@ __btrfs_return_cluster_to_free_space(
- 		node = rb_next(&entry->offset_index);
- 		rb_erase(&entry->offset_index, &cluster->root);
- 		BUG_ON(entry->bitmap);
-+		try_merge_free_space(block_group, entry, false);
- 		tree_insert_offset(&block_group->free_space_offset,
- 				   entry->offset, &entry->offset_index, 0);
- 	}
--- 
-1.7.0.1
+-aneesh
 
