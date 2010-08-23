@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab0HWBdU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 21:33:20 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:52928 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751455Ab0HWBdS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 21:33:18 -0400
-Date: Mon, 23 Aug 2010 11:33:15 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] radix_tree: fix writeback regressions
-Message-ID: <20100823013315.GG31488@dastard>
+	id S1752551Ab0HWBfL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 21:35:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39358 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589Ab0HWBfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Aug 2010 21:35:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,254,1280732400"; 
+   d="asc'?scan'208";a="599135351"
+Date: Mon, 23 Aug 2010 09:35:07 +0800
+From: Zhenyu Wang <zhenyuw@linux.intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] agp/intel: Fix dma mask for Sandybridge
+Message-ID: <20100823013507.GA29442@zhen-devel.sh.intel.com>
+Reply-To: Zhenyu Wang <zhenyuw@linux.intel.com>
+Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
+	Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <s5hlj81cn4n.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
 Content-Disposition: inline
+In-Reply-To: <s5hlj81cn4n.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Can you please pull the following radix tree fixes needed for
-regressions caused by the new sync writeback livelock code? Thanks.
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
+On 2010.08.20 17:36:08 +0200, Takashi Iwai wrote:
+> Sandybridge requires 36bit dma mask, but the current code checks only
+> against i965, thus it gives Oops with i915 probing on 32bit machine:
+>=20
+>    nommu_map_sg: overflow 14a000000+4096 of device mask ffffffff
+>    [drm:drm_agp_bind_pages] *ERROR* Failed to bind AGP memory: -12
+>    BUG: unable to handle kernel paging request at fffffff8
+>    IP: [<f7fac57f>] i915_gem_evict_something+0xef/0x230 [i915]
+>    ...
 
-  Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
+Sandybridge can do 40-bit dma mask. This has been fixed upstream now.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git radix-tree
+--=20
+Open Source Technology Center, Intel ltd.
 
-Dave Chinner (2):
-      radix-tree: clear all tags in radix_tree_node_rcu_free
-      radix-tree: radix_tree_range_tag_if_tagged() can set incorrect tags
+$gpg --keyserver wwwkeys.pgp.net --recv-keys 4D781827
 
- lib/radix-tree.c |   63 +++++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 48 insertions(+), 15 deletions(-)
+--Qxx1br4bt0+wmkIi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
--- 
-Dave Chinner
-david@fromorbit.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkxx0EsACgkQsQQaM014GCe2KQCdE395saT+4bGgcC8ZrX2CC6/n
+zq4AoIzjyh3NMYGQfs3cIXY58jd2bZ7V
+=Wa9B
+-----END PGP SIGNATURE-----
+
+--Qxx1br4bt0+wmkIi--
