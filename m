@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab0HWV2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 17:28:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56109 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754670Ab0HWV2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 17:28:36 -0400
-Date: Mon, 23 Aug 2010 14:28:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        Hanumath Prasad <hanumath.prasad@stericsson.com>,
-        Kyungmin Park <kmpark@infradead.org>
-Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
-Message-Id: <20100823142816.59b12253.akpm@linux-foundation.org>
-In-Reply-To: <20100823204829.GB6510@console-pimps.org>
-References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com>
-	<AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com>
-	<m3pqxbsibq.fsf@pullcord.laptop.org>
-	<20100823204829.GB6510@console-pimps.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754785Ab0HWVjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 17:39:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38179 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754130Ab0HWVjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 17:39:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] ACPI: Don't report current_now if battery reports in mWh
+Date: Mon, 23 Aug 2010 23:37:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, cbou@mail.ru,
+        dwmw2@infradead.org, lenb@kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Alexey Starikovskiy <astarikovskiy@suse.de>
+References: <1282595132-5026-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1282595132-5026-1-git-send-email-mjg@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008232337.19715.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 21:48:29 +0100
-Matt Fleming <matt@console-pimps.org> wrote:
-
-> On Sat, Aug 21, 2010 at 06:37:45PM -0400, Chris Ball wrote:
-> > Hi,
-> > 
-> >    > Hm is there some problem with this patch or has the processing of
-> >    > it simply stalled? When I read the thread I cannot see Hanumaths
-> >    > answers on the list but it looks mainly like the patch is OK and
-> >    > there is some chit-chat.
-> >    > 
-> >    > Can it be picked up? Everyone is going to need DDR MMC for their
-> >    > eMMCs soon-ish.
-> > 
-> > I'd like to dedicate more time to mmc/.  Do you think it'd be useful
-> > for me to catch all the patches sent to linux-mmc@ into a public Git
-> > tree, and periodically report on what went upstream via akpm and
-> > what's still waiting?
+On Monday, August 23, 2010, Matthew Garrett wrote:
+> ACPI batteries can report in units of either current or energy. Right
+> now we expose the current_now file even if the battery is reporting
+> energy units, resulting in a file that should contain mA instead
+> containing mW. Don't expose this value unless the battery is reporting
+> current.
 > 
-> It's possible Andrew has a reason that hasn't been picked up yet.
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+
+> ---
+>  drivers/acpi/battery.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-
-Kyungmin Park's questions didn't seem adequately answered and the
-discussion kind of died.
-
-I updated the patch and merged it, but I'd like the outstanding
-question(s) resolved.  ie: why do we add MMC_DDR_MODE, set it in
-brq.data.flags and then never use it?
-
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index dc58402..9841720 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -273,7 +273,6 @@ static enum power_supply_property energy_battery_props[] = {
+>  	POWER_SUPPLY_PROP_CYCLE_COUNT,
+>  	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+>  	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> -	POWER_SUPPLY_PROP_CURRENT_NOW,
+>  	POWER_SUPPLY_PROP_POWER_NOW,
+>  	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
+>  	POWER_SUPPLY_PROP_ENERGY_FULL,
+> 
 
