@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab0HWTDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 15:03:55 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:34344 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab0HWTDx (ORCPT
+	id S1754361Ab0HWTEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 15:04:12 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:15995 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754331Ab0HWTEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 15:03:53 -0400
-Date: Mon, 23 Aug 2010 21:03:36 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Mack <daniel@caiaq.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Hemanth V <hemanthv@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Paul Gortmaker <p_gortmaker@yahoo.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Roy Zang <tie-fei.zang@freescale.com>,
-        Jingchang Lu <b22599@freescale.com>,
-        Mingkai Hu <Mingkai.hu@freescale.com>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH] i2c: remove obsolete cleanup for clientdata
-Message-ID: <20100823210336.6bdc8e2a@hyperion.delvare>
-In-Reply-To: <1282575908-16555-1-git-send-email-w.sang@pengutronix.de>
-References: <1282575908-16555-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+	Mon, 23 Aug 2010 15:04:09 -0400
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ian Jackson <ijackson@chiark.greenend.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jeremy Fitzhardinge <jeremy@goop.org>
+In-Reply-To: <AANLkTi=+O8wKZV6XT5wGJbfZdgC9kxTxvtEZMD+M+pZn@mail.gmail.com>
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+	 <1282391770.29609.1223.camel@localhost.localdomain>
+	 <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
+	 <1282460275.11348.865.camel@localhost.localdomain>
+	 <1282462386.11348.871.camel@localhost.localdomain>
+	 <1282470917.11348.891.camel@localhost.localdomain>
+	 <20100822172548.GB8957@suse.de>
+	 <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
+	 <19570.38608.79434.179797@chiark.greenend.org.uk>
+	 <1282580751.2605.1997.camel@laptop>
+	 <19570.44367.719276.128881@chiark.greenend.org.uk>
+	 <AANLkTi=+O8wKZV6XT5wGJbfZdgC9kxTxvtEZMD+M+pZn@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 23 Aug 2010 20:03:57 +0100
+Message-ID: <1282590237.5417.60.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.7
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [RFC] mlock/stack guard interaction fixup
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=3ENABmdyEd/Fm7fR7+mZIuMDn6+IErAeEhlfWBImZFk= c=1 sm=0 a=zI1UDiXOKOEA:10 a=8nJEP1OIZ-IA:10 a=61Tg0FzcAAAA:8 a=YykBkRcsrZ_XObWSYhkA:9 a=sAtA7dK8N7wqwXN89RIA:7 a=jNEo3ZIbiS69w5fxBWBc_1lMoawA:4 a=wPNLvfGTeEIA:10 a=i9sELj5dCcQeSSF2:21 a=_QoHdbM2N84jIsNM:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 17:05:08 +0200, Wolfram Sang wrote:
-> A few new i2c-drivers came into the kernel which clear the clientdata-pointer
-> on exit. This is obsolete meanwhile, so fix it and hope the word will spread.
+On Mon, 2010-08-23 at 10:34 -0700, Linus Torvalds wrote:
+> On Mon, Aug 23, 2010 at 10:18 AM, Ian Jackson
+> <ijackson@chiark.greenend.org.uk> wrote:
+> >
+> > But you seem, like me, to be disagreeing with Linus's assertion that
+> > calling mlock() on the stack is something no sane programs does ?
 > 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> ---
-> 
-> Jean, I dunno if it fits for 2.6.36. It is not precisely a regression.
-> Though, if it enters with the next merge window, the next set of "faulty"
-> drivers may come in at the same time...
+> Note: I don't think it's generally sane to mlock() a _part_ of the stack.
 
-Applied, and queued for 2.6.36. I agree that this kind of cleanup fits
-well as an exception to the bugfix-only rule.
+Neither do I. The Xen toolstack even has a mechanism for bouncing data
+to a special area for use as hypercall arguments. I expected it was just
+a few corner cases which didn't use it but when I started looking into
+it due to this conversation I discovered it's not as widely used as it
+should be, I'm working to fix that on the Xen end.
 
+> [...] It's also
+> dubious as a way to pin particular pages in the page tables, because
+> it's not necessarily something that the semantics guarantee
+> (historically mlock just guarantees that they won't be swapped out,
+> not that they will necessarily maintain some particular mapping).
+
+Xen's usage doesn't require that the physical page backing an mlocked
+virtual address never changes, just that it doesn't change without
+obeying the regular TLB flush semantics.
+
+Ian.
 -- 
-Jean Delvare
+Ian Campbell
+
+Familiarity breeds attempt.
+
