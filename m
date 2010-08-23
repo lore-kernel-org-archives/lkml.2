@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab0HWPgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 11:36:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523Ab0HWPgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 11:36:47 -0400
-Date: Mon, 23 Aug 2010 18:35:49 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 03/12] Add async PF initialization to PV guest.
-Message-ID: <20100823153549.GU10499@redhat.com>
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
- <1279553462-7036-4-git-send-email-gleb@redhat.com>
- <4C729342.6070205@redhat.com>
+	id S1754136Ab0HWPjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 11:39:12 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:55518 "EHLO
+	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751520Ab0HWPjK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 11:39:10 -0400
+Date: Mon, 23 Aug 2010 11:37:40 -0400 (EDT)
+From: Miloslav Trmac <mitr@redhat.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Message-ID: <1269957386.1124701282577860651.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1278368294.1123931282577639823.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+Subject: Re: [PATCH 01/19] User-space API definition
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C729342.6070205@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 06:26:58PM +0300, Avi Kivity wrote:
->  On 07/19/2010 06:30 PM, Gleb Natapov wrote:
-> >Enable async PF in a guest if async PF capability is discovered.
+----- "Kyle Moffett" <kyle@moffetthome.net> wrote:
+> On Fri, Aug 20, 2010 at 04:45, Miloslav Trmač <mitr@redhat.com>
+> wrote:
+> > * ioctl(NCRIO_KEY_INIT) to allocate a key object; then generate the key
+> >  material inside the kernel, load a plaintext key, unwrap a key, or
+> >  derive a key.  Similarly the key material can be copied out of the
+> >  kernel or wrapped.
 > >
-> >Signed-off-by: Gleb Natapov<gleb@redhat.com>
-> >---
-> >  arch/x86/include/asm/kvm_para.h |    5 +++
-> >  arch/x86/kernel/kvm.c           |   68 +++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 73 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> >index 5b05e9f..f1662d7 100644
-> >--- a/arch/x86/include/asm/kvm_para.h
-> >+++ b/arch/x86/include/asm/kvm_para.h
-> >@@ -65,6 +65,11 @@ struct kvm_mmu_op_release_pt {
-> >  	__u64 pt_phys;
-> >  };
-> >
-> >+struct kvm_vcpu_pv_apf_data {
-> >+	__u32 reason;
-> >+	__u32 enabled;
-> >+};
-> >+
-> 
-> The guest will have to align this on a 64 byte boundary, should this
-> be marked __aligned(64) here?
-> 
-I do __aligned(64) when I declare variable of that type:
+> Ugh... We already have one very nice key/keyring API in the kernel
+> (see Documentation/keys.txt) that's being used for crypto keys for
+> NFSv4, AFS, etc.  Can't you just add a bunch of cryptoapi key types to
+> that API instead?
+I have examined that API; going purely by the names, having only one facility to manage "keys" does sound reasonable.
 
-static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
+Looking at the details, the keyring API is primarily designed for long-term secure storage of unstructured, named blobs, in various namespaces - in some respects it is quite similar to a memory-only filesystem: each key has an explicit name and permissions, there is a hierarchy, and keys are designed to be shared between processes (although in some namespaces they are not).
 
-> >@@ -231,12 +235,72 @@ static void __init paravirt_ops_setup(void)
-> >  #endif
-> >  }
-> >
-> >+void __cpuinit kvm_guest_cpu_init(void)
-> >+{
-> >+	if (!kvm_para_available())
-> >+		return;
-> >+
-> >+	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF)) {
-> >+		u64 pa = __pa(&__get_cpu_var(apf_reason));
-> >+
-> >+		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
-> >+					  pa | KVM_ASYNC_PF_ENABLED, pa>>  32))
-> >+			return;
-> >+		__get_cpu_var(apf_reason).enabled = 1;
-> >+		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
-> >+		       smp_processor_id());
-> >+	}
-> >+}
-> 
-> Need a way to disable apf from the guest kernel command line.
-> 
-OK.
+The keys for crypto are often short-lived, almost exclusively local to a specific process, most don't have an unique name (which means a kernel-choosen integer is a better identifier than an application-choosen string, especially if user-space libraries hide the existence of the kernel crypto API from applications, because choosing an unique string identifier is non-trivial).  The crypto keys also are also formatted for use by a specific algorithm, often using a non-trivial format (e.g. a RSA key should be internally stored as the separate integer components, not as a blob).  They have some attribute flags, with no overlap with the flags in the keyring API.
 
-> >+
-> >+static int __cpuinit kvm_cpu_notify(struct notifier_block *self,
-> >+				    unsigned long action, void *hcpu)
-> >+{
-> >+	switch (action) {
-> >+	case CPU_ONLINE:
-> >+	case CPU_ONLINE_FROZEN:
-> >+		kvm_guest_cpu_init();
-> >+		break;
-> >+	default:
-> >+		break;
-> 
-> Should we disable apf if the cpu is dying here?
-> 
-Why? Can CPU die with outstanding sleeping tasks?
+I can see almost no overlap between the two sets of requirements.  Probably the only common use case is handling session keys (e.g. keys used in a kerberos ticket), which should be stored in the kernel for the duration of the session, made available to each process in the session, and available as keys for kernel crypto.  Such keys will be in the minority, though, and it seems to me the best approach for handling these is to allow key export/import from/to keyring keys in addition to export/import from/to data in userspace: the long-term storage would be handled by the existing keyring API, which stores the key as unformatted binary data, and import into the crypto context would convert the key into the internal representation more suitable for crypto.
 
-> >+	}
-> >+	return NOTIFY_OK;
-> >+}
-> >+
-> 
-> -- 
-> error compiling committee.c: too many arguments to function
-
---
-			Gleb.
+I have seriously considered the keyring API, and this is what I came up with - but I'd love to be shown a better way.
+    Mirek
