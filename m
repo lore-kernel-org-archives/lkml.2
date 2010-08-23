@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab0HWNDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 09:03:33 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34509 "EHLO gir.skynet.ie"
+	id S1753026Ab0HWNEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 09:04:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53563 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964Ab0HWND3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 09:03:29 -0400
-Date: Mon, 23 Aug 2010 14:03:16 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
-	NR_FREE_PAGES when memory is low and kswapd is awake
-Message-ID: <20100823130315.GQ19797@csn.ul.ie>
-References: <1282550442-15193-1-git-send-email-mel@csn.ul.ie> <1282550442-15193-3-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1008230750380.4094@router.home>
+	id S1752299Ab0HWNEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 09:04:44 -0400
+Date: Mon, 23 Aug 2010 09:04:38 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
+        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] btrfs: free fully occupied bitmap in cluster
+Message-ID: <20100823130438.GC2404@localhost.localdomain>
+References: <4C71CD4B.10606@cn.fujitsu.com> <4C71CD84.1000809@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008230750380.4094@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4C71CD84.1000809@cn.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 07:56:40AM -0500, Christoph Lameter wrote:
-> On Mon, 23 Aug 2010, Mel Gorman wrote:
+On Mon, Aug 23, 2010 at 09:23:16AM +0800, Li Zefan wrote:
+> If there's no more free space in a bitmap, we should free it,
+> otherwise seems it won't get freed until we free the block group.
 > 
-> > This patch introduces zone_nr_free_pages() to take a slightly more accurate
-> > estimate of NR_FREE_PAGES while kswapd is awake. The estimate is not perfect
-> > and may result in cache line bounces but is expected to be lighter than the
-> > IPI calls necessary to continually drain the per-cpu counters while kswapd
-> > is awake.
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  fs/btrfs/free-space-cache.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> The delta of the counters could also be reduced to increase accuracy.
-> See refresh_zone_stat_thresholds().
+> diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+> index 017fd55..631e14f 100644
+> --- a/fs/btrfs/free-space-cache.c
+> +++ b/fs/btrfs/free-space-cache.c
+> @@ -1035,6 +1035,8 @@ static u64 btrfs_alloc_from_bitmap(struct btrfs_block_group_cache *block_group,
+>  
+>  	ret = search_start;
+>  	bitmap_clear_bits(block_group, entry, ret, bytes);
+> +	if (entry->bytes == 0)
+> +		free_bitmap(block_group, entry);
+>  out:
+>  	spin_unlock(&cluster->lock);
+>  	spin_unlock(&block_group->tree_lock);
+> -- 
+> 1.7.0.1
 > 
 
-True, but I thought that would introduce a constant performance penalty
-for a corner case which I didn't like.
+Oops, good catch
 
-> Also would it be possible to add the summation function to vmstat? It may
-> be useful elsewhere.
-> 
-> A new function like
-> 
-> 	zone_page_state_snapshot()
-> 
-> or so?
-> 
+Reviewed-by: Josef Bacik <josef@redhat.com>
 
-We could if there is another counter that results in bad system
-behaviour due to counter drift. As NR_FREE_PAGES seemed to be the only
-one, zone_nr_free_pages() seemed adequate. If such a helper did exist,
-zone_nr_free_pages() would be a simple wrapper around it. The
-indirection didn't seem necessary at this point though.
+Thanks,
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Josef
