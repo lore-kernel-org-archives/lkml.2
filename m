@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab0HWMmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 08:42:39 -0400
-Received: from tex.lwn.net ([70.33.254.29]:48640 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab0HWMmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 08:42:36 -0400
-Date: Mon, 23 Aug 2010 06:42:33 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: Joseph Chan <JosephChan@via.com.tw>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Erik-Jan Post <ej.lfs@xs4all.nl>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 1/2] drivers/video: Removing dead FB_VIA_CAMERA config
- option
-Message-ID: <20100823064233.51889684@bike.lwn.net>
-In-Reply-To: <896537c6f9bd2e4babcb9ff4681bb4db72daf544.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
-	<896537c6f9bd2e4babcb9ff4681bb4db72daf544.1282554255.git.qy03fugy@stud.informatik.uni-erlangen.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
+	id S1752934Ab0HWMn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 08:43:29 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:29118 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751978Ab0HWMn2 (ORCPT
+	<rfc822;groupwise-jlee@novell.com:3:2>);
+	Mon, 23 Aug 2010 08:43:28 -0400
+Message-Id: <4C72F987020000230001F296@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Mon, 23 Aug 2010 06:43:19 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>
+Cc: <gregkh@suse.de>, <trenn@suse.de>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
+ detect
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 11:59:41 +0200
-Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de> wrote:
+Hi Matthew, 
 
-> CONFIG_FB_VIA_CAMERA doesn't exist in Kconfig, therefore removing
-> all references to it from the source.
+於 一，2010-08-23 於 12:49 +0100，Matthew Garrett 提到：
+> On Mon, Aug 23, 2010 at 07:40:48PM +0800, Lee, Chun-Yi wrote:
+> > There have some machines not support by i915 drm driver, e.g. MSI U110/U150,
+> > there are use poulsbo chip and drm driver not support it because legal issue.
+> > Those machines's acpi backlight control actually work fine and don't need apply
+> > the intel opregion support.
+> > So, add intel drm blacklist to intel_opregion_present, it can enable the acpi
+> > brightness interface on Poulsbo/Morrestown.
+> 
+> I'm still kind of reluctant about this - doing the blacklisting here 
+> means that there's no way for a native driver to inhibit registration 
+> from occuring until after opregion setup has taken place, and we found 
+> that that was necessary on some 915 so I suspect it is on gma500 as
 
-The driver using this option has been posted to the lists a few times.
-I have been unforgivably slow in dealing with some review comments, and
-so missed the 2.6.36 merge window.  I don't plan to let that happen
-again, though.  So my preference would be to leave this code in place;
-if it goes away, I'll just have to put it back.
+I read the bug:
+ https://bugzilla.kernel.org/show_bug.cgi?id=11259#c28
+And your patch comment:
+ https://patchwork.kernel.org/patch/13147/
 
-Thanks,
+I think there have some machines implement _BCL by using opregion, so
+causes the issues. But, there sill have many machines implement _BCL by
+using EC to control backlight.
+Unfortunately, there have no way can detect the difference.
 
-jon
+>  
+> well. Perhaps it should just be done as a module option, and then 
+> distributions who want to deal with this case could set it by default?
+> 
+
+OK, I put a module option also a way to fix the issue for those machines
+that were implemented acpi method by call EC. I will put a module option
+in acpi video driver then send to you after testing finished.
+
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_0) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_1) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_2) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_3) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_4) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_5) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_6) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRST_VGA_7) },
+> 
+> Moorestown doesn't have ACPI, so I don't think there's any need to 
+> include these.
+> 
+
+OH! OK, thank's  for your review!
+
+Joey Lee
+
