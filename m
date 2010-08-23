@@ -1,177 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab0HWUOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 16:14:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40787 "EHLO comal.ext.ti.com"
+	id S1754384Ab0HWUVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 16:21:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53939 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab0HWUOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 16:14:43 -0400
-Message-ID: <4C72D6AC.3060509@ti.com>
-Date: Mon, 23 Aug 2010 22:14:36 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: "Basak, Partha" <p-basak2@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Varadarajan, Charulatha" <charu@ti.com>,
-        "Nayak, Rajendra" <rnayak@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH] OMAP: HWMOD: Handle opt clocks using clk_add_alias
-References: <1282578269-8835-1-git-send-email-p-basak2@ti.com>
-In-Reply-To: <1282578269-8835-1-git-send-email-p-basak2@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752220Ab0HWUVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 16:21:06 -0400
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Gennadiy Nerubayev <parakie@gmail.com>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+In-Reply-To: <AANLkTinTg3oHmc6N-zu_Czg7s5dPwvxwgLa-eBuHwSBe@mail.gmail.com>
+References: <4C69653E.6050808@vlnb.net>
+	 <1282077040.16098.47.camel@mulgrave.site> <4C6C1DC1.8090208@vlnb.net>
+	 <1282164188.10878.22.camel@mulgrave.site> <4C702030.2070306@vlnb.net>
+	 <1282423128.3015.35.camel@mulgrave.site>
+	 <AANLkTin9STqUz440fCOEWW=YmedVQtQWU2JLO2wZCt5j@mail.gmail.com>
+	 <1282582740.11194.17.camel@mulgrave.site>
+	 <AANLkTinkYCPA-ZdWFhdriCyrK7J8Okj5HWqg7JsGZ7ry@mail.gmail.com>
+	 <1282586336.11194.30.camel@mulgrave.site>
+	 <AANLkTinTg3oHmc6N-zu_Czg7s5dPwvxwgLa-eBuHwSBe@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Aug 2010 15:21:01 -0500
+Message-ID: <1282594861.11194.60.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Partha,
+On Mon, 2010-08-23 at 22:11 +0200, Bart Van Assche wrote:
+> On Mon, Aug 23, 2010 at 7:58 PM, James Bottomley
+> <James.Bottomley@suse.de> wrote:
+> > On Mon, 2010-08-23 at 19:44 +0200, Bart Van Assche wrote:
+> >> On Mon, Aug 23, 2010 at 6:59 PM, James Bottomley
+> >> <James.Bottomley@suse.de> wrote:
+> >> >
+> >> > My basic conclusion was that there's no incredible discriminator between
+> >> > LIO and STGT (although there are reams written on which performs better
+> >> > in which circumsances, is useful for clustering, supports ALUA, etc.
+> >> > each with partisans for the features).  If the two communities can't
+> >> > work together (as seems to be the case) and I have to choose one, I'll
+> >> > go by what helps me which, as I've said before, are:
+> >> >
+> >> >     1. That it would be a drop in replacement for STGT (our current
+> >> >        in-kernel target mode driver), since he only wanted a single
+> >> >        SCSI target infrastructure.
+> >> >
+> >> >     2. That it used a modern sysfs based control and configuration
+> >> >        plane.
+> >> >
+> >> >     3. That the code was reviewed as clean enough for inclusion.
+> 
+> Let us return to the three acceptance criteria. At this time none of
+> the existing kernel-based target frameworks support ibmvstgt and hence
+> none of them satisfy criterion [1]. Yet these criteria have been used
+> to decide that one kernel-based target framework will be accepted and
+> that the other will not be accepted. I'm afraid that I missed
+> something ?
+> 
+> Also, you write that you, as a kernel maintainer, might become in a
+> position that you have to choose a target framework. I would
+> appreciate it if you would take the time to reread the document
+> Documentation/ManagementStyle. This document was written by Linus
+> Torvalds and explains that a kernel maintainer should try to avoid
+> having to take such decisions. The whole first chapter of that
+> document is devoted to this subject.
 
-On 8/23/2010 5:44 PM, Basak, Partha wrote:
-> From: Basak, Partha<p-basak2@ti.com>
->
-> For every optional clock present per hwmod per omap-device, this function
-> adds an entry in the clocks list of the form<dev-id=dev_name, con-id=role>,
-> if an entry is already present in the list of the form<dev-id=NULL, con-id=role>.
->
-> The function is called from within the framework inside omap_device_build_ss(),
-> after omap_device_register.
->
-> This allows drivers to get a pointer to its optional clocks based on its role
-> by calling clk_get(<dev*>,<role>).
->
-> Link to discussions related to this patch:
-> http://www.spinics.net/lists/linux-omap/msg34809.html
->
-> Signed-off-by: Charulatha V<charu@ti.com>
-> Signed-off-by: Basak, Partha<p-basak2@ti.com>
-> Signed-off-by: Benoit Cousson<b-cousson@ti.com>
-> Signed-off-by: Rajendra Nayak<rnayak@ti.com>
->
-> Cc: Paul Walmsley<paul@pwsan.com>
-> Cc: Kevin Hilman<khilman@deeprootsystems.com>
-> ---
->   arch/arm/plat-omap/omap_device.c |   31 ++++++++++++++++++++++++++++++-
->   1 files changed, 30 insertions(+), 1 deletions(-)
->
-> Index: linux-omap-pm/arch/arm/plat-omap/omap_device.c
-> ===================================================================
-> --- linux-omap-pm.orig/arch/arm/plat-omap/omap_device.c	2010-08-18 02:48:30.789079550 +0530
-> +++ linux-omap-pm/arch/arm/plat-omap/omap_device.c	2010-08-24 07:19:43.637080138 +0530
-> @@ -82,6 +82,7 @@
->   #include<linux/slab.h>
->   #include<linux/err.h>
->   #include<linux/io.h>
-> +#include<linux/clk.h>
->
->   #include<plat/omap_device.h>
->   #include<plat/omap_hwmod.h>
-> @@ -243,7 +244,6 @@ static inline struct omap_device *_find_
->   	return container_of(pdev, struct omap_device, pdev);
->   }
->
-> -
+I have avoided this decision for several years in the vain hope that
+some accommodation could be found.  However, since I foresee a mergeable
+patch in my inbox in the very near future, it's shortly becoming
+unavoidable.
 
-That fix is not related to the patch subject.
+James
 
->   /* Public functions for use by core code */
->
->   /**
-> @@ -271,6 +271,47 @@ int omap_device_count_resources(struct o
->   }
 
-This is not a public function, so you should move it before the /* 
-Public functions for use by core code */
+> I regret that you got involved personally in this discussion. It would
+> have been a lot easier for everyone if you would have been able to
+> keep a neutral position.
+> 
+> Bart.
 
->   /**
-> + * omap_device_add_opt_clk_alias - Add alias for optional clocks in the
-> + * clocks list.
-> + *
-> + * @od: struct omap_device *od
-> + *
-> + * For every optional clock present per hwmod per omap-device, this function
-> + * adds an entry in the clocks list of the form<dev-id=dev_name, con-id=role>
-> + * if an entry is already present in it with the form<dev-id=NULL,con-id=role>
-> + *
-> + * The function is called from inside omap_device_build_ss(),
-> + * after omap_device_register.
-> + *
-> + * This allows drivers to get a pointer to its optional clocks based on its role
-> + * by calling clk_get(<dev*>,<role>).
-> + */
-> +
-> +static void omap_device_add_opt_clk_alias(struct omap_device *od)
-> +{
-> +	int i, j;
-> +	struct omap_hwmod_opt_clk *oc;
-> +	struct omap_hwmod *oh;
-> +
-> +	for (i = 0, oh = *od->hwmods; i<  od->hwmods_cnt; i++, oh++)
-
-You can avoid that iteration and the extra level of indentation by 
-re-using the iteration done before the call to that function.
-
-> +		/* Add Clock alias for all optional clocks*/
-> +		for (j = oh->opt_clks_cnt, oc = oh->opt_clks;
-> +			j>  0; j--, oc++) {
-> +			if ((oc->_clk)&&
-> +			(IS_ERR(clk_get(&od->pdev.dev, oc->role)))) {
-> +				int ret;
-
-You can avoid the indentation by returning in case of error.
-You can avoid as well 2 pairs of parens.
-
-> +
-> +				ret = clk_add_alias(oc->role,
-> +					dev_name(&od->pdev.dev),
-> +					(char *)oc->clk, NULL);
-
-The indentation is not align with the inner parameters... which is not 
-easy in your case due to the too many indentation level you have in this 
-function.
-
-> +				if (ret)
-> +					dev_err(&od->pdev.dev, "omap_device:\
-
-This is not correct way of splitting long string, use "omap_device:" 
-instead.
-
-Even if dev_err is usable because you have the dev pointer, it is in 
-fact an error from the omap_device code code, so using pr_err is 
-probably more appropriate (TBC).
-
-> +					clk_add_alias for %s failed\n",
-> +					oc->role);
-> +			}
-> +		}
-> +}
-> +/**
->    * omap_device_fill_resources - fill in array of struct resource
->    * @od: struct omap_device *
->    * @res: pointer to an array of struct resource to be filled in
-> @@ -424,6 +465,12 @@ struct omap_device *omap_device_build_ss
->   	for (i = 0; i<  oh_cnt; i++)
->   		hwmods[i]->od = od;
-
-You can call a per hwmod API here in order to avoid the iteration inside 
-the function.
-
->
-> +	/*
-> +	 * Add Clock alias for all optional
-> +	 * clocks present in the hwmod
-> +	 */
-
-That comment is not bringing any new information, the function is 
-already documented in the kernel doc comment.
-
-> +	omap_device_add_opt_clk_alias(od);
-> +
->   	if (ret)
->   		goto odbs_exit4;
->
-
-Regards,
-Benoit
 
