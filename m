@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab0HWDaF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Aug 2010 23:30:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63451 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab0HWDaB (ORCPT
+	id S1753158Ab0HWDbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Aug 2010 23:31:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37087
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752899Ab0HWDbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 23:30:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=dMrfITg8AFwy1tDhXJFA+KsyiPo238mboGwxLCkbOtIcK9ijZwCusJbeE2VzrRGOFf
-         g9/8as97/l6nsX0VLSeTkayHPoKdPY+PFMjhKVQ/m+G1tZpuH4Q5fnpJVQswou0RlK3q
-         RDMYNminvNUYhqCxnAhwv8ZV+/Hju9NtRWFuI=
-Subject: mfd: tps6586x - free allocated resources when unload the module
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mike Rapoport <mike@compulab.co.il>
-Content-Type: text/plain
-Date: Mon, 23 Aug 2010 11:33:00 +0800
-Message-Id: <1282534380.2281.3.camel@mola>
+	Sun, 22 Aug 2010 23:31:23 -0400
+Date: Sun, 22 Aug 2010 20:31:40 -0700 (PDT)
+Message-Id: <20100822.203140.15257163.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, baronchon@n7mm.org
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100823132734.ffc076ae.sfr@canb.auug.org.au>
+References: <20100823132734.ffc076ae.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the resources allocated in tps6586x_i2c_probe(),
-we need to free it in tps6586x_i2c_remove().
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 23 Aug 2010 13:27:34 +1000
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/tps6586x.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+> Subject: [PATCH] net/sched: need to include net/ip6_checksum.h
+> 
+> for the declararion of csum_ipv6_magic.
+> 
+> Fixes this build error on PowerPC (at least):
+> 
+> net/sched/act_csum.c: In function 'tcf_csum_ipv6_icmp':
+> net/sched/act_csum.c:178: error: implicit declaration of function 'csum_ipv6_magic'
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 4cde31e..6eb2730 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -338,6 +338,21 @@ err_add_devs:
- 
- static int __devexit tps6586x_i2c_remove(struct i2c_client *client)
- {
-+	struct tps6586x *tps6586x = i2c_get_clientdata(client);
-+	struct tps6586x_platform_data *pdata = client->dev.platform_data;
-+	int ret;
-+
-+	if (pdata->gpio_base) {
-+		ret = gpiochip_remove(&tps6586x->gpio);
-+		if (ret) {
-+			dev_err(&client->dev, "Can't remove gpio chip: %d\n",
-+				ret);
-+			return ret;
-+		}
-+	}
-+
-+	tps6586x_remove_subdevs(tps6586x);
-+	kfree(tps6586x);
- 	return 0;
- }
- 
--- 
-1.7.2
+Oh, if I only had a dollar for every time we've had to fix up
+something like this :-)
 
-
-
+Applied, thanks!
