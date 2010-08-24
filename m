@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934199Ab0HXXaI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:30:08 -0400
-Received: from kroah.org ([198.145.64.141]:40546 "EHLO coco.kroah.org"
+	id S933754Ab0HXXad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:30:33 -0400
+Received: from kroah.org ([198.145.64.141]:40529 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933037Ab0HXW73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:29 -0400
+	id S933023Ab0HXW7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:25 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:17 2010
-Message-Id: <20100824224217.724450789@clark.site>
+Message-Id: <20100824224217.466129174@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:28 -0700
+Date: Tue, 24 Aug 2010 15:42:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "John L. Villalovos" <john.l.villalovos@intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [66/91] Oprofile: Change CPUIDS from decimal to hex, and add some comments
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Christoph Fritz <chf.fritz@googlemail.com>
+Subject: [63/91] pcmcia: avoid buffer overflow in pcmcia_setup_isa_irq
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Villalovos <sodarock@gmail.com>
+From: Dominik Brodowski <linux@dominikbrodowski.net>
 
-commit 45c34e05c4e3d36e7c44e790241ea11a1d90d54e upstream.
+commit 127c03cdbad9bd5af5d7f33bd31a1015a90cb77f upstream.
 
-Back when the patch was submitted for "Add Xeon 7500 series support to
-oprofile", Robert Richter had asked for a followon patch that
-converted all the CPU ID values to hex.
+NR_IRQS may be as low as 16, causing a (harmless?) buffer overflow in
+pcmcia_setup_isa_irq():
 
-I have done that here for the "i386/core_i7" and "i386/atom" class
-processors in the ppro_init() function and also added some comments on
-where to find documentation on the Intel processors.
+static u8 pcmcia_used_irq[NR_IRQS];
 
-Signed-off-by: John L. Villalovos <john.l.villalovos@intel.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+...
+
+		if ((try < 32) && pcmcia_used_irq[irq])
+			continue;
+
+This is read-only, so if this address would be non-zero, it would just
+mean we would not attempt an IRQ >= NR_IRQS -- which would fail anyway!
+And as request_irq() fails for an irq >= NR_IRQS, the setting code path:
+
+			pcmcia_used_irq[irq]++;
+
+is never reached as well.
+
+Reported-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/oprofile/nmi_int.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/pcmcia/pcmcia_resource.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -584,6 +584,18 @@ static int __init ppro_init(char **cpu_t
- 	if (force_arch_perfmon && cpu_has_arch_perfmon)
- 		return 0;
+--- a/drivers/pcmcia/pcmcia_resource.c
++++ b/drivers/pcmcia/pcmcia_resource.c
+@@ -41,7 +41,7 @@ module_param(io_speed, int, 0444);
+ #ifdef CONFIG_PCMCIA_PROBE
+ #include <asm/irq.h>
+ /* mask of IRQs already reserved by other cards, we should avoid using them */
+-static u8 pcmcia_used_irq[NR_IRQS];
++static u8 pcmcia_used_irq[32];
+ #endif
  
-+	/*
-+	 * Documentation on identifying Intel processors by CPU family
-+	 * and model can be found in the Intel Software Developer's
-+	 * Manuals (SDM):
-+	 *
-+	 *  http://www.intel.com/products/processor/manuals/
-+	 *
-+	 * As of May 2010 the documentation for this was in the:
-+	 * "Intel 64 and IA-32 Architectures Software Developer's
-+	 * Manual Volume 3B: System Programming Guide", "Table B-1
-+	 * CPUID Signature Values of DisplayFamily_DisplayModel".
-+	 */
- 	switch (cpu_model) {
- 	case 0 ... 2:
- 		*cpu_type = "i386/ppro";
-@@ -605,12 +617,12 @@ static int __init ppro_init(char **cpu_t
- 	case 15: case 23:
- 		*cpu_type = "i386/core_2";
- 		break;
-+	case 0x1a:
- 	case 0x2e:
--	case 26:
- 		spec = &op_arch_perfmon_spec;
- 		*cpu_type = "i386/core_i7";
- 		break;
--	case 28:
-+	case 0x1c:
- 		*cpu_type = "i386/atom";
- 		break;
- 	default:
+ static int pcmcia_adjust_io_region(struct resource *res, unsigned long start,
+@@ -768,6 +768,9 @@ int pcmcia_request_irq(struct pcmcia_dev
+ 		for (try = 0; try < 64; try++) {
+ 			irq = try % 32;
+ 
++			if (irq > NR_IRQS)
++				continue;
++
+ 			/* marked as available by driver, and not blocked by userspace? */
+ 			if (!((mask >> irq) & 1))
+ 				continue;
 
 
