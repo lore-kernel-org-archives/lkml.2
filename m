@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab0HXRJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:09:09 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:29775 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755751Ab0HXRJG (ORCPT
+	id S1755799Ab0HXRMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:12:09 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:45168 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab0HXRMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:09:06 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: CASrb.MVM1nstCAve1KAo3ptKyxsX84n1nGkc0woxR38OEq
- laSTKJMOcMA_jnQaLevEZSKYYMPRkcPFZgbrq4tdfY3RboFT6UH9Z4sU92E4
- kAG3yhB9Fa.QpO0QfwHZVRpbBaGLBO_JjcvYBTeWmJjiMFZPouiEp0Sq.DC9
- tFxkQDKNnMSbHOoTBffVbKR25a132HPV5NXrBNzjlUtTPCGVhOzh.5vY6l5A
- rxFoyrTX0Y4cDLLgyFlt3Yr9Q4lAVOsAN
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 24 Aug 2010 12:09:02 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v2 2/2] compaction: fix COMPACTPAGEFAILED counting
-In-Reply-To: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
-Message-ID: <alpine.DEB.2.00.1008241207130.3695@router.home>
-References: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 24 Aug 2010 13:12:07 -0400
+X-SpamScore: 6
+X-BigFish: VPS6(z3cfcs329eqzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L7O2CM-02-3GP-02
+X-M-MSG: 
+Date: Tue, 24 Aug 2010 19:09:36 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100824170936.GH26154@erda.amd.com>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100823085339.GA26713@elte.hu>
+ <20100824162252.GB5723@lenovo>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100824162252.GB5723@lenovo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, Minchan Kim wrote:
+On 24.08.10 12:22:52, Cyrill Gorcunov wrote:
+> Btw, guys, I fail to see how new nmi_watchdog work, we have
+> default_do_nmi
+>   if (!(reason & 0xc0)) {
+>     if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == == NOTIFY_STOP)
+>       return
+>     if (nmi_watchdog_tick(regs, reason))
+>       return
+> 
+> but perf_event_nmi_handler returns NOTIFY_STOP when watchdog is perf event
+> and nmi_watchdog_tick _never_ called, or (most probably) I miss something?
 
-> This patch makes new rule for caller of migrate_pages to call putback_lru_pages.
-> So caller need to clean up the lists so it has a chance to postprocess the pages.
-> [suggested by Christoph Lameter]
+The watchdog is disabled during profiling (perf and oprofile) by
+calling disable_lapic_nmi_watchdog().
 
-Acked-by: Christoph Lameter <cl@linux.com>
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
