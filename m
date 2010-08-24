@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab0HXQWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 12:22:38 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:25429 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab0HXQWh (ORCPT
+	id S1755631Ab0HXQXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 12:23:01 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:45996 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445Ab0HXQW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 12:22:37 -0400
-X-SpamScore: -45
-X-BigFish: VPS-45(zzbb2dK1432N1a09M9370J98dN179dN9371P103dK853kzz1202hzz15d4Rz32i2a8h)
-X-WSS-ID: 0L7NZHT-02-U9M-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
-Date: Tue, 24 Aug 2010 18:07:23 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-22-generic; KDE/4.4.2; x86_64; ; )
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Tue, 24 Aug 2010 12:22:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=N/ccwRun+dbLegLN8537yTgKBnR2X8sjHkSJlG9VXDgBBcNNerU8AiPYOFM52ZeiHw
+         kDRxFYTsee4T4QGRaazc4JD2wHT+L49VVsRlYAvYxLBq3YOMqA7XX6/r785QsODRKL/a
+         LipQ7SPivn1+dtn9cNe+lwe5y0QjP9++WvcaE=
+Date: Tue, 24 Aug 2010 20:22:52 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <201008191823.57915.stephan.diestelhorst@amd.com> <4C72639C.6090108@gmail.com>
-In-Reply-To: <4C72639C.6090108@gmail.com>
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+	perfctrs
+Message-ID: <20100824162252.GB5723@lenovo>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-ID: <201008241807.23519.stephan.diestelhorst@amd.com>
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100823085339.GA26713@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 August 2010 14:03:40 Tejun Heo wrote:
-> On 08/19/2010 06:23 PM, Stephan Diestelhorst wrote:
-> > It says "max_performance", I have not touched anyhting. So it has been
-> > like that all the time. Would this explain why your patch did not show
-> > the debug printout?
+On Mon, Aug 23, 2010 at 10:53:39AM +0200, Ingo Molnar wrote:
 > 
-> Hmm... okay.  Yeah, if you haven't been using IPM at all, there won't
-> be any debug messages but at the same time the posted patch should
-> have had the same effect as Rafael's patch as IPM path isn't traveled
-> at all.  Can you please check the followings?
+> * Ingo Molnar <mingo@elte.hu> wrote:
 > 
-> * You're actually running the correct patched kernel and modules.  It
->   probably is a good idea to add a printk message.  ie. Apply the
->   patch and add a printk() in ata_host_request_pm() in libata-core.c
->   and make sure the debug messages appears.
+> > 
+> > * Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > I'll test tip later today to see if I can reproduce it.
+> > > 
+> > > Cheers,
+> > > Don
+> > > 
+> > > Ingo Molnar <mingo@elte.hu> wrote:
+> > > 
+> > > >
+> > > >it's not working so well, i'm getting:
+> > > >
+> > > > Uhhuh. NMI received for unknown reason 00 on CPU 9.
+> > > > Do you have a strange power saving mode enabled?
+> > > > Dazed and confused, but trying to continue
+> > > >
+> > > >on a nehalem box, after a perf top and perf stat run.
+> > 
+> > FYI, it does not trigger on an AMD box.
+> 
+> Ok, to not hold up the perf/urgent flow i zapped these two commits for 
+> the time being:
+> 
+>  4a31beb: perf, x86: Fix handle_irq return values
+>  8e3e42b: perf, x86: Try to handle unknown nmis with an enabled PMU
+> 
+> We can apply them if they take a form that dont introduce a different 
+> kind of (and more visible) regression.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
 
-Did that. Actually also added some printks to the XXX function, called
-early during boot. Output confirms that your patch is loaded. And even
-on the first resume the machine dies.
+Btw, guys, I fail to see how new nmi_watchdog work, we have
+default_do_nmi
+  if (!(reason & 0xc0)) {
+    if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == == NOTIFY_STOP)
+      return
+    if (nmi_watchdog_tick(regs, reason))
+      return
 
-> * Rafael's patch actually fixes the problem.  If you haven't been
->   using IPM at all, Rafael's patch and mine should behave exactly the
->   same (ie. no IPM operation at all during suspend/resume).  It could
->   be that you're seeing a different issue.
+but perf_event_nmi_handler returns NOTIFY_STOP when watchdog is perf event
+and nmi_watchdog_tick _never_ called, or (most probably) I miss something?
 
-That next on my list...
-
-Many thanks!
-
-Stephan
-
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+	-- Cyrill
