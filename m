@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab0HXNPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 09:15:14 -0400
-Received: from blu0-omc3-s30.blu0.hotmail.com ([65.55.116.105]:19643 "EHLO
-	blu0-omc3-s30.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752585Ab0HXNPL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 09:15:11 -0400
-Message-ID: <BLU102-W1030ED196ED7B94722F2A7EB830@phx.gbl>
-X-Originating-IP: [217.140.96.21]
-From: Raj Kumar <rajkumar278@hotmail.com>
-To: <stern@rowland.harvard.edu>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Runtime power management during system resume
-Date: Tue, 24 Aug 2010 18:45:10 +0530
-Importance: Normal
-In-Reply-To: <Pine.LNX.4.44L0.1008231716430.1601-100000@iolanthe.rowland.org>
-References: <4C72D1BD.4060503@kernel.dk>,<Pine.LNX.4.44L0.1008231716430.1601-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 24 Aug 2010 13:15:10.0366 (UTC) FILETIME=[61195BE0:01CB438E]
+	id S1755063Ab0HXNQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 09:16:10 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:59871 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab0HXNQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 09:16:08 -0400
+Subject: Re: workqueue destruction BUG_ON
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C73C425.20503@kernel.org>
+References: <1282640156.3695.5.camel@jlt3.sipsolutions.net>
+	 <4C739DC6.1040309@kernel.org>
+	 <1282646268.3695.9.camel@jlt3.sipsolutions.net>
+	 <4C73BC96.6000003@kernel.org>
+	 <1282655414.3695.25.camel@jlt3.sipsolutions.net>
+	 <4C73C425.20503@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 15:17:45 +0200
+Message-ID: <1282655865.3695.27.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-08-24 at 15:07 +0200, Tejun Heo wrote:
 
- 
-Hi Alan,
- 
-I have implemented the run time power management in my drivers. I have one
-issue regarding System resume.
- 
-When the system sleep is triggered as it is mentioned that Power management
-core will increment the power_usage counter during prepare and decrements when complete
-is called.
- 
-Now I have few questions:
- 
-1) When the system resume is done, it does not increase the power_usage counter.
- right?
- 
-So Does then the driver need to update the power_usage counter with run time power management
-core and again set it to active means RPM_ACTIVE?
- 
-2) Suppose device is active, means its power_usage counter is already one, Now during system
-sleep, does the driver first suspend it with run time power management core and then continue
-System suspend?
- 
-3) Because I have seen the code of power management core and I did not see the that during
-system suspend, run time power management status is updated means RPM_SUSPENDED.
-right?
- 
-What do you think?
- 
-Regards
-Raj
- 
-  		 	   		  
+> > [  500.874185] ------------[ cut here ]------------
+> > [  500.875212] kernel BUG at kernel/workqueue.c:2849!
+> 
+> Are you sure you're running the patched kernel?  With the patch
+> applied, the BUG_ON() wouldn't be on line 2849 (on both rc1 and 2).
+
+Yes:
+
+void destroy_workqueue(struct workqueue_struct *wq)
+{
+        unsigned int cpu;
+   
+        wq->flags |= WQ_DYING;
+        flush_workqueue(wq);
+  
+        /*
+         * wq list is used to freeze wq, remove from list after
+         * flushing is complete in case freeze races us.
+         */
+        spin_lock(&workqueue_lock);
+        list_del(&wq->list);
+        spin_unlock(&workqueue_lock);
+
+        /* sanity check */
+        for_each_cwq_cpu(cpu, wq) {
+                struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+                int i;
+
+                for (i = 0; i < WORK_NR_COLORS; i++)
+                        BUG_ON(cwq->nr_in_flight[i]);
+2849:           BUG_ON(cwq->nr_active);
+                BUG_ON(!list_empty(&cwq->delayed_works));
+
+
+Applying the patch reported some offset, but the kernel is just rc1 +
+wireless stuff.
+
+johannes
+
