@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab0HXHD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:03:59 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:15343 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754098Ab0HXHD5 (ORCPT
-	<rfc822;groupwise-jlee@novell.com:3:2>);
-	Tue, 24 Aug 2010 03:03:57 -0400
-Message-Id: <4C73FB7A020000230001F369@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 24 Aug 2010 01:03:54 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <mjg59@srcf.ucam.org>
-Cc: <gregkh@suse.de>, <trenn@suse.de>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
-Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
- detect
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="=__PartF3DEC1CA.2__="
+	id S1753957Ab0HXHHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:07:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38881 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab0HXHHd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 03:07:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=rBShRVF5HBHR6pkUvuCWMxtyN2qdEnFMrEL1eENNW/79GjmCYO9LggcRXAAygPMH60
+         +Xk2waZ8Rq85H6mQ55J0hcjZwSXNGvSmvi7rGFtCNKbZQU230QPA0qGo/T/9pdSOwPzT
+         ugJhtmyPlzFxcA49u6a6GwS9OCwBXw8QkNR2U=
+MIME-Version: 1.0
+Date: Tue, 24 Aug 2010 15:07:33 +0800
+Message-ID: <AANLkTi=9Cn=R8SPMCRp5z+gEjXbaBHeb-AaOtRbuwwcn@mail.gmail.com>
+Subject: [PATCH] perf: fix core dump
+From: jovi zhang <bookjovi@gmail.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu, acme@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+Perf invoke symbol__init function twice when we input command "perf
+kmem/sched record ls", then it will core dump when symbol__exit
+invoked.
+So give a flag to make symbol__init can be invoked once.
 
---=__PartF3DEC1CA.2__=
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+tools/perf/util/symbol.c |    9 +++++++++
+1 files changed, 9 insertions(+), 0 deletions(-)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 1a36773..aded121 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -43,6 +43,8 @@ struct symbol_conf symbol_conf = {
+       .try_vmlinux_path = true,
+};
 
-Hi Matthew, 
++static bool symbol_initizated;
++
+int dso__name_len(const struct dso *self)
+{
+       if (verbose)
+@@ -2268,6 +2270,11 @@ static int setup_list(struct strlist **list,
+const char *list_str,
 
-於 一，2010-08-23 於 18:51 +0100，Matthew Garrett 提到：
-> On Mon, Aug 23, 2010 at 07:53:21PM +0200, Thomas Renninger wrote:
-> 
-> > Hm, needing a module option to get a system running is not what the user expects.
-> > By default, the system should run fine and a module option should be added
-> > as a workaround or for debugging only.
-> 
-> How about we do this instead: add a psb stub driver that does nothing 
-> other than call acpi_backlight_register()?
-> 
+int symbol__init(void)
+{
++       if (symbol_initizated == true)
++               return 0;
++       else
++               symbol_initizated = true;
++
+       elf_version(EV_CURRENT);
+       if (symbol_conf.sort_by_name)
+               symbol_conf.priv_size += (sizeof(struct symbol_name_rb_node) -
+@@ -2304,6 +2311,8 @@ out_free_comm_list:
 
-The attached file is a draft stub driver for poulsbo. Like you said, it
-will only call acpi_video_register and acpi_video_unregister when
-initial and exit.
-And I added the Poulsbo pci id in the module alias.
-
-It's works to me, where can we put the driver? in driver/staging ? or
-put in driver/gpu/stub ?
-
-
-Thank's a lot!
-Joey Lee
-
-
---=__PartF3DEC1CA.2__=
-Content-Type: text/plain; name="poulsbo.c"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="poulsbo.c"
-
-#include <linux/module.h>=0A#include <acpi/video.h>=0A=0Astatic int __init =
-poulsbo_init(void)=0A{=0A	printk(KERN_INFO "poulsbo: stub driver =
-load.\n");=0A	return acpi_video_register();=0A}=0A=0Astatic void __exit =
-poulsbo_cleanup(void)=0A{=0A	acpi_video_unregister();=0A	printk(KERN=
-_INFO "poulsbo: stub driver unloaded.\n");=0A}=0A=0Amodule_init(poulsbo_ini=
-t);=0Amodule_exit(poulsbo_cleanup);=0A=0AMODULE_AUTHOR("Joey Lee");=0AMODUL=
-E_DESCRIPTION("Poulsbo Stub Driver");=0AMODULE_LICENSE("GPL");=0A=0AMODULE_=
-ALIAS("pci:v00008086d00008108sv*sd*bc*sc*i*");=0AMODULE_ALIAS("pci:v0000808=
-6d00008109sv*sd*bc*sc*i*");=0A
---=__PartF3DEC1CA.2__=--
+void symbol__exit(void)
+{
++       if (symbol_initizated == false)
++               return;
+       strlist__delete(symbol_conf.sym_list);
+       strlist__delete(symbol_conf.dso_list);
+       strlist__delete(symbol_conf.comm_list);
