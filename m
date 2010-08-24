@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab0HXTuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 15:50:03 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:62998 "EHLO
-	mail4.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752803Ab0HXTuA (ORCPT
+	id S1755501Ab0HXTwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 15:52:49 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47590 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755366Ab0HXTwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 15:50:00 -0400
-Date: Tue, 24 Aug 2010 13:49:14 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-To: Ben Hutchings <bhutchings@solarflare.com>
-cc: Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-In-Reply-To: <1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
-Message-ID: <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca> <20100823080543.319143e3@nehalam> <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca> <1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+	Tue, 24 Aug 2010 15:52:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XD0D3BX69NoWjjqPiIUfN2gNiqTFlJTfOSh8/6MQDvRpUsLGQJZ4DSvjGAwBgzXJSO
+         /xQ4ErX9gCdv6H9V0NblymK74K3v98JHr7kxCj645j6aIVDp+0STdwqNfAQRY17fTkPY
+         OmrIyjo0a/SKYFcphFn/EI4j3XzhFhBf1DY28=
+Date: Tue, 24 Aug 2010 23:52:40 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+	perfctrs
+Message-ID: <20100824195240.GA5281@lenovo>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu> <20100824171504.GI26154@erda.amd.com> <20100824172806.GF5723@lenovo> <20100824184658.GB4879@redhat.com> <20100824185458.GG5723@lenovo>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100824185458.GG5723@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010, Ben Hutchings wrote:
-> On Tue, 2010-08-24 at 09:14 -0600, Marc Aurele La France wrote:
->> On Mon, 23 Aug 2010, Stephen Hemminger wrote:
->>> On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
->>> Marc Aurele La France <tsi@ualberta.ca> wrote:
->>>> In regrouping for my next tack at this, I noticed that all stack traces go
->>>> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
->>>> A _very_ rough draft that would have ip_append_data() temporarily drop down
->>>> to a smaller fake MTU follows ...
+On Tue, Aug 24, 2010 at 10:54:58PM +0400, Cyrill Gorcunov wrote:
+...
+> > > | commit 4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
+> > > | Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > | Date:   Thu Aug 19 16:28:00 2010 +0200
+> > > |
+> > > |    perf, x86: Fix handle_irq return values
+> > 
+> > Has anyone else seen kernel panics when enabling the LOCKUP_DETECTOR or
+> > apply Robert's patch?  I keep getting a panic with unable to handle paging
+> > request everytime either Robert's patch or the lockup detector uses
+> > __get_cpu_var().  And only on 2.6.36 code.
+> > 
+> > Cheers,
+> > Don
+> > 
+> 
+> I use 2.6.34 atm. Letme try 2.6.36 (which might require some time to recompile).
+> 
+> 	-- Cyrill
 
->>> Why doesn't NFS generate page size fragments?  Does Infiniband or your
->>> device not support this?  Any thing that requires higher order allocation
->>> is going to unstable under load.  Let's fix the cause not the apply bandaid
->>> solution to the symptom.
+Don, for me it fails with somehow unrelated page handling fault - in
+reiserfs_evict_inode O_o Fails in __get_cpu_var I suspect might means
+a problem either in per-cpu allocator itself or we screw pointer somehow.
+Weird.
 
->> From what I can tell, IP fragmentation is done centrally.
-> [...]
-
-> Stephen and I are not talking about IP fragmentation, but about the
-> ability to append 'fragments' to an skb rather than putting the entire
-> packet payload in a linear buffer.  See
-> <http://vger.kernel.org/~davem/skb_data.html>.
-
-Any payload has to either fit in the MTU, or has to be broken up into 
-MTU-sized (or less) fragments, come hell or high water.  That this is done 
-centrally is a good thing.  It is the "(or less)" part that I am working 
-towards here.
-
-Marc.
-
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
+	-- Cyrill
