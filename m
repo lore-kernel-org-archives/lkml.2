@@ -1,254 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab0HXH4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:56:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58998 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab0HXH4Q (ORCPT
+	id S1751626Ab0HXH5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:57:46 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:37027 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab0HXH5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 03:56:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 24 Aug 2010 16:51:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: linux-mm@kvack.org,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kamezawa.hiroyuki@gmail.com
-Subject: Re: [PATCH] memcg: use ID in page_cgroup
-Message-Id: <20100824165108.dd986751.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr93aaoco3ix.fsf@ninji.mtv.corp.google.com>
-References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100820190132.43684862.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93aaoco3ix.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Aug 2010 03:57:43 -0400
+Date: Tue, 24 Aug 2010 08:57:41 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+Subject: Re: [REGRESSION, i915]: Periodic stalls with 2.6.36-rc2
+Message-ID: <20100824075741.GA11000@sucs.org>
+References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <89kc63$hrmse5@fmsmga002.fm.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010 00:47:50 -0700
-Greg Thelen <gthelen@google.com> wrote:
-
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Tue, Aug 24, 2010 at 01:12:22AM +0100, Chris Wilson wrote:
 > 
-> > I have an idea to remove page_cgroup->page pointer, 8bytes reduction per page.
-> > But it will be after this work.
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > Now, addresses of memory cgroup can be calculated by their ID without complex.
-> > This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
-> > On 64bit architecture, this offers us more 6bytes room per page_cgroup.
-> > Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
-> > some light-weight concurrent access.
-> >
-> > We may able to move this id onto flags field but ...go step by step.
-> >
-> > Changelog: 20100811
-> >  - using new rcu APIs, as rcu_dereference_check() etc.
-> > Changelog: 20100804
-> >  - added comments to page_cgroup.h
-> > Changelog: 20100730
-> >  - fixed some garbage added by debug code in early stage
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/page_cgroup.h |    6 ++++-
-> >  mm/memcontrol.c             |   52 +++++++++++++++++++++++++++-----------------
-> >  mm/page_cgroup.c            |    2 -
-> >  3 files changed, 38 insertions(+), 22 deletions(-)
-> >
-> > Index: mmotm-0811/include/linux/page_cgroup.h
-> > ===================================================================
-> > --- mmotm-0811.orig/include/linux/page_cgroup.h
-> > +++ mmotm-0811/include/linux/page_cgroup.h
-> > @@ -9,10 +9,14 @@
-> >   * page_cgroup helps us identify information about the cgroup
-> >   * All page cgroups are allocated at boot or memory hotplug event,
-> >   * then the page cgroup for pfn always exists.
-> > + *
-> > + * TODO: It seems ID for cgroup can be packed into "flags". But there will
-> > + * be race between assigning ID <-> set/clear flags. Please be careful.
-> >   */
-> >  struct page_cgroup {
-> >  	unsigned long flags;
-> > -	struct mem_cgroup *mem_cgroup;
-> > +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
-> > +	unsigned short blk_cgroup;	/* Not Used..but will be. */
-> >  	struct page *page;
-> >  	struct list_head lru;		/* per cgroup LRU list */
-> >  };
-> > Index: mmotm-0811/mm/page_cgroup.c
-> > ===================================================================
-> > --- mmotm-0811.orig/mm/page_cgroup.c
-> > +++ mmotm-0811/mm/page_cgroup.c
-> > @@ -15,7 +15,7 @@ static void __meminit
-> >  __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
-> >  {
-> >  	pc->flags = 0;
-> > -	pc->mem_cgroup = NULL;
-> > +	pc->mem_cgroup = 0;
-> >  	pc->page = pfn_to_page(pfn);
-> >  	INIT_LIST_HEAD(&pc->lru);
-> >  }
-> > Index: mmotm-0811/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0811.orig/mm/memcontrol.c
-> > +++ mmotm-0811/mm/memcontrol.c
-> > @@ -300,12 +300,13 @@ static atomic_t mem_cgroup_num;
-> >  #define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
-> >  static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
-> >  
-> > -/* Must be called under rcu_read_lock */
-> > -static struct mem_cgroup *id_to_memcg(unsigned short id)
-> > +/* Must be called under rcu_read_lock, set safe==true if under lock */
-> > +static struct mem_cgroup *id_to_memcg(unsigned short id, bool safe)
-> >  {
-> >  	struct mem_cgroup *ret;
-> >  	/* see mem_cgroup_free() */
-> > -	ret = rcu_dereference_check(mem_cgroups[id], rch_read_lock_held());
-> > +	ret = rcu_dereference_check(mem_cgroups[id],
-> > +				rch_read_lock_held() || safe);
-> >  	if (likely(ret && ret->valid))
-> >  		return ret;
-> >  	return NULL;
-> > @@ -381,7 +382,12 @@ struct cgroup_subsys_state *mem_cgroup_c
-> >  static struct mem_cgroup_per_zone *
-> >  page_cgroup_zoneinfo(struct page_cgroup *pc)
-> >  {
-> > -	struct mem_cgroup *mem = pc->mem_cgroup;
-> > +	/*
-> > +	 * The caller should guarantee this "pc" is under lock. In typical
-> > +	 * case, this function is called by lru function with zone->lru_lock.
-> > +	 * It is a safe access.
-> > +	 */
-> > +	struct mem_cgroup *mem = id_to_memcg(pc->mem_cgroup, true);
-> >  	int nid = page_cgroup_nid(pc);
-> >  	int zid = page_cgroup_zid(pc);
-> >  
-> > @@ -723,6 +729,11 @@ static inline bool mem_cgroup_is_root(st
-> >  	return (mem == root_mem_cgroup);
-> >  }
-> >  
-> > +static inline bool mem_cgroup_is_rootid(unsigned short id)
-> > +{
-> > +	return (id == 1);
-> > +}
-> > +
-> >  /*
-> >   * Following LRU functions are allowed to be used without PCG_LOCK.
-> >   * Operations are called by routine of global LRU independently from memcg.
-> > @@ -755,7 +766,7 @@ void mem_cgroup_del_lru_list(struct page
-> >  	 */
-> >  	mz = page_cgroup_zoneinfo(pc);
-> >  	MEM_CGROUP_ZSTAT(mz, lru) -= 1;
-> > -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> > +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
-> >  		return;
-> >  	VM_BUG_ON(list_empty(&pc->lru));
-> >  	list_del_init(&pc->lru);
-> > @@ -782,7 +793,7 @@ void mem_cgroup_rotate_lru_list(struct p
-> >  	 */
-> >  	smp_rmb();
-> >  	/* unused or root page is not rotated. */
-> > -	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
-> > +	if (!PageCgroupUsed(pc) || mem_cgroup_is_rootid(pc->mem_cgroup))
-> >  		return;
-> >  	mz = page_cgroup_zoneinfo(pc);
-> >  	list_move(&pc->lru, &mz->lists[lru]);
-> > @@ -808,7 +819,7 @@ void mem_cgroup_add_lru_list(struct page
-> >  	mz = page_cgroup_zoneinfo(pc);
-> >  	MEM_CGROUP_ZSTAT(mz, lru) += 1;
-> >  	SetPageCgroupAcctLRU(pc);
-> > -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> > +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
-> >  		return;
-> >  	list_add(&pc->lru, &mz->lists[lru]);
-> >  }
-> > @@ -1497,7 +1508,7 @@ void mem_cgroup_update_file_mapped(struc
-> >  		return;
-> >  
-> >  	lock_page_cgroup(pc);
-> > -	mem = pc->mem_cgroup;
-> > +	mem = id_to_memcg(pc->mem_cgroup, true);
-> >  	if (!mem || !PageCgroupUsed(pc))
-> >  		goto done;
-> >  
-> > @@ -1885,14 +1896,14 @@ struct mem_cgroup *try_get_mem_cgroup_fr
-> >  	pc = lookup_page_cgroup(page);
-> >  	lock_page_cgroup(pc);
-> >  	if (PageCgroupUsed(pc)) {
-> > -		mem = pc->mem_cgroup;
-> > +		mem = id_to_memcg(pc->mem_cgroup, true);
-> >  		if (mem && !css_tryget(&mem->css))
-> >  			mem = NULL;
-> >  	} else if (PageSwapCache(page)) {
-> >  		ent.val = page_private(page);
-> >  		id = lookup_swap_cgroup(ent);
-> >  		rcu_read_lock();
-> > -		mem = id_to_memcg(id);
-> > +		mem = id_to_memcg(id, false);
-> >  		if (mem && !css_tryget(&mem->css))
-> >  			mem = NULL;
-> >  		rcu_read_unlock();
-> > @@ -1921,7 +1932,7 @@ static void __mem_cgroup_commit_charge(s
-> >  		return;
-> >  	}
-> >  
-> > -	pc->mem_cgroup = mem;
-> > +	pc->mem_cgroup = css_id(&mem->css);
-> >  	/*
-> >  	 * We access a page_cgroup asynchronously without lock_page_cgroup().
-> >  	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
-> > @@ -1979,7 +1990,7 @@ static void __mem_cgroup_move_account(st
-> >  	VM_BUG_ON(PageLRU(pc->page));
-> >  	VM_BUG_ON(!PageCgroupLocked(pc));
+> From the error message, I'd suggest we'd tackle hangcheck - it simply
+> shouldn't be firing at all under normal circumstances. (Looking at it we
+> don't handle the introduction of the BSD ring correctly, but that is
+> irrelevant on the EeePC 900.)
 > 
-> Should this be VM_BUG_ON(!rcu_read_lock_held())?  I suspect that
-> mem_cgroup_move_account() should grab rcu read lock (see my comment below).
-> 
+> Do the stalls and tearing go away with:
 
-No. (see below)
+The stalls became a bit better with the patch but there were still very
+small pauses but the tearing with more recent X bits is definitely still
+there. Additionally videos in totem would play as a tiny one pixel high
+row about a quarter of the screen across at the top left of the screen.
+It also seems that X has started having trouble refreshing itself so
+sometimes new windows are invisible (especially with compiz).
 
+I've also noticed a couple of other things. Sometimes (but without any
+pattern) an extra display is detected even though no external display is
+plugged in. Here's an example of the xrandr output:
+Screen 0: minimum 320 x 200, current 2384 x 768, maximum 4096 x 4096
+LVDS1 connected 1024x600+0+0 (normal left inverted right x axis y axis) 0mm x 0mm
+   1024x600       59.5*+
+   800x600        85.1     72.2     75.0     60.3     56.2  
+   640x480        85.0     72.8     75.0     59.9  
+   720x400        85.0  
+   640x400        85.1  
+   640x350        85.1  
+VGA1 disconnected (normal left inverted right x axis y axis)
+TV1 disconnected (normal left inverted right x axis y axis)
+  1360x768 (0xbc)   84.8MHz
+        h: width  1360 start 1432 end 1568 total 1776 skew    0 clock   47.7KHz
+        v: height  768 start  771 end  781 total  798           clock   59.8Hz
 
-> >  	VM_BUG_ON(!PageCgroupUsed(pc));
-> > -	VM_BUG_ON(pc->mem_cgroup != from);
-> > +	VM_BUG_ON(id_to_memcg(pc->mem_cgroup, true) != from);
-> >  
-> >  	if (PageCgroupFileMapped(pc)) {
-> >  		/* Update mapped_file data for mem_cgroup */
-> > @@ -1994,7 +2005,7 @@ static void __mem_cgroup_move_account(st
-> >  		mem_cgroup_cancel_charge(from);
-> >  
-> >  	/* caller should have done css_get */
-> > -	pc->mem_cgroup = to;
-> > +	pc->mem_cgroup = css_id(&to->css);
-> >  	mem_cgroup_charge_statistics(to, pc, true);
-> >  	/*
-> >  	 * We charges against "to" which may not have any tasks. Then, "to"
-> > @@ -2014,11 +2025,11 @@ static int mem_cgroup_move_account(struc
-> >  {
-> >  	int ret = -EINVAL;
-> >  	lock_page_cgroup(pc);
-> 
-> Should this be rcu_read_lock() instead of lock_page_cgroup()?
-> 
+Sometimes the output is TV1 sometimes it is VGA1 and sometimes these
+extra outputs will disappear. Another issue is that switching from X to
+a console for the first time causes a LCD "blooming" effect.
 
-No. 
- - lock_page_cgroup() is for keeping page_cgroup's status stable.
- - rcu_read_lock() is for delaying to discard mem_cgroup object.
-
-rcu_read_lock() is just for delaying to discard object, not for avoiding
-racy updates. All _updates_ requires proper lock or speculative logic as
-atomic_inc_not_zero() etc... Basically, RCU is for avoiding use-after-free.
-
-Thanks,
--Kame
-
+-- 
+Sitsofe | http://sucs.org/~sits/
