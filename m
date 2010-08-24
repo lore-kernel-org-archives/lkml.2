@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933762Ab0HXXD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:03:58 -0400
-Received: from kroah.org ([198.145.64.141]:32861 "EHLO coco.kroah.org"
+	id S933576Ab0HXXDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:03:04 -0400
+Received: from kroah.org ([198.145.64.141]:41241 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933708Ab0HXXDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:10 2010
-Message-Id: <20100824224510.208629910@clark.site>
+	id S933549Ab0HXXDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:07 2010
+Message-Id: <20100824224507.586522980@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:48 -0700
+Date: Tue, 24 Aug 2010 15:45:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matt Evans <matt@ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [103/114] powerpc: Initialise paca->kstack before early_setup_secondary
+        David Howells <dhowells@redhat.com>
+Subject: [073/114] Fix init ordering of /dev/console vs callers of modprobe
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Evans <matt@ozlabs.org>
+From: David Howells <dhowells@redhat.com>
 
-commit f761622e59433130bc33ad086ce219feee9eb961 upstream.
+commit 31d1d48e199e99077fb30f6fb9a793be7bec756f upstream.
 
-As early setup calls down to slb_initialize(), we must have kstack
-initialised before checking "should we add a bolted SLB entry for our kstack?"
+Make /dev/console get initialised before any initialisation routine that
+invokes modprobe because if modprobe fails, it's going to want to open
+/dev/console, presumably to write an error message to.
 
-Failing to do so means stack access requires an SLB miss exception to refill
-an entry dynamically, if the stack isn't accessible via SLB(0) (kernel text
-& static data).  It's not always allowable to take such a miss, and
-intermittent crashes will result.
+The problem with that is that if the /dev/console driver is not yet
+initialised, the chardev handler will call request_module() to invoke
+modprobe, which will fail, because we never compile /dev/console as a
+module.
 
-Primary CPUs don't have this issue; an SLB entry is not bolted for their
-stack anyway (as that lives within SLB(0)).  This patch therefore only
-affects the init of secondaries.
+This will lead to a modprobe loop, showing the following in the kernel
+log:
 
-Signed-off-by: Matt Evans <matt@ozlabs.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
+
+This can happen, for example, when the built in md5 module can't find
+the built in cryptomgr module (because the latter fails to initialise).
+The md5 module comes before the call to tty_init(), presumably because
+'crypto' comes before 'drivers' alphabetically.
+
+Fix this by calling tty_init() from chrdev_init().
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/head_64.S |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/char/mem.c    |    2 +-
+ drivers/char/tty_io.c |    4 ++--
+ fs/char_dev.c         |    1 +
+ include/linux/tty.h   |    3 +++
+ 4 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -572,9 +572,6 @@ __secondary_start:
- 	/* Set thread priority to MEDIUM */
- 	HMT_MEDIUM
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -916,7 +916,7 @@ static int __init chr_dev_init(void)
+ 			      NULL, devlist[minor].name);
+ 	}
  
--	/* Do early setup for that CPU (stab, slb, hash table pointer) */
--	bl	.early_setup_secondary
--
- 	/* Initialize the kernel stack.  Just a repeat for iSeries.	 */
- 	LOAD_REG_ADDR(r3, current_set)
- 	sldi	r28,r24,3		/* get current_set[cpu#]	 */
-@@ -582,6 +579,9 @@ __secondary_start:
- 	addi	r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
- 	std	r1,PACAKSAVE(r13)
+-	return 0;
++	return tty_init();
+ }
  
-+	/* Do early setup for that CPU (stab, slb, hash table pointer) */
-+	bl	.early_setup_secondary
+ fs_initcall(chr_dev_init);
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -3128,7 +3128,7 @@ static struct cdev tty_cdev, console_cde
+  * Ok, now we can initialize the rest of the tty devices and can count
+  * on memory allocations, interrupts etc..
+  */
+-static int __init tty_init(void)
++int __init tty_init(void)
+ {
+ 	cdev_init(&tty_cdev, &tty_fops);
+ 	if (cdev_add(&tty_cdev, MKDEV(TTYAUX_MAJOR, 0), 1) ||
+@@ -3149,4 +3149,4 @@ static int __init tty_init(void)
+ #endif
+ 	return 0;
+ }
+-module_init(tty_init);
 +
- 	/* Clear backchain so we get nice backtraces */
- 	li	r7,0
- 	mtlr	r7
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -20,6 +20,7 @@
+ #include <linux/cdev.h>
+ #include <linux/mutex.h>
+ #include <linux/backing-dev.h>
++#include <linux/tty.h>
+ 
+ #include "internal.h"
+ 
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -552,6 +552,9 @@ static inline void tty_audit_push_task(s
+ }
+ #endif
+ 
++/* tty_io.c */
++extern int __init tty_init(void);
++
+ /* tty_ioctl.c */
+ extern int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+ 		       unsigned int cmd, unsigned long arg);
 
 
