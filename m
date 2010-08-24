@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934196Ab0HXX3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:29:46 -0400
-Received: from kroah.org ([198.145.64.141]:40555 "EHLO coco.kroah.org"
+	id S932930Ab0HXW71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:59:27 -0400
+Received: from kroah.org ([198.145.64.141]:40497 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933047Ab0HXW7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:32 -0400
+	id S932990Ab0HXW7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:15 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:17 2010
-Message-Id: <20100824224217.903590746@clark.site>
+Message-Id: <20100824224216.965576587@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:30 -0700
+Date: Tue, 24 Aug 2010 15:42:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Dan Carpenter <error27@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [68/91] e1000e: disable ASPM L1 on 82573
+Subject: [57/91] isdn: fix information leak
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
 
-commit 19833b5dffe2f2e92a1b377f9aae9d5f32239512 upstream.
+From: Dan Carpenter <error27@gmail.com>
 
-On the e1000-devel mailing list, Nils Faerber reported latency issues with
-the 82573 LOM on a ThinkPad X60.  It was found to be caused by ASPM L1;
-disabling it resolves the latency.  The issue is present in kernels back
-to 2.6.34 and possibly 2.6.33.
+[ Upstream commit 4b030d4288a569d6bdeca884d7f102d951f097f2 ]
 
+The main motivation of this patch changing strcpy() to strlcpy().
+We strcpy() to copy a 48 byte buffers into a 49 byte buffers.  So at
+best the last byte has leaked information, or maybe there is an
+overflow?  Anyway, this patch closes the information leaks by zeroing
+the memory and the calls to strlcpy() prevent overflows.
 
-Reported-by: Nils Faerber <nils.faerber@kernelconcepts.de>
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/net/e1000e/82571.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/isdn/sc/ioctl.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/net/e1000e/82571.c
-+++ b/drivers/net/e1000e/82571.c
-@@ -1826,6 +1826,7 @@ struct e1000_info e1000_82573_info = {
- 				  | FLAG_HAS_SMART_POWER_DOWN
- 				  | FLAG_HAS_AMT
- 				  | FLAG_HAS_SWSM_ON_LOAD,
-+	.flags2			= FLAG2_DISABLE_ASPM_L1,
- 	.pba			= 20,
- 	.max_hw_frame_size	= ETH_FRAME_LEN + ETH_FCS_LEN,
- 	.get_variants		= e1000_get_variants_82571,
+--- a/drivers/isdn/sc/ioctl.c
++++ b/drivers/isdn/sc/ioctl.c
+@@ -174,7 +174,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 		pr_debug("%s: SCIOGETSPID: ioctl received\n",
+ 				sc_adapter[card]->devicename);
+ 
+-		spid = kmalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
++		spid = kzalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
+ 		if (!spid) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
+@@ -194,7 +194,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 			kfree(rcvmsg);
+ 			return status;
+ 		}
+-		strcpy(spid, rcvmsg->msg_data.byte_array);
++		strlcpy(spid, rcvmsg->msg_data.byte_array, SCIOC_SPIDSIZE);
+ 
+ 		/*
+ 		 * Package the switch type and send to user space
+@@ -272,12 +272,12 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 			return status;
+ 		}
+ 
+-		dn = kmalloc(SCIOC_DNSIZE, GFP_KERNEL);
++		dn = kzalloc(SCIOC_DNSIZE, GFP_KERNEL);
+ 		if (!dn) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
+ 		}
+-		strcpy(dn, rcvmsg->msg_data.byte_array);
++		strlcpy(dn, rcvmsg->msg_data.byte_array, SCIOC_DNSIZE);
+ 		kfree(rcvmsg);
+ 
+ 		/*
+@@ -348,7 +348,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 		pr_debug("%s: SCIOSTAT: ioctl received\n",
+ 				sc_adapter[card]->devicename);
+ 
+-		bi = kmalloc (sizeof(boardInfo), GFP_KERNEL);
++		bi = kzalloc(sizeof(boardInfo), GFP_KERNEL);
+ 		if (!bi) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
 
 
