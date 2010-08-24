@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934018Ab0HXXUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:20:44 -0400
-Received: from kroah.org ([198.145.64.141]:40936 "EHLO coco.kroah.org"
+	id S934021Ab0HXXVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:21:00 -0400
+Received: from kroah.org ([198.145.64.141]:40919 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933360Ab0HXXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:47 -0400
+	id S932799Ab0HXXBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:44 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:03 2010
-Message-Id: <20100824224503.719108792@clark.site>
+Message-Id: <20100824224503.556219605@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:33 -0700
+Date: Tue, 24 Aug 2010 15:44:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [028/114] perf, x86: Fix Intel-nhm PMU programming errata workaround
+        Victor van den Elzen <victor.vde@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [026/114] platform/x86: move rfkill for Dell Mini 1012 to compal-laptop
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,133 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+From: Victor van den Elzen <victor.vde@gmail.com>
 
-commit 351af0725e5222e35741011d1ea62215c1ed06db upstream.
+commit c3f755e3842108c1cffe570fe9802239810352b6 upstream.
 
-Fix the Errata AAK100/AAP53/BD53 workaround, the officialy documented
-workaround we implemented in:
+Like others in the Mini series, the Dell Mini 1012 does not support
+the smbios hook required by dell-laptop.
 
- 11164cd: perf, x86: Add Nehelem PMU programming errata workaround
-
-doesn't actually work fully and causes a stuck PMU state
-under load and non-functioning perf profiling.
-
-A functional workaround was found by trial & error.
-
-Affects all Nehalem-class Intel PMUs.
-
-Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1281073148.2125.63.camel@ymzhang.sh.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Victor van den Elzen <victor.vde@gmail.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   83 +++++++++++++++++++++++++--------
- 1 file changed, 64 insertions(+), 19 deletions(-)
+ drivers/platform/x86/compal-laptop.c |    9 +++++++++
+ drivers/platform/x86/dell-laptop.c   |    7 +++++++
+ 2 files changed, 16 insertions(+)
 
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -491,33 +491,78 @@ static void intel_pmu_enable_all(int add
-  *   Intel Errata AAP53  (model 30)
-  *   Intel Errata BD53   (model 44)
-  *
-- * These chips need to be 'reset' when adding counters by programming
-- * the magic three (non counting) events 0x4300D2, 0x4300B1 and 0x4300B5
-- * either in sequence on the same PMC or on different PMCs.
-+ * The official story:
-+ *   These chips need to be 'reset' when adding counters by programming the
-+ *   magic three (non-counting) events 0x4300B5, 0x4300D2, and 0x4300B1 either
-+ *   in sequence on the same PMC or on different PMCs.
-+ *
-+ * In practise it appears some of these events do in fact count, and
-+ * we need to programm all 4 events.
-  */
--static void intel_pmu_nhm_enable_all(int added)
-+static void intel_pmu_nhm_workaround(void)
- {
--	if (added) {
--		struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--		int i;
--
--		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 0, 0x4300D2);
--		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
--		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	static const unsigned long nhm_magic[4] = {
-+		0x4300B5,
-+		0x4300D2,
-+		0x4300B1,
-+		0x4300B1
-+	};
-+	struct perf_event *event;
-+	int i;
-+
-+	/*
-+	 * The Errata requires below steps:
-+	 * 1) Clear MSR_IA32_PEBS_ENABLE and MSR_CORE_PERF_GLOBAL_CTRL;
-+	 * 2) Configure 4 PERFEVTSELx with the magic events and clear
-+	 *    the corresponding PMCx;
-+	 * 3) set bit0~bit3 of MSR_CORE_PERF_GLOBAL_CTRL;
-+	 * 4) Clear MSR_CORE_PERF_GLOBAL_CTRL;
-+	 * 5) Clear 4 pairs of ERFEVTSELx and PMCx;
-+	 */
-+
-+	/*
-+	 * The real steps we choose are a little different from above.
-+	 * A) To reduce MSR operations, we don't run step 1) as they
-+	 *    are already cleared before this function is called;
-+	 * B) Call x86_perf_event_update to save PMCx before configuring
-+	 *    PERFEVTSELx with magic number;
-+	 * C) With step 5), we do clear only when the PERFEVTSELx is
-+	 *    not used currently.
-+	 * D) Call x86_perf_event_set_period to restore PMCx;
-+	 */
-+
-+	/* We always operate 4 pairs of PERF Counters */
-+	for (i = 0; i < 4; i++) {
-+		event = cpuc->events[i];
-+		if (event)
-+			x86_perf_event_update(event);
-+	}
- 
--		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
--		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
-+	for (i = 0; i < 4; i++) {
-+		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + i, nhm_magic[i]);
-+		wrmsrl(MSR_ARCH_PERFMON_PERFCTR0 + i, 0x0);
-+	}
- 
--		for (i = 0; i < 3; i++) {
--			struct perf_event *event = cpuc->events[i];
-+	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0xf);
-+	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
- 
--			if (!event)
--				continue;
-+	for (i = 0; i < 4; i++) {
-+		event = cpuc->events[i];
- 
-+		if (event) {
-+			x86_perf_event_set_period(event);
- 			__x86_pmu_enable_event(&event->hw,
--					       ARCH_PERFMON_EVENTSEL_ENABLE);
--		}
-+					ARCH_PERFMON_EVENTSEL_ENABLE);
-+		} else
-+			wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + i, 0x0);
- 	}
-+}
-+
-+static void intel_pmu_nhm_enable_all(int added)
-+{
-+	if (added)
-+		intel_pmu_nhm_workaround();
- 	intel_pmu_enable_all(added);
- }
- 
+--- a/drivers/platform/x86/compal-laptop.c
++++ b/drivers/platform/x86/compal-laptop.c
+@@ -259,6 +259,14 @@ static struct dmi_system_id __initdata c
+ 		.callback = dmi_check_cb
+ 	},
+ 	{
++		.ident = "Dell Mini 1012",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
++		},
++		.callback = dmi_check_cb
++	},
++	{
+ 		.ident = "Dell Inspiron 11z",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+@@ -375,5 +383,6 @@ MODULE_ALIAS("dmi:*:rnIFT00:rvrIFT00:*")
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron910:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1010:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1011:*");
++MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1012:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1110:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1210:*");
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -116,6 +116,13 @@ static struct dmi_system_id __devinitdat
+ 		},
+ 	},
+ 	{
++		.ident = "Dell Mini 1012",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
++		},
++	},
++	{
+ 		.ident = "Dell Inspiron 11z",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
 
 
