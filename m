@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267Ab0HXXBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:01:19 -0400
-Received: from kroah.org ([198.145.64.141]:40806 "EHLO coco.kroah.org"
+	id S933216Ab0HXXBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:01:05 -0400
+Received: from kroah.org ([198.145.64.141]:40761 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933238Ab0HXXBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:02 2010
-Message-Id: <20100824224501.979027786@clark.site>
+	id S932725Ab0HXXBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:01 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:01 2010
+Message-Id: <20100824224501.458025582@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:13 -0700
+Date: Tue, 24 Aug 2010 15:44:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [008/114] ALSA: riptide - Fix detection / load of firmware files
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>
+Subject: [002/114] memstick: fix hangs on unexpected device removal in mspro_blk
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Maxim Levitsky <maximlevitsky@gmail.com>
 
-commit a5ba6beb839cfa288960c92cd2668a2601c24dda upstream.
+commit d862b13bc8cbab9692fbe0ef44c40d0488b81af1 upstream.
 
-The detection and loading of firmeware on riptide driver has been broken
-due to rewrite of some codes, checking the presense wrongly.
-This patch fixes the logic again.
+mspro_block_remove() is called from detect thread that first calls the
+mspro_block_stop(), which stops the request queue.  If we call
+del_gendisk() with the queue stopped we get a deadlock.
 
-Reference: kernel bug 16596
-	https://bugzilla.kernel.org/show_bug.cgi?id=16596
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Alex Dubov <oakad@yahoo.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/riptide/riptide.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/memstick/core/mspro_block.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/pci/riptide/riptide.c
-+++ b/sound/pci/riptide/riptide.c
-@@ -1224,15 +1224,14 @@ static int try_to_load_firmware(struct c
- 		    firmware.firmware.ASIC, firmware.firmware.CODEC,
- 		    firmware.firmware.AUXDSP, firmware.firmware.PROG);
+--- a/drivers/memstick/core/mspro_block.c
++++ b/drivers/memstick/core/mspro_block.c
+@@ -1331,13 +1331,14 @@ static void mspro_block_remove(struct me
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	unsigned long flags;
  
-+	if (!chip)
-+		return 1;
+-	del_gendisk(msb->disk);
+-	dev_dbg(&card->dev, "mspro block remove\n");
+ 	spin_lock_irqsave(&msb->q_lock, flags);
+ 	msb->eject = 1;
+ 	blk_start_queue(msb->queue);
+ 	spin_unlock_irqrestore(&msb->q_lock, flags);
+ 
++	del_gendisk(msb->disk);
++	dev_dbg(&card->dev, "mspro block remove\n");
 +
- 	for (i = 0; i < FIRMWARE_VERSIONS; i++) {
- 		if (!memcmp(&firmware_versions[i], &firmware, sizeof(firmware)))
--			break;
--	}
--	if (i >= FIRMWARE_VERSIONS)
--		return 0; /* no match */
-+			return 1; /* OK */
+ 	blk_cleanup_queue(msb->queue);
+ 	msb->queue = NULL;
  
--	if (!chip)
--		return 1; /* OK */
-+	}
- 
- 	snd_printdd("Writing Firmware\n");
- 	if (!chip->fw_entry) {
 
 
