@@ -1,108 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab0HXJq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:46:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754069Ab0HXJqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:46:54 -0400
-Message-ID: <4C7394F3.2050706@redhat.com>
-Date: Tue, 24 Aug 2010 12:46:27 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1754682Ab0HXJuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:50:25 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33481 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754188Ab0HXJuW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 05:50:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nosx+q65KHi1va44KWoCOEv3gD7WlD1eHpRiNCcPmvcUlBTWMpoZr90oqFCPep7qBt
+         QB2xVdMVQt1T6OjsYYgDAwvA7ntgg3ifdl/QQDdQ9JhpdfYy6RJ9DVFarDOEUXzke711
+         Ojk4/ozUD49ZLw1bQ5+j5wjB837I2POe64rPs=
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 10/12] Handle async PF in non preemptable context
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-11-git-send-email-gleb@redhat.com> <4C739131.1050203@redhat.com> <20100824093635.GZ10499@redhat.com>
-In-Reply-To: <20100824093635.GZ10499@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100824020721.GA14726@amt.cnet>
+References: <20100820011054.GA11297@tpepper-t61p.dolavim.us>
+	<4C724BDB.8020604@redhat.com>
+	<4C724D13.6000807@redhat.com>
+	<AANLkTi=7HdLqm-g1F+ezhDN4n+vPo2jAo2cgn-M6_wMJ@mail.gmail.com>
+	<20100824020721.GA14726@amt.cnet>
+Date: Tue, 24 Aug 2010 17:50:20 +0800
+Message-ID: <AANLkTi=Kj_8O_bTDQ26uPceg=u+pQU7hY6vp-gHG6CbC@mail.gmail.com>
+Subject: Re: [PATCH 0/4 v2] kvm: rework KVM mmu_shrink() code
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/24/2010 12:36 PM, Gleb Natapov wrote:
-> On Tue, Aug 24, 2010 at 12:30:25PM +0300, Avi Kivity wrote:
->>   On 07/19/2010 06:31 PM, Gleb Natapov wrote:
->>> If async page fault is received by idle task or when preemp_count is
->>> not zero guest cannot reschedule, so do sti; hlt and wait for page to be
->>> ready. vcpu can still process interrupts while it waits for the page to
->>> be ready.
->>>
->>> Acked-by: Rik van Riel<riel@redhat.com>
->>> Signed-off-by: Gleb Natapov<gleb@redhat.com>
->>> ---
->>>   arch/x86/kernel/kvm.c |   36 ++++++++++++++++++++++++++++++++----
->>>   1 files changed, 32 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
->>> index a6db92e..914b0fc 100644
->>> --- a/arch/x86/kernel/kvm.c
->>> +++ b/arch/x86/kernel/kvm.c
->>> @@ -37,6 +37,7 @@
->>>   #include<asm/cpu.h>
->>>   #include<asm/traps.h>
->>>   #include<asm/desc.h>
->>> +#include<asm/tlbflush.h>
->>>
->>>   #define MMU_QUEUE_SIZE 1024
->>>
->>> @@ -68,6 +69,8 @@ struct kvm_task_sleep_node {
->>>   	wait_queue_head_t wq;
->>>   	u32 token;
->>>   	int cpu;
->>> +	bool halted;
->>> +	struct mm_struct *mm;
->>>   };
->>>
->>>   static struct kvm_task_sleep_head {
->>> @@ -96,6 +99,11 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
->>>   	struct kvm_task_sleep_head *b =&async_pf_sleepers[key];
->>>   	struct kvm_task_sleep_node n, *e;
->>>   	DEFINE_WAIT(wait);
->>> +	int cpu, idle;
->>> +
->>> +	cpu = get_cpu();
->>> +	idle = idle_cpu(cpu);
->>> +	put_cpu();
->>>
->>>   	spin_lock(&b->lock);
->>>   	e = _find_apf_task(b, token);
->>> @@ -109,17 +117,31 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
->>>
->>>   	n.token = token;
->>>   	n.cpu = smp_processor_id();
->>> +	n.mm = current->active_mm;
->>> +	n.halted = idle || preempt_count()>   1;
->>> +	atomic_inc(&n.mm->mm_count);
->>>   	init_waitqueue_head(&n.wq);
->>>   	hlist_add_head(&n.link,&b->list);
->>>   	spin_unlock(&b->lock);
->>>
->>>   	for (;;) {
->>> -		prepare_to_wait(&n.wq,&wait, TASK_UNINTERRUPTIBLE);
->>> +		if (!n.halted)
->>> +			prepare_to_wait(&n.wq,&wait, TASK_UNINTERRUPTIBLE);
->>>   		if (hlist_unhashed(&n.link))
->>>   			break;
->>> -		schedule();
->>> +
->>> +		if (!n.halted) {
->>> +			schedule();
->>> +		} else {
->>> +			/*
->>> +			 * We cannot reschedule. So halt.
->>> +			 */
->> If we get the wakeup here, we'll halt and never wake up again.
+On Tue, Aug 24, 2010 at 10:07 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Mon, Aug 23, 2010 at 07:11:11PM +0800, Xiaotian Feng wrote:
+>> On Mon, Aug 23, 2010 at 6:27 PM, Avi Kivity <avi@redhat.com> wrote:
+>> >  On 08/23/2010 01:22 PM, Avi Kivity wrote:
+>> >>
+>> >>
+>> >> I see a lot of soft lockups with this patchset:
+>> >
+>> > This is running the emulator.flat test case, with shadow paging.  This test
+>> > triggers a lot (millions) of mmu mode switches.
+>> >
 >>
-> We will not. IRQs are disabled here. native_safe_halt() enables them.
+>> Does following patch fix your issue?
+>>
+>> Latest kvm mmu_shrink code rework makes kernel changes
+>> kvm->arch.n_used_mmu_pages/
+>> kvm->arch.n_max_mmu_pages at kvm_mmu_free_page/kvm_mmu_alloc_page,
+>> which is called
+>> by kvm_mmu_commit_zap_page. So the kvm->arch.n_used_mmu_pages or
+>> kvm_mmu_available_pages(vcpu->kvm) is unchanged after kvm_mmu_commit_zap_page(),
+>> This caused kvm_mmu_change_mmu_pages/__kvm_mmu_free_some_pages looping forever.
+>> Moving kvm_mmu_commit_zap_page would make the while loop performs as normal.
+>>
+>> ---
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index f52a965..7e09a21 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1726,8 +1726,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm,
+>> unsigned int goal_nr_mmu_pages)
+>>                                             struct kvm_mmu_page, link);
+>>                         kvm_mmu_prepare_zap_page(kvm, page,
+>>                                                                &invalid_list);
+>> +                       kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>                 }
+>> -               kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>                 goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
+>>         }
+>>
+>> @@ -2976,9 +2976,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
+>>                 sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
+>>                                   struct kvm_mmu_page, link);
+>>                 kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
+>> +               kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+>>                 ++vcpu->kvm->stat.mmu_recycled;
+>>         }
+>> -       kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+>>  }
+>>
+>>  int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code)
+>
+> Please resend with a signed-off-by, and proper subject for the patch.
 
-Ok.
+It's available at: https://patchwork.kernel.org/patch/125431/
 
--- 
-error compiling committee.c: too many arguments to function
+Thanks
+Xiaotian
 
+>
+> Thanks
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
