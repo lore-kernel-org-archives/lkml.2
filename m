@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab0HXNVf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 09:21:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51377 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754058Ab0HXNVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 09:21:32 -0400
-Date: Tue, 24 Aug 2010 15:21:30 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Niels de Vos <ndevos@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Joe Krahn <krahn@niehs.nih.gov>
-Subject: Re: [PATCH] parport_pc: show the detection of a 2 serial port ITE8874
- chip
-In-Reply-To: <4C729FE4.5@redhat.com>
-Message-ID: <alpine.LNX.2.00.1008241521200.1019@pobox.suse.cz>
-References: <4C729FE4.5@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755139Ab0HXNWF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 09:22:05 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:58197 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab0HXNWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 09:22:01 -0400
+Subject: Re: workqueue destruction BUG_ON
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C73C5EE.2060501@kernel.org>
+References: <1282640156.3695.5.camel@jlt3.sipsolutions.net>
+	 <4C739DC6.1040309@kernel.org>
+	 <1282646268.3695.9.camel@jlt3.sipsolutions.net>
+	 <4C73BC96.6000003@kernel.org>
+	 <1282655414.3695.25.camel@jlt3.sipsolutions.net>
+	 <4C73C425.20503@kernel.org>
+	 <1282655865.3695.27.camel@jlt3.sipsolutions.net>
+	 <4C73C5EE.2060501@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 15:23:38 +0200
+Message-ID: <1282656218.3695.29.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010, Niels de Vos wrote:
+On Tue, 2010-08-24 at 15:15 +0200, Tejun Heo wrote:
 
-> The printk message for the 2 serial port version is obscured with a debug
-> macro, unlike all other versions of the card. It should be changed to make
-> the output equal for all detected models.
-> 
-> Reference: https://bugzilla.redhat.com/show_bug.cgi?id=578616#c1
-> 
-> CC: Joe Krahn <krahn@niehs.nih.gov>
-> Signed-off-by: Niels de Vos <ndevos@redhat.com>
-> ---
->  drivers/parport/parport_pc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-> index 0950fa4..8d62fb7 100644
-> --- a/drivers/parport/parport_pc.c
-> +++ b/drivers/parport/parport_pc.c
-> @@ -2599,7 +2599,7 @@ static int __devinit sio_ite_8872_probe(struct pci_dev *pdev, int autoirq,
->  		printk(KERN_INFO "parport_pc: ITE8873 found (1S)\n");
->  		return 0;
->  	case 0x8:
-> -		DPRINTK(KERN_DEBUG "parport_pc: ITE8874 found (2S)\n");
-> +		printk(KERN_INFO "parport_pc: ITE8874 found (2S)\n");
->  		return 0;
->  	default:
->  		printk(KERN_INFO "parport_pc: unknown ITE887x\n");
+> I see, thanks for verifying.  I probably got confused about the line
+> number.  Hmm... weird.  I'll prep further debug patch but can you
+> please tell me what you did to trigger the bug?
 
-Applied, thank you.
+Not really sure. I think I need to trigger a firmware restart in iwlwifi
+and then try to unload the module.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+johannes
+
