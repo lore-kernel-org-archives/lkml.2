@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934284Ab0HXXgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:36:17 -0400
-Received: from kroah.org ([198.145.64.141]:40380 "EHLO coco.kroah.org"
+	id S934308Ab0HXXgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:36:52 -0400
+Received: from kroah.org ([198.145.64.141]:40364 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932884Ab0HXW6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:41 -0400
+	id S932837Ab0HXW6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:14 2010
-Message-Id: <20100824224214.816674997@clark.site>
+Message-Id: <20100824224214.547850117@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:54 -0700
+Date: Tue, 24 Aug 2010 15:41:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Quan <David.Quan@atheros.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [32/91] ath5k: disable ASPM L0s for all cards
+        Marek Vasut <marek.vasut@gmail.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [29/91] ARM: Fix gen_nand probe structures contents
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,88 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Levitsky <maximlevitsky@gmail.com>
+From: Marek Vasut <marek.vasut@gmail.com>
 
-commit 6ccf15a1a76d2ff915cdef6ae4d12d0170087118 upstream.
+commit ef077179a2909d3d0d3accf29ad1ea9ebb19019b upstream.
 
-Atheros PCIe wireless cards handled by ath5k do require L0s disabled.
-For distributions shipping with CONFIG_PCIEASPM (this will be enabled
-by default in the future in 2.6.36) this will also mean both L1 and L0s
-will be disabled when a pre 1.1 PCIe device is detected. We do know L1
-works correctly even for all ath5k pre 1.1 PCIe devices though but cannot
-currently undue the effect of a blacklist, for details you can read
-pcie_aspm_sanity_check() and see how it adjusts the device link
-capability.
+These three platforms didn't properly fill nr_chips in gen_nand
+registration and therefore depended on gen_nand bug fixed by commit
+81cbb0b17796d81cbd92defe113cf2a7c7a21fbb ("mtd: gen_nand: fix support for
+multiple chips")
 
-It may be possible in the future to implement some PCI API to allow
-drivers to override blacklists for pre 1.1 PCIe but for now it is
-best to accept that both L0s and L1 will be disabled completely for
-distributions shipping with CONFIG_PCIEASPM rather than having this
-issue present. Motivation for adding this new API will be to help
-with power consumption for some of these devices.
-
-Example of issues you'd see:
-
-  - On the Acer Aspire One (AOA150, Atheros Communications Inc. AR5001
-    Wireless Network Adapter [168c:001c] (rev 01)) doesn't work well
-    with ASPM enabled, the card will eventually stall on heavy traffic
-    with often 'unsupported jumbo' warnings appearing. Disabling
-    ASPM L0s in ath5k fixes these problems.
-
-  - On the same card you would see a storm of RXORN interrupts
-    even though medium is idle.
-
-Credit for root causing and fixing the bug goes to Jussi Kivilinna.
-
-Cc: David Quan <David.Quan@atheros.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/base.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ arch/arm/mach-ixp4xx/ixdp425-setup.c |    1 +
+ arch/arm/mach-mx3/mach-qong.c        |    1 +
+ arch/arm/mach-orion5x/ts78xx-setup.c |    1 +
+ 3 files changed, 3 insertions(+)
 
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -48,6 +48,7 @@
- #include <linux/netdevice.h>
- #include <linux/cache.h>
- #include <linux/pci.h>
-+#include <linux/pci-aspm.h>
- #include <linux/ethtool.h>
- #include <linux/uaccess.h>
- #include <linux/slab.h>
-@@ -469,6 +470,26 @@ ath5k_pci_probe(struct pci_dev *pdev,
- 	int ret;
- 	u8 csz;
+--- a/arch/arm/mach-ixp4xx/ixdp425-setup.c
++++ b/arch/arm/mach-ixp4xx/ixdp425-setup.c
+@@ -100,6 +100,7 @@ ixdp425_flash_nand_cmd_ctrl(struct mtd_i
  
-+	/*
-+	 * L0s needs to be disabled on all ath5k cards.
-+	 *
-+	 * For distributions shipping with CONFIG_PCIEASPM (this will be enabled
-+	 * by default in the future in 2.6.36) this will also mean both L1 and
-+	 * L0s will be disabled when a pre 1.1 PCIe device is detected. We do
-+	 * know L1 works correctly even for all ath5k pre 1.1 PCIe devices
-+	 * though but cannot currently undue the effect of a blacklist, for
-+	 * details you can read pcie_aspm_sanity_check() and see how it adjusts
-+	 * the device link capability.
-+	 *
-+	 * It may be possible in the future to implement some PCI API to allow
-+	 * drivers to override blacklists for pre 1.1 PCIe but for now it is
-+	 * best to accept that both L0s and L1 will be disabled completely for
-+	 * distributions shipping with CONFIG_PCIEASPM rather than having this
-+	 * issue present. Motivation for adding this new API will be to help
-+	 * with power consumption for some of these devices.
-+	 */
-+	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S);
-+
- 	ret = pci_enable_device(pdev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "can't enable device\n");
+ static struct platform_nand_data ixdp425_flash_nand_data = {
+ 	.chip = {
++		.nr_chips		= 1,
+ 		.chip_delay		= 30,
+ 		.options		= NAND_NO_AUTOINCR,
+ #ifdef CONFIG_MTD_PARTITIONS
+--- a/arch/arm/mach-mx3/mach-qong.c
++++ b/arch/arm/mach-mx3/mach-qong.c
+@@ -169,6 +169,7 @@ static void qong_nand_select_chip(struct
+ 
+ static struct platform_nand_data qong_nand_data = {
+ 	.chip = {
++		.nr_chips		= 1,
+ 		.chip_delay		= 20,
+ 		.options		= 0,
+ 	},
+--- a/arch/arm/mach-orion5x/ts78xx-setup.c
++++ b/arch/arm/mach-orion5x/ts78xx-setup.c
+@@ -216,6 +216,7 @@ static struct mtd_partition ts78xx_ts_na
+ 
+ static struct platform_nand_data ts78xx_ts_nand_data = {
+ 	.chip	= {
++		.nr_chips		= 1,
+ 		.part_probe_types	= ts_nand_part_probes,
+ 		.partitions		= ts78xx_ts_nand_parts,
+ 		.nr_partitions		= ARRAY_SIZE(ts78xx_ts_nand_parts),
 
 
