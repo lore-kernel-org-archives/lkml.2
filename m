@@ -1,118 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0HXMRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 08:17:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48717 "EHLO mx2.suse.de"
+	id S1752855Ab0HXMZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 08:25:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13524 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460Ab0HXMRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 08:17:49 -0400
-Date: Tue, 24 Aug 2010 14:17:03 +0200
-From: Jan Kara <jack@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Jens Axboe <jaxboe@fusionio.com>, Jan Kara <jack@suse.cz>,
-        cluster-devel@redhat.com, linux-ext4@vger.kernel.org,
+	id S1752472Ab0HXMZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 08:25:37 -0400
+Date: Tue, 24 Aug 2010 09:25:25 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: jovi zhang <bookjovi@gmail.com>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/5] fs: add nofail variant of alloc_buffer_head
-Message-ID: <20100824121702.GC3713@quack.suse.cz>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1008240347070.19596@chino.kir.corp.google.com>
+Subject: Re: [PATCH] perf: fix core dump
+Message-ID: <20100824122525.GM2973@ghostprotocols.net>
+References: <AANLkTi=9Cn=R8SPMCRp5z+gEjXbaBHeb-AaOtRbuwwcn@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008240347070.19596@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=9Cn=R8SPMCRp5z+gEjXbaBHeb-AaOtRbuwwcn@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-08-10 03:50:30, David Rientjes wrote:
-> Add alloc_buffer_head_nofail().  This function is equivalent to
-> alloc_buffer_head(), except that it will never return NULL and instead
-> loop forever trying to allocate memory.
-> 
-> If the first allocation attempt fails, a warning will be emitted,
-> including a call trace.  Subsequent failures will suppress this warning.
-> 
-> This was added as a helper function for documentation and auditability.
-> No future callers should be added.
-  Acked-by: Jan Kara <jack@suse.cz>
-for the JBD part here as well.
+Em Tue, Aug 24, 2010 at 03:07:33PM +0800, jovi zhang escreveu:
+> Perf invoke symbol__init function twice when we input command "perf
+> kmem/sched record ls", then it will core dump when symbol__exit
+> invoked.
+> So give a flag to make symbol__init can be invoked once.
 
-								Honza
+Yeah, this fixes the problem, and I'll apply this patch, but I think
+that the elegant solution is to adopt one more kernel construct, i.e.
+__init markings :)
+
+Thanks!
+
+- Arnaldo
+ 
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+> tools/perf/util/symbol.c |    9 +++++++++
+> 1 files changed, 9 insertions(+), 0 deletions(-)
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index 1a36773..aded121 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -43,6 +43,8 @@ struct symbol_conf symbol_conf = {
+>        .try_vmlinux_path = true,
+> };
 > 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  fs/buffer.c                 |   18 ++++++++++++++++++
->  fs/gfs2/log.c               |    2 +-
->  fs/jbd/journal.c            |    2 +-
->  include/linux/buffer_head.h |    1 +
->  4 files changed, 21 insertions(+), 2 deletions(-)
+> +static bool symbol_initizated;
+> +
+> int dso__name_len(const struct dso *self)
+> {
+>        if (verbose)
+> @@ -2268,6 +2270,11 @@ static int setup_list(struct strlist **list,
+> const char *list_str,
 > 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -3238,6 +3238,24 @@ struct buffer_head *alloc_buffer_head(gfp_t gfp_flags)
->  }
->  EXPORT_SYMBOL(alloc_buffer_head);
->  
-> +/*
-> + * NOTE: no new callers of this function should be implemented!
-> + * All memory allocations should be failable whenever possible.
-> + */
-> +struct buffer_head *alloc_buffer_head_nofail(gfp_t gfp_flags)
-> +{
-> +	struct buffer_head *ret;
+> int symbol__init(void)
+> {
+> +       if (symbol_initizated == true)
+> +               return 0;
+> +       else
+> +               symbol_initizated = true;
 > +
-> +	for (;;) {
-> +		ret = alloc_buffer_head(gfp_flags);
-> +		if (ret)
-> +			return ret;
-> +		WARN_ONCE(1, "Out of memory; no fallback implemented "
-> +				"(flags=0x%x)\n",
-> +				gfp_flags);
-> +	}
-> +}
-> +
->  void free_buffer_head(struct buffer_head *bh)
->  {
->  	BUG_ON(!list_empty(&bh->b_assoc_buffers));
-> diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
-> --- a/fs/gfs2/log.c
-> +++ b/fs/gfs2/log.c
-> @@ -523,7 +523,7 @@ struct buffer_head *gfs2_log_fake_buf(struct gfs2_sbd *sdp,
->  	u64 blkno = log_bmap(sdp, sdp->sd_log_flush_head);
->  	struct buffer_head *bh;
->  
-> -	bh = alloc_buffer_head(GFP_NOFS | __GFP_NOFAIL);
-> +	bh = alloc_buffer_head_nofail(GFP_NOFS);
->  	atomic_set(&bh->b_count, 1);
->  	bh->b_state = (1 << BH_Mapped) | (1 << BH_Uptodate) | (1 << BH_Lock);
->  	set_bh_page(bh, real->b_page, bh_offset(real));
-> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> --- a/fs/jbd/journal.c
-> +++ b/fs/jbd/journal.c
-> @@ -301,7 +301,7 @@ int journal_write_metadata_buffer(transaction_t *transaction,
->  	 */
->  	J_ASSERT_BH(bh_in, buffer_jbddirty(bh_in));
->  
-> -	new_bh = alloc_buffer_head(GFP_NOFS|__GFP_NOFAIL);
-> +	new_bh = alloc_buffer_head_nofail(GFP_NOFS);
->  	/* keep subsequent assertions sane */
->  	new_bh->b_state = 0;
->  	init_buffer(new_bh, NULL, NULL);
-> diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-> --- a/include/linux/buffer_head.h
-> +++ b/include/linux/buffer_head.h
-> @@ -176,6 +176,7 @@ void __breadahead(struct block_device *, sector_t block, unsigned int size);
->  struct buffer_head *__bread(struct block_device *, sector_t block, unsigned size);
->  void invalidate_bh_lrus(void);
->  struct buffer_head *alloc_buffer_head(gfp_t gfp_flags);
-> +struct buffer_head *alloc_buffer_head_nofail(gfp_t gfp_flags);
->  void free_buffer_head(struct buffer_head * bh);
->  void unlock_buffer(struct buffer_head *bh);
->  void __lock_buffer(struct buffer_head *bh);
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>        elf_version(EV_CURRENT);
+>        if (symbol_conf.sort_by_name)
+>                symbol_conf.priv_size += (sizeof(struct symbol_name_rb_node) -
+> @@ -2304,6 +2311,8 @@ out_free_comm_list:
+> 
+> void symbol__exit(void)
+> {
+> +       if (symbol_initizated == false)
+> +               return;
+>        strlist__delete(symbol_conf.sym_list);
+>        strlist__delete(symbol_conf.dso_list);
+>        strlist__delete(symbol_conf.comm_list);
