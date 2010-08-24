@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933385Ab0HXXB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:01:56 -0400
-Received: from kroah.org ([198.145.64.141]:40953 "EHLO coco.kroah.org"
+	id S933403Ab0HXXCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:02:03 -0400
+Received: from kroah.org ([198.145.64.141]:40975 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933355Ab0HXXBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:03 2010
-Message-Id: <20100824224503.888156902@clark.site>
+	id S933386Ab0HXXB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:56 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
+Message-Id: <20100824224504.149984804@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:35 -0700
+Date: Tue, 24 Aug 2010 15:44:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiaju Zhang <jjzhang@suse.de>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: [030/114] Fix the nested PR lock calling issue in ACL
+        Jean Delvare <khali@linux-fr.org>, Jim Cromie <jim.cromie@gmail.com>
+Subject: [033/114] hwmon: (pc87360) Fix device resource declaration
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,106 +25,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiaju Zhang <jjzhang.linux@gmail.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 845b6cf34150100deb5f58c8a37a372b111f2918 upstream.
+commit b9783dcebe952bf73449fe70a19ee4814adc81a0 upstream.
 
-Hi,
+It's not OK to call platform_device_add_resources() multiple times
+in a row. Despite its name, this functions sets the resources, it
+doesn't add them. So we have to prepare an array with all the
+resources, and then call platform_device_add_resources() once.
 
-Thanks a lot for all the review and comments so far;) I'd like to send
-the improved (V4) version of this patch.
+Before this fix, only the last I/O resource would be actually
+registered. The other I/O resources were leaked.
 
-This patch fixes a deadlock in OCFS2 ACL. We found this bug in OCFS2
-and Samba integration using scenario, the symptom is several smbd
-processes will be hung under heavy workload. Finally we found out it
-is the nested PR lock calling that leads to this deadlock:
-
- node1        node2
-              gr PR
-                |
-                V
- PR(EX)---> BAST:OCFS2_LOCK_BLOCKED
-                |
-                V
-              rq PR
-                |
-                V
-              wait=1
-
-After requesting the 2nd PR lock, the process "smbd" went into D
-state. It can only be woken up when the 1st PR lock's RO holder equals
-zero. There should be an ocfs2_inode_unlock in the calling path later
-on, which can decrement the RO holder. But since it has been in
-uninterruptible sleep, the unlock function has no chance to be called.
-
-The related stack trace is:
-smbd          D ffff8800013d0600     0  9522   5608 0x00000000
- ffff88002ca7fb18 0000000000000282 ffff88002f964500 ffff88002ca7fa98
- ffff8800013d0600 ffff88002ca7fae0 ffff88002f964340 ffff88002f964340
- ffff88002ca7ffd8 ffff88002ca7ffd8 ffff88002f964340 ffff88002f964340
-Call Trace:
-[<ffffffff80350425>] schedule_timeout+0x175/0x210
-[<ffffffff8034f580>] wait_for_common+0xf0/0x210
-[<ffffffffa03e12b9>] __ocfs2_cluster_lock+0x3b9/0xa90 [ocfs2]
-[<ffffffffa03e7665>] ocfs2_inode_lock_full_nested+0x255/0xdb0 [ocfs2]
-[<ffffffffa0446019>] ocfs2_get_acl+0x69/0x120 [ocfs2]
-[<ffffffffa0446368>] ocfs2_check_acl+0x28/0x80 [ocfs2]
-[<ffffffff800e3507>] acl_permission_check+0x57/0xb0
-[<ffffffff800e357d>] generic_permission+0x1d/0xc0
-[<ffffffffa03eecea>] ocfs2_permission+0x10a/0x1d0 [ocfs2]
-[<ffffffff800e3f65>] inode_permission+0x45/0x100
-[<ffffffff800d86b3>] sys_chdir+0x53/0x90
-[<ffffffff80007458>] system_call_fastpath+0x16/0x1b
-[<00007f34a4ef6927>] 0x7f34a4ef6927
-
-For details, please see:
-https://bugzilla.novell.com/show_bug.cgi?id=614332 and
-http://oss.oracle.com/bugzilla/show_bug.cgi?id=1278
-
-Signed-off-by: Jiaju Zhang <jjzhang@suse.de>
-Acked-by: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Jim Cromie <jim.cromie@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/acl.c |   24 +++++++++++++++++++++---
- 1 file changed, 21 insertions(+), 3 deletions(-)
+ drivers/hwmon/pc87360.c |   31 +++++++++++++++++--------------
+ 1 file changed, 17 insertions(+), 14 deletions(-)
 
---- a/fs/ocfs2/acl.c
-+++ b/fs/ocfs2/acl.c
-@@ -290,12 +290,30 @@ static int ocfs2_set_acl(handle_t *handl
+--- a/drivers/hwmon/pc87360.c
++++ b/drivers/hwmon/pc87360.c
+@@ -1610,11 +1610,8 @@ static struct pc87360_data *pc87360_upda
  
- int ocfs2_check_acl(struct inode *inode, int mask)
+ static int __init pc87360_device_add(unsigned short address)
  {
--	struct posix_acl *acl = ocfs2_get_acl(inode, ACL_TYPE_ACCESS);
-+	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
-+	struct buffer_head *di_bh = NULL;
-+	struct posix_acl *acl;
-+	int ret = -EAGAIN;
+-	struct resource res = {
+-		.name	= "pc87360",
+-		.flags	= IORESOURCE_IO,
+-	};
+-	int err, i;
++	struct resource res[3];
++	int err, i, res_count;
  
--	if (IS_ERR(acl))
-+	if (!(osb->s_mount_opt & OCFS2_MOUNT_POSIX_ACL))
-+		return ret;
-+
-+	ret = ocfs2_read_inode_block(inode, &di_bh);
-+	if (ret < 0) {
-+		mlog_errno(ret);
-+		return ret;
-+	}
-+
-+	acl = ocfs2_get_acl_nolock(inode, ACL_TYPE_ACCESS, di_bh);
-+
-+	brelse(di_bh);
-+
-+	if (IS_ERR(acl)) {
-+		mlog_errno(PTR_ERR(acl));
- 		return PTR_ERR(acl);
-+	}
- 	if (acl) {
--		int ret = posix_acl_permission(inode, acl, mask);
-+		ret = posix_acl_permission(inode, acl, mask);
- 		posix_acl_release(acl);
- 		return ret;
+ 	pdev = platform_device_alloc("pc87360", address);
+ 	if (!pdev) {
+@@ -1623,22 +1620,28 @@ static int __init pc87360_device_add(uns
+ 		goto exit;
  	}
+ 
++	memset(res, 0, 3 * sizeof(struct resource));
++	res_count = 0;
+ 	for (i = 0; i < 3; i++) {
+ 		if (!extra_isa[i])
+ 			continue;
+-		res.start = extra_isa[i];
+-		res.end = extra_isa[i] + PC87360_EXTENT - 1;
++		res[res_count].start = extra_isa[i];
++		res[res_count].end = extra_isa[i] + PC87360_EXTENT - 1;
++		res[res_count].name = "pc87360",
++		res[res_count].flags = IORESOURCE_IO,
+ 
+-		err = acpi_check_resource_conflict(&res);
++		err = acpi_check_resource_conflict(&res[res_count]);
+ 		if (err)
+ 			goto exit_device_put;
+ 
+-		err = platform_device_add_resources(pdev, &res, 1);
+-		if (err) {
+-			printk(KERN_ERR "pc87360: Device resource[%d] "
+-			       "addition failed (%d)\n", i, err);
+-			goto exit_device_put;
+-		}
++		res_count++;
++	}
++
++	err = platform_device_add_resources(pdev, res, res_count);
++	if (err) {
++		printk(KERN_ERR "pc87360: Device resources addition failed "
++		       "(%d)\n", err);
++		goto exit_device_put;
+ 	}
+ 
+ 	err = platform_device_add(pdev);
 
 
