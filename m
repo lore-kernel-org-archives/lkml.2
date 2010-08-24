@@ -1,101 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab0HXJDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:03:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14967 "EHLO mx1.redhat.com"
+	id S1754556Ab0HXJDj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:03:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47661 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754435Ab0HXJDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:03:16 -0400
-Message-ID: <4C738A8E.7050502@redhat.com>
-Date: Tue, 24 Aug 2010 12:02:06 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1754507Ab0HXJDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 05:03:38 -0400
+Message-ID: <4C73899A.304@kernel.org>
+Date: Tue, 24 Aug 2010 10:58:02 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 04/12] Provide special async page fault handler when
- async PF capability is detected
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-5-git-send-email-gleb@redhat.com> <4C729865.3050409@redhat.com> <20100824073121.GW10499@redhat.com>
-In-Reply-To: <20100824073121.GW10499@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: general protection fault: 0000 [#1] PREEMPT SMP
+References: <20100813134756.GA5235@swordfish.minsk.epam.com>
+In-Reply-To: <20100813134756.GA5235@swordfish.minsk.epam.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 Aug 2010 09:03:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/24/2010 10:31 AM, Gleb Natapov wrote:
-> +
->>> +static void apf_task_wait(struct task_struct *tsk, u32 token)
->>> +{
->>> +	u32 key = hash_32(token, KVM_TASK_SLEEP_HASHBITS);
->>> +	struct kvm_task_sleep_head *b =&async_pf_sleepers[key];
->>> +	struct kvm_task_sleep_node n, *e;
->>> +	DEFINE_WAIT(wait);
->>> +
->>> +	spin_lock(&b->lock);
->>> +	e = _find_apf_task(b, token);
->>> +	if (e) {
->>> +		/* dummy entry exist ->   wake up was delivered ahead of PF */
->>> +		hlist_del(&e->link);
->>> +		kfree(e);
->>> +		spin_unlock(&b->lock);
->>> +		return;
->>> +	}
->>> +
->>> +	n.token = token;
->>> +	n.cpu = smp_processor_id();
->> What's the meaning of cpu?  Won't the waiter migrate to other cpus?
-> Waiter cannot migrate to other cpu since it is sleeping. It may be
-> scheduled to run on any cpu when it will be waked.
+Hello,
 
-What if you have a spurious wakeup?  Also, nothing prevents the 
-scheduler from migrating the thread even if it is sleeping.  It may not 
-do so now, but it might do it in the future.
+On 08/13/2010 03:47 PM, Sergey Senozhatsky wrote:
+> [   29.943019]  [<ffffffff81065893>] lock_acquire+0x97/0xb6
+..
+> [   29.943257]  [<ffffffff8137568d>] _raw_spin_lock_irqsave+0x4e/0x60
+..
+> [   29.943376]  [<ffffffff8137145b>] percpu_counter_hotcpu_callback+0x3e/0x93
 
-Oh, it probably does now on cpu hotunplug.
+It's getting gpf at spin_lock_irqsave(&fbc->lock) in
+percpu_counter_hotplug_callback().  percpu_counter keeps track of all
+the allocated percpu counters and walk them on cpu up/down events.
+It's most likely one of its users freed or corrupted the percpu
+counter structure without properly destroying it.  Adding debugobj is
+probably the best way to track down the offending user.
 
-Why do you need n.cpu?
-
-
->>> +			spin_unlock(&b->lock);
->>> +			cpu_relax();
->>> +			goto again;
->>> +		}
->> The other cpu might be waiting for us to yield.  We can fix it later
->> with the the pv spinlock infrastructure.
->>
-> This busy wait happens only if (very small) allocation fails, so if
-> a guest ever hits this code path I expect it to be on his way to die
-> anyway.
-
-Hm.  I don't have a good feel on how rare atomic allocation failures are 
-on common workloads.
-
-Note a kmem_cache for apfs will make failures even more rare.
-
->> Or, we can avoid the allocation.  If at most one apf can be pending
->> (is this true?), we can use a per-cpu variable for this dummy entry.
->>
-> We can have may outstanding apfs.
-
-But, while we're processing an apf, we can't take any more.
-
-So we can have a buffer of one pre-allocated entry per cpu, and do 
-something like:
-
-apf:
-   disable apf for this cpu
-   handle apf using buffered entry
-   enable interrupts
-   allocate new entry
-   buffer it
-   enable apf for that cpu
-
-this trades off a bigger apf disabled window for not busy looping.
+Thanks.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+tejun
