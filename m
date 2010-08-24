@@ -1,112 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab0HXRws (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:52:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276Ab0HXRwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:52:42 -0400
-Date: Tue, 24 Aug 2010 13:52:16 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Hannes Reinecke <hare@suse.de>,
-        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
-        jack@suse.cz, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
-        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
-        dm-devel@redhat.com
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-Message-ID: <20100824175215.GA29409@redhat.com>
-References: <20100814103654.GA13292@lst.de>
- <4C6A5D8A.4010205@kernel.org>
- <20100817131915.GB2963@lst.de>
- <4C6ABBCB.9030306@kernel.org>
- <20100817165929.GB13800@lst.de>
- <4C6E3C1A.50205@ct.jp.nec.com>
- <4C72660A.7070009@kernel.org>
- <20100823141733.GA21158@redhat.com>
- <4C739DE9.5070803@ct.jp.nec.com>
- <4C73FA8F.5080800@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C73FA8F.5080800@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755849Ab0HXR5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:57:34 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:56008 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab0HXR5c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 13:57:32 -0400
+Subject: Re: RFC: MTU for serving NFS on Infiniband
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Marc Aurele La France <tsi@ualberta.ca>
+Cc: Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+In-Reply-To: <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
+References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca>
+	 <20100823080543.319143e3@nehalam>
+	 <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Tue, 24 Aug 2010 18:57:27 +0100
+Message-ID: <1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Aug 2010 18:01:07.0293 (UTC) FILETIME=[536CA8D0:01CB43B6]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17590.005
+X-TM-AS-Result: No--24.096700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24 2010 at 12:59pm -0400,
-Tejun Heo <tj@kernel.org> wrote:
-
-> Hello,
+On Tue, 2010-08-24 at 09:14 -0600, Marc Aurele La France wrote:
+> On Mon, 23 Aug 2010, Stephen Hemminger wrote:
+> > On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
+> > Marc Aurele La France <tsi@ualberta.ca> wrote:
+> >> In regrouping for my next tack at this, I noticed that all stack traces go
+> >> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
+> >> A _very_ rough draft that would have ip_append_data() temporarily drop down
+> >> to a smaller fake MTU follows ...
 > 
-> On 08/24/2010 12:24 PM, Kiyoshi Ueda wrote:
-> > Yes, checking whether it's a transport error in lower layer is
-> > the right solution.
-> > (Since I know it's not available yet, I just hoped if upper layers
-> >  had some other options.)
-> > 
-> > Anyway, only reporting errors for REQ_FLUSH to upper layer without
-> > such a solution would make dm-multipath almost unusable in real world,
-> > although it's better than implicit data loss.
+> > Why doesn't NFS generate page size fragments?  Does Infiniband or your
+> > device not support this?  Any thing that requires higher order allocation
+> > is going to unstable under load.  Let's fix the cause not the apply bandaid
+> > solution to the symptom.
 > 
-> I see.
-> 
-> >>> Maybe just turn off barrier support in mpath for now?
-> > 
-> > If it's possible, it could be a workaround for a short term.
-> > But how can you do that?
-> > 
-> > I think it's not enough to just drop REQ_FLUSH flag from q->flush_flags.
-> > Underlying devices of a mpath device may have write-back cache and
-> > it may be enabled.
-> > So if a mpath device doesn't set REQ_FLUSH flag in q->flush_flags, it
-> > becomes a device which has write-back cache but doesn't support flush.
-> > Then, upper layer can do nothing to ensure cache flush?
-> 
-> Yeah, I was basically suggesting to forget about cache flush w/ mpath
-> until it can be fixed.  You're saying that if mpath just passes
-> REQ_FLUSH upwards without retrying, it will be almost unuseable,
-> right?  I'm not sure how to proceed here.
+> From what I can tell, IP fragmentation is done centrally.
+[...]
 
-Seems clear that we must fix mpath to receive the SCSI errors, in some
-form, so it can decide if a retry is required/valid or not.
+Stephen and I are not talking about IP fragmentation, but about the
+ability to append 'fragments' to an skb rather than putting the entire
+packet payload in a linear buffer.  See
+<http://vger.kernel.org/~davem/skb_data.html>.
 
-Such error processing was a big selling point for the transition from
-bio-based to request-based multipath; so it's unfortunate that this
-piece has been left until now.
+Ben.
 
-> How much work would discerning between transport and IO errors take?
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-Hannes already proposed some patches:
-https://patchwork.kernel.org/patch/61282/
-https://patchwork.kernel.org/patch/61283/
-https://patchwork.kernel.org/patch/61596/
-
-This work was discussed at LSF, see "Error Handling - Hannes Reinecke"
-here: http://lwn.net/Articles/400589/
-
-I thought James, Alasdair and others offered some guidance on what he'd
-like to see...
-
-Unfortunately, even though I was at this LSF session, I can't recall any
-specific consensus on how Hannes' work should be refactored (to avoid
-adding SCSI sense processing code directly in dm-mpath).  Maybe James,
-Hannes or others remember?
-
-Was it enough to just have the SCSI sense processing code split out in a
-new sub-section of the SCSI midlayer -- and then DM calls that code?
-
-> If it can't be done quickly enough the retry logic can be kept around
-> to keep the old behavior but that already was a broken behavior, so...
-> :-(
-
-I'll have to review this thread again to understand why mpath's existing
-retry logic is broken behavior.  mpath is used with more capable SCSI
-devices so I'm missing why a failed FLUSH implies data loss.
-
-Mike
