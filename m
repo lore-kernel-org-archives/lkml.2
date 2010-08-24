@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab0HXPkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:40:35 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:47829 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755455Ab0HXPj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:39:57 -0400
-From: Nicolas Palix <npalix@diku.dk>
-To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>
-Cc: cocci@diku.dk, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Nicolas Palix <npalix@diku.dk>
-Subject: [PATCH 12/18] Coccinelle: Add api/memdup.cocci
-Date: Tue, 24 Aug 2010 17:39:06 +0200
-Message-Id: <1282664352-15882-13-git-send-email-npalix@diku.dk>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282664352-15882-1-git-send-email-npalix@diku.dk>
-References: <1282664352-15882-1-git-send-email-npalix@diku.dk>
+	id S932116Ab0HXPl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:41:59 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:56095 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab0HXPl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 11:41:56 -0400
+Date: Tue, 24 Aug 2010 16:41:55 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 1/2] drm/i915: Revert wait for vblank to prevent X refresh
+	issues
+Message-ID: <20100824154154.GA10473@sucs.org>
+References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com> <20100824075741.GA11000@sucs.org> <8u3s8d$jcg467@orsmga001.jf.intel.com> <20100824084902.GA27569@sucs.org> <89kc63$hrqoho@fmsmga002.fm.intel.com> <20100824095535.GA14020@sucs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100824095535.GA14020@sucs.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kmemdup rather than duplicating its implementation
-
-Signed-off-by: Nicolas Palix <npalix@diku.dk>
-Signed-off-by: Julia Lawall <julia@diku.dk>
+In commit 9d0498a2bf7455159b317f19531a3e5db2ecc9c4 20ms waits were
+converted into vblank waits. One of these caused tearing, mode detection
+and redraw issues on an EeePC 900 with a more recent intel userspace (
+http://lkml.org/lkml/2010/8/23/432 ). Restoring the 20ms wait resolves
+the issue.
 ---
- scripts/coccinelle/api/memdup.cocci |   40 +++++++++++++++++++++++++++++++++++
- 1 files changed, 40 insertions(+), 0 deletions(-)
- create mode 100644 scripts/coccinelle/api/memdup.cocci
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/scripts/coccinelle/api/memdup.cocci b/scripts/coccinelle/api/memdup.cocci
-new file mode 100644
-index 0000000..b5d7220
---- /dev/null
-+++ b/scripts/coccinelle/api/memdup.cocci
-@@ -0,0 +1,40 @@
-+/// Use kmemdup rather than duplicating its implementation
-+///
-+// Confidence: High
-+// Copyright: (C) 2010 Nicolas Palix, DIKU.  GPLv2.
-+// Copyright: (C) 2010 Julia Lawall, DIKU.  GPLv2.
-+// Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Comments:
-+// Options: -no_includes -include_headers
-+
-+virtual patch
-+
-+@r1@
-+expression from,to;
-+expression flag;
-+position p;
-+@@
-+
-+   to = \(kmalloc@p\|kzalloc@p\)(strlen(from) + 1,flag);
-+
-+@r2@
-+expression x,from,to;
-+expression flag,E1;
-+position p;
-+@@
-+
-+    x = strlen(from) + 1;
-+    ... when != \( x = E1 \| from = E1 \)
-+    to = \(kmalloc@p\|kzalloc@p\)(x,flag);
-+
-+@@
-+expression from,to,size,flag;
-+position p != {r1.p,r2.p};
-+statement S;
-+@@
-+
-+-  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
-++  to = kmemdup(from,size,flag);
-+   if (to==NULL || ...) S
-+-  memcpy(to, from, size);
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 23157e1..116d938 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4539,7 +4539,7 @@ struct drm_crtc *intel_get_load_detect_pipe(struct intel_encoder *intel_encoder,
+ 		encoder_funcs->commit(encoder);
+ 	}
+ 	/* let the connector get through one full cycle before testing */
+-	intel_wait_for_vblank(dev, intel_crtc->pipe);
++	msleep(20);
+ 
+ 	return crtc;
+ }
 -- 
-1.7.0.4
+1.7.1
 
