@@ -1,140 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab0HXWrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:47:18 -0400
-Received: from kroah.org ([198.145.64.141]:59757 "EHLO coco.kroah.org"
+	id S1756295Ab0HXWrf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:47:35 -0400
+Received: from kroah.org ([198.145.64.141]:59770 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755633Ab0HXWqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:46:46 -0400
-Date: Tue, 24 Aug 2010 15:46:17 -0700
+	id S1755323Ab0HXWrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:47:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:18:20 2010
+Message-Id: <20100824221820.151700351@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 24 Aug 2010 15:16:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/91] 2.6.34.6-stable review
-Message-ID: <20100824224617.GA5440@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dima Zavin <dima@android.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [1/8] ARM: Tighten check for allowable CPSR values
+In-Reply-To: <20100824224631.GA5458@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.34.6 release.
-There are 91 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Thursday, August 26, 2010 22:00:00 UTC
-Anything received after that time might be too late.
+------------------
+Content-Length: 1312
+Lines: 45
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.34.6-rc1.gz
-and the diffstat can be found below.
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-thanks,
+commit 41e2e8fd34fff909a0e40129f6ac4233ecfa67a9 upstream.
 
-greg k-h
+Reviewed-by: Arve Hjønnevåg <arve@android.com>
+Acked-by: Dima Zavin <dima@android.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
- Makefile                                    |    2 +-
- arch/arm/include/asm/ptrace.h               |   17 +++-
- arch/arm/mach-ixp4xx/ixdp425-setup.c        |    1 +
- arch/arm/mach-mx3/mach-qong.c               |    1 +
- arch/arm/mach-orion5x/ts78xx-setup.c        |    1 +
- arch/blackfin/mach-bf537/boards/stamp.c     |    1 +
- arch/blackfin/mach-bf561/boards/acvilon.c   |    1 +
- arch/powerpc/Makefile                       |    2 +-
- arch/powerpc/kernel/head_64.S               |    6 +-
- arch/sparc/include/asm/atomic_64.h          |   10 +-
- arch/sparc/include/asm/parport.h            |    4 +
- arch/sparc/include/asm/rwsem-const.h        |    2 +-
- arch/x86/Kconfig                            |    5 +
- arch/x86/include/asm/cmpxchg_32.h           |   67 +++++-----------
- arch/x86/include/asm/cmpxchg_64.h           |    4 +-
- arch/x86/kernel/apic/apic.c                 |   41 ++++++++--
- arch/x86/kernel/apic/io_apic.c              |    2 +
- arch/x86/kernel/smpboot.c                   |   19 +++++
- arch/x86/oprofile/nmi_int.c                 |   17 ++++-
- drivers/gpu/drm/drm_drv.c                   |    4 +-
- drivers/gpu/drm/i915/intel_display.c        |   23 ++++--
- drivers/gpu/drm/radeon/radeon_atombios.c    |   16 +++-
- drivers/gpu/drm/radeon/radeon_device.c      |    2 +-
- drivers/gpu/drm/radeon/radeon_i2c.c         |    7 ++
- drivers/gpu/drm/radeon/radeon_irq_kms.c     |    5 +-
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |    2 +-
- drivers/hwmon/pc87360.c                     |   31 ++++---
- drivers/isdn/gigaset/capi.c                 |   17 ++--
- drivers/isdn/sc/ioctl.c                     |   10 +-
- drivers/md/dm-exception-store.c             |    4 +-
- drivers/md/dm-exception-store.h             |    3 +-
- drivers/md/dm-ioctl.c                       |   44 ++++++-----
- drivers/md/dm-mpath.c                       |    1 +
- drivers/md/dm-snap.c                        |   44 +++++++----
- drivers/md/dm.c                             |    1 +
- drivers/memstick/core/mspro_block.c         |    6 +-
- drivers/mtd/nand/pxa3xx_nand.c              |    2 +-
- drivers/net/e1000e/82571.c                  |   31 ++++---
- drivers/net/e1000e/defines.h                |    4 +
- drivers/net/e1000e/lib.c                    |   10 +++
- drivers/net/wireless/ath/ath5k/base.c       |   21 +++++
- drivers/net/wireless/wl12xx/wl1251_cmd.c    |    2 +-
- drivers/pcmcia/pcmcia_resource.c            |    5 +-
- drivers/platform/x86/compal-laptop.c        |    9 ++
- drivers/platform/x86/dell-laptop.c          |    7 ++
- drivers/regulator/wm8994-regulator.c        |    5 +-
- drivers/usb/host/xhci-ring.c                |    2 +-
- drivers/usb/serial/cp210x.c                 |    4 +-
- drivers/usb/serial/ftdi_sio.c               |    5 +-
- drivers/usb/serial/ftdi_sio_ids.h           |    9 ++
- drivers/usb/serial/io_ti.c                  |    2 +-
- drivers/usb/serial/navman.c                 |    1 +
- drivers/usb/serial/option.c                 |    7 +-
- drivers/usb/serial/pl2303.c                 |    1 +
- drivers/usb/serial/pl2303.h                 |    4 +
- drivers/video/matrox/matroxfb_base.h        |    4 +-
- firmware/Makefile                           |    2 +-
- fs/nfs/super.c                              |    7 ++
- fs/nilfs2/super.c                           |    4 +-
- fs/ocfs2/acl.c                              |   33 +++++++-
- fs/ocfs2/dlm/dlmmaster.c                    |    9 +--
- fs/ocfs2/dlm/dlmrecovery.c                  |   22 +++---
- fs/ocfs2/dlm/dlmthread.c                    |  114 +++++++++++++--------------
- fs/ocfs2/refcounttree.c                     |   20 ++++-
- include/linux/mm_types.h                    |    2 +-
- include/sound/emu10k1.h                     |    1 +
- include/trace/events/timer.h                |    8 ++-
- kernel/fork.c                               |    7 +-
- kernel/trace/ring_buffer.c                  |    3 +
- kernel/trace/trace_functions_graph.c        |   10 ++-
- mm/memory.c                                 |   15 +++-
- mm/mlock.c                                  |   21 ++++-
- mm/mmap.c                                   |   21 ++++-
- mm/nommu.c                                  |    7 +-
- mm/slab.c                                   |    4 +-
- mm/vmscan.c                                 |   53 +++++++++++--
- net/bridge/br_device.c                      |    8 ++-
- net/bridge/br_fdb.c                         |    2 +-
- net/bridge/br_input.c                       |    6 +-
- net/bridge/br_stp_bpdu.c                    |    2 +-
- net/can/bcm.c                               |   41 ++++++---
- net/core/dev.c                              |    8 +-
- net/ipv4/tcp.c                              |    7 +-
- net/netlink/af_netlink.c                    |   46 ++++-------
- net/sched/act_nat.c                         |    2 +-
- net/sched/sch_sfq.c                         |   13 +++
- net/wireless/mlme.c                         |    8 ++-
- scripts/mkmakefile                          |    4 +-
- sound/core/pcm_native.c                     |    4 +
- sound/pci/emu10k1/emu10k1.c                 |    4 +
- sound/pci/emu10k1/emupcm.c                  |   30 ++++++-
- sound/pci/emu10k1/memory.c                  |    4 +-
- sound/pci/hda/patch_conexant.c              |    1 +
- sound/pci/hda/patch_realtek.c               |    1 +
- sound/pci/intel8x0.c                        |    6 ++
- sound/pci/riptide/riptide.c                 |   11 +--
- sound/soc/codecs/wm8580.c                   |    6 +-
- sound/soc/codecs/wm8776.c                   |    7 --
- sound/soc/soc-cache.c                       |    4 +-
- 99 files changed, 757 insertions(+), 389 deletions(-)
+---
+ arch/arm/include/asm/ptrace.h |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+--- a/arch/arm/include/asm/ptrace.h
++++ b/arch/arm/include/asm/ptrace.h
+@@ -124,15 +124,24 @@ struct pt_regs {
+  */
+ static inline int valid_user_regs(struct pt_regs *regs)
+ {
+-	if (user_mode(regs) && (regs->ARM_cpsr & PSR_I_BIT) == 0) {
+-		regs->ARM_cpsr &= ~(PSR_F_BIT | PSR_A_BIT);
+-		return 1;
++	unsigned long mode = regs->ARM_cpsr & MODE_MASK;
++
++	/*
++	 * Always clear the F (FIQ) and A (delayed abort) bits
++	 */
++	regs->ARM_cpsr &= ~(PSR_F_BIT | PSR_A_BIT);
++
++	if ((regs->ARM_cpsr & PSR_I_BIT) == 0) {
++		if (mode == USR_MODE)
++			return 1;
++		if (elf_hwcap & HWCAP_26BIT && mode == USR26_MODE)
++			return 1;
+ 	}
+ 
+ 	/*
+ 	 * Force CPSR to something logical...
+ 	 */
+-	regs->ARM_cpsr &= PSR_f | PSR_s | (PSR_x & ~PSR_A_BIT) | PSR_T_BIT | MODE32_BIT;
++	regs->ARM_cpsr &= PSR_f | PSR_s | PSR_x | PSR_T_BIT | MODE32_BIT;
+ 	if (!(elf_hwcap & HWCAP_26BIT))
+ 		regs->ARM_cpsr |= USR_MODE;
+ 
+
+
