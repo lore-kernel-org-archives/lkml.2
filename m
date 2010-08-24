@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934124Ab0HXXZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:25:42 -0400
-Received: from kroah.org ([198.145.64.141]:40686 "EHLO coco.kroah.org"
+	id S934130Ab0HXX0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:26:03 -0400
+Received: from kroah.org ([198.145.64.141]:40670 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933157Ab0HXXAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:00:03 -0400
+	id S933149Ab0HXXAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:00:01 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:19 2010
-Message-Id: <20100824224219.799313240@clark.site>
+Message-Id: <20100824224219.632989586@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:52 -0700
+Date: Tue, 24 Aug 2010 15:42:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arjan van de Ven <arjan@linux.intel.com>, xiaoguangrong@cn.fujitsu.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [90/91] tracing: Fix timer tracing
+        Martin Michlmayr <tbm@cyrius.com>
+Subject: [88/91] USB: ftdi_sio: Add ID for Ionics PlugComputer
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,75 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arjan van de Ven <arjan@linux.intel.com>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit ede1b4290781ae82ccf0f2ecc6dada8d3dd35779 upstream.
+commit 666cc076d284e32d11bfc5ea2fbfc50434cff051 upstream.
 
-PowerTOP would like to be able to trace timers.
+Add the ID for the Ionics PlugComputer (<http://ionicsplug.com/>).
 
-Unfortunately, the current timer tracing is not very useful: the
-actual timer function is not recorded in the trace at the start
-of timer execution.
-
-Although this is recorded for timer "start" time (when it gets
-armed), this is not useful; most timers get started early, and a
-tracer like PowerTOP will never see this event, but will only
-see the actual running of the  timer.
-
-This patch just adds the function to the timer tracing; I've
-verified with PowerTOP that now it can get useful information
-about timers.
-
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-Cc: xiaoguangrong@cn.fujitsu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <4C6C5FA9.3000405@linux.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/trace/events/timer.h |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/include/trace/events/timer.h
-+++ b/include/trace/events/timer.h
-@@ -74,14 +74,16 @@ TRACE_EVENT(timer_expire_entry,
- 	TP_STRUCT__entry(
- 		__field( void *,	timer	)
- 		__field( unsigned long,	now	)
-+		__field( void *,	function)
- 	),
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -756,6 +756,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SH4_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, SEGWAY_RMP200_PID) },
++	{ USB_DEVICE(IONICS_VID, IONICS_PLUGCOMPUTER_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -996,6 +996,12 @@
+ #define ALTI2_N3_PID	0x6001	/* Neptune 3 */
  
- 	TP_fast_assign(
- 		__entry->timer		= timer;
- 		__entry->now		= jiffies;
-+		__entry->function	= timer->function;
- 	),
- 
--	TP_printk("timer=%p now=%lu", __entry->timer, __entry->now)
-+	TP_printk("timer=%p function=%pf now=%lu", __entry->timer, __entry->function,__entry->now)
- );
- 
- /**
-@@ -213,14 +215,16 @@ TRACE_EVENT(hrtimer_expire_entry,
- 	TP_STRUCT__entry(
- 		__field( void *,	hrtimer	)
- 		__field( s64,		now	)
-+		__field( void *,	function)
- 	),
- 
- 	TP_fast_assign(
- 		__entry->hrtimer	= hrtimer;
- 		__entry->now		= now->tv64;
-+		__entry->function	= hrtimer->function;
- 	),
- 
--	TP_printk("hrtimer=%p now=%llu", __entry->hrtimer,
-+	TP_printk("hrtimer=%p function=%pf now=%llu", __entry->hrtimer, __entry->function,
- 		  (unsigned long long)ktime_to_ns((ktime_t) { .tv64 = __entry->now }))
-  );
- 
+ /*
++ * Ionics PlugComputer
++ */
++#define IONICS_VID			0x1c0c
++#define IONICS_PLUGCOMPUTER_PID		0x0102
++
++/*
+  * Dresden Elektronik Sensor Terminal Board
+  */
+ #define DE_VID			0x1cf1 /* Vendor ID */
 
 
