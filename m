@@ -1,160 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab0HXPeB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:34:01 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:47601 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab0HXPd7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:33:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Il7yiFQn0p315Y7OYTfbA9iGTLOdNpQOO6a0dKxO6MLA42VQN3ePcRhmQeKAT4y4fu
-         gql4s+sjkvJcgMtiJ0ryK20Vz9K66fMdaflKbzB2jYMyB9jQGOs9M39iIywAM3Nc6JUE
-         8m3eMWVHqFkfDCMsHlNIRqYA0QzJAUwfzm6sE=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH v2 2/2] compaction: fix COMPACTPAGEFAILED counting
-Date: Wed, 25 Aug 2010 00:31:19 +0900
-Message-Id: <1282663879-4130-2-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
-In-Reply-To: <1282663879-4130-1-git-send-email-minchan.kim@gmail.com>
-References: <1282663879-4130-1-git-send-email-minchan.kim@gmail.com>
+	id S1755416Ab0HXPjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:39:43 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:47634 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753313Ab0HXPjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 11:39:40 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>
+Cc: cocci@diku.dk, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Nicolas Palix <npalix@diku.dk>
+Subject: [PATCH 00/18] Add new semantic patches and reorganize existing ones
+Date: Tue, 24 Aug 2010 17:38:54 +0200
+Message-Id: <1282664352-15882-1-git-send-email-npalix@diku.dk>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now update_nr_listpages doesn't have a role. That's because
-lists passed is always empty just after calling migrate_pages.
-The migrate_pages cleans up page list which have failed to migrate
-before returning by aaa994b3.
+The following series adds new semantic patches (SPs) in scripts/coccinelle.
+Existing SPs are reorganized accordingly.
 
- [PATCH] page migration: handle freeing of pages in migrate_pages()
+Nicolas Palix (18):
+  Coccinelle: Add null/eno.cocci
+  Coccinelle: Add null/kmerr.cocci
+  Coccinelle: Move deref_null.cocci to a more appropriate directory
+  Coccinelle: Add locks/call_kern.cocci
+  Coccinelle: Add locks/double_lock.cocci
+  Coccinelle: Add locks/mini_lock.cocci
+  Coccinelle: Add iterators/fen.cocci
+  Coccinelle: Add iterators/itnull.cocci
+  Coccinelle: Add iterators/list_entry_update.cocci
+  Coccinelle: Add free/kfree.cocci
+  Coccinelle: Add api/kstrdup.cocci
+  Coccinelle: Add api/memdup.cocci
+  Coccinelle: Add api/memdup_user
+  Coccinelle: Move err_cast.cocci to the api directory
+  Coccinelle: Move resource_size.cocci to the api directory
+  Coccinelle: Move alloc directory into api directory
+  Coccinelle: Add misc/doubleinit.cocci
+  Coccinelle: Add misc/ifcol.cocci
 
- Do not leave pages on the lists passed to migrate_pages().  Seems that we will
- not need any postprocessing of pages.  This will simplify the handling of
- pages by the callers of migrate_pages().
-
-At that time, we thought we don't need any postprocessing of pages.
-But the situation is changed. The compaction need to know the number of
-failed to migrate for COMPACTPAGEFAILED stat
-
-This patch introduces new argument 'cleanup' to migrate_pages.
-This patch make new rule for caller of migrate_pages to call putback_lru_pages.
-So caller need to clean up the lists so it has a chance to postprocess the pages.
-
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/memory-failure.c |    1 +
- mm/memory_hotplug.c |    2 ++
- mm/mempolicy.c      |   10 ++++++++--
- mm/migrate.c        |   12 +++++++-----
- 4 files changed, 18 insertions(+), 7 deletions(-)
-
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 9c26eec..5267861 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1339,6 +1339,7 @@ int soft_offline_page(struct page *page, int flags)
- 		list_add(&page->lru, &pagelist);
- 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0);
- 		if (ret) {
-+			putback_lru_pages(&pagelist);
- 			pr_debug("soft offline: %#lx: migration failed %d, type %lx\n",
- 				pfn, ret, page->flags);
- 			if (ret > 0)
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index a4cfcdc..2638079 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -731,6 +731,8 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
- 		goto out;
- 	/* this function returns # of failed pages */
- 	ret = migrate_pages(&source, hotremove_migrate_alloc, 0, 1);
-+	if (ret)
-+		putback_lru_pages(&source);
- 
- out:
- 	return ret;
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index f969da5..21243b2 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -931,8 +931,11 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
- 	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
- 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
- 
--	if (!list_empty(&pagelist))
-+	if (!list_empty(&pagelist)) {
- 		err = migrate_pages(&pagelist, new_node_page, dest, 0);
-+		if (err)
-+			putback_lru_pages(&pagelist);
-+	}
- 
- 	return err;
- }
-@@ -1147,9 +1150,12 @@ static long do_mbind(unsigned long start, unsigned long len,
- 
- 		err = mbind_range(mm, start, end, new);
- 
--		if (!list_empty(&pagelist))
-+		if (!list_empty(&pagelist)) {
- 			nr_failed = migrate_pages(&pagelist, new_vma_page,
- 						(unsigned long)vma, 0);
-+			if (nr_failed)
-+				putback_lru_pages(&pagelist);
-+		}
- 
- 		if (!err && nr_failed && (flags & MPOL_MF_STRICT))
- 			err = -EIO;
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 38e7cad..ed38c22 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -732,8 +732,9 @@ move_newpage:
-  *
-  * The function returns after 10 attempts or if no pages
-  * are movable anymore because to has become empty
-- * or no retryable pages exist anymore. All pages will be
-- * returned to the LRU or freed.
-+ * or no retryable pages exist anymore.
-+ * Caller should call putback_lru_pages to return pages to the LRU
-+ * or free list.
-  *
-  * Return: Number of pages not migrated or error code.
-  */
-@@ -780,8 +781,6 @@ out:
- 	if (!swapwrite)
- 		current->flags &= ~PF_SWAPWRITE;
- 
--	putback_lru_pages(from);
--
- 	if (rc)
- 		return rc;
- 
-@@ -890,9 +889,12 @@ set_status:
- 	}
- 
- 	err = 0;
--	if (!list_empty(&pagelist))
-+	if (!list_empty(&pagelist)) {
- 		err = migrate_pages(&pagelist, new_page_node,
- 				(unsigned long)pm, 0);
-+		if (err)
-+			putback_lru_pages(&pagelist);
-+	}
- 
- 	up_read(&mm->mmap_sem);
- 	return err;
--- 
-1.7.0.5
+ scripts/coccinelle/alloc/drop_kmalloc_cast.cocci   |   67 -----
+ scripts/coccinelle/alloc/kzalloc-simple.cocci      |   86 ------
+ .../coccinelle/api/alloc/drop_kmalloc_cast.cocci   |   67 +++++
+ scripts/coccinelle/api/alloc/kzalloc-simple.cocci  |   86 ++++++
+ scripts/coccinelle/api/err_cast.cocci              |   56 ++++
+ scripts/coccinelle/api/kstrdup.cocci               |   39 +++
+ scripts/coccinelle/api/memdup.cocci                |   40 +++
+ scripts/coccinelle/api/memdup_user.cocci           |   35 +++
+ scripts/coccinelle/api/resource_size.cocci         |   93 ++++++
+ scripts/coccinelle/deref_null.cocci                |  293 --------------------
+ scripts/coccinelle/err_cast.cocci                  |   56 ----
+ scripts/coccinelle/free/kfree.cocci                |  116 ++++++++
+ scripts/coccinelle/iterators/fen.cocci             |   64 +++++
+ scripts/coccinelle/iterators/itnull.cocci          |   58 ++++
+ .../coccinelle/iterators/list_entry_update.cocci   |   62 ++++
+ scripts/coccinelle/locks/call_kern.cocci           |   74 +++++
+ scripts/coccinelle/locks/double_lock.cocci         |   92 ++++++
+ scripts/coccinelle/locks/mini_lock.cocci           |   95 +++++++
+ scripts/coccinelle/misc/doubleinit.cocci           |   53 ++++
+ scripts/coccinelle/misc/ifcol.cocci                |   48 ++++
+ scripts/coccinelle/null/deref_null.cocci           |  293 ++++++++++++++++++++
+ scripts/coccinelle/null/eno.cocci                  |   20 ++
+ scripts/coccinelle/null/kmerr.cocci                |   72 +++++
+ scripts/coccinelle/resource_size.cocci             |   93 ------
+ 24 files changed, 1463 insertions(+), 595 deletions(-)
+ delete mode 100644 scripts/coccinelle/alloc/drop_kmalloc_cast.cocci
+ delete mode 100644 scripts/coccinelle/alloc/kzalloc-simple.cocci
+ create mode 100644 scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci
+ create mode 100644 scripts/coccinelle/api/alloc/kzalloc-simple.cocci
+ create mode 100644 scripts/coccinelle/api/err_cast.cocci
+ create mode 100644 scripts/coccinelle/api/kstrdup.cocci
+ create mode 100644 scripts/coccinelle/api/memdup.cocci
+ create mode 100644 scripts/coccinelle/api/memdup_user.cocci
+ create mode 100644 scripts/coccinelle/api/resource_size.cocci
+ delete mode 100644 scripts/coccinelle/deref_null.cocci
+ delete mode 100644 scripts/coccinelle/err_cast.cocci
+ create mode 100644 scripts/coccinelle/free/kfree.cocci
+ create mode 100644 scripts/coccinelle/iterators/fen.cocci
+ create mode 100644 scripts/coccinelle/iterators/itnull.cocci
+ create mode 100644 scripts/coccinelle/iterators/list_entry_update.cocci
+ create mode 100644 scripts/coccinelle/locks/call_kern.cocci
+ create mode 100644 scripts/coccinelle/locks/double_lock.cocci
+ create mode 100644 scripts/coccinelle/locks/mini_lock.cocci
+ create mode 100644 scripts/coccinelle/misc/doubleinit.cocci
+ create mode 100644 scripts/coccinelle/misc/ifcol.cocci
+ create mode 100644 scripts/coccinelle/null/deref_null.cocci
+ create mode 100644 scripts/coccinelle/null/eno.cocci
+ create mode 100644 scripts/coccinelle/null/kmerr.cocci
+ delete mode 100644 scripts/coccinelle/resource_size.cocci
 
