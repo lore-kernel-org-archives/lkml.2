@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934067Ab0HXXXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:23:10 -0400
-Received: from kroah.org ([198.145.64.141]:40845 "EHLO coco.kroah.org"
+	id S933303Ab0HXXBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:01:31 -0400
+Received: from kroah.org ([198.145.64.141]:40823 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933277Ab0HXXBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:22 -0400
+	id S933230Ab0HXXBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:16 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:02 2010
-Message-Id: <20100824224502.594956541@clark.site>
+Message-Id: <20100824224502.227595841@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:20 -0700
+Date: Tue, 24 Aug 2010 15:44:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tao Ma <tao.ma@oracle.com>, Joel Becker <joel.becker@oracle.com>
-Subject: [015/114] ocfs2: Count more refcount records in file system fragmentation.
+        Takashi Iwai <tiwai@suse.de>
+Subject: [011/114] ALSA: hda - Add quirk for Dell Vostro 1220
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tao Ma <tao.ma@oracle.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8a2e70c40ff58f82dde67770e6623ca45f0cb0c8 upstream.
+commit c3e68fad88143fd1fe8fe640207fb19c0f087dbc upstream.
 
-The refcount record calculation in ocfs2_calc_refcount_meta_credits
-is too optimistic that we can always allocate contiguous clusters
-and handle an already existed refcount rec as a whole. Actually
-because of file system fragmentation, we may have the chance to split
-a refcount record into 3 parts during the transaction. So consider
-the worst case in record calculation.
+model=dell-vostro is needed for Dell Vostro 1220 with Coexnat 5067.
 
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Reference: Novell bnc#631066
+	https://bugzilla.novell.com/show_bug.cgi?id=631066
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/refcounttree.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_conexant.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -2436,16 +2436,26 @@ static int ocfs2_calc_refcount_meta_cred
- 		len = min((u64)cpos + clusters, le64_to_cpu(rec.r_cpos) +
- 			  le32_to_cpu(rec.r_clusters)) - cpos;
- 		/*
--		 * If the refcount rec already exist, cool. We just need
--		 * to check whether there is a split. Otherwise we just need
--		 * to increase the refcount.
--		 * If we will insert one, increases recs_add.
--		 *
- 		 * We record all the records which will be inserted to the
- 		 * same refcount block, so that we can tell exactly whether
- 		 * we need a new refcount block or not.
-+		 *
-+		 * If we will insert a new one, this is easy and only happens
-+		 * during adding refcounted flag to the extent, so we don't
-+		 * have a chance of spliting. We just need one record.
-+		 *
-+		 * If the refcount rec already exists, that would be a little
-+		 * complicated. we may have to:
-+		 * 1) split at the beginning if the start pos isn't aligned.
-+		 *    we need 1 more record in this case.
-+		 * 2) split int the end if the end pos isn't aligned.
-+		 *    we need 1 more record in this case.
-+		 * 3) split in the middle because of file system fragmentation.
-+		 *    we need 2 more records in this case(we can't detect this
-+		 *    beforehand, so always think of the worst case).
- 		 */
- 		if (rec.r_refcount) {
-+			recs_add += 2;
- 			/* Check whether we need a split at the beginning. */
- 			if (cpos == start_cpos &&
- 			    cpos != le64_to_cpu(rec.r_cpos))
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -2970,6 +2970,7 @@ static struct snd_pci_quirk cxt5066_cfg_
+ 	SND_PCI_QUIRK(0x1028, 0x02f5, "Dell",
+ 		      CXT5066_DELL_LAPTOP),
+ 	SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
++	SND_PCI_QUIRK(0x1028, 0x02d8, "Dell Vostro", CXT5066_DELL_VOSTO),
+ 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTO),
+ 	SND_PCI_QUIRK(0x1028, 0x0408, "Dell Inspiron One 19T", CXT5066_IDEAPAD),
+ 	SND_PCI_QUIRK(0x1179, 0xff50, "Toshiba Satellite P500-PSPGSC-01800T", CXT5066_OLPC_XO_1_5),
 
 
