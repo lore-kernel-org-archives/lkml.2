@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab0HXXDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:03:36 -0400
-Received: from kroah.org ([198.145.64.141]:32773 "EHLO coco.kroah.org"
+	id S1756587Ab0HXXIO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:08:14 -0400
+Received: from kroah.org ([198.145.64.141]:32830 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933631Ab0HXXDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:24 -0400
+	id S933675Ab0HXXDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:35 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:09 2010
-Message-Id: <20100824224509.055662244@clark.site>
+Message-Id: <20100824224509.777887272@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:35 -0700
+Date: Tue, 24 Aug 2010 15:45:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [090/114] netlink: fix compat recvmsg
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Sven Eckelmann <sven.eckelmann@gmx.de>
+Subject: [098/114] Staging: batman-adv: unify orig_hash_lock spinlock handling to avoid deadlocks
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,130 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Marek Lindner <lindner_marek@yahoo.de>
 
-commit 68d6ac6d2740b6a55f3ae92a4e0be6d881904b32 upstream.
+commit 9abc10238e1df7ce81c58a441f65efd5e905b9e8 upstream.
 
-Since
-commit 1dacc76d0014a034b8aca14237c127d7c19d7726
-Author: Johannes Berg <johannes@sipsolutions.net>
-Date:   Wed Jul 1 11:26:02 2009 +0000
+The orig_hash_lock spinlock always has to be locked with IRQs being
+disabled to avoid deadlocks between code that is being executed in
+IRQ context and code that is being executed in non-IRQ context.
 
-    net/compat/wext: send different messages to compat tasks
-
-we had a race condition when setting and then
-restoring frag_list. Eric attempted to fix it,
-but the fix created even worse problems.
-
-However, the original motivation I had when I
-added the code that turned out to be racy is
-no longer clear to me, since we only copy up
-to skb->len to userspace, which doesn't include
-the frag_list length. As a result, not doing
-any frag_list clearing and restoring avoids
-the race condition, while not introducing any
-other problems.
-
-Additionally, while preparing this patch I found
-that since none of the remaining netlink code is
-really aware of the frag_list, we need to use the
-original skb's information for packet information
-and credentials. This fixes, for example, the
-group information received by compat tasks.
-
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netlink/af_netlink.c |   46 ++++++++++++++++------------------------------
- 1 file changed, 16 insertions(+), 30 deletions(-)
+ drivers/staging/batman-adv/originator.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1400,7 +1400,7 @@ static int netlink_recvmsg(struct kiocb
- 	struct netlink_sock *nlk = nlk_sk(sk);
- 	int noblock = flags&MSG_DONTWAIT;
- 	size_t copied;
--	struct sk_buff *skb, *frag __maybe_unused = NULL;
-+	struct sk_buff *skb, *data_skb;
- 	int err;
+--- a/drivers/staging/batman-adv/originator.c
++++ b/drivers/staging/batman-adv/originator.c
+@@ -401,11 +401,12 @@ static int orig_node_add_if(struct orig_
+ int orig_hash_add_if(struct batman_if *batman_if, int max_if_num)
+ {
+ 	struct orig_node *orig_node;
++	unsigned long flags;
+ 	HASHIT(hashit);
  
- 	if (flags&MSG_OOB)
-@@ -1412,45 +1412,35 @@ static int netlink_recvmsg(struct kiocb
- 	if (skb == NULL)
- 		goto out;
+ 	/* resize all orig nodes because orig_node->bcast_own(_sum) depend on
+ 	 * if_num */
+-	spin_lock(&orig_hash_lock);
++	spin_lock_irqsave(&orig_hash_lock, flags);
  
-+	data_skb = skb;
-+
- #ifdef CONFIG_COMPAT_NETLINK_MESSAGES
- 	if (unlikely(skb_shinfo(skb)->frag_list)) {
--		bool need_compat = !!(flags & MSG_CMSG_COMPAT);
--
- 		/*
--		 * If this skb has a frag_list, then here that means that
--		 * we will have to use the frag_list skb for compat tasks
--		 * and the regular skb for non-compat tasks.
-+		 * If this skb has a frag_list, then here that means that we
-+		 * will have to use the frag_list skb's data for compat tasks
-+		 * and the regular skb's data for normal (non-compat) tasks.
- 		 *
--		 * The skb might (and likely will) be cloned, so we can't
--		 * just reset frag_list and go on with things -- we need to
--		 * keep that. For the compat case that's easy -- simply get
--		 * a reference to the compat skb and free the regular one
--		 * including the frag. For the non-compat case, we need to
--		 * avoid sending the frag to the user -- so assign NULL but
--		 * restore it below before freeing the skb.
-+		 * If we need to send the compat skb, assign it to the
-+		 * 'data_skb' variable so that it will be used below for data
-+		 * copying. We keep 'skb' for everything else, including
-+		 * freeing both later.
- 		 */
--		if (need_compat) {
--			struct sk_buff *compskb = skb_shinfo(skb)->frag_list;
--			skb_get(compskb);
--			kfree_skb(skb);
--			skb = compskb;
--		} else {
--			frag = skb_shinfo(skb)->frag_list;
--			skb_shinfo(skb)->frag_list = NULL;
--		}
-+		if (flags & MSG_CMSG_COMPAT)
-+			data_skb = skb_shinfo(skb)->frag_list;
- 	}
- #endif
- 
- 	msg->msg_namelen = 0;
- 
--	copied = skb->len;
-+	copied = data_skb->len;
- 	if (len < copied) {
- 		msg->msg_flags |= MSG_TRUNC;
- 		copied = len;
+ 	while (hash_iterate(orig_hash, &hashit)) {
+ 		orig_node = hashit.bucket->data;
+@@ -414,11 +415,11 @@ int orig_hash_add_if(struct batman_if *b
+ 			goto err;
  	}
  
--	skb_reset_transport_header(skb);
--	err = skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
-+	skb_reset_transport_header(data_skb);
-+	err = skb_copy_datagram_iovec(data_skb, 0, msg->msg_iov, copied);
+-	spin_unlock(&orig_hash_lock);
++	spin_unlock_irqrestore(&orig_hash_lock, flags);
+ 	return 0;
  
- 	if (msg->msg_name) {
- 		struct sockaddr_nl *addr = (struct sockaddr_nl *)msg->msg_name;
-@@ -1470,11 +1460,7 @@ static int netlink_recvmsg(struct kiocb
- 	}
- 	siocb->scm->creds = *NETLINK_CREDS(skb);
- 	if (flags & MSG_TRUNC)
--		copied = skb->len;
--
--#ifdef CONFIG_COMPAT_NETLINK_MESSAGES
--	skb_shinfo(skb)->frag_list = frag;
--#endif
-+		copied = data_skb->len;
+ err:
+-	spin_unlock(&orig_hash_lock);
++	spin_unlock_irqrestore(&orig_hash_lock, flags);
+ 	return -ENOMEM;
+ }
  
- 	skb_free_datagram(sk, skb);
+@@ -480,12 +481,13 @@ int orig_hash_del_if(struct batman_if *b
+ {
+ 	struct batman_if *batman_if_tmp;
+ 	struct orig_node *orig_node;
++	unsigned long flags;
+ 	HASHIT(hashit);
+ 	int ret;
  
+ 	/* resize all orig nodes because orig_node->bcast_own(_sum) depend on
+ 	 * if_num */
+-	spin_lock(&orig_hash_lock);
++	spin_lock_irqsave(&orig_hash_lock, flags);
+ 
+ 	while (hash_iterate(orig_hash, &hashit)) {
+ 		orig_node = hashit.bucket->data;
+@@ -512,10 +514,10 @@ int orig_hash_del_if(struct batman_if *b
+ 	rcu_read_unlock();
+ 
+ 	batman_if->if_num = -1;
+-	spin_unlock(&orig_hash_lock);
++	spin_unlock_irqrestore(&orig_hash_lock, flags);
+ 	return 0;
+ 
+ err:
+-	spin_unlock(&orig_hash_lock);
++	spin_unlock_irqrestore(&orig_hash_lock, flags);
+ 	return -ENOMEM;
+ }
 
 
