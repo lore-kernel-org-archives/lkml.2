@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab0HXWxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:53:32 -0400
+	id S934468Ab0HXXsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:48:19 -0400
 Received: from kroah.org ([198.145.64.141]:52059 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756205Ab0HXWx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:29 -0400
+	id S1756330Ab0HXWxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:30 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:23 2010
-Message-Id: <20100824222522.971723695@clark.site>
+Message-Id: <20100824222523.070047443@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:19 -0700
+Date: Tue, 24 Aug 2010 15:24:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tiger Yang <tiger.yang@oracle.com>,
+        Wengang Wang <wen.gang.wang@oracle.com>,
         Joel Becker <joel.becker@oracle.com>
-Subject: [07/59] ocfs2: do not overwrite error codes in ocfs2_init_acl
+Subject: [08/59] ocfs2/dlm: fix a dead lock
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tiger Yang <tiger.yang@oracle.com>
+From: Wengang Wang <wen.gang.wang@oracle.com>
 
-commit 6eda3dd33f8a0ce58ee56a11351758643a698db4 upstream.
+commit 6d98c3ccb52f692f1a60339dde7c700686a5568b upstream.
 
-Setting the acl while creating a new inode depends on
-the error codes of posix_acl_create_masq. This patch fix
-a issue of overwriting the error codes of it.
+When we have to take both dlm->master_lock and lockres->spinlock,
+take them in order
 
-Reported-by: Pawel Zawora <pzawora@gmail.com>
-Signed-off-by: Tiger Yang <tiger.yang@oracle.com>
+lockres->spinlock and then dlm->master_lock.
+
+The patch fixes a violation of the rule.
+We can simply move taking dlm->master_lock to where we have dropped res->spinlock
+since when we access res->state and free mle memory we don't need master_lock's
+protection.
+
+Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
 Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/acl.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/ocfs2/dlm/dlmmaster.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/fs/ocfs2/acl.c
-+++ b/fs/ocfs2/acl.c
-@@ -347,7 +347,7 @@ int ocfs2_init_acl(handle_t *handle,
- {
- 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
- 	struct posix_acl *acl = NULL;
--	int ret = 0;
-+	int ret = 0, ret2;
- 	mode_t mode;
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -3046,8 +3046,6 @@ int dlm_migrate_request_handler(struct o
+ 	/* check for pre-existing lock */
+ 	spin_lock(&dlm->spinlock);
+ 	res = __dlm_lookup_lockres(dlm, name, namelen, hash);
+-	spin_lock(&dlm->master_lock);
+-
+ 	if (res) {
+ 		spin_lock(&res->spinlock);
+ 		if (res->state & DLM_LOCK_RES_RECOVERING) {
+@@ -3065,14 +3063,15 @@ int dlm_migrate_request_handler(struct o
+ 		spin_unlock(&res->spinlock);
+ 	}
  
- 	if (!S_ISLNK(inode->i_mode)) {
-@@ -384,7 +384,12 @@ int ocfs2_init_acl(handle_t *handle,
- 		mode = inode->i_mode;
- 		ret = posix_acl_create_masq(clone, &mode);
- 		if (ret >= 0) {
--			ret = ocfs2_acl_set_mode(inode, di_bh, handle, mode);
-+			ret2 = ocfs2_acl_set_mode(inode, di_bh, handle, mode);
-+			if (ret2) {
-+				mlog_errno(ret2);
-+				ret = ret2;
-+				goto cleanup;
-+			}
- 			if (ret > 0) {
- 				ret = ocfs2_set_acl(handle, inode,
- 						    di_bh, ACL_TYPE_ACCESS,
++	spin_lock(&dlm->master_lock);
+ 	/* ignore status.  only nonzero status would BUG. */
+ 	ret = dlm_add_migration_mle(dlm, res, mle, &oldmle,
+ 				    name, namelen,
+ 				    migrate->new_master,
+ 				    migrate->master);
+ 
+-unlock:
+ 	spin_unlock(&dlm->master_lock);
++unlock:
+ 	spin_unlock(&dlm->spinlock);
+ 
+ 	if (oldmle) {
 
 
