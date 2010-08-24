@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934483Ab0HXXsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:48:42 -0400
-Received: from kroah.org ([198.145.64.141]:52044 "EHLO coco.kroah.org"
+	id S933337Ab0HXXtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:49:04 -0400
+Received: from kroah.org ([198.145.64.141]:52032 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756239Ab0HXWxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:25 -0400
+	id S1755652Ab0HXWxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:22 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:22 2010
-Message-Id: <20100824222522.704453047@clark.site>
+Message-Id: <20100824222522.536894985@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:16 -0700
+Date: Tue, 24 Aug 2010 15:24:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [04/59] ALSA: riptide - Fix detection / load of firmware files
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [02/59] ASoC: Fix inverted mute controls for WM8580
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit a5ba6beb839cfa288960c92cd2668a2601c24dda upstream.
+commit 4f0ed9a51bc8ef16c2589112fdb110479e4b0df1 upstream.
 
-The detection and loading of firmeware on riptide driver has been broken
-due to rewrite of some codes, checking the presense wrongly.
-This patch fixes the logic again.
-
-Reference: kernel bug 16596
-	https://bugzilla.kernel.org/show_bug.cgi?id=16596
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/riptide/riptide.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ sound/soc/codecs/wm8580.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/pci/riptide/riptide.c
-+++ b/sound/pci/riptide/riptide.c
-@@ -1224,15 +1224,14 @@ static int try_to_load_firmware(struct c
- 		    firmware.firmware.ASIC, firmware.firmware.CODEC,
- 		    firmware.firmware.AUXDSP, firmware.firmware.PROG);
+--- a/sound/soc/codecs/wm8580.c
++++ b/sound/soc/codecs/wm8580.c
+@@ -268,9 +268,9 @@ SOC_DOUBLE("DAC2 Invert Switch", WM8580_
+ SOC_DOUBLE("DAC3 Invert Switch", WM8580_DAC_CONTROL4,  4, 5, 1, 0),
  
-+	if (!chip)
-+		return 1;
-+
- 	for (i = 0; i < FIRMWARE_VERSIONS; i++) {
- 		if (!memcmp(&firmware_versions[i], &firmware, sizeof(firmware)))
--			break;
--	}
--	if (i >= FIRMWARE_VERSIONS)
--		return 0; /* no match */
-+			return 1; /* OK */
+ SOC_SINGLE("DAC ZC Switch", WM8580_DAC_CONTROL5, 5, 1, 0),
+-SOC_SINGLE("DAC1 Switch", WM8580_DAC_CONTROL5, 0, 1, 0),
+-SOC_SINGLE("DAC2 Switch", WM8580_DAC_CONTROL5, 1, 1, 0),
+-SOC_SINGLE("DAC3 Switch", WM8580_DAC_CONTROL5, 2, 1, 0),
++SOC_SINGLE("DAC1 Switch", WM8580_DAC_CONTROL5, 0, 1, 1),
++SOC_SINGLE("DAC2 Switch", WM8580_DAC_CONTROL5, 1, 1, 1),
++SOC_SINGLE("DAC3 Switch", WM8580_DAC_CONTROL5, 2, 1, 1),
  
--	if (!chip)
--		return 1; /* OK */
-+	}
- 
- 	snd_printdd("Writing Firmware\n");
- 	if (!chip->fw_entry) {
+ SOC_DOUBLE("ADC Mute Switch", WM8580_ADC_CONTROL1, 0, 1, 1, 0),
+ SOC_SINGLE("ADC High-Pass Filter Switch", WM8580_ADC_CONTROL1, 4, 1, 0),
 
 
