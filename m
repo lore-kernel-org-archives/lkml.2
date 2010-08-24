@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934433Ab0HXXnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:43:22 -0400
-Received: from kroah.org ([198.145.64.141]:52255 "EHLO coco.kroah.org"
+	id S934440Ab0HXXnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:43:39 -0400
+Received: from kroah.org ([198.145.64.141]:52237 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932422Ab0HXWyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:12 -0400
+	id S932486Ab0HXWyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:09 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
-Message-Id: <20100824222525.706491630@clark.site>
+Message-Id: <20100824222525.528405312@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:50 -0700
+Date: Tue, 24 Aug 2010 15:24:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        Rik van Riel <riel@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [38/59] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+        Dan Carpenter <error27@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [36/59] isdn: fix information leak
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,161 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
 
-commit e31f3698cd3499e676f6b0ea12e3528f569c4fa3 upstream.
+From: Dan Carpenter <error27@gmail.com>
 
-Fix "system goes unresponsive under memory pressure and lots of
-dirty/writeback pages" bug.
+[ Upstream commit 4b030d4288a569d6bdeca884d7f102d951f097f2 ]
 
-	http://lkml.org/lkml/2010/4/4/86
+The main motivation of this patch changing strcpy() to strlcpy().
+We strcpy() to copy a 48 byte buffers into a 49 byte buffers.  So at
+best the last byte has leaked information, or maybe there is an
+overflow?  Anyway, this patch closes the information leaks by zeroing
+the memory and the calls to strlcpy() prevent overflows.
 
-In the above thread, Andreas Mohr described that
-
-	Invoking any command locked up for minutes (note that I'm
-	talking about attempted additional I/O to the _other_,
-	_unaffected_ main system HDD - such as loading some shell
-	binaries -, NOT the external SSD18M!!).
-
-This happens when the two conditions are both meet:
-- under memory pressure
-- writing heavily to a slow device
-
-OOM also happens in Andreas' system.  The OOM trace shows that 3 processes
-are stuck in wait_on_page_writeback() in the direct reclaim path.  One in
-do_fork() and the other two in unix_stream_sendmsg().  They are blocked on
-this condition:
-
-	(sc->order && priority < DEF_PRIORITY - 2)
-
-which was introduced in commit 78dc583d (vmscan: low order lumpy reclaim
-also should use PAGEOUT_IO_SYNC) one year ago.  That condition may be too
-permissive.  In Andreas' case, 512MB/1024 = 512KB.  If the direct reclaim
-for the order-1 fork() allocation runs into a range of 512KB
-hard-to-reclaim LRU pages, it will be stalled.
-
-It's a severe problem in three ways.
-
-Firstly, it can easily happen in daily desktop usage.  vmscan priority can
-easily go below (DEF_PRIORITY - 2) on _local_ memory pressure.  Even if
-the system has 50% globally reclaimable pages, it still has good
-opportunity to have 0.1% sized hard-to-reclaim ranges.  For example, a
-simple dd can easily create a big range (up to 20%) of dirty pages in the
-LRU lists.  And order-1 to order-3 allocations are more than common with
-SLUB.  Try "grep -v '1 :' /proc/slabinfo" to get the list of high order
-slab caches.  For example, the order-1 radix_tree_node slab cache may
-stall applications at swap-in time; the order-3 inode cache on most
-filesystems may stall applications when trying to read some file; the
-order-2 proc_inode_cache may stall applications when trying to open a
-/proc file.
-
-Secondly, once triggered, it will stall unrelated processes (not doing IO
-at all) in the system.  This "one slow USB device stalls the whole system"
-avalanching effect is very bad.
-
-Thirdly, once stalled, the stall time could be intolerable long for the
-users.  When there are 20MB queued writeback pages and USB 1.1 is writing
-them in 1MB/s, wait_on_page_writeback() will stuck for up to 20 seconds.
-Not to mention it may be called multiple times.
-
-So raise the bar to only enable PAGEOUT_IO_SYNC when priority goes below
-DEF_PRIORITY/3, or 6.25% LRU size.  As the default dirty throttle ratio is
-20%, it will hardly be triggered by pure dirty pages.  We'd better treat
-PAGEOUT_IO_SYNC as some last resort workaround -- its stall time is so
-uncomfortably long (easily goes beyond 1s).
-
-The bar is only raised for (order < PAGE_ALLOC_COSTLY_ORDER) allocations,
-which are easy to satisfy in 1TB memory boxes.  So, although 6.25% of
-memory could be an awful lot of pages to scan on a system with 1TB of
-memory, it won't really have to busy scan that much.
-
-Andreas tested an older version of this patch and reported that it mostly
-fixed his problem.  Mel Gorman helped improve it and KOSAKI Motohiro will
-fix it further in the next patch.
-
-Reported-by: Andreas Mohr <andi@lisas.de>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/vmscan.c |   53 +++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 45 insertions(+), 8 deletions(-)
+ drivers/isdn/sc/ioctl.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1083,6 +1083,48 @@ static int too_many_isolated(struct zone
- }
+--- a/drivers/isdn/sc/ioctl.c
++++ b/drivers/isdn/sc/ioctl.c
+@@ -174,7 +174,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 		pr_debug("%s: SCIOGETSPID: ioctl received\n",
+ 				sc_adapter[card]->devicename);
  
- /*
-+ * Returns true if the caller should wait to clean dirty/writeback pages.
-+ *
-+ * If we are direct reclaiming for contiguous pages and we do not reclaim
-+ * everything in the list, try again and wait for writeback IO to complete.
-+ * This will stall high-order allocations noticeably. Only do that when really
-+ * need to free the pages under high memory pressure.
-+ */
-+static inline bool should_reclaim_stall(unsigned long nr_taken,
-+					unsigned long nr_freed,
-+					int priority,
-+					int lumpy_reclaim,
-+					struct scan_control *sc)
-+{
-+	int lumpy_stall_priority;
-+
-+	/* kswapd should not stall on sync IO */
-+	if (current_is_kswapd())
-+		return false;
-+
-+	/* Only stall on lumpy reclaim */
-+	if (!lumpy_reclaim)
-+		return false;
-+
-+	/* If we have relaimed everything on the isolated list, no stall */
-+	if (nr_freed == nr_taken)
-+		return false;
-+
-+	/*
-+	 * For high-order allocations, there are two stall thresholds.
-+	 * High-cost allocations stall immediately where as lower
-+	 * order allocations such as stacks require the scanning
-+	 * priority to be much higher before stalling.
-+	 */
-+	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-+		lumpy_stall_priority = DEF_PRIORITY;
-+	else
-+		lumpy_stall_priority = DEF_PRIORITY / 3;
-+
-+	return priority <= lumpy_stall_priority;
-+}
-+
-+/*
-  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-  * of reclaimed pages
-  */
-@@ -1176,14 +1218,9 @@ static unsigned long shrink_inactive_lis
- 		nr_scanned += nr_scan;
- 		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+-		spid = kmalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
++		spid = kzalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
+ 		if (!spid) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
+@@ -194,7 +194,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 			kfree(rcvmsg);
+ 			return status;
+ 		}
+-		strcpy(spid, rcvmsg->msg_data.byte_array);
++		strlcpy(spid, rcvmsg->msg_data.byte_array, SCIOC_SPIDSIZE);
  
--		/*
--		 * If we are direct reclaiming for contiguous pages and we do
--		 * not reclaim everything in the list, try again and wait
--		 * for IO to complete. This will stall high-order allocations
--		 * but that should be acceptable to the caller
--		 */
--		if (nr_freed < nr_taken && !current_is_kswapd() &&
--		    lumpy_reclaim) {
-+		/* Check if we should syncronously wait for writeback */
-+		if (should_reclaim_stall(nr_taken, nr_freed, priority,
-+					lumpy_reclaim, sc)) {
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 		/*
+ 		 * Package the switch type and send to user space
+@@ -272,12 +272,12 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 			return status;
+ 		}
  
- 			/*
+-		dn = kmalloc(SCIOC_DNSIZE, GFP_KERNEL);
++		dn = kzalloc(SCIOC_DNSIZE, GFP_KERNEL);
+ 		if (!dn) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
+ 		}
+-		strcpy(dn, rcvmsg->msg_data.byte_array);
++		strlcpy(dn, rcvmsg->msg_data.byte_array, SCIOC_DNSIZE);
+ 		kfree(rcvmsg);
+ 
+ 		/*
+@@ -348,7 +348,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 		pr_debug("%s: SCIOSTAT: ioctl received\n",
+ 				sc_adapter[card]->devicename);
+ 
+-		bi = kmalloc (sizeof(boardInfo), GFP_KERNEL);
++		bi = kzalloc(sizeof(boardInfo), GFP_KERNEL);
+ 		if (!bi) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
 
 
