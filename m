@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab0HXEFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 00:05:49 -0400
-Received: from kroah.org ([198.145.64.141]:39654 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab0HXEF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 00:05:29 -0400
-Date: Mon, 23 Aug 2010 21:05:13 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [GIT PATCH] STAGING fixes for .36-rc2
-Message-ID: <20100824040513.GD16749@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752066Ab0HXEIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 00:08:52 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:55291 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab0HXEIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 00:08:51 -0400
+Date: Tue, 24 Aug 2010 13:04:02 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH] memcg: use ID in page_cgroup
+Message-Id: <20100824130402.9ee7447b.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100824105405.abf226e6.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820190132.43684862.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100823143237.b7822ffc.nishimura@mxp.nes.nec.co.jp>
+	<20100824085243.8dd3c8de.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100824101425.2dc25773.nishimura@mxp.nes.nec.co.jp>
+	<20100824105405.abf226e6.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some staging drivers fixes for the .36-rc2 kernel.
+On Tue, 24 Aug 2010 10:54:05 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Some batman-adv fixes (one due to a merge I messed up), some spectra
-driver build issues that lots of people are hitting, and the removal of
-the "sep" driver due to the request of the original submitter (Alan
-Cox.)
+> On Tue, 24 Aug 2010 10:14:25 +0900
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> 
+> > > > > @@ -723,6 +729,11 @@ static inline bool mem_cgroup_is_root(st
+> > > > >  	return (mem == root_mem_cgroup);
+> > > > >  }
+> > > > >  
+> > > > > +static inline bool mem_cgroup_is_rootid(unsigned short id)
+> > > > > +{
+> > > > > +	return (id == 1);
+> > > > > +}
+> > > > > +
+> > > > It might be better to add
+> > > > 
+> > > > 	BUG_ON(newid->id != 1)
+> > > > 
+> > > > in cgroup.c::cgroup_init_idr().
+> > > > 
+> > > 
+> > > Why ??
+> > > 
+> > Just to make sure that the root css has id==1. mem_cgroup_is_rootid() make
+> > use of the fact.
+> > I'm sorry if I miss something.
+> > 
+> 
+> Hmm. The function allocating ID does
+> 
+> 4530 static struct css_id *get_new_cssid(struct cgroup_subsys *ss, int depth)
+> 4531 {
+> ==
+> 4546         spin_lock(&ss->id_lock);
+> 4547         /* Don't use 0. allocates an ID of 1-65535 */
+> 4548         error = idr_get_new_above(&ss->idr, newid, 1, &myid);
+> 4549         spin_unlock(&ss->id_lock);
+> ==
+> 
+> and allocates ID above "1", always.
+> 
+> Adding BUG_ON(newid->id != 1) will mean that we doubt the bitmap function and
+> consider possibility that new->id == 0.
+> 
+> But, we're 100% sure that it never happens.
+> 
+> I don't think adding a comment is a right thing to do.
+> 
+Okey, I don't have strong requirement to add BUG_ON() anyway.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/
+These patches looks good to me except for some minor points I've commented.
 
-All of these patches have been in the linux-next and mm trees.
-
-The patches will be sent as a follow-on to this message to the
-driver-devel list for people to see.
-
-thanks,
-
-greg k-h
-
---------------
-
- drivers/staging/Kconfig                     |    2 -
- drivers/staging/Makefile                    |    1 -
- drivers/staging/batman-adv/bat_sysfs.c      |    4 +
- drivers/staging/batman-adv/hard-interface.c |   29 +-
- drivers/staging/batman-adv/icmp_socket.c    |   12 +-
- drivers/staging/batman-adv/main.c           |    7 +-
- drivers/staging/batman-adv/originator.c     |   14 +-
- drivers/staging/batman-adv/routing.c        |   16 +-
- drivers/staging/batman-adv/types.h          |    1 +
- drivers/staging/sep/Kconfig                 |   10 -
- drivers/staging/sep/Makefile                |    2 -
- drivers/staging/sep/TODO                    |    8 -
- drivers/staging/sep/sep_dev.h               |  110 --
- drivers/staging/sep/sep_driver.c            | 2742 ---------------------------
- drivers/staging/sep/sep_driver_api.h        |  425 -----
- drivers/staging/sep/sep_driver_config.h     |  225 ---
- drivers/staging/sep/sep_driver_hw_defs.h    |  232 ---
- drivers/staging/spectra/ffsport.c           |   29 +-
- drivers/staging/spectra/flash.c             |  420 +----
- 19 files changed, 70 insertions(+), 4219 deletions(-)
- delete mode 100644 drivers/staging/sep/Kconfig
- delete mode 100644 drivers/staging/sep/Makefile
- delete mode 100644 drivers/staging/sep/TODO
- delete mode 100644 drivers/staging/sep/sep_dev.h
- delete mode 100644 drivers/staging/sep/sep_driver.c
- delete mode 100644 drivers/staging/sep/sep_driver_api.h
- delete mode 100644 drivers/staging/sep/sep_driver_config.h
- delete mode 100644 drivers/staging/sep/sep_driver_hw_defs.h
-
----------------
-
-Greg Kroah-Hartman (1):
-      Staging: sep: remove driver
-
-Javier Martinez Canillas (7):
-      Staging: spectra: removes q->prepare_flush_fn, fix build breakage
-      Staging: use new REQ_FLUSH flag, fix build breakage
-      Staging: spectra: don't use locked_ioctl, fix build
-      Staging: spectra: remove duplicate GLOB_VERSION definition
-      Staging: spectra: removes unused variable
-      Staging: spectra: initializa lblk variable
-      Staging: spectra: removes unused functions
-
-Marek Lindner (4):
-      Staging: batman-adv: unify orig_hash_lock spinlock handling to avoid deadlocks
-      Staging: batman-adv: fix batman icmp originating from secondary interface
-      Staging: batman-adv: always reply batman icmp packets with primary mac
-      Staging: batman-adv: fix own mac address detection
-
-Sven Eckelmann (4):
-      Staging: batman-adv: Fix merge of linus tree
-      Staging: batman-adv: Create batman_if only on register event
-      Staging: batman-adv: Don't use net_dev after dev_put
-      Staging: batman-adv: Don't write in not allocated packet_buff
-
+Thanks,
+Daisuke Nishimura.
