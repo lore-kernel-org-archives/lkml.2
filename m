@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933216Ab0HXXBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:01:05 -0400
-Received: from kroah.org ([198.145.64.141]:40761 "EHLO coco.kroah.org"
+	id S934053Ab0HXXYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:24:33 -0400
+Received: from kroah.org ([198.145.64.141]:40783 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932725Ab0HXXBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:01 -0400
+	id S933220Ab0HXXBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:06 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:01 2010
-Message-Id: <20100824224501.458025582@clark.site>
+Message-Id: <20100824224501.718969126@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:07 -0700
+Date: Tue, 24 Aug 2010 15:44:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>
-Subject: [002/114] memstick: fix hangs on unexpected device removal in mspro_blk
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [005/114] ASoC: Remove DSP mode support for WM8776
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Levitsky <maximlevitsky@gmail.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit d862b13bc8cbab9692fbe0ef44c40d0488b81af1 upstream.
+commit b2c1e07b81a126e5846dfc3d36f559d861df59f4 upstream.
 
-mspro_block_remove() is called from detect thread that first calls the
-mspro_block_stop(), which stops the request queue.  If we call
-del_gendisk() with the queue stopped we get a deadlock.
+This is not supported by current hardware revisions.
 
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Alex Dubov <oakad@yahoo.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/memstick/core/mspro_block.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8776.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/drivers/memstick/core/mspro_block.c
-+++ b/drivers/memstick/core/mspro_block.c
-@@ -1331,13 +1331,14 @@ static void mspro_block_remove(struct me
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
- 	unsigned long flags;
- 
--	del_gendisk(msb->disk);
--	dev_dbg(&card->dev, "mspro block remove\n");
- 	spin_lock_irqsave(&msb->q_lock, flags);
- 	msb->eject = 1;
- 	blk_start_queue(msb->queue);
- 	spin_unlock_irqrestore(&msb->q_lock, flags);
- 
-+	del_gendisk(msb->disk);
-+	dev_dbg(&card->dev, "mspro block remove\n");
-+
- 	blk_cleanup_queue(msb->queue);
- 	msb->queue = NULL;
- 
+--- a/sound/soc/codecs/wm8776.c
++++ b/sound/soc/codecs/wm8776.c
+@@ -178,13 +178,6 @@ static int wm8776_set_fmt(struct snd_soc
+ 	case SND_SOC_DAIFMT_LEFT_J:
+ 		iface |= 0x0001;
+ 		break;
+-		/* FIXME: CHECK A/B */
+-	case SND_SOC_DAIFMT_DSP_A:
+-		iface |= 0x0003;
+-		break;
+-	case SND_SOC_DAIFMT_DSP_B:
+-		iface |= 0x0007;
+-		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
 
 
