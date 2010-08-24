@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933615Ab0HXXM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:12:27 -0400
-Received: from kroah.org ([198.145.64.141]:41255 "EHLO coco.kroah.org"
+	id S933569Ab0HXXMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:12:42 -0400
+Received: from kroah.org ([198.145.64.141]:41228 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933564Ab0HXXDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:02 -0400
+	id S933556Ab0HXXC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:58 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:07 2010
-Message-Id: <20100824224507.755251859@clark.site>
+Message-Id: <20100824224507.417047857@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:20 -0700
+Date: Tue, 24 Aug 2010 15:45:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
+        Changli Gao <xiaosuo@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [075/114] isdn/gigaset: reduce syslog spam
+Subject: [071/114] net: disable preemption before call smp_processor_id()
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
 
-commit 7d060ed2877ff6d00e7238226edbaf91493d6d0b upstream.
+From: Changli Gao <xiaosuo@gmail.com>
 
-Downgrade some error messages which occur frequently during
-normal operation to debug messages.
+[ Upstream commit cece1945bffcf1a823cdfa36669beae118419351 ]
 
-Impact: logging
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Although netif_rx() isn't expected to be called in process context with
+preemption enabled, it'd better handle this case. And this is why get_cpu()
+is used in the non-RPS #ifdef branch. If tree RCU is selected,
+rcu_read_lock() won't disable preemption, so preempt_disable() should be
+called explictly.
+
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-
 ---
- drivers/isdn/gigaset/capi.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ net/core/dev.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -378,13 +378,13 @@ void gigaset_skb_sent(struct bc_state *b
- 	++bcs->trans_up;
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2504,6 +2504,7 @@ int netif_rx(struct sk_buff *skb)
+ 		struct rps_dev_flow voidflow, *rflow = &voidflow;
+ 		int cpu;
  
- 	if (!ap) {
--		dev_err(cs->dev, "%s: no application\n", __func__);
-+		gig_dbg(DEBUG_MCMD, "%s: application gone", __func__);
- 		return;
++		preempt_disable();
+ 		rcu_read_lock();
+ 
+ 		cpu = get_rps_cpu(skb->dev, skb, &rflow);
+@@ -2513,6 +2514,7 @@ int netif_rx(struct sk_buff *skb)
+ 		ret = enqueue_to_backlog(skb, cpu, &rflow->last_qtail);
+ 
+ 		rcu_read_unlock();
++		preempt_enable();
  	}
- 
- 	/* don't send further B3 messages if disconnected */
- 	if (bcs->apconnstate < APCONN_ACTIVE) {
--		gig_dbg(DEBUG_LLDATA, "disconnected, discarding ack");
-+		gig_dbg(DEBUG_MCMD, "%s: disconnected", __func__);
- 		return;
- 	}
- 
-@@ -422,13 +422,14 @@ void gigaset_skb_rcvd(struct bc_state *b
- 	bcs->trans_down++;
- 
- 	if (!ap) {
--		dev_err(cs->dev, "%s: no application\n", __func__);
-+		gig_dbg(DEBUG_MCMD, "%s: application gone", __func__);
-+		dev_kfree_skb_any(skb);
- 		return;
- 	}
- 
- 	/* don't send further B3 messages if disconnected */
- 	if (bcs->apconnstate < APCONN_ACTIVE) {
--		gig_dbg(DEBUG_LLDATA, "disconnected, discarding data");
-+		gig_dbg(DEBUG_MCMD, "%s: disconnected", __func__);
- 		dev_kfree_skb_any(skb);
- 		return;
- 	}
-@@ -747,7 +748,7 @@ void gigaset_isdn_connD(struct bc_state
- 	ap = bcs->ap;
- 	if (!ap) {
- 		spin_unlock_irqrestore(&bcs->aplock, flags);
--		dev_err(cs->dev, "%s: no application\n", __func__);
-+		gig_dbg(DEBUG_CMD, "%s: application gone", __func__);
- 		return;
- 	}
- 	if (bcs->apconnstate == APCONN_NONE) {
-@@ -843,7 +844,7 @@ void gigaset_isdn_connB(struct bc_state
- 	ap = bcs->ap;
- 	if (!ap) {
- 		spin_unlock_irqrestore(&bcs->aplock, flags);
--		dev_err(cs->dev, "%s: no application\n", __func__);
-+		gig_dbg(DEBUG_CMD, "%s: application gone", __func__);
- 		return;
- 	}
- 	if (!bcs->apconnstate) {
-@@ -901,13 +902,12 @@ void gigaset_isdn_connB(struct bc_state
-  */
- void gigaset_isdn_hupB(struct bc_state *bcs)
- {
--	struct cardstate *cs = bcs->cs;
- 	struct gigaset_capi_appl *ap = bcs->ap;
- 
- 	/* ToDo: assure order of DISCONNECT_B3_IND and DISCONNECT_IND ? */
- 
- 	if (!ap) {
--		dev_err(cs->dev, "%s: no application\n", __func__);
-+		gig_dbg(DEBUG_CMD, "%s: application gone", __func__);
- 		return;
- 	}
- 
+ #else
+ 	{
 
 
