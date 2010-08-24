@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933770Ab0HXXLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:11:38 -0400
-Received: from kroah.org ([198.145.64.141]:41298 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933462Ab0HXXDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:08 2010
-Message-Id: <20100824224508.268146014@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        John Stultz <johnstul@us.ibm.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, Ingo Molnar <mingo@elte.hu>
-Subject: [081/114] time: Workaround gcc loop optimization that causes 64bit div errors
-In-Reply-To: <20100824224610.GA5424@kroah.com>
+	id S933678Ab0HXXLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:11:23 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:15264
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933627Ab0HXXLR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:11:17 -0400
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 19:11:17 EDT
+X-SpamScore: -10
+X-BigFish: VPS-10(zzbb2cK146fK4015Lzz1202hzz8275dhz2fh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+Message-ID: <4C744DC5.3040106@am.sony.com>
+Date: Tue, 24 Aug 2010 15:55:01 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux kernel <linux-kernel@vger.kernel.org>
+Subject: Possible kmemleak issue, but I'm confused
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Reverse-DNS: mail7.fw-bc.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+Hi Catalin,
 
-------------------
+I wasn't sure what list to post this to.  Is there a list where
+kmemleak is predominately discussed, outside of LKML?
 
-From: John Stultz <johnstul@us.ibm.com>
+I have a "fix" for kmemleak that we are using in Sony's
+Linux kernel (circa 2.6.29), that I wanted to discuss with
+you and possibly push upstream.  However, I'm confused about
+the status of kmemleak in current mainline.
 
-commit c7dcf87a6881bf796faee83003163eb3de41a309 upstream.
+In our patch set against 2.6.29, there are some kmemleak
+instrumentation hooks in kernel/module.c, in the routines
+percpu_modalloc and  percpu_modfree.  I thought that all
+of kmemleak got mainlined in 2.6.34, but I don't see these
+hooks in Linus' latest tree.
 
-Early 4.3 versions of gcc apparently aggressively optimize the raw
-time accumulation loop, replacing it with a divide.
+I found the commit that we are modifying, in your tree at:
+http://git.kernel.org/?p=linux/kernel/git/cmarinas/linux-2.6-cm.git;a=commitdiff;h=4f2294b6dc88d99295230d97fef2c9863cec44c3
 
-On 32bit systems, this causes the following link errors:
-	undefined reference to `__umoddi3'
-	undefined reference to `__udivdi3'
+What is the status of this patch relative to linux-next or Linus'
+tree?
 
-The gcc issue has been fixed in 4.4 and greater.
+Here's the issue we found (I'm parroting this from some
+developers in Japan who are actually found the issue, so please
+forgive me if I mangle the explanation):
 
-This patch replaces the accumulation loop with a do_div, as suggested
-by Linus.
+The kmemleak_alloc and kmemleak_free in percpu_modalloc
+and percpu_modfree routines are capturing allocations/frees
+of percpu data areas when a module is loaded or unloaded,
+respectively.  However, on some platforms, the percpu
+memory area is instantiated by the bootmem allocator,
+and the memory in question is already tracked by kmemleak.
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-CC: Jason Wessel <jason.wessel@windriver.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+When a module is loaded and unloaded multiple times, it
+causes problems for kmemleak.  The bug report I'm looking at
+says "kmemleak stops", but I don't know what that means. I
+can ask for clarification if needed.
 
----
- kernel/time/timekeeping.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Have you heard of this issue?
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -756,9 +756,10 @@ static cycle_t logarithmic_accumulation(
- 	/* Accumulate raw time */
- 	raw_nsecs = timekeeper.raw_interval << shift;
- 	raw_nsecs += raw_time.tv_nsec;
--	while (raw_nsecs >= NSEC_PER_SEC) {
--		raw_nsecs -= NSEC_PER_SEC;
--		raw_time.tv_sec++;
-+	if (raw_nsecs >= NSEC_PER_SEC) {
-+		u64 raw_secs = raw_nsecs;
-+		raw_nsecs = do_div(raw_secs, NSEC_PER_SEC);
-+		raw_time.tv_sec += raw_secs;
- 	}
- 	raw_time.tv_nsec = raw_nsecs;
- 
+Our solution was just to make these specific calls to kmemleak_alloc
+and kmemleak_free (in module.c) compile-time configurable.
+I suspect that there is a better way to do this -- possibly by
+detecting or noting that this situation exists for certain
+platforms, and avoiding it without specific user interaction.
 
+Anyway, any help you can provide would be appreciated.
+
+I thought I'd contact you and clarify the situation before
+trying to push our existing patch, or reimplement it based on
+my current understanding.
+
+Thanks,
+ -- Tim
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Linux Forum
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
