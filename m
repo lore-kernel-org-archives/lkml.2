@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934256Ab0HXXfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:35:20 -0400
-Received: from kroah.org ([198.145.64.141]:40405 "EHLO coco.kroah.org"
+	id S932886Ab0HXW6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:58:42 -0400
+Received: from kroah.org ([198.145.64.141]:40346 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932900Ab0HXW6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:15 2010
-Message-Id: <20100824224215.168189276@clark.site>
+	id S932853Ab0HXW6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:14 2010
+Message-Id: <20100824224214.213449631@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:58 -0700
+Date: Tue, 24 Aug 2010 15:41:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Eric Anholt <eric@anholt.net>
-Subject: [36/91] drm/i915: i8xx also doesnt like multiple oustanding pageflips
+        Jiaju Zhang <jjzhang@suse.de>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: [25/91] Fix the nested PR lock calling issue in ACL
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +26,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Jiaju Zhang <jjzhang.linux@gmail.com>
 
-commit 6146b3d61925116e3fecce36c2fd873665bd6614 upstream.
+commit 845b6cf34150100deb5f58c8a37a372b111f2918 upstream.
 
-My i855GM suffers from a 80k/s interrupt storm without this.
-So add 2nd gen to the list of things that don't like more than
-one outstanding pageflip request.
+Hi,
 
-Furthermore I've changed the busy loop into a ringbuffer wait.
-Busy-loops that don't check whether the chip died are simply evil.
-And performance should actually improve, because there's usually
-a decent amount of rendering queued on the gpu, hopefully rendering
-that MI_WAIT into a noop by the time it's executed.
+Thanks a lot for all the review and comments so far;) I'd like to send
+the improved (V4) version of this patch.
 
-The current code holds dev->struct_mutex while executing this loop,
-hence stalling all other gem activity anyway.
+This patch fixes a deadlock in OCFS2 ACL. We found this bug in OCFS2
+and Samba integration using scenario, the symptom is several smbd
+processes will be hung under heavy workload. Finally we found out it
+is the nested PR lock calling that leads to this deadlock:
 
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-[anholt: resolved against conflict]
-Signed-off-by: Eric Anholt <eric@anholt.net>
+ node1        node2
+              gr PR
+                |
+                V
+ PR(EX)---> BAST:OCFS2_LOCK_BLOCKED
+                |
+                V
+              rq PR
+                |
+                V
+              wait=1
+
+After requesting the 2nd PR lock, the process "smbd" went into D
+state. It can only be woken up when the 1st PR lock's RO holder equals
+zero. There should be an ocfs2_inode_unlock in the calling path later
+on, which can decrement the RO holder. But since it has been in
+uninterruptible sleep, the unlock function has no chance to be called.
+
+The related stack trace is:
+smbd          D ffff8800013d0600     0  9522   5608 0x00000000
+ ffff88002ca7fb18 0000000000000282 ffff88002f964500 ffff88002ca7fa98
+ ffff8800013d0600 ffff88002ca7fae0 ffff88002f964340 ffff88002f964340
+ ffff88002ca7ffd8 ffff88002ca7ffd8 ffff88002f964340 ffff88002f964340
+Call Trace:
+[<ffffffff80350425>] schedule_timeout+0x175/0x210
+[<ffffffff8034f580>] wait_for_common+0xf0/0x210
+[<ffffffffa03e12b9>] __ocfs2_cluster_lock+0x3b9/0xa90 [ocfs2]
+[<ffffffffa03e7665>] ocfs2_inode_lock_full_nested+0x255/0xdb0 [ocfs2]
+[<ffffffffa0446019>] ocfs2_get_acl+0x69/0x120 [ocfs2]
+[<ffffffffa0446368>] ocfs2_check_acl+0x28/0x80 [ocfs2]
+[<ffffffff800e3507>] acl_permission_check+0x57/0xb0
+[<ffffffff800e357d>] generic_permission+0x1d/0xc0
+[<ffffffffa03eecea>] ocfs2_permission+0x10a/0x1d0 [ocfs2]
+[<ffffffff800e3f65>] inode_permission+0x45/0x100
+[<ffffffff800d86b3>] sys_chdir+0x53/0x90
+[<ffffffff80007458>] system_call_fastpath+0x16/0x1b
+[<00007f34a4ef6927>] 0x7f34a4ef6927
+
+For details, please see:
+https://bugzilla.novell.com/show_bug.cgi?id=614332 and
+http://oss.oracle.com/bugzilla/show_bug.cgi?id=1278
+
+Signed-off-by: Jiaju Zhang <jjzhang@suse.de>
+Acked-by: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ fs/ocfs2/acl.c |   24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4290,14 +4290,16 @@ static int intel_crtc_page_flip(struct d
- 	work->pending_flip_obj = obj;
+--- a/fs/ocfs2/acl.c
++++ b/fs/ocfs2/acl.c
+@@ -290,12 +290,30 @@ static int ocfs2_set_acl(handle_t *handl
  
- 	if (intel_crtc->plane)
--		flip_mask = I915_DISPLAY_PLANE_B_FLIP_PENDING_INTERRUPT;
-+		flip_mask = MI_WAIT_FOR_PLANE_B_FLIP;
- 	else
--		flip_mask = I915_DISPLAY_PLANE_A_FLIP_PENDING_INTERRUPT;
-+		flip_mask = MI_WAIT_FOR_PLANE_A_FLIP;
+ int ocfs2_check_acl(struct inode *inode, int mask)
+ {
+-	struct posix_acl *acl = ocfs2_get_acl(inode, ACL_TYPE_ACCESS);
++	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
++	struct buffer_head *di_bh = NULL;
++	struct posix_acl *acl;
++	int ret = -EAGAIN;
  
--	/* Wait for any previous flip to finish */
--	if (IS_GEN3(dev))
--		while (I915_READ(ISR) & flip_mask)
--			;
-+	if (IS_GEN3(dev) || IS_GEN2(dev)) {
-+		BEGIN_LP_RING(2);
-+		OUT_RING(MI_WAIT_FOR_EVENT | flip_mask);
-+		OUT_RING(0);
-+		ADVANCE_LP_RING();
+-	if (IS_ERR(acl))
++	if (!(osb->s_mount_opt & OCFS2_MOUNT_POSIX_ACL))
++		return ret;
++
++	ret = ocfs2_read_inode_block(inode, &di_bh);
++	if (ret < 0) {
++		mlog_errno(ret);
++		return ret;
 +	}
- 
- 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
- 	offset = obj_priv->gtt_offset;
++
++	acl = ocfs2_get_acl_nolock(inode, ACL_TYPE_ACCESS, di_bh);
++
++	brelse(di_bh);
++
++	if (IS_ERR(acl)) {
++		mlog_errno(PTR_ERR(acl));
+ 		return PTR_ERR(acl);
++	}
+ 	if (acl) {
+-		int ret = posix_acl_permission(inode, acl, mask);
++		ret = posix_acl_permission(inode, acl, mask);
+ 		posix_acl_release(acl);
+ 		return ret;
+ 	}
 
 
