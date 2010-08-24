@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab0HXCbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 22:31:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45614 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab0HXCbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 22:31:13 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [PATCH -kvm] kvm: fix regression from rework KVM mmu_shrink() code
-Date: Tue, 24 Aug 2010 10:31:07 +0800
-Message-Id: <1282617067-7686-1-git-send-email-dfeng@redhat.com>
-In-Reply-To: <20100824020721.GA14726@amt.cnet>
-References: <20100824020721.GA14726@amt.cnet>
+	id S1753408Ab0HXCfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 22:35:46 -0400
+Received: from nwd2mail11.analog.com ([137.71.25.57]:15298 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab0HXCfn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 22:35:43 -0400
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+X-IronPort-AV: E=Sophos;i="4.56,260,1280721600"; 
+   d="scan'208";a="21136633"
+Content-Class: urn:content-classes:message
+Subject: RE: [PATCH 1/2] drivers/serial/bfin_5xx.c: Fix logging messages continued with \
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 24 Aug 2010 10:37:02 +0800
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Message-ID: <0F1B54C89D5F954D8535DB252AF412FA06C359EF@chinexm1.ad.analog.com>
+In-Reply-To: <6028a858f4eb3f07cc5cdddebf5af64fb0e6204e.1282589920.git.joe@perches.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 1/2] drivers/serial/bfin_5xx.c: Fix logging messages continued with \
+Thread-Index: ActC9aYW5XQZKY0BSv2jJsionKwvAAAPv+xQ
+References: <6028a858f4eb3f07cc5cdddebf5af64fb0e6204e.1282589920.git.joe@perches.com>
+To: "Joe Perches" <joe@perches.com>, <linux-kernel@vger.kernel.org>
+CC: <uclinux-dist-devel@blackfin.uclinux.org>
+X-OriginalArrivalTime: 24 Aug 2010 02:35:33.0161 (UTC) FILETIME=[06809990:01CB4335]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Latest kvm mmu_shrink code rework makes kernel changes kvm->arch.n_used_mmu_pages/
-kvm->arch.n_max_mmu_pages at kvm_mmu_free_page/kvm_mmu_alloc_page, which is called
-by kvm_mmu_commit_zap_page. So the kvm->arch.n_used_mmu_pages or
-kvm_mmu_available_pages(vcpu->kvm) is unchanged after kvm_mmu_prepare_zap_page(),
-This caused kvm_mmu_change_mmu_pages/__kvm_mmu_free_some_pages loops forever.
-Moving kvm_mmu_commit_zap_page would make the while loop performs as normal.
-
-Reported-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Tested-by: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index f52a965..0991de3 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1724,10 +1724,9 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
  
- 			page = container_of(kvm->arch.active_mmu_pages.prev,
- 					    struct kvm_mmu_page, link);
--			kvm_mmu_prepare_zap_page(kvm, page,
--							       &invalid_list);
-+			kvm_mmu_prepare_zap_page(kvm, page, &invalid_list);
-+			kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 		}
--		kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 		goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
- 	}
- 
-@@ -2976,9 +2975,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- 		sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
- 				  struct kvm_mmu_page, link);
- 		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
-+		kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- 		++vcpu->kvm->stat.mmu_recycled;
- 	}
--	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- }
- 
- int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code)
--- 
-1.7.2.1
 
+>-----Original Message-----
+>From: Joe Perches [mailto:joe@perches.com] 
+>Sent: Tuesday, August 24, 2010 3:02 AM
+>To: linux-kernel@vger.kernel.org
+>Cc: Zhang, Sonic; uclinux-dist-devel@blackfin.uclinux.org
+>Subject: [PATCH 1/2] drivers/serial/bfin_5xx.c: Fix logging 
+>messages continued with \
+>
+>Using continuation lines often introduces undesired whitespace.
+>Fix the misuses.
+>
+
+Acked-by: Sonic Zhang <sonic.zhang@analog.com>
+
+
+>Signed-off-by: Joe Perches <joe@perches.com>
+>---
+> drivers/serial/bfin_5xx.c |    8 ++++----
+> 1 files changed, 4 insertions(+), 4 deletions(-)
+>
+>diff --git a/drivers/serial/bfin_5xx.c 
+>b/drivers/serial/bfin_5xx.c index a9eff2b..4e38f99 100644
+>--- a/drivers/serial/bfin_5xx.c
+>+++ b/drivers/serial/bfin_5xx.c
+>@@ -734,8 +734,8 @@ static int bfin_serial_startup(struct 
+>uart_port *port)
+> 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
+> 			IRQF_DISABLED, "BFIN_UART_CTS", uart)) {
+> 			uart->cts_pin = -1;
+>-			pr_info("Unable to attach BlackFin UART 
+>CTS interrupt.\
+>-				 So, disable it.\n");
+>+			pr_info("Unable to attach BlackFin UART 
+>CTS interrupt. "
+>+				"So, disable it.\n");
+> 		}
+> 	}
+> 	if (uart->rts_pin >= 0) {
+>@@ -747,8 +747,8 @@ static int bfin_serial_startup(struct 
+>uart_port *port)
+> 	if (request_irq(uart->status_irq,
+> 		bfin_serial_mctrl_cts_int,
+> 		IRQF_DISABLED, "BFIN_UART_MODEM_STATUS", uart)) {
+>-		pr_info("Unable to attach BlackFin UART Modem \
+>-			Status interrupt.\n");
+>+		pr_info("Unable to attach BlackFin UART Modem "
+>+			"Status interrupt.\n");
+> 	}
+> 
+> 	/* CTS RTS PINs are negative assertive. */
+>--
+>1.7.2.19.g9a302
+>
+>
