@@ -1,123 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab0HXTbD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 15:31:03 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36096 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab0HXTbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 15:31:00 -0400
-Date: Tue, 24 Aug 2010 21:30:39 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] V4L/DVB: mantis: Fix IR_CORE dependency
-Message-ID: <20100824193039.GA20425@elte.hu>
-References: <4C643A08.3000605@redhat.com>
- <20100824084528.GA26618@elte.hu>
- <4C73E46B.8050203@oracle.com>
+	id S1755201Ab0HXTeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 15:34:16 -0400
+Received: from imap.ru.mvista.com ([213.79.90.228]:30591 "EHLO
+	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752627Ab0HXTeO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 15:34:14 -0400
+Date: Tue, 24 Aug 2010 23:34:12 +0400
+From: Anton Vorontsov <avorontsov@mvista.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Andy Fleming <afleming@freescale.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] phylib: Fix race between returning phydev and calling
+ adjust_link
+Message-ID: <20100824193412.GA1887@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4C73E46B.8050203@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It is possible that phylib will call adjust_link before returning
+from {,of_}phy_connect(), which may cause the following [very rare,
+though] oops upon reopening the device:
 
-* Randy Dunlap <randy.dunlap@oracle.com> wrote:
+  Unable to handle kernel paging request for data at address 0x0000024c
+  Oops: Kernel access of bad area, sig: 11 [#1]
+  PREEMPT SMP NR_CPUS=2 LTT NESTING LEVEL : 0
+  P1021 RDB
+  Modules linked in:
+  NIP: c0345dac LR: c0345dac CTR: c0345d84
+  TASK = dffab6b0[30] 'events/0' THREAD: c0d24000 CPU: 0
+  [...]
+  NIP [c0345dac] adjust_link+0x28/0x19c
+  LR [c0345dac] adjust_link+0x28/0x19c
+  Call Trace:
+  [c0d25f00] [000045e1] 0x45e1 (unreliable)
+  [c0d25f30] [c036c158] phy_state_machine+0x3ac/0x554
+  [...]
 
-> On 08/24/10 01:45, Ingo Molnar wrote:
-> > 
-> > * Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
-> > 
-> >> Linus,
-> >>
-> >> Please pull from:
-> >>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
-> >>
-> >> For 3 build fixes.
-> >>
-> >> Cheers,
-> >> Mauro.
-> >>
-> >> The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
-> >>
-> >>   Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
-> >>
-> >> are available in the git repository at:
-> >>
-> >>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
-> >>
-> >> Mauro Carvalho Chehab (2):
-> >>       V4L/DVB: Fix IR_CORE dependencies
-> >>       V4L/DVB: fix Kconfig to depends on VIDEO_IR
-> >>
-> >> Randy Dunlap (1):
-> >>       V4L/DVB: v4l2-ctrls.c: needs to include slab.h
-> > 
-> > FYI, there's one more IR_CORE related build bug which triggers 
-> > frequently in randconfig tests - see the fix below.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
-> > ------------------->
-> > From c56aef270d7ec01564c632c1f7ebab6b8f9f032c Mon Sep 17 00:00:00 2001
-> > From: Ingo Molnar <mingo@elte.hu>
-> > Date: Tue, 24 Aug 2010 10:41:33 +0200
-> > Subject: [PATCH] V4L/DVB: mantis: Fix IR_CORE dependency
-> > 
-> > This build bug triggers:
-> > 
-> >  drivers/built-in.o: In function `mantis_exit':
-> >  (.text+0x377413): undefined reference to `ir_input_unregister'
-> >  drivers/built-in.o: In function `mantis_input_init':
-> >  (.text+0x3774ff): undefined reference to `__ir_input_register'
-> > 
-> > If MANTIS_CORE is enabled but IR_CORE is not. Add the correct
-> > dependency.
-> > 
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > ---
-> >  drivers/media/dvb/mantis/Kconfig |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/media/dvb/mantis/Kconfig b/drivers/media/dvb/mantis/Kconfig
-> > index decdeda..fd0830e 100644
-> > --- a/drivers/media/dvb/mantis/Kconfig
-> > +++ b/drivers/media/dvb/mantis/Kconfig
-> > @@ -1,6 +1,6 @@
-> >  config MANTIS_CORE
-> >  	tristate "Mantis/Hopper PCI bridge based devices"
-> > -	depends on PCI && I2C && INPUT
-> > +	depends on PCI && I2C && INPUT && IR_CORE
-> >  
-> >  	help
-> >  	  Support for PCI cards based on the Mantis and Hopper PCi bridge.
-> 
-> 
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> http://lkml.org/lkml/2010/8/17/341
+Here is why. Drivers store phydev in their private structures, e.g.
+gianfar driver:
 
-Your patch came first :-)
+static int init_phy(struct net_device *dev)
+{
+	...
+	priv->phydev = of_phy_connect(...);
+	...
+}
 
-Btw., the reason i missed your patch is that i grepped lkml for the 
-static build failure - while your changelog contained the modular one. 
-Oh well :)
+So that adjust_link could retrieve it back:
 
-Thanks,
+static void adjust_link(struct net_device *dev)
+{
+	...
+	struct phy_device *phydev = priv->phydev;
+	...
+}
 
-	Ingo
+If the device has been opened before, then phydev->state is set to
+PHY_HALTED (or undefined if the driver didn't call phy_stop()).
+
+Now, phy_connect starts the PHY state machine before returning phydev to
+the driver:
+
+	phy_start_machine(phydev, NULL);
+
+	if (phydev->irq > 0)
+		phy_start_interrupts(phydev);
+
+	return phydev;
+
+The time between 'phy_start_machine()' and 'return phydev' is undefined.
+The start machine routine delays execution for 1 second, which is enough
+for most cases. But under heavy load, or if you're unlucky, it is quite
+possible that PHY state machine will execute before phy_connect()
+returns, and so adjust_link callback will try to dereference phydev,
+which is not yet ready.
+
+To fix the issue, simply initialize the PHY's state to PHY_READY during
+phy_attach(). This will ensure that phylib won't call adjust_link before
+phy_start().
+
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+---
+ drivers/net/phy/phy_device.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index c076119..16ddc77 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -466,6 +466,8 @@ int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+ 
+ 	phydev->interface = interface;
+ 
++	phydev->state = PHY_READY;
++
+ 	/* Do initial configuration here, now that
+ 	 * we have certain key parameters
+ 	 * (dev_flags and interface) */
+-- 
+1.7.0.5
