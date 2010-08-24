@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab0HXXas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:30:48 -0400
-Received: from kroah.org ([198.145.64.141]:40523 "EHLO coco.kroah.org"
+	id S934062Ab0HXXbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:31:06 -0400
+Received: from kroah.org ([198.145.64.141]:40518 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933020Ab0HXW7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:24 -0400
+	id S933015Ab0HXW7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:23 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:17 2010
-Message-Id: <20100824224217.378951472@clark.site>
+Message-Id: <20100824224217.296252530@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:24 -0700
+Date: Tue, 24 Aug 2010 15:42:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        Rik van Riel <riel@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [62/91] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [61/91] pkt_sched: Fix sch_sfq vs tc_modify_qdisc oops
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,161 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
 
-commit e31f3698cd3499e676f6b0ea12e3528f569c4fa3 upstream.
+From: Jarek Poplawski <jarkao2@gmail.com>
 
-Fix "system goes unresponsive under memory pressure and lots of
-dirty/writeback pages" bug.
+[ Upstream commit 41065fba846e795b31b17e4dec01cb904d56c6cd ]
 
-	http://lkml.org/lkml/2010/4/4/86
+sch_sfq as a classful qdisc needs the .leaf handler. Otherwise, there
+is an oops possible in tc_modify_qdisc()/check_loop().
 
-In the above thread, Andreas Mohr described that
+Fixes commit 7d2681a6ff4f9ab5e48d02550b4c6338f1638998
 
-	Invoking any command locked up for minutes (note that I'm
-	talking about attempted additional I/O to the _other_,
-	_unaffected_ main system HDD - such as loading some shell
-	binaries -, NOT the external SSD18M!!).
-
-This happens when the two conditions are both meet:
-- under memory pressure
-- writing heavily to a slow device
-
-OOM also happens in Andreas' system.  The OOM trace shows that 3 processes
-are stuck in wait_on_page_writeback() in the direct reclaim path.  One in
-do_fork() and the other two in unix_stream_sendmsg().  They are blocked on
-this condition:
-
-	(sc->order && priority < DEF_PRIORITY - 2)
-
-which was introduced in commit 78dc583d (vmscan: low order lumpy reclaim
-also should use PAGEOUT_IO_SYNC) one year ago.  That condition may be too
-permissive.  In Andreas' case, 512MB/1024 = 512KB.  If the direct reclaim
-for the order-1 fork() allocation runs into a range of 512KB
-hard-to-reclaim LRU pages, it will be stalled.
-
-It's a severe problem in three ways.
-
-Firstly, it can easily happen in daily desktop usage.  vmscan priority can
-easily go below (DEF_PRIORITY - 2) on _local_ memory pressure.  Even if
-the system has 50% globally reclaimable pages, it still has good
-opportunity to have 0.1% sized hard-to-reclaim ranges.  For example, a
-simple dd can easily create a big range (up to 20%) of dirty pages in the
-LRU lists.  And order-1 to order-3 allocations are more than common with
-SLUB.  Try "grep -v '1 :' /proc/slabinfo" to get the list of high order
-slab caches.  For example, the order-1 radix_tree_node slab cache may
-stall applications at swap-in time; the order-3 inode cache on most
-filesystems may stall applications when trying to read some file; the
-order-2 proc_inode_cache may stall applications when trying to open a
-/proc file.
-
-Secondly, once triggered, it will stall unrelated processes (not doing IO
-at all) in the system.  This "one slow USB device stalls the whole system"
-avalanching effect is very bad.
-
-Thirdly, once stalled, the stall time could be intolerable long for the
-users.  When there are 20MB queued writeback pages and USB 1.1 is writing
-them in 1MB/s, wait_on_page_writeback() will stuck for up to 20 seconds.
-Not to mention it may be called multiple times.
-
-So raise the bar to only enable PAGEOUT_IO_SYNC when priority goes below
-DEF_PRIORITY/3, or 6.25% LRU size.  As the default dirty throttle ratio is
-20%, it will hardly be triggered by pure dirty pages.  We'd better treat
-PAGEOUT_IO_SYNC as some last resort workaround -- its stall time is so
-uncomfortably long (easily goes beyond 1s).
-
-The bar is only raised for (order < PAGE_ALLOC_COSTLY_ORDER) allocations,
-which are easy to satisfy in 1TB memory boxes.  So, although 6.25% of
-memory could be an awful lot of pages to scan on a system with 1TB of
-memory, it won't really have to busy scan that much.
-
-Andreas tested an older version of this patch and reported that it mostly
-fixed his problem.  Mel Gorman helped improve it and KOSAKI Motohiro will
-fix it further in the next patch.
-
-Reported-by: Andreas Mohr <andi@lisas.de>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/vmscan.c |   53 +++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 45 insertions(+), 8 deletions(-)
+ net/sched/sch_sfq.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1118,6 +1118,48 @@ static int too_many_isolated(struct zone
+--- a/net/sched/sch_sfq.c
++++ b/net/sched/sch_sfq.c
+@@ -497,6 +497,11 @@ nla_put_failure:
+ 	return -1;
  }
  
- /*
-+ * Returns true if the caller should wait to clean dirty/writeback pages.
-+ *
-+ * If we are direct reclaiming for contiguous pages and we do not reclaim
-+ * everything in the list, try again and wait for writeback IO to complete.
-+ * This will stall high-order allocations noticeably. Only do that when really
-+ * need to free the pages under high memory pressure.
-+ */
-+static inline bool should_reclaim_stall(unsigned long nr_taken,
-+					unsigned long nr_freed,
-+					int priority,
-+					int lumpy_reclaim,
-+					struct scan_control *sc)
++static struct Qdisc *sfq_leaf(struct Qdisc *sch, unsigned long arg)
 +{
-+	int lumpy_stall_priority;
-+
-+	/* kswapd should not stall on sync IO */
-+	if (current_is_kswapd())
-+		return false;
-+
-+	/* Only stall on lumpy reclaim */
-+	if (!lumpy_reclaim)
-+		return false;
-+
-+	/* If we have relaimed everything on the isolated list, no stall */
-+	if (nr_freed == nr_taken)
-+		return false;
-+
-+	/*
-+	 * For high-order allocations, there are two stall thresholds.
-+	 * High-cost allocations stall immediately where as lower
-+	 * order allocations such as stacks require the scanning
-+	 * priority to be much higher before stalling.
-+	 */
-+	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-+		lumpy_stall_priority = DEF_PRIORITY;
-+	else
-+		lumpy_stall_priority = DEF_PRIORITY / 3;
-+
-+	return priority <= lumpy_stall_priority;
++	return NULL;
 +}
 +
-+/*
-  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-  * of reclaimed pages
-  */
-@@ -1209,14 +1251,9 @@ static unsigned long shrink_inactive_lis
- 		nr_scanned += nr_scan;
- 		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+ static unsigned long sfq_get(struct Qdisc *sch, u32 classid)
+ {
+ 	return 0;
+@@ -560,6 +565,7 @@ static void sfq_walk(struct Qdisc *sch,
+ }
  
--		/*
--		 * If we are direct reclaiming for contiguous pages and we do
--		 * not reclaim everything in the list, try again and wait
--		 * for IO to complete. This will stall high-order allocations
--		 * but that should be acceptable to the caller
--		 */
--		if (nr_freed < nr_taken && !current_is_kswapd() &&
--		    lumpy_reclaim) {
-+		/* Check if we should syncronously wait for writeback */
-+		if (should_reclaim_stall(nr_taken, nr_freed, priority,
-+					lumpy_reclaim, sc)) {
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 			/*
+ static const struct Qdisc_class_ops sfq_class_ops = {
++	.leaf		=	sfq_leaf,
+ 	.get		=	sfq_get,
+ 	.tcf_chain	=	sfq_find_tcf,
+ 	.bind_tcf	=	sfq_bind,
 
 
