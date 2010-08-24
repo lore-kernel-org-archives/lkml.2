@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab0HXIRs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:17:48 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55852 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab0HXIRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:17:45 -0400
-Message-ID: <4C738037.20201@kernel.dk>
-Date: Tue, 24 Aug 2010 10:17:59 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753973Ab0HXISb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 04:18:31 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58407 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab0HXIS1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 04:18:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VF19mcCH3mTz95ojbRlSIBD8TSOrsEm2TpuElGtwwz5uvPU3APbobpXiLnTSZCTPJu
+         6RQS+P8AvEwfRBzuTNYYkhudp5KDWjVkVazOoXgNtFix5FxhLwRC3Hn1q8IuXyGndXhA
+         ejiaRvlhmDDhd0bt6xeakKyRa33NjwemDnGKY=
+Date: Tue, 24 Aug 2010 12:18:22 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Matthew Garrett <mjg@redhat.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org, lenb@kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Alexey Starikovskiy <astarikovskiy@suse.de>
+Subject: Re: [PATCH] ACPI: Don't report current_now if battery reports in
+ mWh
+Message-ID: <20100824081822.GA7963@oksana.dev.rtsoft.ru>
+References: <1282595132-5026-1-git-send-email-mjg@redhat.com>
+ <201008232337.19715.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: linux-next: manual merge of the block tree with the s390 tree
-References: <20100824105328.9bf22335.sfr@canb.auug.org.au> <20100824091344.3945ccdc@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20100824091344.3945ccdc@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <201008232337.19715.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-24 09:13, Martin Schwidefsky wrote:
-> Hi Stephen,
+On Mon, Aug 23, 2010 at 11:37:19PM +0200, Rafael J. Wysocki wrote:
+> On Monday, August 23, 2010, Matthew Garrett wrote:
+> > ACPI batteries can report in units of either current or energy. Right
+> > now we expose the current_now file even if the battery is reporting
+> > energy units, resulting in a file that should contain mA instead
+> > containing mW. Don't expose this value unless the battery is reporting
+> > current.
+> > 
+> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> > Cc: Arjan van de Ven <arjan@linux.intel.com>
 > 
-> On Tue, 24 Aug 2010 10:53:28 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
->> Hi Jens,
->>
->> Today's linux-next merge of the block tree got a conflict in
->> drivers/s390/char/tape_block.c between commit
->> 7dc74a8fdb22f4410a2d8e45353c9ea75821a9ba ("[S390] tape: fix kernel panic
->> when setting tape device offline") from the s390 tree and commit
->> 52cc2eef31587b22ce9fbe77b064a031a9613ab0 ("block: switch s390 tape_block
->> and mg_disk to elevator_change()") from the block tree.
->>
->> I assume that the latter removes the need for the former, so I used that.
-> 
-> The patch in the block tree includes the fix for the s390 tape driver.
-> So I guess its best if I remove the s390 specific patch from the
-> git390 tree.
-> 
+> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Probably best, since the change in my tree is different from the
-one you likely merged. So it will clash, as Stephen also reports.
+Looks good to me as well.
+
+Should I merge this into the battery-2.6.git tree, or
+ACPI folks are gonna handle this patch?
+
+Thanks,
+
+> > ---
+> >  drivers/acpi/battery.c |    1 -
+> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> > index dc58402..9841720 100644
+> > --- a/drivers/acpi/battery.c
+> > +++ b/drivers/acpi/battery.c
+> > @@ -273,7 +273,6 @@ static enum power_supply_property energy_battery_props[] = {
+> >  	POWER_SUPPLY_PROP_CYCLE_COUNT,
+> >  	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+> >  	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> > -	POWER_SUPPLY_PROP_CURRENT_NOW,
+> >  	POWER_SUPPLY_PROP_POWER_NOW,
+> >  	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
+> >  	POWER_SUPPLY_PROP_ENERGY_FULL,
+> > 
 
 -- 
-Jens Axboe
-
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
