@@ -1,70 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab0HXNiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 09:38:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58763 "EHLO mga01.intel.com"
+	id S1755246Ab0HXNiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 09:38:11 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42903 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607Ab0HXNiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 09:38:03 -0400
-Message-Id: <89k77n$oolmh9@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,263,1280732400"; 
-   d="scan'208";a="831183401"
-Date: Tue, 24 Aug 2010 14:37:58 +0100
-To: Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [now bisected] i915: 2.6.36-rc2 hoses my Intel display
-Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        Eric Anholt <eric@anholt.net>
-References: <20100823110145.08eb72fd@bike.lwn.net> <20100823151708.6b242599@bike.lwn.net> <8u3s8d$jcc0rr@orsmga001.jf.intel.com> <20100823173225.2bda6f78@bike.lwn.net> <8u3s94$gak083@orsmga002.jf.intel.com> <20100823174641.4ba58bfe@bike.lwn.net> <8u3s94$gak45q@orsmga002.jf.intel.com> <20100824071626.1be75877@bike.lwn.net>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <20100824071626.1be75877@bike.lwn.net>
+	id S1753283Ab0HXNiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 09:38:09 -0400
+Message-ID: <4C73CB53.9030506@kernel.dk>
+Date: Tue, 24 Aug 2010 15:38:27 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Runtime PM and the block layer
+References: <Pine.LNX.4.44L0.1008231716430.1601-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1008231716430.1601-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010 07:16:26 -0600, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Tue, 24 Aug 2010 00:55:54 +0100
-> Chris Wilson <chris@chris-wilson.co.uk> wrote:
+On 2010-08-23 23:51, Alan Stern wrote:
+>>> happens to the request and to the queue?  How does the runtime-resume
+>>> routine tell the block layer that the deferred request should be
+>>> restarted?
+>>
+>> Internally, it uses the block queue plugging to set a timer to defer a
+>> bit. That's purely implementation detail and it will change in the
+>> not-so-distant future if I kill the per-queue plugging. The effect will
+>> still be the same though, the action will be automatically retried after
+>> some defined interval.
 > 
-> > In threes. Hmm, one for primary, cursor and self-refresh. drm.debug=0xe
-> > would be interesting to see what the pixel clock is.
-> > 
-> > Can you grab one before the bad commit and one after? If there is a change
-> > that may help pin-point the mistake. Or indicate further problems...
+> Hmm.  That doesn't sound quite like what I need.  Ideally the request
+> would go back to the head of the queue and stay there until the driver
+> tells the block layer to let it through (when the device is ready to 
+> accept it).
+
+It depends on where you want to handle it. If you want the driver to
+reject it, then we don't have to change the block layer bits a lot. We
+could add a DEFER_AND_STOP or something, which would never retry and it
+would stop the queue. If the driver passed that back, then it would be
+responsible for starting the queue at some point in the future.
+
+>>> How does this all relate to the queue being stopped or plugged?
+>>
+>> A stopped queue is usually the driver telling the block layer to bugger
+>> off for a while, and the driver will tell us when it's ok to resume
+>> operations.
 > 
-> OK, three files attached; drm.good is from 2.6.35, drm.bad is from
-> 2.6.36-rc2.  I also stripped the times and did a diff, in case that's
-> useful.
+> Yes, that sounds more like it.  Put the request back on the queue 
+> and stop the queue.  If the prep fn calls blk_stop_queue() and then 
+> returns BLKPREP_DEFER, will that do it?
 
-[snip]
+I think it will be a lot cleaner to add specific support for this, as
+per the DEFER_AND_STOP above.
 
-> -[drm:intel_calculate_wm], FIFO entries required for mode: 48
-> -[drm:intel_calculate_wm], FIFO watermark level: -22
-> +[drm:intel_calculate_wm], FIFO entries required for mode: 49
-> +[drm:intel_calculate_wm], FIFO watermark level: -23
-> +*ERROR* Insufficient FIFO for plane, expect flickering: entries required = 51, available = 28.
->  [drm:intel_calculate_wm], FIFO entries required for mode: 0
->  [drm:intel_calculate_wm], FIFO watermark level: 29
->  [drm:i9xx_update_wm], FIFO watermarks - A: 1, B: 29
-> -[drm:i9xx_update_wm], self-refresh entries: 60
-> -[drm:i9xx_update_wm], Setting FIFO watermarks - A: 1, B: 29, C: 2, SR 35
-> -[drm:i915_get_vblank_counter], trying to get vblank count for disabled pipe 1
-> +[drm:i9xx_update_wm], self-refresh entries: 120
-> +[drm:i9xx_update_wm], Setting FIFO watermarks - A: 1, B: 29, C: 2, SR 1
+>>  So we can't control that part. Plugging we can control. But
+> 
+> I probably didn't make it clear in the earlier message: The changes
+> to implement all this PM stuff will go in the driver, with nothing (or
+> almost nothing) changed in the block layer.  Hence stopping the queue
+> _is_ under my control.
+> 
+> Unless you think it would be better to change the block layer 
+> instead...
 
-I'm going to focus on this since this could account for the on-screen
-corruption. Here we suddenly double the computed minimal FIFO size for
-self-refresh and due to a separate bug program a minimal low watermark.
+Doing it in the driver is fine. We can always make things more generic
+and share them across drivers if there's sharing to be had there.
 
-That should addressed with
-http://cgit.freedesktop.org/~ickle/linux-2.6/commit/?h=drm-testing&id=30c127264ef9729bcef1d9901718f9a8a47be6a4
-however that patch isn't quite ready yet since Jesse pointed out that
-some chipsets do indeed want a high-watermark instead of the low-watermark
-used, at least, for gen3+.
+It also means we don't need special request types that are allowed to
+bypass certain queue states, since the driver will track the state and
+know what to defer and what to pass through.
 
-The question though is why that bad commit would cause a doubling of the
-SR. Thanks for the diff, I now know that I need to look more closely at
-the mode-fixup for SDVO.
+>> It needs to be done carefully. A queue can go in and out of idle/busy
+>> state extremely fast. I did quite a few tricks on the queue timeout
+>> handling to ensure that it didn't have much overhead on a per-rq basis.
+>> So we could probably add an idle timer that is set to some suitable
+>> timeout for this and would be added when the queue first goes empty. If
+>> new requests come in, just let it simmer and defer checking the state to
+>> when it actually fires. If nothing has happened, issue a new
+>> q->power_mode(new_state) callback that would then queue a suitable
+>> request to change the power state of the device. Queueing a new request
+>> could check the state and issue a q->power_mode(RUNNING) or similar call
+>> to bring things back to life.
+>>
+>> Just a few ideas...
+> 
+> The idle-time management can be handled in a couple of different ways,
+> and the PM core already contains routines to do it.  I'm not worried
+> about that (I have a very clear understanding of the PM core).  The 
+> interactions with the block layer are where I need help.
+> 
+> Speaking of which...  What is this q->power_mode stuff?  I haven't run
+> across it before and it doesn't seem to be mentioned in
+> include/linux/blkdev.h.  Is it connected with request_pm_state?  I
+> don't know what that is either, or how it is meant to be used.
+
+->power_mode() was just a suggested way to implement this, it doesn't
+exist. But if you want to push it to the driver, then great, less work
+for me :-)
+
+Sounds like all you need is a way to return BLKPREP_DEFER_AND_STOP and
+have the block layer stop the queue for you. When you need to restart,
+you would insert a special request at the head of the queue and call
+blk_start_queue() to get things going again.
+
+The only missing bit would then be the idle detection. That would need
+to be in the block layer itself, and the scheme I described should be
+fine for that still.
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Jens Axboe
+
