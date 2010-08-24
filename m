@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab0HXW45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:56:57 -0400
-Received: from kroah.org ([198.145.64.141]:52337 "EHLO coco.kroah.org"
+	id S932580Ab0HXW5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:57:14 -0400
+Received: from kroah.org ([198.145.64.141]:52325 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932580Ab0HXWy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:28 -0400
+	id S932568Ab0HXWy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:26 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
-Message-Id: <20100824222526.762810331@clark.site>
+Message-Id: <20100824222526.589138454@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:25:02 -0700
+Date: Tue, 24 Aug 2010 15:25:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Tokarev <mjt@tls.msk.ru>
-Subject: [50/59] USB: option: add Celot CT-650
+        Anatolij Gustschin <agust@denx.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [48/59] powerpc: Fix typo in uImage target
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Tokarev <mjt@tls.msk.ru>
+From: Anatolij Gustschin <agust@denx.de>
 
-commit 76078dc4fc389185fe467d33428f259ea9e69807 upstream.
+commit c686ecf5040d287a68d4fca7f1948472f556a6d3 upstream.
 
-Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
+Commit e32e78c5ee8aadef020fbaecbe6fb741ed9029fd
+(powerpc: fix build with make 3.82) introduced a
+typo in uImage target and broke building uImage:
+
+make: *** No rule to make target `uImage'.  Stop.
+
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/powerpc/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -375,6 +375,10 @@ static int  option_resume(struct usb_ser
- #define OLIVETTI_VENDOR_ID			0x0b3c
- #define OLIVETTI_PRODUCT_OLICARD100		0xc000
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -159,7 +159,7 @@ drivers-$(CONFIG_OPROFILE)	+= arch/power
+ all: zImage
  
-+/* Celot products */
-+#define CELOT_VENDOR_ID				0x211f
-+#define CELOT_PRODUCT_CT680M			0x6801
-+
- static struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -874,10 +878,9 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
--
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
--
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
-+	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ # With make 3.82 we cannot mix normal and wildcard targets
+-BOOT_TARGETS1 := zImage zImage.initrd uImaged
++BOOT_TARGETS1 := zImage zImage.initrd uImage
+ BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
+ 
+ PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
 
 
