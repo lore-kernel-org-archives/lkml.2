@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933690Ab0HXXJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:09:43 -0400
-Received: from kroah.org ([198.145.64.141]:32783 "EHLO coco.kroah.org"
+	id S1755255Ab0HXXJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:09:56 -0400
+Received: from kroah.org ([198.145.64.141]:32769 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933635Ab0HXXDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:25 -0400
+	id S933626Ab0HXXDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:22 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:09 2010
-Message-Id: <20100824224509.146048054@clark.site>
+Message-Id: <20100824224508.971210532@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:36 -0700
+Date: Tue, 24 Aug 2010 15:45:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [091/114] drm/radeon/kms: dont enable MSIs on AGP boards
+        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [089/114] ALSA: intel8x0: Mute External Amplifier by default for ThinkPad X31
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit da7be684c55dbaeebfc1a048d5faf52d52cb3c1f upstream.
+commit 9c77b846ec8b4e0c7107dd7f820172462dc84a61 upstream.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=29327
+BugLink: https://bugs.launchpad.net/bugs/619439
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This ThinkPad model needs External Amplifier muted for audible playback,
+so set the inv_eapd quirk for it.
+
+Reported-and-tested-by: Dennis Bell <dennis.bell@parkerg.co.uk>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/intel8x0.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -121,11 +121,12 @@ int radeon_irq_kms_init(struct radeon_de
- 	 * chips.  Disable MSI on them for now.
- 	 */
- 	if ((rdev->family >= CHIP_RV380) &&
--	    (!(rdev->flags & RADEON_IS_IGP))) {
-+	    (!(rdev->flags & RADEON_IS_IGP)) &&
-+	    (!(rdev->flags & RADEON_IS_AGP))) {
- 		int ret = pci_enable_msi(rdev->pdev);
- 		if (!ret) {
- 			rdev->msi_enabled = 1;
--			DRM_INFO("radeon: using MSI.\n");
-+			dev_info(rdev->dev, "radeon: using MSI.\n");
- 		}
- 	}
- 	rdev->irq.installed = true;
+--- a/sound/pci/intel8x0.c
++++ b/sound/pci/intel8x0.c
+@@ -1776,6 +1776,12 @@ static struct ac97_quirk ac97_quirks[] _
+         },
+ 	{
+ 		.subvendor = 0x1014,
++		.subdevice = 0x0534,
++		.name = "ThinkPad X31",
++		.type = AC97_TUNE_INV_EAPD
++	},
++	{
++		.subvendor = 0x1014,
+ 		.subdevice = 0x1f00,
+ 		.name = "MS-9128",
+ 		.type = AC97_TUNE_ALC_JACK
 
 
