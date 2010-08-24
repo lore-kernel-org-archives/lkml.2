@@ -1,76 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab0HXHPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:15:55 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:40336 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab0HXHPv (ORCPT
+	id S1754188Ab0HXHTh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:19:37 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:37065 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab0HXHTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 03:15:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=pMzzcVVtIpI6WLAZ/+WyaWYpvRGdvea6qtCybxMaaI4I4y0x8LCW92X6/IjuFTsOi7
-         kB3wSqeqGfGVg4NCD2woD1yZN98V3gWSkWPunQ2iM6eT4RDviXMp8yXzVwjYLR6O8o7B
-         35b/iu+wkQxej/4buCFO9V5UCFvcZmRJT7YGc=
-Subject: [PATCH v2] mfd: tps6586x - free allocated resources when unload
-	the module
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mike Rapoport <mike@compulab.co.il>,
-        eric miao <eric.y.miao@gmail.com>
-Content-Type: text/plain
-Date: Tue, 24 Aug 2010 15:18:58 +0800
-Message-Id: <1282634338.11025.5.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Aug 2010 03:19:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=w3MMiIgviy2GXofS87saoyXC3R42KDtF5KcDXdrEruefIwOcCZXtfUFZnLgn/WOza
+	XyegmQ1l+F1Ts4HqR7ifw==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        m-ikeda@ds.jp.nec.com,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com, "menage\@google.com" <menage@google.com>,
+        "lizf\@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 1/5] cgroup: ID notification call back
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 24 Aug 2010 00:19:01 -0700
+Message-ID: <xr93bp8sqxzu.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the resources allocated in tps6586x_i2c_probe(),
-we need to free it in tps6586x_i2c_remove().
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-Changes since V1:
-Current implementation allows gpiochip_add() fail in probe,
-thus just show a wraning if gpiochip_remove() fail.
+> CC'ed to Paul Menage and Li Zefan.
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> When cgroup subsystem use ID (ss->use_id==1), each css's ID is assigned
+> after successful call of ->create(). css_ID is tightly coupled with
+> css struct itself but it is allocated by ->create() call, IOW,
+> per-subsystem special allocations.
+>
+> To know css_id before creation, this patch adds id_attached() callback.
+> after css_ID allocation. This will be used by memory cgroup's quick lookup
+> routine.
+>
+> Maybe you can think of other implementations as
+> 	- pass ID to ->create()
+> 	or
+> 	- add post_create()
+> 	etc...
+> But when considering dirtiness of codes, this straightforward patch seems
+> good to me. If someone wants post_create(), this patch can be replaced.
+>
+> Changelog: 20100820
+>  - new approarch.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  Documentation/cgroups/cgroups.txt |   10 ++++++++++
+>  include/linux/cgroup.h            |    1 +
+>  kernel/cgroup.c                   |    5 ++++-
+>  3 files changed, 15 insertions(+), 1 deletion(-)
+>
+> Index: mmotm-0811/Documentation/cgroups/cgroups.txt
+> ===================================================================
+> --- mmotm-0811.orig/Documentation/cgroups/cgroups.txt
+> +++ mmotm-0811/Documentation/cgroups/cgroups.txt
+> @@ -621,6 +621,16 @@ and root cgroup. Currently this will onl
+>  the default hierarchy (which never has sub-cgroups) and a hierarchy
+>  that is being created/destroyed (and hence has no sub-cgroups).
+>  
+> +void id_attached(struct cgroup_subsys *ss, struct cgroup *root)
+> +(cgroup_mutex and ss->hierarchy_mutex held by caller)
+> +(called only when ss->use_id=1)
+> +
+> +Called when css_id is attached to css. Because css_id is assigned
+> +against "css", css_id is not available until ->create() is called.
+> +If subsystem wants to make use of ID at createtion time, use
 
-I don't have this hardware handy,
-I am not sure that does it make sense to allow gpiochip_add() fail in probe.
+Minor spelling correction: s/createtion/creation/
 
- drivers/mfd/tps6586x.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+> +this handler. This handler will be called after css_id is assigned
+> +to css. Not necessary to be implemented in usual(see memcontrol.c)
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 1c91936..2f9336c 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -344,6 +344,19 @@ err_add_devs:
- 
- static int __devexit tps6586x_i2c_remove(struct i2c_client *client)
- {
-+	struct tps6586x *tps6586x = i2c_get_clientdata(client);
-+	struct tps6586x_platform_data *pdata = client->dev.platform_data;
-+	int ret;
-+
-+	if (pdata->gpio_base) {
-+		ret = gpiochip_remove(&tps6586x->gpio);
-+		if (ret)
-+			dev_err(&client->dev, "Can't remove gpio chip: %d\n",
-+				ret);
-+	}
-+
-+	tps6586x_remove_subdevs(tps6586x);
-+	kfree(tps6586x);
- 	return 0;
- }
- 
--- 
-1.7.2
+Maybe this sounds better?
 
+"This handler is not usually needed.  See memcontrol.c for an example."
 
-
+> +
+>  4. Questions
+>  ============
+>  
+> Index: mmotm-0811/include/linux/cgroup.h
+> ===================================================================
+> --- mmotm-0811.orig/include/linux/cgroup.h
+> +++ mmotm-0811/include/linux/cgroup.h
+> @@ -475,6 +475,7 @@ struct cgroup_subsys {
+>  			struct cgroup *cgrp);
+>  	void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+>  	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
+> +	void (*id_attached)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+>  
+>  	int subsys_id;
+>  	int active;
+> Index: mmotm-0811/kernel/cgroup.c
+> ===================================================================
+> --- mmotm-0811.orig/kernel/cgroup.c
+> +++ mmotm-0811/kernel/cgroup.c
+> @@ -4618,6 +4618,8 @@ static int __init_or_module cgroup_init_
+>  	newid->stack[0] = newid->id;
+>  	newid->css = rootcss;
+>  	rootcss->id = newid;
+> +	if (ss->id_attached)
+> +		ss->id_attached(ss, dummytop);
+>  	return 0;
+>  }
+>  
+> @@ -4646,7 +4648,8 @@ static int alloc_css_id(struct cgroup_su
+>  	 * see cgroup_populate_dir()
+>  	 */
+>  	rcu_assign_pointer(child_css->id, child_id);
+> -
+> +	if (ss->id_attached)
+> +		ss->id_attached(ss, child);
+>  	return 0;
+>  }
+>  
