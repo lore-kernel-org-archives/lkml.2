@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab0HXASO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 20:18:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52595 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751478Ab0HXASL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 20:18:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,260,1280732400"; 
-   d="scan'208";a="548022036"
-Date: Tue, 24 Aug 2010 08:18:02 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Greg KH <greg@kroah.com>
-Cc: Nikola Ciprich <extmaillist@linuxbox.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "nikola.ciprich@linuxbox.cz" <nikola.ciprich@linuxbox.cz>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pedro Ribeiro <pedrib@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [stable] "vmscan: raise the bar to PAGEOUT_IO_SYNC stalls" to
- stable?
-Message-ID: <20100824001802.GA6568@localhost>
-References: <4C639E87.3050805@suse.cz>
- <20100819060516.GA14221@localhost>
- <20100819103139.GA31206@develbox.linuxbox.cz>
- <20100823222216.GB13371@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100823222216.GB13371@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752550Ab0HXAdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 20:33:33 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:59905 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab0HXAdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 20:33:31 -0400
+Date: Tue, 24 Aug 2010 09:19:20 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 2/5] memcg: use array and ID for quick look up
+Message-Id: <20100824091920.181932e0.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100824085111.6acf8881.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820185917.87876cb0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100823123533.b75b99c5.nishimura@mxp.nes.nec.co.jp>
+	<20100824085111.6acf8881.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 06:22:16AM +0800, Greg KH wrote:
-> On Thu, Aug 19, 2010 at 12:31:39PM +0200, Nikola Ciprich wrote:
-> > Hello everybody,
-> > is there any chance this one could also make it to long term
-> > supported 2.6.32 series?
-> > I guess this will take more work, but I guess there are quite
-> > a few users that would appreciate it much :)
+> > > @@ -2231,7 +2244,7 @@ __mem_cgroup_commit_charge_swapin(struct
+> > >  
+> > >  		id = swap_cgroup_record(ent, 0);
+> > >  		rcu_read_lock();
+> > > -		memcg = mem_cgroup_lookup(id);
+> > > +		memcg = id_to_memcg(id);
+> > >  		if (memcg) {
+> > >  			/*
+> > >  			 * This recorded memcg can be obsolete one. So, avoid
+> > > @@ -2240,9 +2253,10 @@ __mem_cgroup_commit_charge_swapin(struct
+> > >  			if (!mem_cgroup_is_root(memcg))
+> > >  				res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+> > >  			mem_cgroup_swap_statistics(memcg, false);
+> > > +			rcu_read_unlock();
+> > >  			mem_cgroup_put(memcg);
+> > > -		}
+> > > -		rcu_read_unlock();
+> > > +		} else
+> > > +			rcu_read_unlock();
+> > >  	}
+> > >  	/*
+> > >  	 * At swapin, we may charge account against cgroup which has no tasks.
+> > > @@ -2495,7 +2509,7 @@ void mem_cgroup_uncharge_swap(swp_entry_
+> > >  
+> > >  	id = swap_cgroup_record(ent, 0);
+> > >  	rcu_read_lock();
+> > > -	memcg = mem_cgroup_lookup(id);
+> > > +	memcg = id_to_memcg(id);
+> > >  	if (memcg) {
+> > >  		/*
+> > >  		 * We uncharge this because swap is freed.
+> > > @@ -2504,9 +2518,10 @@ void mem_cgroup_uncharge_swap(swp_entry_
+> > >  		if (!mem_cgroup_is_root(memcg))
+> > >  			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+> > >  		mem_cgroup_swap_statistics(memcg, false);
+> > > +		rcu_read_unlock();
+> > >  		mem_cgroup_put(memcg);
+> > > -	}
+> > > -	rcu_read_unlock();
+> > > +	} else
+> > > +		rcu_read_unlock();
+> > >  }
+> > >  
+> > >  /**
+> > Could you explain why we need rcu_read_unlock() before mem_cgroup_put() ?
+> > I suspect that it's because mem_cgroup_put() can free the memcg, but do we
+> > need mem->valid then ?
+> > 
+> mem_cgroup_put() may call synchronize_rcu(). So, we have to unlock before it.
 > 
-> It seems to also apply and build successfully on .32-stable, so I've
-> queued it up there as well.
+Ah, I see. Thank you for your explanation.
 
-Yup, thanks! The patch can be used unmodified on .32.
-
-Thanks,
-Fengguang
+Daisuke Nishimura.
