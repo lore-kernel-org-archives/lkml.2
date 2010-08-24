@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778Ab0HXXPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:15:00 -0400
-Received: from kroah.org ([198.145.64.141]:41151 "EHLO coco.kroah.org"
+	id S933807Ab0HXXPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:15:14 -0400
+Received: from kroah.org ([198.145.64.141]:41144 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933503Ab0HXXCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:42 -0400
+	id S933497Ab0HXXCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:40 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:06 2010
-Message-Id: <20100824224506.462715902@clark.site>
+Message-Id: <20100824224506.381485275@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:05 -0700
+Date: Tue, 24 Aug 2010 15:45:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "David S. Miller" <davem@davemloft.net>
-Subject: [060/114] sparc: Really fix "console=" for serial consoles.
+Subject: [059/114] sparc64: Fix atomic64_t routine return values.
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,83 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit 0a492896ac07336c98f37ad7fab4a6387b6ada78 ]
+[ Upstream commits 86fa04b8742ac681d470786f55e2403ada0075b2
+  and b10f997bb0f4e5b34d447f498fb85834a40d3acb ]
 
-If a video head and keyboard are hooked up, specifying "console=ttyS0"
-or similar to use a serial console will not work properly.
+Should return 'long' instead of 'int'.
 
-The key issue is that we must register all serial console capable
-devices with register_console(), otherwise the command line specified
-device won't be found.  The sun serial drivers would only register
-themselves as console devices if the OpenFirmware specified console
-device node matched.  To fix this part we now unconditionally get
-the serial console register by setting serial_drv->cons always.
+Thanks to Dimitris Michailidis and Tony Luck.
 
-Secondarily we must not add_preferred_console() using the firmware
-provided console setting if the user gaven an override on the kernel
-command line using "console="  The "primary framebuffer" matching
-logic was always triggering o n openfirmware device node match, make
-it not when a command line override was given.
-
-Reported-by: Frans Pop <elendil@planet.nl>
-Tested-by: Frans Pop <elendil@planet.nl>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/include/asm/fb.h |    4 ++++
- drivers/serial/suncore.c    |   15 +++++++++------
- 2 files changed, 13 insertions(+), 6 deletions(-)
+ arch/sparc/include/asm/atomic_64.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/sparc/include/asm/fb.h
-+++ b/arch/sparc/include/asm/fb.h
-@@ -1,5 +1,6 @@
- #ifndef _SPARC_FB_H_
- #define _SPARC_FB_H_
-+#include <linux/console.h>
- #include <linux/fb.h>
- #include <linux/fs.h>
- #include <asm/page.h>
-@@ -18,6 +19,9 @@ static inline int fb_is_primary_device(s
- 	struct device *dev = info->device;
- 	struct device_node *node;
+--- a/arch/sparc/include/asm/atomic_64.h
++++ b/arch/sparc/include/asm/atomic_64.h
+@@ -20,14 +20,14 @@
+ #define atomic64_set(v, i)	(((v)->counter) = i)
  
-+	if (console_set_on_cmdline)
-+		return 0;
-+
- 	node = dev->of_node;
- 	if (node &&
- 	    node == of_console_device)
---- a/drivers/serial/suncore.c
-+++ b/drivers/serial/suncore.c
-@@ -55,7 +55,12 @@ EXPORT_SYMBOL(sunserial_unregister_minor
- int sunserial_console_match(struct console *con, struct device_node *dp,
- 			    struct uart_driver *drv, int line, bool ignore_line)
+ extern void atomic_add(int, atomic_t *);
+-extern void atomic64_add(int, atomic64_t *);
++extern void atomic64_add(long, atomic64_t *);
+ extern void atomic_sub(int, atomic_t *);
+-extern void atomic64_sub(int, atomic64_t *);
++extern void atomic64_sub(long, atomic64_t *);
+ 
+ extern int atomic_add_ret(int, atomic_t *);
+-extern int atomic64_add_ret(int, atomic64_t *);
++extern long atomic64_add_ret(long, atomic64_t *);
+ extern int atomic_sub_ret(int, atomic_t *);
+-extern int atomic64_sub_ret(int, atomic64_t *);
++extern long atomic64_sub_ret(long, atomic64_t *);
+ 
+ #define atomic_dec_return(v) atomic_sub_ret(1, v)
+ #define atomic64_dec_return(v) atomic64_sub_ret(1, v)
+@@ -91,7 +91,7 @@ static inline int atomic_add_unless(atom
+ 	((__typeof__((v)->counter))cmpxchg(&((v)->counter), (o), (n)))
+ #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
+ 
+-static inline int atomic64_add_unless(atomic64_t *v, long a, long u)
++static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
  {
--	if (!con || of_console_device != dp)
-+	if (!con)
-+		return 0;
-+
-+	drv->cons = con;
-+
-+	if (of_console_device != dp)
- 		return 0;
- 
- 	if (!ignore_line) {
-@@ -69,12 +74,10 @@ int sunserial_console_match(struct conso
- 			return 0;
- 	}
- 
--	con->index = line;
--	drv->cons = con;
--
--	if (!console_set_on_cmdline)
-+	if (!console_set_on_cmdline) {
-+		con->index = line;
- 		add_preferred_console(con->name, line, NULL);
--
-+	}
- 	return 1;
- }
- EXPORT_SYMBOL(sunserial_console_match);
+ 	long c, old;
+ 	c = atomic64_read(v);
 
 
