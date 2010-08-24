@@ -1,134 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab0HXKJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 06:09:06 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:29531 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751634Ab0HXKJC (ORCPT
-	<rfc822;groupwise-jlee@novell.com:3:2>);
-	Tue, 24 Aug 2010 06:09:02 -0400
-Message-Id: <4C7426DB020000230001F3A8@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 24 Aug 2010 04:08:59 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <mjg59@srcf.ucam.org>, <trenn@suse.de>
-Cc: <gregkh@suse.de>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
-Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
- detect
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="=__PartE6CBD42B.2__="
+	id S1754785Ab0HXKR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 06:17:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59433 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754453Ab0HXKRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 06:17:25 -0400
+Message-ID: <4C739AF2.6050206@kernel.org>
+Date: Tue, 24 Aug 2010 12:12:02 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: percpu_counter: add debugobj support
+References: <20100813134756.GA5235@swordfish.minsk.epam.com> <4C73899A.304@kernel.org> <20100824091536.GA5440@swordfish.minsk.epam.com>
+In-Reply-To: <20100824091536.GA5440@swordfish.minsk.epam.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 Aug 2010 10:17:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+All percpu counters are linked to a global list on initialization and
+removed from it on destruction.  The list is walked during CPU
+up/down.  If a percpu counter is freed without being properly
+destroyed, the system will oops only on the next CPU up/down making it
+pretty nasty to track down.  This patch adds debugobj support for
+percpu counters so that such problems can be found easily.
 
---=__PartE6CBD42B.2__=
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+As percpu counters don't make sense on stack and can't be statically
+initialized, debugobj support is pretty simple.  It's initialized and
+activated on counter initialization, and deactivatd and destroyed on
+counter destruction.  With this patch applied, the bug fixed by commit
+602586a83b719df0fbd94196a1359ed35aeb2df3 (shmem: put_super must
+percpu_counter_destroy) triggers the following warning on tmpfs
+unmount and the system won't oops on the next cpu up/down operation.
 
-Hi Matthew, Thomas, 
+ ------------[ cut here ]------------
+ WARNING: at /devel/tj/os/work/lib/debugobjects.c:259 debug_print_object+0x5c/0x70()
+ Hardware name: Bochs
+ ODEBUG: free active (active state 0) object type: percpu_counter
+ Modules linked in:
+ Pid: 3999, comm: umount Not tainted 2.6.36-rc2-work+ #5
+ Call Trace:
+  [<ffffffff81083f7f>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff81084076>] warn_slowpath_fmt+0x46/0x50
+  [<ffffffff813b45cc>] debug_print_object+0x5c/0x70
+  [<ffffffff813b50e5>] debug_check_no_obj_freed+0x125/0x210
+  [<ffffffff811577d3>] kfree+0xb3/0x2f0
+  [<ffffffff81132edd>] shmem_put_super+0x1d/0x30
+  [<ffffffff81162e96>] generic_shutdown_super+0x56/0xe0
+  [<ffffffff81162f86>] kill_anon_super+0x16/0x60
+  [<ffffffff81162ff7>] kill_litter_super+0x27/0x30
+  [<ffffffff81163295>] deactivate_locked_super+0x45/0x60
+  [<ffffffff81163cfa>] deactivate_super+0x4a/0x70
+  [<ffffffff8117d446>] mntput_no_expire+0x86/0xe0
+  [<ffffffff8117df7f>] sys_umount+0x6f/0x360
+  [<ffffffff8103f01b>] system_call_fastpath+0x16/0x1b
+ ---[ end trace cce2a341ba3611a7 ]---
 
-於 二，2010-08-24 於 01:03 -0600，Joey Lee 提到：
-> Hi Matthew, 
-> 
-> 於 一，2010-08-23 於 18:51 +0100，Matthew Garrett 提到：
-> > On Mon, Aug 23, 2010 at 07:53:21PM +0200, Thomas Renninger wrote:
-> > 
-> > > Hm, needing a module option to get a system running is not what the user expects.
-> > > By default, the system should run fine and a module option should be added
-> > > as a workaround or for debugging only.
-> > 
-> > How about we do this instead: add a psb stub driver that does nothing 
-> > other than call acpi_backlight_register()?
-> > 
-> 
-> The attached file is a draft stub driver for poulsbo. Like you said, it
-> will only call acpi_video_register and acpi_video_unregister when
-> initial and exit.
-> And I added the Poulsbo pci id in the module alias.
-> 
-> It's works to me, where can we put the driver? in driver/staging ? or
-> put in driver/gpu/stub ?
-> 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Andrew, if there's no objection, can you please route this through
+your tree?
 
-The attached file is the patch to add a poulsbo stub module in
-drivers/gpu/stub.
+Thanks.
 
-Please kindly review it and give me any suggestions.
+ lib/Kconfig.debug    |    8 ++++++++
+ lib/percpu_counter.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+)
 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 1b4afd2..651d794 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -317,6 +317,14 @@ config DEBUG_OBJECTS_RCU_HEAD
+ 	help
+ 	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
 
-Thank's a lot!
-Joey Lee
++config DEBUG_OBJECTS_PERCPU_COUNTER
++	bool "Debug percpu counter objects"
++	depends on DEBUG_OBJECTS
++	help
++	  If you say Y here, additional code will be inserted into the
++	  percpu counter routines to track the life time of percpu counter
++	  objects and validate the percpu counter operations.
++
+ config DEBUG_OBJECTS_ENABLE_DEFAULT
+ 	int "debug_objects bootup default value (0-1)"
+         range 0 1
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index ec9048e..14a793f 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -8,10 +8,53 @@
+ #include <linux/init.h>
+ #include <linux/cpu.h>
+ #include <linux/module.h>
++#include <linux/debugobjects.h>
 
+ static LIST_HEAD(percpu_counters);
+ static DEFINE_MUTEX(percpu_counters_lock);
 
---=__PartE6CBD42B.2__=
-Content-Type: text/plain; name="0001-Add-Intel-Poulsbo-Stub-Driver.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="0001-Add-Intel-Poulsbo-Stub-Driver.patch"
++#ifdef CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER
++
++static struct debug_obj_descr percpu_counter_debug_descr;
++
++static int percpu_counter_fixup_free(void *addr, enum debug_obj_state state)
++{
++	struct percpu_counter *fbc = addr;
++
++	switch (state) {
++	case ODEBUG_STATE_ACTIVE:
++		percpu_counter_destroy(fbc);
++		debug_object_free(fbc, &percpu_counter_debug_descr);
++		return 1;
++	default:
++		return 0;
++	}
++}
++
++static struct debug_obj_descr percpu_counter_debug_descr = {
++	.name		= "percpu_counter",
++	.fixup_free	= percpu_counter_fixup_free,
++};
++
++static inline void debug_percpu_counter_activate(struct percpu_counter *fbc)
++{
++	debug_object_init(fbc, &percpu_counter_debug_descr);
++	debug_object_activate(fbc, &percpu_counter_debug_descr);
++}
++
++static inline void debug_percpu_counter_deactivate(struct percpu_counter *fbc)
++{
++	debug_object_deactivate(fbc, &percpu_counter_debug_descr);
++	debug_object_free(fbc, &percpu_counter_debug_descr);
++}
++
++#else	/* CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER */
++static inline void debug_percpu_counter_activate(struct percpu_counter *fbc)
++{ }
++static inline void debug_percpu_counter_deactivate(struct percpu_counter *fbc)
++{ }
++#endif	/* CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER */
++
+ void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
+ {
+ 	int cpu;
+@@ -75,6 +118,9 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+ 	fbc->counters = alloc_percpu(s32);
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
++
++	debug_percpu_counter_activate(fbc);
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_add(&fbc->list, &percpu_counters);
+@@ -89,6 +135,8 @@ void percpu_counter_destroy(struct percpu_counter *fbc)
+ 	if (!fbc->counters)
+ 		return;
 
->From 18d66ed453e4052874280ff0c17b68f5ce3cbc3a Mon Sep 17 00:00:00 =
-2001=0AFrom: Lee, Chun-Yi <jlee@novell.com>=0ADate: Tue, 24 Aug 2010 =
-17:55:23 +0800=0ASubject: [PATCH] Add Intel Poulsbo Stub Driver=0A=0ACurren=
-tly, there have no Poulsbo native video driver to support=0Aintel =
-opregion. So, use this stub driver to call acpi_video_register=0Ato enable =
-the acpi backlight control sysfs entry files.=0A=0ASigned-off-by: Lee, =
-Chun-Yi <jlee@novell.com>=0A---=0A drivers/gpu/Makefile       |    2 +-=0A =
-drivers/gpu/stub/Kconfig   |   13 +++++++++++++=0A drivers/gpu/stub/Makefil=
-e  |    1 +=0A drivers/gpu/stub/poulsbo.c |   44 ++++++++++++++++++++++++++=
-++++++++++++++++++=0A drivers/video/Kconfig      |    2 ++=0A 5 files =
-changed, 61 insertions(+), 1 deletions(-)=0A create mode 100644 drivers/gpu=
-/stub/Kconfig=0A create mode 100644 drivers/gpu/stub/Makefile=0A create =
-mode 100644 drivers/gpu/stub/poulsbo.c=0A=0Adiff --git a/drivers/gpu/Makefi=
-le b/drivers/gpu/Makefile=0Aindex 30879df..cc92778 100644=0A--- a/drivers/g=
-pu/Makefile=0A+++ b/drivers/gpu/Makefile=0A@@ -1 +1 @@=0A-obj-y			=
-+=3D drm/ vga/=0A+obj-y			+=3D drm/ vga/ stub/=0Adiff --git =
-a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig=0Anew file mode =
-100644=0Aindex 0000000..88fd919=0A--- /dev/null=0A+++ b/drivers/gpu/stub/Kc=
-onfig=0A@@ -0,0 +1,13 @@=0A+config STUB_POULSBO=0A+	tristate "Intel =
-Poulsbo Stub Driver"=0A+        default m=0A+        # Poulsbo stub =
-depends on ACPI_VIDEO when ACPI is enabled=0A+        # but for select to =
-work, need to select ACPI_VIDEO's dependencies, ick=0A+        select =
-ACPI_VIDEO if ACPI=0A+	help=0A+	  Choose this option if you have a =
-system that has Intel Poulsbo=0A+	  integrated graphics. If M is =
-selected, the module will be called=0A+	  Poulsbo. This driver is a stub =
-driver for Poulsbo that will call=0A+	  acpi_video_register to enable =
-the acpi backlight control sysfs=0A+	  entry file because there have no =
-poulsbo native driver can support=0A+	  intel opregion.=0Adiff --git =
-a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile=0Anew file mode =
-100644=0Aindex 0000000..cd940cc=0A--- /dev/null=0A+++ b/drivers/gpu/stub/Ma=
-kefile=0A@@ -0,0 +1 @@=0A+obj-$(CONFIG_STUB_POULSBO) +=3D poulsbo.o=0Adiff =
---git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c=0Anew file =
-mode 100644=0Aindex 0000000..c93cd67=0A--- /dev/null=0A+++ b/drivers/gpu/st=
-ub/poulsbo.c=0A@@ -0,0 +1,44 @@=0A+/*=0A+ * Intel Poulsbo Stub=0A+ *=0A+ * =
-Copyright (C) 2010 Novell <jlee@novell.com>=0A+ *=0A+ *  This program is =
-free software; you can redistribute it and/or modify=0A+ *  it under the =
-terms of the GNU General Public License as published by=0A+ *  the Free =
-Software Foundation; either version 2 of the License, or=0A+ *  (at your =
-option) any later version.=0A+ *=0A+ *  This program is distributed in the =
-hope that it will be useful,=0A+ *  but WITHOUT ANY WARRANTY; without even =
-the implied warranty of=0A+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR =
-PURPOSE.  See the=0A+ *  GNU General Public License for more details.=0A+ =
-*=0A+ *  You should have received a copy of the GNU General Public =
-License=0A+ *  along with this program; if not, write to the Free =
-Software=0A+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  =
-02111-1307  USA=0A+ */=0A+=0A+#include <linux/module.h>=0A+#include =
-<acpi/video.h>=0A+=0A+static int __init poulsbo_init(void)=0A+{=0A+	=
-printk(KERN_INFO "poulsbo: stub driver load.\n");=0A+	return acpi_video_r=
-egister();=0A+}=0A+=0A+static void __exit poulsbo_cleanup(void)=0A+{=0A+	=
-acpi_video_unregister();=0A+	printk(KERN_INFO "poulsbo: stub driver =
-unloaded.\n");=0A+}=0A+=0A+module_init(poulsbo_init);=0A+module_exit(poulsb=
-o_cleanup);=0A+=0A+MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");=0A+MODU=
-LE_DESCRIPTION("Poulsbo Stub Driver");=0A+MODULE_LICENSE("GPL");=0A+=0A+MOD=
-ULE_ALIAS("pci:v00008086d00008108sv*sd*bc*sc*i*");=0A+MODULE_ALIAS("pci:v00=
-008086d00008109sv*sd*bc*sc*i*");=0Adiff --git a/drivers/video/Kconfig =
-b/drivers/video/Kconfig=0Aindex 8b31fdf..8807ae5 100644=0A--- a/drivers/vid=
-eo/Kconfig=0A+++ b/drivers/video/Kconfig=0A@@ -17,6 +17,8 @@ source =
-"drivers/gpu/vga/Kconfig"=0A =0A source "drivers/gpu/drm/Kconfig"=0A =
-=0A+source "drivers/gpu/stub/Kconfig"=0A+=0A config VGASTATE=0A        =
-tristate=0A        default n=0A-- =0A1.6.0.2=0A=0A
---=__PartE6CBD42B.2__=--
++	debug_percpu_counter_deactivate(fbc);
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_del(&fbc->list);
