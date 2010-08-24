@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933721Ab0HXXDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:03:44 -0400
-Received: from kroah.org ([198.145.64.141]:32837 "EHLO coco.kroah.org"
+	id S1756516Ab0HXXGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:06:34 -0400
+Received: from kroah.org ([198.145.64.141]:32876 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933677Ab0HXXDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:37 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:09 2010
-Message-Id: <20100824224509.865906342@clark.site>
+	id S933728Ab0HXXDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:10 2010
+Message-Id: <20100824224510.526934019@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:44 -0700
+Date: Tue, 24 Aug 2010 15:45:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sven Eckelmann <sven.eckelmann@gmx.de>
-Subject: [099/114] Staging: batman-adv: Create batman_if only on register event
+        Jef Driesen <jefdriesen@telenet.be>
+Subject: [106/114] USB: pl2303: New vendor and product id
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
+From: Jef Driesen <jefdriesen@telenet.be>
 
-commit 1189f130f89b73eecb6117c0fc5e90abbcb7faa0 upstream.
+commit f36ecd5de93e4c85a9e3d25100c6e233155b12e5 upstream.
 
-We try to get all events for all net_devices to be able to add special
-sysfs folders for the batman-adv configuration. This also includes such
-events like NETDEV_POST_INIT which has no valid kobject according to
-v2.6.32-rc3-13-g7ffbe3f. This would create an oops in that situation.
+Add support for the Zeagle N2iTiON3 dive computer interface. Since
+Zeagle devices are actually manufactured by Seiko, this patch will
+support other Seiko based models as well.
 
-It is enough to create the batman_if only on NETDEV_REGISTER events
-because we will also receive those events for devices which already
-existed when we registered the notifier call.
-
-Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+Signed-off-by: Jef Driesen <jefdriesen@telenet.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/batman-adv/hard-interface.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/usb/serial/pl2303.c |    1 +
+ drivers/usb/serial/pl2303.h |    4 ++++
+ 2 files changed, 5 insertions(+)
 
---- a/drivers/staging/batman-adv/hard-interface.c
-+++ b/drivers/staging/batman-adv/hard-interface.c
-@@ -397,15 +397,13 @@ static int hard_if_event(struct notifier
- 	/* FIXME: each batman_if will be attached to a softif */
- 	struct bat_priv *bat_priv = netdev_priv(soft_device);
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -86,6 +86,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(SUPERIAL_VENDOR_ID, SUPERIAL_PRODUCT_ID) },
+ 	{ USB_DEVICE(HP_VENDOR_ID, HP_LD220_PRODUCT_ID) },
+ 	{ USB_DEVICE(CRESSI_VENDOR_ID, CRESSI_EDY_PRODUCT_ID) },
++	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
+ 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+ 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
+ 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -128,6 +128,10 @@
+ #define CRESSI_VENDOR_ID	0x04b8
+ #define CRESSI_EDY_PRODUCT_ID	0x0521
  
--	if (!batman_if)
--		batman_if = hardif_add_interface(net_dev);
-+	if (!batman_if && event == NETDEV_REGISTER)
-+			batman_if = hardif_add_interface(net_dev);
- 
- 	if (!batman_if)
- 		goto out;
- 
- 	switch (event) {
--	case NETDEV_REGISTER:
--		break;
- 	case NETDEV_UP:
- 		hardif_activate_interface(bat_priv, batman_if);
- 		break;
++/* Zeagle dive computer interface */
++#define ZEAGLE_VENDOR_ID	0x04b8
++#define ZEAGLE_N2ITION3_PRODUCT_ID	0x0522
++
+ /* Sony, USB data cable for CMD-Jxx mobile phones */
+ #define SONY_VENDOR_ID		0x054c
+ #define SONY_QN3USB_PRODUCT_ID	0x0437
 
 
