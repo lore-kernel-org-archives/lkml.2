@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab0HXQfj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 12:35:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755642Ab0HXQfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 12:35:37 -0400
-Date: Tue, 24 Aug 2010 18:31:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org
-Subject: Re: [RFC PATCH 1/3] timer: fix comments of try_to_del_timer_sync()
-Message-ID: <20100824163149.GA7415@redhat.com>
-References: <1282633129-9187-1-git-send-email-yong.zhang0@gmail.com> <1282633129-9187-2-git-send-email-yong.zhang0@gmail.com> <20100824121109.GA13061@redhat.com> <20100824124958.GA3070@zhy>
+	id S932096Ab0HXQjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 12:39:01 -0400
+Received: from owa.skola.saffle.se ([195.84.66.73]:6673 "EHLO
+	owa.skola.saffle.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab0HXQjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 12:39:00 -0400
+X-Greylist: delayed 929 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 12:38:59 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100824124958.GA3070@zhy>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+	charset="utf-8"
+Content-class: urn:content-classes:message
+Subject: =?utf-8?B?Tm90aWZpY2FjacOzbiBJbXBvcnRhbnRl?=
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Date: Tue, 24 Aug 2010 18:23:26 +0200
+Message-ID: <FD758DE5F34BD24FAF03F7249275032C0209DC3C@it-skolmail-w2k.saffle.edu>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: =?utf-8?B?Tm90aWZpY2FjacOzbiBJbXBvcnRhbnRl?=
+Thread-Index: ActDqKlB5lVaJkEzSAeCpkAckXs3nw==
+From: "malin ljung" <malin.ljung@skola.saffle.se>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7OGd53Q024439
 
-On 08/24, Yong Zhang wrote:
->
-> On Tue, Aug 24, 2010 at 02:11:09PM +0200, Oleg Nesterov wrote:
-> > On 08/24, Yong Zhang wrote:
-> > >
-> > > From: Yong Zhang <yong.zhang@windriver.com>
-> > >
-> > > In commit fd450b7318b75343fd76b3d95416853e34e72c95, it was saying
-> > > try_to_del_timer_sync() can be used in interrupt context.
-> >
-> > Yes, but not in UP case.
->
-> Yeah, but in UP case there is no try_to_del_timer_sync(), it's redefined
-> to del_timer().
+ 
+ 
+MASTERCARD Â® / MICROSOFT Â® PREMIO MAYOR SÃšPER INTERNACIONAL.
+Director Ejecutivo: Sr. Adam Smith.
 
-Ah, indeed, I forgot. This was another reason for the comment.
+Querido Ganador en Efectivo,
 
-> > Please remove "#ifdef CONFIG_SMP" from set_running_timer(), then iirc
-> > it can be used from irq.
->
-> I have noticed your comments in the commit log, but I think it's about
-> introducing the same semantic of try_to_del_timer_sync() on UP as well
-> as SMP. But this patch is focusing on the current code(SMP special).
-> Not about realizing try_to_del_timer_sync() on UP case. Do we need
-> to do that?
+Su direcciÃ³n de correo electrÃ³nico fue seleccionada y confirmada por nuestro copatrocinador Microsoft Internacional, por su Ãºltimo software de Internet. Usted tiene por lo tanto sido aprobado por MasterCard Â® Int'l/Microsoft Â® CorporaciÃ³n el Reino Unido la suma de Â£952,000.00GBP (Novecientas cincuenta y dos mil Grandes Libras Esterlinas). Estos fondos estÃ¡n en el efectivo, CreÃ­do a un cheque de caja vÃ¡lido, con a ganancia de Registro. No de MCIMJ: 36925/0751. Sea informado que su premio ha sido asegurado y listo para le gastan. Usted debe ponerse en contacto con su adjudicado oficial de reclamaciones abajo con su informaciÃ³n requerida:
 
-I dunno.
+Nombre Srs. Helen Thomason
+Correo electrÃ³nico: helen.thomason@live.com
+Departamento de VerificaciÃ³n de Reclamaciones.
 
-But look, currently try_to_del_timer_sync() is not allowed from interrupt
-even if it works with CONFIG_SMP.
+EnvÃ­e realmente al susodicho Administrador de Reclamaciones por correo electrÃ³nico, inmediatamente con este Reclama Exigencias; 1. El Nombre 2 Lleno. DirecciÃ³n: 3. Nacionalidad: 4. Edad: 5.OcupaciÃ³n: Naturaleza de Trabajo: 6. Telefonear: Fax: 7. Estado de Origen: PaÃ­s: 8.Sexo: 9. Ganancia de Correo electrÃ³nico DirecciÃ³n:
 
-If we "officially" allow it to use from irq, it should work on UP too but
-it doesn't. del_timer() can't hang, but it can never return -1 to indicate
-we hit the running timer.
+Modo de Premio Entrega de Remittance:Courier de su Cheque de Ganancia Certificadoy otros Documentos de Ganancia sin peligro a usted.
+ 
+Atentamente,
+Malin Ljung.
+DirÃ­jasse Cliente Se preocupan el Servicio.
+Copyright Â© 2010 MasterCard Inc el Reino Unido
 
-Consider:
-
-	// runs in interrup context
-
-	if (try_do_del_timer_sync(&TIMER) > 0)
-		kfree(something_which_can_be_used_by_TIMER_func);		
-
-This is unsafe on UP.
-
-
-del_timer_sync == del_timer is fine on UP. Since it must not be called
-from irq, it can never hit the running timer.
-
-Oleg.
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
