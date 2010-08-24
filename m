@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab0HXWyV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:54:21 -0400
-Received: from kroah.org ([198.145.64.141]:52231 "EHLO coco.kroah.org"
+	id S1756560Ab0HXXmb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:42:31 -0400
+Received: from kroah.org ([198.145.64.141]:52294 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932480Ab0HXWyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
-Message-Id: <20100824222525.440364792@clark.site>
+	id S932126Ab0HXWyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
+Message-Id: <20100824222526.155105270@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:47 -0700
+Date: Tue, 24 Aug 2010 15:24:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Urs Thuermann <urs.thuermann@volkswagen.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [35/59] can: add limit for nframes and clean up signed/unsigned variables
+        Jan Beulich <jbeulich@novell.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [43/59] fixes for using make 3.82
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,159 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jan Beulich <JBeulich@novell.com>
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+commit 3c955b407a084810f57260d61548cc92c14bc627 upstream.
 
-[ Upstream commit 5b75c4973ce779520b9d1e392483207d6f842cde ]
+It doesn't like pattern and explicit rules to be on the same line,
+and it seems to be more picky when matching file (or really directory)
+names with different numbers of trailing slashes.
 
-This patch adds a limit for nframes as the number of frames in TX_SETUP and
-RX_SETUP are derived from a single byte multiplex value by default.
-Use-cases that would require to send/filter more than 256 CAN frames should
-be implemented in userspace for complexity reasons anyway.
-
-Additionally the assignments of unsigned values from userspace to signed
-values in kernelspace and vice versa are fixed by using unsigned values in
-kernelspace consistently.
-
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Reported-by: Ben Hawkes <hawkes@google.com>
-Acked-by: Urs Thuermann <urs.thuermann@volkswagen.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+Andrew Benton <b3nton@gmail.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/can/bcm.c |   41 +++++++++++++++++++++++++++--------------
- 1 file changed, 27 insertions(+), 14 deletions(-)
 
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -59,6 +59,13 @@
- #include <net/sock.h>
- #include <net/net_namespace.h>
+---
+ firmware/Makefile  |    2 +-
+ scripts/mkmakefile |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -140,7 +140,7 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin
+ fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
  
-+/*
-+ * To send multiple CAN frame content within TX_SETUP or to filter
-+ * CAN messages with multiplex index within RX_SETUP, the number of
-+ * different filters is limited to 256 due to the one byte index value.
-+ */
-+#define MAX_NFRAMES 256
-+
- /* use of last_frames[index].can_dlc */
- #define RX_RECV    0x40 /* received data for this element */
- #define RX_THR     0x80 /* element not been sent due to throttle feature */
-@@ -88,16 +95,16 @@ struct bcm_op {
- 	struct list_head list;
- 	int ifindex;
- 	canid_t can_id;
--	int flags;
-+	u32 flags;
- 	unsigned long frames_abs, frames_filtered;
- 	struct timeval ival1, ival2;
- 	struct hrtimer timer, thrtimer;
- 	struct tasklet_struct tsklet, thrtsklet;
- 	ktime_t rx_stamp, kt_ival1, kt_ival2, kt_lastmsg;
- 	int rx_ifindex;
--	int count;
--	int nframes;
--	int currframe;
-+	u32 count;
-+	u32 nframes;
-+	u32 currframe;
- 	struct can_frame *frames;
- 	struct can_frame *last_frames;
- 	struct can_frame sframe;
-@@ -174,7 +181,7 @@ static int bcm_proc_show(struct seq_file
+ # Directories which we _might_ need to create, so we have a rule for them.
+-firmware-dirs := $(sort $(patsubst %,$(objtree)/$(obj)/%/,$(dir $(fw-external-y) $(fw-shipped-all))))
++firmware-dirs := $(sort $(addprefix $(objtree)/$(obj)/,$(dir $(fw-external-y) $(fw-shipped-all))))
  
- 		seq_printf(m, "rx_op: %03X %-5s ",
- 				op->can_id, bcm_proc_getifname(ifname, op->ifindex));
--		seq_printf(m, "[%d]%c ", op->nframes,
-+		seq_printf(m, "[%u]%c ", op->nframes,
- 				(op->flags & RX_CHECK_DLC)?'d':' ');
- 		if (op->kt_ival1.tv64)
- 			seq_printf(m, "timeo=%lld ",
-@@ -197,7 +204,7 @@ static int bcm_proc_show(struct seq_file
+ quiet_cmd_mkdir = MKDIR   $(patsubst $(objtree)/%,%,$@)
+       cmd_mkdir = mkdir -p $@
+--- a/scripts/mkmakefile
++++ b/scripts/mkmakefile
+@@ -44,7 +44,9 @@ all:
  
- 	list_for_each_entry(op, &bo->tx_ops, list) {
+ Makefile:;
  
--		seq_printf(m, "tx_op: %03X %s [%d] ",
-+		seq_printf(m, "tx_op: %03X %s [%u] ",
- 				op->can_id,
- 				bcm_proc_getifname(ifname, op->ifindex),
- 				op->nframes);
-@@ -282,7 +289,7 @@ static void bcm_send_to_user(struct bcm_
- 	struct can_frame *firstframe;
- 	struct sockaddr_can *addr;
- 	struct sock *sk = op->sk;
--	int datalen = head->nframes * CFSIZ;
-+	unsigned int datalen = head->nframes * CFSIZ;
- 	int err;
+-\$(all) %/: all
++\$(all): all
+ 	@:
  
- 	skb = alloc_skb(sizeof(*head) + datalen, gfp_any());
-@@ -467,7 +474,7 @@ rx_changed_settime:
-  * bcm_rx_cmp_to_index - (bit)compares the currently received data to formerly
-  *                       received data stored in op->last_frames[]
-  */
--static void bcm_rx_cmp_to_index(struct bcm_op *op, int index,
-+static void bcm_rx_cmp_to_index(struct bcm_op *op, unsigned int index,
- 				const struct can_frame *rxdata)
- {
- 	/*
-@@ -553,7 +560,8 @@ static enum hrtimer_restart bcm_rx_timeo
- /*
-  * bcm_rx_do_flush - helper for bcm_rx_thr_flush
-  */
--static inline int bcm_rx_do_flush(struct bcm_op *op, int update, int index)
-+static inline int bcm_rx_do_flush(struct bcm_op *op, int update,
-+				  unsigned int index)
- {
- 	if ((op->last_frames) && (op->last_frames[index].can_dlc & RX_THR)) {
- 		if (update)
-@@ -574,7 +582,7 @@ static int bcm_rx_thr_flush(struct bcm_o
- 	int updated = 0;
- 
- 	if (op->nframes > 1) {
--		int i;
-+		unsigned int i;
- 
- 		/* for MUX filter we start at index 1 */
- 		for (i = 1; i < op->nframes; i++)
-@@ -623,7 +631,7 @@ static void bcm_rx_handler(struct sk_buf
- {
- 	struct bcm_op *op = (struct bcm_op *)data;
- 	const struct can_frame *rxframe = (struct can_frame *)skb->data;
--	int i;
-+	unsigned int i;
- 
- 	/* disable timeout */
- 	hrtimer_cancel(&op->timer);
-@@ -823,14 +831,15 @@ static int bcm_tx_setup(struct bcm_msg_h
- {
- 	struct bcm_sock *bo = bcm_sk(sk);
- 	struct bcm_op *op;
--	int i, err;
-+	unsigned int i;
-+	int err;
- 
- 	/* we need a real device to send frames */
- 	if (!ifindex)
- 		return -ENODEV;
- 
--	/* we need at least one can_frame */
--	if (msg_head->nframes < 1)
-+	/* check nframes boundaries - we need at least one can_frame */
-+	if (msg_head->nframes < 1 || msg_head->nframes > MAX_NFRAMES)
- 		return -EINVAL;
- 
- 	/* check the given can_id */
-@@ -994,6 +1003,10 @@ static int bcm_rx_setup(struct bcm_msg_h
- 		msg_head->nframes = 0;
- 	}
- 
-+	/* the first element contains the mux-mask => MAX_NFRAMES + 1  */
-+	if (msg_head->nframes > MAX_NFRAMES + 1)
-+		return -EINVAL;
-+
- 	if ((msg_head->flags & RX_RTR_FRAME) &&
- 	    ((msg_head->nframes != 1) ||
- 	     (!(msg_head->can_id & CAN_RTR_FLAG))))
++%/: all
++	@:
+ EOF
 
 
