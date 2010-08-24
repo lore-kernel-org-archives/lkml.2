@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab0HXJzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:55:38 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:43400 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab0HXJzg (ORCPT
+	id S1754730Ab0HXJ74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:59:56 -0400
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:51080
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752116Ab0HXJ7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:55:36 -0400
-Date: Tue, 24 Aug 2010 10:55:35 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: Re: [REGRESSION, BISECTED, i915]: Periodic stalls with 2.6.36-rc2
-Message-ID: <20100824095535.GA14020@sucs.org>
-References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com> <20100824075741.GA11000@sucs.org> <8u3s8d$jcg467@orsmga001.jf.intel.com> <20100824084902.GA27569@sucs.org> <89kc63$hrqoho@fmsmga002.fm.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <89kc63$hrqoho@fmsmga002.fm.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 24 Aug 2010 05:59:55 -0400
+X-Greylist: delayed 2290 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 05:59:54 EDT
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Ivan Bulatovic <combuster@gmx.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, jbarnes@virtuousgeek.org,
+        eric@anholt.net, penberg@kernel.org
+Subject: [PATCH] drm/i915/tv: Flush register writes before sleeping.
+Date: Tue, 24 Aug 2010 10:21:17 +0100
+Message-Id: <1282641677-27378-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282641126.2259.15.camel@localhost.localdomain>
+References: <1282641126.2259.15.camel@localhost.localdomain>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 10:00:47AM +0100, Chris Wilson wrote:
-> 
-> I was hoping that git would be more intelligent than that. Is there a
-> way to simply bisect down one side of a merge?
+Ivan, can you try this patch?
 
-Seemingly not...
+Linus is going to make some more snide comments if he sees just how many
+of these trivial-ish patches that I have pending...
 
-> The slow boot is probably fixed by 4936a3b90d79dd8775c6ac23c2cf2dcebe29abde.
-> A trivial patch you can apply on each step is:
+---
 
-Thanks that patch got it booting at normal speeds. Bisecting has now
-narrowed the flickering/corruption with a newer X userspace down to
-this:
+If we need to wait until the next vblank for the register to be updated
+and to take effect, make sure the write is actually flushed to the register
+prior to sleeping.
 
-commit 9d0498a2bf7455159b317f19531a3e5db2ecc9c4
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Wed Aug 18 13:20:54 2010 -0700
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/i915/intel_tv.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-    drm/i915: wait for actual vblank, not just 20ms
-    
-    Waiting for a hard coded 20ms isn't always enough to make sure a vblank
-    period has actually occurred, so add code to make sure we really have
-    passed through a vblank period (or that the pipe is off when disabling).
-    
-    This prevents problems with mode setting and link training, and seems to
-    fix a bug like https://bugs.freedesktop.org/show_bug.cgi?id=29278, but
-    on an HP 8440p instead.  Hopefully also fixes
-    https://bugs.freedesktop.org/show_bug.cgi?id=29141.
-    
-    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-    Signed-off-by: Eric Anholt <eric@anholt.net>
-
-Reverting the above against HEAD seems to have fixed the misdetection of
-displays and hangcheck warnings don't appear (although plenty of FIFO
-warnings still). I notice that this commit also seemed to be the cause
-of problems for Ivan and Pekka in http://lkml.org/lkml/2010/8/23/452 ...
-
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index d2029ef..19b9739 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1157,10 +1157,13 @@ intel_tv_mode_set(struct drm_encoder *encoder, struct drm_display_mode *mode,
+ 		I915_WRITE(dspbase_reg, I915_READ(dspbase_reg));
+ 
+ 		/* Wait for vblank for the disable to take effect */
+-		if (!IS_I9XX(dev))
++		if (!IS_I9XX(dev)) {
++			POSTING_READ(dspbase_reg);
+ 			intel_wait_for_vblank(dev, intel_crtc->pipe);
++		}
+ 
+ 		I915_WRITE(pipeconf_reg, pipeconf & ~PIPEACONF_ENABLE);
++		POSTING_READ(pipeconf_reg);
+ 		/* Wait for vblank for the disable to take effect. */
+ 		intel_wait_for_vblank(dev, intel_crtc->pipe);
+ 
+@@ -1268,11 +1271,15 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
+ 		   DAC_C_0_7_V);
+ 	I915_WRITE(TV_CTL, tv_ctl);
+ 	I915_WRITE(TV_DAC, tv_dac);
++	POSTING_READ(TV_DAC);
+ 	intel_wait_for_vblank(dev, intel_crtc->pipe);
++
+ 	tv_dac = I915_READ(TV_DAC);
+ 	I915_WRITE(TV_DAC, save_tv_dac);
+ 	I915_WRITE(TV_CTL, save_tv_ctl);
++	POSTING_READ(TV_CTL);
+ 	intel_wait_for_vblank(dev, intel_crtc->pipe);
++
+ 	/*
+ 	 *  A B C
+ 	 *  0 1 1 Composite
 -- 
-Sitsofe | http://sucs.org/~sits/
+1.7.1
+
