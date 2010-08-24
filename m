@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab0HXQCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 12:02:36 -0400
+	id S932166Ab0HXQC4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 12:02:56 -0400
 Received: from h-66-167-125-103.snvacaid.static.covad.net ([66.167.125.103]:59598
 	"EHLO localhost.localdomain" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932082Ab0HXQC0 (ORCPT
+	by vger.kernel.org with ESMTP id S932084Ab0HXQC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 12:02:26 -0400
+	Tue, 24 Aug 2010 12:02:28 -0400
 X-Greylist: delayed 777 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 12:02:24 EDT
-Message-Id: <20100824154855.752613648@gmail.com>
+Message-Id: <20100824154858.588047317@gmail.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 24 Aug 2010 08:47:22 -0700
+Date: Tue, 24 Aug 2010 08:47:26 -0700
 From: don.mullis@gmail.com
 To: Artem.Bityutskiy@nokia.com, aelder@sgi.com, airlied@linux.ie
 Cc: stable@kernel.org, linux-kernel@vger.kernel.org,
         Don Mullis <don.mullis@gmail.com>
-Subject: [PATCH 01/10] lib/list_sort: selftest: enabled with CONFIG_TEST_LIST_SORT
+Subject: [PATCH 05/10] lib/list_sort: selftest: improve printk wording
 References: <20100824154721.995117660@gmail.com>
-Content-Disposition: inline; filename=lib_list_sort_-selftest-enabled-with-CONFIG_TEST_LIST_SORT.patch
+Content-Disposition: inline; filename=lib_list_sort_-selftest_-improve-printk-wording-2.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Enable the self-test, without editing of the code.
+Start boot printk's with "list_sort_test:" prefix to make it obvious
+for users where the messages come from; other wording improvements.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Don Mullis <don.mullis@gmail.com>
 ---
- lib/Kconfig.debug |    9 +++++++++
- lib/list_sort.c   |    4 ++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ lib/list_sort.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-Index: linux-next/lib/Kconfig.debug
-===================================================================
---- linux-next.orig/lib/Kconfig.debug	2010-08-23 22:51:13.888053055 -0700
-+++ linux-next/lib/Kconfig.debug	2010-08-23 22:51:19.674177607 -0700
-@@ -714,6 +714,15 @@ config DEBUG_LIST
- 
- 	  If unsure, say N.
- 
-+config TEST_LIST_SORT
-+	bool "Linked list sorting test"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Enable this to turn on 'list_sort()' function test. This test is
-+	  executed only once during system boot, so affects only boot time.
-+
-+	  If unsure, say N.
-+
- config DEBUG_SG
- 	bool "Debug SG table operations"
- 	depends on DEBUG_KERNEL
 Index: linux-next/lib/list_sort.c
 ===================================================================
---- linux-next.orig/lib/list_sort.c	2010-08-23 22:51:13.888053055 -0700
-+++ linux-next/lib/list_sort.c	2010-08-23 23:01:56.494053043 -0700
-@@ -141,7 +141,7 @@ void list_sort(void *priv, struct list_h
- }
- EXPORT_SYMBOL(list_sort);
+--- linux-next.orig/lib/list_sort.c	2010-08-23 22:51:19.703177580 -0700
++++ linux-next/lib/list_sort.c	2010-08-23 23:01:55.854177312 -0700
+@@ -167,14 +167,14 @@ static int __init list_sort_test(void)
+ 	struct list_head head;
+ 	struct list_head *cur, *tmp;
  
--#ifdef DEBUG_LIST_SORT
-+#ifdef CONFIG_TEST_LIST_SORT
- struct debug_el {
- 	struct list_head l_h;
- 	int value;
-@@ -214,4 +214,4 @@ static int __init list_sort_test(void)
- 	return 0;
- }
- module_init(list_sort_test);
--#endif
-+#endif /* CONFIG_TEST_LIST_SORT */
+-	printk(KERN_DEBUG "testing list_sort()\n");
++	printk(KERN_DEBUG "list_sort_test: starting\n");
+ 
+ 	cur = &head;
+ 	for (i = 0; i < LIST_SORT_TEST_LENGTH; i++) {
+ 		struct debug_el *el = kmalloc(sizeof(*el), GFP_KERNEL);
+ 		if (!el) {
+-			printk(KERN_ERR "cannot	allocate memory -- "
+-					"testing aborted\n");
++			printk(KERN_ERR "list_sort_test: cannot	allocate memory"
++					" -- testing aborted\n");
+ 			goto exit;
+ 		}
+ 		 /* force some equivalencies */
+@@ -195,26 +195,24 @@ static int __init list_sort_test(void)
+ 		struct debug_el *el_next;
+ 		int cmp_result = cmp(NULL, cur, cur->next);
+ 		if (cur->next->prev != cur) {
+-			printk(KERN_ERR "list_sort() returned "
+-					"a corrupted list!\n");
++			printk(KERN_ERR "list_sort_test: list corrupted\n");
+ 			goto exit;
+ 		}
+ 		if (cmp_result > 0) {
+-			printk(KERN_ERR "list_sort() failed to sort!\n");
++			printk(KERN_ERR "list_sort_test: failed to sort\n");
+ 			goto exit;
+ 		}
+ 		el = container_of(cur, struct debug_el, list);
+ 		el_next = container_of(cur->next, struct debug_el, list);
+ 		if (cmp_result == 0 && el->serial >= el_next->serial) {
+-			printk(KERN_ERR "list_sort() failed to preserve order "
+-					"of equivalent elements!\n");
++			printk(KERN_ERR "list_sort_test: failed to preserve"
++					" order of equivalent elements\n");
+ 			goto exit;
+ 		}
+ 		count++;
+ 	}
+ 	if (count != LIST_SORT_TEST_LENGTH) {
+-		printk(KERN_ERR "list_sort() returned list of "
+-				"different length!\n");
++		printk(KERN_ERR "list_sort_test: list length changed\n");
+ 		goto exit;
+ 	}
+ 	err = 0;
 
