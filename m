@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab0HXTIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 15:08:40 -0400
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:47831 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241Ab0HXTIh (ORCPT
+	id S1752891Ab0HXTNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 15:13:49 -0400
+Received: from www84.your-server.de ([213.133.104.84]:60339 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab0HXTNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 15:08:37 -0400
-Message-ID: <4C7418B3.5060103@hardwarefreak.com>
-Date: Tue, 24 Aug 2010 14:08:35 -0500
-From: Stan Hoeppner <stan@hardwarefreak.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, Mikael Abrahamsson <swmike@swm.pp.se>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, Linux Netdev List <netdev@vger.kernel.org>
-Subject: Re: 2.6.34.1 page allocation failure
-References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home> <4C724141.8060000@kernel.org> <4C72F7C6.3020109@hardwarefreak.com> <4C74097A.5020504@kernel.org>
-In-Reply-To: <4C74097A.5020504@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 24 Aug 2010 15:13:47 -0400
+Subject: Re: [RFC -v2] kfifo writer side lock-less support
+From: Stefani Seibold <stefani@seibold.net>
+To: huang.ying.caritas@gmail.com
+Cc: Huang Ying <ying.huang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1282654207.11483.32.camel@caritas-mobile.ml.org>
+References: <1282614146.2708.13.camel@yhuang-dev>
+	 <1282636558.7357.28.camel@wall-e.seibold.net>
+	 <1282639425.2708.40.camel@yhuang-dev>
+	 <1282640663.7896.17.camel@wall-e.seibold.net>
+	 <1282654207.11483.32.camel@caritas-mobile.ml.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 24 Aug 2010 21:13:50 +0200
+Message-ID: <1282677230.10219.22.camel@wall-e.seibold.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pekka Enberg put forth on 8/24/2010 1:03 PM:
 
-> It looks to me as if tcp_create_openreq_child() is able to cope with the
-> situation so the warning could be harmless. If that's the case, we
-> should probably stick a __GFP_NOWARN there.
+> > > The patch adds only 1 field (unsigned int) to struct __kfifo. I think
+> > > that should be acceptable. Because sizeof(struct __kfifo) should be much
+> > > smaller that __kfifo->mask + 1 in most cases.
+> > 
+> > I don't know what you mean with "because sizeof(struct __kfifo) should
+> > be much smaller that __kfifo->mask + 1 in most cases". I am convinced
+> > that you did not really understand the kfifo code. sizeof(struct
+> > __kfifo) is constant and __kfifo->mask + 1 is the fifo size in elements,
+> > which is not constant. Before you answering study the code first!
+> > 
+> > And is not acceptable to bload the struct __kfifo, because it will never
+> > need by the most users.
+> 
+> I mean, for most user, __kfifo->mask + 1 > sizeof(struct __kfifo), so
+> another 4 bytes for each user is relatively small.
+> 
 
-If it would be helpful, here's a complete copy of dmesg:
-http://www.hardwarefreak.com/2.6.34.1-dmesg-oopses.txt
+You have no idea. As i wrote you should study the code before answering!
 
-Something I forgot to mention earlier is that every now and then I
-unmount swap and drop caches to clear things out a bit.  Not sure if
-that may be relevant, but since it has to do with memory allocation I
-thought I'd mention it.
+sizeof(struct __kfifo) is always 20 bytes on a 32 bit cpu, and
+kfifo->mask +1 depends on the size of the number of fifo elements and it
+is an initialization parameter. 
 
--- 
-Stan
+
+If you will be able to shrink the footprint of the struct __kfifo,
+whithout wasting the code, you are welcome to do. 
+
+Currently you generate only a lot of hot air. The assertion in your
+"number of elements or bytes for kfifo_in etc" thread was also wrong.
+You should first study code and understand it.
+
+Until you have can prove your assertion by measurements and working
+patches, please stop bothering.
+
+- Stefani
+
+
