@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab0HXWyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:54:23 -0400
-Received: from kroah.org ([198.145.64.141]:52242 "EHLO coco.kroah.org"
+	id S932743Ab0HXW5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:57:44 -0400
+Received: from kroah.org ([198.145.64.141]:52322 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932497Ab0HXWyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
-Message-Id: <20100824222525.616721342@clark.site>
+	id S932497Ab0HXWyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:25 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
+Message-Id: <20100824222526.504596500@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:49 -0700
+Date: Tue, 24 Aug 2010 15:24:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Changli Gao <xiaosuo@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [37/59] act_nat: the checksum of ICMP doesnt have pseudo header
+        Dave Airlie <airlied@redhat.com>
+Subject: [47/59] drm: stop information leak of old kernel stack.
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dave Airlie <airlied@redhat.com>
 
-From: Changli Gao <xiaosuo@gmail.com>
+commit b9f0aee83335db1f3915f4e42a5e21b351740afd upstream.
 
-[ Upstream commit 3a3dfb062c2e086c202d34f09ce29634515ad256 ]
+non-critical issue, CVE-2010-2803
 
-after updating the value of the ICMP payload, inet_proto_csum_replace4() should
-be called with zero pseudohdr.
+Userspace controls the amount of memory to be allocate, so it can
+get the ioctl to allocate more memory than the kernel uses, and get
+access to kernel stack. This can only be done for processes authenticated
+to the X server for DRI access, and if the user has DRI access.
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix is to just memset the data to 0 if the user doesn't copy into
+it in the first place.
+
+Reported-by: Kees Cook <kees@ubuntu.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/sched/act_nat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sched/act_nat.c
-+++ b/net/sched/act_nat.c
-@@ -240,7 +240,7 @@ static int tcf_nat(struct sk_buff *skb,
- 			iph->saddr = new_addr;
+---
+ drivers/gpu/drm/drm_drv.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -470,7 +470,9 @@ int drm_ioctl(struct inode *inode, struc
+ 				retcode = -EFAULT;
+ 				goto err_i1;
+ 			}
+-		}
++		} else
++			memset(kdata, 0, _IOC_SIZE(cmd));
++
+ 		retcode = func(dev, kdata, file_priv);
  
- 		inet_proto_csum_replace4(&icmph->checksum, skb, addr, new_addr,
--					 1);
-+					 0);
- 		break;
- 	}
- 	default:
+ 		if (cmd & IOC_OUT) {
 
 
