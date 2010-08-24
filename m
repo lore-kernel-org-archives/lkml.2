@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab0HXJg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:36:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44271 "EHLO mx2.suse.de"
+	id S1754591Ab0HXJhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:37:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5857 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab0HXJg5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:36:57 -0400
-From: Andreas Gruenbacher <agruen@suse.de>
-Organization: SUSE Labs, Novell Inc.
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Subject: Re: [PATCH 1/4] fanotify: flush outstanding perm requests on group destroy
-Date: Tue, 24 Aug 2010 11:36:29 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Eric Paris <eparis@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1282523830-27751-1-git-send-email-eparis@redhat.com> <201008240313.11593.agruen@suse.de> <201008240949.46243.tvrtko.ursulin@sophos.com>
-In-Reply-To: <201008240949.46243.tvrtko.ursulin@sophos.com>
+	id S1754449Ab0HXJhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 05:37:09 -0400
+Message-ID: <4C73928A.4040601@redhat.com>
+Date: Tue, 24 Aug 2010 12:36:10 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201008241136.30064.agruen@suse.de>
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v5 12/12] Send async PF when guest is not in userspace
+ too.
+References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-13-git-send-email-gleb@redhat.com>
+In-Reply-To: <1279553462-7036-13-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 August 2010 10:49:45 Tvrtko Ursulin wrote:
-> I think just switching to interruptible sleep in
-> fanotify_get_response_from_access should be fine. And it should probably
-> deny the current event when signal is received.
+  On 07/19/2010 06:31 PM, Gleb Natapov wrote:
+> If guest indicates that it can handle async pf in kernel mode too send
+> it, but only if interrupt are enabled.
+>
+> Reviewed-by: Rik van Riel<riel@redhat.com>
+> Signed-off-by: Gleb Natapov<gleb@redhat.com>
+> ---
+>   arch/x86/kvm/mmu.c |    8 +++++++-
+>   1 files changed, 7 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 12d1a7b..ed87b1c 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2361,7 +2361,13 @@ static bool can_do_async_pf(struct kvm_vcpu *vcpu)
+>   	if (!vcpu->arch.apf_data || kvm_event_needs_reinjection(vcpu))
+>   		return false;
+>
+> -	return !!kvm_x86_ops->get_cpl(vcpu);
+> +	if (vcpu->arch.apf_send_user_only)
+> +		return !!kvm_x86_ops->get_cpl(vcpu);
 
-Well the result would be -EINTR from the system call that blocked on the
-perm event, the same as with an interruptible nfs mount.  The process would 
-never get -EPERM.  Processes may
-not be prepared to handle -EINTR in all cases, and so it may make more sense
-to use the same behavior as NFS and only allow SIGKILL to kill a process 
-blocked on a perm event (which the blocked process will never see).
+cpl is not a bool.  Compare it with 0.
 
->From the nfs man page:
-> intr / nointr
-> 
-> Selects whether to allow signals to interrupt file operations on this mount
-> point.  If neither option is specified (or if nointr is specified),
-> signals do not interrupt NFS file operations.  If intr is  specified, 
-> system  calls return EINTR if an in-progress NFS operation is interrupted
-> by a signal.
-> 
-> Using  the  intr option is preferred to using the soft option because it is
-> significantly less likely to result in data corruption.  The intr / nointr
-> mount option is deprecated  after  kernel  2.6.25.   Only SIGKILL  can 
-> interrupt  a  pending  NFS operation on these kernels, and if specified,
-> this mount option is ignored to provide backwards  compatibility with
-> older kernels.
+> +
+> +	if (!kvm_x86_ops->interrupt_allowed(vcpu))
+> +		return false;
+> +
+> +	return true;
+>   }
 
-Andreas
+Should have commented before, but get_cpl() is not accurate when doing 
+nested virtualization.  When L1 intercepts page faults, being in L2 is 
+equivalent to CPL 3.  But we need to get the apf information to L1 somehow.
+
+-- 
+error compiling committee.c: too many arguments to function
+
