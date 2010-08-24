@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab0HXSzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 14:55:11 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58053 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab0HXSzI (ORCPT
+	id S1754453Ab0HXSzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 14:55:16 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61679 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab0HXSzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 14:55:08 -0400
+	Tue, 24 Aug 2010 14:55:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QSo9amzm416R7Q9j4V9rb8uRHeojSkFQxOhIvMJAfbqYuB1UM1HzZktDr7MkHDUxp6
-         OV4llO6GtedFBN/YxKE9bra5XhtyKQjyLzPk+qHlBvRu4kdcc/mS0hXUVi5Zjk2kZsQQ
-         +IgjjNMXu4h6HpJDDC4Au5phYa0pE4sYBI940=
-Date: Tue, 24 Aug 2010 22:54:58 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100824185458.GG5723@lenovo>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu> <20100824171504.GI26154@erda.amd.com> <20100824172806.GF5723@lenovo> <20100824184658.GB4879@redhat.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Gvh63nTeh1ARLq2yNkyvBBeZXu6zvWBx2zsVx1zLoKJshVIKLnCVdQaXTkEjacj1qo
+         g+7E+UhnNcurIjlQLQQCDwrXNL6+YwR15w+ROyypNOvj9xor3MPkOoH3s5wLoLQXQVYc
+         ikdBgU2xmU2cE5R1fv3RS9/7HwPGj3I4xbXUY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100824184658.GB4879@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <496565EC904933469F292DDA3F1663E602F0FA397F@dlee06.ent.ti.com>
+References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
+	<1277943660-4112-2-git-send-email-x0095840@ti.com>
+	<1277943660-4112-3-git-send-email-x0095840@ti.com>
+	<1277943660-4112-4-git-send-email-x0095840@ti.com>
+	<1277943660-4112-5-git-send-email-x0095840@ti.com>
+	<1277943660-4112-6-git-send-email-x0095840@ti.com>
+	<1277943660-4112-7-git-send-email-x0095840@ti.com>
+	<1277943660-4112-8-git-send-email-x0095840@ti.com>
+	<1277943660-4112-9-git-send-email-x0095840@ti.com>
+	<8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
+	<496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
+	<8F7AF80515AF0D4D93307E594F3CB40E4CAD39F6@dlee03.ent.ti.com>
+	<496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
+	<AANLkTimENxUjUWJQSZ1dmdkX_9hQ0pjat-kyR9oNjVxf@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA3883@dlee06.ent.ti.com>
+	<AANLkTi=NuPu6bvv6KF7sXRp02bvfz7oRkG1SG1PstA-H@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA397F@dlee06.ent.ti.com>
+Date: Tue, 24 Aug 2010 21:55:08 +0300
+Message-ID: <AANLkTinaJ=xn_CAJznVtMcA0nwK_-gbo05OQKM7PuoYA@mail.gmail.com>
+Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 02:46:58PM -0400, Don Zickus wrote:
-> On Tue, Aug 24, 2010 at 09:28:06PM +0400, Cyrill Gorcunov wrote:
-> > On Tue, Aug 24, 2010 at 07:15:05PM +0200, Robert Richter wrote:
-> > > On 23.08.10 04:53:39, Ingo Molnar wrote:
-> > > > Ok, to not hold up the perf/urgent flow i zapped these two commits for 
-> > > > the time being:
-> > > > 
-> > > >  4a31beb: perf, x86: Fix handle_irq return values
-> > > >  8e3e42b: perf, x86: Try to handle unknown nmis with an enabled PMU
-> > > 
-> > > Ingo, are those commits in some branch to fetch them for testing? I
-> > > did not find them in tip/master.
-> > > 
-> > > Thanks,
-> > > 
-> > > -Robert
-> > > 
-> > > -- 
-> > > Advanced Micro Devices, Inc.
-> > > Operating System Research Center
-> > >
-> > 
-> > Robert, they should be in -tip tree, I have
-> > 
-> > | commit 4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
-> > | Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > | Date:   Thu Aug 19 16:28:00 2010 +0200
-> > |
-> > |    perf, x86: Fix handle_irq return values
-> 
-> Has anyone else seen kernel panics when enabling the LOCKUP_DETECTOR or
-> apply Robert's patch?  I keep getting a panic with unable to handle paging
-> request everytime either Robert's patch or the lockup detector uses
-> __get_cpu_var().  And only on 2.6.36 code.
-> 
-> Cheers,
-> Don
-> 
+On Tue, Aug 24, 2010 at 9:44 PM, Guzman Lugo, Fernando
+<fernando.lugo@ti.com> wrote:
+>> However, I still have the question about the dependency on
+>> iommu; AFAICS the DMM removal doesn't depend on the migration
+>> to iommu, which AFAIK has been stalled for some time.
+>
+> Yeah, DMM removal does not depend on iommu migration. However,
+> After the changes for iommu migration the DMM module is not
+> Needed anymore, so it is better to remove it too.
 
-I use 2.6.34 atm. Letme try 2.6.36 (which might require some time to recompile).
+Yes, but there are two options:
 
-	-- Cyrill
+a) 1. Migrate to iommu, 2. Remove DMM
+
+or:
+
+b) 1. Remove DMM, 2. Migrate to iommu
+
+I've heard there are some problems regarding DMM, and since you say
+you have already done the changes, and since iommu migration is not
+yet ready AFAIK, it might make sense to go for option b).
+
+Anyway, thanks for the clarification :)
+
+-- 
+Felipe Contreras
