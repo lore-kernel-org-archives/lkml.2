@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab0HXPFC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:05:02 -0400
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:44202 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab0HXPFA (ORCPT
+	id S1754990Ab0HXPMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:12:20 -0400
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:57197
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751507Ab0HXPMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:05:00 -0400
-Date: Tue, 24 Aug 2010 17:06:55 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2] ARM: uaccess: Implement strict user copy checks
-Message-ID: <20100824150655.GB2160@osiris.boeblingen.de.ibm.com>
-References: <4C61EE55.5030506@codeaurora.org>
- <201008181428.45029.arnd@arndb.de>
- <4C6C3910.80800@codeaurora.org>
- <201008191309.15425.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008191309.15425.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 24 Aug 2010 11:12:18 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: linux-gfx@lists.freedesktop.org, Ivan Bulatovic <combuster@gmx.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] drm/i915/tv: After disabling the pipe, use wait_for_vblank_off()
+Date: Tue, 24 Aug 2010 16:11:52 +0100
+Message-Id: <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282647815.2221.15.camel@localhost.localdomain>
+References: <1282647815.2221.15.camel@localhost.localdomain>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 01:09:15PM +0200, Arnd Bergmann wrote:
-> On Wednesday 18 August 2010, Stephen Boyd wrote:
-> > So the only sticking point now is that x86, parisc, and arm use warnings 
-> > and errors but s390 only uses warnings. I guess I'll reword it to be:
-> > 
-> >         Enabling this option turns a certain set of sanity checks for
-> >         user copy operations into compile time warnings/errors.
-> > 
-> >         The copy_from_user() etc checks are there to help test if there
-> >         are sufficient security checks on the length argument of the
-> >         copy operation, by having gcc prove that the argument is
-> >         within bounds.
-> > 
-> >         If unsure, or if you run an older (pre 4.4) gcc where this
-> >         option is a no-op, say N.
-> > 
-> > or I'll add a patch to make s390 trigger an error when this is enabled?
-> 
-> (Taking Martin and Heiko on Cc for s390)
-> 
-> I'd strongly suggest making the behavior the same for everyone. It should
-> be fairly easy to make sure none of these warnings ever triggers
-> on s390, because most of the Linux device driver code does not get build
-> there anyway.
+Hopefully this is a contributing factor to the spurious TV detection
+repoted by Ivan Bulatovic and others.
 
-Please don't do that. An s390 allyesconfig still triggers 45 warnings and
-I'm currently not willing to "patch" working code just to get rid of these
-warnings which are most likely all false positives.
-That's the reason why we currently don't error out and only generate
-warnings.
+References:
+
+  Bug 16871 - "TV1 connected" with no tv
+  https://bugzilla.kernel.org/show_bug.cgi?id=16871
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-by: Ivan Bulatovic <combuster@gmx.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/gpu/drm/i915/intel_tv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index f70bc76..f96289d 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1171,7 +1171,7 @@ intel_tv_mode_set(struct drm_encoder *encoder, struct drm_display_mode *mode,
+ 		I915_WRITE(pipeconf_reg, pipeconf & ~PIPEACONF_ENABLE);
+ 		POSTING_READ(pipeconf_reg);
+ 		/* Wait for vblank for the disable to take effect. */
+-		intel_wait_for_vblank(dev, intel_crtc->pipe);
++		intel_wait_for_vblank_off(dev, intel_crtc->pipe);
+ 
+ 		/* Filter ctl must be set before TV_WIN_SIZE */
+ 		I915_WRITE(TV_FILTER_CTL_1, TV_AUTO_SCALE);
+-- 
+1.7.1
+
