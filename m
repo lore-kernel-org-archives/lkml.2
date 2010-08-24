@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab0HXEUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 00:20:08 -0400
-Received: from mail.perches.com ([173.55.12.10]:1313 "EHLO mail.perches.com"
+	id S1753636Ab0HXEUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 00:20:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:1314 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab0HXEUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751683Ab0HXEUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Aug 2010 00:20:05 -0400
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Subject: [PATCH net-next - trivial] drivers/net: Remove address use from assignments of function pointers
-Date: Mon, 23 Aug 2010 21:20:02 -0700
-Message-Id: <1282623603-31052-1-git-send-email-joe@perches.com>
+Date: Mon, 23 Aug 2010 21:20:03 -0700
+Message-Id: <1282623603-31052-2-git-send-email-joe@perches.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282623603-31052-1-git-send-email-joe@perches.com>
+References: <1282623603-31052-1-git-send-email-joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
