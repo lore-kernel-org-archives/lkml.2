@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab0HXWyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:54:33 -0400
-Received: from kroah.org ([198.145.64.141]:52314 "EHLO coco.kroah.org"
+	id S932627Ab0HXWyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:54:38 -0400
+Received: from kroah.org ([198.145.64.141]:52329 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932557Ab0HXWyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:23 -0400
+	id S932387Ab0HXWy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:27 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
-Message-Id: <20100824222526.421306912@clark.site>
+Message-Id: <20100824222526.676650737@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:58 -0700
+Date: Tue, 24 Aug 2010 15:25:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [46/59] drm/radeon/kms: fix typo in radeon_compute_pll_gain
+        Matt Evans <matt@ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [49/59] powerpc: Initialise paca->kstack before early_setup_secondary
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Matt Evans <matt@ozlabs.org>
 
-commit 0537398b211b4f040564beec458e23571042d335 upstream.
+commit f761622e59433130bc33ad086ce219feee9eb961 upstream.
 
-Looks like this got copied from the ddx wrong.
+As early setup calls down to slb_initialize(), we must have kstack
+initialised before checking "should we add a bolted SLB entry for our kstack?"
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Failing to do so means stack access requires an SLB miss exception to refill
+an entry dynamically, if the stack isn't accessible via SLB(0) (kernel text
+& static data).  It's not always allowable to take such a miss, and
+intermittent crashes will result.
+
+Primary CPUs don't have this issue; an SLB entry is not bolted for their
+stack anyway (as that lives within SLB(0)).  This patch therefore only
+affects the init of secondaries.
+
+Signed-off-by: Matt Evans <matt@ozlabs.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/head_64.S |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-@@ -261,7 +261,7 @@ static uint8_t radeon_compute_pll_gain(u
- 	if (!ref_div)
- 		return 1;
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -563,9 +563,6 @@ __secondary_start:
+ 	/* Set thread priority to MEDIUM */
+ 	HMT_MEDIUM
  
--	vcoFreq = ((unsigned)ref_freq & fb_div) / ref_div;
-+	vcoFreq = ((unsigned)ref_freq * fb_div) / ref_div;
+-	/* Do early setup for that CPU (stab, slb, hash table pointer) */
+-	bl	.early_setup_secondary
+-
+ 	/* Initialize the kernel stack.  Just a repeat for iSeries.	 */
+ 	LOAD_REG_ADDR(r3, current_set)
+ 	sldi	r28,r24,3		/* get current_set[cpu#]	 */
+@@ -573,6 +570,9 @@ __secondary_start:
+ 	addi	r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
+ 	std	r1,PACAKSAVE(r13)
  
- 	/*
- 	 * This is horribly crude: the VCO frequency range is divided into
++	/* Do early setup for that CPU (stab, slb, hash table pointer) */
++	bl	.early_setup_secondary
++
+ 	/* Clear backchain so we get nice backtraces */
+ 	li	r7,0
+ 	mtlr	r7
 
 
