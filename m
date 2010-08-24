@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab0HXMwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 08:52:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53030 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab0HXMwf (ORCPT
+	id S1754980Ab0HXMxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 08:53:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36499 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab0HXMxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 08:52:35 -0400
-Message-ID: <4C73C094.1000101@infradead.org>
-Date: Tue, 24 Aug 2010 09:52:36 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100803 Red Hat/3.1.2-1.el6 Lightning/1.0b2 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Richard Zidlicky <rz@linux-m68k.org>
-CC: Jiri Slaby <jirislaby@gmail.com>, Kulikov Vasiliy <segooon@gmail.com>,
-        kernel-janitors@vger.kernel.org,
-        Douglas Schilling Landgraf <dougsland@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Roel Kluin <roel.kluin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dvb: siano: free spinlock before schedule()
-References: <1280256161-7971-1-git-send-email-segooon@gmail.com> <4C4F5CA7.1030706@gmail.com> <20100808161022.GB5594@linux-m68k.org>
-In-Reply-To: <20100808161022.GB5594@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 24 Aug 2010 08:53:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=xFFkApiMroV+U+zAQLcggBa1A+9W+lAF8Kc881YFQo5qgPYKBJ+V1w8oInGtNTlJrV
+         mLOoR5IIQcD1liXWew7hbG1B3PHL2h3WVQoDUYf62wF5DxiGoNoky4e2fQn3FLhF3BsC
+         QfP/3mTeooe9Hh+9qokLzbo95fVuCKeOK7cjM=
+Subject: Re: [PATCH 2/2] drivers/mtd/ubi: Eliminate update of
+ list_for_each_entry loop cursor
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Julia Lawall <julia@diku.dk>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1008071109140.5821@ask.diku.dk>
+References: <Pine.LNX.4.64.1008071109140.5821@ask.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 15:52:12 +0300
+Message-ID: <1282654332.24044.170.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 08-08-2010 13:10, Richard Zidlicky escreveu:
-> On Wed, Jul 28, 2010 at 12:24:39AM +0200, Jiri Slaby wrote:
+On Sat, 2010-08-07 at 11:09 +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> sorry for seeing this so late, was flooded with email lately.
+> list_for_each_entry uses its first argument to move from one element to the
+> next, so modifying it can break the iteration.  The variable re1 is already
+> used within the loop as a temporary variable, and is not live here.
 > 
->> There is a better fix (which fixes the potential NULL dereference):
->> http://lkml.org/lkml/2010/6/7/175
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
 > 
->> Richard, could you address the comments there and resend?
+> // <smpl>
+> @r@
+> iterator name list_for_each_entry;
+> expression x,E;
+> position p1,p2;
+> @@
 > 
-> I am running this patch since many weeks (after fixing the compile error obviously). 
-> Did not implement your beautification suggestion yet, was doing all kinds of experiments
-> with IR and had plenty of unrelated issues.
+> list_for_each_entry@p1(x,...) { <... x =@p2 E ...> }
+> 
+> @@
+> expression x,E;
+> position r.p1,r.p2;
+> statement S;
+> @@
+> 
+> *x =@p2 E
+> ...
+> list_for_each_entry@p1(x,...) S
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-This patch seems a way better than the previous patch. I've rebased it against
-the current tree (and fixed the identation).
+Pushed to ubi-2.6.git tree. This won't be seen in linux-next for some
+time though, but I'll make it visible in linux-next at some point soon.
 
-The only missing issue on it is the lack of your Signed-off-by. Richard, could you
-please send it to us?
+Thanks!
 
----
- drivers/media/dvb/siano/smscoreapi.c |   31 +++++++++++++------------------
- 1 file changed, 13 insertions(+), 18 deletions(-)
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
---- patchwork.orig/drivers/media/dvb/siano/smscoreapi.c
-+++ patchwork/drivers/media/dvb/siano/smscoreapi.c
-@@ -1098,31 +1098,26 @@ EXPORT_SYMBOL_GPL(smscore_onresponse);
-  *
-  * @return pointer to descriptor on success, NULL on error.
-  */
--struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-+
-+struct smscore_buffer_t *get_entry(struct smscore_device_t *coredev)
- {
- 	struct smscore_buffer_t *cb = NULL;
- 	unsigned long flags;
- 
--	DEFINE_WAIT(wait);
--
- 	spin_lock_irqsave(&coredev->bufferslock, flags);
-+	if (!list_empty(&coredev->buffers)) {
-+		cb = (struct smscore_buffer_t *) coredev->buffers.next;
-+		list_del(&cb->entry);
-+	}
-+	spin_unlock_irqrestore(&coredev->bufferslock, flags);
-+	return cb;
-+}
- 
--	/* This function must return a valid buffer, since the buffer list is
--	 * finite, we check that there is an available buffer, if not, we wait
--	 * until such buffer become available.
--	 */
--
--	prepare_to_wait(&coredev->buffer_mng_waitq, &wait, TASK_INTERRUPTIBLE);
--
--	if (list_empty(&coredev->buffers))
--		schedule();
--
--	finish_wait(&coredev->buffer_mng_waitq, &wait);
--
--	cb = (struct smscore_buffer_t *) coredev->buffers.next;
--	list_del(&cb->entry);
-+struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-+{
-+	struct smscore_buffer_t *cb = NULL;
- 
--	spin_unlock_irqrestore(&coredev->bufferslock, flags);
-+	wait_event(coredev->buffer_mng_waitq, (cb = get_entry(coredev)));
- 
- 	return cb;
- }
