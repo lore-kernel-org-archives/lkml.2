@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab0HXPkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:40:19 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:47820 "EHLO mgw2.diku.dk"
+	id S1755558Ab0HXPkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:40:21 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:47650 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755453Ab0HXPjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:39:54 -0400
+	id S1755422Ab0HXPjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 11:39:43 -0400
 From: Nicolas Palix <npalix@diku.dk>
 To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
         Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>
 Cc: cocci@diku.dk, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org, Nicolas Palix <npalix@diku.dk>
-Subject: [PATCH 09/18] Coccinelle: Add iterators/list_entry_update.cocci
-Date: Tue, 24 Aug 2010 17:39:03 +0200
-Message-Id: <1282664352-15882-10-git-send-email-npalix@diku.dk>
+Subject: [PATCH 02/18] Coccinelle: Add null/kmerr.cocci
+Date: Tue, 24 Aug 2010 17:38:56 +0200
+Message-Id: <1282664352-15882-3-git-send-email-npalix@diku.dk>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282664352-15882-1-git-send-email-npalix@diku.dk>
 References: <1282664352-15882-1-git-send-email-npalix@diku.dk>
@@ -21,28 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-list_for_each_entry uses its first argument to get from one element of
-the list to the next, so it is usually not a good idea to reassign it.
-The first rule finds such a reassignment and the second rule checks
-that there is a path from the reassignment back to the top of the loop.
+This semantic patch looks for kmalloc etc that are not followed by a
+NULL check.  It only gives a report in the case where there is some
+error handling code later in the function, which may be helpful
+in determining what the error handling code for the call to kmalloc etc
+should be.
 
 Signed-off-by: Nicolas Palix <npalix@diku.dk>
 Signed-off-by: Julia Lawall <julia@diku.dk>
 ---
- .../coccinelle/iterators/list_entry_update.cocci   |   62 ++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
- create mode 100644 scripts/coccinelle/iterators/list_entry_update.cocci
+ scripts/coccinelle/null/kmerr.cocci |   72 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 72 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/coccinelle/null/kmerr.cocci
 
-diff --git a/scripts/coccinelle/iterators/list_entry_update.cocci b/scripts/coccinelle/iterators/list_entry_update.cocci
+diff --git a/scripts/coccinelle/null/kmerr.cocci b/scripts/coccinelle/null/kmerr.cocci
 new file mode 100644
-index 0000000..b296747
+index 0000000..949bf65
 --- /dev/null
-+++ b/scripts/coccinelle/iterators/list_entry_update.cocci
-@@ -0,0 +1,62 @@
-+/// list_for_each_entry uses its first argument to get from one element of
-+/// the list to the next, so it is usually not a good idea to reassign it.
-+/// The first rule finds such a reassignment and the second rule checks
-+/// that there is a path from the reassignment back to the top of the loop.
++++ b/scripts/coccinelle/null/kmerr.cocci
+@@ -0,0 +1,72 @@
++/// This semantic patch looks for kmalloc etc that are not followed by a
++/// NULL check.  It only gives a report in the case where there is some
++/// error handling code later in the function, which may be helpful
++/// in determining what the error handling code for the call to kmalloc etc
++/// should be.
 +///
 +// Confidence: High
 +// Copyright: (C) 2010 Nicolas Palix, DIKU.  GPLv2.
@@ -56,50 +58,59 @@ index 0000000..b296747
 +virtual org
 +virtual report
 +
-+@r@
-+iterator name list_for_each_entry;
-+expression x,E;
-+position p1,p2;
++@withtest@
++expression x;
++position p;
++identifier f,fld;
 +@@
 +
-+list_for_each_entry@p1(x,...) { <... x =@p2 E ...> }
++x@p = f(...);
++... when != x->fld
++\(x == NULL \| x != NULL\)
 +
-+@depends on context && !org && !report@
-+expression x,E;
-+position r.p1,r.p2;
++@fixed depends on context && !org && !report@
++expression x,x1;
++position p1 != withtest.p;
 +statement S;
++position any withtest.p;
++identifier f;
 +@@
 +
-+*x =@p2 E
++*x@p1 = \(kmalloc\|kzalloc\|kcalloc\)(...);
 +...
-+list_for_each_entry@p1(x,...) S
++*x1@p = f(...);
++if (!x1) S
 +
 +// ------------------------------------------------------------------------
 +
-+@back depends on (org || report) && !context exists@
-+expression x,E;
-+position r.p1,r.p2;
++@rfixed depends on (org || report) && !context exists@
++expression x,x1;
++position p1 != withtest.p;
++position p2;
 +statement S;
++position any withtest.p;
++identifier f;
 +@@
 +
-+x =@p2 E
++x@p1 = \(kmalloc\|kzalloc\|kcalloc\)(...);
 +...
-+list_for_each_entry@p1(x,...) S
++x1@p = f@p2(...);
++if (!x1) S
 +
-+@script:python depends on back && org@
-+p1 << r.p1;
-+p2 << r.p2;
++@script:python depends on org@
++p1 << rfixed.p1;
++p2 << rfixed.p2;
 +@@
 +
-+cocci.print_main("iterator",p1)
-+cocci.print_secs("update",p2)
++cocci.print_main("alloc call",p1)
++cocci.print_secs("possible model",p2)
 +
-+@script:python depends on back && report@
-+p1 << r.p1;
-+p2 << r.p2;
++@script:python depends on report@
++p1 << rfixed.p1;
++p2 << rfixed.p2;
 +@@
 +
-+msg = "iterator with update on line %s" % (p2[0].line)
++msg = "alloc with no test, possible model on line %s" % (p2[0].line)
 +coccilib.report.print_report(p1[0],msg)
 -- 
 1.7.0.4
