@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934207Ab0HXXdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:33:50 -0400
-Received: from kroah.org ([198.145.64.141]:40444 "EHLO coco.kroah.org"
+	id S932911Ab0HXW6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:58:48 -0400
+Received: from kroah.org ([198.145.64.141]:40387 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932844Ab0HXW66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:58 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:16 2010
-Message-Id: <20100824224215.928734573@clark.site>
+	id S932887Ab0HXW6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:42 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:14 2010
+Message-Id: <20100824224214.903736706@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:07 -0700
+Date: Tue, 24 Aug 2010 15:41:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [45/91] mm: make stack guard page logic use vm_prev pointer
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Axel Lin <axel.lin@gmail.com>, Lei Wen <leiwen@marvell.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [33/91] pxa3xx: fix ns2cycle equation
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,49 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit 0e8e50e20c837eeec8323bba7dcd25fe5479194c upstream.
+commit 93b352fce679945845664b56b0c3afbd655a7a12 upstream.
 
-Like the mlock() change previously, this makes the stack guard check
-code use vma->vm_prev to see what the mapping below the current stack
-is, rather than have to look it up with find_vma().
+Test on a PXA310 platform with Samsung K9F2G08X0B NAND flash,
+with tCH=5 and clk is 156MHz, ns2cycle(5, 156000000) returns -1.
 
-Also, accept an abutting stack segment, since that happens naturally if
-you split the stack with mlock or mprotect.
+ns2cycle returns negtive value will break NDTR0_tXX macros.
 
-Tested-by: Ian Campbell <ijc@hellion.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+After checking the commit log, I found the problem is introduced by
+commit 5b0d4d7c8a67c5ba3d35e6ceb0c5530cc6846db7
+"[MTD] [NAND] pxa3xx: convert from ns to clock ticks more accurately"
+
+To get num of clock cycles, we use below equation:
+num of clock cycles = time (ns) / one clock cycle (ns) + 1
+We need to add 1 cycle here because integer division will truncate the result.
+It is possible the developers set the Min values in SPEC for timing settings.
+Thus the truncate may cause problem, and it is safe to add an extra cycle here.
+
+The various fields in NDTR{01} are in units of clock ticks minus one,
+thus we should subtract 1 cycle then.
+
+Thus the correct equation should be:
+num of clock cycles = time (ns) / one clock cycle (ns) + 1 - 1
+                    = time (ns) / one clock cycle (ns)
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/mtd/nand/pxa3xx_nand.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2761,11 +2761,18 @@ static inline int check_stack_guard_page
- {
- 	address &= PAGE_MASK;
- 	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
--		address -= PAGE_SIZE;
--		if (find_vma(vma->vm_mm, address) != vma)
--			return -ENOMEM;
-+		struct vm_area_struct *prev = vma->vm_prev;
+--- a/drivers/mtd/nand/pxa3xx_nand.c
++++ b/drivers/mtd/nand/pxa3xx_nand.c
+@@ -363,7 +363,7 @@ static struct pxa3xx_nand_flash *builtin
+ #define tAR_NDTR1(r)	(((r) >> 0) & 0xf)
  
--		expand_stack(vma, address);
-+		/*
-+		 * Is there a mapping abutting this one below?
-+		 *
-+		 * That's only ok if it's the same stack mapping
-+		 * that has gotten split..
-+		 */
-+		if (prev && prev->vm_end == address)
-+			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
-+
-+		expand_stack(vma, address - PAGE_SIZE);
- 	}
- 	return 0;
- }
+ /* convert nano-seconds to nand flash controller clock cycles */
+-#define ns2cycle(ns, clk)	(int)(((ns) * (clk / 1000000) / 1000) - 1)
++#define ns2cycle(ns, clk)	(int)((ns) * (clk / 1000000) / 1000)
+ 
+ /* convert nand flash controller clock cycles to nano-seconds */
+ #define cycle2ns(c, clk)	((((c) + 1) * 1000000 + clk / 500) / (clk / 1000))
 
 
