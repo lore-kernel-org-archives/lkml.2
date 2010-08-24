@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab0HXQL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 12:11:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59180 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755291Ab0HXQL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 12:11:26 -0400
-Message-ID: <4C73EF2A.1030201@suse.com>
-Date: Tue, 24 Aug 2010 12:11:22 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1755202Ab0HXQNa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 12:13:30 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:37245
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755184Ab0HXQN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 12:13:26 -0400
+X-SpamScore: -45
+X-BigFish: VPS-45(zzbb2dK1432N1a09M9370J98dN179dN9371P103dK853kzz1202hzz15d4Rz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7NZNM-02-UKJ-02
+X-M-MSG: 
+From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Organization: AMD OSRC
+To: Tejun Heo <htejun@gmail.com>
+Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
+Date: Tue, 24 Aug 2010 18:11:22 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-22-generic; KDE/4.4.2; x86_64; ; )
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C72639C.6090108@gmail.com> <201008241807.23519.stephan.diestelhorst@amd.com>
+In-Reply-To: <201008241807.23519.stephan.diestelhorst@amd.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Sjur Braendeland <sjur.brandeland@stericsson.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] caif: Use asm/unaligned.h
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-ID: <201008241811.22991.stephan.diestelhorst@amd.com>
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-caif does not build on ia64 starting with 2.6.32-rc1. Using asm/unaligned.h
-instead of linux/unaligned/le_byteshift.h fixes the issue.
+On Tuesday 24 August 2010 18:07:23 Stephan Diestelhorst wrote:
+> On Monday 23 August 2010 14:03:40 Tejun Heo wrote:
+> > On 08/19/2010 06:23 PM, Stephan Diestelhorst wrote:
+> > > It says "max_performance", I have not touched anyhting. So it has been
+> > > like that all the time. Would this explain why your patch did not show
+> > > the debug printout?
+> > 
+> > Hmm... okay.  Yeah, if you haven't been using IPM at all, there won't
+> > be any debug messages but at the same time the posted patch should
+> > have had the same effect as Rafael's patch as IPM path isn't traveled
+> > at all.  Can you please check the followings?
+> > 
+> > * You're actually running the correct patched kernel and modules.  It
+> >   probably is a good idea to add a printk message.  ie. Apply the
+> >   patch and add a printk() in ata_host_request_pm() in libata-core.c
+> >   and make sure the debug messages appears.
+> 
+> Did that. Actually also added some printks to the XXX function, called
 
-include/linux/unaligned/le_byteshift.h:40:50: error: redefinition of 'get_unaligned_le16'
-include/linux/unaligned/le_byteshift.h:45:50: error: redefinition of 'get_unaligned_le32'
-include/linux/unaligned/le_byteshift.h:50:50: error: redefinition of 'get_unaligned_le64'
-include/linux/unaligned/le_byteshift.h:55:51: error: redefinition of 'put_unaligned_le16'
-include/linux/unaligned/le_byteshift.h:60:51: error: redefinition of 'put_unaligned_le32'
-include/linux/unaligned/le_byteshift.h:65:51: error: redefinition of 'put_unaligned_le64'
-include/linux/unaligned/le_struct.h:31:51: note: previous definition of 'put_unaligned_le64' was here
+I meant ahci_dev_config() in libahci.c . Darn quick trigger finger ;-)
 
----
- net/caif/cfrfml.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> early during boot. Output confirms that your patch is loaded. And even
+> on the first resume the machine dies.
+> 
+> > * Rafael's patch actually fixes the problem.  If you haven't been
+> >   using IPM at all, Rafael's patch and mine should behave exactly the
+> >   same (ie. no IPM operation at all during suspend/resume).  It could
+> >   be that you're seeing a different issue.
+> 
+> That next on my list...
+> 
+> Many thanks!
+> 
+> Stephan
+> 
+> 
 
---- a/net/caif/cfrfml.c
-+++ b/net/caif/cfrfml.c
-@@ -7,7 +7,7 @@
- #include <linux/stddef.h>
- #include <linux/spinlock.h>
- #include <linux/slab.h>
--#include <linux/unaligned/le_byteshift.h>
-+#include <asm/unaligned.h>
- #include <net/caif/caif_layer.h>
- #include <net/caif/cfsrvl.h>
- #include <net/caif/cfpkt.h>
+
 -- 
-Jeff Mahoney
-SUSE Labs
+Stephan Diestelhorst, AMD Operating System Research Center
+stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
