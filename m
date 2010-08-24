@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670Ab0HXXDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:03:33 -0400
-Received: from kroah.org ([198.145.64.141]:60980 "EHLO coco.kroah.org"
+	id S1756601Ab0HXXIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:08:31 -0400
+Received: from kroah.org ([198.145.64.141]:32825 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933614Ab0HXXDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:08 2010
-Message-Id: <20100824224508.714340472@clark.site>
+	id S933673Ab0HXXDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:09 2010
+Message-Id: <20100824224509.687144640@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:31 -0700
+Date: Tue, 24 Aug 2010 15:45:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [086/114] e1000e: dont check for alternate MAC addr on parts that dont support it
+        Dave Airlie <airlied@redhat.com>
+Subject: [097/114] drm: stop information leak of old kernel stack.
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,118 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 1aef70ef125165e0114a8e475636eff242a52030 upstream.
+commit b9f0aee83335db1f3915f4e42a5e21b351740afd upstream.
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+non-critical issue, CVE-2010-2803
 
-The alternate MAC address feature is only supported by 80003ES2LAN and
-82571 LOMs as well as a couple 82571 mezzanine cards.  Checking for an
-alternate MAC address on other parts can fail leading to the driver not
-able to load.  This patch limits the check for an alternate MAC address
-to be done only for parts that support the feature.
+Userspace controls the amount of memory to be allocate, so it can
+get the ioctl to allocate more memory than the kernel uses, and get
+access to kernel stack. This can only be done for processes authenticated
+to the X server for DRI access, and if the user has DRI access.
 
-This issue has been around since support for the feature was introduced
-to the e1000e driver in 2.6.34.
+Fix is to just memset the data to 0 if the user doesn't copy into
+it in the first place.
 
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Reported-by: Fabio Varesano <fax8@users.sourceforge.net>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Kees Cook <kees@ubuntu.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000e/82571.c   |   30 +++++++++++++++++-------------
- drivers/net/e1000e/defines.h |    4 ++++
- drivers/net/e1000e/lib.c     |   10 ++++++++++
- 3 files changed, 31 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/drm_drv.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/e1000e/82571.c
-+++ b/drivers/net/e1000e/82571.c
-@@ -936,12 +936,14 @@ static s32 e1000_reset_hw_82571(struct e
- 	ew32(IMC, 0xffffffff);
- 	icr = er32(ICR);
- 
--	/* Install any alternate MAC address into RAR0 */
--	ret_val = e1000_check_alt_mac_addr_generic(hw);
--	if (ret_val)
--		return ret_val;
-+	if (hw->mac.type == e1000_82571) {
-+		/* Install any alternate MAC address into RAR0 */
-+		ret_val = e1000_check_alt_mac_addr_generic(hw);
-+		if (ret_val)
-+			return ret_val;
- 
--	e1000e_set_laa_state_82571(hw, true);
-+		e1000e_set_laa_state_82571(hw, true);
-+	}
- 
- 	/* Reinitialize the 82571 serdes link state machine */
- 	if (hw->phy.media_type == e1000_media_type_internal_serdes)
-@@ -1618,14 +1620,16 @@ static s32 e1000_read_mac_addr_82571(str
- {
- 	s32 ret_val = 0;
- 
--	/*
--	 * If there's an alternate MAC address place it in RAR0
--	 * so that it will override the Si installed default perm
--	 * address.
--	 */
--	ret_val = e1000_check_alt_mac_addr_generic(hw);
--	if (ret_val)
--		goto out;
-+	if (hw->mac.type == e1000_82571) {
-+		/*
-+		 * If there's an alternate MAC address place it in RAR0
-+		 * so that it will override the Si installed default perm
-+		 * address.
-+		 */
-+		ret_val = e1000_check_alt_mac_addr_generic(hw);
-+		if (ret_val)
-+			goto out;
-+	}
- 
- 	ret_val = e1000_read_mac_addr_generic(hw);
- 
---- a/drivers/net/e1000e/defines.h
-+++ b/drivers/net/e1000e/defines.h
-@@ -620,6 +620,7 @@
- #define E1000_FLASH_UPDATES  2000
- 
- /* NVM Word Offsets */
-+#define NVM_COMPAT                 0x0003
- #define NVM_ID_LED_SETTINGS        0x0004
- #define NVM_INIT_CONTROL2_REG      0x000F
- #define NVM_INIT_CONTROL3_PORT_B   0x0014
-@@ -642,6 +643,9 @@
- /* Mask bits for fields in Word 0x1a of the NVM */
- #define NVM_WORD1A_ASPM_MASK  0x000C
- 
-+/* Mask bits for fields in Word 0x03 of the EEPROM */
-+#define NVM_COMPAT_LOM    0x0800
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -502,7 +502,9 @@ long drm_ioctl(struct file *filp,
+ 				retcode = -EFAULT;
+ 				goto err_i1;
+ 			}
+-		}
++		} else
++			memset(kdata, 0, _IOC_SIZE(cmd));
 +
- /* For checksumming, the sum of all words in the NVM should equal 0xBABA. */
- #define NVM_SUM                    0xBABA
- 
---- a/drivers/net/e1000e/lib.c
-+++ b/drivers/net/e1000e/lib.c
-@@ -183,6 +183,16 @@ s32 e1000_check_alt_mac_addr_generic(str
- 	u16 offset, nvm_alt_mac_addr_offset, nvm_data;
- 	u8 alt_mac_addr[ETH_ALEN];
- 
-+	ret_val = e1000_read_nvm(hw, NVM_COMPAT, 1, &nvm_data);
-+	if (ret_val)
-+		goto out;
-+
-+	/* Check for LOM (vs. NIC) or one of two valid mezzanine cards */
-+	if (!((nvm_data & NVM_COMPAT_LOM) ||
-+	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_DUAL) ||
-+	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_QUAD)))
-+		goto out;
-+
- 	ret_val = e1000_read_nvm(hw, NVM_ALT_MAC_ADDR_PTR, 1,
- 	                         &nvm_alt_mac_addr_offset);
- 	if (ret_val) {
+ 		if (ioctl->flags & DRM_UNLOCKED)
+ 			retcode = func(dev, kdata, file_priv);
+ 		else {
 
 
