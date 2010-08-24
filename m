@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab0HXCmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 22:42:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:38699 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab0HXCmn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 22:42:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=olLc2YQ1TBkSx9ab++TZvHlTAxh9trNL8rM1YQZP6iqm8KLGBAh/qenKQutp/1lfhh
-         28qzI5gvHmekwMlx/a7w==
+	id S1753248Ab0HXCq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 22:46:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751659Ab0HXCqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 22:46:54 -0400
+Date: Mon, 23 Aug 2010 22:50:24 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] btrfs: update stats when allocating from a cluster
+Message-ID: <20100824025023.GA2638@dhcp231-156.rdu.redhat.com>
+References: <4C71CD4B.10606@cn.fujitsu.com> <4C71CD91.4050703@cn.fujitsu.com> <20100823130932.GD2404@localhost.localdomain> <4C731771.1060904@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20100824021136.GA9254@localhost>
-References: <20100821054808.GA29869@localhost> <AANLkTikS+DUfPz0E2SmCZTQBWL8h2zSsGM8--yqEaVgZ@mail.gmail.com>
- <20100824100943.F3B6.A69D9226@jp.fujitsu.com> <AANLkTi=OwGUzM0oZ5qTEFnGTuo8kVfW79oqH-Dcf8jdp@mail.gmail.com>
- <20100824021136.GA9254@localhost>
-From: Michael Rubin <mrubin@google.com>
-Date: Mon, 23 Aug 2010 19:42:20 -0700
-Message-ID: <AANLkTikcsqnwwNjXPPTJ3xb981Z0hopWRLEYjrE3uvQ7@mail.gmail.com>
-Subject: Re: [PATCH 4/4] writeback: Reporting dirty thresholds in /proc/vmstat
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C731771.1060904@cn.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 7:11 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> Sorry for giving a wrong example. Hope this one is better:
->
-> $ cat /debug/bdi/default/stats
-> [...]
-> DirtyThresh:       1838904 kB
-> BackgroundThresh:   919452 kB
-> [...]
->
-> It's a trick to avoid messing with real devices :)
+On Tue, Aug 24, 2010 at 08:50:57AM +0800, Li Zefan wrote:
+> >>  	spin_unlock(&cluster->lock);
+> >>  
+> >> +	if (!ret)
+> >> +		return 0;
+> >> +
+> >> +	spin_lock(&block_group->tree_lock);
+> >> +
+> >> +	block_group->free_space -= bytes;
+> >> +	if (entry->bytes == 0) {
+> >> +		block_group->free_extents--;
+> >> +		kfree(entry);
+> >> +	}
+> >> +
+> >> +	spin_unlock(&block_group->tree_lock);
+> >> +
+> > 
+> > Move this part up so we don't drop the spinlock and then re-grab it.  Thanks,
+> > 
+> 
+> But they are 2 different locks. ;)
+> 
+> And we can't grab block_group->tree_lock when holding cluster->lock.
 
-That's cool. And it's the exact code path :-)
+Ugh Jesus sorry, ignore me.
 
-mrubin
+Reviewed-by: Josef Bacik <josef@redhat.com>
+
+Thanks,
+
+Josef
