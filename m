@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab0HXPMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:12:20 -0400
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:57197
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751507Ab0HXPMS (ORCPT
+	id S1755262Ab0HXPMk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:12:40 -0400
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:50864 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab0HXPMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:12:18 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: linux-gfx@lists.freedesktop.org, Ivan Bulatovic <combuster@gmx.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] drm/i915/tv: After disabling the pipe, use wait_for_vblank_off()
-Date: Tue, 24 Aug 2010 16:11:52 +0100
-Message-Id: <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282647815.2221.15.camel@localhost.localdomain>
-References: <1282647815.2221.15.camel@localhost.localdomain>
-X-Originating-IP: 78.156.66.37
+	Tue, 24 Aug 2010 11:12:38 -0400
+Date: Tue, 24 Aug 2010 17:14:27 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH] caif-driver: add HAS_DMA dependency
+Message-ID: <20100824151427.GC2160@osiris.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hopefully this is a contributing factor to the spurious TV detection
-repoted by Ivan Bulatovic and others.
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-References:
+Fix this error on an s390 allyesconfig build:
 
-  Bug 16871 - "TV1 connected" with no tv
-  https://bugzilla.kernel.org/show_bug.cgi?id=16871
+linux-2.6/drivers/net/caif/caif_spi.c:98:
+    undefined reference to `dma_free_coherent'
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reported-by: Ivan Bulatovic <combuster@gmx.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- drivers/gpu/drm/i915/intel_tv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/caif/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index f70bc76..f96289d 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1171,7 +1171,7 @@ intel_tv_mode_set(struct drm_encoder *encoder, struct drm_display_mode *mode,
- 		I915_WRITE(pipeconf_reg, pipeconf & ~PIPEACONF_ENABLE);
- 		POSTING_READ(pipeconf_reg);
- 		/* Wait for vblank for the disable to take effect. */
--		intel_wait_for_vblank(dev, intel_crtc->pipe);
-+		intel_wait_for_vblank_off(dev, intel_crtc->pipe);
+--- a/drivers/net/caif/Kconfig
++++ b/drivers/net/caif/Kconfig
+@@ -15,7 +15,7 @@ config CAIF_TTY
  
- 		/* Filter ctl must be set before TV_WIN_SIZE */
- 		I915_WRITE(TV_FILTER_CTL_1, TV_AUTO_SCALE);
--- 
-1.7.1
-
+ config CAIF_SPI_SLAVE
+ 	tristate "CAIF SPI transport driver for slave interface"
+-	depends on CAIF
++	depends on CAIF && HAS_DMA
+ 	default n
+ 	---help---
+ 	The CAIF Link layer SPI Protocol driver for Slave SPI interface.
