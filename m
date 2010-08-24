@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594Ab0HXXor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:44:47 -0400
-Received: from kroah.org ([198.145.64.141]:52202 "EHLO coco.kroah.org"
+	id S932424Ab0HXWyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:54:00 -0400
+Received: from kroah.org ([198.145.64.141]:52140 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932434Ab0HXWyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:01 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
-Message-Id: <20100824222524.995105188@clark.site>
+	id S932356Ab0HXWxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:24 2010
+Message-Id: <20100824222524.409406850@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:42 -0700
+Date: Tue, 24 Aug 2010 15:24:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [30/59] sunxvr500: Ignore secondary output PCI devices.
+        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [23/59] dm ioctl: release _hash_lock between devices in remove_all
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,67 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
 
-[ Upstream commit bdd32ce95f79fb5cc964cd789d7ae4500bba7c6f ]
+commit 98f332855effef02aeb738e4d62e9a5b903c52fd upstream.
 
-These just represent the secondary and further heads attached to the
-card, and they have different sets of PCI bar registers to map.
+This patch changes dm_hash_remove_all() to release _hash_lock when
+removing a device.  After removing the device, dm_hash_remove_all()
+takes _hash_lock and searches the hash from scratch again.
 
-So don't try to drive them in the main driver.
+This patch is a preparation for the next patch, which changes device
+deletion code to wait for md reference to be 0.  Without this patch,
+the wait in the next patch may cause AB-BA deadlock:
+  CPU0                                CPU1
+  -----------------------------------------------------------------------
+  dm_hash_remove_all()
+    down_write(_hash_lock)
+                                      table_status()
+                                        md = find_device()
+                                               dm_get(md)
+                                                 <increment md->holders>
+                                        dm_get_live_or_inactive_table()
+                                          dm_get_inactive_table()
+                                            down_write(_hash_lock)
+    <in the md deletion code>
+      <wait for md->holders to be 0>
 
-Reported-by: Frans van Berckel <fberckel@xs4all.nl>
-Tested-by: Frans van Berckel <fberckel@xs4all.nl>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/video/sunxvr500.c |   24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
 
---- a/drivers/video/sunxvr500.c
-+++ b/drivers/video/sunxvr500.c
-@@ -242,11 +242,27 @@ static int __devinit e3d_set_fbinfo(stru
- static int __devinit e3d_pci_register(struct pci_dev *pdev,
- 				      const struct pci_device_id *ent)
+---
+ drivers/md/dm-ioctl.c |   44 +++++++++++++++++++++++++-------------------
+ 1 file changed, 25 insertions(+), 19 deletions(-)
+
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -249,40 +249,46 @@ static void __hash_remove(struct hash_ce
+ 
+ static void dm_hash_remove_all(int keep_open_devices)
  {
-+	struct device_node *of_node;
-+	const char *device_type;
- 	struct fb_info *info;
- 	struct e3d_info *ep;
- 	unsigned int line_length;
- 	int err;
+-	int i, dev_skipped, dev_removed;
++	int i, dev_skipped;
+ 	struct hash_cell *hc;
+-	struct list_head *tmp, *n;
++	struct mapped_device *md;
++
++retry:
++	dev_skipped = 0;
  
-+	of_node = pci_device_to_OF_node(pdev);
-+	if (!of_node) {
-+		printk(KERN_ERR "e3d: Cannot find OF node of %s\n",
-+		       pci_name(pdev));
-+		return -ENODEV;
-+	}
+ 	down_write(&_hash_lock);
+ 
+-retry:
+-	dev_skipped = dev_removed = 0;
+ 	for (i = 0; i < NUM_BUCKETS; i++) {
+-		list_for_each_safe (tmp, n, _name_buckets + i) {
+-			hc = list_entry(tmp, struct hash_cell, name_list);
++		list_for_each_entry(hc, _name_buckets + i, name_list) {
++			md = hc->md;
++			dm_get(md);
+ 
+-			if (keep_open_devices &&
+-			    dm_lock_for_deletion(hc->md)) {
++			if (keep_open_devices && dm_lock_for_deletion(md)) {
++				dm_put(md);
+ 				dev_skipped++;
+ 				continue;
+ 			}
 +
-+	device_type = of_get_property(of_node, "device_type", NULL);
-+	if (!device_type) {
-+		printk(KERN_INFO "e3d: Ignoring secondary output device "
-+		       "at %s\n", pci_name(pdev));
-+		return -ENODEV;
-+	}
-+
- 	err = pci_enable_device(pdev);
- 	if (err < 0) {
- 		printk(KERN_ERR "e3d: Cannot enable PCI device %s\n",
-@@ -265,13 +281,7 @@ static int __devinit e3d_pci_register(st
- 	ep->info = info;
- 	ep->pdev = pdev;
- 	spin_lock_init(&ep->lock);
--	ep->of_node = pci_device_to_OF_node(pdev);
--	if (!ep->of_node) {
--		printk(KERN_ERR "e3d: Cannot find OF node of %s\n",
--		       pci_name(pdev));
--		err = -ENODEV;
--		goto err_release_fb;
+ 			__hash_remove(hc);
+-			dev_removed = 1;
+-		}
 -	}
-+	ep->of_node = of_node;
  
- 	/* Read the PCI base register of the frame buffer, which we
- 	 * need in order to interpret the RAMDAC_VID_*FB* values in
+-	/*
+-	 * Some mapped devices may be using other mapped devices, so if any
+-	 * still exist, repeat until we make no further progress.
+-	 */
+-	if (dev_skipped) {
+-		if (dev_removed)
+-			goto retry;
++			up_write(&_hash_lock);
+ 
+-		DMWARN("remove_all left %d open device(s)", dev_skipped);
++			dm_put(md);
++
++			/*
++			 * Some mapped devices may be using other mapped
++			 * devices, so repeat until we make no further
++			 * progress.  If a new mapped device is created
++			 * here it will also get removed.
++			 */
++			goto retry;
++		}
+ 	}
+ 
+ 	up_write(&_hash_lock);
++
++	if (dev_skipped)
++		DMWARN("remove_all left %d open device(s)", dev_skipped);
+ }
+ 
+ static int dm_hash_rename(uint32_t cookie, const char *old, const char *new)
 
 
