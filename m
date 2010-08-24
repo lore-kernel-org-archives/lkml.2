@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934355Ab0HXXjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:39:00 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36043 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755753Ab0HXW6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:22 -0400
-Date: Wed, 25 Aug 2010 00:14:21 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: Tejun Heo <tj@kernel.org>, Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-        Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, jack@suse.cz,
-        rwheeler@redhat.com, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-Message-ID: <20100825001421.67eb8aad@lxorguk.ukuu.org.uk>
-In-Reply-To: <4C73FD52.7000305@vlnb.net>
-References: <1281616891-5691-1-git-send-email-tj@kernel.org>
-	<20100813114858.GA31937@lst.de>
-	<4C654D4B.1030507@kernel.org>
-	<20100813143820.GA7931@lst.de>
-	<4C655BE5.4070809@kernel.org>
-	<20100814103654.GA13292@lst.de>
-	<4C6A5D8A.4010205@kernel.org>
-	<20100817131915.GB2963@lst.de>
-	<4C6ABBCB.9030306@kernel.org>
-	<20100817165929.GB13800@lst.de>
-	<4C6E3C1A.50205@ct.jp.nec.com>
-	<4C72660A.7070009@kernel.org>
-	<4C73FD52.7000305@vlnb.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934358Ab0HXXjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:39:31 -0400
+Received: from kroah.org ([198.145.64.141]:40305 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755699Ab0HXW6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:13 2010
+Message-Id: <20100824224213.523600253@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 24 Aug 2010 15:41:39 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Yuri Ershov <ext-yuri.ershov@nokia.com>,
+        Yuri Kululin <ext-yuri.kululin@nokia.com>,
+        Kalle Valo <kvalo@adurom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [17/91] wl1251: fix trigger scan timeout usage
+In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In SCSI there are conditions when a command, including FLUSH 
-> (SYNC_CACHE), failed which don't imply lost data. For them the caller 
-> expected to retry the failed command. Most common cases are Unit 
-> Attentions and TASK QUEUE FULL status.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-ATA expects the command to be retried as well because a failed flush
-indicates the specific sector is lost (unless the host still has a copy
-of course - which is *very* likely although we don't use it) but the rest
-of the flush transaction can be retried to continue to flush sectors
-beyond the failed one.
+------------------
 
-Alan
+From: Yuri Kululin <ext-yuri.kululin@nokia.com>
+
+commit fe0dbcc9d2e941328b3269dab102b94ad697ade5 upstream.
+
+Use appropriate command (CMD_TRIGGER_SCAN_TO) instead of scan command
+(CMD_SCAN) to configure trigger scan timeout.
+
+This was broken in commit 3a98c30f3e8bb1f32b5bcb74a39647b3670de275.
+
+This fix address the bug reported here:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=16554
+
+Signed-off-by: Yuri Ershov <ext-yuri.ershov@nokia.com>
+Signed-off-by: Yuri Kululin <ext-yuri.kululin@nokia.com>
+Acked-by: Kalle Valo <kvalo@adurom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/wireless/wl12xx/wl1251_cmd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/wl12xx/wl1251_cmd.c
++++ b/drivers/net/wireless/wl12xx/wl1251_cmd.c
+@@ -484,7 +484,7 @@ int wl1251_cmd_trigger_scan_to(struct wl
+ 
+ 	cmd->timeout = timeout;
+ 
+-	ret = wl1251_cmd_send(wl, CMD_SCAN, cmd, sizeof(*cmd));
++	ret = wl1251_cmd_send(wl, CMD_TRIGGER_SCAN_TO, cmd, sizeof(*cmd));
+ 	if (ret < 0) {
+ 		wl1251_error("cmd trigger scan to failed: %d", ret);
+ 		goto out;
+
+
