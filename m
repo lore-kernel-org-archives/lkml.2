@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab0HXIp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:45:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44674 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751190Ab0HXIpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:45:52 -0400
-Date: Tue, 24 Aug 2010 10:45:28 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Subject: [PATCH] V4L/DVB: mantis: Fix IR_CORE dependency
-Message-ID: <20100824084528.GA26618@elte.hu>
-References: <4C643A08.3000605@redhat.com>
+	id S1754168Ab0HXItG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 04:49:06 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:36458 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab0HXItE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 04:49:04 -0400
+Date: Tue, 24 Aug 2010 09:49:02 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+Subject: Re: [REGRESSION, i915]: Periodic stalls with 2.6.36-rc2
+Message-ID: <20100824084902.GA27569@sucs.org>
+References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com> <20100824075741.GA11000@sucs.org> <8u3s8d$jcg467@orsmga001.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C643A08.3000605@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0016]
+In-Reply-To: <8u3s8d$jcg467@orsmga001.jf.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
-
-> Linus,
+On Tue, Aug 24, 2010 at 09:16:50AM +0100, Chris Wilson wrote:
 > 
-> Please pull from:
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+> Ok, I'm a little happier that the hangcheck could be just another symptom
+> of the problem...
 > 
-> For 3 build fixes.
+> I think it is safe to assume that the bug is in i915, so restricting the
+> bisect to just drm seems plausible:
 > 
-> Cheers,
-> Mauro.
-> 
-> The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
-> 
->   Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
-> 
-> are available in the git repository at:
-> 
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
-> 
-> Mauro Carvalho Chehab (2):
->       V4L/DVB: Fix IR_CORE dependencies
->       V4L/DVB: fix Kconfig to depends on VIDEO_IR
-> 
-> Randy Dunlap (1):
->       V4L/DVB: v4l2-ctrls.c: needs to include slab.h
+> git bisect start drivers/gpu/drm
+> git bisect good 2.6.36-rc1
+> git bisect bad 2.6.36-rc2
 
-FYI, there's one more IR_CORE related build bug which triggers 
-frequently in randconfig tests - see the fix below.
+I should mention that I ran a similar bisect yesterday but it led to a dead
+end:
 
-Thanks,
+# bad: [9ee47476d6734c9deb9ae9ab05d963302f6b6150] Merge branch 'radix-tree' of git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev
+# good: [da5cabf80e2433131bf0ed8993abc0f7ea618c73] Linux 2.6.36-rc1
+git bisect start 'HEAD' 'v2.6.36-rc1'
+# good: [d1126ad907ce197ff45fbc2369fbeaf8ae6f75a8] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
+git bisect good d1126ad907ce197ff45fbc2369fbeaf8ae6f75a8
+# bad: [4fefe435626758b14e6c05d2a5f8d71a997c0ad6] drm/i915,intel_agp: Add support for Sandybridge D0
+git bisect bad 4fefe435626758b14e6c05d2a5f8d71a997c0ad6
+# bad: [2e88e40bed136a7b7cb1c77d8dc6bd181d0d2732] drm/i915/sdvo: Markup a few constant strings.
+git bisect bad 2e88e40bed136a7b7cb1c77d8dc6bd181d0d2732
+# bad: [6146b3d61925116e3fecce36c2fd873665bd6614] drm/i915: i8xx also doesn't like multiple oustanding pageflips
+git bisect bad 6146b3d61925116e3fecce36c2fd873665bd6614
+# bad: [e044218a8ecb560b6fad65912a4e7e509db40414] drm/i915/sdvo: Add dot crawl property
+git bisect bad e044218a8ecb560b6fad65912a4e7e509db40414
+# bad: [45d7f32c7a43cbb9592886d38190e379e2eb2226] Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile
+git bisect bad 45d7f32c7a43cbb9592886d38190e379e2eb2226
 
-	Ingo
+All the bad kernels above boot EXTREMELY slowly and it's not clear why. Using
+the results above to run your tests produced the following:
 
-------------------->
->From c56aef270d7ec01564c632c1f7ebab6b8f9f032c Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@elte.hu>
-Date: Tue, 24 Aug 2010 10:41:33 +0200
-Subject: [PATCH] V4L/DVB: mantis: Fix IR_CORE dependency
+Bisecting: a merge base must be tested
+[45d7f32c7a43cbb9592886d38190e379e2eb2226] Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile
+git bisect bad 45d7f32c7a43cbb9592886d38190e379e2eb2226
+The merge base 45d7f32c7a43cbb9592886d38190e379e2eb2226 is bad.
+This means the bug has been fixed between 45d7f32c7a43cbb9592886d38190e379e2eb2226 and [da5cabf80e2433131bf0ed8993abc0f7ea618c73].
 
-This build bug triggers:
+As mentioned in the first mail, c584c5107bfd97e2aa41c798e3b213bcdd4eae7
+seems to be good but 45d7f32c7a43cbb9592886d38190e379e2eb2226 does
+not...
 
- drivers/built-in.o: In function `mantis_exit':
- (.text+0x377413): undefined reference to `ir_input_unregister'
- drivers/built-in.o: In function `mantis_input_init':
- (.text+0x3774ff): undefined reference to `__ir_input_register'
+Any ideas?
 
-If MANTIS_CORE is enabled but IR_CORE is not. Add the correct
-dependency.
+> And yes, it does apppear that the false detection rate for TV has changed.
+> The suspicion is that the change to intel_wait_for_vblank() is actually
+> causing issues here.
 
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- drivers/media/dvb/mantis/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+OK.
 
-diff --git a/drivers/media/dvb/mantis/Kconfig b/drivers/media/dvb/mantis/Kconfig
-index decdeda..fd0830e 100644
---- a/drivers/media/dvb/mantis/Kconfig
-+++ b/drivers/media/dvb/mantis/Kconfig
-@@ -1,6 +1,6 @@
- config MANTIS_CORE
- 	tristate "Mantis/Hopper PCI bridge based devices"
--	depends on PCI && I2C && INPUT
-+	depends on PCI && I2C && INPUT && IR_CORE
- 
- 	help
- 	  Support for PCI cards based on the Mantis and Hopper PCi bridge.
+-- 
+Sitsofe | http://sucs.org/~sits/
