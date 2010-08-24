@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab0HXW7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:59:05 -0400
-Received: from kroah.org ([198.145.64.141]:40432 "EHLO coco.kroah.org"
+	id S933091Ab0HXW7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:59:45 -0400
+Received: from kroah.org ([198.145.64.141]:40549 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932562Ab0HXW6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:15 2010
-Message-Id: <20100824224215.678866443@clark.site>
+	id S932905Ab0HXW7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:17 2010
+Message-Id: <20100824224217.814993123@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:04 -0700
+Date: Tue, 24 Aug 2010 15:42:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [42/91] dm ioctl: release _hash_lock between devices in remove_all
+        Josh Hunt <johunt@akamai.com>, Robert Richter <robert.richter@amd.com>
+Subject: [67/91] oprofile: add support for Intel processor model 30
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,107 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+From: Josh Hunt <johunt@akamai.com>
 
-commit 98f332855effef02aeb738e4d62e9a5b903c52fd upstream.
+commit a7c55cbee0c1bae9bf5a15a08300e91d88706e45 upstream.
 
-This patch changes dm_hash_remove_all() to release _hash_lock when
-removing a device.  After removing the device, dm_hash_remove_all()
-takes _hash_lock and searches the hash from scratch again.
+Newer Intel processors identifying themselves as model 30 are not recognized by
+oprofile.
 
-This patch is a preparation for the next patch, which changes device
-deletion code to wait for md reference to be 0.  Without this patch,
-the wait in the next patch may cause AB-BA deadlock:
-  CPU0                                CPU1
-  -----------------------------------------------------------------------
-  dm_hash_remove_all()
-    down_write(_hash_lock)
-                                      table_status()
-                                        md = find_device()
-                                               dm_get(md)
-                                                 <increment md->holders>
-                                        dm_get_live_or_inactive_table()
-                                          dm_get_inactive_table()
-                                            down_write(_hash_lock)
-    <in the md deletion code>
-      <wait for md->holders to be 0>
+<cpuinfo snippet>
+model           : 30
+model name      : Intel(R) Xeon(R) CPU           X3470  @ 2.93GHz
+</cpuinfo snippet>
 
-Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Running oprofile on these machines gives the following:
++ opcontrol --init
++ opcontrol --list-events
+oprofile: available events for CPU type "Intel Architectural Perfmon"
+
+See Intel 64 and IA-32 Architectures Software Developer's Manual
+Volume 3B (Document 253669) Chapter 18 for architectural perfmon events
+This is a limited set of fallback events because oprofile doesn't know your CPU
+CPU_CLK_UNHALTED: (counter: all)
+        Clock cycles when not halted (min count: 6000)
+INST_RETIRED: (counter: all)
+        number of instructions retired (min count: 6000)
+LLC_MISSES: (counter: all)
+        Last level cache demand requests from this core that missed the LLC
+(min count: 6000)
+        Unit masks (default 0x41)
+        ----------
+        0x41: No unit mask
+LLC_REFS: (counter: all)
+        Last level cache demand requests from this core (min count: 6000)
+        Unit masks (default 0x4f)
+        ----------
+        0x4f: No unit mask
+BR_MISS_PRED_RETIRED: (counter: all)
+        number of mispredicted branches retired (precise) (min count: 500)
++ opcontrol --shutdown
+
+Tested using oprofile 0.9.6.
+
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-ioctl.c |   44 +++++++++++++++++++++++++-------------------
- 1 file changed, 25 insertions(+), 19 deletions(-)
+ arch/x86/oprofile/nmi_int.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -249,40 +249,46 @@ static void __hash_remove(struct hash_ce
- 
- static void dm_hash_remove_all(int keep_open_devices)
- {
--	int i, dev_skipped, dev_removed;
-+	int i, dev_skipped;
- 	struct hash_cell *hc;
--	struct list_head *tmp, *n;
-+	struct mapped_device *md;
-+
-+retry:
-+	dev_skipped = 0;
- 
- 	down_write(&_hash_lock);
- 
--retry:
--	dev_skipped = dev_removed = 0;
- 	for (i = 0; i < NUM_BUCKETS; i++) {
--		list_for_each_safe (tmp, n, _name_buckets + i) {
--			hc = list_entry(tmp, struct hash_cell, name_list);
-+		list_for_each_entry(hc, _name_buckets + i, name_list) {
-+			md = hc->md;
-+			dm_get(md);
- 
--			if (keep_open_devices &&
--			    dm_lock_for_deletion(hc->md)) {
-+			if (keep_open_devices && dm_lock_for_deletion(md)) {
-+				dm_put(md);
- 				dev_skipped++;
- 				continue;
- 			}
-+
- 			__hash_remove(hc);
--			dev_removed = 1;
--		}
--	}
- 
--	/*
--	 * Some mapped devices may be using other mapped devices, so if any
--	 * still exist, repeat until we make no further progress.
--	 */
--	if (dev_skipped) {
--		if (dev_removed)
--			goto retry;
-+			up_write(&_hash_lock);
- 
--		DMWARN("remove_all left %d open device(s)", dev_skipped);
-+			dm_put(md);
-+
-+			/*
-+			 * Some mapped devices may be using other mapped
-+			 * devices, so repeat until we make no further
-+			 * progress.  If a new mapped device is created
-+			 * here it will also get removed.
-+			 */
-+			goto retry;
-+		}
- 	}
- 
- 	up_write(&_hash_lock);
-+
-+	if (dev_skipped)
-+		DMWARN("remove_all left %d open device(s)", dev_skipped);
- }
- 
- static int dm_hash_rename(uint32_t cookie, uint32_t *flags, const char *old,
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -618,6 +618,7 @@ static int __init ppro_init(char **cpu_t
+ 		*cpu_type = "i386/core_2";
+ 		break;
+ 	case 0x1a:
++	case 0x1e:
+ 	case 0x2e:
+ 		spec = &op_arch_perfmon_spec;
+ 		*cpu_type = "i386/core_i7";
 
 
