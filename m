@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab0HXXBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:01:50 -0400
-Received: from kroah.org ([198.145.64.141]:40929 "EHLO coco.kroah.org"
+	id S933433Ab0HXXCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:02:14 -0400
+Received: from kroah.org ([198.145.64.141]:40993 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933355Ab0HXXBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:03 2010
-Message-Id: <20100824224503.639224857@clark.site>
+	id S933397Ab0HXXCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:02 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
+Message-Id: <20100824224504.400213091@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:32 -0700
+Date: Tue, 24 Aug 2010 15:44:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [027/114] x86, hotplug: Serialize CPU hotplug to avoid bringup concurrency issues
+        Marek Vasut <marek.vasut@gmail.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [036/114] BFIN: Fix gen_nand probe structures contents
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@amd64.org>
+From: Marek Vasut <marek.vasut@gmail.com>
 
-commit d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11 upstream.
+commit ef56609f9c7fdf5baa9d9f86f84a7bd8a717cd25 upstream.
 
-When testing cpu hotplug code on 32-bit we kept hitting the "CPU%d:
-Stuck ??" message due to multiple cores concurrently accessing the
-cpu_callin_mask, among others.
+These two platforms didn't properly fill nr_chips in gen_nand
+registration and therefore depended on gen_nand bug fixed by by commit
+81cbb0b17796d81cbd92defe113cf2a7c7a21fbb ("mtd: gen_nand: fix support for
+multiple chips")
 
-Since these codepaths are not protected from concurrent access due to
-the fact that there's no sane reason for making an already complex
-code unnecessarily more complex - we hit the issue only when insanely
-switching cores off- and online - serialize hotplugging cores on the
-sysfs level and be done with it.
-
-[ v2.1: fix !HOTPLUG_CPU build ]
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20100819181029.GC17171@aftab>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/Kconfig          |    5 +++++
- arch/x86/kernel/smpboot.c |   19 +++++++++++++++++++
- 2 files changed, 24 insertions(+)
+ arch/blackfin/mach-bf537/boards/stamp.c   |    1 +
+ arch/blackfin/mach-bf561/boards/acvilon.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -247,6 +247,11 @@ config ARCH_HWEIGHT_CFLAGS
+--- a/arch/blackfin/mach-bf537/boards/stamp.c
++++ b/arch/blackfin/mach-bf537/boards/stamp.c
+@@ -400,6 +400,7 @@ static int bfin_plat_nand_dev_ready(stru
  
- config KTIME_SCALAR
- 	def_bool X86_32
-+
-+config ARCH_CPU_PROBE_RELEASE
-+	def_bool y
-+	depends on HOTPLUG_CPU
-+
- source "init/Kconfig"
- source "kernel/Kconfig.freezer"
+ static struct platform_nand_data bfin_plat_nand_data = {
+ 	.chip = {
++		.nr_chips = 1,
+ 		.chip_delay = 30,
+ #ifdef CONFIG_MTD_PARTITIONS
+ 		.part_probe_types = part_probes,
+--- a/arch/blackfin/mach-bf561/boards/acvilon.c
++++ b/arch/blackfin/mach-bf561/boards/acvilon.c
+@@ -284,6 +284,7 @@ static int bfin_plat_nand_dev_ready(stru
  
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -91,6 +91,25 @@ DEFINE_PER_CPU(int, cpu_state) = { 0 };
- static DEFINE_PER_CPU(struct task_struct *, idle_thread_array);
- #define get_idle_for_cpu(x)      (per_cpu(idle_thread_array, x))
- #define set_idle_for_cpu(x, p)   (per_cpu(idle_thread_array, x) = (p))
-+
-+/*
-+ * We need this for trampoline_base protection from concurrent accesses when
-+ * off- and onlining cores wildly.
-+ */
-+static DEFINE_MUTEX(x86_cpu_hotplug_driver_mutex);
-+
-+void cpu_hotplug_driver_lock()
-+{
-+        mutex_lock(&x86_cpu_hotplug_driver_mutex);
-+}
-+
-+void cpu_hotplug_driver_unlock()
-+{
-+        mutex_unlock(&x86_cpu_hotplug_driver_mutex);
-+}
-+
-+ssize_t arch_cpu_probe(const char *buf, size_t count) { return -1; }
-+ssize_t arch_cpu_release(const char *buf, size_t count) { return -1; }
- #else
- static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- #define get_idle_for_cpu(x)      (idle_thread_array[(x)])
+ static struct platform_nand_data bfin_plat_nand_data = {
+ 	.chip = {
++		 .nr_chips = 1,
+ 		 .chip_delay = 30,
+ #ifdef CONFIG_MTD_PARTITIONS
+ 		 .part_probe_types = part_probes,
 
 
