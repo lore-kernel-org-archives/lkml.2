@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933600Ab0HXXKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:10:53 -0400
-Received: from kroah.org ([198.145.64.141]:41315 "EHLO coco.kroah.org"
+	id S1756676Ab0HXXKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:10:46 -0400
+Received: from kroah.org ([198.145.64.141]:60974 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933604Ab0HXXDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:14 -0400
+	id S933609Ab0HXXDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:17 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:08 2010
-Message-Id: <20100824224508.446457430@clark.site>
+Message-Id: <20100824224508.631601905@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:28 -0700
+Date: Tue, 24 Aug 2010 15:45:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [083/114] iwlagn: fix rts cts protection
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [085/114] e1000e: disable ASPM L1 on 82573
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,332 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-This is a backport of mainline commit
-94597ab23ea10b3bdcba534be00a9f7b35791c07.
-I removed the variable renamings from it
-and made it apply on 2.6.35. It now also
-incorporates some changes from commit
-cfecc6b492162fb49209a83dc207f182b87ea27a
-since those were required as well.
-commit 94597ab23ea10b3bdcba534be00a9f7b35791c07 upstream.
+commit 19833b5dffe2f2e92a1b377f9aae9d5f32239512 upstream.
 
-Currently the driver will try to protect all frames,
-which leads to a lot of odd things like sending an
-RTS with a zeroed RA before multicast frames, which
-is clearly bogus.
+On the e1000-devel mailing list, Nils Faerber reported latency issues with
+the 82573 LOM on a ThinkPad X60.  It was found to be caused by ASPM L1;
+disabling it resolves the latency.  The issue is present in kernels back
+to 2.6.34 and possibly 2.6.33.
 
-In order to fix all of this, we need to take a step
-back and see what we need to achieve:
- * we need RTS/CTS protection if requested by
-   the AP for the BSS, mac80211 tells us this
- * in that case, CTS-to-self should only be
-   enabled when mac80211 tells us
- * additionally, as a hardware workaround, on
-   some devices we have to protect aggregated
-   frames with RTS
 
-To achieve the first two items, set up the RXON
-accordingly and set the protection required flag
-in the transmit command when mac80211 requests
-protection for the frame.
-
-To achieve the last item, set the rate-control
-RTS-requested flag for all stations that we have
-aggregation sessions with, and set the protection
-required flag when sending aggregated frames (on
-those devices where this is required).
-
-Since otherwise bugs can occur, do not allow the
-user to override the RTS-for-aggregation setting
-from sysfs any more.
-
-Finally, also clean up the way all these flags get
-set in the driver and move everything into the
-device-specific functions.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Nils Faerber <nils.faerber@kernelconcepts.de>
+Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/net/wireless/iwlwifi/iwl-3945.c     |   16 -----------
- drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c |   17 ++++++++++--
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c   |   17 +++---------
- drivers/net/wireless/iwlwifi/iwl-agn-tx.c   |   20 --------------
- drivers/net/wireless/iwlwifi/iwl-agn.c      |   38 +++++++++++++++++++++-------
- drivers/net/wireless/iwlwifi/iwl-core.c     |   25 ++++++++++++++++--
- drivers/net/wireless/iwlwifi/iwl-core.h     |   10 ++++---
- drivers/net/wireless/iwlwifi/iwl3945-base.c |    5 ---
- 8 files changed, 79 insertions(+), 69 deletions(-)
+ drivers/net/e1000e/82571.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/iwlwifi/iwl-3945.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
-@@ -915,22 +915,6 @@ void iwl3945_hw_build_tx_cmd_rate(struct
- 		rts_retry_limit = data_retry_limit;
- 	tx_cmd->rts_retry_limit = rts_retry_limit;
- 
--	if (ieee80211_is_mgmt(fc)) {
--		switch (fc & cpu_to_le16(IEEE80211_FCTL_STYPE)) {
--		case cpu_to_le16(IEEE80211_STYPE_AUTH):
--		case cpu_to_le16(IEEE80211_STYPE_DEAUTH):
--		case cpu_to_le16(IEEE80211_STYPE_ASSOC_REQ):
--		case cpu_to_le16(IEEE80211_STYPE_REASSOC_REQ):
--			if (tx_flags & TX_CMD_FLG_RTS_MSK) {
--				tx_flags &= ~TX_CMD_FLG_RTS_MSK;
--				tx_flags |= TX_CMD_FLG_CTS_MSK;
--			}
--			break;
--		default:
--			break;
--		}
--	}
--
- 	tx_cmd->rate = rate;
- 	tx_cmd->tx_flags = tx_flags;
- 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c
-@@ -209,10 +209,21 @@ static void iwlagn_chain_noise_reset(str
- 	}
- }
- 
--static void iwlagn_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
--			__le32 *tx_flags)
-+static void iwlagn_rts_tx_cmd_flag(struct iwl_priv *priv,
-+				     struct ieee80211_tx_info *info,
-+				     __le16 fc, __le32 *tx_flags)
- {
--	*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
-+	if (info->control.rates[0].flags & IEEE80211_TX_RC_USE_RTS_CTS ||
-+	    info->control.rates[0].flags & IEEE80211_TX_RC_USE_CTS_PROTECT) {
-+		*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
-+		return;
-+	}
-+
-+	if (priv->cfg->use_rts_for_ht &&
-+	    info->flags & IEEE80211_TX_CTL_AMPDU) {
-+		*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
-+		return;
-+	}
- }
- 
- /* Calc max signal level (dBm) among 3 possible receivers */
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -325,18 +325,11 @@ static void rs_tl_turn_on_agg(struct iwl
- 			      struct iwl_lq_sta *lq_data,
- 			      struct ieee80211_sta *sta)
- {
--	if ((tid < TID_MAX_LOAD_COUNT) &&
--	    !rs_tl_turn_on_agg_for_tid(priv, lq_data, tid, sta)) {
--		if (priv->cfg->use_rts_for_ht) {
--			/*
--			 * switch to RTS/CTS if it is the prefer protection
--			 * method for HT traffic
--			 */
--			IWL_DEBUG_HT(priv, "use RTS/CTS protection for HT\n");
--			priv->staging_rxon.flags &= ~RXON_FLG_SELF_CTS_EN;
--			iwlcore_commit_rxon(priv);
--		}
--	}
-+	if (tid < TID_MAX_LOAD_COUNT)
-+		rs_tl_turn_on_agg_for_tid(priv, lq_data, tid, sta);
-+	else
-+		IWL_ERR(priv, "tid exceeds max load count: %d/%d\n",
-+			tid, TID_MAX_LOAD_COUNT);
- }
- 
- static inline int get_num_of_ant_from_rate(u32 rate_n_flags)
---- a/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-@@ -376,10 +376,7 @@ static void iwlagn_tx_cmd_build_basic(st
- 		tx_flags |= TX_CMD_FLG_SEQ_CTL_MSK;
- 	}
- 
--	priv->cfg->ops->utils->rts_tx_cmd_flag(info, &tx_flags);
--
--	if ((tx_flags & TX_CMD_FLG_RTS_MSK) || (tx_flags & TX_CMD_FLG_CTS_MSK))
--		tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
-+	priv->cfg->ops->utils->rts_tx_cmd_flag(priv, info, fc, &tx_flags);
- 
- 	tx_flags &= ~(TX_CMD_FLG_ANT_SEL_MSK);
- 	if (ieee80211_is_mgmt(fc)) {
-@@ -453,21 +450,6 @@ static void iwlagn_tx_cmd_build_rate(str
- 	if ((rate_idx >= IWL_FIRST_CCK_RATE) && (rate_idx <= IWL_LAST_CCK_RATE))
- 		rate_flags |= RATE_MCS_CCK_MSK;
- 
--	/* Set up RTS and CTS flags for certain packets */
--	switch (fc & cpu_to_le16(IEEE80211_FCTL_STYPE)) {
--	case cpu_to_le16(IEEE80211_STYPE_AUTH):
--	case cpu_to_le16(IEEE80211_STYPE_DEAUTH):
--	case cpu_to_le16(IEEE80211_STYPE_ASSOC_REQ):
--	case cpu_to_le16(IEEE80211_STYPE_REASSOC_REQ):
--		if (tx_cmd->tx_flags & TX_CMD_FLG_RTS_MSK) {
--			tx_cmd->tx_flags &= ~TX_CMD_FLG_RTS_MSK;
--			tx_cmd->tx_flags |= TX_CMD_FLG_CTS_MSK;
--		}
--		break;
--	default:
--		break;
--	}
--
- 	/* Set up antennas */
- 	priv->mgmt_tx_ant = iwl_toggle_tx_ant(priv, priv->mgmt_tx_ant);
- 	rate_flags |= iwl_ant_idx_to_flags(priv->mgmt_tx_ant);
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@ -200,13 +200,6 @@ int iwl_commit_rxon(struct iwl_priv *pri
- 
- 	priv->start_calib = 0;
- 	if (new_assoc) {
--		/*
--		 * allow CTS-to-self if possible for new association.
--		 * this is relevant only for 5000 series and up,
--		 * but will not damage 4965
--		 */
--		priv->staging_rxon.flags |= RXON_FLG_SELF_CTS_EN;
--
- 		/* Apply the new configuration
- 		 * RXON assoc doesn't clear the station table in uCode,
- 		 */
-@@ -3336,13 +3329,40 @@ static int iwl_mac_ampdu_action(struct i
- 			IWL_DEBUG_HT(priv, "priv->_agn.agg_tids_count = %u\n",
- 				     priv->_agn.agg_tids_count);
- 		}
-+		if (priv->cfg->use_rts_for_ht) {
-+			struct iwl_station_priv *sta_priv =
-+				(void *) sta->drv_priv;
-+			/*
-+			 * switch off RTS/CTS if it was previously enabled
-+			 */
-+
-+			sta_priv->lq_sta.lq.general_params.flags &=
-+				~LINK_QUAL_FLAGS_SET_STA_TLC_RTS_MSK;
-+			iwl_send_lq_cmd(priv, &sta_priv->lq_sta.lq,
-+				CMD_ASYNC, false);
-+		}
-+ 		break;
- 		if (test_bit(STATUS_EXIT_PENDING, &priv->status))
- 			return 0;
- 		else
- 			return ret;
- 	case IEEE80211_AMPDU_TX_OPERATIONAL:
--		/* do nothing */
--		return -EOPNOTSUPP;
-+		if (priv->cfg->use_rts_for_ht) {
-+			struct iwl_station_priv *sta_priv =
-+				(void *) sta->drv_priv;
-+
-+			/*
-+			 * switch to RTS/CTS if it is the prefer protection
-+			 * method for HT traffic
-+			 */
-+
-+			sta_priv->lq_sta.lq.general_params.flags |=
-+				LINK_QUAL_FLAGS_SET_STA_TLC_RTS_MSK;
-+			iwl_send_lq_cmd(priv, &sta_priv->lq_sta.lq,
-+				CMD_ASYNC, false);
-+		}
-+		ret = 0;
-+		break;
- 	default:
- 		IWL_DEBUG_HT(priv, "unknown\n");
- 		return -EINVAL;
---- a/drivers/net/wireless/iwlwifi/iwl-core.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.c
-@@ -403,19 +403,36 @@ EXPORT_SYMBOL(iwlcore_free_geos);
-  *  iwlcore_rts_tx_cmd_flag: Set rts/cts. 3945 and 4965 only share this
-  *  function.
-  */
--void iwlcore_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
--				__le32 *tx_flags)
-+void iwlcore_rts_tx_cmd_flag(struct iwl_priv *priv,
-+			       struct ieee80211_tx_info *info,
-+			       __le16 fc, __le32 *tx_flags)
- {
- 	if (info->control.rates[0].flags & IEEE80211_TX_RC_USE_RTS_CTS) {
- 		*tx_flags |= TX_CMD_FLG_RTS_MSK;
- 		*tx_flags &= ~TX_CMD_FLG_CTS_MSK;
-+		*tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
-+
-+		if (!ieee80211_is_mgmt(fc))
-+			return;
-+
-+		switch (fc & cpu_to_le16(IEEE80211_FCTL_STYPE)) {
-+		case cpu_to_le16(IEEE80211_STYPE_AUTH):
-+		case cpu_to_le16(IEEE80211_STYPE_DEAUTH):
-+		case cpu_to_le16(IEEE80211_STYPE_ASSOC_REQ):
-+		case cpu_to_le16(IEEE80211_STYPE_REASSOC_REQ):
-+			*tx_flags &= ~TX_CMD_FLG_RTS_MSK;
-+			*tx_flags |= TX_CMD_FLG_CTS_MSK;
-+			break;
-+		}
- 	} else if (info->control.rates[0].flags & IEEE80211_TX_RC_USE_CTS_PROTECT) {
- 		*tx_flags &= ~TX_CMD_FLG_RTS_MSK;
- 		*tx_flags |= TX_CMD_FLG_CTS_MSK;
-+		*tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
- 	}
- }
- EXPORT_SYMBOL(iwlcore_rts_tx_cmd_flag);
- 
-+
- static bool is_single_rx_stream(struct iwl_priv *priv)
- {
- 	return priv->current_ht_config.smps == IEEE80211_SMPS_STATIC ||
-@@ -1936,6 +1953,10 @@ void iwl_bss_info_changed(struct ieee802
- 			priv->staging_rxon.flags |= RXON_FLG_TGG_PROTECT_MSK;
- 		else
- 			priv->staging_rxon.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
-+		if (bss_conf->use_cts_prot)
-+			priv->staging_rxon.flags |= RXON_FLG_SELF_CTS_EN;
-+		else
-+			priv->staging_rxon.flags &= ~RXON_FLG_SELF_CTS_EN;
- 	}
- 
- 	if (changes & BSS_CHANGED_BASIC_RATES) {
---- a/drivers/net/wireless/iwlwifi/iwl-core.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.h
-@@ -102,8 +102,9 @@ struct iwl_hcmd_utils_ops {
- 			u32 min_average_noise,
- 			u8 default_chain);
- 	void (*chain_noise_reset)(struct iwl_priv *priv);
--	void (*rts_tx_cmd_flag)(struct ieee80211_tx_info *info,
--			__le32 *tx_flags);
-+	void (*rts_tx_cmd_flag)(struct iwl_priv *priv,
-+				  struct ieee80211_tx_info *info,
-+				  __le16 fc, __le32 *tx_flags);
- 	int  (*calc_rssi)(struct iwl_priv *priv,
- 			  struct iwl_rx_phy_res *rx_resp);
- 	void (*request_scan)(struct iwl_priv *priv, struct ieee80211_vif *vif);
-@@ -375,8 +376,9 @@ void iwl_config_ap(struct iwl_priv *priv
- void iwl_mac_reset_tsf(struct ieee80211_hw *hw);
- int iwl_alloc_txq_mem(struct iwl_priv *priv);
- void iwl_free_txq_mem(struct iwl_priv *priv);
--void iwlcore_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
--				__le32 *tx_flags);
-+void iwlcore_rts_tx_cmd_flag(struct iwl_priv *priv,
-+			       struct ieee80211_tx_info *info,
-+			       __le16 fc, __le32 *tx_flags);
- #ifdef CONFIG_IWLWIFI_DEBUGFS
- int iwl_alloc_traffic_mem(struct iwl_priv *priv);
- void iwl_free_traffic_mem(struct iwl_priv *priv);
---- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-@@ -434,10 +434,7 @@ static void iwl3945_build_tx_cmd_basic(s
- 		tx_flags |= TX_CMD_FLG_SEQ_CTL_MSK;
- 	}
- 
--	priv->cfg->ops->utils->rts_tx_cmd_flag(info, &tx_flags);
--
--	if ((tx_flags & TX_CMD_FLG_RTS_MSK) || (tx_flags & TX_CMD_FLG_CTS_MSK))
--		tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
-+	priv->cfg->ops->utils->rts_tx_cmd_flag(priv, info, fc, &tx_flags);
- 
- 	tx_flags &= ~(TX_CMD_FLG_ANT_SEL_MSK);
- 	if (ieee80211_is_mgmt(fc)) {
+--- a/drivers/net/e1000e/82571.c
++++ b/drivers/net/e1000e/82571.c
+@@ -1833,6 +1833,7 @@ struct e1000_info e1000_82573_info = {
+ 				  | FLAG_HAS_SMART_POWER_DOWN
+ 				  | FLAG_HAS_AMT
+ 				  | FLAG_HAS_SWSM_ON_LOAD,
++	.flags2			= FLAG2_DISABLE_ASPM_L1,
+ 	.pba			= 20,
+ 	.max_hw_frame_size	= ETH_FRAME_LEN + ETH_FCS_LEN,
+ 	.get_variants		= e1000_get_variants_82571,
 
 
