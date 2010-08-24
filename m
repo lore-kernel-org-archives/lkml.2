@@ -1,101 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab0HXRqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:46:30 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33238 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab0HXRq2 (ORCPT
+	id S1755299Ab0HXRve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:51:34 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:53048 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752058Ab0HXRvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:46:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=MCnlrVmD2w0Cs2y4zbKBFCS4dOoj3nRyRm9kqyb8jqNrLEp4/l6duLpZ55u0wghzUR
-         Wef6X4SIXAWC2gZaQqweLIRIwdE8vFNinjLoKYYVP4JlbPxwi49zhAHxevqqhRPGo+N1
-         pihe879KLGjhnDy6TxwoPgE5JHqogd3pEs9SU=
-MIME-Version: 1.0
-In-Reply-To: <496565EC904933469F292DDA3F1663E602F0FA3883@dlee06.ent.ti.com>
-References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
-	<1277943660-4112-2-git-send-email-x0095840@ti.com>
-	<1277943660-4112-3-git-send-email-x0095840@ti.com>
-	<1277943660-4112-4-git-send-email-x0095840@ti.com>
-	<1277943660-4112-5-git-send-email-x0095840@ti.com>
-	<1277943660-4112-6-git-send-email-x0095840@ti.com>
-	<1277943660-4112-7-git-send-email-x0095840@ti.com>
-	<1277943660-4112-8-git-send-email-x0095840@ti.com>
-	<1277943660-4112-9-git-send-email-x0095840@ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD39F6@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
-	<AANLkTimENxUjUWJQSZ1dmdkX_9hQ0pjat-kyR9oNjVxf@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F0FA3883@dlee06.ent.ti.com>
-Date: Tue, 24 Aug 2010 20:46:23 +0300
-Message-ID: <AANLkTi=NuPu6bvv6KF7sXRp02bvfz7oRkG1SG1PstA-H@mail.gmail.com>
-Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Aug 2010 13:51:31 -0400
+Subject: Re: [PATCH -v2] x86, tsc: Limit CPU frequency calibration on AMD
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100824155305.GA18220@aftab>
+References: <1282024311.20786.2.camel@ank32.eng.vmware.com>
+	 <4C6A2C98.4060605@zytor.com> <20100817070520.GD32714@liondog.tnic>
+	 <1282063532.4388.8.camel@ank32.eng.vmware.com>
+	 <20100817185634.GA10597@liondog.tnic> <20100818161639.GF9880@aftab>
+	 <4C6C08EC.2080404@zytor.com> <20100818173401.GG9880@aftab>
+	 <1282153895.15158.45.camel@ank32.eng.vmware.com>
+	 <20100818184534.GA12842@aftab>  <20100824155305.GA18220@aftab>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Tue, 24 Aug 2010 10:51:30 -0700
+Message-Id: <1282672290.24498.8.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 7:31 PM, Guzman Lugo, Fernando
-<fernando.lugo@ti.com> wrote:
->
->
->> -----Original Message-----
->> From: Felipe Contreras [mailto:felipe.contreras@gmail.com]
->> Sent: Tuesday, August 24, 2010 5:09 AM
->> To: Guzman Lugo, Fernando
->> Cc: Kanigeri, Hari; linux-omap@vger.kernel.org;
->> linux-kernel@vger.kernel.org; ohad@wizery.com;
->> hiroshi.doyu@nokia.com; ameya.palande@nokia.com;
->> felipe.contreras@nokia.com
->> Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
->>
->> On Fri, Jul 2, 2010 at 9:39 PM, Guzman Lugo, Fernando
->> <fernando.lugo@ti.com> wrote:
->> > I think, it would be good if we get rid of DMMPOOL size, if
->> the liked list grow up as it is needed, there is no memory
->> penalty of have all the possible iommu addresses valid
->> (11000000 - FFFFFFFF). The reservation will only fail when
->> there is no memory. If a software restriction is needed we
->> could define a start and end addresses for iommu module
->> (maybe as a parameter when the iommu handle for iva2 is got)
->> and that boundaries can be taking in account at the moment of
->> reserve the memory.
->>
->> What happened to this?
->>
->> IIUC what you are proposing is to remove the DMM pool
->> completely, that makes sense to me. However, is it really
->> needed to finish the iommu migration to do this?
->>
->> > I think the reserve/unreserved dspbridge api can disappear
->> and just return the da address in the map function.
->>
->> This is something I've proposed before, so I agree :)
->
-> Yeah, that is how it will be. I have been busy with other stuffs, but now
-> I have finish a version with all dmm module removed and reserve/unreserve
-> Api removed as well. But because a the big # of patches merge in dspbrdge
-> I have to rebase them to the latest, I hope finish this week and send
-> Them again next week.
+Hi Borislav,
 
-Awesome :)
+Thanks for working on this change..
 
-However, I still have the question about the dependency on iommu;
-AFAICS the DMM removal doesn't depend on the migration to iommu, which
-AFAIK has been stalled for some time.
+On Tue, 2010-08-24 at 08:53 -0700, Borislav Petkov wrote:
+> 6b37f5a20c0e5c334c010a587058354215433e92 introduced the CPU frequency
+> calibration code for AMD CPUs whose TSCs didn't increment with the
+> core's P0 frequency. From F10h, revB onward, the TSC increment rate is
+> denoted by MSRC001_0015[24] and when this bit is set (which is normally
+> done by the BIOS,) the TSC increments with the P0 frequency so the
+> calibration is not needed and booting can be a couple of mcecs faster on
+> those machines.
+> 
+> While at it, make the code work on 32-bit. In addition, use the 4th
+> perfctr since using perfctr 0 might clash with perfctr-watchdog.c during
+> LAPIC init. Finally, warn about wrongly calibrated value in the most
+> seldom cases when the core TSC is not incrementing with P0 frequency.
+> 
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+> 
+> Here's the new version, had to change quite a lot and check all families
+> first.
+> 
+> @Alok, I think in your case you will want to do
+> 
+> 	x86_cpuinit.calibrate_cpu = NULL;
 
--- 
-Felipe Contreras
+> since this means no need to recalibrate.
+
+Right, I will send that patch once this is committed. 
+
+Alok
+> 
+> Sorry for the delay.
+> 
+> 
+>  arch/x86/include/asm/x86_init.h |    1 +
+>  arch/x86/kernel/cpu/amd.c       |   74 +++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/tsc.c           |   65 ++++------------------------------
+>  3 files changed, 83 insertions(+), 57 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+> index baa579c..c63ab76 100644
+> --- a/arch/x86/include/asm/x86_init.h
+> +++ b/arch/x86/include/asm/x86_init.h
+> @@ -133,6 +133,7 @@ struct x86_init_ops {
+>   */
+>  struct x86_cpuinit_ops {
+>  	void (*setup_percpu_clockev)(void);
+> +	unsigned long (*calibrate_cpu)(void);
+>  };
+>  
+>  /**
+> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+> index ba5f62f..236bcff 100644
+> --- a/arch/x86/kernel/cpu/amd.c
+> +++ b/arch/x86/kernel/cpu/amd.c
+> @@ -6,6 +6,7 @@
+>  #include <asm/processor.h>
+>  #include <asm/apic.h>
+>  #include <asm/cpu.h>
+> +#include <asm/nmi.h>
+>  #include <asm/pci-direct.h>
+>  
+>  #ifdef CONFIG_X86_64
+> @@ -381,6 +382,62 @@ static void __cpuinit early_init_amd_mc(struct cpuinfo_x86 *c)
+>  #endif
+>  }
+>  
+> +/*
+> + * This is used on systems with fixed rate TSCs to determine processor frequency
+> + * when the TSC on those systems is not incrementing with the P0 frequency.
+> + */
+> +#define TICK_COUNT 100000000
+> +unsigned long __cpuinit amd_calibrate_cpu(void)
+> +{
+> +	u64 evntsel3 = 0, pmc3 = 0, pmcs = 0;
+> +	int tsc_start, tscs, i, no_ctr_free;
+> +	unsigned long flags;
+> +
+> +	for (i = 3; i >= -1; i--)
+> +		if (avail_to_resrv_perfctr_nmi_bit(i))
+> +			break;
+> +
+> +	no_ctr_free = (i == -1);
+> +	if (no_ctr_free) {
+> +		WARN(1, KERN_WARNING "Warning: AMD perfctrs busy ... "
+> +		     "cpu_khz value may be incorrect.\n");
+> +		i = 3;
+> +		rdmsrl(MSR_K7_EVNTSEL3, evntsel3);
+> +		wrmsrl(MSR_K7_EVNTSEL3, 0);
+> +		rdmsrl(MSR_K7_PERFCTR3, pmc3);
+> +	} else {
+> +		reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i);
+> +		reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
+> +	}
+> +
+> +	/* start measuring cycles, incrementing from 0 */
+> +	local_irq_save(flags);
+> +	wrmsrl(MSR_K7_PERFCTR0 + i, 0);
+> +	wrmsrl(MSR_K7_EVNTSEL0 + i, 1 << 22 | 3 << 16 | 0x76);
+> +	rdtscl(tsc_start);
+> +	do {
+> +		rdmsrl(MSR_K7_PERFCTR0 + i, pmcs);
+> +		tscs = get_cycles();
+> +	} while ((tscs - tsc_start) < TICK_COUNT);
+> +	local_irq_restore(flags);
+> +
+> +	if (no_ctr_free) {
+> +		wrmsrl(MSR_K7_EVNTSEL3, 0);
+> +		wrmsrl(MSR_K7_PERFCTR3, pmc3);
+> +		wrmsrl(MSR_K7_EVNTSEL3, evntsel3);
+> +	} else {
+> +		release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
+> +		release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
+> +	}
+> +
+> +	pmcs *= tsc_khz;
+> +	tscs -= tsc_start;
+> +
+> +	(void)do_div(pmcs, tscs);
+> +
+> +	return pmcs;
+> +}
+> +
+>  static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+>  {
+>  	early_init_amd_mc(c);
+> @@ -412,6 +469,23 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+>  			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
+>  	}
+>  #endif
+> +
+> +	/* We need to do the following only once */
+> +	if (c != &boot_cpu_data)
+> +		return;
+> +
+> +	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
+> +
+> +		if (c->x86 > 0x10 ||
+> +		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
+> +			u64 val;
+> +
+> +			rdmsrl(MSR_K7_HWCR, val);
+> +			if (!(val & BIT(24)))
+> +				x86_cpuinit.calibrate_cpu = amd_calibrate_cpu;
+> +		} else
+> +			x86_cpuinit.calibrate_cpu = amd_calibrate_cpu;
+> +	}
+>  }
+>  
+>  static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index ce8e502..6b4f22f 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -854,60 +854,6 @@ static void __init init_tsc_clocksource(void)
+>  	clocksource_register_khz(&clocksource_tsc, tsc_khz);
+>  }
+>  
+> -#ifdef CONFIG_X86_64
+> -/*
+> - * calibrate_cpu is used on systems with fixed rate TSCs to determine
+> - * processor frequency
+> - */
+> -#define TICK_COUNT 100000000
+> -static unsigned long __init calibrate_cpu(void)
+> -{
+> -	int tsc_start, tsc_now;
+> -	int i, no_ctr_free;
+> -	unsigned long evntsel3 = 0, pmc3 = 0, pmc_now = 0;
+> -	unsigned long flags;
+> -
+> -	for (i = 0; i < 4; i++)
+> -		if (avail_to_resrv_perfctr_nmi_bit(i))
+> -			break;
+> -	no_ctr_free = (i == 4);
+> -	if (no_ctr_free) {
+> -		WARN(1, KERN_WARNING "Warning: AMD perfctrs busy ... "
+> -		     "cpu_khz value may be incorrect.\n");
+> -		i = 3;
+> -		rdmsrl(MSR_K7_EVNTSEL3, evntsel3);
+> -		wrmsrl(MSR_K7_EVNTSEL3, 0);
+> -		rdmsrl(MSR_K7_PERFCTR3, pmc3);
+> -	} else {
+> -		reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i);
+> -		reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
+> -	}
+> -	local_irq_save(flags);
+> -	/* start measuring cycles, incrementing from 0 */
+> -	wrmsrl(MSR_K7_PERFCTR0 + i, 0);
+> -	wrmsrl(MSR_K7_EVNTSEL0 + i, 1 << 22 | 3 << 16 | 0x76);
+> -	rdtscl(tsc_start);
+> -	do {
+> -		rdmsrl(MSR_K7_PERFCTR0 + i, pmc_now);
+> -		tsc_now = get_cycles();
+> -	} while ((tsc_now - tsc_start) < TICK_COUNT);
+> -
+> -	local_irq_restore(flags);
+> -	if (no_ctr_free) {
+> -		wrmsrl(MSR_K7_EVNTSEL3, 0);
+> -		wrmsrl(MSR_K7_PERFCTR3, pmc3);
+> -		wrmsrl(MSR_K7_EVNTSEL3, evntsel3);
+> -	} else {
+> -		release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
+> -		release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
+> -	}
+> -
+> -	return pmc_now * tsc_khz / (tsc_now - tsc_start);
+> -}
+> -#else
+> -static inline unsigned long calibrate_cpu(void) { return cpu_khz; }
+> -#endif
+> -
+>  void __init tsc_init(void)
+>  {
+>  	u64 lpj;
+> @@ -926,9 +872,14 @@ void __init tsc_init(void)
+>  		return;
+>  	}
+>  
+> -	if (cpu_has(&boot_cpu_data, X86_FEATURE_CONSTANT_TSC) &&
+> -			(boot_cpu_data.x86_vendor == X86_VENDOR_AMD))
+> -		cpu_khz = calibrate_cpu();
+> +	if (x86_cpuinit.calibrate_cpu) {
+> +		cpu_khz = x86_cpuinit.calibrate_cpu();
+> +		if (cpu_khz < tsc_khz) {
+> +			printk(KERN_WARNING "TSC possibly calibrated at non-P0 "
+> +			      "core frequency, fall back to previous value.\n");
+> +			cpu_khz = tsc_khz;
+> +		}
+> +	}
+>  
+>  	printk("Detected %lu.%03lu MHz processor.\n",
+>  			(unsigned long)cpu_khz / 1000,
+> -- 
+> 1.7.1
+> 
+
