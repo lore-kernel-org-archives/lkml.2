@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab0HXRhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:37:47 -0400
-Received: from www17.your-server.de ([213.133.104.17]:52083 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab0HXRho (ORCPT
+	id S1755747Ab0HXRly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:41:54 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:34887 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab0HXRlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:37:44 -0400
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Roberto Oppedisano <roberto.oppedisano@gmail.com>
-Subject: Re: 2.6.35-rc6+: i915: Bisected regression
-Date: Tue, 24 Aug 2010 19:36:18 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2-00003-g9ee4747; KDE/4.4.5; i686; ; )
-Cc: Paul Rolland <rol@as2917.net>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Zou Nan hai <nanhai.zou@intel.com>,
-        "Xiang Hai hao" <haihao.xiang@intel.com>,
-        Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-References: <201008011101.01429.thomas@m3y3r.de> <20100801151409.252be86b@tux.DEF.witbe.net> <4C559022.1010406@gmail.com>
-In-Reply-To: <4C559022.1010406@gmail.com>
+	Tue, 24 Aug 2010 13:41:53 -0400
+Message-ID: <4C740450.3030000@cs.helsinki.fi>
+Date: Tue, 24 Aug 2010 20:41:36 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Christoph Lameter <cl@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (slab
+ tree related)
+References: <20100824120714.8918f8de.sfr@canb.auug.org.au>
+In-Reply-To: <20100824120714.8918f8de.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008241936.18681.thomas@m3y3r.de>
-X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 01 August 2010 17:17:54 Roberto Oppedisano wrote:
->   On 01/08/2010 15:14, Paul Rolland wrote:
-> > My machine has :
-> > 00:02.0 0300: 8086:2a42 (rev 07)
-> > 00:02.1 0380: 8086:2a43 (rev 07)
-> >
-> > 00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
-> > 00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
-> >
-> > (Dell Vostro 1520, BIOS Revision A04)
-> >
-> >>>   Is it suspend
-> >>> or resume that is unreliable?
-> >> suspend never finishes/hangs.
+On 24.8.2010 5.07, Stephen Rothwell wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+>
+> mm/slub.c: In function 'alloc_kmem_cache_cpus':
+> mm/slub.c:2094: error: 'PERCPU_DYNAMIC_EARLY_SIZE' undeclared (first use in this function)
+> mm/slub.c:2094: error: (Each undeclared identifier is reported only once
+> mm/slub.c:2094: error: for each function it appears in.)
+> mm/slub.c:2094: error: bit-field '<anonymous>' width not an integer constant
+>
+> Caused by commit e18d65f0500b95d8724b17d8ea9f1116cf390bbe ("slub: Remove
+> static kmem_cache_cpu array for boot"). PERCPU_DYNAMIC_EARLY_SIZE is only
+> defined for SMP (and only in linux/percpu.h which is not explicitly
+> included).  This build does not have CONFIG_SMP set.
+>
+> I have used the version of the slab tree from next-20100823 for today.
 
-Seems to be fixed in 2.6.36-rc2. Probably by merge commit 
-4238a417a91643e1162a98770288f630e37f0484.
+Thanks for the report. The problem should be fixed by this commit:
 
-Paul, Roberto: Could you please confirm this on your hardware?
-
-kind regards
-thomas
+http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=5792949c540c9fd719c3fc0d6edc97374222e792
