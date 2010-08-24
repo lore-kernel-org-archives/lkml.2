@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab0HXXql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:46:41 -0400
-Received: from kroah.org ([198.145.64.141]:52094 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756433Ab0HXWxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:23 2010
-Message-Id: <20100824222523.804429703@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:28 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Jim Cromie <jim.cromie@gmail.com>
-Subject: [16/59] hwmon: (pc87360) Fix device resource declaration
-In-Reply-To: <20100824224625.GA5449@kroah.com>
+	id S932815Ab0HXXq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:46:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52162 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932767Ab0HXXqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:46:54 -0400
+Date: Tue, 24 Aug 2010 16:46:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Huang Shijie <shijie8@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>
+Subject: Re: [PATCH] avoiding the same resource to be inserted
+Message-Id: <20100824164622.a3b2c1ed.akpm@linux-foundation.org>
+In-Reply-To: <1281974138-5553-1-git-send-email-shijie8@gmail.com>
+References: <1281974138-5553-1-git-send-email-shijie8@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Mon, 16 Aug 2010 23:55:38 +0800
+Huang Shijie <shijie8@gmail.com> wrote:
 
-------------------
+>   If the same resource is inserted to the resource tree
+> (maybe not on purpose), a dead loop will be created. In this situation,
+> The kernel does not report any warning or error	:(
+> 
+>   The command below will show a endless print.
+>   #cat /proc/iomem
 
-From: Jean Delvare <khali@linux-fr.org>
+OK, we shouldn't do that.
 
-commit b9783dcebe952bf73449fe70a19ee4814adc81a0 upstream.
+>   So, adding the check for the same resource is needed for the stability
+> and reliability of the kernel.
+> 
+> Signed-off-by: Huang Shijie <shijie8@gmail.com>
+> ---
+>  kernel/resource.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index 7b36976..60daab4 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -451,7 +451,7 @@ static struct resource * __insert_resource(struct resource *parent, struct resou
+>  		if (!first)
+>  			return first;
+>  
+> -		if (first == parent)
+> +		if (first == parent || first == new)
+>  			return first;
 
-It's not OK to call platform_device_add_resources() multiple times
-in a row. Despite its name, this functions sets the resources, it
-doesn't add them. So we have to prepare an array with all the
-resources, and then call platform_device_add_resources() once.
+However, inserting the same thing twice _is_ a bug, and we shouldn't
+silently accept it like this.  We should tell the programmer!
 
-Before this fix, only the last I/O resource would be actually
-registered. The other I/O resources were leaked.
+But we can recover from the situation so let's not kill the box.  How
+does this look?
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Jim Cromie <jim.cromie@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/hwmon/pc87360.c |   31 +++++++++++++++++--------------
- 1 file changed, 17 insertions(+), 14 deletions(-)
-
---- a/drivers/hwmon/pc87360.c
-+++ b/drivers/hwmon/pc87360.c
-@@ -1610,11 +1610,8 @@ static struct pc87360_data *pc87360_upda
+--- a/kernel/resource.c~kernel-resourcec-handle-reinsertion-of-an-already-inserted-resource
++++ a/kernel/resource.c
+@@ -453,6 +453,8 @@ static struct resource * __insert_resour
  
- static int __init pc87360_device_add(unsigned short address)
- {
--	struct resource res = {
--		.name	= "pc87360",
--		.flags	= IORESOURCE_IO,
--	};
--	int err, i;
-+	struct resource res[3];
-+	int err, i, res_count;
+ 		if (first == parent)
+ 			return first;
++		if (WARN_ON(first == new))	/* duplicated insertion */
++			return first;
  
- 	pdev = platform_device_alloc("pc87360", address);
- 	if (!pdev) {
-@@ -1623,22 +1620,28 @@ static int __init pc87360_device_add(uns
- 		goto exit;
- 	}
- 
-+	memset(res, 0, 3 * sizeof(struct resource));
-+	res_count = 0;
- 	for (i = 0; i < 3; i++) {
- 		if (!extra_isa[i])
- 			continue;
--		res.start = extra_isa[i];
--		res.end = extra_isa[i] + PC87360_EXTENT - 1;
-+		res[res_count].start = extra_isa[i];
-+		res[res_count].end = extra_isa[i] + PC87360_EXTENT - 1;
-+		res[res_count].name = "pc87360",
-+		res[res_count].flags = IORESOURCE_IO,
- 
--		err = acpi_check_resource_conflict(&res);
-+		err = acpi_check_resource_conflict(&res[res_count]);
- 		if (err)
- 			goto exit_device_put;
- 
--		err = platform_device_add_resources(pdev, &res, 1);
--		if (err) {
--			printk(KERN_ERR "pc87360: Device resource[%d] "
--			       "addition failed (%d)\n", i, err);
--			goto exit_device_put;
--		}
-+		res_count++;
-+	}
-+
-+	err = platform_device_add_resources(pdev, res, res_count);
-+	if (err) {
-+		printk(KERN_ERR "pc87360: Device resources addition failed "
-+		       "(%d)\n", err);
-+		goto exit_device_put;
- 	}
- 
- 	err = platform_device_add(pdev);
-
+ 		if ((first->start > new->start) || (first->end < new->end))
+ 			break;
+_
 
