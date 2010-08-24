@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab0HXXC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:02:58 -0400
-Received: from kroah.org ([198.145.64.141]:41214 "EHLO coco.kroah.org"
+	id S933450Ab0HXXCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:02:20 -0400
+Received: from kroah.org ([198.145.64.141]:41007 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933549Ab0HXXCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:07 2010
-Message-Id: <20100824224507.241248165@clark.site>
+	id S933402Ab0HXXCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
+Message-Id: <20100824224504.580704332@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:14 -0700
+Date: Tue, 24 Aug 2010 15:44:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [069/114] pkt_sched: Fix sch_sfq vs tcf_bind_filter oops
+        Patrick LoPresti <lopresti@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [038/114] nfs: Add "lookupcache" to displayed mount options
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Patrick J. LoPresti <lopresti@gmail.com>
 
-From: Jarek Poplawski <jarkao2@gmail.com>
+commit 9b00c64318cc337846a7a08a5678f5f19aeff188 upstream.
 
-[ Upstream commit eb4a5527b1f0d581ac217c80ef3278ed5e38693c ]
+Running "cat /proc/mounts" fails to display the "lookupcache" option.
+This oversight cost me a bunch of wasted time recently.
 
-Since there was added ->tcf_chain() method without ->bind_tcf() to
-sch_sfq class options, there is oops when a filter is added with
-the classid parameter.
+The following simple patch fixes it.
 
-Fixes commit 7d2681a6ff4f9ab5e48d02550b4c6338f1638998
-netdev thread: null pointer at cls_api.c
-
-Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
-Reported-by: Franchoze Eric <franchoze@yandex.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- net/sched/sch_sfq.c |    7 +++++++
+ fs/nfs/super.c |    7 +++++++
  1 file changed, 7 insertions(+)
 
---- a/net/sched/sch_sfq.c
-+++ b/net/sched/sch_sfq.c
-@@ -502,6 +502,12 @@ static unsigned long sfq_get(struct Qdis
- 	return 0;
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -652,6 +652,13 @@ static void nfs_show_mount_options(struc
+ 
+ 	if (nfss->options & NFS_OPTION_FSCACHE)
+ 		seq_printf(m, ",fsc");
++
++	if (nfss->flags & NFS_MOUNT_LOOKUP_CACHE_NONEG) {
++		if (nfss->flags & NFS_MOUNT_LOOKUP_CACHE_NONE)
++			seq_printf(m, ",lookupcache=none");
++		else
++			seq_printf(m, ",lookupcache=pos");
++	}
  }
  
-+static unsigned long sfq_bind(struct Qdisc *sch, unsigned long parent,
-+			      u32 classid)
-+{
-+	return 0;
-+}
-+
- static struct tcf_proto **sfq_find_tcf(struct Qdisc *sch, unsigned long cl)
- {
- 	struct sfq_sched_data *q = qdisc_priv(sch);
-@@ -556,6 +562,7 @@ static void sfq_walk(struct Qdisc *sch,
- static const struct Qdisc_class_ops sfq_class_ops = {
- 	.get		=	sfq_get,
- 	.tcf_chain	=	sfq_find_tcf,
-+	.bind_tcf	=	sfq_bind,
- 	.dump		=	sfq_dump_class,
- 	.dump_stats	=	sfq_dump_class_stats,
- 	.walk		=	sfq_walk,
+ /*
 
 
