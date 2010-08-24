@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab0HXWy3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:54:29 -0400
-Received: from kroah.org ([198.145.64.141]:52283 "EHLO coco.kroah.org"
+	id S932718Ab0HXW45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:56:57 -0400
+Received: from kroah.org ([198.145.64.141]:52337 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932530Ab0HXWyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:18 -0400
+	id S932580Ab0HXWy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:28 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
-Message-Id: <20100824222526.067220480@clark.site>
+Message-Id: <20100824222526.762810331@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:54 -0700
+Date: Tue, 24 Aug 2010 15:25:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Josh Hunt <johunt@akamai.com>, Robert Richter <robert.richter@amd.com>
-Subject: [42/59] oprofile: add support for Intel processor model 30
+        Michael Tokarev <mjt@tls.msk.ru>
+Subject: [50/59] USB: option: add Celot CT-650
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Hunt <johunt@akamai.com>
+From: Michael Tokarev <mjt@tls.msk.ru>
 
-commit a7c55cbee0c1bae9bf5a15a08300e91d88706e45 upstream.
+commit 76078dc4fc389185fe467d33428f259ea9e69807 upstream.
 
-Newer Intel processors identifying themselves as model 30 are not recognized by
-oprofile.
-
-<cpuinfo snippet>
-model           : 30
-model name      : Intel(R) Xeon(R) CPU           X3470  @ 2.93GHz
-</cpuinfo snippet>
-
-Running oprofile on these machines gives the following:
-+ opcontrol --init
-+ opcontrol --list-events
-oprofile: available events for CPU type "Intel Architectural Perfmon"
-
-See Intel 64 and IA-32 Architectures Software Developer's Manual
-Volume 3B (Document 253669) Chapter 18 for architectural perfmon events
-This is a limited set of fallback events because oprofile doesn't know your CPU
-CPU_CLK_UNHALTED: (counter: all)
-        Clock cycles when not halted (min count: 6000)
-INST_RETIRED: (counter: all)
-        number of instructions retired (min count: 6000)
-LLC_MISSES: (counter: all)
-        Last level cache demand requests from this core that missed the LLC
-(min count: 6000)
-        Unit masks (default 0x41)
-        ----------
-        0x41: No unit mask
-LLC_REFS: (counter: all)
-        Last level cache demand requests from this core (min count: 6000)
-        Unit masks (default 0x4f)
-        ----------
-        0x4f: No unit mask
-BR_MISS_PRED_RETIRED: (counter: all)
-        number of mispredicted branches retired (precise) (min count: 500)
-+ opcontrol --shutdown
-
-Tested using oprofile 0.9.6.
-
-Signed-off-by: Josh Hunt <johunt@akamai.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/oprofile/nmi_int.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -618,6 +618,7 @@ static int __init ppro_init(char **cpu_t
- 		*cpu_type = "i386/core_2";
- 		break;
- 	case 0x1a:
-+	case 0x1e:
- 	case 0x2e:
- 		spec = &op_arch_perfmon_spec;
- 		*cpu_type = "i386/core_i7";
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -375,6 +375,10 @@ static int  option_resume(struct usb_ser
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
+ 
++/* Celot products */
++#define CELOT_VENDOR_ID				0x211f
++#define CELOT_PRODUCT_CT680M			0x6801
++
+ static struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -874,10 +878,9 @@ static struct usb_device_id option_ids[]
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
+-
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
+-
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
++	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
