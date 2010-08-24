@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab0HXMG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 08:06:26 -0400
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:55692 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab0HXMGX (ORCPT
+	id S1752235Ab0HXMG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 08:06:59 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56668 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab0HXMG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 08:06:23 -0400
-Date: Tue, 24 Aug 2010 14:06:19 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: balbir@linux.vnet.ibm.com, Venkatesh Pallipadi <venki@google.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Menage <menage@google.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH 0/4] Finer granularity and task/cgroup irq time
- accounting
-Message-ID: <20100824140619.35850ae9@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <1282650835.2605.2629.camel@laptop>
-References: <1279583835-22854-1-git-send-email-venki@google.com>
-	<20100720095546.2f899e04@mschwide.boeblingen.de.ibm.com>
-	<AANLkTiktBNr3pVOHwxX3piwagtkGxHpp5TepBFS3UGhb@mail.gmail.com>
-	<20100722131239.208d9501@mschwide.boeblingen.de.ibm.com>
-	<AANLkTim==2J3Fo8Axz0yLvpfWf1bq_e0c0EYWi6y3xRe@mail.gmail.com>
-	<1282636286.2605.2307.camel@laptop>
-	<20100824080515.GK4684@balbir.in.ibm.com>
-	<1282640953.2605.2428.camel@laptop>
-	<20100824113801.GO4684@balbir.in.ibm.com>
-	<1282650835.2605.2629.camel@laptop>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 24 Aug 2010 08:06:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: 64-bit ppc rwsem
+Date: Tue, 24 Aug 2010 14:06:38 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: David Miller <davem@davemloft.net>, linuxppc-dev@lists.ozlabs.org,
+        torvalds@linux-foundation.org, paulus@au.ibm.com,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        akpm@linux-foundation.org
+References: <20100818.222925.233689776.davem@davemloft.net> <20100823.151853.108794567.davem@davemloft.net> <1282613477.22370.485.camel@pasglop>
+In-Reply-To: <1282613477.22370.485.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008241406.38539.arnd@arndb.de>
+X-Provags-ID: V02:K0:DW1WXj35mtWiGH/38TMntlUMuLew8SgNoCHcdOo0n4X
+ V7OGMzhYL9MVu3mTwISLE5csMBibXIT/YOsx5hx7z2/QM+USOr
+ lBdCFjr9bdRabWihufV2JdPs3zAKq1pIxTGWoRL95n4KRr+7ux
+ 3jCP6AGaPF/Qwo+jmKc+kluKUiD/OVmucWLdY2udYM47SIH9Z5
+ 5JnrralTSEjUxJB24nVrw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010 13:53:55 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, 2010-08-24 at 17:08 +0530, Balbir Singh wrote:
+On Tuesday 24 August 2010, Benjamin Herrenschmidt wrote:
+> On Mon, 2010-08-23 at 15:18 -0700, David Miller wrote:
+> > > I've seen drivers in the past do trylocks at interrupt time ... tho
+> > I
+> > > agree it sucks.
 > > 
-> > The point is for containers it is more likely to give the right answer
-> > and so on. Yes, the results are not 100% accurate. 
+> > Recently there was a thread where this was declared absolutely
+> > illegal.
+> > 
+> > Maybe it was allowed, or sort-of worked before, and that's why it's
+> > accounted for with IRQ disables in some implementations.  I don't
+> > know. 
 > 
-> Consider one group heavily dirtying pages, it stuffs the IO queues full
-> and gets blocked on IO completion. Since the CPU is then free to
-> schedule something else we start running things from another group,
-> those IO completions will come in while we run other group and get
-> accounted to other group -- FAIL.
+> Ok, I'm happy to say it's a big no-no then.
 > 
-> s/group/task/ etc..
-> 
-> That just really doesn't work, accounting async work, esp stuff that is
-> not under software control it very tricky indeed.
-> 
-> So what are you wanting to do, and why. Do you really need accounting
-> madness?
+> Arnd, do you want to take over the moving to asm-generic and take care
+> of the spinlock case as well ? I can send Linus the first patch that
+> changes powerpc to use atomic_long now along with a few other things I
+> have pending, then you can pickup from there. Or do you want me to
+> continue pushing my patch as-is and we can look at cleaning up the
+> spinlock case separately ?
 
-Well, I have sent a patch back in 2006 that stops adding the hardirq /
-softirq time to the currently running process. See
-http://lkml.org/lkml/2006/8/24/139
-It did not get very far, so that answer to the question if we need
-accounting madness seems to be yes ..
+I'm currently doing too many things at once, please push in your existing
+patch for now, we can continue from there.
 
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+For the asm-generic patch:
+Acked-by: Arnd Bergmann <arnd@arndb.de>
