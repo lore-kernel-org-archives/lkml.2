@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab0HXX1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:27:41 -0400
-Received: from kroah.org ([198.145.64.141]:40626 "EHLO coco.kroah.org"
+	id S934135Ab0HXX1x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:27:53 -0400
+Received: from kroah.org ([198.145.64.141]:40618 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933104Ab0HXW7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:47 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:19 2010
-Message-Id: <20100824224218.948483171@clark.site>
+	id S933097Ab0HXW7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:18 2010
+Message-Id: <20100824224218.863017271@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:42 -0700
+Date: Tue, 24 Aug 2010 15:42:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matt Evans <matt@ozlabs.org>,
+        Anatolij Gustschin <agust@denx.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [80/91] powerpc: Initialise paca->kstack before early_setup_secondary
+Subject: [79/91] powerpc: Fix typo in uImage target
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Evans <matt@ozlabs.org>
+From: Anatolij Gustschin <agust@denx.de>
 
-commit f761622e59433130bc33ad086ce219feee9eb961 upstream.
+commit c686ecf5040d287a68d4fca7f1948472f556a6d3 upstream.
 
-As early setup calls down to slb_initialize(), we must have kstack
-initialised before checking "should we add a bolted SLB entry for our kstack?"
+Commit e32e78c5ee8aadef020fbaecbe6fb741ed9029fd
+(powerpc: fix build with make 3.82) introduced a
+typo in uImage target and broke building uImage:
 
-Failing to do so means stack access requires an SLB miss exception to refill
-an entry dynamically, if the stack isn't accessible via SLB(0) (kernel text
-& static data).  It's not always allowable to take such a miss, and
-intermittent crashes will result.
+make: *** No rule to make target `uImage'.  Stop.
 
-Primary CPUs don't have this issue; an SLB entry is not bolted for their
-stack anyway (as that lives within SLB(0)).  This patch therefore only
-affects the init of secondaries.
-
-Signed-off-by: Matt Evans <matt@ozlabs.org>
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/head_64.S |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -572,9 +572,6 @@ __secondary_start:
- 	/* Set thread priority to MEDIUM */
- 	HMT_MEDIUM
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -159,7 +159,7 @@ drivers-$(CONFIG_OPROFILE)	+= arch/power
+ all: zImage
  
--	/* Do early setup for that CPU (stab, slb, hash table pointer) */
--	bl	.early_setup_secondary
--
- 	/* Initialize the kernel stack.  Just a repeat for iSeries.	 */
- 	LOAD_REG_ADDR(r3, current_set)
- 	sldi	r28,r24,3		/* get current_set[cpu#]	 */
-@@ -582,6 +579,9 @@ __secondary_start:
- 	addi	r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
- 	std	r1,PACAKSAVE(r13)
+ # With make 3.82 we cannot mix normal and wildcard targets
+-BOOT_TARGETS1 := zImage zImage.initrd uImaged
++BOOT_TARGETS1 := zImage zImage.initrd uImage
+ BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
  
-+	/* Do early setup for that CPU (stab, slb, hash table pointer) */
-+	bl	.early_setup_secondary
-+
- 	/* Clear backchain so we get nice backtraces */
- 	li	r7,0
- 	mtlr	r7
+ PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
 
 
