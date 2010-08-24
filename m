@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab0HXRFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:05:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55197 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab0HXRFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:05:39 -0400
-Message-ID: <4C73FA8F.5080800@kernel.org>
-Date: Tue, 24 Aug 2010 18:59:59 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-CC: Mike Snitzer <snitzer@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
-        jack@suse.cz, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
-        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
-        dm-devel@redhat.com
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com> <4C739DE9.5070803@ct.jp.nec.com>
-In-Reply-To: <4C739DE9.5070803@ct.jp.nec.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755810Ab0HXRGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:06:08 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:50019 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755155Ab0HXRGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 13:06:05 -0400
+Subject: Re: [PATCH] x86, apic: Add apic calibration hook.
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1008241532210.2768@localhost.localdomain>
+References: <1282153304.15158.39.camel@ank32.eng.vmware.com>
+	 <1282159660.15158.56.camel@ank32.eng.vmware.com>
+	 <alpine.LFD.2.00.1008241532210.2768@localhost.localdomain>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Tue, 24 Aug 2010 10:06:04 -0700
+Message-Id: <1282669564.24498.2.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 Aug 2010 17:05:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Thomas,
 
-On 08/24/2010 12:24 PM, Kiyoshi Ueda wrote:
-> Yes, checking whether it's a transport error in lower layer is
-> the right solution.
-> (Since I know it's not available yet, I just hoped if upper layers
->  had some other options.)
+Thanks for taking a look.
+
+On Tue, 2010-08-24 at 06:37 -0700, Thomas Gleixner wrote:
+> On Wed, 18 Aug 2010, Alok Kataria wrote:
+> >  
+> > +static void __init initialize_lapic_clkevt(long delta)
+> > +{
+> > +	/* Calculate the scaled math multiplication factor */
+> > +	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+> > +				       lapic_clockevent.shift);
+> > +	lapic_clockevent.max_delta_ns =
+> > +		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
+> > +	lapic_clockevent.min_delta_ns =
+> > +		clockevent_delta2ns(0xF, &lapic_clockevent);
+> > +}
+> > +
+> >  static int __init calibrate_APIC_clock(void)
+> >  {
+> > +	apic_calibration_res = x86_init.timers.calibrate_apic();
+> > +	if (apic_calibration_res) {
+> > +		struct clock_event_device *levt = &__get_cpu_var(lapic_events);
+> > +		long delta;
+> > +
+> > +		if (lapic_clockevent.mult)
+> > +			return 0;
 > 
-> Anyway, only reporting errors for REQ_FLUSH to upper layer without
-> such a solution would make dm-multipath almost unusable in real world,
-> although it's better than implicit data loss.
-
-I see.
-
->>> Maybe just turn off barrier support in mpath for now?
+>   Why is this necessary ? calibrate_APIC_clock() is only called once.
 > 
-> If it's possible, it could be a workaround for a short term.
-> But how can you do that?
-> 
-> I think it's not enough to just drop REQ_FLUSH flag from q->flush_flags.
-> Underlying devices of a mpath device may have write-back cache and
-> it may be enabled.
-> So if a mpath device doesn't set REQ_FLUSH flag in q->flush_flags, it
-> becomes a device which has write-back cache but doesn't support flush.
-> Then, upper layer can do nothing to ensure cache flush?
 
-Yeah, I was basically suggesting to forget about cache flush w/ mpath
-until it can be fixed.  You're saying that if mpath just passes
-REQ_FLUSH upwards without retrying, it will be almost unuseable,
-right?  I'm not sure how to proceed here.  How much work would
-discerning between transport and IO errors take?  If it can't be done
-quickly enough the retry logic can be kept around to keep the old
-behavior but that already was a broken behavior, so...  :-(
+Yes, though timer.calibrate_apci() could behave differently on different
+platforms. For eg. the vmware_calibrate_apic doesn't initialize any of
+the lapic_clockevent state and we need this to set it up in that case.
 
-Thanks.
+Thanks,
+Alok
 
--- 
-tejun
