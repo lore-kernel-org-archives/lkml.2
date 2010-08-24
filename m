@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab0HXXpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:45:30 -0400
-Received: from kroah.org ([198.145.64.141]:52163 "EHLO coco.kroah.org"
+	id S932347Ab0HXWxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:53:51 -0400
+Received: from kroah.org ([198.145.64.141]:52100 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401Ab0HXWxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:24 2010
-Message-Id: <20100824222524.661535344@clark.site>
+	id S1756352Ab0HXWxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:23 2010
+Message-Id: <20100824222523.888166392@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:38 -0700
+Date: Tue, 24 Aug 2010 15:24:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [26/59] mm: make stack guard page logic use vm_prev pointer
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dima Zavin <dima@android.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [17/59] ARM: Tighten check for allowable CPSR values
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,49 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 0e8e50e20c837eeec8323bba7dcd25fe5479194c upstream.
+commit 41e2e8fd34fff909a0e40129f6ac4233ecfa67a9 upstream.
 
-Like the mlock() change previously, this makes the stack guard check
-code use vma->vm_prev to see what the mapping below the current stack
-is, rather than have to look it up with find_vma().
-
-Also, accept an abutting stack segment, since that happens naturally if
-you split the stack with mlock or mprotect.
-
-Tested-by: Ian Campbell <ijc@hellion.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Arve Hjønnevåg <arve@android.com>
+Acked-by: Dima Zavin <dima@android.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/ptrace.h |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2640,11 +2640,18 @@ static inline int check_stack_guard_page
+--- a/arch/arm/include/asm/ptrace.h
++++ b/arch/arm/include/asm/ptrace.h
+@@ -150,15 +150,24 @@ struct pt_regs {
+  */
+ static inline int valid_user_regs(struct pt_regs *regs)
  {
- 	address &= PAGE_MASK;
- 	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
--		address -= PAGE_SIZE;
--		if (find_vma(vma->vm_mm, address) != vma)
--			return -ENOMEM;
-+		struct vm_area_struct *prev = vma->vm_prev;
- 
--		expand_stack(vma, address);
-+		/*
-+		 * Is there a mapping abutting this one below?
-+		 *
-+		 * That's only ok if it's the same stack mapping
-+		 * that has gotten split..
-+		 */
-+		if (prev && prev->vm_end == address)
-+			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
+-	if (user_mode(regs) && (regs->ARM_cpsr & PSR_I_BIT) == 0) {
+-		regs->ARM_cpsr &= ~(PSR_F_BIT | PSR_A_BIT);
+-		return 1;
++	unsigned long mode = regs->ARM_cpsr & MODE_MASK;
 +
-+		expand_stack(vma, address - PAGE_SIZE);
++	/*
++	 * Always clear the F (FIQ) and A (delayed abort) bits
++	 */
++	regs->ARM_cpsr &= ~(PSR_F_BIT | PSR_A_BIT);
++
++	if ((regs->ARM_cpsr & PSR_I_BIT) == 0) {
++		if (mode == USR_MODE)
++			return 1;
++		if (elf_hwcap & HWCAP_26BIT && mode == USR26_MODE)
++			return 1;
  	}
- 	return 0;
- }
+ 
+ 	/*
+ 	 * Force CPSR to something logical...
+ 	 */
+-	regs->ARM_cpsr &= PSR_f | PSR_s | (PSR_x & ~PSR_A_BIT) | PSR_T_BIT | MODE32_BIT;
++	regs->ARM_cpsr &= PSR_f | PSR_s | PSR_x | PSR_T_BIT | MODE32_BIT;
+ 	if (!(elf_hwcap & HWCAP_26BIT))
+ 		regs->ARM_cpsr |= USR_MODE;
+ 
 
 
