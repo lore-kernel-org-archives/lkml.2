@@ -1,118 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab0HXIfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:35:22 -0400
-Received: from mailout-us.gmx.com ([74.208.5.67]:35097 "HELO
-	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751683Ab0HXIfT (ORCPT
+	id S1754029Ab0HXIf7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 04:35:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31149 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab0HXIfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:35:19 -0400
-X-Authenticated: #65048216
-X-Provags-ID: V01U2FsdGVkX1+E46kdqFiEnxtGnQMEHhUPrECzZEV2xdeqCf5Ovf
-	tExjPOdGWi6+j6
-Subject: Re: i915: 2.6.36-rc2 wrong resolution on gdm start
-From: Ivan Bulatovic <combuster@gmx.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        jbarnes@virtuousgeek.org, eric@anholt.net
-In-Reply-To: <8u3s8d$jcftu0@orsmga001.jf.intel.com>
-References: <1282611655.2177.19.camel@localhost.localdomain>
-	 <8u3s8d$jcftu0@orsmga001.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Aug 2010 10:35:12 +0200
-Message-ID: <1282638912.2191.17.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Tue, 24 Aug 2010 04:35:55 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=o9SkekO+rbohOI6Ta9QLE0BU8rHqOmrfmIz2xDAz1WrBxonV/II7jYN/7Hq3vwfu5
+	PkySaaPtsVWVzp5Bq8GPw==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        m-ikeda@ds.jp.nec.com,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com
+Subject: Re: [PATCH] memcg: use ID in page_cgroup
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820190132.43684862.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr93aaoco3ix.fsf@ninji.mtv.corp.google.com>
+	<20100824165108.dd986751.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 24 Aug 2010 01:35:37 -0700
+Message-ID: <xr93r5hojtly.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-24 at 08:49 +0100, Chris Wilson wrote: 
-> On Tue, 24 Aug 2010 03:00:55 +0200, Ivan Bulatovic <combuster@gmx.com> wrote:
-> > While in init3, resolution is native, KMS works fine, no problems at
-> > all. As soon as gdm starts it seems that TV1 output is recognized as
-> > connected even if it isn't so resolution on VGA output is degraded from
-> > native 1280x1024 to 1024x768 on startup.
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+
+> On Tue, 24 Aug 2010 00:47:50 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+>> 
+>> > I have an idea to remove page_cgroup->page pointer, 8bytes reduction per page.
+>> > But it will be after this work.
+>> > ==
+>> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> >
+>> > Now, addresses of memory cgroup can be calculated by their ID without complex.
+>> > This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
+>> > On 64bit architecture, this offers us more 6bytes room per page_cgroup.
+>> > Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
+>> > some light-weight concurrent access.
+>> >
+>> > We may able to move this id onto flags field but ...go step by step.
+>> >
+>> > Changelog: 20100811
+>> >  - using new rcu APIs, as rcu_dereference_check() etc.
+>> > Changelog: 20100804
+>> >  - added comments to page_cgroup.h
+>> > Changelog: 20100730
+>> >  - fixed some garbage added by debug code in early stage
+>> >
+>> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> > ---
+>> >  include/linux/page_cgroup.h |    6 ++++-
+>> >  mm/memcontrol.c             |   52 +++++++++++++++++++++++++++-----------------
+>> >  mm/page_cgroup.c            |    2 -
+>> >  3 files changed, 38 insertions(+), 22 deletions(-)
+>> >
+>> > Index: mmotm-0811/include/linux/page_cgroup.h
+>> > ===================================================================
+>> > --- mmotm-0811.orig/include/linux/page_cgroup.h
+>> > +++ mmotm-0811/include/linux/page_cgroup.h
+>> > @@ -9,10 +9,14 @@
+>> >   * page_cgroup helps us identify information about the cgroup
+>> >   * All page cgroups are allocated at boot or memory hotplug event,
+>> >   * then the page cgroup for pfn always exists.
+>> > + *
+>> > + * TODO: It seems ID for cgroup can be packed into "flags". But there will
+>> > + * be race between assigning ID <-> set/clear flags. Please be careful.
+>> >   */
+>> >  struct page_cgroup {
+>> >  	unsigned long flags;
+>> > -	struct mem_cgroup *mem_cgroup;
+>> > +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
+>> > +	unsigned short blk_cgroup;	/* Not Used..but will be. */
+>> >  	struct page *page;
+>> >  	struct list_head lru;		/* per cgroup LRU list */
+>> >  };
+>> > Index: mmotm-0811/mm/page_cgroup.c
+>> > ===================================================================
+>> > --- mmotm-0811.orig/mm/page_cgroup.c
+>> > +++ mmotm-0811/mm/page_cgroup.c
+>> > @@ -15,7 +15,7 @@ static void __meminit
+>> >  __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
+>> >  {
+>> >  	pc->flags = 0;
+>> > -	pc->mem_cgroup = NULL;
+>> > +	pc->mem_cgroup = 0;
+>> >  	pc->page = pfn_to_page(pfn);
+>> >  	INIT_LIST_HEAD(&pc->lru);
+>> >  }
+>> > Index: mmotm-0811/mm/memcontrol.c
+>> > ===================================================================
+>> > --- mmotm-0811.orig/mm/memcontrol.c
+>> > +++ mmotm-0811/mm/memcontrol.c
+>> > @@ -300,12 +300,13 @@ static atomic_t mem_cgroup_num;
+>> >  #define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
+>> >  static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
+>> >  
+>> > -/* Must be called under rcu_read_lock */
+>> > -static struct mem_cgroup *id_to_memcg(unsigned short id)
+>> > +/* Must be called under rcu_read_lock, set safe==true if under lock */
+>> > +static struct mem_cgroup *id_to_memcg(unsigned short id, bool safe)
+>> >  {
+>> >  	struct mem_cgroup *ret;
+>> >  	/* see mem_cgroup_free() */
+>> > -	ret = rcu_dereference_check(mem_cgroups[id], rch_read_lock_held());
+>> > +	ret = rcu_dereference_check(mem_cgroups[id],
+>> > +				rch_read_lock_held() || safe);
+>> >  	if (likely(ret && ret->valid))
+>> >  		return ret;
+>> >  	return NULL;
+>> > @@ -381,7 +382,12 @@ struct cgroup_subsys_state *mem_cgroup_c
+>> >  static struct mem_cgroup_per_zone *
+>> >  page_cgroup_zoneinfo(struct page_cgroup *pc)
+>> >  {
+>> > -	struct mem_cgroup *mem = pc->mem_cgroup;
+>> > +	/*
+>> > +	 * The caller should guarantee this "pc" is under lock. In typical
+>> > +	 * case, this function is called by lru function with zone->lru_lock.
+>> > +	 * It is a safe access.
+>> > +	 */
+>> > +	struct mem_cgroup *mem = id_to_memcg(pc->mem_cgroup, true);
+>> >  	int nid = page_cgroup_nid(pc);
+>> >  	int zid = page_cgroup_zid(pc);
+>> >  
+>> > @@ -723,6 +729,11 @@ static inline bool mem_cgroup_is_root(st
+>> >  	return (mem == root_mem_cgroup);
+>> >  }
+>> >  
+>> > +static inline bool mem_cgroup_is_rootid(unsigned short id)
+>> > +{
+>> > +	return (id == 1);
+>> > +}
+>> > +
+>> >  /*
+>> >   * Following LRU functions are allowed to be used without PCG_LOCK.
+>> >   * Operations are called by routine of global LRU independently from memcg.
+>> > @@ -755,7 +766,7 @@ void mem_cgroup_del_lru_list(struct page
+>> >  	 */
+>> >  	mz = page_cgroup_zoneinfo(pc);
+>> >  	MEM_CGROUP_ZSTAT(mz, lru) -= 1;
+>> > -	if (mem_cgroup_is_root(pc->mem_cgroup))
+>> > +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
+>> >  		return;
+>> >  	VM_BUG_ON(list_empty(&pc->lru));
+>> >  	list_del_init(&pc->lru);
+>> > @@ -782,7 +793,7 @@ void mem_cgroup_rotate_lru_list(struct p
+>> >  	 */
+>> >  	smp_rmb();
+>> >  	/* unused or root page is not rotated. */
+>> > -	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
+>> > +	if (!PageCgroupUsed(pc) || mem_cgroup_is_rootid(pc->mem_cgroup))
+>> >  		return;
+>> >  	mz = page_cgroup_zoneinfo(pc);
+>> >  	list_move(&pc->lru, &mz->lists[lru]);
+>> > @@ -808,7 +819,7 @@ void mem_cgroup_add_lru_list(struct page
+>> >  	mz = page_cgroup_zoneinfo(pc);
+>> >  	MEM_CGROUP_ZSTAT(mz, lru) += 1;
+>> >  	SetPageCgroupAcctLRU(pc);
+>> > -	if (mem_cgroup_is_root(pc->mem_cgroup))
+>> > +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
+>> >  		return;
+>> >  	list_add(&pc->lru, &mz->lists[lru]);
+>> >  }
+>> > @@ -1497,7 +1508,7 @@ void mem_cgroup_update_file_mapped(struc
+>> >  		return;
+>> >  
+>> >  	lock_page_cgroup(pc);
+>> > -	mem = pc->mem_cgroup;
+>> > +	mem = id_to_memcg(pc->mem_cgroup, true);
+>> >  	if (!mem || !PageCgroupUsed(pc))
+>> >  		goto done;
+>> >  
+>> > @@ -1885,14 +1896,14 @@ struct mem_cgroup *try_get_mem_cgroup_fr
+>> >  	pc = lookup_page_cgroup(page);
+>> >  	lock_page_cgroup(pc);
+>> >  	if (PageCgroupUsed(pc)) {
+>> > -		mem = pc->mem_cgroup;
+>> > +		mem = id_to_memcg(pc->mem_cgroup, true);
+>> >  		if (mem && !css_tryget(&mem->css))
+>> >  			mem = NULL;
+>> >  	} else if (PageSwapCache(page)) {
+>> >  		ent.val = page_private(page);
+>> >  		id = lookup_swap_cgroup(ent);
+>> >  		rcu_read_lock();
+>> > -		mem = id_to_memcg(id);
+>> > +		mem = id_to_memcg(id, false);
+>> >  		if (mem && !css_tryget(&mem->css))
+>> >  			mem = NULL;
+>> >  		rcu_read_unlock();
+>> > @@ -1921,7 +1932,7 @@ static void __mem_cgroup_commit_charge(s
+>> >  		return;
+>> >  	}
+>> >  
+>> > -	pc->mem_cgroup = mem;
+>> > +	pc->mem_cgroup = css_id(&mem->css);
+>> >  	/*
+>> >  	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+>> >  	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+>> > @@ -1979,7 +1990,7 @@ static void __mem_cgroup_move_account(st
+>> >  	VM_BUG_ON(PageLRU(pc->page));
+>> >  	VM_BUG_ON(!PageCgroupLocked(pc));
+>> 
+>> Should this be VM_BUG_ON(!rcu_read_lock_held())?  I suspect that
+>> mem_cgroup_move_account() should grab rcu read lock (see my comment below).
+>> 
+>
+> No. (see below)
+>
+>
+>> >  	VM_BUG_ON(!PageCgroupUsed(pc));
+>> > -	VM_BUG_ON(pc->mem_cgroup != from);
+>> > +	VM_BUG_ON(id_to_memcg(pc->mem_cgroup, true) != from);
+>> >  
+>> >  	if (PageCgroupFileMapped(pc)) {
+>> >  		/* Update mapped_file data for mem_cgroup */
+>> > @@ -1994,7 +2005,7 @@ static void __mem_cgroup_move_account(st
+>> >  		mem_cgroup_cancel_charge(from);
+>> >  
+>> >  	/* caller should have done css_get */
+>> > -	pc->mem_cgroup = to;
+>> > +	pc->mem_cgroup = css_id(&to->css);
+>> >  	mem_cgroup_charge_statistics(to, pc, true);
+>> >  	/*
+>> >  	 * We charges against "to" which may not have any tasks. Then, "to"
+>> > @@ -2014,11 +2025,11 @@ static int mem_cgroup_move_account(struc
+>> >  {
+>> >  	int ret = -EINVAL;
+>> >  	lock_page_cgroup(pc);
+>> 
+>> Should this be rcu_read_lock() instead of lock_page_cgroup()?
+>> 
+>
+> No. 
+>  - lock_page_cgroup() is for keeping page_cgroup's status stable.
+>  - rcu_read_lock() is for delaying to discard mem_cgroup object.
+>
+> rcu_read_lock() is just for delaying to discard object, not for avoiding
+> racy updates. All _updates_ requires proper lock or speculative logic as
+> atomic_inc_not_zero() etc... Basically, RCU is for avoiding use-after-free.
+
+
+Thanks for the info.  Referring to your original patch:
+> @@ -2014,11 +2025,11 @@ static int mem_cgroup_move_account(struc
+>  {
+>  	int ret = -EINVAL;
+>  	lock_page_cgroup(pc);
+> -	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
+> +	if (PageCgroupUsed(pc) && id_to_memcg(pc->mem_cgroup, true) == from) {
+>  		__mem_cgroup_move_account(pc, from, to, uncharge);
+>  		ret = 0;
+>  	}
+> -	unlock_page_cgroup(pc);
+> +	rcu_read_unlock();
 > 
-> Interesting. I am chasing a spurious TV connection on SDVO that has been
-> present since time immemorial. How certain are you that you've never have a
-> false detection in earlier kernels? It may not have affected the choice of
-> outputs, except sporadically, but it should be recorded in the debug logs
-> with drm.debug=0x6.
-> 
-> Does this make any difference?
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_sdvo.c
-> b/drivers/gpu/drm/i915/intel_sdvo
-> index ea2f4ab..e7ff378 100644
-> --- a/drivers/gpu/drm/i915/intel_sdvo.c
-> +++ b/drivers/gpu/drm/i915/intel_sdvo.c
-> @@ -1454,7 +1454,7 @@ intel_sdvo_detect(struct drm_connector *connector,
->                 return connector_status_unknown;
->         if (intel_sdvo->is_tv) {
->                 /* add 30ms delay when the output type is SDVO-TV */
-> -               mdelay(30);
-> +               mdelay(100);
->         }
->         if (!intel_sdvo_read_response(intel_sdvo, &response, 2))
->                 return connector_status_unknown;
-> 
-> Or (more likely):
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_sdvo.c
-> b/drivers/gpu/drm/i915/intel_sdvo
-> index ea2f4ab..77c455b 100644
-> --- a/drivers/gpu/drm/i915/intel_sdvo.c
-> +++ b/drivers/gpu/drm/i915/intel_sdvo.c
-> @@ -1216,8 +1216,8 @@ static int intel_sdvo_dpms(struct drm_encoder
-> *encoder, in
->                 temp = I915_READ(intel_sdvo->sdvo_reg);
->                 if ((temp & SDVO_ENABLE) == 0)
->                         intel_sdvo_write_sdvox(intel_sdvo, temp |
-> SDVO_ENABLE);
-> -               for (i = 0; i < 2; i++)
-> -                       intel_wait_for_vblank(dev, intel_crtc->pipe);
-> +
-> +               msleep(100);
->  
->                 status = intel_sdvo_get_trained_inputs(intel_sdvo,
->                                                        &input1, &input2);
-> 
-> -- 
-> Chris Wilson, Intel Open Source Technology Centre
 
-Hi Chris. Well, I think that I had these problems before, around
-2.6.28/2.6.29 but all I remember is that it was fixed relatively fast.
-Everything worked well untill 2.6.36-rc2 popped up. Not even sporadical
-events like these. What was strange about this that I wasn't able to
-kill TV connection with xrandr, so I was stuck with 1024x768 and all of
-a sudden upon subsequent restarts it somehow remembered that tv is
-disconnected and VGA resolution is native.
-
-xrandr -q
-
-TV1 disconnected (normal left inverted right x axis y axis)
-  848x480 (0x55)   14.5MHz
-        h: width   848 start  849 end  912 total  944 skew    0 clock
-15.4KHz
-        v: height  480 start  481 end  512 total  513           clock
-30.0Hz
-
-
-cat /var/log/Xorg.0.log | grep TV
-
-[    27.733] (II) intel(0): Output TV1 has no monitor section
-[    27.988] (II) intel(0): EDID for output TV1
-[    27.991] (II) intel(0): Printing probed modes for output TV1
-[    27.991] (II) intel(0): Output TV1 connected
-[    27.991] (II) intel(0): Output TV1 using initial mode 1024x768
-
-Above patches didn't help when applied to 2.6.36-rc2. 
-
-I'm going to compare dmesg between 2.6.35.3 and 2.6.36-rc2 with
-drm.debug=0x6. Thanks,
-
-Ivan
-
+It seems like mem_cgroup_move_account() is not balanced.  Why is
+lock_page_cgroup(pc) used to lock but rcu_read_unlock() used to unlock?
