@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab0HXWxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:53:43 -0400
-Received: from kroah.org ([198.145.64.141]:52078 "EHLO coco.kroah.org"
+	id S932494Ab0HXWyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:54:10 -0400
+Received: from kroah.org ([198.145.64.141]:52196 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756352Ab0HXWxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:38 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:23 2010
-Message-Id: <20100824222523.535484685@clark.site>
+	id S932422Ab0HXWyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:24 2010
+Message-Id: <20100824222524.911046529@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:25 -0700
+Date: Tue, 24 Aug 2010 15:24:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [13/59] x86, hotplug: Serialize CPU hotplug to avoid bringup concurrency issues
+        Christoph Lameter <cl@linux.com>, Carsten Otte <cotte@de.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [29/59] slab: fix object alignment
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@amd64.org>
+From: Carsten Otte <cotte@de.ibm.com>
 
-commit d7c53c9e822a4fefa13a0cae76f3190bfd0d5c11 upstream.
+commit 1ab335d8f85792e3b107ff8237d53cf64db714df upstream.
 
-When testing cpu hotplug code on 32-bit we kept hitting the "CPU%d:
-Stuck ??" message due to multiple cores concurrently accessing the
-cpu_callin_mask, among others.
+This patch fixes alignment of slab objects in case CONFIG_DEBUG_PAGEALLOC is
+active.
+Before this spot in kmem_cache_create, we have this situation:
+- align contains the required alignment of the object
+- cachep->obj_offset is 0 or equals align in case of CONFIG_DEBUG_SLAB
+- size equals the size of the object, or object plus trailing redzone in case
+  of CONFIG_DEBUG_SLAB
 
-Since these codepaths are not protected from concurrent access due to
-the fact that there's no sane reason for making an already complex
-code unnecessarily more complex - we hit the issue only when insanely
-switching cores off- and online - serialize hotplugging cores on the
-sysfs level and be done with it.
+This spot tries to fill one page per object if the object is in certain size
+limits, however setting obj_offset to PAGE_SIZE - size does break the object
+alignment since size may not be aligned with the required alignment.
+This patch simply adds an ALIGN(size, align) to the equation and fixes the
+object size detection accordingly.
 
-[ v2.1: fix !HOTPLUG_CPU build ]
+This code in drivers/s390/cio/qdio_setup_init has lead to incorrectly aligned
+slab objects (sizeof(struct qdio_q) equals 1792):
+	qdio_q_cache = kmem_cache_create("qdio_q", sizeof(struct qdio_q),
+					 256, 0, NULL);
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20100819181029.GC17171@aftab>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Carsten Otte <cotte@de.ibm.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/Kconfig          |    5 +++++
- arch/x86/kernel/smpboot.c |   19 +++++++++++++++++++
- 2 files changed, 24 insertions(+)
+ mm/slab.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -227,6 +227,11 @@ config X86_32_LAZY_GS
- 
- config KTIME_SCALAR
- 	def_bool X86_32
-+
-+config ARCH_CPU_PROBE_RELEASE
-+	def_bool y
-+	depends on HOTPLUG_CPU
-+
- source "init/Kconfig"
- source "kernel/Kconfig.freezer"
- 
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -88,6 +88,25 @@ DEFINE_PER_CPU(int, cpu_state) = { 0 };
- static DEFINE_PER_CPU(struct task_struct *, idle_thread_array);
- #define get_idle_for_cpu(x)      (per_cpu(idle_thread_array, x))
- #define set_idle_for_cpu(x, p)   (per_cpu(idle_thread_array, x) = (p))
-+
-+/*
-+ * We need this for trampoline_base protection from concurrent accesses when
-+ * off- and onlining cores wildly.
-+ */
-+static DEFINE_MUTEX(x86_cpu_hotplug_driver_mutex);
-+
-+void cpu_hotplug_driver_lock()
-+{
-+        mutex_lock(&x86_cpu_hotplug_driver_mutex);
-+}
-+
-+void cpu_hotplug_driver_unlock()
-+{
-+        mutex_unlock(&x86_cpu_hotplug_driver_mutex);
-+}
-+
-+ssize_t arch_cpu_probe(const char *buf, size_t count) { return -1; }
-+ssize_t arch_cpu_release(const char *buf, size_t count) { return -1; }
- #else
- static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- #define get_idle_for_cpu(x)      (idle_thread_array[(x)])
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2249,8 +2249,8 @@ kmem_cache_create (const char *name, siz
+ 	}
+ #if FORCED_DEBUG && defined(CONFIG_DEBUG_PAGEALLOC)
+ 	if (size >= malloc_sizes[INDEX_L3 + 1].cs_size
+-	    && cachep->obj_size > cache_line_size() && size < PAGE_SIZE) {
+-		cachep->obj_offset += PAGE_SIZE - size;
++	    && cachep->obj_size > cache_line_size() && ALIGN(size, align) < PAGE_SIZE) {
++		cachep->obj_offset += PAGE_SIZE - ALIGN(size, align);
+ 		size = PAGE_SIZE;
+ 	}
+ #endif
 
 
