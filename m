@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab0HXAF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 20:05:59 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:23068 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753461Ab0HXAF5 (ORCPT
+	id S1753903Ab0HXAGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 20:06:44 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:37528 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab0HXAGm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 20:05:57 -0400
-Subject: [PATCH] x86, vmware: Remove alloc_pmd_clone hook.
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Cc: Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Mon, 23 Aug 2010 17:05:57 -0700
-Message-Id: <1282608357.19396.36.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Aug 2010 20:06:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tWYCRr+LJFq946ZjjllzRKl9FcBe6xDSF64JAgDw4XhjaNjBHDBobSyHjaGAXTg6Tn
+         ioDPxHrlvPEQ3C+q+xJsQhrz9Kj5hnGq9HU3wRbjWstAOS9bApizahru/m2loxNzkXub
+         mmgN7A10g7iACJz7iqvBO50eSRXhLlXtyeneo=
+MIME-Version: 1.0
+In-Reply-To: <1282581656-26137-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1282581656-26137-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Tue, 24 Aug 2010 09:06:40 +0900
+Message-ID: <AANLkTim6+6-L8ALM0YO01D44PmZgsbcMrrwRxrPJMkpT@mail.gmail.com>
+Subject: Re: [spi-devel-general] [PATCH] spi/spi_s3c64xx: Warn if PIO
+ transfers time out
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch on top of tip/x86/vmware
+On Tue, Aug 24, 2010 at 1:40 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> When using PIO we have a timeout for the TX and RX FIFOs to ensure that
+> the data actually gets transferred. Warn if we hit that timeout - it
+> should never happen, but this makes sure we'll find out if it does.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/spi/spi_s3c64xx.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
+> index 7e627f7..f72e1c0 100644
+> --- a/drivers/spi/spi_s3c64xx.c
+> +++ b/drivers/spi/spi_s3c64xx.c
+> @@ -200,6 +200,9 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
+>                val = readl(regs + S3C64XX_SPI_STATUS);
+>        } while (TX_FIFO_LVL(val, sci) && loops--);
+>
+> +       if (loops == 0)
+> +               dev_warn(&sdd->pdev->dev, "Timed out flushing TX FIFO\n");
+> +
+>        /* Flush RxFIFO*/
+>        loops = msecs_to_loops(1);
+>        do {
+> @@ -210,6 +213,9 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
+>                        break;
+>        } while (loops--);
+>
+> +       if (loops == 0)
+> +               dev_warn(&sdd->pdev->dev, "Timed out flushing RX FIFO\n");
+> +
+>        val = readl(regs + S3C64XX_SPI_CH_CFG);
+>        val &= ~S3C64XX_SPI_CH_SW_RST;
+>        writel(val, regs + S3C64XX_SPI_CH_CFG);
 
-VMI was the only user of the alloc_pmd_clone hook, given that VMI
-is now removed we can also remove this hook.
+Ok, though I'll be very surprised to see the FIFO flush failing. We
+are not waiting
+for data to be transferred, but for SW Reset to make its effect.
 
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-Cc: Jeremy Fitzhardinge <jeremy@xensource.com>
-
-Index: linux-tip-master/arch/x86/include/asm/paravirt.h
-===================================================================
---- linux-tip-master.orig/arch/x86/include/asm/paravirt.h	2010-08-23 11:36:03.000000000 -0700
-+++ linux-tip-master/arch/x86/include/asm/paravirt.h	2010-08-23 16:34:26.000000000 -0700
-@@ -416,11 +416,6 @@ static inline void paravirt_alloc_pmd(st
- 	PVOP_VCALL2(pv_mmu_ops.alloc_pmd, mm, pfn);
- }
- 
--static inline void paravirt_alloc_pmd_clone(unsigned long pfn, unsigned long clonepfn,
--					    unsigned long start, unsigned long count)
--{
--	PVOP_VCALL4(pv_mmu_ops.alloc_pmd_clone, pfn, clonepfn, start, count);
--}
- static inline void paravirt_release_pmd(unsigned long pfn)
- {
- 	PVOP_VCALL1(pv_mmu_ops.release_pmd, pfn);
-Index: linux-tip-master/arch/x86/include/asm/paravirt_types.h
-===================================================================
---- linux-tip-master.orig/arch/x86/include/asm/paravirt_types.h	2010-08-23 11:36:03.000000000 -0700
-+++ linux-tip-master/arch/x86/include/asm/paravirt_types.h	2010-08-23 16:34:39.000000000 -0700
-@@ -255,7 +255,6 @@ struct pv_mmu_ops {
- 	 */
- 	void (*alloc_pte)(struct mm_struct *mm, unsigned long pfn);
- 	void (*alloc_pmd)(struct mm_struct *mm, unsigned long pfn);
--	void (*alloc_pmd_clone)(unsigned long pfn, unsigned long clonepfn, unsigned long start, unsigned long count);
- 	void (*alloc_pud)(struct mm_struct *mm, unsigned long pfn);
- 	void (*release_pte)(unsigned long pfn);
- 	void (*release_pmd)(unsigned long pfn);
-Index: linux-tip-master/arch/x86/kernel/paravirt.c
-===================================================================
---- linux-tip-master.orig/arch/x86/kernel/paravirt.c	2010-08-23 11:36:03.000000000 -0700
-+++ linux-tip-master/arch/x86/kernel/paravirt.c	2010-08-23 16:34:45.000000000 -0700
-@@ -413,7 +413,6 @@ struct pv_mmu_ops pv_mmu_ops = {
- 
- 	.alloc_pte = paravirt_nop,
- 	.alloc_pmd = paravirt_nop,
--	.alloc_pmd_clone = paravirt_nop,
- 	.alloc_pud = paravirt_nop,
- 	.release_pte = paravirt_nop,
- 	.release_pmd = paravirt_nop,
-Index: linux-tip-master/arch/x86/xen/mmu.c
-===================================================================
---- linux-tip-master.orig/arch/x86/xen/mmu.c	2010-08-23 16:29:20.000000000 -0700
-+++ linux-tip-master/arch/x86/xen/mmu.c	2010-08-23 16:35:16.000000000 -0700
-@@ -1969,7 +1969,6 @@ static const struct pv_mmu_ops xen_mmu_o
- 	.alloc_pte = xen_alloc_pte_init,
- 	.release_pte = xen_release_pte_init,
- 	.alloc_pmd = xen_alloc_pmd_init,
--	.alloc_pmd_clone = paravirt_nop,
- 	.release_pmd = xen_release_pmd_init,
- 
- #ifdef CONFIG_X86_64
-Index: linux-tip-master/arch/x86/mm/pgtable.c
-===================================================================
---- linux-tip-master.orig/arch/x86/mm/pgtable.c	2010-08-23 11:36:03.000000000 -0700
-+++ linux-tip-master/arch/x86/mm/pgtable.c	2010-08-23 16:38:48.000000000 -0700
-@@ -98,10 +98,6 @@ static void pgd_ctor(pgd_t *pgd)
- 		clone_pgd_range(pgd + KERNEL_PGD_BOUNDARY,
- 				swapper_pg_dir + KERNEL_PGD_BOUNDARY,
- 				KERNEL_PGD_PTRS);
--		paravirt_alloc_pmd_clone(__pa(pgd) >> PAGE_SHIFT,
--					 __pa(swapper_pg_dir) >> PAGE_SHIFT,
--					 KERNEL_PGD_BOUNDARY,
--					 KERNEL_PGD_PTRS);
- 	}
- 
- 	/* list required to sync kernel mapping updates */
-
-
+Acked-by: Jassi Brar <jassi.brar@samsung.com>
