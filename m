@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab0HXKqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 06:46:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38693 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab0HXKqc (ORCPT
+	id S1754893Ab0HXKq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 06:46:58 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:52683 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710Ab0HXKq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 06:46:32 -0400
+	Tue, 24 Aug 2010 06:46:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=P9uYaPBJY0hNxra1RftQDLdrbnzlvzeo4s25/aefh9p5QVSyc8oBj1AzfilfgeVms8
-         L8aJcvbr8yKJWA14jQkjsyZtLlzOJcq5tlb9pODxZekg4p3apWXnZiozxKCzqmh1DHmn
-         5LtZm+E1LtbiOwPO/gKuiwvXub6AYEk4vnvqs=
-Subject: Re: [PATCH v2 0/2] Deprecate ECCGETLAYOUT
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Brian Norris <norris@broadcom.com>
-Cc: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Sneha Narnakaje <nsnehaprabha@ti.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C6E9C23.6060703@broadcom.com>
-References: <4C5CA4A1.1040000@broadcom.com>
-	 <1282154806-9420-1-git-send-email-norris@broadcom.com>
-	 <4C6DD170.1060807@renesas.com>  <4C6E9C23.6060703@broadcom.com>
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=ZRpAb933HqmeS/KHV02zvY/xTJ/gyYRiRG5gWuK3hfIIO/SbefWfmnRS+c1ogD1914
+         YRghw2jYbZNKJD+fdvhX8M7IteVQie3ps5l/JiNU1r+OQCTDyCZ94gBXxGRd7p6x/zDV
+         yGPIxnAKT2ry4gAor2aAe4LKHgaz7tCPxIYLU=
+Subject: [PATCH] Input: pxa27x_keypad - remove input_free_device() in
+ pxa27x_keypad_remove()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Aug 2010 13:45:03 +0300
-Message-ID: <1282646703.24044.162.camel@localhost>
+Date: Tue, 24 Aug 2010 18:47:20 +0800
+Message-ID: <1282646840.2567.1.camel@phoenix>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-20 at 08:15 -0700, Brian Norris wrote:
-> So this leaves the important patch set as the following two independent, 
-> slightly different approaches to the same problem; we should choose 
-> between them:
-> [PATCH v3 1/2] mtd: Expand...
-> [PATCH v2 2/2] mtd: nand: Expand...
+No need to call input_free_device() after input_unregister_device().
 
-Could you please re-send up-to date (against current mtd-2.6.git tree)
-patches which implement your strategy #2? I'd add them to my l2 tree.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/input/keyboard/pxa27x_keypad.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/input/keyboard/pxa27x_keypad.c b/drivers/input/keyboard/pxa27x_keypad.c
+index 0e53b3b..f32404f 100644
+--- a/drivers/input/keyboard/pxa27x_keypad.c
++++ b/drivers/input/keyboard/pxa27x_keypad.c
+@@ -567,8 +567,6 @@ static int __devexit pxa27x_keypad_remove(struct platform_device *pdev)
+ 	clk_put(keypad->clk);
+ 
+ 	input_unregister_device(keypad->input_dev);
+-	input_free_device(keypad->input_dev);
+-
+ 	iounmap(keypad->mmio_base);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.7.0.4
+
+
 
