@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab0HXVjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 17:39:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48068 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755993Ab0HXVjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 17:39:53 -0400
-Message-ID: <4C743C0F.2010101@zytor.com>
-Date: Tue, 24 Aug 2010 14:39:27 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Jack Steiner <steiner@sgi.com>, mingo@elte.hu, tglx@linutronix.de,
-        lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-References: <20100722152220.GA18290@sgi.com> <20100724001449.GA9618@khazad-dum.debian.net>
-In-Reply-To: <20100724001449.GA9618@khazad-dum.debian.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756093Ab0HXVkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 17:40:05 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:48926 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755993Ab0HXVkC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 17:40:02 -0400
+Date: Tue, 24 Aug 2010 23:39:31 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Daniel Kiper <dkiper@net-space.pl>,
+        mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, apic: Fix apic=debug boot crash
+Message-ID: <20100824213931.GA1192@router-fw-old.local.net-space.pl>
+References: <20100819224616.GB9967@router-fw-old.local.net-space.pl> <tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org> <AANLkTim9kjBp68LqieU3MDLbkRDiWLNQjtUvjEbc9Hca@mail.gmail.com> <20100823081212.GA13297@router-fw-old.local.net-space.pl> <9cca0990-1b78-40e7-a71d-f550b4f504aa@email.android.com> <4C72B6F7.8010706@kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C72B6F7.8010706@kernel.org>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 05:14 PM, Henrique de Moraes Holschuh wrote:
-> 
-> Well, as it was raised in this thread, ACPI tables are likely to be near RAM
-> regions used for IPC with the firmware or SMBIOS, and we have no idea of the
-> kind of crap that could happen if we enable caching on those areas.
-> 
+Hello,
 
-I'm really not sure I buy that argument -- at least not on x86: if that
-is the case, then when PAT is off (and we fall down to MTRR-only
-control) then we'd have the same failures.  If we mark them cacheable
-and the MTRRs say uncachable, then we will *still* not cache them (since
-MTRR UC overrides PAT WB -- in fact "PAT off" really just means ALL the
-pagetables are marked WB.)
+On 08/23/2010 07:54 AM, H. Peter Anvin wrote:
+> It's already applied.
 
-In that sense it is probably *safer* to map them WB, since the firmware
-if it uses page tables at all is extremely likely to have all the cache
-control bits at zero (meaning WB) -- and if it doesn't use page tables,
-they are functionally zero by default (MTRR control only.)
+Thx.
 
-So I think it'd be safer to map them cacheable -- regardless of if we
-want to copy them to RAM or not.
+On Mon, Aug 23, 2010 at 10:59:19AM -0700, Yinghai Lu wrote:
+[...]
+> >>>> x86, apic: Fix apic=debug boot crash
+> >>>>
+> >>>> Fix a boot crash when apic=debug is used and the APIC is
+> >>>> not properly initialized.
+> >>>>
+> >>>> This issue appears during Xen Dom0 kernel boot but the
+> >>>> fix is generic and the crash could occur on real hardware
+> >>>> as well.
+> >>>
+> >>> Do you have any report on real hardware?
+> >>> that could not happen on real hardware.
+> >>
+> >> Till now no, however I think it is good idea
+> >> to apply this patch now. It is not worth to wait
+> >> for another null pointer dereference.
+>
+> no, we should add BUG_ON() etc debug info there to see why that null cfg could happen.
+> because according to code, we should have null there.
 
-	-hpa
+I think that BUG_ON() is too strong here because
+it is "debug" function and it should work also
+with let's say "invalid" data (in Xen case it is
+normal because APIC state is managed directly
+by hypervisor).
 
+Additionally, with this patch it is easy to
+differentiate between cfg != NULL and
+cfg == NULL. Please look below:
 
+cfg != NULL:
+IRQ to pin mappings:
+IRQ0 -> 0:2
+IRQ1 -> 0:1
+IRQ3 -> 0:3
+IRQ4 -> 0:4
+IRQ5 -> 0:5
+IRQ6 -> 0:6
+IRQ7 -> 0:7
+IRQ8 -> 0:8
+IRQ9 -> 0:9
+IRQ10 -> 0:10
+IRQ11 -> 0:11
+IRQ12 -> 0:12
+IRQ13 -> 0:13
+IRQ14 -> 0:14
+IRQ15 -> 0:15
+.................................... done.
+
+cfg == NULL:
+IRQ to pin mappings:
+.................................... done.
+
+If I missed something or if you have any
+questions please drop me a line.
+
+Daniel
