@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933900Ab0HXXRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:17:09 -0400
-Received: from kroah.org ([198.145.64.141]:41072 "EHLO coco.kroah.org"
+	id S933908Ab0HXXRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:17:39 -0400
+Received: from kroah.org ([198.145.64.141]:41058 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933444Ab0HXXCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:18 -0400
+	id S933436Ab0HXXCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:15 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
-Message-Id: <20100824224505.278927481@clark.site>
+Message-Id: <20100824224505.098533989@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:51 -0700
+Date: Tue, 24 Aug 2010 15:44:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Eric Anholt <eric@anholt.net>
-Subject: [046/114] drm/i915: i8xx also doesnt like multiple oustanding pageflips
+        Stefani Seibold <stefani@seibold.net>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [044/114] mtd: change struct flchip_shared spinlock locking into mutex
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +27,213 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Stefani Seibold <stefani@seibold.net>
 
-commit 6146b3d61925116e3fecce36c2fd873665bd6614 upstream.
+commit 8ae664184c45def51ff0b61d4bd6c6671db6cb4f upstream.
 
-My i855GM suffers from a 80k/s interrupt storm without this.
-So add 2nd gen to the list of things that don't like more than
-one outstanding pageflip request.
+This patch prevent to schedule while atomic by changing the
+flchip_shared spinlock into a mutex. This should be save since no atomic
+path will use this lock.
 
-Furthermore I've changed the busy loop into a ringbuffer wait.
-Busy-loops that don't check whether the chip died are simply evil.
-And performance should actually improve, because there's usually
-a decent amount of rendering queued on the gpu, hopefully rendering
-that MI_WAIT into a noop by the time it's executed.
+It was suggested by Arnd Bergmann and Vasiliy Kulikov.
 
-The current code holds dev->struct_mutex while executing this loop,
-hence stalling all other gem activity anyway.
-
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-[anholt: resolved against conflict]
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/mtd/chips/cfi_cmdset_0001.c |   20 ++++++++++----------
+ drivers/mtd/lpddr/lpddr_cmds.c      |   20 ++++++++++----------
+ include/linux/mtd/flashchip.h       |    2 +-
+ 3 files changed, 21 insertions(+), 21 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4816,14 +4816,16 @@ static int intel_crtc_page_flip(struct d
- 	work->pending_flip_obj = obj;
+--- a/drivers/mtd/chips/cfi_cmdset_0001.c
++++ b/drivers/mtd/chips/cfi_cmdset_0001.c
+@@ -717,7 +717,7 @@ static int cfi_intelext_partition_fixup(
+ 		chip = &newcfi->chips[0];
+ 		for (i = 0; i < cfi->numchips; i++) {
+ 			shared[i].writing = shared[i].erasing = NULL;
+-			spin_lock_init(&shared[i].lock);
++			mutex_init(&shared[i].lock);
+ 			for (j = 0; j < numparts; j++) {
+ 				*chip = cfi->chips[i];
+ 				chip->start += j << partshift;
+@@ -886,7 +886,7 @@ static int get_chip(struct map_info *map
+ 		 */
+ 		struct flchip_shared *shared = chip->priv;
+ 		struct flchip *contender;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		contender = shared->writing;
+ 		if (contender && contender != chip) {
+ 			/*
+@@ -899,7 +899,7 @@ static int get_chip(struct map_info *map
+ 			 * get_chip returns success we're clear to go ahead.
+ 			 */
+ 			ret = mutex_trylock(&contender->mutex);
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			if (!ret)
+ 				goto retry;
+ 			mutex_unlock(&chip->mutex);
+@@ -914,7 +914,7 @@ static int get_chip(struct map_info *map
+ 				mutex_unlock(&contender->mutex);
+ 				return ret;
+ 			}
+-			spin_lock(&shared->lock);
++			mutex_lock(&shared->lock);
  
- 	if (intel_crtc->plane)
--		flip_mask = I915_DISPLAY_PLANE_B_FLIP_PENDING_INTERRUPT;
-+		flip_mask = MI_WAIT_FOR_PLANE_B_FLIP;
- 	else
--		flip_mask = I915_DISPLAY_PLANE_A_FLIP_PENDING_INTERRUPT;
-+		flip_mask = MI_WAIT_FOR_PLANE_A_FLIP;
+ 			/* We should not own chip if it is already
+ 			 * in FL_SYNCING state. Put contender and retry. */
+@@ -930,7 +930,7 @@ static int get_chip(struct map_info *map
+ 		 * on this chip. Sleep. */
+ 		if (mode == FL_ERASING && shared->erasing
+ 		    && shared->erasing->oldstate == FL_ERASING) {
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			add_wait_queue(&chip->wq, &wait);
+ 			mutex_unlock(&chip->mutex);
+@@ -944,7 +944,7 @@ static int get_chip(struct map_info *map
+ 		shared->writing = chip;
+ 		if (mode == FL_ERASING)
+ 			shared->erasing = chip;
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 	ret = chip_ready(map, chip, adr, mode);
+ 	if (ret == -EAGAIN)
+@@ -959,7 +959,7 @@ static void put_chip(struct map_info *ma
  
--	/* Wait for any previous flip to finish */
--	if (IS_GEN3(dev))
--		while (I915_READ(ISR) & flip_mask)
--			;
-+	if (IS_GEN3(dev) || IS_GEN2(dev)) {
-+		BEGIN_LP_RING(2);
-+		OUT_RING(MI_WAIT_FOR_EVENT | flip_mask);
-+		OUT_RING(0);
-+		ADVANCE_LP_RING();
-+	}
+ 	if (chip->priv) {
+ 		struct flchip_shared *shared = chip->priv;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		if (shared->writing == chip && chip->oldstate == FL_READY) {
+ 			/* We own the ability to write, but we're done */
+ 			shared->writing = shared->erasing;
+@@ -967,7 +967,7 @@ static void put_chip(struct map_info *ma
+ 				/* give back ownership to who we loaned it from */
+ 				struct flchip *loaner = shared->writing;
+ 				mutex_lock(&loaner->mutex);
+-				spin_unlock(&shared->lock);
++				mutex_unlock(&shared->lock);
+ 				mutex_unlock(&chip->mutex);
+ 				put_chip(map, loaner, loaner->start);
+ 				mutex_lock(&chip->mutex);
+@@ -985,11 +985,11 @@ static void put_chip(struct map_info *ma
+ 			 * Don't let the switch below mess things up since
+ 			 * we don't have ownership to resume anything.
+ 			 */
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			wake_up(&chip->wq);
+ 			return;
+ 		}
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
  
- 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
- 	offset = obj_priv->gtt_offset;
+ 	switch(chip->oldstate) {
+--- a/drivers/mtd/lpddr/lpddr_cmds.c
++++ b/drivers/mtd/lpddr/lpddr_cmds.c
+@@ -98,7 +98,7 @@ struct mtd_info *lpddr_cmdset(struct map
+ 	numchips = lpddr->numchips / lpddr->qinfo->HWPartsNum;
+ 	for (i = 0; i < numchips; i++) {
+ 		shared[i].writing = shared[i].erasing = NULL;
+-		spin_lock_init(&shared[i].lock);
++		mutex_init(&shared[i].lock);
+ 		for (j = 0; j < lpddr->qinfo->HWPartsNum; j++) {
+ 			*chip = lpddr->chips[i];
+ 			chip->start += j << lpddr->chipshift;
+@@ -217,7 +217,7 @@ static int get_chip(struct map_info *map
+ 		 */
+ 		struct flchip_shared *shared = chip->priv;
+ 		struct flchip *contender;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		contender = shared->writing;
+ 		if (contender && contender != chip) {
+ 			/*
+@@ -230,7 +230,7 @@ static int get_chip(struct map_info *map
+ 			 * get_chip returns success we're clear to go ahead.
+ 			 */
+ 			ret = mutex_trylock(&contender->mutex);
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			if (!ret)
+ 				goto retry;
+ 			mutex_unlock(&chip->mutex);
+@@ -245,7 +245,7 @@ static int get_chip(struct map_info *map
+ 				mutex_unlock(&contender->mutex);
+ 				return ret;
+ 			}
+-			spin_lock(&shared->lock);
++			mutex_lock(&shared->lock);
+ 
+ 			/* We should not own chip if it is already in FL_SYNCING
+ 			 * state. Put contender and retry. */
+@@ -261,7 +261,7 @@ static int get_chip(struct map_info *map
+ 		   Must sleep in such a case. */
+ 		if (mode == FL_ERASING && shared->erasing
+ 		    && shared->erasing->oldstate == FL_ERASING) {
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			add_wait_queue(&chip->wq, &wait);
+ 			mutex_unlock(&chip->mutex);
+@@ -275,7 +275,7 @@ static int get_chip(struct map_info *map
+ 		shared->writing = chip;
+ 		if (mode == FL_ERASING)
+ 			shared->erasing = chip;
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 
+ 	ret = chip_ready(map, chip, mode);
+@@ -348,7 +348,7 @@ static void put_chip(struct map_info *ma
+ {
+ 	if (chip->priv) {
+ 		struct flchip_shared *shared = chip->priv;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		if (shared->writing == chip && chip->oldstate == FL_READY) {
+ 			/* We own the ability to write, but we're done */
+ 			shared->writing = shared->erasing;
+@@ -356,7 +356,7 @@ static void put_chip(struct map_info *ma
+ 				/* give back the ownership */
+ 				struct flchip *loaner = shared->writing;
+ 				mutex_lock(&loaner->mutex);
+-				spin_unlock(&shared->lock);
++				mutex_unlock(&shared->lock);
+ 				mutex_unlock(&chip->mutex);
+ 				put_chip(map, loaner);
+ 				mutex_lock(&chip->mutex);
+@@ -374,11 +374,11 @@ static void put_chip(struct map_info *ma
+ 			 * Don't let the switch below mess things up since
+ 			 * we don't have ownership to resume anything.
+ 			 */
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			wake_up(&chip->wq);
+ 			return;
+ 		}
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 
+ 	switch (chip->oldstate) {
+--- a/include/linux/mtd/flashchip.h
++++ b/include/linux/mtd/flashchip.h
+@@ -92,7 +92,7 @@ struct flchip {
+ /* This is used to handle contention on write/erase operations
+    between partitions of the same physical chip. */
+ struct flchip_shared {
+-	spinlock_t lock;
++	struct mutex lock;
+ 	struct flchip *writing;
+ 	struct flchip *erasing;
+ };
 
 
