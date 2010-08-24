@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab0HXPqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:46:15 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:44263 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192Ab0HXPqL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:46:11 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC PATCHSET block#for-2.6.36-post] block: convert to REQ_FLUSH/FUA
-Date: Tue, 24 Aug 2010 17:45:34 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
-Cc: lars.ellenberg@linbit.com, Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org
-References: <1281977523-19335-1-git-send-email-tj@kernel.org> <20100823164709.GA31221@lst.de>
-In-Reply-To: <20100823164709.GA31221@lst.de>
-X-OTRS-FollowUp-SenderType: agent
+	id S1755476Ab0HXPts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:49:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56605 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754873Ab0HXPtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 11:49:46 -0400
+Date: Tue, 24 Aug 2010 17:49:44 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Marcel Holtmann <marcel@holtmann.org>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] usbhid: Set Report ID properly for Output reports
+ on the Control endpoint.
+In-Reply-To: <1282020244-25786-1-git-send-email-alan@signal11.us>
+Message-ID: <alpine.LNX.2.00.1008241747570.1019@pobox.suse.cz>
+References: <1282020244-25786-1-git-send-email-alan@signal11.us>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008241745.35242.philipp.reisner@linbit.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 23. August 2010, um 18:47:09 schrieb Christoph Hellwig:
-> Phillipp and Lars,
+On Tue, 17 Aug 2010, Alan Ott wrote:
+
+> When I made commit 29129a98e6fc89, I didn't account for *buf not being
+> the report ID anymore, as buf is incremented.
 > 
-> can you look at the changes in
+> This applies to 2.6.35 and newer.
 > 
-> 	http://www.spinics.net/lists/linux-fsdevel/msg35884.html
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>  drivers/hid/usbhid/hid-core.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> and
-> 
-> 	http://www.spinics.net/lists/linux-fsdevel/msg36001.html
-> 
-> and see how drbd can be adapted to it?  It's one of two drivers still
-> missing, and because it's not quite intuitive what it's doing it's
-> very hard for Tejun and me to help.
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index b729c02..ffd6899 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -828,6 +828,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+>  		}
+>  	} else {
+>  		int skipped_report_id = 0;
+> +		int report_id = buf[0];
+>  		if (buf[0] == 0x0) {
+>  			/* Don't send the Report ID */
+>  			buf++;
+> @@ -837,7 +838,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+>  		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+>  			HID_REQ_SET_REPORT,
+>  			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+> -			((report_type + 1) << 8) | *buf,
+> +			((report_type + 1) << 8) | report_id,
+>  			interface->desc.bInterfaceNumber, buf, count,
+>  			USB_CTRL_SET_TIMEOUT);
+>  		/* count also the report id, if this was a numbered report. */
 
-Hi Christoph,
+Good catch, applied, thank you.
 
-I was able to finish the greater part of the necessary work today.
-You can find it there:
-
-git://git.drbd.org/linux-2.6-drbd.git flush-fua
-
-Of course that is based on
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua
-
-REQ_HARDBARRIER is not yet completely eliminated from drbd, but I
-am very confident that I will be able to finish that by tomorrow.
-
-Best,
- Phil
 -- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
-
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
+Jiri Kosina
+SUSE Labs, Novell Inc.
