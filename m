@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab0HXWUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:20:53 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:17953 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155Ab0HXWUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:20:51 -0400
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Marc Aurele La France <tsi@ualberta.ca>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-In-Reply-To: <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca>
-	 <20100823080543.319143e3@nehalam>
-	 <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
-	 <1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
-	 <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Tue, 24 Aug 2010 23:20:41 +0100
-Message-ID: <1282688441.22839.34.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932313Ab0HXWVk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:21:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932097Ab0HXWVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:21:37 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] NOMMU: Stub out vm_get_page_prot() if there's no MMU
+To: vapier@gentoo.org
+Cc: linux-kernel@vger.kernel.org, uclinux-dev@uclinux.org,
+        David Howells <dhowells@redhat.com>
+Date: Tue, 24 Aug 2010 23:21:30 +0100
+Message-ID: <20100824222130.3667.11971.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Aug 2010 22:24:26.0777 (UTC) FILETIME=[1CA69890:01CB43DB]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17590.005
-X-TM-AS-Result: No--27.001400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-24 at 13:49 -0600, Marc Aurele La France wrote:
-> On Tue, 24 Aug 2010, Ben Hutchings wrote:
-> > On Tue, 2010-08-24 at 09:14 -0600, Marc Aurele La France wrote:
-> >> On Mon, 23 Aug 2010, Stephen Hemminger wrote:
-> >>> On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
-> >>> Marc Aurele La France <tsi@ualberta.ca> wrote:
-> >>>> In regrouping for my next tack at this, I noticed that all stack traces go
-> >>>> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
-> >>>> A _very_ rough draft that would have ip_append_data() temporarily drop down
-> >>>> to a smaller fake MTU follows ...
-> 
-> >>> Why doesn't NFS generate page size fragments?  Does Infiniband or your
-> >>> device not support this?  Any thing that requires higher order allocation
-> >>> is going to unstable under load.  Let's fix the cause not the apply bandaid
-> >>> solution to the symptom.
-> 
-> >> From what I can tell, IP fragmentation is done centrally.
-> > [...]
-> 
-> > Stephen and I are not talking about IP fragmentation, but about the
-> > ability to append 'fragments' to an skb rather than putting the entire
-> > packet payload in a linear buffer.  See
-> > <http://vger.kernel.org/~davem/skb_data.html>.
-> 
-> Any payload has to either fit in the MTU, or has to be broken up into 
-> MTU-sized (or less) fragments, come hell or high water.  That this is done 
-> centrally is a good thing.
+Stub out vm_get_page_prot() if there's no MMU.
 
-Not necessarily.  Offloading it to hardware, where possible, is usually
-a performance win.
+This was added by commit:
 
-> It is the "(or less)" part that I am working towards here.
+	commit 804af2cf6e7af31d2e664b54e657dddd9b531dbd
+	Author: Hugh Dickins <hugh@veritas.com>
+	Date:   Wed Jul 26 21:39:49 2006 +0100
+	Subject: [AGPGART] remove private page protection map
 
-The inability to allocate large linear buffers is not a good reason to
-generate packets smaller than the MTU.  You are working around the real
-problem.
+and is used in commit:
 
-Ben.
+	commit c07fbfd17e614a76b194f371c5331e21e6cffb54
+	Author: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+	Date:   Tue Aug 10 18:02:45 2010 -0700
+	Subject: fbmem: VM_IO set, but not propagated
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+in the fbmem video driver, but the function doesn't exist on NOMMU, resulting
+in an undefined symbol at link time.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ include/linux/mm.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 709f672..6b258c5 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1357,7 +1357,15 @@ static inline unsigned long vma_pages(struct vm_area_struct *vma)
+ 	return (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ }
+ 
++#ifdef CONFIG_MMU
+ pgprot_t vm_get_page_prot(unsigned long vm_flags);
++#else
++static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
++{
++	return __pgprot(0);
++}
++#endif
++
+ struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+ 			unsigned long pfn, unsigned long size, pgprot_t);
 
