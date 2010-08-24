@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab0HXXCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:02:43 -0400
-Received: from kroah.org ([198.145.64.141]:41040 "EHLO coco.kroah.org"
+	id S933635Ab0HXXOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:14:46 -0400
+Received: from kroah.org ([198.145.64.141]:41162 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932590Ab0HXXCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
-Message-Id: <20100824224505.527197512@clark.site>
+	id S1755758Ab0HXXCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:06 2010
+Message-Id: <20100824224506.635112644@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:54 -0700
+Date: Tue, 24 Aug 2010 15:45:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [049/114] dm snapshot: test chunk size against both origin and snapshot
+        Dmitry Popov <dp@highloadlab.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [062/114] tcp: cookie transactions setsockopt memory leak
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,145 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit c24110450650f17f7d3ba4fbe01f01ac5a115456 upstream.
+From: Dmitry Popov <dp@highloadlab.com>
 
-Validate chunk size against both origin and snapshot sector size
+[ Upstream commit a3bdb549e30e7a263f7a589747c40e9c50110315 ]
 
-Don't allow chunk size smaller than either origin or snapshot logical
-sector size. Reading or writing data not aligned to sector size is not
-allowed and causes immediate errors.
+There is a bug in do_tcp_setsockopt(net/ipv4/tcp.c),
+TCP_COOKIE_TRANSACTIONS case.
+In some cases (when tp->cookie_values == NULL) new tcp_cookie_values
+structure can be allocated (at cvp), but not bound to
+tp->cookie_values. So a memory leak occurs.
 
-This requires us to open the origin before initialising the
-exception store and to export dm_snap_origin.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Reviewed-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/md/dm-exception-store.c |    4 +++-
- drivers/md/dm-exception-store.h |    3 ++-
- drivers/md/dm-snap.c            |   36 +++++++++++++++++++++---------------
- 3 files changed, 26 insertions(+), 17 deletions(-)
+ net/ipv4/tcp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-exception-store.c
-+++ b/drivers/md/dm-exception-store.c
-@@ -173,7 +173,9 @@ int dm_exception_store_set_chunk_size(st
- 
- 	/* Validate the chunk size against the device block size */
- 	if (chunk_size %
--	    (bdev_logical_block_size(dm_snap_cow(store->snap)->bdev) >> 9)) {
-+	    (bdev_logical_block_size(dm_snap_cow(store->snap)->bdev) >> 9) ||
-+	    chunk_size %
-+	    (bdev_logical_block_size(dm_snap_origin(store->snap)->bdev) >> 9)) {
- 		*error = "Chunk size is not a multiple of device blocksize";
- 		return -EINVAL;
- 	}
---- a/drivers/md/dm-exception-store.h
-+++ b/drivers/md/dm-exception-store.h
-@@ -126,8 +126,9 @@ struct dm_exception_store {
- };
- 
- /*
-- * Obtain the cow device used by a given snapshot.
-+ * Obtain the origin or cow device used by a given snapshot.
-  */
-+struct dm_dev *dm_snap_origin(struct dm_snapshot *snap);
- struct dm_dev *dm_snap_cow(struct dm_snapshot *snap);
- 
- /*
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -148,6 +148,12 @@ struct dm_snapshot {
- #define RUNNING_MERGE          0
- #define SHUTDOWN_MERGE         1
- 
-+struct dm_dev *dm_snap_origin(struct dm_snapshot *s)
-+{
-+	return s->origin;
-+}
-+EXPORT_SYMBOL(dm_snap_origin);
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2176,6 +2176,8 @@ static int do_tcp_setsockopt(struct sock
+ 				      GFP_KERNEL);
+ 			if (cvp == NULL)
+ 				return -ENOMEM;
 +
- struct dm_dev *dm_snap_cow(struct dm_snapshot *s)
- {
- 	return s->cow;
-@@ -1065,10 +1071,6 @@ static int snapshot_ctr(struct dm_target
- 		origin_mode = FMODE_WRITE;
- 	}
- 
--	origin_path = argv[0];
--	argv++;
--	argc--;
--
- 	s = kmalloc(sizeof(*s), GFP_KERNEL);
- 	if (!s) {
- 		ti->error = "Cannot allocate snapshot context private "
-@@ -1077,6 +1079,16 @@ static int snapshot_ctr(struct dm_target
- 		goto bad;
- 	}
- 
-+	origin_path = argv[0];
-+	argv++;
-+	argc--;
++			kref_init(&cvp->kref);
+ 		}
+ 		lock_sock(sk);
+ 		tp->rx_opt.cookie_in_always =
+@@ -2190,12 +2192,11 @@ static int do_tcp_setsockopt(struct sock
+ 				 */
+ 				kref_put(&tp->cookie_values->kref,
+ 					 tcp_cookie_values_release);
+-				kref_init(&cvp->kref);
+-				tp->cookie_values = cvp;
+ 			} else {
+ 				cvp = tp->cookie_values;
+ 			}
+ 		}
 +
-+	r = dm_get_device(ti, origin_path, origin_mode, &s->origin);
-+	if (r) {
-+		ti->error = "Cannot get origin device";
-+		goto bad_origin;
-+	}
+ 		if (cvp != NULL) {
+ 			cvp->cookie_desired = ctd.tcpct_cookie_desired;
+ 
+@@ -2209,6 +2210,8 @@ static int do_tcp_setsockopt(struct sock
+ 				cvp->s_data_desired = ctd.tcpct_s_data_desired;
+ 				cvp->s_data_constant = 0; /* false */
+ 			}
 +
- 	cow_path = argv[0];
- 	argv++;
- 	argc--;
-@@ -1097,12 +1109,6 @@ static int snapshot_ctr(struct dm_target
- 	argv += args_used;
- 	argc -= args_used;
- 
--	r = dm_get_device(ti, origin_path, origin_mode, &s->origin);
--	if (r) {
--		ti->error = "Cannot get origin device";
--		goto bad_origin;
--	}
--
- 	s->ti = ti;
- 	s->valid = 1;
- 	s->active = 0;
-@@ -1212,15 +1218,15 @@ bad_kcopyd:
- 	dm_exception_table_exit(&s->complete, exception_cache);
- 
- bad_hash_tables:
--	dm_put_device(ti, s->origin);
--
--bad_origin:
- 	dm_exception_store_destroy(s->store);
- 
- bad_store:
- 	dm_put_device(ti, s->cow);
- 
- bad_cow:
-+	dm_put_device(ti, s->origin);
-+
-+bad_origin:
- 	kfree(s);
- 
- bad:
-@@ -1314,12 +1320,12 @@ static void snapshot_dtr(struct dm_targe
- 
- 	mempool_destroy(s->pending_pool);
- 
--	dm_put_device(ti, s->origin);
--
- 	dm_exception_store_destroy(s->store);
- 
- 	dm_put_device(ti, s->cow);
- 
-+	dm_put_device(ti, s->origin);
-+
- 	kfree(s);
- }
- 
++			tp->cookie_values = cvp;
+ 		}
+ 		release_sock(sk);
+ 		return err;
 
 
