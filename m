@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933754Ab0HXXad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:30:33 -0400
-Received: from kroah.org ([198.145.64.141]:40529 "EHLO coco.kroah.org"
+	id S933017Ab0HXW7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:59:23 -0400
+Received: from kroah.org ([198.145.64.141]:40482 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933023Ab0HXW7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:25 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:17 2010
-Message-Id: <20100824224217.466129174@clark.site>
+	id S932971Ab0HXW7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:16 2010
+Message-Id: <20100824224216.705515426@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:25 -0700
+Date: Tue, 24 Aug 2010 15:42:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Christoph Fritz <chf.fritz@googlemail.com>
-Subject: [63/91] pcmcia: avoid buffer overflow in pcmcia_setup_isa_irq
+        Changli Gao <xiaosuo@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [54/91] act_nat: the checksum of ICMP doesnt have pseudo header
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dominik Brodowski <linux@dominikbrodowski.net>
 
-commit 127c03cdbad9bd5af5d7f33bd31a1015a90cb77f upstream.
+From: Changli Gao <xiaosuo@gmail.com>
 
-NR_IRQS may be as low as 16, causing a (harmless?) buffer overflow in
-pcmcia_setup_isa_irq():
+[ Upstream commit 3a3dfb062c2e086c202d34f09ce29634515ad256 ]
 
-static u8 pcmcia_used_irq[NR_IRQS];
+after updating the value of the ICMP payload, inet_proto_csum_replace4() should
+be called with zero pseudohdr.
 
-...
-
-		if ((try < 32) && pcmcia_used_irq[irq])
-			continue;
-
-This is read-only, so if this address would be non-zero, it would just
-mean we would not attempt an IRQ >= NR_IRQS -- which would fail anyway!
-And as request_irq() fails for an irq >= NR_IRQS, the setting code path:
-
-			pcmcia_used_irq[irq]++;
-
-is never reached as well.
-
-Reported-by: Christoph Fritz <chf.fritz@googlemail.com>
-Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/pcmcia/pcmcia_resource.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/sched/act_nat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pcmcia/pcmcia_resource.c
-+++ b/drivers/pcmcia/pcmcia_resource.c
-@@ -41,7 +41,7 @@ module_param(io_speed, int, 0444);
- #ifdef CONFIG_PCMCIA_PROBE
- #include <asm/irq.h>
- /* mask of IRQs already reserved by other cards, we should avoid using them */
--static u8 pcmcia_used_irq[NR_IRQS];
-+static u8 pcmcia_used_irq[32];
- #endif
+--- a/net/sched/act_nat.c
++++ b/net/sched/act_nat.c
+@@ -240,7 +240,7 @@ static int tcf_nat(struct sk_buff *skb,
+ 			iph->saddr = new_addr;
  
- static int pcmcia_adjust_io_region(struct resource *res, unsigned long start,
-@@ -768,6 +768,9 @@ int pcmcia_request_irq(struct pcmcia_dev
- 		for (try = 0; try < 64; try++) {
- 			irq = try % 32;
- 
-+			if (irq > NR_IRQS)
-+				continue;
-+
- 			/* marked as available by driver, and not blocked by userspace? */
- 			if (!((mask >> irq) & 1))
- 				continue;
+ 		inet_proto_csum_replace4(&icmph->checksum, skb, addr, new_addr,
+-					 1);
++					 0);
+ 		break;
+ 	}
+ 	default:
 
 
