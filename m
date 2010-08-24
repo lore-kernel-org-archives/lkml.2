@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab0HXBhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 21:37:31 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44050 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab0HXBh3 convert rfc822-to-8bit (ORCPT
+	id S1754058Ab0HXBl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 21:41:27 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:16588 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab0HXBlX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 21:37:29 -0400
+	Mon, 23 Aug 2010 21:41:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=rk95pjcXM0t1IN0RnQiPdwBHbsOSf83j3w3NNJHeFhKSIeT/Gsn8IrbU+G1yDo++U1
-         BANCXrTetJOkJDHJMpppONA77WeLlaRBazCL/tkIocKLTI8N/tH5xqLWJy6Ih+qs8n3i
-         wQxYQklji5Ynqtsb/iqo19Ri1AR9787jxr2DE=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=eMdYFxYHpyYbNwg8JM4OVIQVlCQj0T3NNaDa3SGuuU+xyFlwSeqzGRlXMLypawVQrK
+         PS5rxx9LMwn6oSNf+tPw==
 MIME-Version: 1.0
-In-Reply-To: <1282281295.22370.400.camel@pasglop>
-References: <1282107803.22370.173.camel@pasglop>
-	<20100817.222818.193699062.davem@davemloft.net>
-	<1282195403.22370.296.camel@pasglop>
-	<20100818.222925.233689776.davem@davemloft.net>
-	<1282281295.22370.400.camel@pasglop>
-Date: Mon, 23 Aug 2010 20:37:23 -0500
-X-Google-Sender-Auth: _a2S8ikWYjUWdP2ZKZjJQJN4Oh0
-Message-ID: <AANLkTinsTMxmhScg2nfr=4hASqPbsqAOSgnG-V21N-P+@mail.gmail.com>
-Subject: Re: [PATCH 1/2] powerpc: Make rwsem use "long" type
-From: Timur Tabi <timur@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulus@au.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        David Miller <davem@davemloft.net>
+In-Reply-To: <20100824100943.F3B6.A69D9226@jp.fujitsu.com>
+References: <20100821054808.GA29869@localhost> <AANLkTikS+DUfPz0E2SmCZTQBWL8h2zSsGM8--yqEaVgZ@mail.gmail.com>
+ <20100824100943.F3B6.A69D9226@jp.fujitsu.com>
+From: Michael Rubin <mrubin@google.com>
+Date: Mon, 23 Aug 2010 18:41:00 -0700
+Message-ID: <AANLkTi=OwGUzM0oZ5qTEFnGTuo8kVfW79oqH-Dcf8jdp@mail.gmail.com>
+Subject: Re: [PATCH 4/4] writeback: Reporting dirty thresholds in /proc/vmstat
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 12:14 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
+On Mon, Aug 23, 2010 at 6:20 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Fri, Aug 20, 2010 at 10:48 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> LOL. I know about these counters. This goes back and forth a lot.
+>> The reason we don't want to use this interface is several fold.
+>
+> Please don't use LOL if you want to get good discuttion. afaict, Wu have
+> deep knowledge in this area. However all kernel-developer don't know all
+> kernel knob.
 
->  static inline int rwsem_is_locked(struct rw_semaphore *sem)
->  {
-> -       return (sem->count != 0);
-> +       return sem->count != 0;
->  }
+Apologies. No offense was intended. I was laughing at the situation
+and how I too once thought the per bdi counters were enough. Feng has
+been very helpful and patient. The discussion has done nothing but
+help the code so far so it is appreciated.
 
-Does this change make the code do anything different?
+> In nowadays, many distro mount debugfs at boot time. so, can you please
+> elaborate you worried risk?  even though we have namespace.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Right now we don't mount all of debugfs at boot time. We have not done
+the work to verify its safe in our environment. It's mostly a nit.
+
+Also I was under the impression that debugfs was intended more for
+kernel devs while /proc and /sys was intended for application
+developers.
+
+>> 3) Full system counters are easier to handle the juggling of removable
+>> storage where these numbers will appear and disappear due to being
+>> dynamic.
+
+This is the biggie to me. The idea is to get a complete view of the
+system's writeback behaviour over time. With systems with hot plug
+devices, or many many drives collecting that view gets difficult.
+
+>> The goal is to get a full view of the system writeback behaviour not a
+>> "kinda got it-oops maybe not" view.
+>
+> I bet nobody oppose this point :)
+
+Yup.
+
+mrubin
