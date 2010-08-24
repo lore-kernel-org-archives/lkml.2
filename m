@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab0HXIz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:55:28 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:33800 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752204Ab0HXIzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:55:25 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephane Chatty <chatty@enac.fr>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] hid: Add a hid quirk for input sync override
-Date: Tue, 24 Aug 2010 10:54:44 +0200
-Message-Id: <1282640084-19217-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OnpHX-0006Mk-61.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OnpHX-0006Mk-61 7d82cbfe46c51993d46e8c692e1fb1d1
+	id S1754377Ab0HXJAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:00:03 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50906 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752220Ab0HXJAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 05:00:01 -0400
+Message-ID: <4C738B34.6070602@cn.fujitsu.com>
+Date: Tue, 24 Aug 2010 17:04:52 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com, "menage@google.com" <menage@google.com>
+Subject: Re: [PATCH 1/5] cgroup: ID notification call back
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com> <20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Henrik Rydberg <rydberg@thabit.(none)>
+KAMEZAWA Hiroyuki wrote:
+> CC'ed to Paul Menage and Li Zefan.
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> When cgroup subsystem use ID (ss->use_id==1), each css's ID is assigned
+> after successful call of ->create(). css_ID is tightly coupled with
+> css struct itself but it is allocated by ->create() call, IOW,
+> per-subsystem special allocations.
+> 
+> To know css_id before creation, this patch adds id_attached() callback.
+> after css_ID allocation. This will be used by memory cgroup's quick lookup
+> routine.
+> 
+> Maybe you can think of other implementations as
+> 	- pass ID to ->create()
+> 	or
+> 	- add post_create()
+> 	etc...
+> But when considering dirtiness of codes, this straightforward patch seems
+> good to me. If someone wants post_create(), this patch can be replaced.
+> 
+> Changelog: 20100820
+>  - new approarch.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-As of lately, HID devices which send per-frame data split over several
-HID reports have started to emerge. This patch adds a quirk which
-allows the HID driver to take over the input layer synchronization,
-and hence the control of the frame boundary.
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Jiri, Dmitry, Stephane,
+...
+>  
+> Index: mmotm-0811/include/linux/cgroup.h
+> ===================================================================
+> --- mmotm-0811.orig/include/linux/cgroup.h
+> +++ mmotm-0811/include/linux/cgroup.h
+> @@ -475,6 +475,7 @@ struct cgroup_subsys {
+>  			struct cgroup *cgrp);
+>  	void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+>  	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
+> +	void (*id_attached)(struct cgroup_subsys *ss, struct cgroup *cgrp);
 
-No doubt, this is not a final solution, but it serves the purpose of
-being able to make existing drivers functional while a satisfactory
-solution is being worked out.
+Maybe pass the id number to id_attached() is better.
 
-Cheers,
-Henrik
+And actually the @ss argument is not necessary, because the memcg's
+id_attached() handler of course knows it's dealing with the memory
+cgroup subsystem.
 
- drivers/hid/hid-input.c |    3 +++
- include/linux/hid.h     |    1 +
- 2 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 69d152e..9d97934 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -656,6 +656,9 @@ void hidinput_report_event(struct hid_device *hid, struct hid_report *report)
- {
- 	struct hid_input *hidinput;
- 
-+	if (hid->quirks & HID_QUIRK_NO_INPUT_SYNC)
-+		return;
-+
- 	list_for_each_entry(hidinput, &hid->inputs, list)
- 		input_sync(hidinput->input);
- }
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 895001f..8029883 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -315,6 +315,7 @@ struct hid_item {
- #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
- #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
- #define HID_QUIRK_NO_IGNORE			0x40000000
-+#define HID_QUIRK_NO_INPUT_SYNC			0x80000000
- 
- /*
-  * This is the global environment of the parser. This information is
--- 
-1.7.1
+So I suspect we can just remove all the @ss from all the callbacks..
 
