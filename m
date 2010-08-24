@@ -1,73 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933934Ab0HXXSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:18:06 -0400
-Received: from kroah.org ([198.145.64.141]:41040 "EHLO coco.kroah.org"
+	id S933946Ab0HXXSa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:18:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26158 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933422Ab0HXXCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
-Message-Id: <20100824224504.914485894@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:47 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Brian Gerst <brgerst@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [042/114] matroxfb: fix incorrect use of memcpy_toio()
-In-Reply-To: <20100824224610.GA5424@kroah.com>
+	id S933456Ab0HXXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:18:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
+   d="scan'208";a="316566915"
+Date: Wed, 25 Aug 2010 07:18:18 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH v2 2/2] compaction: fix COMPACTPAGEFAILED counting
+Message-ID: <20100824231818.GB7283@localhost>
+References: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
-
-------------------
-
-From: Ondrej Zary <linux@rainbow-software.org>
-
-commit c81476df1b4241aefba4ff83a7701b3a926bd7ce upstream.
-
-Screen is completely corrupted since 2.6.34.  Bisection revealed that it's
-caused by commit 6175ddf06b61720 ("x86: Clean up mem*io functions.").
-
-H.  Peter Anvin explained that memcpy_toio() does not copy data in 32bit
-chunks anymore on x86.
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Cc: Brian Gerst <brgerst@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Petr Vandrovec <vandrove@vc.cvut.cz>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/video/matrox/matroxfb_base.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/video/matrox/matroxfb_base.h
-+++ b/drivers/video/matrox/matroxfb_base.h
-@@ -151,13 +151,13 @@ static inline void mga_writel(vaddr_t va
- static inline void mga_memcpy_toio(vaddr_t va, const void* src, int len) {
- #if defined(__alpha__) || defined(__i386__) || defined(__x86_64__)
- 	/*
--	 * memcpy_toio works for us if:
-+	 * iowrite32_rep works for us if:
- 	 *  (1) Copies data as 32bit quantities, not byte after byte,
- 	 *  (2) Performs LE ordered stores, and
- 	 *  (3) It copes with unaligned source (destination is guaranteed to be page
- 	 *      aligned and length is guaranteed to be multiple of 4).
- 	 */
--	memcpy_toio(va.vaddr, src, len);
-+	iowrite32_rep(va.vaddr, src, len >> 2);
- #else
-         u_int32_t __iomem* addr = va.vaddr;
- 
-
-
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
