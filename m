@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab0HXXce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:32:34 -0400
-Received: from kroah.org ([198.145.64.141]:40469 "EHLO coco.kroah.org"
+	id S933050Ab0HXXcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:32:48 -0400
+Received: from kroah.org ([198.145.64.141]:40461 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755780Ab0HXW7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:06 -0400
+	id S932958Ab0HXW7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:03 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:16 2010
-Message-Id: <20100824224216.438352699@clark.site>
+Message-Id: <20100824224216.269100570@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:13 -0700
+Date: Tue, 24 Aug 2010 15:42:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Hemminger <shemminger@vyatta.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [51/91] bridge: add rcu_read_lock on transmit
+Subject: [49/91] sparc64: Add missing ID to parport probing code.
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: David S. Miller <davem@davemloft.net>
 
-From: Stephen Hemminger <shemminger@vyatta.com>
+[ Upstream commit bf8253bf5e7cfe17dd53e3f6340a45b11d9fb51c ]
 
-[ Upstream commit eeaf61d8891f9c9ed12c1a667e72bf83f0857954 ]
+SunBlade-2500 has 'parallel' device node with compatible
+property "pnpALI,1533,3" so add that to the ID table.
 
-Long ago, when bridge was converted to RCU, rcu lock was equivalent
-to having preempt disabled. RCU has changed a lot since then and
-bridge code was still assuming the since transmit was called with
-bottom half disabled, it was RCU safe.
-
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Tested-by: Johannes Berg <johannes@sipsolutions.net>
+Reported-by: Mikael Pettersson <mikpe@it.uu.se>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/bridge/br_device.c   |    4 +++-
- net/bridge/br_fdb.c      |    2 +-
- net/bridge/br_input.c    |    6 +++---
- net/bridge/br_stp_bpdu.c |    2 +-
- 4 files changed, 8 insertions(+), 6 deletions(-)
+ arch/sparc/include/asm/parport.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/bridge/br_device.c
-+++ b/net/bridge/br_device.c
-@@ -19,7 +19,7 @@
- #include <asm/uaccess.h>
- #include "br_private.h"
+--- a/arch/sparc/include/asm/parport.h
++++ b/arch/sparc/include/asm/parport.h
+@@ -228,6 +228,10 @@ static const struct of_device_id ecpp_ma
+ 		.name = "parallel",
+ 		.compatible = "ns87317-ecpp",
+ 	},
++	{
++		.name = "parallel",
++		.compatible = "pnpALI,1533,3",
++	},
+ 	{},
+ };
  
--/* net device transmit always called with no BH (preempt_disabled) */
-+/* net device transmit always called with BH disabled */
- netdev_tx_t br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
- {
- 	struct net_bridge *br = netdev_priv(dev);
-@@ -35,6 +35,7 @@ netdev_tx_t br_dev_xmit(struct sk_buff *
- 	skb_reset_mac_header(skb);
- 	skb_pull(skb, ETH_HLEN);
- 
-+	rcu_read_lock();
- 	if (dest[0] & 1) {
- 		if (br_multicast_rcv(br, NULL, skb))
- 			goto out;
-@@ -50,6 +51,7 @@ netdev_tx_t br_dev_xmit(struct sk_buff *
- 		br_flood_deliver(br, skb);
- 
- out:
-+	rcu_read_unlock();
- 	return NETDEV_TX_OK;
- }
- 
---- a/net/bridge/br_fdb.c
-+++ b/net/bridge/br_fdb.c
-@@ -214,7 +214,7 @@ void br_fdb_delete_by_port(struct net_br
- 	spin_unlock_bh(&br->hash_lock);
- }
- 
--/* No locking or refcounting, assumes caller has no preempt (rcu_read_lock) */
-+/* No locking or refcounting, assumes caller has rcu_read_lock */
- struct net_bridge_fdb_entry *__br_fdb_get(struct net_bridge *br,
- 					  const unsigned char *addr)
- {
---- a/net/bridge/br_input.c
-+++ b/net/bridge/br_input.c
-@@ -35,7 +35,7 @@ static int br_pass_frame_up(struct sk_bu
- 		       netif_receive_skb);
- }
- 
--/* note: already called with rcu_read_lock (preempt_disabled) */
-+/* note: already called with rcu_read_lock */
- int br_handle_frame_finish(struct sk_buff *skb)
- {
- 	const unsigned char *dest = eth_hdr(skb)->h_dest;
-@@ -106,7 +106,7 @@ drop:
- 	goto out;
- }
- 
--/* note: already called with rcu_read_lock (preempt_disabled) */
-+/* note: already called with rcu_read_lock */
- static int br_handle_local_finish(struct sk_buff *skb)
- {
- 	struct net_bridge_port *p = rcu_dereference(skb->dev->br_port);
-@@ -131,7 +131,7 @@ static inline int is_link_local(const un
- /*
-  * Called via br_handle_frame_hook.
-  * Return NULL if skb is handled
-- * note: already called with rcu_read_lock (preempt_disabled)
-+ * note: already called with rcu_read_lock
-  */
- struct sk_buff *br_handle_frame(struct net_bridge_port *p, struct sk_buff *skb)
- {
---- a/net/bridge/br_stp_bpdu.c
-+++ b/net/bridge/br_stp_bpdu.c
-@@ -131,7 +131,7 @@ void br_send_tcn_bpdu(struct net_bridge_
- /*
-  * Called from llc.
-  *
-- * NO locks, but rcu_read_lock (preempt_disabled)
-+ * NO locks, but rcu_read_lock
-  */
- void br_stp_rcv(const struct stp_proto *proto, struct sk_buff *skb,
- 		struct net_device *dev)
 
 
