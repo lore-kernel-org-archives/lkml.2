@@ -1,111 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab0HXTGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 15:06:37 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36863 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138Ab0HXTGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 15:06:35 -0400
-Date: Tue, 24 Aug 2010 21:06:20 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20100824190620.GA7636@elte.hu>
+	id S1755287Ab0HXTIk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 15:08:40 -0400
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:47831 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241Ab0HXTIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 15:08:37 -0400
+Message-ID: <4C7418B3.5060103@hardwarefreak.com>
+Date: Tue, 24 Aug 2010 14:08:35 -0500
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Pekka Enberg <penberg@kernel.org>
+CC: Christoph Lameter <cl@linux.com>, Mikael Abrahamsson <swmike@swm.pp.se>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Mel Gorman <mel@csn.ul.ie>, Linux Netdev List <netdev@vger.kernel.org>
+Subject: Re: 2.6.34.1 page allocation failure
+References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home> <4C724141.8060000@kernel.org> <4C72F7C6.3020109@hardwarefreak.com> <4C74097A.5020504@kernel.org>
+In-Reply-To: <4C74097A.5020504@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Pekka Enberg put forth on 8/24/2010 1:03 PM:
 
-Please pull the latest perf-fixes-for-linus git tree from:
+> It looks to me as if tcp_create_openreq_child() is able to cope with the
+> situation so the warning could be harmless. If that's the case, we
+> should probably stick a __GFP_NOWARN there.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+If it would be helpful, here's a complete copy of dmesg:
+http://www.hardwarefreak.com/2.6.34.1-dmesg-oopses.txt
 
- Thanks,
+Something I forgot to mention earlier is that every now and then I
+unmount swap and drop caches to clear things out a bit.  Not sure if
+that may be relevant, but since it has to do with memory allocation I
+thought I'd mention it.
 
-	Ingo
-
------------------->
-Arjan van de Ven (1):
-      tracing: Fix timer tracing
-
-Peter Zijlstra (1):
-      watchdog: Don't throttle the watchdog
-
-
- include/trace/events/timer.h |    8 ++++++--
- kernel/watchdog.c            |    3 +++
- 2 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/include/trace/events/timer.h b/include/trace/events/timer.h
-index c624126..425bcfe 100644
---- a/include/trace/events/timer.h
-+++ b/include/trace/events/timer.h
-@@ -81,14 +81,16 @@ TRACE_EVENT(timer_expire_entry,
- 	TP_STRUCT__entry(
- 		__field( void *,	timer	)
- 		__field( unsigned long,	now	)
-+		__field( void *,	function)
- 	),
- 
- 	TP_fast_assign(
- 		__entry->timer		= timer;
- 		__entry->now		= jiffies;
-+		__entry->function	= timer->function;
- 	),
- 
--	TP_printk("timer=%p now=%lu", __entry->timer, __entry->now)
-+	TP_printk("timer=%p function=%pf now=%lu", __entry->timer, __entry->function,__entry->now)
- );
- 
- /**
-@@ -200,14 +202,16 @@ TRACE_EVENT(hrtimer_expire_entry,
- 	TP_STRUCT__entry(
- 		__field( void *,	hrtimer	)
- 		__field( s64,		now	)
-+		__field( void *,	function)
- 	),
- 
- 	TP_fast_assign(
- 		__entry->hrtimer	= hrtimer;
- 		__entry->now		= now->tv64;
-+		__entry->function	= hrtimer->function;
- 	),
- 
--	TP_printk("hrtimer=%p now=%llu", __entry->hrtimer,
-+	TP_printk("hrtimer=%p function=%pf now=%llu", __entry->hrtimer, __entry->function,
- 		  (unsigned long long)ktime_to_ns((ktime_t) { .tv64 = __entry->now }))
-  );
- 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 613bc1f..0d53c8e 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -206,6 +206,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
- 		 struct perf_sample_data *data,
- 		 struct pt_regs *regs)
- {
-+	/* Ensure the watchdog never gets throttled */
-+	event->hw.interrupts = 0;
-+
- 	if (__get_cpu_var(watchdog_nmi_touch) == true) {
- 		__get_cpu_var(watchdog_nmi_touch) = false;
- 		return;
+-- 
+Stan
