@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab0HXJBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:01:50 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55086
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752220Ab0HXJBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:01:49 -0400
-Date: Tue, 24 Aug 2010 02:02:07 -0700 (PDT)
-Message-Id: <20100824.020207.71104293.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754511Ab0HXJDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:03:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754435Ab0HXJDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 05:03:16 -0400
+Message-ID: <4C738A8E.7050502@redhat.com>
+Date: Tue, 24 Aug 2010 12:02:06 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v5 04/12] Provide special async page fault handler when
+ async PF capability is detected
+References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-5-git-send-email-gleb@redhat.com> <4C729865.3050409@redhat.com> <20100824073121.GW10499@redhat.com>
+In-Reply-To: <20100824073121.GW10499@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  On 08/24/2010 10:31 AM, Gleb Natapov wrote:
+> +
+>>> +static void apf_task_wait(struct task_struct *tsk, u32 token)
+>>> +{
+>>> +	u32 key = hash_32(token, KVM_TASK_SLEEP_HASHBITS);
+>>> +	struct kvm_task_sleep_head *b =&async_pf_sleepers[key];
+>>> +	struct kvm_task_sleep_node n, *e;
+>>> +	DEFINE_WAIT(wait);
+>>> +
+>>> +	spin_lock(&b->lock);
+>>> +	e = _find_apf_task(b, token);
+>>> +	if (e) {
+>>> +		/* dummy entry exist ->   wake up was delivered ahead of PF */
+>>> +		hlist_del(&e->link);
+>>> +		kfree(e);
+>>> +		spin_unlock(&b->lock);
+>>> +		return;
+>>> +	}
+>>> +
+>>> +	n.token = token;
+>>> +	n.cpu = smp_processor_id();
+>> What's the meaning of cpu?  Won't the waiter migrate to other cpus?
+> Waiter cannot migrate to other cpu since it is sleeping. It may be
+> scheduled to run on any cpu when it will be waked.
 
-A few sparc64 bug fixes and proper 64-bit rwsem support as you
-suggested.
+What if you have a spurious wakeup?  Also, nothing prevents the 
+scheduler from migrating the thread even if it is sleeping.  It may not 
+do so now, but it might do it in the future.
 
-1) Fetching large device properties from openfirmware spams all
-   over the kernel data section, based upon a report by Meelis
-   Roos.  The fix is to just use the caller's buffers directly
-   instead of this unnecessary 3k bounce buffer business.
+Oh, it probably does now on cpu hotunplug.
 
-2) The atomic64_t interface 'long' cases I missed.
+Why do you need n.cpu?
 
-3) Lock loop backoff didn't really NOP out correctly on UP.
 
-4) Perf control register writes would write the register
-   twice by mistake due to a missing delay slot nop.  Fix
-   from Mikulas Patocka.
+>>> +			spin_unlock(&b->lock);
+>>> +			cpu_relax();
+>>> +			goto again;
+>>> +		}
+>> The other cpu might be waiting for us to yield.  We can fix it later
+>> with the the pv spinlock infrastructure.
+>>
+> This busy wait happens only if (very small) allocation fails, so if
+> a guest ever hits this code path I expect it to be on his way to die
+> anyway.
 
-Please pull, thanks a lot!
+Hm.  I don't have a good feel on how rare atomic allocation failures are 
+on common workloads.
 
-The following changes since commit d1b113bb028999e82a8528e1484be8c23fb5a7d9:
+Note a kmem_cache for apfs will make failures even more rare.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2010-08-23 18:30:30 -0700)
+>> Or, we can avoid the allocation.  If at most one apf can be pending
+>> (is this true?), we can use a per-cpu variable for this dummy entry.
+>>
+> We can have may outstanding apfs.
 
-are available in the git repository at:
+But, while we're processing an apf, we can't take any more.
 
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
+So we can have a buffer of one pre-allocated entry per cpu, and do 
+something like:
 
-David S. Miller (4):
-      sparc64: Really fix atomic64_t interface types.
-      sparc64: Make rwsems 64-bit.
-      sparc64: Make lock backoff really a NOP on UP builds.
-      sparc64: Get rid of indirect p1275 PROM call buffer.
+apf:
+   disable apf for this cpu
+   handle apf using buffered entry
+   enable interrupts
+   allocate new entry
+   buffer it
+   enable apf for that cpu
 
-Mikulas Patocka (2):
-      sparc64: simple microoptimizations for atomic functions
-      sparc64: Fill a missing delay slot.
+this trades off a bigger apf disabled window for not busy looping.
 
- arch/sparc/include/asm/atomic_64.h   |    8 +-
- arch/sparc/include/asm/backoff.h     |   11 +-
- arch/sparc/include/asm/oplib_64.h    |   27 +---
- arch/sparc/include/asm/rwsem-const.h |   12 --
- arch/sparc/include/asm/rwsem.h       |  120 +++++++++++--
- arch/sparc/include/asm/system_64.h   |    1 +
- arch/sparc/lib/Makefile              |    2 +-
- arch/sparc/lib/atomic_64.S           |   36 ++---
- arch/sparc/lib/bitops.S              |   12 +-
- arch/sparc/lib/rwsem_64.S            |  163 ------------------
- arch/sparc/prom/cif.S                |   16 +-
- arch/sparc/prom/console_64.c         |   48 ++++--
- arch/sparc/prom/devops_64.c          |   36 ++++-
- arch/sparc/prom/misc_64.c            |  314 ++++++++++++++++++++++++----------
- arch/sparc/prom/p1275.c              |  102 +-----------
- arch/sparc/prom/tree_64.c            |  210 +++++++++++++++++------
- 16 files changed, 595 insertions(+), 523 deletions(-)
- delete mode 100644 arch/sparc/include/asm/rwsem-const.h
- delete mode 100644 arch/sparc/lib/rwsem_64.S
+-- 
+error compiling committee.c: too many arguments to function
+
