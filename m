@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab0HXPk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:40:56 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:47953 "EHLO mgw2.diku.dk"
+	id S1755639Ab0HXPkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:40:43 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:47836 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478Ab0HXPkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:40:07 -0400
+	id S1755456Ab0HXPj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 11:39:58 -0400
 From: Nicolas Palix <npalix@diku.dk>
 To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
         Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>
 Cc: cocci@diku.dk, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org, Nicolas Palix <npalix@diku.dk>
-Subject: [PATCH 17/18] Coccinelle: Add misc/doubleinit.cocci
-Date: Tue, 24 Aug 2010 17:39:11 +0200
-Message-Id: <1282664352-15882-18-git-send-email-npalix@diku.dk>
+Subject: [PATCH 10/18] Coccinelle: Add free/kfree.cocci
+Date: Tue, 24 Aug 2010 17:39:04 +0200
+Message-Id: <1282664352-15882-11-git-send-email-npalix@diku.dk>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282664352-15882-1-git-send-email-npalix@diku.dk>
 References: <1282664352-15882-1-git-send-email-npalix@diku.dk>
@@ -21,28 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Find duplicate field initializations.  This has a high rate of false
-positives due to #ifdefs, which Coccinelle is not aware of in a structure
-initialization.
+Find a use after free.  Values of variables may imply that some
+execution paths are not possible, resulting in false positives.
+Another source of false positives are macros such as
+SCTP_DBG_OBJCNT_DEC that do not actually evaluate their argument
 
 Signed-off-by: Nicolas Palix <npalix@diku.dk>
 Signed-off-by: Julia Lawall <julia@diku.dk>
 ---
- scripts/coccinelle/misc/doubleinit.cocci |   53 ++++++++++++++++++++++++++++++
- 1 files changed, 53 insertions(+), 0 deletions(-)
- create mode 100644 scripts/coccinelle/misc/doubleinit.cocci
+ scripts/coccinelle/free/kfree.cocci |  116 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 116 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/coccinelle/free/kfree.cocci
 
-diff --git a/scripts/coccinelle/misc/doubleinit.cocci b/scripts/coccinelle/misc/doubleinit.cocci
+diff --git a/scripts/coccinelle/free/kfree.cocci b/scripts/coccinelle/free/kfree.cocci
 new file mode 100644
-index 0000000..55d7dc1
+index 0000000..c13a539
 --- /dev/null
-+++ b/scripts/coccinelle/misc/doubleinit.cocci
-@@ -0,0 +1,53 @@
-+/// Find duplicate field initializations.  This has a high rate of false
-+/// positives due to #ifdefs, which Coccinelle is not aware of in a structure
-+/// initialization.
++++ b/scripts/coccinelle/free/kfree.cocci
+@@ -0,0 +1,116 @@
++/// Find a use after free.  Values of variables may imply that some
++/// execution paths are not possible, resulting in false positives.
++/// Another source of false positives are macros such as
++/// SCTP_DBG_OBJCNT_DEC that do not actually evaluate their argument
 +///
-+// Confidence: Low
++// Confidence: Moderate
 +// Copyright: (C) 2010 Nicolas Palix, DIKU.  GPLv2.
 +// Copyright: (C) 2010 Julia Lawall, DIKU.  GPLv2.
 +// Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
@@ -53,44 +55,106 @@ index 0000000..55d7dc1
 +virtual org
 +virtual report
 +
-+@r@
-+identifier I, s, fld;
-+position p0,p;
++@free@
 +expression E;
++position p1;
 +@@
 +
-+struct I s =@p0 { ... .fld@p = E, ...};
++kfree@p1(E)
 +
-+@s@
-+identifier I, s, r.fld;
-+position r.p0,p;
-+expression E;
++@print expression@
++constant char *c;
++expression free.E,E2;
++type T;
++position p;
++identifier f;
 +@@
 +
-+struct I s =@p0 { ... .fld@p = E, ...};
++(
++ f(...,c,...,(T)E@p,...)
++|
++ E@p == E2
++|
++ E@p != E2
++|
++ !E@p
++|
++ E@p || ...
++)
++
++@sz@
++expression free.E;
++position p;
++@@
++
++ sizeof(<+...E@p...+>)
++
++@loop exists@
++expression E;
++identifier l;
++position ok;
++@@
++
++while (1) { ...
++  kfree@ok(E)
++  ... when != break;
++      when != goto l;
++      when forall
++}
++
++@r exists@
++expression free.E, subE<=free.E, E2;
++expression E1;
++iterator iter;
++statement S;
++position free.p1!=loop.ok,p2!={print.p,sz.p};
++@@
++
++kfree@p1(E,...)
++...
++(
++ iter(...,subE,...) S // no use
++|
++ list_remove_head(E1,subE,...)
++|
++ subE = E2
++|
++ subE++
++|
++ ++subE
++|
++ --subE
++|
++ subE--
++|
++ &subE
++|
++ BUG(...)
++|
++ BUG_ON(...)
++|
++ return_VALUE(...)
++|
++ return_ACPI_STATUS(...)
++|
++ E@p2 // bad use
++)
 +
 +@script:python depends on org@
-+p0 << r.p0;
-+fld << r.fld;
-+ps << s.p;
-+pr << r.p;
++p1 << free.p1;
++p2 << r.p2;
 +@@
 +
-+if int(ps[0].line) < int(pr[0].line) or (int(ps[0].line) == int(pr[0].line) and int(ps[0].column) < int(pr[0].column)):
-+  cocci.print_main(fld,p0)
-+  cocci.print_secs("s",ps)
-+  cocci.print_secs("r",pr)
++cocci.print_main("kfree",p1)
++cocci.print_secs("ref",p2)
 +
 +@script:python depends on report@
-+p0 << r.p0;
-+fld << r.fld;
-+ps << s.p;
-+pr << r.p;
++p1 << free.p1;
++p2 << r.p2;
 +@@
 +
-+if int(ps[0].line) < int(pr[0].line) or (int(ps[0].line) == int(pr[0].line) and int(ps[0].column) < int(pr[0].column)):
-+  msg = "%s: first occurrence %s, second occurrence %s" % (fld,ps[0].line,pr[0].line)
-+  coccilib.report.print_report(p0[0],msg)
++msg = "reference preceded by free on line %s" % (p1[0].line)
++coccilib.report.print_report(p2[0],msg)
 -- 
 1.7.0.4
 
