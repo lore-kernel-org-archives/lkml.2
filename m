@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820Ab0HXW6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:58:15 -0400
-Received: from kroah.org ([198.145.64.141]:52431 "EHLO coco.kroah.org"
+	id S1755760Ab0HXW6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:58:22 -0400
+Received: from kroah.org ([198.145.64.141]:40293 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932800Ab0HXW6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:09 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:12 2010
-Message-Id: <20100824224212.844885163@clark.site>
+	id S932800Ab0HXW6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:13 2010
+Message-Id: <20100824224213.269743937@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:31 -0700
+Date: Tue, 24 Aug 2010 15:41:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jonathan Woithe <jwoithe@physics.adelaide.edu.au>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [09/91] ALSA: hda - Fix missing stream for second ADC on Realtek ALC260 HDA codec
+        Tao Ma <tao.ma@oracle.com>, Joel Becker <joel.becker@oracle.com>
+Subject: [14/91] ocfs2: Count more refcount records in file system fragmentation.
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+From: Tao Ma <tao.ma@oracle.com>
 
-commit 53bacfbbb2ddd981287b58a511c8b8f5df179886 upstream.
+commit 8a2e70c40ff58f82dde67770e6623ca45f0cb0c8 upstream.
 
-I discovered tonight that ALSA no longer sets up a stream for the second ADC
-provided by the Realtek ALC260 HDA codec.  At some point alc_build_pcms()
-started using stream_analog_alt_capture when constructing the second ADC
-stream, but patch_alc260() was never updated accordingly.  I have no idea
-when this regression occurred.  The trivial patch to patch_alc260() given
-below fixes the problem as far as I can tell.  The patch is against 2.6.35.
+The refcount record calculation in ocfs2_calc_refcount_meta_credits
+is too optimistic that we can always allocate contiguous clusters
+and handle an already existed refcount rec as a whole. Actually
+because of file system fragmentation, we may have the chance to split
+a refcount record into 3 parts during the transaction. So consider
+the worst case in record calculation.
 
-Signed-off-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/refcounttree.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6757,6 +6757,7 @@ static int patch_alc260(struct hda_codec
- 
- 	spec->stream_analog_playback = &alc260_pcm_analog_playback;
- 	spec->stream_analog_capture = &alc260_pcm_analog_capture;
-+	spec->stream_analog_alt_capture = &alc260_pcm_analog_capture;
- 
- 	spec->stream_digital_playback = &alc260_pcm_digital_playback;
- 	spec->stream_digital_capture = &alc260_pcm_digital_capture;
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -2437,16 +2437,26 @@ static int ocfs2_calc_refcount_meta_cred
+ 		len = min((u64)cpos + clusters, le64_to_cpu(rec.r_cpos) +
+ 			  le32_to_cpu(rec.r_clusters)) - cpos;
+ 		/*
+-		 * If the refcount rec already exist, cool. We just need
+-		 * to check whether there is a split. Otherwise we just need
+-		 * to increase the refcount.
+-		 * If we will insert one, increases recs_add.
+-		 *
+ 		 * We record all the records which will be inserted to the
+ 		 * same refcount block, so that we can tell exactly whether
+ 		 * we need a new refcount block or not.
++		 *
++		 * If we will insert a new one, this is easy and only happens
++		 * during adding refcounted flag to the extent, so we don't
++		 * have a chance of spliting. We just need one record.
++		 *
++		 * If the refcount rec already exists, that would be a little
++		 * complicated. we may have to:
++		 * 1) split at the beginning if the start pos isn't aligned.
++		 *    we need 1 more record in this case.
++		 * 2) split int the end if the end pos isn't aligned.
++		 *    we need 1 more record in this case.
++		 * 3) split in the middle because of file system fragmentation.
++		 *    we need 2 more records in this case(we can't detect this
++		 *    beforehand, so always think of the worst case).
+ 		 */
+ 		if (rec.r_refcount) {
++			recs_add += 2;
+ 			/* Check whether we need a split at the beginning. */
+ 			if (cpos == start_cpos &&
+ 			    cpos != le64_to_cpu(rec.r_cpos))
 
 
