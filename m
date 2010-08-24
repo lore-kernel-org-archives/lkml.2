@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab0HXJuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:50:25 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33481 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab0HXJuW convert rfc822-to-8bit (ORCPT
+	id S1754727Ab0HXJvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:51:35 -0400
+Received: from mx3.sophos.com ([74.202.89.160]:43945 "EHLO mx3.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754188Ab0HXJvc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:50:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nosx+q65KHi1va44KWoCOEv3gD7WlD1eHpRiNCcPmvcUlBTWMpoZr90oqFCPep7qBt
-         QB2xVdMVQt1T6OjsYYgDAwvA7ntgg3ifdl/QQDdQ9JhpdfYy6RJ9DVFarDOEUXzke711
-         Ojk4/ozUD49ZLw1bQ5+j5wjB837I2POe64rPs=
+	Tue, 24 Aug 2010 05:51:32 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Andreas Gruenbacher <agruen@suse.de>
+Subject: Re: [PATCH 1/4] fanotify: flush outstanding perm requests on group destroy
+Date: Tue, 24 Aug 2010 10:51:29 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: Eric Paris <eparis@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1282523830-27751-1-git-send-email-eparis@redhat.com> <201008240949.46243.tvrtko.ursulin@sophos.com> <201008241136.30064.agruen@suse.de>
+In-Reply-To: <201008241136.30064.agruen@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20100824020721.GA14726@amt.cnet>
-References: <20100820011054.GA11297@tpepper-t61p.dolavim.us>
-	<4C724BDB.8020604@redhat.com>
-	<4C724D13.6000807@redhat.com>
-	<AANLkTi=7HdLqm-g1F+ezhDN4n+vPo2jAo2cgn-M6_wMJ@mail.gmail.com>
-	<20100824020721.GA14726@amt.cnet>
-Date: Tue, 24 Aug 2010 17:50:20 +0800
-Message-ID: <AANLkTi=Kj_8O_bTDQ26uPceg=u+pQU7hY6vp-gHG6CbC@mail.gmail.com>
-Subject: Re: [PATCH 0/4 v2] kvm: rework KVM mmu_shrink() code
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Message-ID: <201008241051.29656.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 24/08/2010 10:51:30,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 24/08/2010 10:51:30,
+	Serialize complete at 24/08/2010 10:51:30
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 10:07 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> On Mon, Aug 23, 2010 at 07:11:11PM +0800, Xiaotian Feng wrote:
->> On Mon, Aug 23, 2010 at 6:27 PM, Avi Kivity <avi@redhat.com> wrote:
->> >  On 08/23/2010 01:22 PM, Avi Kivity wrote:
->> >>
->> >>
->> >> I see a lot of soft lockups with this patchset:
->> >
->> > This is running the emulator.flat test case, with shadow paging.  This test
->> > triggers a lot (millions) of mmu mode switches.
->> >
->>
->> Does following patch fix your issue?
->>
->> Latest kvm mmu_shrink code rework makes kernel changes
->> kvm->arch.n_used_mmu_pages/
->> kvm->arch.n_max_mmu_pages at kvm_mmu_free_page/kvm_mmu_alloc_page,
->> which is called
->> by kvm_mmu_commit_zap_page. So the kvm->arch.n_used_mmu_pages or
->> kvm_mmu_available_pages(vcpu->kvm) is unchanged after kvm_mmu_commit_zap_page(),
->> This caused kvm_mmu_change_mmu_pages/__kvm_mmu_free_some_pages looping forever.
->> Moving kvm_mmu_commit_zap_page would make the while loop performs as normal.
->>
->> ---
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index f52a965..7e09a21 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -1726,8 +1726,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm,
->> unsigned int goal_nr_mmu_pages)
->>                                             struct kvm_mmu_page, link);
->>                         kvm_mmu_prepare_zap_page(kvm, page,
->>                                                                &invalid_list);
->> +                       kvm_mmu_commit_zap_page(kvm, &invalid_list);
->>                 }
->> -               kvm_mmu_commit_zap_page(kvm, &invalid_list);
->>                 goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
->>         }
->>
->> @@ -2976,9 +2976,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
->>                 sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
->>                                   struct kvm_mmu_page, link);
->>                 kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
->> +               kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
->>                 ++vcpu->kvm->stat.mmu_recycled;
->>         }
->> -       kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
->>  }
->>
->>  int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code)
+On Tuesday 24 Aug 2010 10:36:29 Andreas Gruenbacher wrote:
+> On Tuesday 24 August 2010 10:49:45 Tvrtko Ursulin wrote:
+> > I think just switching to interruptible sleep in
+> > fanotify_get_response_from_access should be fine. And it should probably
+> > deny the current event when signal is received.
 >
-> Please resend with a signed-off-by, and proper subject for the patch.
+> Well the result would be -EINTR from the system call that blocked on the
+> perm event, the same as with an interruptible nfs mount.  The process would
+> never get -EPERM.  Processes may
+> not be prepared to handle -EINTR in all cases, and so it may make more
+> sense to use the same behavior as NFS and only allow SIGKILL to kill a
+> process blocked on a perm event (which the blocked process will never
+> see).
 
-It's available at: https://patchwork.kernel.org/patch/125431/
+That would be wait_event_killable then, even simpler change.
 
-Thanks
-Xiaotian
+I agree that hiding -EINTR from open, from userspace code is probably a more
+compatible way of doing it. If I remember correctly POSIX does allow EINTR
+from open but form our experience there are indeed applications which do not
+handle it. Some version of X immediately spring to mind who used to set up a
+periodic signal delivery (something like internal jiffy, I think they called
+it smart scheduler) to themselves and would not handle -EINTR from open. Samba
+also had a problem here in specific circumstances.
 
->
-> Thanks
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Tvrtko
+
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
