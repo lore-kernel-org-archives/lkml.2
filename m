@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934190Ab0HXX31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:29:27 -0400
-Received: from kroah.org ([198.145.64.141]:40568 "EHLO coco.kroah.org"
+	id S933049Ab0HXW7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:59:33 -0400
+Received: from kroah.org ([198.145.64.141]:40513 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977Ab0HXW7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:35 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:18 2010
-Message-Id: <20100824224218.085556900@clark.site>
+	id S933010Ab0HXW7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:22 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:17 2010
+Message-Id: <20100824224217.213782597@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:32 -0700
+Date: Tue, 24 Aug 2010 15:42:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [70/91] fixes for using make 3.82
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [60/91] pkt_sched: Fix sch_sfq vs tcf_bind_filter oops
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
 
-commit 3c955b407a084810f57260d61548cc92c14bc627 upstream.
+From: Jarek Poplawski <jarkao2@gmail.com>
 
-It doesn't like pattern and explicit rules to be on the same line,
-and it seems to be more picky when matching file (or really directory)
-names with different numbers of trailing slashes.
+[ Upstream commit eb4a5527b1f0d581ac217c80ef3278ed5e38693c ]
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-Andrew Benton <b3nton@gmail.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Since there was added ->tcf_chain() method without ->bind_tcf() to
+sch_sfq class options, there is oops when a filter is added with
+the classid parameter.
+
+Fixes commit 7d2681a6ff4f9ab5e48d02550b4c6338f1638998
+netdev thread: null pointer at cls_api.c
+
+Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
+Reported-by: Franchoze Eric <franchoze@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- firmware/Makefile  |    2 +-
- scripts/mkmakefile |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ net/sched/sch_sfq.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/firmware/Makefile
-+++ b/firmware/Makefile
-@@ -141,7 +141,7 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin
- fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
+--- a/net/sched/sch_sfq.c
++++ b/net/sched/sch_sfq.c
+@@ -502,6 +502,12 @@ static unsigned long sfq_get(struct Qdis
+ 	return 0;
+ }
  
- # Directories which we _might_ need to create, so we have a rule for them.
--firmware-dirs := $(sort $(patsubst %,$(objtree)/$(obj)/%/,$(dir $(fw-external-y) $(fw-shipped-all))))
-+firmware-dirs := $(sort $(addprefix $(objtree)/$(obj)/,$(dir $(fw-external-y) $(fw-shipped-all))))
- 
- quiet_cmd_mkdir = MKDIR   $(patsubst $(objtree)/%,%,$@)
-       cmd_mkdir = mkdir -p $@
---- a/scripts/mkmakefile
-+++ b/scripts/mkmakefile
-@@ -44,7 +44,9 @@ all:
- 
- Makefile:;
- 
--\$(all) %/: all
-+\$(all): all
- 	@:
- 
-+%/: all
-+	@:
- EOF
++static unsigned long sfq_bind(struct Qdisc *sch, unsigned long parent,
++			      u32 classid)
++{
++	return 0;
++}
++
+ static struct tcf_proto **sfq_find_tcf(struct Qdisc *sch, unsigned long cl)
+ {
+ 	struct sfq_sched_data *q = qdisc_priv(sch);
+@@ -556,6 +562,7 @@ static void sfq_walk(struct Qdisc *sch,
+ static const struct Qdisc_class_ops sfq_class_ops = {
+ 	.get		=	sfq_get,
+ 	.tcf_chain	=	sfq_find_tcf,
++	.bind_tcf	=	sfq_bind,
+ 	.dump		=	sfq_dump_class,
+ 	.dump_stats	=	sfq_dump_class_stats,
+ 	.walk		=	sfq_walk,
 
 
