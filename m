@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337Ab0HXXtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:49:04 -0400
-Received: from kroah.org ([198.145.64.141]:52032 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755652Ab0HXWxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:22 2010
-Message-Id: <20100824222522.536894985@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:14 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [02/59] ASoC: Fix inverted mute controls for WM8580
-In-Reply-To: <20100824224625.GA5449@kroah.com>
+	id S1756239Ab0HYAA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 20:00:29 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:65199 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab0HYAA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 20:00:26 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/8] Hugepage migration (v3)
+Date: Wed, 25 Aug 2010 08:55:19 +0900
+Message-Id: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+Hi,
 
-------------------
+This is the 3rd version of "hugepage migration" set.
+I rebased this onto 2.6.36-rc2 and merged many comments from you.
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-commit 4f0ed9a51bc8ef16c2589112fdb110479e4b0df1 upstream.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/soc/codecs/wm8580.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- a/sound/soc/codecs/wm8580.c
-+++ b/sound/soc/codecs/wm8580.c
-@@ -268,9 +268,9 @@ SOC_DOUBLE("DAC2 Invert Switch", WM8580_
- SOC_DOUBLE("DAC3 Invert Switch", WM8580_DAC_CONTROL4,  4, 5, 1, 0),
- 
- SOC_SINGLE("DAC ZC Switch", WM8580_DAC_CONTROL5, 5, 1, 0),
--SOC_SINGLE("DAC1 Switch", WM8580_DAC_CONTROL5, 0, 1, 0),
--SOC_SINGLE("DAC2 Switch", WM8580_DAC_CONTROL5, 1, 1, 0),
--SOC_SINGLE("DAC3 Switch", WM8580_DAC_CONTROL5, 2, 1, 0),
-+SOC_SINGLE("DAC1 Switch", WM8580_DAC_CONTROL5, 0, 1, 1),
-+SOC_SINGLE("DAC2 Switch", WM8580_DAC_CONTROL5, 1, 1, 1),
-+SOC_SINGLE("DAC3 Switch", WM8580_DAC_CONTROL5, 2, 1, 1),
- 
- SOC_DOUBLE("ADC Mute Switch", WM8580_ADC_CONTROL1, 0, 1, 1, 0),
- SOC_SINGLE("ADC High-Pass Filter Switch", WM8580_ADC_CONTROL1, 4, 1, 0),
+In previous discussion, I explained why hugepage migration encounts no race
+with direct I/O without additional page locking. Based on that reasoning,
+I made no change on page locking on migration code (i.e. lock only head pages.)
 
 
+Future works:
+
+- Migration can fail for various reasons depending on various factors,
+  so it's useful if soft offline can be retried when it noticed migration
+  fails. This problem is a more general one because it's applied for
+  soft offline of normal-sized pages. So we leave it as a future work.
+  
+- Corrupted hugepage counter implemeted in the previous version was dropped
+  because it's not directly related to migration topic and have no serious
+  impact on kernel behavior. We also leave it as the next work.
+  
+
+Summary:
+
+ [PATCH 1/8] hugetlb: fix metadata corruption in hugetlb_fault()
+ [PATCH 2/8] hugetlb: add allocate function for hugepage migration
+ [PATCH 3/8] hugetlb: rename hugepage allocation functions
+ [PATCH 4/8] hugetlb: redefine hugepage copy functions
+ [PATCH 5/8] hugetlb: hugepage migration core
+ [PATCH 6/8] HWPOISON, hugetlb: soft offlining for hugepage
+ [PATCH 7/8] HWPOISON, hugetlb: fix unpoison for hugepage
+ [PATCH 8/8] page-types.c: fix name of unpoison interface
+
+ Documentation/vm/page-types.c |    2 +-
+ fs/hugetlbfs/inode.c          |   15 +++
+ include/linux/hugetlb.h       |    9 ++
+ include/linux/migrate.h       |   12 +++
+ mm/hugetlb.c                  |  216 ++++++++++++++++++++++++++++++++---------
+ mm/memory-failure.c           |   65 +++++++++----
+ mm/migrate.c                  |  192 +++++++++++++++++++++++++++++++++----
+ mm/vmscan.c                   |    9 ++-
+ 8 files changed, 434 insertions(+), 86 deletions(-)
+
+Thanks,
+Naoya Horiguchi
