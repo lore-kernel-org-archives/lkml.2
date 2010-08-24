@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933855Ab0HXXEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:04:39 -0400
-Received: from mailout-us.gmx.com ([74.208.5.67]:37605 "HELO
-	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933846Ab0HXXEg (ORCPT
+	id S933860Ab0HXXFc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:05:32 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40532 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933826Ab0HXXF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:04:36 -0400
-X-Authenticated: #65048216
-X-Provags-ID: V01U2FsdGVkX1/82CMXSTH8MPYGtek+OjjQuYiYIE5oNQO8YSyx8A
-	R5zTvgso3/mqOJ
-Subject: Re: [PATCH] drm/i915/tv: After disabling the pipe, use
- wait_for_vblank_off()
-From: Ivan Bulatovic <combuster@gmx.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-gfx@lists.freedesktop.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <89k83a$9drtkt@azsmga001.ch.intel.com>
-References: <1282647815.2221.15.camel@localhost.localdomain>
-	 <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk>
-	 <1282684130.2199.25.camel@localhost.localdomain>
-	 <89k83a$9drtkt@azsmga001.ch.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Aug 2010 01:04:31 +0200
-Message-ID: <1282691071.2120.28.camel@localhost.localdomain>
+	Tue, 24 Aug 2010 19:05:27 -0400
+Date: Wed, 25 Aug 2010 00:22:21 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Samo Pogacnik <samo_pogacnik@t-2.net>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100824225703.GA5913@suse.de>
+References: <20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	<1277244410.2195.47.camel@itpsd6lap>
+	<20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+	<1277462596.2143.101.camel@itpsd6lap>
+	<20100625120329.1303aa61@lxorguk.ukuu.org.uk>
+	<1282683470.8020.66.camel@itpsd6lap>
+	<20100824211016.GA7176@suse.de>
+	<1282687797.8020.108.camel@itpsd6lap>
+	<20100824222035.GA10625@suse.de>
+	<1282690232.8020.116.camel@itpsd6lap>
+	<20100824225703.GA5913@suse.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-24 at 22:52 +0100, Chris Wilson wrote: 
-> On Tue, 24 Aug 2010 23:08:50 +0200, Ivan Bulatovic <combuster@gmx.com> wrote:
-> > Unfotunately I still get TV connection detected :(
-> 
-> Jesse spotted the root cause and Linus has now pushed that fix for
-> intel_wait_for_vblank() out. This is just a very minor bug in comparison.
-> Can you please test against linus/master and check that resolves the
-> spurious TV detection for you?
-> Thanks.
-> 
-> -- 
-> Chris Wilson, Intel Open Source Technology Centre
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> No, it does cover that.  You should be able to do that with a simple
+> console redirection to /dev/kmsg  What happened when you tried to do
+> that?
 
-Spurious TV detection is still here and + I have a new problem with
-resolution in init3 when KMS fires up, it occupies only 1/3rd of the
-screen when booting.
+stty: standard input: Inappropriate ioctl for device
 
-I've tried patching the kernel I used for testing so far with that one
-liner and I've tried without patches we tried so far (git pull on a
-clean linux-git) and the symptoms are the same on both of them.
+It's value is twofold
 
-So
-- PIPE_VBLANK_INTERRUPT_STATUS) == 0,
-+ PIPE_VBLANK_INTERRUPT_STATUS),
-in intel_display.c doesn't fix the issue, plus it brings a new one in my
-case.
+- formatting
+- tty ioctls work as they should on a console (eg vhangup)
 
+and its a tiny driver with no impact on the rest of the kernel - so to me
+it seems useful in that form.
 
+Alan
