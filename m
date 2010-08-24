@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab0HXRGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:06:08 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:50019 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755155Ab0HXRGF (ORCPT
+	id S1755762Ab0HXRIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:08:11 -0400
+Received: from owa.skola.saffle.se ([195.84.66.73]:23823 "EHLO
+	owa.skola.saffle.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab0HXRIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:06:05 -0400
-Subject: Re: [PATCH] x86, apic: Add apic calibration hook.
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1008241532210.2768@localhost.localdomain>
-References: <1282153304.15158.39.camel@ank32.eng.vmware.com>
-	 <1282159660.15158.56.camel@ank32.eng.vmware.com>
-	 <alpine.LFD.2.00.1008241532210.2768@localhost.localdomain>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Tue, 24 Aug 2010 10:06:04 -0700
-Message-Id: <1282669564.24498.2.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Aug 2010 13:08:10 -0400
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+Content-class: urn:content-classes:message
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Subject: =?utf-8?B?Tm90aWZpY2FjacOzbiBJbXBvcnRhbnRl?=
+Date: Tue, 24 Aug 2010 19:08:07 +0200
+Message-ID: <FD758DE5F34BD24FAF03F7249275032C0209DC7E@it-skolmail-w2k.saffle.edu>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: =?utf-8?B?Tm90aWZpY2FjacOzbiBJbXBvcnRhbnRl?=
+Thread-Index: ActDruhqq952gpx+R6q+f0L84AQ1cQ==
+From: "malin ljung" <malin.ljung@skola.saffle.se>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7OH8KDj024619
 
-Hi Thomas,
+ 
+ 
+MASTERCARD Â® / MICROSOFT Â® PREMIO MAYOR SÃšPER INTERNACIONAL.
+Director Ejecutivo: Sr. Adam Smith.
 
-Thanks for taking a look.
+Querido Ganador en Efectivo,
 
-On Tue, 2010-08-24 at 06:37 -0700, Thomas Gleixner wrote:
-> On Wed, 18 Aug 2010, Alok Kataria wrote:
-> >  
-> > +static void __init initialize_lapic_clkevt(long delta)
-> > +{
-> > +	/* Calculate the scaled math multiplication factor */
-> > +	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
-> > +				       lapic_clockevent.shift);
-> > +	lapic_clockevent.max_delta_ns =
-> > +		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
-> > +	lapic_clockevent.min_delta_ns =
-> > +		clockevent_delta2ns(0xF, &lapic_clockevent);
-> > +}
-> > +
-> >  static int __init calibrate_APIC_clock(void)
-> >  {
-> > +	apic_calibration_res = x86_init.timers.calibrate_apic();
-> > +	if (apic_calibration_res) {
-> > +		struct clock_event_device *levt = &__get_cpu_var(lapic_events);
-> > +		long delta;
-> > +
-> > +		if (lapic_clockevent.mult)
-> > +			return 0;
-> 
->   Why is this necessary ? calibrate_APIC_clock() is only called once.
-> 
+Su direcciÃ³n de correo electrÃ³nico fue seleccionada y confirmada por nuestro copatrocinador Microsoft Internacional, por su Ãºltimo software de Internet. Usted tiene por lo tanto sido aprobado por MasterCard Â® Int'l/Microsoft Â® CorporaciÃ³n el Reino Unido la suma de Â£952,000.00GBP (Novecientas cincuenta y dos mil Grandes Libras Esterlinas). Estos fondos estÃ¡n en el efectivo, CreÃ­do a un cheque de caja vÃ¡lido, con a ganancia de Registro. No de MCIMJ: 36925/0751. Sea informado que su premio ha sido asegurado y listo para le gastan. Usted debe ponerse en contacto con su adjudicado oficial de reclamaciones abajo con su informaciÃ³n requerida:
 
-Yes, though timer.calibrate_apci() could behave differently on different
-platforms. For eg. the vmware_calibrate_apic doesn't initialize any of
-the lapic_clockevent state and we need this to set it up in that case.
+Nombre Srs. Helen Thomason
+Correo electrÃ³nico: helen.thomason@live.com
+Departamento de VerificaciÃ³n de Reclamaciones.
 
-Thanks,
-Alok
+EnvÃ­e realmente al susodicho Administrador de Reclamaciones por correo electrÃ³nico, inmediatamente con este Reclama Exigencias; 1. El Nombre 2 Lleno. DirecciÃ³n: 3. Nacionalidad: 4. Edad: 5.OcupaciÃ³n: Naturaleza de Trabajo: 6. Telefonear: Fax: 7. Estado de Origen: PaÃ­s: 8.Sexo: 9. Ganancia de Correo electrÃ³nico DirecciÃ³n:
 
+Modo de Premio Entrega de Remittance:Courier de su Cheque de Ganancia Certificadoy otros Documentos de Ganancia sin peligro a usted.
+ 
+Atentamente,
+Malin Ljung.
+DirÃ­jasse Cliente Se preocupan el Servicio.
+Copyright Â© 2010 MasterCard Inc el Reino Unido
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
