@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab0HXSxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 14:53:41 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:23607 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752871Ab0HXSxj (ORCPT
+	id S1754272Ab0HXSzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 14:55:11 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58053 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab0HXSzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 14:53:39 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: FDEoHe4VM1mOmFFSZIFnh.RdDwiXGgoHyWqbn5ajyZEGX5Q
- kXEwghRhvA8P9Dl9Vrwik6GkCLIz13ZuG7BTM7SOBDg8h9XDhUZU3XNZcvHx
- QvY5ph.2v9QKOwrls1lsjONSFOda3KJqVx7tra7ZExAJo4WhyH5.jTHOpR7F
- ZPMZZ12jn.2ZtFCcqEMugQ5B97sBOnHlppTvwAiz.OaRrYHhkl_2ghgaYZEF
- W
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 24 Aug 2010 13:53:35 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (slab
- tree related)
-In-Reply-To: <4C741029.7090300@cs.helsinki.fi>
-Message-ID: <alpine.DEB.2.00.1008241352240.5388@router.home>
-References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 24 Aug 2010 14:55:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QSo9amzm416R7Q9j4V9rb8uRHeojSkFQxOhIvMJAfbqYuB1UM1HzZktDr7MkHDUxp6
+         OV4llO6GtedFBN/YxKE9bra5XhtyKQjyLzPk+qHlBvRu4kdcc/mS0hXUVi5Zjk2kZsQQ
+         +IgjjNMXu4h6HpJDDC4Au5phYa0pE4sYBI940=
+Date: Tue, 24 Aug 2010 22:54:58 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+	perfctrs
+Message-ID: <20100824185458.GG5723@lenovo>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu> <20100824171504.GI26154@erda.amd.com> <20100824172806.GF5723@lenovo> <20100824184658.GB4879@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100824184658.GB4879@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010, Pekka Enberg wrote:
+On Tue, Aug 24, 2010 at 02:46:58PM -0400, Don Zickus wrote:
+> On Tue, Aug 24, 2010 at 09:28:06PM +0400, Cyrill Gorcunov wrote:
+> > On Tue, Aug 24, 2010 at 07:15:05PM +0200, Robert Richter wrote:
+> > > On 23.08.10 04:53:39, Ingo Molnar wrote:
+> > > > Ok, to not hold up the perf/urgent flow i zapped these two commits for 
+> > > > the time being:
+> > > > 
+> > > >  4a31beb: perf, x86: Fix handle_irq return values
+> > > >  8e3e42b: perf, x86: Try to handle unknown nmis with an enabled PMU
+> > > 
+> > > Ingo, are those commits in some branch to fetch them for testing? I
+> > > did not find them in tip/master.
+> > > 
+> > > Thanks,
+> > > 
+> > > -Robert
+> > > 
+> > > -- 
+> > > Advanced Micro Devices, Inc.
+> > > Operating System Research Center
+> > >
+> > 
+> > Robert, they should be in -tip tree, I have
+> > 
+> > | commit 4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
+> > | Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > | Date:   Thu Aug 19 16:28:00 2010 +0200
+> > |
+> > |    perf, x86: Fix handle_irq return values
+> 
+> Has anyone else seen kernel panics when enabling the LOCKUP_DETECTOR or
+> apply Robert's patch?  I keep getting a panic with unable to handle paging
+> request everytime either Robert's patch or the lockup detector uses
+> __get_cpu_var().  And only on 2.6.36 code.
+> 
+> Cheers,
+> Don
+> 
 
-> On 24.8.2010 20.59, Christoph Lameter wrote:
-> > On Tue, 24 Aug 2010, Pekka Enberg wrote:
-> >
-> > > Thanks for the report. The problem should be fixed by this commit:
-> >
-> > Its not that easy. __alloc_percpu falls back to kzalloc() on UP and this
-> > can result in unique bootstrap problems with UP since the bootstrap array
-> > is no longer there. Does the UP kernel boot?
->
-> No, I get this under kvm:
+I use 2.6.34 atm. Letme try 2.6.36 (which might require some time to recompile).
 
-> [    0.000000] Kernel panic - not syncing: Cannot create slab kmem_cache
-> size=232 realsize=256 order=0 offset=0 flags=42000
-
-alloc per cpu result in kmalloc which fails.
-
-Tejon: Is there some way we could get a reserved per cpu area under UP
-instead of fallback to slab allocations during bootup?
+	-- Cyrill
