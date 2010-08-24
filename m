@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab0HXOa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 10:30:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54383 "EHLO mx2.suse.de"
+	id S1752472Ab0HXOih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 10:38:37 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59330 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab0HXOa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 10:30:57 -0400
-Date: Tue, 24 Aug 2010 16:30:11 +0200
-From: Jan Kara <jack@suse.cz>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz, alex.shi@intel.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH]dquot: do full inode dirty in allocating space
-Message-ID: <20100824143011.GF3713@quack.suse.cz>
-References: <20100820084943.GA1131@sli10-desk.sh.intel.com>
- <20100824142359.GE3713@quack.suse.cz>
+	id S1751407Ab0HXOig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 10:38:36 -0400
+Date: Tue, 24 Aug 2010 16:38:33 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/5] drivers/net/irda: Eliminate memory leak
+Message-ID: <Pine.LNX.4.64.1008241638130.15172@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="T4sUOijqQbZv57TR"
-Content-Disposition: inline
-In-Reply-To: <20100824142359.GE3713@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <julia@diku.dk>
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+dev_alloc_skb allocates some memory, so that memory should be freed before
+leaving the function in an error case.
 
-On Tue 24-08-10 16:23:59, Jan Kara wrote:
->   Hi,
-> 
-> On Fri 20-08-10 16:49:43, Shaohua Li wrote:
-> > Alex Shi found a regression when doing ffsb test. The test has several threads,
-> > and each thread creates a small file, write to it and then delete it. ffsb
-> > reports about 20% regression and Alex bisected it to 43d2932d88e4. The test
-> > will call __mark_inode_dirty 3 times. without this commit, we only take
-> > inode_lock one time, while with it, we take the lock 3 times with flags (
-> > I_DIRTY_SYNC,I_DIRTY_PAGES,I_DIRTY). Perf shows the lock contention increased
-> > too much. Below proposed patch fixes it.
->   Thanks for the analysis and the patch!  With which filesystem have you
-> measured the results? And what kind of machine it was?
-> 
-> > fs is allocating blocks, which usually means file writes and the inode
-> > will be dirtied soon. We fully dirty the inode to reduce some inode_lock
-> > contention in several calls of __mark_inode_dirty.
->   Well, this is rather a workaround for a poor handling of inode dirty
-> bits. BTW, I think Nick's VFS scalability patches address inode_lock
-> contention as well so with them the contention you see should be reduced.
->   Anyway, I will take this patch for the time before inode_lock
-> contention improves and add a proper comment about this before
-> mark_inode_dirty.
-  Attached is a version of the patch that is in my tree now.
+Corrected some typos in a nearby comment as well.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+A simplified version of the semantic match that finds this problem is:
+(http://coccinelle.lip6.fr/)
 
---T4sUOijqQbZv57TR
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-dquot-do-full-inode-dirty-in-allocating-space.patch"
+// <smpl>
+@r exists@
+local idexpression x;
+expression E;
+identifier f1;
+iterator I;
+@@
 
->From 2a7ad4df051b43a481862fe0afa50539bc7e6b78 Mon Sep 17 00:00:00 2001
-From: Shaohua Li <shaohua.li@intel.com>
-Date: Fri, 20 Aug 2010 16:49:43 +0800
-Subject: [PATCH] dquot: do full inode dirty in allocating space
+x = dev_alloc_skb(...);
+<... when != x
+     when != true (x == NULL || ...)
+     when != if (...) { <+...x...+> }
+     when != I (...) { <+...x...+> }
+(
+ x == NULL
+|
+ x == E
+|
+ x->f1
+)
+...>
+* return ...;
+// </smpl>
 
-Alex Shi found a regression when doing ffsb test. The test has several threads,
-and each thread creates a small file, write to it and then delete it. ffsb
-reports about 20% regression and Alex bisected it to 43d2932d88e4. The test
-will call __mark_inode_dirty 3 times. without this commit, we only take
-inode_lock one time, while with it, we take the lock 3 times with flags (
-I_DIRTY_SYNC,I_DIRTY_PAGES,I_DIRTY). Perf shows the lock contention increased
-too much. Below proposed patch fixes it.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-fs is allocating blocks, which usually means file writes and the inode
-will be dirtied soon. We fully dirty the inode to reduce some inode_lock
-contention in several calls of __mark_inode_dirty.
-
-Jan Kara: Added comment.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- include/linux/quotaops.h |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/irda/via-ircc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/quotaops.h b/include/linux/quotaops.h
-index d50ba85..d1a9193 100644
---- a/include/linux/quotaops.h
-+++ b/include/linux/quotaops.h
-@@ -274,8 +274,14 @@ static inline int dquot_alloc_space(struct inode *inode, qsize_t nr)
- 	int ret;
+diff --git a/drivers/net/irda/via-ircc.c b/drivers/net/irda/via-ircc.c
+index b0a6cd8..67c0ad4 100644
+--- a/drivers/net/irda/via-ircc.c
++++ b/drivers/net/irda/via-ircc.c
+@@ -1182,12 +1182,13 @@ F01_E */
  
- 	ret = dquot_alloc_space_nodirty(inode, nr);
--	if (!ret)
--		mark_inode_dirty_sync(inode);
-+	if (!ret) {
-+		/*
-+		 * Mark inode fully dirty. Since we are allocating blocks, inode
-+		 * would become fully dirty soon anyway and it reportedly
-+		 * reduces inode_lock contention.
-+		 */
-+		mark_inode_dirty(inode);
-+	}
- 	return ret;
- }
- 
--- 
-1.6.4.2
-
-
---T4sUOijqQbZv57TR--
+ 		skb = dev_alloc_skb(len + 1 - 4);
+ 		/*
+-		 * if frame size,data ptr,or skb ptr are wrong ,the get next
++		 * if frame size, data ptr, or skb ptr are wrong, then get next
+ 		 * entry.
+ 		 */
+ 		if ((skb == NULL) || (skb->data == NULL) ||
+ 		    (self->rx_buff.data == NULL) || (len < 6)) {
+ 			self->netdev->stats.rx_dropped++;
++			kfree_skb(skb);
+ 			return TRUE;
+ 		}
+ 		skb_reserve(skb, 1);
