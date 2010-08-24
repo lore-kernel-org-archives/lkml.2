@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab0HXWyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:54:47 -0400
-Received: from kroah.org ([198.145.64.141]:52375 "EHLO coco.kroah.org"
+	id S932666Ab0HXWzX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:55:23 -0400
+Received: from kroah.org ([198.145.64.141]:52349 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387Ab0HXWyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:40 -0400
+	id S932617Ab0HXWyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:27 2010
-Message-Id: <20100824222527.552176577@clark.site>
+Message-Id: <20100824222527.286994497@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:25:11 -0700
+Date: Tue, 24 Aug 2010 15:25:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        <jbohac@novell.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kerstin Jonsson <kerstin.jonsson@ericsson.com>,
-        Avi Kivity <avi@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Renninger <trenn@suse.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [59/59] x86, apic: ack all pending irqs when crashed/on kexec
+        John Youn <johnyoun@synopsys.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [56/59] USB: xhci: Remove buggy assignment in next_trb()
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,140 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
+From: John Youn <John.Youn@synopsys.com>
 
-commit 8c3ba8d049247dc06b6dcee1711a11b26647aa44 upstream.
+commit a1669b2c64a9c8b031e0ac5cbf2692337a577f7c upstream.
 
-When the SMP kernel decides to crash_kexec() the local APICs may have
-pending interrupts in their vector tables.
+The code to increment the TRB pointer has a slight ambiguity that could
+lead to a bug on different compilers.  The ANSI C specification does not
+specify the precedence of the assignment operator over the postfix
+operator.  gcc 4.4 produced the correct code (increment the pointer and
+assign the value), but a MIPS compiler that one of John's clients used
+assigned the old (unincremented) value.
 
-The setup routine for the local APIC has a deficient mechanism for
-clearing these interrupts, it only handles interrupts that has already
-been dispatched to the local core for servicing (the ISR register) safely,
-it doesn't consider lower prioritized queued interrupts stored in the IRR
-register.
+Remove the unnecessary assignment to make all compilers produce the
+correct assembly.
 
-If you have more than one pending interrupt within the same 32 bit word in
-the LAPIC vector table registers you may find yourself entering the IO
-APIC setup with pending interrupts left in the LAPIC.  This is a situation
-for wich the IO APIC setup is not prepared.  Depending of what/which
-interrupt vector/vectors are stuck in the APIC tables your system may show
-various degrees of malfunctioning.  That was the reason why the
-check_timer() failed in our system, the timer interrupts was blocked by
-pending interrupts from the old kernel when routed trough the IO APIC.
-
-Additional comment from Jiri Bohac:
-==============
-If this should go into stable release,
-I'd add some kind of limit on the number of iterations, just to be safe from
-hard to debug lock-ups:
-
-+if (loops++  > MAX_LOOPS) {
-+        printk("LAPIC pending clean-up")
-+        break;
-+}
- while (queued);
-
-with MAX_LOOPS something like 1E9 this would leave plenty of time for the
-pending IRQs to be cleared and would and still cause at most a second of delay
-if the loop were to lock-up for whatever reason.
-
-[trenn@suse.de:
-
-V2: Use tsc if avail to bail out after 1 sec due to possible virtual
-    apic_read calls which may take rather long (suggested by: Avi Kivity
-    <avi@redhat.com>) If no tsc is available bail out quickly after
-    cpu_khz, if we broke out too early and still have irqs pending (which
-    should never happen?) we still get a WARN_ON...
-
-V3: - Fixed indentation -> checkpatch clean
-    - max_loops must be signed
-
-V4: - Fix typo, mixed up tsc and ntsc in first rdtscll() call
-
-V5: Adjust WARN_ON() condition to also catch error in cpu_has_tsc case]
-
-Cc: <jbohac@novell.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Tested-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-LKML-Reference: <201005241913.o4OJDGWM010865@imap1.linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: John Youn <johnyoun@synopsys.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/apic.c |   41 +++++++++++++++++++++++++++++++++--------
- 1 file changed, 33 insertions(+), 8 deletions(-)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -51,6 +51,7 @@
- #include <asm/smp.h>
- #include <asm/mce.h>
- #include <asm/kvm_para.h>
-+#include <asm/tsc.h>
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -124,7 +124,7 @@ static void next_trb(struct xhci_hcd *xh
+ 		*seg = (*seg)->next;
+ 		*trb = ((*seg)->trbs);
+ 	} else {
+-		*trb = (*trb)++;
++		(*trb)++;
+ 	}
+ }
  
- unsigned int num_processors;
- 
-@@ -1172,8 +1173,13 @@ static void __cpuinit lapic_setup_esr(vo
-  */
- void __cpuinit setup_local_APIC(void)
- {
--	unsigned int value;
--	int i, j;
-+	unsigned int value, queued;
-+	int i, j, acked = 0;
-+	unsigned long long tsc = 0, ntsc;
-+	long long max_loops = cpu_khz;
-+
-+	if (cpu_has_tsc)
-+		rdtscll(tsc);
- 
- 	if (disable_apic) {
- 		arch_disable_smp_support();
-@@ -1225,13 +1231,32 @@ void __cpuinit setup_local_APIC(void)
- 	 * the interrupt. Hence a vector might get locked. It was noticed
- 	 * for timer irq (vector 0x31). Issue an extra EOI to clear ISR.
- 	 */
--	for (i = APIC_ISR_NR - 1; i >= 0; i--) {
--		value = apic_read(APIC_ISR + i*0x10);
--		for (j = 31; j >= 0; j--) {
--			if (value & (1<<j))
--				ack_APIC_irq();
-+	do {
-+		queued = 0;
-+		for (i = APIC_ISR_NR - 1; i >= 0; i--)
-+			queued |= apic_read(APIC_IRR + i*0x10);
-+
-+		for (i = APIC_ISR_NR - 1; i >= 0; i--) {
-+			value = apic_read(APIC_ISR + i*0x10);
-+			for (j = 31; j >= 0; j--) {
-+				if (value & (1<<j)) {
-+					ack_APIC_irq();
-+					acked++;
-+				}
-+			}
- 		}
--	}
-+		if (acked > 256) {
-+			printk(KERN_ERR "LAPIC pending interrupts after %d EOI\n",
-+			       acked);
-+			break;
-+		}
-+		if (cpu_has_tsc) {
-+			rdtscll(ntsc);
-+			max_loops = (cpu_khz << 10) - (ntsc - tsc);
-+		} else
-+			max_loops--;
-+	} while (queued && max_loops > 0);
-+	WARN_ON(max_loops <= 0);
- 
- 	/*
- 	 * Now that we are all set up, enable the APIC
 
 
