@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab0HXFlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 01:41:24 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36596 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab0HXFlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 01:41:21 -0400
-Date: Tue, 24 Aug 2010 15:41:02 +1000
-From: Neil Brown <neilb@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        Tejun Heo <tj@kernle.org>
-Subject: Re: [PATCH 4/5] md: implment REQ_FLUSH/FUA support
-Message-ID: <20100824154102.7b68818b@notabene>
-In-Reply-To: <1281977523-19335-5-git-send-email-tj@kernel.org>
-References: <1281977523-19335-1-git-send-email-tj@kernel.org>
-	<1281977523-19335-5-git-send-email-tj@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1753026Ab0HXFmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 01:42:42 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42193 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab0HXFmj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 01:42:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WWPThpwaOm7CDMatEEY7sGw8UaxcwNnuvrjzpNu8daEW09ze7EVAKkJHoue7NVdCNK
+         N+SkbQD4C8uOn64uBP8k1rsA1jcCWx7GVNSIILXw1v8xthh42g8hFgvzijM1KLyNWOVF
+         Is4rjTgIJwoOvNVDSJiqtSYfNYHqSXCyeZqP8=
+Subject: [PATCH 2/3] mfd: ezx-pcap - fix pcap_add_subdev error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Daniel Ribeiro <drwyrm@gmail.com>
+In-Reply-To: <1282628645.6074.1.camel@mola>
+References: <1282628645.6074.1.camel@mola>
+Content-Type: text/plain
+Date: Tue, 24 Aug 2010 13:45:49 +0800
+Message-Id: <1282628749.6074.3.camel@mola>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Aug 2010 18:52:02 +0200
-Tejun Heo <tj@kernel.org> wrote:
+1. return -ENOMEM if platform_device_alloc() fail.
+2. call platform_device_put() if platform_device_add() fail.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/ezx-pcap.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
+index 134c69a..d283d77 100644
+--- a/drivers/mfd/ezx-pcap.c
++++ b/drivers/mfd/ezx-pcap.c
+@@ -384,12 +384,20 @@ static int __devinit pcap_add_subdev(struct pcap_chip *pcap,
+ 						struct pcap_subdev *subdev)
+ {
+ 	struct platform_device *pdev;
++	int ret;
+ 
+ 	pdev = platform_device_alloc(subdev->name, subdev->id);
++	if (!pdev)
++		return -ENOMEM;
++
+ 	pdev->dev.parent = &pcap->spi->dev;
+ 	pdev->dev.platform_data = subdev->platform_data;
+ 
+-	return platform_device_add(pdev);
++	ret = platform_device_add(pdev);
++	if (ret)
++		platform_device_put(pdev);
++
++	return ret;
+ }
+ 
+ static int __devexit ezx_pcap_remove(struct spi_device *spi)
+-- 
+1.7.2
 
 
-Hi Tejun,
- thanks for doing this.
- It mostly looks good, especially ...
-
-
-> * REQ_FLUSH/FUA failures are final and its users don't need retry
->   logic.  Retry logic is removed.
-
-This bit - all that retry logic felt so clumsy :-)
-
-Only change I would make is:
-
->  
-> @@ -4083,7 +4089,7 @@ static int make_request(mddev_t *mddev, struct bio * bi)
->  			finish_wait(&conf->wait_for_overlap, &w);
->  			set_bit(STRIPE_HANDLE, &sh->state);
->  			clear_bit(STRIPE_DELAYED, &sh->state);
-> -			if (mddev->barrier && 
-> +			if (mddev->flush_bio &&
->  			    !test_and_set_bit(STRIPE_PREREAD_ACTIVE, &sh->state))
->  				atomic_inc(&conf->preread_active_stripes);
->  			release_stripe(sh);
-> @@ -4106,7 +4112,7 @@ static int make_request(mddev_t *mddev, struct bio * bi)
->  		bio_endio(bi, 0);
->  	}
->  
-> -	if (mddev->barrier) {
-> +	if (mddev->flush_bio) {
->  		/* We need to wait for the stripes to all be handled.
->  		 * So: wait for preread_active_stripes to drop to 0.
->  		 */
-
-These two in raid5.c aren't quite right.
-The first should be changed to test
-   bi->bi_rw & REQ_SYNC
-rather than
-   mddev->flush_bio.
-(Assuming the REQ_SYNC means "don't bother waiting for more requests that
-might combine with this one to make it all go faster" which I think it does.)
-
-For the second we can just drop the whole if statement.
-It was needed so that the all the writes would go done to the underlying
-devices so that the null-barrier which would subsequently be passed to all
-those devices would go *after* the writes for the barrier request.
-As there is no longer a post-flush, that code can go.
-
-Thanks a lot, and sorry for the delay in reviewing it.
-NeilBrown
-
-
-> diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
-> index 0f86f5e..ff9cad2 100644
-> --- a/drivers/md/raid5.h
-> +++ b/drivers/md/raid5.h
-> @@ -275,6 +275,7 @@ struct r6_state {
->  				    * filling
->  				    */
->  #define R5_Wantdrain	13 /* dev->towrite needs to be drained */
-> +#define R5_WantFUA	14	/* Write should be FUA */
->  /*
->   * Write method
->   */
 
