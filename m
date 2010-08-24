@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab0HXXOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:14:46 -0400
-Received: from kroah.org ([198.145.64.141]:41162 "EHLO coco.kroah.org"
+	id S933778Ab0HXXPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:15:00 -0400
+Received: from kroah.org ([198.145.64.141]:41151 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755758Ab0HXXCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:45 -0400
+	id S933503Ab0HXXCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:42 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:06 2010
-Message-Id: <20100824224506.635112644@clark.site>
+Message-Id: <20100824224506.462715902@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:07 -0700
+Date: Tue, 24 Aug 2010 15:45:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Popov <dp@highloadlab.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [062/114] tcp: cookie transactions setsockopt memory leak
+Subject: [060/114] sparc: Really fix "console=" for serial consoles.
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,56 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Dmitry Popov <dp@highloadlab.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit a3bdb549e30e7a263f7a589747c40e9c50110315 ]
+[ Upstream commit 0a492896ac07336c98f37ad7fab4a6387b6ada78 ]
 
-There is a bug in do_tcp_setsockopt(net/ipv4/tcp.c),
-TCP_COOKIE_TRANSACTIONS case.
-In some cases (when tp->cookie_values == NULL) new tcp_cookie_values
-structure can be allocated (at cvp), but not bound to
-tp->cookie_values. So a memory leak occurs.
+If a video head and keyboard are hooked up, specifying "console=ttyS0"
+or similar to use a serial console will not work properly.
 
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+The key issue is that we must register all serial console capable
+devices with register_console(), otherwise the command line specified
+device won't be found.  The sun serial drivers would only register
+themselves as console devices if the OpenFirmware specified console
+device node matched.  To fix this part we now unconditionally get
+the serial console register by setting serial_drv->cons always.
+
+Secondarily we must not add_preferred_console() using the firmware
+provided console setting if the user gaven an override on the kernel
+command line using "console="  The "primary framebuffer" matching
+logic was always triggering o n openfirmware device node match, make
+it not when a command line override was given.
+
+Reported-by: Frans Pop <elendil@planet.nl>
+Tested-by: Frans Pop <elendil@planet.nl>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/sparc/include/asm/fb.h |    4 ++++
+ drivers/serial/suncore.c    |   15 +++++++++------
+ 2 files changed, 13 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2176,6 +2176,8 @@ static int do_tcp_setsockopt(struct sock
- 				      GFP_KERNEL);
- 			if (cvp == NULL)
- 				return -ENOMEM;
-+
-+			kref_init(&cvp->kref);
- 		}
- 		lock_sock(sk);
- 		tp->rx_opt.cookie_in_always =
-@@ -2190,12 +2192,11 @@ static int do_tcp_setsockopt(struct sock
- 				 */
- 				kref_put(&tp->cookie_values->kref,
- 					 tcp_cookie_values_release);
--				kref_init(&cvp->kref);
--				tp->cookie_values = cvp;
- 			} else {
- 				cvp = tp->cookie_values;
- 			}
- 		}
-+
- 		if (cvp != NULL) {
- 			cvp->cookie_desired = ctd.tcpct_cookie_desired;
+--- a/arch/sparc/include/asm/fb.h
++++ b/arch/sparc/include/asm/fb.h
+@@ -1,5 +1,6 @@
+ #ifndef _SPARC_FB_H_
+ #define _SPARC_FB_H_
++#include <linux/console.h>
+ #include <linux/fb.h>
+ #include <linux/fs.h>
+ #include <asm/page.h>
+@@ -18,6 +19,9 @@ static inline int fb_is_primary_device(s
+ 	struct device *dev = info->device;
+ 	struct device_node *node;
  
-@@ -2209,6 +2210,8 @@ static int do_tcp_setsockopt(struct sock
- 				cvp->s_data_desired = ctd.tcpct_s_data_desired;
- 				cvp->s_data_constant = 0; /* false */
- 			}
++	if (console_set_on_cmdline)
++		return 0;
 +
-+			tp->cookie_values = cvp;
- 		}
- 		release_sock(sk);
- 		return err;
+ 	node = dev->of_node;
+ 	if (node &&
+ 	    node == of_console_device)
+--- a/drivers/serial/suncore.c
++++ b/drivers/serial/suncore.c
+@@ -55,7 +55,12 @@ EXPORT_SYMBOL(sunserial_unregister_minor
+ int sunserial_console_match(struct console *con, struct device_node *dp,
+ 			    struct uart_driver *drv, int line, bool ignore_line)
+ {
+-	if (!con || of_console_device != dp)
++	if (!con)
++		return 0;
++
++	drv->cons = con;
++
++	if (of_console_device != dp)
+ 		return 0;
+ 
+ 	if (!ignore_line) {
+@@ -69,12 +74,10 @@ int sunserial_console_match(struct conso
+ 			return 0;
+ 	}
+ 
+-	con->index = line;
+-	drv->cons = con;
+-
+-	if (!console_set_on_cmdline)
++	if (!console_set_on_cmdline) {
++		con->index = line;
+ 		add_preferred_console(con->name, line, NULL);
+-
++	}
+ 	return 1;
+ }
+ EXPORT_SYMBOL(sunserial_console_match);
 
 
