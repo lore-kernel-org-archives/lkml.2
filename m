@@ -1,119 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab0HXUbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 16:31:41 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63934 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328Ab0HXUbi convert rfc822-to-8bit (ORCPT
+	id S1755769Ab0HXUc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:32:57 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42268 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755328Ab0HXUcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 16:31:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=gNVAD1J9IfkSo53BuTxpdD2bJdjqTtnx949Pam5lN48ybAnZESo6VZXbM7LJP/+F8v
-         ejqrp8xf2mvAUnsCzm5YXYeH5ug2jFkWKFOaly3nfyy5Cr5vePsynvoWfuwSqLcHDDDw
-         djWJBr545W0rG4qFM34xx9Zxl8U2XlutNa9yA=
-MIME-Version: 1.0
-In-Reply-To: <4C7404C4.4040704@vlnb.net>
-References: <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
-	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>
-	<4C701E08.2020005@vlnb.net>
-	<1282423398.3015.39.camel@mulgrave.site>
-	<AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com>
-	<1282508953.3042.102.camel@mulgrave.site>
-	<4C727BEB.9020100@scalableinformatics.com>
-	<AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com>
-	<AANLkTinDY8hEABHaPsCC+3wGMCn0ZLcyfDa9U9jXJ3d4@mail.gmail.com>
-	<AANLkTim+fj-OL+Bixfbrxv6AgSVv_NpT-KdG6vrc6ub-@mail.gmail.com>
-	<20100824072557.GK2804@reaktio.net>
-	<4C7404C4.4040704@vlnb.net>
-Date: Tue, 24 Aug 2010 14:31:37 -0600
-Message-ID: <AANLkTin85yqvykJPW=Zk46m2hA=n2wTRamYodRgMZCVM@mail.gmail.com>
-Subject: Re: Linux I/O subsystem performance (was: linuxcon 2010...)
-From: Chris Worley <worleys@gmail.com>
-To: Vladislav Bolkhovitin <vst@vlnb.net>,
-        =?ISO-8859-1?Q?Pasi_K=E4rkk=E4inen?= <pasik@iki.fi>,
-        Chetan Loke <chetanloke@gmail.com>,
-        Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Aug 2010 16:32:53 -0400
+Subject: Re: [PATCH v2] guard page for stacks that grow upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org, linux-ia64@vger.kernel.org,
+        John David Anglin <dave.anglin@nrc-cnrc.gc.ca>,
+        Kyle McMartin <kyle@parisc-linux.org>
+In-Reply-To: <AANLkTinMbTu6H9m70sapfpGHC4secUsaUqZKkg_=CWA6@mail.gmail.com>
+References: <4c7413025613b269c@agluck-desktop.sc.intel.com>
+	 <AANLkTinMbTu6H9m70sapfpGHC4secUsaUqZKkg_=CWA6@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 20:32:48 +0000
+Message-ID: <1282681968.2993.109.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 11:43 AM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
-> Pasi Kärkkäinen, on 08/24/2010 11:25 AM wrote:
->>
->> On Mon, Aug 23, 2010 at 02:03:26PM -0400, Chetan Loke wrote:
->>>
->>> I actually received 3+ off-post emails asking whether I was talking
->>> about initiator or target in the 100K IOPS case below and what did I
->>> mean by the ACKs.
->>> I was referring to the 'Initiator' side.
->>> ACKs == When scsi-ML down-calls the LLD via the queue-command, process
->>> the sgl's(if you like) and then trigger the scsi_done up-call path.
->>>
->>
->> Uhm, Intel and Microsoft demonstrated over 1 million IOPS
->> using software iSCSI and a single 10 Gbit Ethernet NIC (Intel 82599).
->>
->> How come there is such a huge difference? What are we lacking in Linux?
->
-> I also have an impression that Linux I/O subsystem has some performance
-> problems. For instance, in one recent SCST performance test only 8 Linux
-> initiators with fio as a load generator were able to saturate a single SCST
-> target with dual IB cards (SRP) on 4K AIO direct accesses over an SSD
-> backend. This rawly means that any initiator took several times (8?) more
-> processing time than the target.
+On Tue, 2010-08-24 at 13:19 -0700, Linus Torvalds wrote:
+> On Tue, Aug 24, 2010 at 11:44 AM, Luck, Tony <tony.luck@intel.com> wrote:
+> >
+> > Built, booted & tested on ia64
+> > Built for x86_64 (but not booted or tested)
+> > pa-risc - untested
+> 
+> Ok, applied. I do think we could do the "VM_GROWSDOWN = 0" trick for
+> PA-RISC  (so that the code for the growsdown case would be compiled
+> away there), but that definitely needs somebody who actually cares
+> specifically about PA-RISC.
 
-While I can't tell you where the bottlenecks are, I can share some
-performance numbers...
+I can try it ... I was just getting ready to try the -rc2 kernel on our
+cupertino test ring anyway.
 
-4 initiators can get >600K random 4KB IOPS off a single target...
-which is ~150% of what the Emulex/Intel/Microsoft results show using 8
-targets at 4KB (their 1M IOPS was at 512 byte blocks, which is not a
-realistic test point) here:
+James
 
-http://itbrandpulse.com/Documents/Test2010001%20-%20The%20Sun%20Rises%20on%20CNAs%20Test%20Report.pdf
 
-The blog referenced earlier used 10 targets... and I'm not sure how
-many 10G ports per target.
-
-In general, my target seems capable of 65% the local small-block
-random write performance over IB,  and 85% the local small-block
-random read performance.  For large block performance, ~95% efficiency
-is easily achievable, read or write (i.e. 5.6GB/s over fabric, where
-6GB/s is achievable on the drives locally at 1MB random blocks).
-These small-block efficiencies are achievable only when tested with
-multiple initiators.
-
-The single initiator is only capable of <150K 4KB IOPS... but gets
-full bandwidth w/ larger blocks.
-
-If I were to chose my problem, target or initiator bottleneck, I'd
-certainly rather have an initiator bottleneck rather than Microsoft's
-target bottleneck.
-
-> Hardware used for that target and
-> initiators was the same. I can't see on this load why the initiators would
-> need to do something more than the target. Well, I know we in SCST did an
-> excellent work to maximize performance, but such a difference looks too much
-> ;)
->
-> Also it looks very suspicious why nobody even tried to match that
-> Microsoft/Intel record, even Intel itself who closely works with Linux
-> community in the storage area and could do it using the same hardware.
-
-The numbers are suspicious for other reasons.  "Random" is often used
-loosely (and the blog referenced earlier doesn't even claim "random").
- If there is any merging/coalescing going on, then the "IOPS" are
-going to look vastly better.  If I allow coalescing, I can easily get
-4M 4KB IOPS, but can't honestly call those 4KB IOPS (even if the
-benchmark thinks it's doing 4KB I/O).  They need to show that their
-advertised block size is maintained end-to-end.
-
-Chris
