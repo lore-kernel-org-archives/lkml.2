@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0HXAA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 20:00:56 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53465 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab0HXAAx (ORCPT
+	id S1753636Ab0HXACZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 20:02:25 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13390 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753021Ab0HXACX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 20:00:53 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH] writeback: remove the internal 5% low bound on dirty_ratio
-Cc: kosaki.motohiro@jp.fujitsu.com, Neil Brown <neilb@suse.de>,
-        Con Kolivas <kernel@kolivas.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "david@fromorbit.com" <david@fromorbit.com>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-In-Reply-To: <20100823062359.GA19586@localhost>
-References: <20100823144248.15fbb700@notabene> <20100823062359.GA19586@localhost>
-Message-Id: <20100824085812.F3AD.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 24 Aug 2010 09:00:51 +0900 (JST)
+	Mon, 23 Aug 2010 20:02:23 -0400
+Message-ID: <000401cb431f$a06d83d0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Greg KH" <gregkh@suse.de>
+Cc: "Morinaga" <morinaga526@dsn.okisemi.com>, <margie.foster@intel.com>,
+        <alan@linux.intel.com>, <arjan@linux.intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, "LKML" <linux-kernel@vger.kernel.org>,
+        <meego-dev@meego.com>
+References: <4C6BA385.80409@dsn.okisemi.com> <20100818131401.GA5861@suse.de> <000601cb3f99$8f5a0a20$66f8800a@maildom.okisemi.com> <20100819152214.GD2562@suse.de> <000401cb42bf$07e201f0$66f8800a@maildom.okisemi.com> <20100823153449.GA18649@suse.de>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+Date: Tue, 24 Aug 2010 09:02:19 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> writeback: remove the internal 5% low bound on dirty_ratio
-> 
-> The dirty_ratio was silently limited in global_dirty_limits() to >= 5%. This
-> is not a user expected behavior. And it's inconsistent with calc_period_shift(),
-> which uses the plain vm_dirty_ratio value. So let's rip the internal bound.
-> 
-> At the same time, force a user visible low bound of 1% for the vm.dirty_ratio
-> interface. Applications trying to write 0 will be rejected with -EINVAL. This
-> will break user space applications if they
-> 1) try to write 0 to vm.dirty_ratio
-> 2) and check the return value
-> That is very weird combination, so the risk of breaking user space is low.
+----- Original Message ----- 
+From: "Greg KH" <gregkh@suse.de>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Morinaga" <morinaga526@dsn.okisemi.com>; <margie.foster@intel.com>; <alan@linux.intel.com>;
+<arjan@linux.intel.com>; <andrew.chih.howe.khor@intel.com>; <qi.wang@intel.com>; <yong.y.wang@intel.com>; "LKML"
+<linux-kernel@vger.kernel.org>; <meego-dev@meego.com>
+Sent: Tuesday, August 24, 2010 12:34 AM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
 
-I'm ok this one too. because I bet nobody use 0% dirty ratio on their production
-server and/or their own desktop. (i.e. I don't mind lab machine crash)
 
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> On Mon, Aug 23, 2010 at 09:30:51PM +0900, Masayuki Ohtake wrote:
+> > ----- Original Message ----- 
+> > From: "Greg KH" <gregkh@suse.de>
+> > To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+> > Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <yong.y.wang@intel.com>; <qi.wang@intel.com>;
+> > <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <alan@linux.intel.com>; <margie.foster@intel.com>;
+> > "Morinaga" <morinaga526@dsn.okisemi.com>
+> > Sent: Friday, August 20, 2010 12:22 AM
+> > Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+> >
+> >
+> > > On Thu, Aug 19, 2010 at 09:25:03PM +0900, Masayuki Ohtake wrote:
+> > > > Please find <MASA>
+> > >
+> > > If someone takes the time to review your code and ask questions, it is
+> > > considered common courtesy to at least answer them all and not ignore
+> > > some of them.  Please do so.
+> > >
+> > > > > >  drivers/misc/Kconfig    |    9 +
+> > > > > >  drivers/misc/Makefile   |    1 +
+> > > > > >  drivers/misc/pch_phub.c |  722 +++++++++++++++++++++++++++++++++++++++++++++++
+> > > > > >  3 files changed, 732 insertions(+), 0 deletions(-)
+> > > > > >  create mode 100755 drivers/misc/pch_phub.c
+> > > > >
+> > > > > You forgot to add documentation for your sysfs files in
+> > > > > Documentation/ABI/ which is a requiremend when you add new ones.
+> > > >
+> > > > <MASA>
+> > > > Which folder should we put stable/ or testing/ ?
+> > >
+> > > Which do you feel it should be in?
+> > I think 'testing' is appropriate.
+>
+> Ok, when will you feel they should move to "stable"?
 
-> 
-> CC: Jan Kara <jack@suse.cz>
-> CC: Neil Brown <neilb@suse.de>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Con Kolivas <kernel@kolivas.org>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  kernel/sysctl.c     |    2 +-
->  mm/page-writeback.c |   10 ++--------
->  2 files changed, 3 insertions(+), 9 deletions(-)
-> 
-> --- linux-next.orig/mm/page-writeback.c	2010-08-20 20:14:11.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2010-08-23 10:31:01.000000000 +0800
-> @@ -415,14 +415,8 @@ void global_dirty_limits(unsigned long *
->  
->  	if (vm_dirty_bytes)
->  		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-> -	else {
-> -		int dirty_ratio;
-> -
-> -		dirty_ratio = vm_dirty_ratio;
-> -		if (dirty_ratio < 5)
-> -			dirty_ratio = 5;
-> -		dirty = (dirty_ratio * available_memory) / 100;
-> -	}
-> +	else
-> +		dirty = (vm_dirty_ratio * available_memory) / 100;
->  
->  	if (dirty_background_bytes)
->  		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-> --- linux-next.orig/kernel/sysctl.c	2010-08-23 14:06:11.000000000 +0800
-> +++ linux-next/kernel/sysctl.c	2010-08-23 14:07:30.000000000 +0800
-> @@ -1029,7 +1029,7 @@ static struct ctl_table vm_table[] = {
->  		.maxlen		= sizeof(vm_dirty_ratio),
->  		.mode		= 0644,
->  		.proc_handler	= dirty_ratio_handler,
-> -		.extra1		= &zero,
-> +		.extra1		= &one,
->  		.extra2		= &one_hundred,
->  	},
->  	{
+After accepted by upstream and updating given comments,
+we will move to stable.
 
+>
+> > > > > > +};
+> > > > > > +
+> > > > > > +/* SROM SPEC for MAC address assignment offset */
+> > > > > > +static const int pch_phub_mac_offset[ETH_ALEN] = {0x3, 0x2, 0x1, 0x0, 0xb, 0xa};
+> > > > > > +
+> > > > > > +static DEFINE_MUTEX(pch_phub_mutex);
+> > > > > > +static struct pch_phub_reg pch_phub_reg;
+> > > > >
+> > > > > So you can only have one of these devices in a system at the same time?
+> > > > > What happens when a machine ships with two of them?
+> > > >
+> > > > <MASA>
+> > > > I can't understand the above questioin meaning.
+> > > > Give me more information, please.
+> > > > What's does the above "these devices" mean?
+> > >
+> > > The device the driver is controlling.  What happens when this driver
+> > > runs on a system that has 2 of these devices?  You need to be able to
+> > > handle multiple devices, and that doesn't happen with a single variable,
+> > > right?  Please dynamically allocate it and make the lock associated to
+> > > the actual device, not the whole driver, if possible.
+> > I can understand your saying.
+> > But our driver for Topcliff doesn't support multiple device but single device only.
+> > From LSI structure point of view, I think, it is impossible that
+> > topcliff is used as multiple devices.
+>
+> Are you sure that this is going to be true?
+>
+> > None the less, should our driver support multiple device ?
+>
+> Yes, it is trivial to make it support multiple devices, which makes it
+> easier in the future if you happen to have a machine with more than one.
+I understand. You are right.
+I will modify for supporting multiple devices.
+
+Thanks, Ohtake(OKISEMI)
 
 
