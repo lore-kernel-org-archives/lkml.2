@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab0HXW71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:59:27 -0400
-Received: from kroah.org ([198.145.64.141]:40497 "EHLO coco.kroah.org"
+	id S934199Ab0HXXaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:30:08 -0400
+Received: from kroah.org ([198.145.64.141]:40546 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932990Ab0HXW7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:15 -0400
+	id S933037Ab0HXW73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:29 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:17 2010
-Message-Id: <20100824224216.965576587@clark.site>
+Message-Id: <20100824224217.724450789@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:19 -0700
+Date: Tue, 24 Aug 2010 15:42:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [57/91] isdn: fix information leak
+        "John L. Villalovos" <john.l.villalovos@intel.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [66/91] Oprofile: Change CPUIDS from decimal to hex, and add some comments
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: John Villalovos <sodarock@gmail.com>
 
-From: Dan Carpenter <error27@gmail.com>
+commit 45c34e05c4e3d36e7c44e790241ea11a1d90d54e upstream.
 
-[ Upstream commit 4b030d4288a569d6bdeca884d7f102d951f097f2 ]
+Back when the patch was submitted for "Add Xeon 7500 series support to
+oprofile", Robert Richter had asked for a followon patch that
+converted all the CPU ID values to hex.
 
-The main motivation of this patch changing strcpy() to strlcpy().
-We strcpy() to copy a 48 byte buffers into a 49 byte buffers.  So at
-best the last byte has leaked information, or maybe there is an
-overflow?  Anyway, this patch closes the information leaks by zeroing
-the memory and the calls to strlcpy() prevent overflows.
+I have done that here for the "i386/core_i7" and "i386/atom" class
+processors in the ppro_init() function and also added some comments on
+where to find documentation on the Intel processors.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: John L. Villalovos <john.l.villalovos@intel.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/isdn/sc/ioctl.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/isdn/sc/ioctl.c
-+++ b/drivers/isdn/sc/ioctl.c
-@@ -174,7 +174,7 @@ int sc_ioctl(int card, scs_ioctl *data)
- 		pr_debug("%s: SCIOGETSPID: ioctl received\n",
- 				sc_adapter[card]->devicename);
+---
+ arch/x86/oprofile/nmi_int.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -584,6 +584,18 @@ static int __init ppro_init(char **cpu_t
+ 	if (force_arch_perfmon && cpu_has_arch_perfmon)
+ 		return 0;
  
--		spid = kmalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
-+		spid = kzalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
- 		if (!spid) {
- 			kfree(rcvmsg);
- 			return -ENOMEM;
-@@ -194,7 +194,7 @@ int sc_ioctl(int card, scs_ioctl *data)
- 			kfree(rcvmsg);
- 			return status;
- 		}
--		strcpy(spid, rcvmsg->msg_data.byte_array);
-+		strlcpy(spid, rcvmsg->msg_data.byte_array, SCIOC_SPIDSIZE);
- 
- 		/*
- 		 * Package the switch type and send to user space
-@@ -272,12 +272,12 @@ int sc_ioctl(int card, scs_ioctl *data)
- 			return status;
- 		}
- 
--		dn = kmalloc(SCIOC_DNSIZE, GFP_KERNEL);
-+		dn = kzalloc(SCIOC_DNSIZE, GFP_KERNEL);
- 		if (!dn) {
- 			kfree(rcvmsg);
- 			return -ENOMEM;
- 		}
--		strcpy(dn, rcvmsg->msg_data.byte_array);
-+		strlcpy(dn, rcvmsg->msg_data.byte_array, SCIOC_DNSIZE);
- 		kfree(rcvmsg);
- 
- 		/*
-@@ -348,7 +348,7 @@ int sc_ioctl(int card, scs_ioctl *data)
- 		pr_debug("%s: SCIOSTAT: ioctl received\n",
- 				sc_adapter[card]->devicename);
- 
--		bi = kmalloc (sizeof(boardInfo), GFP_KERNEL);
-+		bi = kzalloc(sizeof(boardInfo), GFP_KERNEL);
- 		if (!bi) {
- 			kfree(rcvmsg);
- 			return -ENOMEM;
++	/*
++	 * Documentation on identifying Intel processors by CPU family
++	 * and model can be found in the Intel Software Developer's
++	 * Manuals (SDM):
++	 *
++	 *  http://www.intel.com/products/processor/manuals/
++	 *
++	 * As of May 2010 the documentation for this was in the:
++	 * "Intel 64 and IA-32 Architectures Software Developer's
++	 * Manual Volume 3B: System Programming Guide", "Table B-1
++	 * CPUID Signature Values of DisplayFamily_DisplayModel".
++	 */
+ 	switch (cpu_model) {
+ 	case 0 ... 2:
+ 		*cpu_type = "i386/ppro";
+@@ -605,12 +617,12 @@ static int __init ppro_init(char **cpu_t
+ 	case 15: case 23:
+ 		*cpu_type = "i386/core_2";
+ 		break;
++	case 0x1a:
+ 	case 0x2e:
+-	case 26:
+ 		spec = &op_arch_perfmon_spec;
+ 		*cpu_type = "i386/core_i7";
+ 		break;
+-	case 28:
++	case 0x1c:
+ 		*cpu_type = "i386/atom";
+ 		break;
+ 	default:
 
 
