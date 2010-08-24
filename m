@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab0HXWgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:36:01 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:53919 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab0HXWfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:35:55 -0400
-Date: Tue, 24 Aug 2010 18:35:30 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, sedat.dilek@gmail.com,
-        Andi Kleen <ak@linux.intel.com>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull request] ACPI patches for 2.6.36.merge
-In-reply-to: <20100816124300.e72258c9.sfr@canb.auug.org.au>
-Message-id: <alpine.LFD.2.00.1008241815120.29078@localhost.localdomain>
-References: <AANLkTikV2eVo6KM5dSqfDwAwT=bVxnuWSpBE7F+JQU+_@mail.gmail.com>
- <AANLkTi=vngT_5XYz1=3P6GjExFNtCVCdBMhaz4Sc4oEk@mail.gmail.com>
- <20100815133015.883c7069.akpm@linux-foundation.org>
- <AANLkTi=Ok3NH3k5EF1Da2Z3xA7uahABRtH7pEdOEuZH2@mail.gmail.com>
- <20100815182153.994179c1.akpm@linux-foundation.org>
- <AANLkTinBAgk_Ay4vCcTxTEsq-uwn=RwQpTA6O86JXGCM@mail.gmail.com>
- <20100816124300.e72258c9.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1756213Ab0HXWj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:39:26 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:60910 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753283Ab0HXWjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:39:24 -0400
+Date: Tue, 24 Aug 2010 15:39:20 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Marc Aurele La France <tsi@ualberta.ca>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: RFC: MTU for serving NFS on Infiniband
+Message-ID: <20100824153920.63360072@s6510>
+In-Reply-To: <1282688441.22839.34.camel@localhost>
+References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca>
+	<20100823080543.319143e3@nehalam>
+	<alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
+	<1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
+	<alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
+	<1282688441.22839.34.camel@localhost>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My bad.
+On Tue, 24 Aug 2010 23:20:41 +0100
+Ben Hutchings <bhutchings@solarflare.com> wrote:
 
-Andrew was right -- I botched a modify/delete
-merge conflict of two correct patches.
-I did it at the last minute and then fed the wrong branch
-("idle-release" instead of "release") to my build test,
-send the code, and dropped of the net.  multiple mistakes.
+> On Tue, 2010-08-24 at 13:49 -0600, Marc Aurele La France wrote:
+> > On Tue, 24 Aug 2010, Ben Hutchings wrote:
+> > > On Tue, 2010-08-24 at 09:14 -0600, Marc Aurele La France wrote:
+> > >> On Mon, 23 Aug 2010, Stephen Hemminger wrote:
+> > >>> On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
+> > >>> Marc Aurele La France <tsi@ualberta.ca> wrote:
+> > >>>> In regrouping for my next tack at this, I noticed that all stack traces go
+> > >>>> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
+> > >>>> A _very_ rough draft that would have ip_append_data() temporarily drop down
+> > >>>> to a smaller fake MTU follows ...
+> > 
+> > >>> Why doesn't NFS generate page size fragments?  Does Infiniband or your
+> > >>> device not support this?  Any thing that requires higher order allocation
+> > >>> is going to unstable under load.  Let's fix the cause not the apply bandaid
+> > >>> solution to the symptom.
+> > 
+> > >> From what I can tell, IP fragmentation is done centrally.
+> > > [...]
+> > 
+> > > Stephen and I are not talking about IP fragmentation, but about the
+> > > ability to append 'fragments' to an skb rather than putting the entire
+> > > packet payload in a linear buffer.  See
+> > > <http://vger.kernel.org/~davem/skb_data.html>.
+> > 
+> > Any payload has to either fit in the MTU, or has to be broken up into 
+> > MTU-sized (or less) fragments, come hell or high water.  That this is done 
+> > centrally is a good thing.
+> 
+> Not necessarily.  Offloading it to hardware, where possible, is usually
+> a performance win.
+> 
+> > It is the "(or less)" part that I am working towards here.
+> 
+> The inability to allocate large linear buffers is not a good reason to
+> generate packets smaller than the MTU.  You are working around the real
+> problem.
 
-Sorry for the sloppiness, I'll do better.
+IF NFS server is smart enough to generate:
+   Header (skb) + one or more pages in fragment list
+then IP fragmentation could do fragmentation by allocating
+new headers skb (small) and assigning the same pages to
+multiple skb's using page ref count.
 
-Upon the git merge conflict, it looks like I resorted to
-pulling andi's original patch out of git, pushing it into
-quilt on top of rui's delete; and then got fooled
-by the refresh.  Should have caught that both by inspection
-and by build...
+It obviously isn't working that way.
 
-On a positive note, the underlying reason for the conflict
-was that we are succeeding in deleting a bunch of crufty code
-that should not need to be maintained at all:-)
+The whole problem is moot because NFS over UDP has known data corruption
+issues in the face of packet loss.  The sequence number of the IP fragment
+can easily wrap around causing old data to be grouped with new data and
+the UDP checksum is so weak that the resulting UDP packet will be consumed by the NFS
+client ans passed to the user application as corrupted disk block.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+DON'T USE NFS OVER UDP!
+
+
+
+
