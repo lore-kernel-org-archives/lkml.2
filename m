@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934011Ab0HXXU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:20:28 -0400
-Received: from kroah.org ([198.145.64.141]:40943 "EHLO coco.kroah.org"
+	id S934018Ab0HXXUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:20:44 -0400
+Received: from kroah.org ([198.145.64.141]:40936 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933364Ab0HXXBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:49 -0400
+	id S933360Ab0HXXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:47 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:03 2010
-Message-Id: <20100824224503.805147223@clark.site>
+Message-Id: <20100824224503.719108792@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:34 -0700
+Date: Tue, 24 Aug 2010 15:44:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Kiper <dkiper@net-space.pl>, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, jeremy@goop.org, Ingo Molnar <mingo@elte.hu>
-Subject: [029/114] x86, apic: Fix apic=debug boot crash
+        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [028/114] perf, x86: Fix Intel-nhm PMU programming errata workaround
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +28,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Kiper <dkiper@net-space.pl>
+From: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
 
-commit 05e407603e527f9d808dd3866d3a17c2ce4dfcc5 upstream.
+commit 351af0725e5222e35741011d1ea62215c1ed06db upstream.
 
-Fix a boot crash when apic=debug is used and the APIC is
-not properly initialized.
+Fix the Errata AAK100/AAP53/BD53 workaround, the officialy documented
+workaround we implemented in:
 
-This issue appears during Xen Dom0 kernel boot but the
-fix is generic and the crash could occur on real hardware
-as well.
+ 11164cd: perf, x86: Add Nehelem PMU programming errata workaround
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-Cc: xen-devel@lists.xensource.com
-Cc: konrad.wilk@oracle.com
-Cc: jeremy@goop.org
-LKML-Reference: <20100819224616.GB9967@router-fw-old.local.net-space.pl>
+doesn't actually work fully and causes a stuck PMU state
+under load and non-functioning perf profiling.
+
+A functional workaround was found by trial & error.
+
+Affects all Nehalem-class Intel PMUs.
+
+Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1281073148.2125.63.camel@ymzhang.sh.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/io_apic.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel.c |   83 +++++++++++++++++++++++++--------
+ 1 file changed, 64 insertions(+), 19 deletions(-)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1728,6 +1728,8 @@ __apicdebuginit(void) print_IO_APIC(void
- 		struct irq_pin_list *entry;
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -491,33 +491,78 @@ static void intel_pmu_enable_all(int add
+  *   Intel Errata AAP53  (model 30)
+  *   Intel Errata BD53   (model 44)
+  *
+- * These chips need to be 'reset' when adding counters by programming
+- * the magic three (non counting) events 0x4300D2, 0x4300B1 and 0x4300B5
+- * either in sequence on the same PMC or on different PMCs.
++ * The official story:
++ *   These chips need to be 'reset' when adding counters by programming the
++ *   magic three (non-counting) events 0x4300B5, 0x4300D2, and 0x4300B1 either
++ *   in sequence on the same PMC or on different PMCs.
++ *
++ * In practise it appears some of these events do in fact count, and
++ * we need to programm all 4 events.
+  */
+-static void intel_pmu_nhm_enable_all(int added)
++static void intel_pmu_nhm_workaround(void)
+ {
+-	if (added) {
+-		struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-		int i;
+-
+-		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 0, 0x4300D2);
+-		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+-		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	static const unsigned long nhm_magic[4] = {
++		0x4300B5,
++		0x4300D2,
++		0x4300B1,
++		0x4300B1
++	};
++	struct perf_event *event;
++	int i;
++
++	/*
++	 * The Errata requires below steps:
++	 * 1) Clear MSR_IA32_PEBS_ENABLE and MSR_CORE_PERF_GLOBAL_CTRL;
++	 * 2) Configure 4 PERFEVTSELx with the magic events and clear
++	 *    the corresponding PMCx;
++	 * 3) set bit0~bit3 of MSR_CORE_PERF_GLOBAL_CTRL;
++	 * 4) Clear MSR_CORE_PERF_GLOBAL_CTRL;
++	 * 5) Clear 4 pairs of ERFEVTSELx and PMCx;
++	 */
++
++	/*
++	 * The real steps we choose are a little different from above.
++	 * A) To reduce MSR operations, we don't run step 1) as they
++	 *    are already cleared before this function is called;
++	 * B) Call x86_perf_event_update to save PMCx before configuring
++	 *    PERFEVTSELx with magic number;
++	 * C) With step 5), we do clear only when the PERFEVTSELx is
++	 *    not used currently.
++	 * D) Call x86_perf_event_set_period to restore PMCx;
++	 */
++
++	/* We always operate 4 pairs of PERF Counters */
++	for (i = 0; i < 4; i++) {
++		event = cpuc->events[i];
++		if (event)
++			x86_perf_event_update(event);
++	}
  
- 		cfg = desc->chip_data;
-+		if (!cfg)
-+			continue;
- 		entry = cfg->irq_2_pin;
- 		if (!entry)
- 			continue;
+-		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+-		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
++	for (i = 0; i < 4; i++) {
++		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + i, nhm_magic[i]);
++		wrmsrl(MSR_ARCH_PERFMON_PERFCTR0 + i, 0x0);
++	}
+ 
+-		for (i = 0; i < 3; i++) {
+-			struct perf_event *event = cpuc->events[i];
++	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0xf);
++	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+ 
+-			if (!event)
+-				continue;
++	for (i = 0; i < 4; i++) {
++		event = cpuc->events[i];
+ 
++		if (event) {
++			x86_perf_event_set_period(event);
+ 			__x86_pmu_enable_event(&event->hw,
+-					       ARCH_PERFMON_EVENTSEL_ENABLE);
+-		}
++					ARCH_PERFMON_EVENTSEL_ENABLE);
++		} else
++			wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + i, 0x0);
+ 	}
++}
++
++static void intel_pmu_nhm_enable_all(int added)
++{
++	if (added)
++		intel_pmu_nhm_workaround();
+ 	intel_pmu_enable_all(added);
+ }
+ 
 
 
