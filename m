@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab0HYADr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 20:03:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:1321 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755646Ab0HYADn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 20:03:43 -0400
-Subject: Re: [PATCH] lib: fix scnprintf() if @size is == 0
-From: Joe Perches <joe@perches.com>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1282692902-2981-1-git-send-email-xiaosuo@gmail.com>
-References: <1282692902-2981-1-git-send-email-xiaosuo@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Aug 2010 17:03:41 -0700
-Message-ID: <1282694621.25208.19.camel@Joe-Laptop>
+	id S932485Ab0HYAD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 20:03:56 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42007 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab0HYADw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 20:03:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 25 Aug 2010 08:58:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com, "menage@google.com" <menage@google.com>
+Subject: Re: [PATCH 1/5] cgroup: ID notification call back
+Message-Id: <20100825085843.54277f3c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C738B34.6070602@cn.fujitsu.com>
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
+	<4C738B34.6070602@cn.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 07:35 +0800, Changli Gao wrote:
-> scnprintf() should return 0 if @size is == 0. Update the comment for it,
-> as @size is unsigned.
+On Tue, 24 Aug 2010 17:04:52 +0800
+Li Zefan <lizf@cn.fujitsu.com> wrote:
+
+> KAMEZAWA Hiroyuki wrote:
+> > CC'ed to Paul Menage and Li Zefan.
+> > ==
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > When cgroup subsystem use ID (ss->use_id==1), each css's ID is assigned
+> > after successful call of ->create(). css_ID is tightly coupled with
+> > css struct itself but it is allocated by ->create() call, IOW,
+> > per-subsystem special allocations.
+> > 
+> > To know css_id before creation, this patch adds id_attached() callback.
+> > after css_ID allocation. This will be used by memory cgroup's quick lookup
+> > routine.
+> > 
+> > Maybe you can think of other implementations as
+> > 	- pass ID to ->create()
+> > 	or
+> > 	- add post_create()
+> > 	etc...
+> > But when considering dirtiness of codes, this straightforward patch seems
+> > good to me. If someone wants post_create(), this patch can be replaced.
+> > 
+> > Changelog: 20100820
+> >  - new approarch.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-> ---
->  lib/vsprintf.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index 7af9d84..0c66ae9 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -1497,7 +1497,7 @@ EXPORT_SYMBOL(snprintf);
->   * @...: Arguments for the format string
->   *
->   * The return value is the number of characters written into @buf not including
-> - * the trailing '\0'. If @size is <= 0 the function returns 0.
-> + * the trailing '\0'. If @size is == 0 the function returns 0.
->   */
->  
->  int scnprintf(char *buf, size_t size, const char *fmt, ...)
-> @@ -1509,7 +1509,7 @@ int scnprintf(char *buf, size_t size, const char *fmt, ...)
->  	i = vsnprintf(buf, size, fmt, args);
->  	va_end(args);
->  
-> -	return (i >= size) ? (size - 1) : i;
-> +	return (i >= size) ? (size != 0 ? (size - 1) : 0) : i;
+> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+> 
+> ...
+> >  
+> > Index: mmotm-0811/include/linux/cgroup.h
+> > ===================================================================
+> > --- mmotm-0811.orig/include/linux/cgroup.h
+> > +++ mmotm-0811/include/linux/cgroup.h
+> > @@ -475,6 +475,7 @@ struct cgroup_subsys {
+> >  			struct cgroup *cgrp);
+> >  	void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+> >  	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
+> > +	void (*id_attached)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+> 
+> Maybe pass the id number to id_attached() is better.
+> 
+ok.
 
-Isn't simpler to check size at the beginning of the function?
+> And actually the @ss argument is not necessary, because the memcg's
+> id_attached() handler of course knows it's dealing with the memory
+> cgroup subsystem.
+> 
+> So I suspect we can just remove all the @ss from all the callbacks..
+> 
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 7af9d84..779236f 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -1505,6 +1505,9 @@ int scnprintf(char *buf, size_t size, const char *fmt, ...)
- 	va_list args;
- 	int i;
- 
-+	if (!size)
-+		return 0;
-+
- 	va_start(args, fmt);
- 	i = vsnprintf(buf, size, fmt, args);
- 	va_end(args);
+I agree. But could you write "remove ss" patch later ?
+It seems an design change. I leave "ss" as this for now.
+
+Thanks
+-Kame
 
 
