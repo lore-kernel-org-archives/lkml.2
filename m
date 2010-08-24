@@ -1,274 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab0HXQ7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 12:59:47 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:41787 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791Ab0HXQ7H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 12:59:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6083"; a="51941450"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 5/5 v2] msm: gpio: Remove tlmm routines obsoleted by gpiomux.
-Date: Tue, 24 Aug 2010 09:58:59 -0700
-Message-Id: <1282669139-17640-5-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282669139-17640-1-git-send-email-gbean@codeaurora.org>
-References: <1282669139-17640-1-git-send-email-gbean@codeaurora.org>
+	id S1755823Ab0HXRFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:05:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55197 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754406Ab0HXRFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 13:05:39 -0400
+Message-ID: <4C73FA8F.5080800@kernel.org>
+Date: Tue, 24 Aug 2010 18:59:59 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+CC: Mike Snitzer <snitzer@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
+        jack@suse.cz, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
+        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
+        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
+        dm-devel@redhat.com
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com> <4C739DE9.5070803@ct.jp.nec.com>
+In-Reply-To: <4C739DE9.5070803@ct.jp.nec.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 Aug 2010 17:05:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all supported gpio_tlmm_config-using boards
-are using gpiomux, remove the deprecated code.
+Hello,
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/Makefile            |    1 -
- arch/arm/mach-msm/gpio.c              |   85 -----------------------
- arch/arm/mach-msm/include/mach/gpio.h |  123 ---------------------------------
- 3 files changed, 0 insertions(+), 209 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpio.c
+On 08/24/2010 12:24 PM, Kiyoshi Ueda wrote:
+> Yes, checking whether it's a transport error in lower layer is
+> the right solution.
+> (Since I know it's not available yet, I just hoped if upper layers
+>  had some other options.)
+> 
+> Anyway, only reporting errors for REQ_FLUSH to upper layer without
+> such a solution would make dm-multipath almost unusable in real world,
+> although it's better than implicit data loss.
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 1850942..faeb1f9 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -3,7 +3,6 @@ obj-y += io.o idle.o timer.o dma.o
- obj-y += vreg.o
- obj-y += acpuclock-arm11.o
- obj-y += clock.o clock-pcom.o
--obj-y += gpio.o
- 
- ifdef CONFIG_MSM_VIC
- obj-y += irq-vic.o
-diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
-deleted file mode 100644
-index bc32c84..0000000
---- a/arch/arm/mach-msm/gpio.c
-+++ /dev/null
-@@ -1,85 +0,0 @@
--/* linux/arch/arm/mach-msm/gpio.c
-- *
-- * Copyright (C) 2007 Google, Inc.
-- * Copyright (c) 2009, Code Aurora Forum. All rights reserved.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/module.h>
--#include <mach/gpio.h>
--#include "proc_comm.h"
--
--int gpio_tlmm_config(unsigned config, unsigned disable)
--{
--	return msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &config, &disable);
--}
--EXPORT_SYMBOL(gpio_tlmm_config);
--
--int msm_gpios_enable(const struct msm_gpio *table, int size)
--{
--	int rc;
--	int i;
--	const struct msm_gpio *g;
--	for (i = 0; i < size; i++) {
--		g = table + i;
--		rc = gpio_tlmm_config(g->gpio_cfg, GPIO_ENABLE);
--		if (rc) {
--			pr_err("gpio_tlmm_config(0x%08x, GPIO_ENABLE)"
--			       " <%s> failed: %d\n",
--			       g->gpio_cfg, g->label ?: "?", rc);
--			pr_err("pin %d func %d dir %d pull %d drvstr %d\n",
--			       GPIO_PIN(g->gpio_cfg), GPIO_FUNC(g->gpio_cfg),
--			       GPIO_DIR(g->gpio_cfg), GPIO_PULL(g->gpio_cfg),
--			       GPIO_DRVSTR(g->gpio_cfg));
--			goto err;
--		}
--	}
--	return 0;
--err:
--	msm_gpios_disable(table, i);
--	return rc;
--}
--EXPORT_SYMBOL(msm_gpios_enable);
--
--void msm_gpios_disable(const struct msm_gpio *table, int size)
--{
--	int rc;
--	int i;
--	const struct msm_gpio *g;
--	for (i = size-1; i >= 0; i--) {
--		g = table + i;
--		rc = gpio_tlmm_config(g->gpio_cfg, GPIO_DISABLE);
--		if (rc) {
--			pr_err("gpio_tlmm_config(0x%08x, GPIO_DISABLE)"
--			       " <%s> failed: %d\n",
--			       g->gpio_cfg, g->label ?: "?", rc);
--			pr_err("pin %d func %d dir %d pull %d drvstr %d\n",
--			       GPIO_PIN(g->gpio_cfg), GPIO_FUNC(g->gpio_cfg),
--			       GPIO_DIR(g->gpio_cfg), GPIO_PULL(g->gpio_cfg),
--			       GPIO_DRVSTR(g->gpio_cfg));
--		}
--	}
--}
--EXPORT_SYMBOL(msm_gpios_disable);
--
--int msm_gpios_request_enable(const struct msm_gpio *table, int size)
--{
--	int rc = msm_gpios_enable(table, size);
--	return rc;
--}
--EXPORT_SYMBOL(msm_gpios_request_enable);
--
--void msm_gpios_disable_free(const struct msm_gpio *table, int size)
--{
--	msm_gpios_disable(table, size);
--}
--EXPORT_SYMBOL(msm_gpios_disable_free);
-diff --git a/arch/arm/mach-msm/include/mach/gpio.h b/arch/arm/mach-msm/include/mach/gpio.h
-index 83e47c0..36ad50d 100644
---- a/arch/arm/mach-msm/include/mach/gpio.h
-+++ b/arch/arm/mach-msm/include/mach/gpio.h
-@@ -23,127 +23,4 @@
- #define gpio_cansleep   __gpio_cansleep
- #define gpio_to_irq     __gpio_to_irq
- 
--/**
-- * struct msm_gpio - GPIO pin description
-- * @gpio_cfg - configuration bitmap, as per gpio_tlmm_config()
-- * @label - textual label
-- *
-- * Usually, GPIO's are operated by sets.
-- * This struct accumulate all GPIO information in single source
-- * and facilitete group operations provided by msm_gpios_xxx()
-- */
--struct msm_gpio {
--	u32 gpio_cfg;
--	const char *label;
--};
--
--/**
-- * msm_gpios_request_enable() - request and enable set of GPIOs
-- *
-- * Request and configure set of GPIO's
-- * In case of error, all operations rolled back.
-- * Return error code.
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--int msm_gpios_request_enable(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_disable_free() - disable and free set of GPIOs
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--void msm_gpios_disable_free(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_request() - request set of GPIOs
-- * In case of error, all operations rolled back.
-- * Return error code.
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--int msm_gpios_request(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_free() - free set of GPIOs
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--void msm_gpios_free(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_enable() - enable set of GPIOs
-- * In case of error, all operations rolled back.
-- * Return error code.
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--int msm_gpios_enable(const struct msm_gpio *table, int size);
--
--/**
-- * msm_gpios_disable() - disable set of GPIOs
-- *
-- * @table: GPIO table
-- * @size:  number of entries in @table
-- */
--void msm_gpios_disable(const struct msm_gpio *table, int size);
--
--/* GPIO TLMM (Top Level Multiplexing) Definitions */
--
--/* GPIO TLMM: Function -- GPIO specific */
--
--/* GPIO TLMM: Direction */
--enum {
--	GPIO_INPUT,
--	GPIO_OUTPUT,
--};
--
--/* GPIO TLMM: Pullup/Pulldown */
--enum {
--	GPIO_NO_PULL,
--	GPIO_PULL_DOWN,
--	GPIO_KEEPER,
--	GPIO_PULL_UP,
--};
--
--/* GPIO TLMM: Drive Strength */
--enum {
--	GPIO_2MA,
--	GPIO_4MA,
--	GPIO_6MA,
--	GPIO_8MA,
--	GPIO_10MA,
--	GPIO_12MA,
--	GPIO_14MA,
--	GPIO_16MA,
--};
--
--enum {
--	GPIO_ENABLE,
--	GPIO_DISABLE,
--};
--
--#define GPIO_CFG(gpio, func, dir, pull, drvstr) \
--	((((gpio) & 0x3FF) << 4)        |	  \
--	 ((func) & 0xf)                  |	  \
--	 (((dir) & 0x1) << 14)           |	  \
--	 (((pull) & 0x3) << 15)          |	  \
--	 (((drvstr) & 0xF) << 17))
--
--/**
-- * extract GPIO pin from bit-field used for gpio_tlmm_config
-- */
--#define GPIO_PIN(gpio_cfg)    (((gpio_cfg) >>  4) & 0x3ff)
--#define GPIO_FUNC(gpio_cfg)   (((gpio_cfg) >>  0) & 0xf)
--#define GPIO_DIR(gpio_cfg)    (((gpio_cfg) >> 14) & 0x1)
--#define GPIO_PULL(gpio_cfg)   (((gpio_cfg) >> 15) & 0x3)
--#define GPIO_DRVSTR(gpio_cfg) (((gpio_cfg) >> 17) & 0xf)
--
--int gpio_tlmm_config(unsigned config, unsigned disable);
--
- #endif /* __ASM_ARCH_MSM_GPIO_H */
+I see.
+
+>>> Maybe just turn off barrier support in mpath for now?
+> 
+> If it's possible, it could be a workaround for a short term.
+> But how can you do that?
+> 
+> I think it's not enough to just drop REQ_FLUSH flag from q->flush_flags.
+> Underlying devices of a mpath device may have write-back cache and
+> it may be enabled.
+> So if a mpath device doesn't set REQ_FLUSH flag in q->flush_flags, it
+> becomes a device which has write-back cache but doesn't support flush.
+> Then, upper layer can do nothing to ensure cache flush?
+
+Yeah, I was basically suggesting to forget about cache flush w/ mpath
+until it can be fixed.  You're saying that if mpath just passes
+REQ_FLUSH upwards without retrying, it will be almost unuseable,
+right?  I'm not sure how to proceed here.  How much work would
+discerning between transport and IO errors take?  If it can't be done
+quickly enough the retry logic can be kept around to keep the old
+behavior but that already was a broken behavior, so...  :-(
+
+Thanks.
+
 -- 
-1.7.0.4
-
-/usr2/gbean/.signature.codeaurora.org
+tejun
