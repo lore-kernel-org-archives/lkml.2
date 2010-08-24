@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934408Ab0HXXll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:41:41 -0400
-Received: from kroah.org ([198.145.64.141]:52405 "EHLO coco.kroah.org"
+	id S932528Ab0HXWyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:54:17 -0400
+Received: from kroah.org ([198.145.64.141]:52225 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932729Ab0HXW6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:02 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:12 2010
-Message-Id: <20100824224212.411100101@clark.site>
+	id S932407Ab0HXWyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:06 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
+Message-Id: <20100824222525.349829098@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:26 -0700
+Date: Tue, 24 Aug 2010 15:24:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [04/91] ASoC: Remove DSP mode support for WM8776
-In-Reply-To: <20100824224617.GA5440@kroah.com>
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [34/59] net: Fix a memmove bug in dev_gro_receive()
+In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit b2c1e07b81a126e5846dfc3d36f559d861df59f4 upstream.
+From: Jarek Poplawski <jarkao2@gmail.com>
 
-This is not supported by current hardware revisions.
+[ Upstream commit e5093aec2e6b60c3df2420057ffab9ed4a6d2792 ]
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+>Xin Xiaohui wrote:
+> I looked into the code dev_gro_receive(), found the code here:
+> if the frags[0] is pulled to 0, then the page will be released,
+> and memmove() frags left.
+> Is that right? I'm not sure if memmove do right or not, but
+> frags[0].size is never set after memove at least. what I think
+> a simple way is not to do anything if we found frags[0].size == 0.
+> The patch is as followed.
+...
+
+This version of the patch fixes the bug directly in memmove.
+
+Reported-by: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- sound/soc/codecs/wm8776.c |    7 -------
- 1 file changed, 7 deletions(-)
+ net/core/dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8776.c
-+++ b/sound/soc/codecs/wm8776.c
-@@ -178,13 +178,6 @@ static int wm8776_set_fmt(struct snd_soc
- 	case SND_SOC_DAIFMT_LEFT_J:
- 		iface |= 0x0001;
- 		break;
--		/* FIXME: CHECK A/B */
--	case SND_SOC_DAIFMT_DSP_A:
--		iface |= 0x0003;
--		break;
--	case SND_SOC_DAIFMT_DSP_B:
--		iface |= 0x0007;
--		break;
- 	default:
- 		return -EINVAL;
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2519,7 +2519,7 @@ pull:
+ 			put_page(skb_shinfo(skb)->frags[0].page);
+ 			memmove(skb_shinfo(skb)->frags,
+ 				skb_shinfo(skb)->frags + 1,
+-				--skb_shinfo(skb)->nr_frags);
++				--skb_shinfo(skb)->nr_frags * sizeof(skb_frag_t));
+ 		}
  	}
+ 
 
 
