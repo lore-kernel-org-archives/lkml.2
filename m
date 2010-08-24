@@ -1,156 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab0HXW56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:57:58 -0400
-Received: from kroah.org ([198.145.64.141]:52306 "EHLO coco.kroah.org"
+	id S934414Ab0HXXmD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:42:03 -0400
+Received: from kroah.org ([198.145.64.141]:52393 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab0HXWyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
-Message-Id: <20100824222526.329149319@clark.site>
+	id S932629Ab0HXW54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:57:56 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:12 2010
+Message-Id: <20100824224212.241449199@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:57 -0700
+Date: Tue, 24 Aug 2010 15:41:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [45/59] netlink: fix compat recvmsg
-In-Reply-To: <20100824224625.GA5449@kroah.com>
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>
+Subject: [02/91] memstick: fix hangs on unexpected device removal in mspro_blk
+In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Maxim Levitsky <maximlevitsky@gmail.com>
 
-commit 68d6ac6d2740b6a55f3ae92a4e0be6d881904b32 upstream.
+commit d862b13bc8cbab9692fbe0ef44c40d0488b81af1 upstream.
 
-Since
-commit 1dacc76d0014a034b8aca14237c127d7c19d7726
-Author: Johannes Berg <johannes@sipsolutions.net>
-Date:   Wed Jul 1 11:26:02 2009 +0000
+mspro_block_remove() is called from detect thread that first calls the
+mspro_block_stop(), which stops the request queue.  If we call
+del_gendisk() with the queue stopped we get a deadlock.
 
-    net/compat/wext: send different messages to compat tasks
-
-we had a race condition when setting and then
-restoring frag_list. Eric attempted to fix it,
-but the fix created even worse problems.
-
-However, the original motivation I had when I
-added the code that turned out to be racy is
-no longer clear to me, since we only copy up
-to skb->len to userspace, which doesn't include
-the frag_list length. As a result, not doing
-any frag_list clearing and restoring avoids
-the race condition, while not introducing any
-other problems.
-
-Additionally, while preparing this patch I found
-that since none of the remaining netlink code is
-really aware of the frag_list, we need to use the
-original skb's information for packet information
-and credentials. This fixes, for example, the
-group information received by compat tasks.
-
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Alex Dubov <oakad@yahoo.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netlink/af_netlink.c |   46 ++++++++++++++++------------------------------
- 1 file changed, 16 insertions(+), 30 deletions(-)
+ drivers/memstick/core/mspro_block.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1363,7 +1363,7 @@ static int netlink_recvmsg(struct kiocb
- 	struct netlink_sock *nlk = nlk_sk(sk);
- 	int noblock = flags&MSG_DONTWAIT;
- 	size_t copied;
--	struct sk_buff *skb, *frag __maybe_unused = NULL;
-+	struct sk_buff *skb, *data_skb;
- 	int err;
+--- a/drivers/memstick/core/mspro_block.c
++++ b/drivers/memstick/core/mspro_block.c
+@@ -1331,13 +1331,14 @@ static void mspro_block_remove(struct me
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	unsigned long flags;
  
- 	if (flags&MSG_OOB)
-@@ -1375,45 +1375,35 @@ static int netlink_recvmsg(struct kiocb
- 	if (skb == NULL)
- 		goto out;
+-	del_gendisk(msb->disk);
+-	dev_dbg(&card->dev, "mspro block remove\n");
+ 	spin_lock_irqsave(&msb->q_lock, flags);
+ 	msb->eject = 1;
+ 	blk_start_queue(msb->queue);
+ 	spin_unlock_irqrestore(&msb->q_lock, flags);
  
-+	data_skb = skb;
++	del_gendisk(msb->disk);
++	dev_dbg(&card->dev, "mspro block remove\n");
 +
- #ifdef CONFIG_COMPAT_NETLINK_MESSAGES
- 	if (unlikely(skb_shinfo(skb)->frag_list)) {
--		bool need_compat = !!(flags & MSG_CMSG_COMPAT);
--
- 		/*
--		 * If this skb has a frag_list, then here that means that
--		 * we will have to use the frag_list skb for compat tasks
--		 * and the regular skb for non-compat tasks.
-+		 * If this skb has a frag_list, then here that means that we
-+		 * will have to use the frag_list skb's data for compat tasks
-+		 * and the regular skb's data for normal (non-compat) tasks.
- 		 *
--		 * The skb might (and likely will) be cloned, so we can't
--		 * just reset frag_list and go on with things -- we need to
--		 * keep that. For the compat case that's easy -- simply get
--		 * a reference to the compat skb and free the regular one
--		 * including the frag. For the non-compat case, we need to
--		 * avoid sending the frag to the user -- so assign NULL but
--		 * restore it below before freeing the skb.
-+		 * If we need to send the compat skb, assign it to the
-+		 * 'data_skb' variable so that it will be used below for data
-+		 * copying. We keep 'skb' for everything else, including
-+		 * freeing both later.
- 		 */
--		if (need_compat) {
--			struct sk_buff *compskb = skb_shinfo(skb)->frag_list;
--			skb_get(compskb);
--			kfree_skb(skb);
--			skb = compskb;
--		} else {
--			frag = skb_shinfo(skb)->frag_list;
--			skb_shinfo(skb)->frag_list = NULL;
--		}
-+		if (flags & MSG_CMSG_COMPAT)
-+			data_skb = skb_shinfo(skb)->frag_list;
- 	}
- #endif
- 
- 	msg->msg_namelen = 0;
- 
--	copied = skb->len;
-+	copied = data_skb->len;
- 	if (len < copied) {
- 		msg->msg_flags |= MSG_TRUNC;
- 		copied = len;
- 	}
- 
--	skb_reset_transport_header(skb);
--	err = skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
-+	skb_reset_transport_header(data_skb);
-+	err = skb_copy_datagram_iovec(data_skb, 0, msg->msg_iov, copied);
- 
- 	if (msg->msg_name) {
- 		struct sockaddr_nl *addr = (struct sockaddr_nl *)msg->msg_name;
-@@ -1433,11 +1423,7 @@ static int netlink_recvmsg(struct kiocb
- 	}
- 	siocb->scm->creds = *NETLINK_CREDS(skb);
- 	if (flags & MSG_TRUNC)
--		copied = skb->len;
--
--#ifdef CONFIG_COMPAT_NETLINK_MESSAGES
--	skb_shinfo(skb)->frag_list = frag;
--#endif
-+		copied = data_skb->len;
- 
- 	skb_free_datagram(sk, skb);
+ 	blk_cleanup_queue(msb->queue);
+ 	msb->queue = NULL;
  
 
 
