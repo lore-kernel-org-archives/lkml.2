@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab0HXW7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:59:52 -0400
-Received: from kroah.org ([198.145.64.141]:40588 "EHLO coco.kroah.org"
+	id S933106Ab0HXW7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:59:48 -0400
+Received: from kroah.org ([198.145.64.141]:40561 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933069Ab0HXW7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:39 -0400
+	id S933010Ab0HXW7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:18 2010
-Message-Id: <20100824224218.347057192@clark.site>
+Message-Id: <20100824224217.992436219@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:35 -0700
+Date: Tue, 24 Aug 2010 15:42:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [73/91] drm/radeon/kms: dont enable MSIs on AGP boards
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [69/91] e1000e: dont check for alternate MAC addr on parts that dont support it
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-commit da7be684c55dbaeebfc1a048d5faf52d52cb3c1f upstream.
+commit 1aef70ef125165e0114a8e475636eff242a52030 upstream.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=29327
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The alternate MAC address feature is only supported by 80003ES2LAN and
+82571 LOMs as well as a couple 82571 mezzanine cards.  Checking for an
+alternate MAC address on other parts can fail leading to the driver not
+able to load.  This patch limits the check for an alternate MAC address
+to be done only for parts that support the feature.
+
+This issue has been around since support for the feature was introduced
+to the e1000e driver in 2.6.34.
+
+Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+Reported-by: Fabio Varesano <fax8@users.sourceforge.net>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/e1000e/82571.c   |   30 +++++++++++++++++-------------
+ drivers/net/e1000e/defines.h |    4 ++++
+ drivers/net/e1000e/lib.c     |   10 ++++++++++
+ 3 files changed, 31 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -118,11 +118,12 @@ int radeon_irq_kms_init(struct radeon_de
- 	 * chips.  Disable MSI on them for now.
- 	 */
- 	if ((rdev->family >= CHIP_RV380) &&
--	    (!(rdev->flags & RADEON_IS_IGP))) {
-+	    (!(rdev->flags & RADEON_IS_IGP)) &&
-+	    (!(rdev->flags & RADEON_IS_AGP))) {
- 		int ret = pci_enable_msi(rdev->pdev);
- 		if (!ret) {
- 			rdev->msi_enabled = 1;
--			DRM_INFO("radeon: using MSI.\n");
-+			dev_info(rdev->dev, "radeon: using MSI.\n");
- 		}
- 	}
- 	rdev->irq.installed = true;
+--- a/drivers/net/e1000e/82571.c
++++ b/drivers/net/e1000e/82571.c
+@@ -926,12 +926,14 @@ static s32 e1000_reset_hw_82571(struct e
+ 	ew32(IMC, 0xffffffff);
+ 	icr = er32(ICR);
+ 
+-	/* Install any alternate MAC address into RAR0 */
+-	ret_val = e1000_check_alt_mac_addr_generic(hw);
+-	if (ret_val)
+-		return ret_val;
++	if (hw->mac.type == e1000_82571) {
++		/* Install any alternate MAC address into RAR0 */
++		ret_val = e1000_check_alt_mac_addr_generic(hw);
++		if (ret_val)
++			return ret_val;
+ 
+-	e1000e_set_laa_state_82571(hw, true);
++		e1000e_set_laa_state_82571(hw, true);
++	}
+ 
+ 	/* Reinitialize the 82571 serdes link state machine */
+ 	if (hw->phy.media_type == e1000_media_type_internal_serdes)
+@@ -1609,14 +1611,16 @@ static s32 e1000_read_mac_addr_82571(str
+ {
+ 	s32 ret_val = 0;
+ 
+-	/*
+-	 * If there's an alternate MAC address place it in RAR0
+-	 * so that it will override the Si installed default perm
+-	 * address.
+-	 */
+-	ret_val = e1000_check_alt_mac_addr_generic(hw);
+-	if (ret_val)
+-		goto out;
++	if (hw->mac.type == e1000_82571) {
++		/*
++		 * If there's an alternate MAC address place it in RAR0
++		 * so that it will override the Si installed default perm
++		 * address.
++		 */
++		ret_val = e1000_check_alt_mac_addr_generic(hw);
++		if (ret_val)
++			goto out;
++	}
+ 
+ 	ret_val = e1000_read_mac_addr_generic(hw);
+ 
+--- a/drivers/net/e1000e/defines.h
++++ b/drivers/net/e1000e/defines.h
+@@ -613,6 +613,7 @@
+ #define E1000_FLASH_UPDATES  2000
+ 
+ /* NVM Word Offsets */
++#define NVM_COMPAT                 0x0003
+ #define NVM_ID_LED_SETTINGS        0x0004
+ #define NVM_INIT_CONTROL2_REG      0x000F
+ #define NVM_INIT_CONTROL3_PORT_B   0x0014
+@@ -633,6 +634,9 @@
+ /* Mask bits for fields in Word 0x1a of the NVM */
+ #define NVM_WORD1A_ASPM_MASK  0x000C
+ 
++/* Mask bits for fields in Word 0x03 of the EEPROM */
++#define NVM_COMPAT_LOM    0x0800
++
+ /* For checksumming, the sum of all words in the NVM should equal 0xBABA. */
+ #define NVM_SUM                    0xBABA
+ 
+--- a/drivers/net/e1000e/lib.c
++++ b/drivers/net/e1000e/lib.c
+@@ -183,6 +183,16 @@ s32 e1000_check_alt_mac_addr_generic(str
+ 	u16 offset, nvm_alt_mac_addr_offset, nvm_data;
+ 	u8 alt_mac_addr[ETH_ALEN];
+ 
++	ret_val = e1000_read_nvm(hw, NVM_COMPAT, 1, &nvm_data);
++	if (ret_val)
++		goto out;
++
++	/* Check for LOM (vs. NIC) or one of two valid mezzanine cards */
++	if (!((nvm_data & NVM_COMPAT_LOM) ||
++	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_DUAL) ||
++	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_QUAD)))
++		goto out;
++
+ 	ret_val = e1000_read_nvm(hw, NVM_ALT_MAC_ADDR_PTR, 1,
+ 	                         &nvm_alt_mac_addr_offset);
+ 	if (ret_val) {
 
 
