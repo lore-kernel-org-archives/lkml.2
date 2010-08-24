@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab0HXHgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:36:22 -0400
-Received: from reaktio.net ([194.89.68.22]:49380 "EHLO ydin.reaktio.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488Ab0HXHgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 03:36:20 -0400
-X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 03:36:19 EDT
-Date: Tue, 24 Aug 2010 10:25:57 +0300
-From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
-To: Chetan Loke <chetanloke@gmail.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, Vladislav Bolkhovitin <vst@vlnb.net>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@suse.de>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-Message-ID: <20100824072557.GK2804@reaktio.net>
-References: <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de> <1282256949.30453.278.camel@haakon2.linux-iscsi.org> <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site> <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com> <1282508953.3042.102.camel@mulgrave.site> <4C727BEB.9020100@scalableinformatics.com> <AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com> <AANLkTinDY8hEABHaPsCC+3wGMCn0ZLcyfDa9U9jXJ3d4@mail.gmail.com> <AANLkTim+fj-OL+Bixfbrxv6AgSVv_NpT-KdG6vrc6ub-@mail.gmail.com>
+	id S1752750Ab0HXHkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:40:03 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:40111 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab0HXHj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 03:39:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=h83+iNRW+LEWgmE1TQivmIim+EBrzk1x00BswgBJ1pnoNA080IEHhewtAenUzK7VJj
+         C/CekF/Et0wDrI1QNjvRKCt+X4rwbGump5CYmfmnaIGIMWsubUVBz/mvgBrUozYmqv9r
+         8ToBh9eiR73jQ1zwPZJpfumzIYj+RY67ns7JQ=
+Date: Tue, 24 Aug 2010 15:39:31 +0800
+From: Cong Meng <mcpacino@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Jens Axboe <jens.axboe@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] VFS buffer: calculate block-size correctly
+Message-ID: <20100824073930.GA3198@zhongling.bej.apac.novell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim+fj-OL+Bixfbrxv6AgSVv_NpT-KdG6vrc6ub-@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 02:03:26PM -0400, Chetan Loke wrote:
-> I actually received 3+ off-post emails asking whether I was talking
-> about initiator or target in the 100K IOPS case below and what did I
-> mean by the ACKs.
-> I was referring to the 'Initiator' side.
-> ACKs == When scsi-ML down-calls the LLD via the queue-command, process
-> the sgl's(if you like) and then trigger the scsi_done up-call path.
-> 
+the invocation of __getblk(bdev, block, size) will cause kernel stall if
+the @size parameter is not equal to the block size of the block device
+saved in the inode struct.
 
-Uhm, Intel and Microsoft demonstrated over 1 million IOPS
-using software iSCSI and a single 10 Gbit Ethernet NIC (Intel 82599).
+submit_bh() has the similar problem.
 
-How come there is such a huge difference? What are we lacking in Linux? 
+this patch calculates the blocksize by the value i_blkbits saved in the 
+inode struct.
 
--- Pasi
+Signed-off-by: Cong Meng <mcpacino@gmail.com>
+---
+ fs/buffer.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-> Chetan Loke
-> 
-> On Mon, Aug 23, 2010 at 12:07 PM, Chetan Loke <chetanloke@gmail.com> wrote:
-> > On Mon, Aug 23, 2010 at 11:11 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> >
-> >>
-> >> There is an important design difference between SCST and LIO: SCST by
-> >> defaults creates multiple threads to process the I/O operations for a
-> >> storage target, while LIO only creates a single thread per storage target.
-> >> This makes SCST perform measurably faster.
-> >>
-> >
-> > Forget that. You could have discussed this if there were code reviews
-> > or other mainline inclusion emails from James B. From what I have
-> > heard, the decision was taken around 8-9 months back.
-> > Would anyone like to either comment/validate/refute this please?  If
-> > not then I would kindly request these guys to stop taking us for a
-> > test drive. And also I'm not sure when was the last time James B.
-> > bench-marked our scsi-stack. Even if I ACK in the xmit-path then I
-> > can't push more than 100K IOPs. But other folks have re-engineered our
-> > linux-scsi stack and from what I've heard they can push > 300K+ IOPs.
-> > So I would just ignore performance discussion because I don't think
-> > folks have done even simple lame experiments in the last 1 year. Or
-> > may be I'm completely wrong and so please enlighten me so that I can
-> > re-run the tests.
-> >
-> >
-> >> Bart.
-> >>
-> > Chetan Loke
-> >
-> 
-> ------------------------------------------------------------------------------
-> Sell apps to millions through the Intel(R) Atom(Tm) Developer Program
-> Be part of this innovative community and reach millions of netbook users 
-> worldwide. Take advantage of special opportunities to increase revenue and 
-> speed time-to-market. Join now, and jumpstart your future.
-> http://p.sf.net/sfu/intel-atom-d2d
-> _______________________________________________
-> Scst-devel mailing list
-> Scst-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/scst-devel
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 3e7dca2..f7f9d33 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1051,10 +1051,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+ 	pgoff_t index;
+ 	int sizebits;
+ 
+-	sizebits = -1;
+-	do {
+-		sizebits++;
+-	} while ((size << sizebits) < PAGE_SIZE);
++	sizebits = PAGE_CACHE_SHIFT - bdev->bd_inode->i_blkbits;
+ 
+ 	index = block >> sizebits;
+ 
+@@ -2924,7 +2921,7 @@ int submit_bh(int rw, struct buffer_head * bh)
+ 	 */
+ 	bio = bio_alloc(GFP_NOIO, 1);
+ 
+-	bio->bi_sector = bh->b_blocknr * (bh->b_size >> 9);
++	bio->bi_sector = bh->b_blocknr << (bh->b_bdev->bd_inode->i_blkbits - 9);
+ 	bio->bi_bdev = bh->b_bdev;
+ 	bio->bi_io_vec[0].bv_page = bh->b_page;
+ 	bio->bi_io_vec[0].bv_len = bh->b_size;
