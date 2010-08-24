@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab0HXRU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:20:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41316 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab0HXRUZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:20:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LAdyg50i3n5npOJrNKxL5JrJLp0v5sbPjRxMjb5OJsKXjuZlifamA6A3bxMGqhuJBQ
-         nKMnPR5T0Fs5wzR3qgMS6mqENmwvnzUUYaVTw6KcI2FgzPp/FmZpcubqKgAP6SN4sGVb
-         1edm/H81HaX8ZSc3x/MPudaiuY9nTBWY+Xs8o=
-Date: Tue, 24 Aug 2010 21:20:22 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100824172022.GD5723@lenovo>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu> <20100824162252.GB5723@lenovo> <20100824170936.GH26154@erda.amd.com>
-MIME-Version: 1.0
+	id S932104Ab0HXRVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:21:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753283Ab0HXRVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 13:21:43 -0400
+Date: Tue, 24 Aug 2010 13:21:09 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: 7eggert@gmx.de, David Woodhouse <dwmw2@infradead.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, jack@suse.cz, agruen@suse.de,
+        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100824172108.GA28718@shell>
+References: <eVJmW-3Lf-15@gated-at.bofh.it> <eVJmW-3Lf-19@gated-at.bofh.it> <fdNs6-5F1-7@gated-at.bofh.it> <fdVfY-pv-23@gated-at.bofh.it> <fe6Ep-cD-13@gated-at.bofh.it> <fiCPo-73x-17@gated-at.bofh.it> <fiMc1-6ip-7@gated-at.bofh.it> <E1OlrzM-0001lZ-0z@be1.7eggert.dyndns.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100824170936.GH26154@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <E1OlrzM-0001lZ-0z@be1.7eggert.dyndns.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 07:09:36PM +0200, Robert Richter wrote:
-> On 24.08.10 12:22:52, Cyrill Gorcunov wrote:
-> > Btw, guys, I fail to see how new nmi_watchdog work, we have
-> > default_do_nmi
-> >   if (!(reason & 0xc0)) {
-> >     if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == == NOTIFY_STOP)
-> >       return
-> >     if (nmi_watchdog_tick(regs, reason))
-> >       return
-> > 
-> > but perf_event_nmi_handler returns NOTIFY_STOP when watchdog is perf event
-> > and nmi_watchdog_tick _never_ called, or (most probably) I miss something?
+On Thu, Aug 19, 2010 at 01:24:07AM +0200, Bodo Eggert wrote:
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > On Tue, 17 Aug 2010, Valerie Aurora wrote:
 > 
-> The watchdog is disabled during profiling (perf and oprofile) by
-> calling disable_lapic_nmi_watchdog().
+> >> >  - hard links to make sure a separate inode is not necessary for each
+> >> >    whiteout/fallthrough entry
+> >> 
+> >> The problem with hard links is that you run into hard link limits.  I
+> >> don't think we can do hard links for whiteouts and fallthrus.  Each
+> >> whiteout or fallthru will cost an inode if we implement them as
+> >> extended attributes.  This cost has to be balanced against the cost of
+> >> implementing them as dentries, which is mainly code complexity in
+> >> individual file systems.
 > 
-> -Robert
->
+> Not knowing the details, I'd suggest to implement a generic function to
+> create an attributed inode and let the fs override it to create an
+> unlinked-file-dentry instead.
+> 
+> Benefit: All fs supporting extended attributes will be able to support
+> whiteout. If the fs has other means of supporting whiteout, they may fake
+> the attribute.
 
-Huh? iirc Don have switched nmi watchdog to native perf subsystem, ie watchdog
-uses PERF_COUNT_HW_CPU_CYCLES event, letme check...
- 
-	-- Cyrill
+Yeah, I think that's the way to go.
+
+> Possible problems:
+> - Having two ways of reporting a whiteout? Or can it be reported using a
+>   (static) fake inode?
+
+They are going to look the same at the VFS level and higher.
+
+> - How do you un-whiteout while (not) having an overlaying fs?
+
+The current version of whiteout support always hides DT_WHT dentries
+from userspace.  Perhaps a start is to only hide DT_WHT entries when
+the file system is union mounted.  Applications usually ignore all
+dentries with d_ino == 0 so it might not cause problems.
+
+Right now, you have to remove whiteouts offline using fsck.
+
+> > get_unlinked_inode() is a great idea.  But I feel that individual
+> > inodes for each fallthrough is excessive.  It'll make the first
+> > readdir() really really expensive and wastes a lot of disk and memory
+> > for no good reason.
+> > 
+> > Not sure how to fix the hard link limits problem though...
+> 
+> Do a hardlink if you can create a hard link, otherwise use a fresh inode
+> and use that for the next hardlink(s).
+
+Bleah!  Then you have a code path that is only tested when you hit
+LINK_MAX.  Sounds like a recipe for bugs for me.
+
+-VAL
