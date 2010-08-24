@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab0HXGOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 02:14:32 -0400
-Received: from compulab.co.il ([67.18.134.219]:32858 "EHLO compulab.co.il"
+	id S1754029Ab0HXGSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 02:18:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53554 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753770Ab0HXGOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 02:14:30 -0400
-Message-ID: <4C736319.6090701@compulab.co.il>
-Date: Tue, 24 Aug 2010 09:13:45 +0300
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
+	id S1752283Ab0HXGSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 02:18:53 -0400
+Message-ID: <4C736438.8010206@redhat.com>
+Date: Tue, 24 Aug 2010 14:18:32 +0800
+From: Xiaotian Feng <dfeng@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        eric miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH 1/3] mfd: da903x - fix da903x_add_subdevs error path
-References: <1282628645.6074.1.camel@mola>
-In-Reply-To: <1282628645.6074.1.camel@mola>
-X-Enigmail-Version: 0.95.7
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Roland McGrath <roland@redhat.com>
+Subject: Re: [RFC PATCH v3] core_pattern: fix long parameters was truncated
+ by core_pattern handler
+References: <20100803105941.GA2996@hmsreliant.think-freely.org>	<1282296958-2427-1-git-send-email-dfeng@redhat.com> <20100823141843.f177bf1f.akpm@linux-foundation.org>
+In-Reply-To: <20100823141843.f177bf1f.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin wrote:
-> This patch fixes da903x_add_subdevs error path:
-> 1. return -ENOMEM if platform_device_alloc() fail.
-> 2. call platform_device_put() if platform_device_add() fail.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On 08/24/2010 05:18 AM, Andrew Morton wrote:
+> On Fri, 20 Aug 2010 17:35:58 +0800
+> Xiaotian Feng<dfeng@redhat.com>  wrote:
+>
+>> We met a parameter truncated issue, consider following:
+>>> echo "|/root/core_pattern_pipe_test %p /usr/libexec/blah-blah-blah \
+>> %s %c %p %u %g 11 12345678901234567890123456789012345678 %t">  \
+>> /proc/sys/kernel/core_pattern
+>>
+>> This is okay because the strings is less than CORENAME_MAX_SIZE.
+>> "cat /proc/sys/kernel/core_pattern" shows the whole string. but
+>> after we run core_pattern_pipe_test in man page, we found last
+>> parameter was truncated like below:
+>>          argc[10]=<12807486>
+>>
+>> The root cause is core_pattern allows % specifiers, which need to be
+>> replaced during parse time, but the replace may expand the strings
+>> to larger than CORENAME_MAX_SIZE. So if the last parameter is %
+>> specifiers, the replace code is using snprintf(out_ptr, out_end - out_ptr, ...),
+>> this will write out of corename array.
+>>
+>> Changes since v2:
+>> Introduced generic function cn_printf and make format_corename remember the time
+>> has been expanded.
+>>
+>> Changes since v1:
+>> This patch allocates corename at runtime, if the replace doesn't have enough
+>> memory, expand the corename dynamically.
+>
+>
+>> +			if (cn->used == cn->size)
+>> +				if (expand_corename(cn))
+>> +					goto out_fail;
+>> +
+>> +			out_ptr = cn->corename + cn->used;
+>> +			*out_ptr = *pat_ptr++;
+>> +			cn->used++;
+>
+>
+>> -				if (out_ptr == out_end)
+>> -					goto out;
+>> -				*out_ptr++ = '%';
+>> +				if (cn->used == cn->size)
+>> +					if (expand_corename(cn))
+>> +						goto out_fail;
+>> +
+>> +				out_ptr = cn->corename + cn->used;
+>> +				*out_ptr = '%';
+>> +				cn->used++;
+>
+>
+>> +	out_ptr = cn->corename + cn->used;
+>> +	if (cn->used == cn->size)
+>> +		if (expand_corename(cn))
+>> +			goto out_fail;
+>> +
+>> +	out_ptr = cn->corename + cn->used;
+>>   	*out_ptr = 0;
+>
+> Quite a bit of code duplication there.  A little helper function which
+> adds a single char to the output would tidy that up.
+Yep, this would be much more cleaner ;-)
+>
+> However I think that if the % and %% handers are converted to call
+> cn_printf() then the output is always null-terninated and the third
+> hunk of code above simply becomes unneeded?
+You are absolutely right ;-)
+>
+> Something like this, although I didn't try very hard.  Just a
+> suggestion to work with ;)
+>
+Yep,  we just need change a little on your patch
 
-Acked-by: Mike Rapoport <mike@compulab.co.il>
+	- err = cn_printf(cn, "%%");
+	+ err = cn_printf(cn, "%");
 
-> ---
->  drivers/mfd/da903x.c |    8 +++++++-
->  1 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/da903x.c b/drivers/mfd/da903x.c
-> index c07aece..2fadbae 100644
-> --- a/drivers/mfd/da903x.c
-> +++ b/drivers/mfd/da903x.c
-> @@ -470,13 +470,19 @@ static int __devinit da903x_add_subdevs(struct da903x_chip *chip,
->  		subdev = &pdata->subdevs[i];
->  
->  		pdev = platform_device_alloc(subdev->name, subdev->id);
-> +		if (!pdev) {
-> +			ret = -ENOMEM;
-> +			goto failed;
-> +		}
->  
->  		pdev->dev.parent = chip->dev;
->  		pdev->dev.platform_data = subdev->platform_data;
->  
->  		ret = platform_device_add(pdev);
-> -		if (ret)
-> +		if (ret) {
-> +			platform_device_put(pdev);
->  			goto failed;
-> +		}
->  	}
->  	return 0;
->  
+Do you need me to resend a v4 patch?
 
-
--- 
-Sincerely yours,
-Mike.
