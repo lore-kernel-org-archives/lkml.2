@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab0HXWzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:55:54 -0400
-Received: from kroah.org ([198.145.64.141]:52349 "EHLO coco.kroah.org"
+	id S932597Ab0HXWya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:54:30 -0400
+Received: from kroah.org ([198.145.64.141]:52301 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932605Ab0HXWyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:27 2010
-Message-Id: <20100824222527.037386774@clark.site>
+	id S932540Ab0HXWyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
+Message-Id: <20100824222526.246002513@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:25:05 -0700
+Date: Tue, 24 Aug 2010 15:24:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Craig Shelley <craig@microtron.org.uk>
-Subject: [53/59] USB: CP210x Fix Break On/Off
+        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [44/59] ALSA: intel8x0: Mute External Amplifier by default for ThinkPad X31
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Craig Shelley <craig@microtron.org.uk>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 72916791cbeb9cc607ae620cfba207dea481cd76 upstream.
+commit 9c77b846ec8b4e0c7107dd7f820172462dc84a61 upstream.
 
-The definitions for BREAK_ON and BREAK_OFF are inverted, causing break
-requests to fail. This patch sets BREAK_ON and BREAK_OFF to the correct
-values.
+BugLink: https://bugs.launchpad.net/bugs/619439
 
-Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+This ThinkPad model needs External Amplifier muted for audible playback,
+so set the inv_eapd quirk for it.
+
+Reported-and-tested-by: Dennis Bell <dennis.bell@parkerg.co.uk>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/intel8x0.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -223,8 +223,8 @@ static struct usb_serial_driver cp210x_d
- #define BITS_STOP_2		0x0002
- 
- /* CP210X_SET_BREAK */
--#define BREAK_ON		0x0000
--#define BREAK_OFF		0x0001
-+#define BREAK_ON		0x0001
-+#define BREAK_OFF		0x0000
- 
- /* CP210X_(SET_MHS|GET_MDMSTS) */
- #define CONTROL_DTR		0x0001
+--- a/sound/pci/intel8x0.c
++++ b/sound/pci/intel8x0.c
+@@ -1776,6 +1776,12 @@ static struct ac97_quirk ac97_quirks[] _
+         },
+ 	{
+ 		.subvendor = 0x1014,
++		.subdevice = 0x0534,
++		.name = "ThinkPad X31",
++		.type = AC97_TUNE_INV_EAPD
++	},
++	{
++		.subvendor = 0x1014,
+ 		.subdevice = 0x1f00,
+ 		.name = "MS-9128",
+ 		.type = AC97_TUNE_ALC_JACK
 
 
