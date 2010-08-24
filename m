@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab0HXKuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 06:50:40 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:44589 "EHLO
+	id S1754924Ab0HXKup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 06:50:45 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:44610 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab0HXKuh (ORCPT
+	with ESMTP id S1754884Ab0HXKul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 06:50:37 -0400
+	Tue, 24 Aug 2010 06:50:41 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
 	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Gke0lkLYWpJI3pFS1AVYqJA1y9rVcj2Hv1I4qS6F4hWTlGKZBporXPAbhQSUeMDnc
-	/F4hKN8jx1OS2FUnFaTKA==
-Date: Tue, 24 Aug 2010 03:50:30 -0700 (PDT)
+	b=ylpnukWVOKSn+Tmu5dDqVYvXuzoYxyb1PMnVXHVjIaM/8ygph+ZXC6HgyNeM618GO
+	Ae7fUg4D2bIsaTjTief4Q==
+Date: Tue, 24 Aug 2010 03:50:34 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Steven Whitehouse <swhiteho@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        Jan Kara <jack@suse.cz>, cluster-devel@redhat.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 3/5] fs: add nofail variant of alloc_buffer_head
+cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 4/5] btrfs: add nofail variant of set_extent_dirty
 In-Reply-To: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1008240347070.19596@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1008240348150.19596@chino.kir.corp.google.com>
 References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
@@ -31,9 +30,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add alloc_buffer_head_nofail().  This function is equivalent to
-alloc_buffer_head(), except that it will never return NULL and instead
-loop forever trying to allocate memory.
+Add set_extent_dirty_nofail().  This function is equivalent to
+set_extent_dirty(), except that it will never fail because of allocation
+failure and instead loop forever trying to allocate memory.
 
 If the first allocation attempt fails, a warning will be emitted,
 including a call trace.  Subsequent failures will suppress this warning.
@@ -43,72 +42,75 @@ No future callers should be added.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- fs/buffer.c                 |   18 ++++++++++++++++++
- fs/gfs2/log.c               |    2 +-
- fs/jbd/journal.c            |    2 +-
- include/linux/buffer_head.h |    1 +
- 4 files changed, 21 insertions(+), 2 deletions(-)
+ fs/btrfs/extent-tree.c |    8 ++++----
+ fs/btrfs/extent_io.c   |   19 +++++++++++++++++++
+ fs/btrfs/extent_io.h   |    2 ++
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -3238,6 +3238,24 @@ struct buffer_head *alloc_buffer_head(gfp_t gfp_flags)
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -3831,9 +3831,9 @@ static int update_block_group(struct btrfs_trans_handle *trans,
+ 			spin_unlock(&cache->lock);
+ 			spin_unlock(&cache->space_info->lock);
+ 
+-			set_extent_dirty(info->pinned_extents,
++			set_extent_dirty_nofail(info->pinned_extents,
+ 					 bytenr, bytenr + num_bytes - 1,
+-					 GFP_NOFS | __GFP_NOFAIL);
++					 GFP_NOFS);
+ 		}
+ 		btrfs_put_block_group(cache);
+ 		total -= num_bytes;
+@@ -3872,8 +3872,8 @@ static int pin_down_extent(struct btrfs_root *root,
+ 	spin_unlock(&cache->lock);
+ 	spin_unlock(&cache->space_info->lock);
+ 
+-	set_extent_dirty(root->fs_info->pinned_extents, bytenr,
+-			 bytenr + num_bytes - 1, GFP_NOFS | __GFP_NOFAIL);
++	set_extent_dirty_nofail(root->fs_info->pinned_extents, bytenr,
++			 bytenr + num_bytes - 1, GFP_NOFS);
+ 	return 0;
  }
- EXPORT_SYMBOL(alloc_buffer_head);
+ 
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -940,6 +940,25 @@ int set_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
+ 			      NULL, mask);
+ }
  
 +/*
 + * NOTE: no new callers of this function should be implemented!
 + * All memory allocations should be failable whenever possible.
 + */
-+struct buffer_head *alloc_buffer_head_nofail(gfp_t gfp_flags)
++int set_extent_dirty_nofail(struct extent_io_tree *tree, u64 start, u64 end,
++		     gfp_t mask)
 +{
-+	struct buffer_head *ret;
++	int ret;
 +
 +	for (;;) {
-+		ret = alloc_buffer_head(gfp_flags);
-+		if (ret)
++		ret = set_extent_dirty(tree, start, end, mask);
++		if (ret != -ENOMEM)
 +			return ret;
-+		WARN_ONCE(1, "Out of memory; no fallback implemented "
++		WARN_ONCE(1, "Out of memory, no fallback implemented "
 +				"(flags=0x%x)\n",
-+				gfp_flags);
++				mask);
 +	}
 +}
 +
- void free_buffer_head(struct buffer_head *bh)
+ int set_extent_bits(struct extent_io_tree *tree, u64 start, u64 end,
+ 		    int bits, gfp_t mask)
  {
- 	BUG_ON(!list_empty(&bh->b_assoc_buffers));
-diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
---- a/fs/gfs2/log.c
-+++ b/fs/gfs2/log.c
-@@ -523,7 +523,7 @@ struct buffer_head *gfs2_log_fake_buf(struct gfs2_sbd *sdp,
- 	u64 blkno = log_bmap(sdp, sdp->sd_log_flush_head);
- 	struct buffer_head *bh;
- 
--	bh = alloc_buffer_head(GFP_NOFS | __GFP_NOFAIL);
-+	bh = alloc_buffer_head_nofail(GFP_NOFS);
- 	atomic_set(&bh->b_count, 1);
- 	bh->b_state = (1 << BH_Mapped) | (1 << BH_Uptodate) | (1 << BH_Lock);
- 	set_bh_page(bh, real->b_page, bh_offset(real));
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -301,7 +301,7 @@ int journal_write_metadata_buffer(transaction_t *transaction,
- 	 */
- 	J_ASSERT_BH(bh_in, buffer_jbddirty(bh_in));
- 
--	new_bh = alloc_buffer_head(GFP_NOFS|__GFP_NOFAIL);
-+	new_bh = alloc_buffer_head_nofail(GFP_NOFS);
- 	/* keep subsequent assertions sane */
- 	new_bh->b_state = 0;
- 	init_buffer(new_bh, NULL, NULL);
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -176,6 +176,7 @@ void __breadahead(struct block_device *, sector_t block, unsigned int size);
- struct buffer_head *__bread(struct block_device *, sector_t block, unsigned size);
- void invalidate_bh_lrus(void);
- struct buffer_head *alloc_buffer_head(gfp_t gfp_flags);
-+struct buffer_head *alloc_buffer_head_nofail(gfp_t gfp_flags);
- void free_buffer_head(struct buffer_head * bh);
- void unlock_buffer(struct buffer_head *bh);
- void __lock_buffer(struct buffer_head *bh);
+diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
+--- a/fs/btrfs/extent_io.h
++++ b/fs/btrfs/extent_io.h
+@@ -197,6 +197,8 @@ int set_extent_new(struct extent_io_tree *tree, u64 start, u64 end,
+ 		   gfp_t mask);
+ int set_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
+ 		     gfp_t mask);
++int set_extent_dirty_nofail(struct extent_io_tree *tree, u64 start, u64 end,
++		     gfp_t mask);
+ int clear_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
+ 		       gfp_t mask);
+ int clear_extent_ordered(struct extent_io_tree *tree, u64 start, u64 end,
