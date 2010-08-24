@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab0HXXKt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:10:49 -0400
-Received: from kroah.org ([198.145.64.141]:41323 "EHLO coco.kroah.org"
+	id S933600Ab0HXXKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:10:53 -0400
+Received: from kroah.org ([198.145.64.141]:41315 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933601Ab0HXXDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:16 -0400
+	id S933604Ab0HXXDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:14 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:08 2010
-Message-Id: <20100824224508.545220406@clark.site>
+Message-Id: <20100824224508.446457430@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:29 -0700
+Date: Tue, 24 Aug 2010 15:45:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [084/114] dm: separate device deletion from dm_put
+        Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [083/114] iwlagn: fix rts cts protection
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,222 +27,332 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 3f77316de0ec0fd208467fbee8d9edc70e2c73b2 upstream.
+This is a backport of mainline commit
+94597ab23ea10b3bdcba534be00a9f7b35791c07.
+I removed the variable renamings from it
+and made it apply on 2.6.35. It now also
+incorporates some changes from commit
+cfecc6b492162fb49209a83dc207f182b87ea27a
+since those were required as well.
+commit 94597ab23ea10b3bdcba534be00a9f7b35791c07 upstream.
 
-This patch separates the device deletion code from dm_put()
-to make sure the deletion happens in the process context.
+Currently the driver will try to protect all frames,
+which leads to a lot of odd things like sending an
+RTS with a zeroed RA before multicast frames, which
+is clearly bogus.
 
-By this patch, device deletion always occurs in an ioctl (process)
-context and dm_put() can be called in interrupt context.
-As a result, the request-based dm's bad dm_put() usage pointed out
-by Mikulas below disappears.
-    http://marc.info/?l=dm-devel&m=126699981019735&w=2
+In order to fix all of this, we need to take a step
+back and see what we need to achieve:
+ * we need RTS/CTS protection if requested by
+   the AP for the BSS, mac80211 tells us this
+ * in that case, CTS-to-self should only be
+   enabled when mac80211 tells us
+ * additionally, as a hardware workaround, on
+   some devices we have to protect aggregated
+   frames with RTS
 
-Without this patch, I confirmed there is a case to crash the system:
-    dm_put() => dm_table_destroy() => vfree() => BUG_ON(in_interrupt())
+To achieve the first two items, set up the RXON
+accordingly and set the protection required flag
+in the transmit command when mac80211 requests
+protection for the frame.
 
-Some more backgrounds and details:
-In request-based dm, a device opener can remove a mapped_device
-while the last request is still completing, because bios in the last
-request complete first and then the device opener can close and remove
-the mapped_device before the last request completes:
-  CPU0                                          CPU1
-  =================================================================
-  <<INTERRUPT>>
-  blk_end_request_all(clone_rq)
-    blk_update_request(clone_rq)
-      bio_endio(clone_bio) == end_clone_bio
-        blk_update_request(orig_rq)
-          bio_endio(orig_bio)
-                                                <<I/O completed>>
-                                                dm_blk_close()
-                                                dev_remove()
-                                                  dm_put(md)
-                                                    <<Free md>>
-   blk_finish_request(clone_rq)
-     ....
-     dm_end_request(clone_rq)
-       free_rq_clone(clone_rq)
-       blk_end_request_all(orig_rq)
-       rq_completed(md)
+To achieve the last item, set the rate-control
+RTS-requested flag for all stations that we have
+aggregation sessions with, and set the protection
+required flag when sending aggregated frames (on
+those devices where this is required).
 
-So request-based dm used dm_get()/dm_put() to hold md for each I/O
-until its request completion handling is fully done.
-However, the final dm_put() can call the device deletion code which
-must not be run in interrupt context and may cause kernel panic.
+Since otherwise bugs can occur, do not allow the
+user to override the RTS-for-aggregation setting
+from sysfs any more.
 
-To solve the problem, this patch moves the device deletion code,
-dm_destroy(), to predetermined places that is actually deleting
-the mapped_device in ioctl (process) context, and changes dm_put()
-just to decrement the reference count of the mapped_device.
-By this change, dm_put() can be used in any context and the symmetric
-model below is introduced:
-    dm_create():  create a mapped_device
-    dm_destroy(): destroy a mapped_device
-    dm_get():     increment the reference count of a mapped_device
-    dm_put():     decrement the reference count of a mapped_device
+Finally, also clean up the way all these flags get
+set in the driver and move everything into the
+device-specific functions.
 
-dm_destroy() waits for all references of the mapped_device to disappear,
-then deletes the mapped_device.
-
-dm_destroy() uses active waiting with msleep(1), since deleting
-the mapped_device isn't performance-critical task.
-And since at this point, nobody opens the mapped_device and no new
-reference will be taken, the pending counts are just for racing
-completing activity and will eventually decrease to zero.
-
-For the unlikely case of the forced module unload, dm_destroy_immediate(),
-which doesn't wait and forcibly deletes the mapped_device, is also
-introduced and used in dm_hash_remove_all().  Otherwise, "rmmod -f"
-may be stuck and never return.
-And now, because the mapped_device is deleted at this point, subsequent
-accesses to the mapped_device may cause NULL pointer references.
-
-Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/md/dm-ioctl.c |    6 ++++
- drivers/md/dm.c       |   62 +++++++++++++++++++++++++++++++++++++-------------
- drivers/md/dm.h       |    5 ++++
- 3 files changed, 57 insertions(+), 16 deletions(-)
 
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -274,6 +274,10 @@ retry:
- 			up_write(&_hash_lock);
+---
+ drivers/net/wireless/iwlwifi/iwl-3945.c     |   16 -----------
+ drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c |   17 ++++++++++--
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c   |   17 +++---------
+ drivers/net/wireless/iwlwifi/iwl-agn-tx.c   |   20 --------------
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   38 +++++++++++++++++++++-------
+ drivers/net/wireless/iwlwifi/iwl-core.c     |   25 ++++++++++++++++--
+ drivers/net/wireless/iwlwifi/iwl-core.h     |   10 ++++---
+ drivers/net/wireless/iwlwifi/iwl3945-base.c |    5 ---
+ 8 files changed, 79 insertions(+), 69 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/iwl-3945.c
++++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
+@@ -915,22 +915,6 @@ void iwl3945_hw_build_tx_cmd_rate(struct
+ 		rts_retry_limit = data_retry_limit;
+ 	tx_cmd->rts_retry_limit = rts_retry_limit;
  
- 			dm_put(md);
-+			if (likely(keep_open_devices))
-+				dm_destroy(md);
-+			else
-+				dm_destroy_immediate(md);
- 
- 			/*
- 			 * Some mapped devices may be using other mapped
-@@ -646,6 +650,7 @@ static int dev_create(struct dm_ioctl *p
- 	r = dm_hash_insert(param->name, *param->uuid ? param->uuid : NULL, md);
- 	if (r) {
- 		dm_put(md);
-+		dm_destroy(md);
- 		return r;
- 	}
- 
-@@ -748,6 +753,7 @@ static int dev_remove(struct dm_ioctl *p
- 		param->flags |= DM_UEVENT_GENERATED_FLAG;
- 
- 	dm_put(md);
-+	dm_destroy(md);
- 	return 0;
- }
- 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -19,6 +19,7 @@
- #include <linux/slab.h>
- #include <linux/idr.h>
- #include <linux/hdreg.h>
-+#include <linux/delay.h>
- 
- #include <trace/events/block.h>
- 
-@@ -2176,6 +2177,7 @@ void dm_set_mdptr(struct mapped_device *
- void dm_get(struct mapped_device *md)
- {
- 	atomic_inc(&md->holders);
-+	BUG_ON(test_bit(DMF_FREEING, &md->flags));
- }
- 
- const char *dm_device_name(struct mapped_device *md)
-@@ -2184,27 +2186,55 @@ const char *dm_device_name(struct mapped
- }
- EXPORT_SYMBOL_GPL(dm_device_name);
- 
--void dm_put(struct mapped_device *md)
-+static void __dm_destroy(struct mapped_device *md, bool wait)
- {
- 	struct dm_table *map;
- 
--	BUG_ON(test_bit(DMF_FREEING, &md->flags));
-+	might_sleep();
- 
--	if (atomic_dec_and_lock(&md->holders, &_minor_lock)) {
--		map = dm_get_live_table(md);
--		idr_replace(&_minor_idr, MINOR_ALLOCED,
--			    MINOR(disk_devt(dm_disk(md))));
--		set_bit(DMF_FREEING, &md->flags);
--		spin_unlock(&_minor_lock);
--		if (!dm_suspended_md(md)) {
--			dm_table_presuspend_targets(map);
--			dm_table_postsuspend_targets(map);
+-	if (ieee80211_is_mgmt(fc)) {
+-		switch (fc & cpu_to_le16(IEEE80211_FCTL_STYPE)) {
+-		case cpu_to_le16(IEEE80211_STYPE_AUTH):
+-		case cpu_to_le16(IEEE80211_STYPE_DEAUTH):
+-		case cpu_to_le16(IEEE80211_STYPE_ASSOC_REQ):
+-		case cpu_to_le16(IEEE80211_STYPE_REASSOC_REQ):
+-			if (tx_flags & TX_CMD_FLG_RTS_MSK) {
+-				tx_flags &= ~TX_CMD_FLG_RTS_MSK;
+-				tx_flags |= TX_CMD_FLG_CTS_MSK;
+-			}
+-			break;
+-		default:
+-			break;
 -		}
--		dm_sysfs_exit(md);
--		dm_table_put(map);
--		dm_table_destroy(__unbind(md));
--		free_dev(md);
-+	spin_lock(&_minor_lock);
-+	map = dm_get_live_table(md);
-+	idr_replace(&_minor_idr, MINOR_ALLOCED, MINOR(disk_devt(dm_disk(md))));
-+	set_bit(DMF_FREEING, &md->flags);
-+	spin_unlock(&_minor_lock);
-+
-+	if (!dm_suspended_md(md)) {
-+		dm_table_presuspend_targets(map);
-+		dm_table_postsuspend_targets(map);
+-	}
+-
+ 	tx_cmd->rate = rate;
+ 	tx_cmd->tx_flags = tx_flags;
+ 
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c
+@@ -209,10 +209,21 @@ static void iwlagn_chain_noise_reset(str
  	}
-+
-+	/*
-+	 * Rare, but there may be I/O requests still going to complete,
-+	 * for example.  Wait for all references to disappear.
-+	 * No one should increment the reference count of the mapped_device,
-+	 * after the mapped_device state becomes DMF_FREEING.
-+	 */
-+	if (wait)
-+		while (atomic_read(&md->holders))
-+			msleep(1);
-+	else if (atomic_read(&md->holders))
-+		DMWARN("%s: Forcibly removing mapped_device still in use! (%d users)",
-+		       dm_device_name(md), atomic_read(&md->holders));
-+
-+	dm_sysfs_exit(md);
-+	dm_table_put(map);
-+	dm_table_destroy(__unbind(md));
-+	free_dev(md);
-+}
-+
-+void dm_destroy(struct mapped_device *md)
-+{
-+	__dm_destroy(md, true);
-+}
-+
-+void dm_destroy_immediate(struct mapped_device *md)
-+{
-+	__dm_destroy(md, false);
-+}
-+
-+void dm_put(struct mapped_device *md)
-+{
-+	atomic_dec(&md->holders);
  }
- EXPORT_SYMBOL_GPL(dm_put);
  
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -122,6 +122,11 @@ void dm_linear_exit(void);
- int dm_stripe_init(void);
- void dm_stripe_exit(void);
+-static void iwlagn_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
+-			__le32 *tx_flags)
++static void iwlagn_rts_tx_cmd_flag(struct iwl_priv *priv,
++				     struct ieee80211_tx_info *info,
++				     __le16 fc, __le32 *tx_flags)
+ {
+-	*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
++	if (info->control.rates[0].flags & IEEE80211_TX_RC_USE_RTS_CTS ||
++	    info->control.rates[0].flags & IEEE80211_TX_RC_USE_CTS_PROTECT) {
++		*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
++		return;
++	}
++
++	if (priv->cfg->use_rts_for_ht &&
++	    info->flags & IEEE80211_TX_CTL_AMPDU) {
++		*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
++		return;
++	}
+ }
  
-+/*
-+ * mapped_device operations
-+ */
-+void dm_destroy(struct mapped_device *md);
-+void dm_destroy_immediate(struct mapped_device *md);
- int dm_open_count(struct mapped_device *md);
- int dm_lock_for_deletion(struct mapped_device *md);
+ /* Calc max signal level (dBm) among 3 possible receivers */
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
+@@ -325,18 +325,11 @@ static void rs_tl_turn_on_agg(struct iwl
+ 			      struct iwl_lq_sta *lq_data,
+ 			      struct ieee80211_sta *sta)
+ {
+-	if ((tid < TID_MAX_LOAD_COUNT) &&
+-	    !rs_tl_turn_on_agg_for_tid(priv, lq_data, tid, sta)) {
+-		if (priv->cfg->use_rts_for_ht) {
+-			/*
+-			 * switch to RTS/CTS if it is the prefer protection
+-			 * method for HT traffic
+-			 */
+-			IWL_DEBUG_HT(priv, "use RTS/CTS protection for HT\n");
+-			priv->staging_rxon.flags &= ~RXON_FLG_SELF_CTS_EN;
+-			iwlcore_commit_rxon(priv);
+-		}
+-	}
++	if (tid < TID_MAX_LOAD_COUNT)
++		rs_tl_turn_on_agg_for_tid(priv, lq_data, tid, sta);
++	else
++		IWL_ERR(priv, "tid exceeds max load count: %d/%d\n",
++			tid, TID_MAX_LOAD_COUNT);
+ }
  
+ static inline int get_num_of_ant_from_rate(u32 rate_n_flags)
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
+@@ -376,10 +376,7 @@ static void iwlagn_tx_cmd_build_basic(st
+ 		tx_flags |= TX_CMD_FLG_SEQ_CTL_MSK;
+ 	}
+ 
+-	priv->cfg->ops->utils->rts_tx_cmd_flag(info, &tx_flags);
+-
+-	if ((tx_flags & TX_CMD_FLG_RTS_MSK) || (tx_flags & TX_CMD_FLG_CTS_MSK))
+-		tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
++	priv->cfg->ops->utils->rts_tx_cmd_flag(priv, info, fc, &tx_flags);
+ 
+ 	tx_flags &= ~(TX_CMD_FLG_ANT_SEL_MSK);
+ 	if (ieee80211_is_mgmt(fc)) {
+@@ -453,21 +450,6 @@ static void iwlagn_tx_cmd_build_rate(str
+ 	if ((rate_idx >= IWL_FIRST_CCK_RATE) && (rate_idx <= IWL_LAST_CCK_RATE))
+ 		rate_flags |= RATE_MCS_CCK_MSK;
+ 
+-	/* Set up RTS and CTS flags for certain packets */
+-	switch (fc & cpu_to_le16(IEEE80211_FCTL_STYPE)) {
+-	case cpu_to_le16(IEEE80211_STYPE_AUTH):
+-	case cpu_to_le16(IEEE80211_STYPE_DEAUTH):
+-	case cpu_to_le16(IEEE80211_STYPE_ASSOC_REQ):
+-	case cpu_to_le16(IEEE80211_STYPE_REASSOC_REQ):
+-		if (tx_cmd->tx_flags & TX_CMD_FLG_RTS_MSK) {
+-			tx_cmd->tx_flags &= ~TX_CMD_FLG_RTS_MSK;
+-			tx_cmd->tx_flags |= TX_CMD_FLG_CTS_MSK;
+-		}
+-		break;
+-	default:
+-		break;
+-	}
+-
+ 	/* Set up antennas */
+ 	priv->mgmt_tx_ant = iwl_toggle_tx_ant(priv, priv->mgmt_tx_ant);
+ 	rate_flags |= iwl_ant_idx_to_flags(priv->mgmt_tx_ant);
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -200,13 +200,6 @@ int iwl_commit_rxon(struct iwl_priv *pri
+ 
+ 	priv->start_calib = 0;
+ 	if (new_assoc) {
+-		/*
+-		 * allow CTS-to-self if possible for new association.
+-		 * this is relevant only for 5000 series and up,
+-		 * but will not damage 4965
+-		 */
+-		priv->staging_rxon.flags |= RXON_FLG_SELF_CTS_EN;
+-
+ 		/* Apply the new configuration
+ 		 * RXON assoc doesn't clear the station table in uCode,
+ 		 */
+@@ -3336,13 +3329,40 @@ static int iwl_mac_ampdu_action(struct i
+ 			IWL_DEBUG_HT(priv, "priv->_agn.agg_tids_count = %u\n",
+ 				     priv->_agn.agg_tids_count);
+ 		}
++		if (priv->cfg->use_rts_for_ht) {
++			struct iwl_station_priv *sta_priv =
++				(void *) sta->drv_priv;
++			/*
++			 * switch off RTS/CTS if it was previously enabled
++			 */
++
++			sta_priv->lq_sta.lq.general_params.flags &=
++				~LINK_QUAL_FLAGS_SET_STA_TLC_RTS_MSK;
++			iwl_send_lq_cmd(priv, &sta_priv->lq_sta.lq,
++				CMD_ASYNC, false);
++		}
++ 		break;
+ 		if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+ 			return 0;
+ 		else
+ 			return ret;
+ 	case IEEE80211_AMPDU_TX_OPERATIONAL:
+-		/* do nothing */
+-		return -EOPNOTSUPP;
++		if (priv->cfg->use_rts_for_ht) {
++			struct iwl_station_priv *sta_priv =
++				(void *) sta->drv_priv;
++
++			/*
++			 * switch to RTS/CTS if it is the prefer protection
++			 * method for HT traffic
++			 */
++
++			sta_priv->lq_sta.lq.general_params.flags |=
++				LINK_QUAL_FLAGS_SET_STA_TLC_RTS_MSK;
++			iwl_send_lq_cmd(priv, &sta_priv->lq_sta.lq,
++				CMD_ASYNC, false);
++		}
++		ret = 0;
++		break;
+ 	default:
+ 		IWL_DEBUG_HT(priv, "unknown\n");
+ 		return -EINVAL;
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -403,19 +403,36 @@ EXPORT_SYMBOL(iwlcore_free_geos);
+  *  iwlcore_rts_tx_cmd_flag: Set rts/cts. 3945 and 4965 only share this
+  *  function.
+  */
+-void iwlcore_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
+-				__le32 *tx_flags)
++void iwlcore_rts_tx_cmd_flag(struct iwl_priv *priv,
++			       struct ieee80211_tx_info *info,
++			       __le16 fc, __le32 *tx_flags)
+ {
+ 	if (info->control.rates[0].flags & IEEE80211_TX_RC_USE_RTS_CTS) {
+ 		*tx_flags |= TX_CMD_FLG_RTS_MSK;
+ 		*tx_flags &= ~TX_CMD_FLG_CTS_MSK;
++		*tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
++
++		if (!ieee80211_is_mgmt(fc))
++			return;
++
++		switch (fc & cpu_to_le16(IEEE80211_FCTL_STYPE)) {
++		case cpu_to_le16(IEEE80211_STYPE_AUTH):
++		case cpu_to_le16(IEEE80211_STYPE_DEAUTH):
++		case cpu_to_le16(IEEE80211_STYPE_ASSOC_REQ):
++		case cpu_to_le16(IEEE80211_STYPE_REASSOC_REQ):
++			*tx_flags &= ~TX_CMD_FLG_RTS_MSK;
++			*tx_flags |= TX_CMD_FLG_CTS_MSK;
++			break;
++		}
+ 	} else if (info->control.rates[0].flags & IEEE80211_TX_RC_USE_CTS_PROTECT) {
+ 		*tx_flags &= ~TX_CMD_FLG_RTS_MSK;
+ 		*tx_flags |= TX_CMD_FLG_CTS_MSK;
++		*tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
+ 	}
+ }
+ EXPORT_SYMBOL(iwlcore_rts_tx_cmd_flag);
+ 
++
+ static bool is_single_rx_stream(struct iwl_priv *priv)
+ {
+ 	return priv->current_ht_config.smps == IEEE80211_SMPS_STATIC ||
+@@ -1936,6 +1953,10 @@ void iwl_bss_info_changed(struct ieee802
+ 			priv->staging_rxon.flags |= RXON_FLG_TGG_PROTECT_MSK;
+ 		else
+ 			priv->staging_rxon.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
++		if (bss_conf->use_cts_prot)
++			priv->staging_rxon.flags |= RXON_FLG_SELF_CTS_EN;
++		else
++			priv->staging_rxon.flags &= ~RXON_FLG_SELF_CTS_EN;
+ 	}
+ 
+ 	if (changes & BSS_CHANGED_BASIC_RATES) {
+--- a/drivers/net/wireless/iwlwifi/iwl-core.h
++++ b/drivers/net/wireless/iwlwifi/iwl-core.h
+@@ -102,8 +102,9 @@ struct iwl_hcmd_utils_ops {
+ 			u32 min_average_noise,
+ 			u8 default_chain);
+ 	void (*chain_noise_reset)(struct iwl_priv *priv);
+-	void (*rts_tx_cmd_flag)(struct ieee80211_tx_info *info,
+-			__le32 *tx_flags);
++	void (*rts_tx_cmd_flag)(struct iwl_priv *priv,
++				  struct ieee80211_tx_info *info,
++				  __le16 fc, __le32 *tx_flags);
+ 	int  (*calc_rssi)(struct iwl_priv *priv,
+ 			  struct iwl_rx_phy_res *rx_resp);
+ 	void (*request_scan)(struct iwl_priv *priv, struct ieee80211_vif *vif);
+@@ -375,8 +376,9 @@ void iwl_config_ap(struct iwl_priv *priv
+ void iwl_mac_reset_tsf(struct ieee80211_hw *hw);
+ int iwl_alloc_txq_mem(struct iwl_priv *priv);
+ void iwl_free_txq_mem(struct iwl_priv *priv);
+-void iwlcore_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
+-				__le32 *tx_flags);
++void iwlcore_rts_tx_cmd_flag(struct iwl_priv *priv,
++			       struct ieee80211_tx_info *info,
++			       __le16 fc, __le32 *tx_flags);
+ #ifdef CONFIG_IWLWIFI_DEBUGFS
+ int iwl_alloc_traffic_mem(struct iwl_priv *priv);
+ void iwl_free_traffic_mem(struct iwl_priv *priv);
+--- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
++++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+@@ -434,10 +434,7 @@ static void iwl3945_build_tx_cmd_basic(s
+ 		tx_flags |= TX_CMD_FLG_SEQ_CTL_MSK;
+ 	}
+ 
+-	priv->cfg->ops->utils->rts_tx_cmd_flag(info, &tx_flags);
+-
+-	if ((tx_flags & TX_CMD_FLG_RTS_MSK) || (tx_flags & TX_CMD_FLG_CTS_MSK))
+-		tx_flags |= TX_CMD_FLG_FULL_TXOP_PROT_MSK;
++	priv->cfg->ops->utils->rts_tx_cmd_flag(priv, info, fc, &tx_flags);
+ 
+ 	tx_flags &= ~(TX_CMD_FLG_ANT_SEL_MSK);
+ 	if (ieee80211_is_mgmt(fc)) {
 
 
