@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab0HXPUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:20:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47499 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab0HXPUU (ORCPT
+	id S1755383Ab0HXPVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:21:33 -0400
+Received: from smtp.srv.ualberta.ca ([129.128.5.19]:57487 "EHLO
+	mail5.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754315Ab0HXPVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:20:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=kMqPhV8DC8MJBxPixk8l4d4AyZCHmACcuEeJ4XGyvc7G3vWmZ7FwbZDKSi0j427RwT
-         cc2bZcbLP2neg3IOR4FoWz4RVTmQ35xy0W/SfjxYJTDM8u0WaHmjGez97EVDId+eLejP
-         PjrMTUMOXaEd+PnVYkXAuWwD2EfNfqPjFFFw4=
-From: Otavio Salvador <otavio@ossystems.com.br>
-To: linux-kernel@vger.kernel.org
-Cc: Otavio Salvador <otavio@ossystems.com.br>
-Subject: [PATCH] x86, vmware: fix compilation failure due lack of preset_lpj variable
-Date: Tue, 24 Aug 2010 12:19:48 -0300
-Message-Id: <1282663188-31090-1-git-send-email-otavio@ossystems.com.br>
-X-Mailer: git-send-email 1.7.1.569.g6f426
+	Tue, 24 Aug 2010 11:21:30 -0400
+X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 11:21:30 EDT
+Date: Tue, 24 Aug 2010 09:14:54 -0600 (Mountain Daylight Time)
+From: Marc Aurele La France <tsi@ualberta.ca>
+To: Stephen Hemminger <shemminger@vyatta.com>
+cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: RFC: MTU for serving NFS on Infiniband
+In-Reply-To: <20100823080543.319143e3@nehalam>
+Message-ID: <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
+References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca> <20100823080543.319143e3@nehalam>
+User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At commit 9f242dc10e0c3c1eb32d8c83c18650a35fd7f80d the preset_lpj
-variable started to be used but vmware.c lacked the include for
-"jiffies.h" that defines it causing a build failure.
+On Mon, 23 Aug 2010, Stephen Hemminger wrote:
+> On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
+> Marc Aurele La France <tsi@ualberta.ca> wrote:
+>> In regrouping for my next tack at this, I noticed that all stack traces go
+>> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
+>> A _very_ rough draft that would have ip_append_data() temporarily drop down
+>> to a smaller fake MTU follows ...
 
-Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
----
- arch/x86/kernel/cpu/vmware.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> Why doesn't NFS generate page size fragments?  Does Infiniband or your
+> device not support this?  Any thing that requires higher order allocation
+> is going to unstable under load.  Let's fix the cause not the apply bandaid
+> solution to the symptom.
 
-diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
-index 227b044..ce9c6c2 100644
---- a/arch/x86/kernel/cpu/vmware.c
-+++ b/arch/x86/kernel/cpu/vmware.c
-@@ -23,6 +23,7 @@
- 
- #include <linux/dmi.h>
- #include <linux/module.h>
-+#include <linux/jiffies.h>
- #include <asm/div64.h>
- #include <asm/x86_init.h>
- #include <asm/hypervisor.h>
--- 
-1.7.1.569.g6f426
+>From what I can tell, IP fragmentation is done centrally.
 
+The MTU is a device attribute, yes.  But, here, it is ip_append_data(), 
+not NFS nor the device driver, whose responsibility it is to break up the 
+payload into fragments, either by itself or using any facility supported 
+by the adapter.  What I'm saying is that there's no reason to require all 
+fragments, except the last, to be MTU-sized.  The RFCs I've looked at 
+allow them to be shorter which can be used to advantage when MTU-sized 
+fragments cannot be allocated in a memory fragmentation scenario, instead 
+of reporting an error.
+
+Marc.
+
++----------------------------------+----------------------------------+
+|  Marc Aurele La France           |  work:   1-780-492-9310          |
+|  Academic Information and        |  fax:    1-780-492-1729          |
+|    Communications Technologies   |  email:  tsi@ualberta.ca         |
+|  352 General Services Building   +----------------------------------+
+|  University of Alberta           |                                  |
+|  Edmonton, Alberta               |    Standard disclaimers apply    |
+|  T6G 2H1                         |                                  |
+|  CANADA                          |                                  |
++----------------------------------+----------------------------------+
