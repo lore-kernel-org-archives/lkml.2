@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934384Ab0HXXkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:40:05 -0400
-Received: from kroah.org ([198.145.64.141]:52436 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932807Ab0HXW6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932727Ab0HXW6M (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Aug 2010 18:58:12 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:13 2010
-Message-Id: <20100824224213.017074974@clark.site>
+Received: from kroah.org ([198.145.64.141]:52426 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932779Ab0HXW6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:08 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:12 2010
+Message-Id: <20100824224212.751248139@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:33 -0700
+Date: Tue, 24 Aug 2010 15:41:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tiger Yang <tiger.yang@oracle.com>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: [11/91] ocfs2: do not overwrite error codes in ocfs2_init_acl
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Subject: [08/91] ALSA: emu10k1 - delay the PCM interrupts (add pcm_irq_delay parameter)
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +25,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tiger Yang <tiger.yang@oracle.com>
+From: Jaroslav Kysela <perex@perex.cz>
 
-commit 6eda3dd33f8a0ce58ee56a11351758643a698db4 upstream.
+commit 56385a12d9bb9e173751f74b6c430742018cafc0 upstream.
 
-Setting the acl while creating a new inode depends on
-the error codes of posix_acl_create_masq. This patch fix
-a issue of overwriting the error codes of it.
+With some hardware combinations, the PCM interrupts are acknowledged
+before the period boundary from the emu10k1 chip. The midlevel PCM code
+gets confused and the playback stream is interrupted.
 
-Reported-by: Pawel Zawora <pzawora@gmail.com>
-Signed-off-by: Tiger Yang <tiger.yang@oracle.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+It seems that the interrupt processing shift by 2 samples is enough
+to fix this issue. This default value does not harm other,
+non-affected hardware.
+
+More information: Kernel bugzilla bug#16300
+
+[A copmile warning fixed by tiwai]
+
+Signed-off-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/acl.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ include/sound/emu10k1.h     |    1 +
+ sound/core/pcm_native.c     |    4 ++++
+ sound/pci/emu10k1/emu10k1.c |    4 ++++
+ sound/pci/emu10k1/emupcm.c  |   30 ++++++++++++++++++++++++++----
+ sound/pci/emu10k1/memory.c  |    4 +++-
+ 5 files changed, 38 insertions(+), 5 deletions(-)
 
---- a/fs/ocfs2/acl.c
-+++ b/fs/ocfs2/acl.c
-@@ -344,7 +344,7 @@ int ocfs2_init_acl(handle_t *handle,
+--- a/include/sound/emu10k1.h
++++ b/include/sound/emu10k1.h
+@@ -1707,6 +1707,7 @@ struct snd_emu10k1 {
+ 	unsigned int card_type;			/* EMU10K1_CARD_* */
+ 	unsigned int ecard_ctrl;		/* ecard control bits */
+ 	unsigned long dma_mask;			/* PCI DMA mask */
++	unsigned int delay_pcm_irq;		/* in samples */
+ 	int max_cache_pages;			/* max memory size / PAGE_SIZE */
+ 	struct snd_dma_buffer silent_page;	/* silent page */
+ 	struct snd_dma_buffer ptb_pages;	/* page table pages */
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -979,6 +979,10 @@ static int snd_pcm_do_pause(struct snd_p
  {
- 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
- 	struct posix_acl *acl = NULL;
--	int ret = 0;
-+	int ret = 0, ret2;
- 	mode_t mode;
+ 	if (substream->runtime->trigger_master != substream)
+ 		return 0;
++	/* some drivers might use hw_ptr to recover from the pause -
++	   update the hw_ptr now */
++	if (push)
++		snd_pcm_update_hw_ptr(substream);
+ 	/* The jiffies check in snd_pcm_update_hw_ptr*() is done by
+ 	 * a delta betwen the current jiffies, this gives a large enough
+ 	 * delta, effectively to skip the check once.
+--- a/sound/pci/emu10k1/emu10k1.c
++++ b/sound/pci/emu10k1/emu10k1.c
+@@ -52,6 +52,7 @@ static int max_synth_voices[SNDRV_CARDS]
+ static int max_buffer_size[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 128};
+ static int enable_ir[SNDRV_CARDS];
+ static uint subsystem[SNDRV_CARDS]; /* Force card subsystem model */
++static uint delay_pcm_irq[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 2};
  
- 	if (!S_ISLNK(inode->i_mode)) {
-@@ -381,7 +381,12 @@ int ocfs2_init_acl(handle_t *handle,
- 		mode = inode->i_mode;
- 		ret = posix_acl_create_masq(clone, &mode);
- 		if (ret >= 0) {
--			ret = ocfs2_acl_set_mode(inode, di_bh, handle, mode);
-+			ret2 = ocfs2_acl_set_mode(inode, di_bh, handle, mode);
-+			if (ret2) {
-+				mlog_errno(ret2);
-+				ret = ret2;
-+				goto cleanup;
-+			}
- 			if (ret > 0) {
- 				ret = ocfs2_set_acl(handle, inode,
- 						    di_bh, ACL_TYPE_ACCESS,
+ module_param_array(index, int, NULL, 0444);
+ MODULE_PARM_DESC(index, "Index value for the EMU10K1 soundcard.");
+@@ -73,6 +74,8 @@ module_param_array(enable_ir, bool, NULL
+ MODULE_PARM_DESC(enable_ir, "Enable IR.");
+ module_param_array(subsystem, uint, NULL, 0444);
+ MODULE_PARM_DESC(subsystem, "Force card subsystem model.");
++module_param_array(delay_pcm_irq, uint, NULL, 0444);
++MODULE_PARM_DESC(delay_pcm_irq, "Delay PCM interrupt by specified number of samples (default 0).");
+ /*
+  * Class 0401: 1102:0008 (rev 00) Subsystem: 1102:1001 -> Audigy2 Value  Model:SB0400
+  */
+@@ -127,6 +130,7 @@ static int __devinit snd_card_emu10k1_pr
+ 				      &emu)) < 0)
+ 		goto error;
+ 	card->private_data = emu;
++	emu->delay_pcm_irq = delay_pcm_irq[dev] & 0x1f;
+ 	if ((err = snd_emu10k1_pcm(emu, 0, NULL)) < 0)
+ 		goto error;
+ 	if ((err = snd_emu10k1_pcm_mic(emu, 1, NULL)) < 0)
+--- a/sound/pci/emu10k1/emupcm.c
++++ b/sound/pci/emu10k1/emupcm.c
+@@ -332,7 +332,7 @@ static void snd_emu10k1_pcm_init_voice(s
+ 		evoice->epcm->ccca_start_addr = start_addr + ccis;
+ 		if (extra) {
+ 			start_addr += ccis;
+-			end_addr += ccis;
++			end_addr += ccis + emu->delay_pcm_irq;
+ 		}
+ 		if (stereo && !extra) {
+ 			snd_emu10k1_ptr_write(emu, CPF, voice, CPF_STEREO_MASK);
+@@ -360,7 +360,9 @@ static void snd_emu10k1_pcm_init_voice(s
+ 	/* Assumption that PT is already 0 so no harm overwriting */
+ 	snd_emu10k1_ptr_write(emu, PTRX, voice, (send_amount[0] << 8) | send_amount[1]);
+ 	snd_emu10k1_ptr_write(emu, DSL, voice, end_addr | (send_amount[3] << 24));
+-	snd_emu10k1_ptr_write(emu, PSST, voice, start_addr | (send_amount[2] << 24));
++	snd_emu10k1_ptr_write(emu, PSST, voice,
++			(start_addr + (extra ? emu->delay_pcm_irq : 0)) |
++			(send_amount[2] << 24));
+ 	if (emu->card_capabilities->emu_model)
+ 		pitch_target = PITCH_48000; /* Disable interpolators on emu1010 card */
+ 	else 
+@@ -732,6 +734,23 @@ static void snd_emu10k1_playback_stop_vo
+ 	snd_emu10k1_ptr_write(emu, IP, voice, 0);
+ }
+ 
++static inline void snd_emu10k1_playback_mangle_extra(struct snd_emu10k1 *emu,
++		struct snd_emu10k1_pcm *epcm,
++		struct snd_pcm_substream *substream,
++		struct snd_pcm_runtime *runtime)
++{
++	unsigned int ptr, period_pos;
++
++	/* try to sychronize the current position for the interrupt
++	   source voice */
++	period_pos = runtime->status->hw_ptr - runtime->hw_ptr_interrupt;
++	period_pos %= runtime->period_size;
++	ptr = snd_emu10k1_ptr_read(emu, CCCA, epcm->extra->number);
++	ptr &= ~0x00ffffff;
++	ptr |= epcm->ccca_start_addr + period_pos;
++	snd_emu10k1_ptr_write(emu, CCCA, epcm->extra->number, ptr);
++}
++
+ static int snd_emu10k1_playback_trigger(struct snd_pcm_substream *substream,
+ 				        int cmd)
+ {
+@@ -753,6 +772,8 @@ static int snd_emu10k1_playback_trigger(
+ 		/* follow thru */
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
++		if (cmd == SNDRV_PCM_TRIGGER_PAUSE_RELEASE)
++			snd_emu10k1_playback_mangle_extra(emu, epcm, substream, runtime);
+ 		mix = &emu->pcm_mixer[substream->number];
+ 		snd_emu10k1_playback_prepare_voice(emu, epcm->voices[0], 1, 0, mix);
+ 		snd_emu10k1_playback_prepare_voice(emu, epcm->voices[1], 0, 0, mix);
+@@ -869,8 +890,9 @@ static snd_pcm_uframes_t snd_emu10k1_pla
+ #endif
+ 	/*
+ 	printk(KERN_DEBUG
+-	       "ptr = 0x%x, buffer_size = 0x%x, period_size = 0x%x\n",
+-	       ptr, runtime->buffer_size, runtime->period_size);
++	       "ptr = 0x%lx, buffer_size = 0x%lx, period_size = 0x%lx\n",
++	       (long)ptr, (long)runtime->buffer_size,
++	       (long)runtime->period_size);
+ 	*/
+ 	return ptr;
+ }
+--- a/sound/pci/emu10k1/memory.c
++++ b/sound/pci/emu10k1/memory.c
+@@ -310,8 +310,10 @@ snd_emu10k1_alloc_pages(struct snd_emu10
+ 	if (snd_BUG_ON(!hdr))
+ 		return NULL;
+ 
++	idx = runtime->period_size >= runtime->buffer_size ?
++					(emu->delay_pcm_irq * 2) : 0;
+ 	mutex_lock(&hdr->block_mutex);
+-	blk = search_empty(emu, runtime->dma_bytes);
++	blk = search_empty(emu, runtime->dma_bytes + idx);
+ 	if (blk == NULL) {
+ 		mutex_unlock(&hdr->block_mutex);
+ 		return NULL;
 
 
