@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934300Ab0HXXgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:36:23 -0400
-Received: from kroah.org ([198.145.64.141]:40368 "EHLO coco.kroah.org"
+	id S932872Ab0HXW6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:58:36 -0400
+Received: from kroah.org ([198.145.64.141]:40320 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932875Ab0HXW6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:38 -0400
+	id S932837Ab0HXW60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:26 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:14 2010
-Message-Id: <20100824224214.635466753@clark.site>
+Message-Id: <20100824224213.968424169@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:52 -0700
+Date: Tue, 24 Aug 2010 15:41:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marek.vasut@gmail.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [30/91] BFIN: Fix gen_nand probe structures contents
+        Victor van den Elzen <victor.vde@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [22/91] platform/x86: move rfkill for Dell Mini 1012 to compal-laptop
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marek.vasut@gmail.com>
+From: Victor van den Elzen <victor.vde@gmail.com>
 
-commit ef56609f9c7fdf5baa9d9f86f84a7bd8a717cd25 upstream.
+commit c3f755e3842108c1cffe570fe9802239810352b6 upstream.
 
-These two platforms didn't properly fill nr_chips in gen_nand
-registration and therefore depended on gen_nand bug fixed by by commit
-81cbb0b17796d81cbd92defe113cf2a7c7a21fbb ("mtd: gen_nand: fix support for
-multiple chips")
+Like others in the Mini series, the Dell Mini 1012 does not support
+the smbios hook required by dell-laptop.
 
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Victor van den Elzen <victor.vde@gmail.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/blackfin/mach-bf537/boards/stamp.c   |    1 +
- arch/blackfin/mach-bf561/boards/acvilon.c |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/platform/x86/compal-laptop.c |    9 +++++++++
+ drivers/platform/x86/dell-laptop.c   |    7 +++++++
+ 2 files changed, 16 insertions(+)
 
---- a/arch/blackfin/mach-bf537/boards/stamp.c
-+++ b/arch/blackfin/mach-bf537/boards/stamp.c
-@@ -400,6 +400,7 @@ static int bfin_plat_nand_dev_ready(stru
- 
- static struct platform_nand_data bfin_plat_nand_data = {
- 	.chip = {
-+		.nr_chips = 1,
- 		.chip_delay = 30,
- #ifdef CONFIG_MTD_PARTITIONS
- 		.part_probe_types = part_probes,
---- a/arch/blackfin/mach-bf561/boards/acvilon.c
-+++ b/arch/blackfin/mach-bf561/boards/acvilon.c
-@@ -283,6 +283,7 @@ static int bfin_plat_nand_dev_ready(stru
- 
- static struct platform_nand_data bfin_plat_nand_data = {
- 	.chip = {
-+		 .nr_chips = 1,
- 		 .chip_delay = 30,
- #ifdef CONFIG_MTD_PARTITIONS
- 		 .part_probe_types = part_probes,
+--- a/drivers/platform/x86/compal-laptop.c
++++ b/drivers/platform/x86/compal-laptop.c
+@@ -259,6 +259,14 @@ static struct dmi_system_id __initdata c
+ 		.callback = dmi_check_cb
+ 	},
+ 	{
++		.ident = "Dell Mini 1012",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
++		},
++		.callback = dmi_check_cb
++	},
++	{
+ 		.ident = "Dell Inspiron 11z",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+@@ -375,5 +383,6 @@ MODULE_ALIAS("dmi:*:rnIFT00:rvrIFT00:*")
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron910:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1010:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1011:*");
++MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1012:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1110:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1210:*");
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -116,6 +116,13 @@ static struct dmi_system_id __devinitdat
+ 		},
+ 	},
+ 	{
++		.ident = "Dell Mini 1012",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
++		},
++	},
++	{
+ 		.ident = "Dell Inspiron 11z",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
 
 
