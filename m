@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab0HXWyD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:54:03 -0400
-Received: from kroah.org ([198.145.64.141]:52154 "EHLO coco.kroah.org"
+	id S934368Ab0HXXoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:44:21 -0400
+Received: from kroah.org ([198.145.64.141]:52209 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387Ab0HXWxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:24 2010
-Message-Id: <20100824222524.569637694@clark.site>
+	id S932441Ab0HXWyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:54:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
+Message-Id: <20100824222525.085037995@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:37 -0700
+Date: Tue, 24 Aug 2010 15:24:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [25/59] mm: make the mlock() stack guard page checks stricter
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [31/59] sparc64: Add missing ID to parport probing code.
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,57 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: David S. Miller <davem@davemloft.net>
 
-commit 7798330ac8114c731cfab83e634c6ecedaa233d7 upstream.
+[ Upstream commit bf8253bf5e7cfe17dd53e3f6340a45b11d9fb51c ]
 
-If we've split the stack vma, only the lowest one has the guard page.
-Now that we have a doubly linked list of vma's, checking this is trivial.
+SunBlade-2500 has 'parallel' device node with compatible
+property "pnpALI,1533,3" so add that to the ID table.
 
-Tested-by: Ian Campbell <ijc@hellion.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Mikael Pettersson <mikpe@it.uu.se>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/mlock.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ arch/sparc/include/asm/parport.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -138,6 +138,19 @@ void munlock_vma_page(struct page *page)
- 	}
- }
+--- a/arch/sparc/include/asm/parport.h
++++ b/arch/sparc/include/asm/parport.h
+@@ -228,6 +228,10 @@ static const struct of_device_id ecpp_ma
+ 		.name = "parallel",
+ 		.compatible = "ns87317-ecpp",
+ 	},
++	{
++		.name = "parallel",
++		.compatible = "pnpALI,1533,3",
++	},
+ 	{},
+ };
  
-+/* Is the vma a continuation of the stack vma above it? */
-+static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
-+}
-+
-+static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return (vma->vm_flags & VM_GROWSDOWN) &&
-+		(vma->vm_start == addr) &&
-+		!vma_stack_continue(vma->vm_prev, addr);
-+}
-+
- /**
-  * __mlock_vma_pages_range() -  mlock a range of pages in the vma.
-  * @vma:   target vma
-@@ -171,11 +184,9 @@ static long __mlock_vma_pages_range(stru
- 		gup_flags |= FOLL_WRITE;
- 
- 	/* We don't try to access the guard page of a stack vma */
--	if (vma->vm_flags & VM_GROWSDOWN) {
--		if (start == vma->vm_start) {
--			start += PAGE_SIZE;
--			nr_pages--;
--		}
-+	if (stack_guard_page(vma, start)) {
-+		addr += PAGE_SIZE;
-+		nr_pages--;
- 	}
- 
- 	while (nr_pages > 0) {
 
 
