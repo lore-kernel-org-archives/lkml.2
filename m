@@ -1,133 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab0HXHTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:19:37 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37065 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab0HXHTg (ORCPT
+	id S1754386Ab0HXHUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:20:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43796 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab0HXHU3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 03:19:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:message-id:user-agent:
-	mime-version:content-type;
-	b=w3MMiIgviy2GXofS87saoyXC3R42KDtF5KcDXdrEruefIwOcCZXtfUFZnLgn/WOza
-	XyegmQ1l+F1Ts4HqR7ifw==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kamezawa.hiroyuki@gmail.com, "menage\@google.com" <menage@google.com>,
-        "lizf\@cn.fujitsu.com" <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH 1/5] cgroup: ID notification call back
-References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 24 Aug 2010 00:19:01 -0700
-Message-ID: <xr93bp8sqxzu.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 24 Aug 2010 03:20:29 -0400
+Subject: Re: [RFC] mlock/stack guard interaction fixup
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ian Jackson <ijackson@chiark.greenend.org.uk>,
+        Greg KH <gregkh@suse.de>, Ian Campbell <ijc@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+In-Reply-To: <1282633694.2605.2254.camel@laptop>
+References: <AANLkTimuP9cFvd4pfqy6=vixSMdagrSEv1-VLNAEuWgr@mail.gmail.com>
+	 <1282391770.29609.1223.camel@localhost.localdomain>
+	 <AANLkTimYnfewBCDNYXZHxbcX=TRE__Cu07_FFK_kAK2h@mail.gmail.com>
+	 <1282460275.11348.865.camel@localhost.localdomain>
+	 <1282462386.11348.871.camel@localhost.localdomain>
+	 <1282470917.11348.891.camel@localhost.localdomain>
+	 <20100822172548.GB8957@suse.de>
+	 <AANLkTi=wWcAg8MdWy4O-0au3m6mH+9xWDOKVCJ_x5G_v@mail.gmail.com>
+	 <19570.38608.79434.179797@chiark.greenend.org.uk>
+	 <1282580751.2605.1997.camel@laptop>
+	 <19570.44367.719276.128881@chiark.greenend.org.uk>
+	 <AANLkTi=+O8wKZV6XT5wGJbfZdgC9kxTxvtEZMD+M+pZn@mail.gmail.com>
+	 <4C72C2E9.3070408@goop.org> <1282590457.2605.2200.camel@laptop>
+	 <4C72CAA7.5070202@goop.org> <1282591592.2605.2221.camel@laptop>
+	 <4C72D1E1.1040709@goop.org>  <1282633694.2605.2254.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 24 Aug 2010 09:20:16 +0200
+Message-ID: <1282634416.2605.2272.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Tue, 2010-08-24 at 09:08 +0200, Peter Zijlstra wrote:
 
-> CC'ed to Paul Menage and Li Zefan.
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> When cgroup subsystem use ID (ss->use_id==1), each css's ID is assigned
-> after successful call of ->create(). css_ID is tightly coupled with
-> css struct itself but it is allocated by ->create() call, IOW,
-> per-subsystem special allocations.
->
-> To know css_id before creation, this patch adds id_attached() callback.
-> after css_ID allocation. This will be used by memory cgroup's quick lookup
-> routine.
->
-> Maybe you can think of other implementations as
-> 	- pass ID to ->create()
-> 	or
-> 	- add post_create()
-> 	etc...
-> But when considering dirtiness of codes, this straightforward patch seems
-> good to me. If someone wants post_create(), this patch can be replaced.
->
-> Changelog: 20100820
->  - new approarch.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  Documentation/cgroups/cgroups.txt |   10 ++++++++++
->  include/linux/cgroup.h            |    1 +
->  kernel/cgroup.c                   |    5 ++++-
->  3 files changed, 15 insertions(+), 1 deletion(-)
->
-> Index: mmotm-0811/Documentation/cgroups/cgroups.txt
-> ===================================================================
-> --- mmotm-0811.orig/Documentation/cgroups/cgroups.txt
-> +++ mmotm-0811/Documentation/cgroups/cgroups.txt
-> @@ -621,6 +621,16 @@ and root cgroup. Currently this will onl
->  the default hierarchy (which never has sub-cgroups) and a hierarchy
->  that is being created/destroyed (and hence has no sub-cgroups).
->  
-> +void id_attached(struct cgroup_subsys *ss, struct cgroup *root)
-> +(cgroup_mutex and ss->hierarchy_mutex held by caller)
-> +(called only when ss->use_id=1)
-> +
-> +Called when css_id is attached to css. Because css_id is assigned
-> +against "css", css_id is not available until ->create() is called.
-> +If subsystem wants to make use of ID at createtion time, use
+> > Won't dirty anonymous pages also get written to swap?
 
-Minor spelling correction: s/createtion/creation/
+Also, usually when we talk about dirty pages we mean file pages.
 
-> +this handler. This handler will be called after css_id is assigned
-> +to css. Not necessary to be implemented in usual(see memcontrol.c)
 
-Maybe this sounds better?
-
-"This handler is not usually needed.  See memcontrol.c for an example."
-
-> +
->  4. Questions
->  ============
->  
-> Index: mmotm-0811/include/linux/cgroup.h
-> ===================================================================
-> --- mmotm-0811.orig/include/linux/cgroup.h
-> +++ mmotm-0811/include/linux/cgroup.h
-> @@ -475,6 +475,7 @@ struct cgroup_subsys {
->  			struct cgroup *cgrp);
->  	void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
->  	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
-> +	void (*id_attached)(struct cgroup_subsys *ss, struct cgroup *cgrp);
->  
->  	int subsys_id;
->  	int active;
-> Index: mmotm-0811/kernel/cgroup.c
-> ===================================================================
-> --- mmotm-0811.orig/kernel/cgroup.c
-> +++ mmotm-0811/kernel/cgroup.c
-> @@ -4618,6 +4618,8 @@ static int __init_or_module cgroup_init_
->  	newid->stack[0] = newid->id;
->  	newid->css = rootcss;
->  	rootcss->id = newid;
-> +	if (ss->id_attached)
-> +		ss->id_attached(ss, dummytop);
->  	return 0;
->  }
->  
-> @@ -4646,7 +4648,8 @@ static int alloc_css_id(struct cgroup_su
->  	 * see cgroup_populate_dir()
->  	 */
->  	rcu_assign_pointer(child_css->id, child_id);
-> -
-> +	if (ss->id_attached)
-> +		ss->id_attached(ss, child);
->  	return 0;
->  }
->  
