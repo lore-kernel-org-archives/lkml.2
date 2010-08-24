@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab0HXIO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:14:29 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58812 "EHLO mx2.mail.elte.hu"
+	id S1753262Ab0HXIQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 04:16:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6978 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683Ab0HXIO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:14:27 -0400
-Date: Tue, 24 Aug 2010 10:14:07 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH 0/4] Finer granularity and task/cgroup irq time accounting
-Message-ID: <20100824081407.GB27089@elte.hu>
-References: <1279583835-22854-1-git-send-email-venki@google.com>
- <20100720095546.2f899e04@mschwide.boeblingen.de.ibm.com>
- <AANLkTiktBNr3pVOHwxX3piwagtkGxHpp5TepBFS3UGhb@mail.gmail.com>
- <20100722131239.208d9501@mschwide.boeblingen.de.ibm.com>
- <AANLkTim==2J3Fo8Axz0yLvpfWf1bq_e0c0EYWi6y3xRe@mail.gmail.com>
- <1282636286.2605.2307.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282636286.2605.2307.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0002]
+	id S1751683Ab0HXIQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 04:16:53 -0400
+Message-Id: <8u3s8d$jcg467@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,262,1280732400"; 
+   d="scan'208";a="650645703"
+Date: Tue, 24 Aug 2010 09:16:50 +0100
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: Re: [REGRESSION, i915]: Periodic stalls with 2.6.36-rc2
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com> <20100824075741.GA11000@sucs.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100824075741.GA11000@sucs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 24 Aug 2010 08:57:41 +0100, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
+> The stalls became a bit better with the patch but there were still very
+> small pauses but the tearing with more recent X bits is definitely still
+> there. Additionally videos in totem would play as a tiny one pixel high
+> row about a quarter of the screen across at the top left of the screen.
+> It also seems that X has started having trouble refreshing itself so
+> sometimes new windows are invisible (especially with compiz).
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Ok, I'm a little happier that the hangcheck could be just another symptom
+of the problem...
 
-> On Thu, 2010-07-22 at 19:12 -0700, Venkatesh Pallipadi wrote:
-> > >
-> > > Well, the task and cgroup information is there but what does it really
-> > > tell me? As long as the irq & softirq time can be caused by any other
-> > > process I don't see the value of this incorrect data point.
-> > >
-> > 
-> > Data point will be correct. How it gets used is a different qn. This
-> > interface will be useful for Alert/Paranoid/Annoyed user/admin who
-> > sees that the job exec_time is high but it is not doing any useful
-> > work. 
-> 
-> I'm very sympathetic with Martin's POV. irq/softirq times per task 
-> don't really make sense. In the case you provide above the solution 
-> would be to subtract these times from the task execution time, not 
-> break it out. In that case he would see his task not do much, and end 
-> up with the same action list.
+I think it is safe to assume that the bug is in i915, so restricting the
+bisect to just drm seems plausible:
 
-Right, andthis connects to something Frederic sent a few RFC patches for 
-some time ago: finegrained irq/softirq perf stat support. If we do 
-something in this area we need a facility that enables both types of 
-statistics gathering.
+git bisect start drivers/gpu/drm
+git bisect good 2.6.36-rc1
+git bisect bad 2.6.36-rc2
 
-Frederic's model is based on exclusion - so you could do a perf stat run 
-that excluded softirq and hardirq execution from a workload's runtime. 
-It's nifty, as it allows the reduction of measurement noise. (IRQ and 
-softirq execution can be regarded as random noise added (or not added) 
-to execution times)
+And yes, it does apppear that the false detection rate for TV has changed.
+The suspicion is that the change to intel_wait_for_vblank() is actually
+causing issues here.
 
-Thanks,
-
-	Ingo
+-- 
+Chris Wilson, Intel Open Source Technology Centre
