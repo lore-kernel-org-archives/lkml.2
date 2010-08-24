@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807Ab0HXXPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:15:14 -0400
-Received: from kroah.org ([198.145.64.141]:41144 "EHLO coco.kroah.org"
+	id S933482Ab0HXXCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:02:33 -0400
+Received: from kroah.org ([198.145.64.141]:41058 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933497Ab0HXXCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:06 2010
-Message-Id: <20100824224506.381485275@clark.site>
+	id S933453Ab0HXXCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
+Message-Id: <20100824224505.444488024@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:04 -0700
+Date: Tue, 24 Aug 2010 15:44:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [059/114] sparc64: Fix atomic64_t routine return values.
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [048/114] dm snapshot: iterate origin and cow devices
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-From: David S. Miller <davem@davemloft.net>
+commit 1e5554c8428bc7209a83e2d07ca724be4d981ce3 upstream.
 
-[ Upstream commits 86fa04b8742ac681d470786f55e2403ada0075b2
-  and b10f997bb0f4e5b34d447f498fb85834a40d3acb ]
+Iterate both origin and snapshot devices
 
-Should return 'long' instead of 'int'.
+iterate_devices method should call the callback for all the devices where
+the bio may be remapped. Thus, snapshot_iterate_devices should call the callback
+for both snapshot and origin underlying devices because it remaps some bios
+to the snapshot and some to the origin.
 
-Thanks to Dimitris Michailidis and Tony Luck.
+snapshot_iterate_devices called the callback only for the origin device.
+This led to badly calculated device limits if snapshot and origin were placed
+on different types of disks.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Reviewed-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/include/asm/atomic_64.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/sparc/include/asm/atomic_64.h
-+++ b/arch/sparc/include/asm/atomic_64.h
-@@ -20,14 +20,14 @@
- #define atomic64_set(v, i)	(((v)->counter) = i)
- 
- extern void atomic_add(int, atomic_t *);
--extern void atomic64_add(int, atomic64_t *);
-+extern void atomic64_add(long, atomic64_t *);
- extern void atomic_sub(int, atomic_t *);
--extern void atomic64_sub(int, atomic64_t *);
-+extern void atomic64_sub(long, atomic64_t *);
- 
- extern int atomic_add_ret(int, atomic_t *);
--extern int atomic64_add_ret(int, atomic64_t *);
-+extern long atomic64_add_ret(long, atomic64_t *);
- extern int atomic_sub_ret(int, atomic_t *);
--extern int atomic64_sub_ret(int, atomic64_t *);
-+extern long atomic64_sub_ret(long, atomic64_t *);
- 
- #define atomic_dec_return(v) atomic_sub_ret(1, v)
- #define atomic64_dec_return(v) atomic64_sub_ret(1, v)
-@@ -91,7 +91,7 @@ static inline int atomic_add_unless(atom
- 	((__typeof__((v)->counter))cmpxchg(&((v)->counter), (o), (n)))
- #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
- 
--static inline int atomic64_add_unless(atomic64_t *v, long a, long u)
-+static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
+---
+ drivers/md/dm-snap.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/drivers/md/dm-snap.c
++++ b/drivers/md/dm-snap.c
+@@ -1899,8 +1899,14 @@ static int snapshot_iterate_devices(stru
+ 				    iterate_devices_callout_fn fn, void *data)
  {
- 	long c, old;
- 	c = atomic64_read(v);
+ 	struct dm_snapshot *snap = ti->private;
++	int r;
+ 
+-	return fn(ti, snap->origin, 0, ti->len, data);
++	r = fn(ti, snap->origin, 0, ti->len, data);
++
++	if (!r)
++		r = fn(ti, snap->cow, 0, get_dev_size(snap->cow->bdev), data);
++
++	return r;
+ }
+ 
+ 
 
 
