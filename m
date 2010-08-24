@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab0HXRWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:22:03 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48164 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab0HXRWB (ORCPT
+	id S932140Ab0HXR0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:26:00 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25166
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932081Ab0HXRZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:22:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kkkOxC3dCH0K1GehI0LfmwyM49zyxbzq+aFfryqx0zK4oEWmgcKEotYQoiAbvT0Fh4
-         32KunXCYL7Yx1vDMBbAroOPtrjDWQ73HH8k70sV2/DaJv2BOqfRJorErBkqagOWT3hcI
-         ycELKP+QZ8pWbh64qahao/jGu0XJRHcdCuMlg=
-Date: Tue, 24 Aug 2010 21:21:57 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+	Tue, 24 Aug 2010 13:25:58 -0400
+X-SpamScore: 2
+X-BigFish: VPS2(z3cfcs329eqzbb2cK1432N98dN4015Lzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L7O2ZJ-02-4I2-02
+X-M-MSG: 
+Date: Tue, 24 Aug 2010 19:15:05 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
         "fweisbec@gmail.com" <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
         Andi Kleen <andi@firstfloor.org>
 Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100824172157.GE5723@lenovo>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu> <20100824162252.GB5723@lenovo> <20100824170936.GH26154@erda.amd.com> <20100824172022.GD5723@lenovo>
+ perfctrs
+Message-ID: <20100824171504.GI26154@erda.amd.com>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100823085339.GA26713@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100824172022.GD5723@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100823085339.GA26713@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 09:20:22PM +0400, Cyrill Gorcunov wrote:
-> On Tue, Aug 24, 2010 at 07:09:36PM +0200, Robert Richter wrote:
-> > On 24.08.10 12:22:52, Cyrill Gorcunov wrote:
-> > > Btw, guys, I fail to see how new nmi_watchdog work, we have
-> > > default_do_nmi
-> > >   if (!(reason & 0xc0)) {
-> > >     if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == == NOTIFY_STOP)
-> > >       return
-> > >     if (nmi_watchdog_tick(regs, reason))
-> > >       return
-> > > 
-> > > but perf_event_nmi_handler returns NOTIFY_STOP when watchdog is perf event
-> > > and nmi_watchdog_tick _never_ called, or (most probably) I miss something?
-> > 
-> > The watchdog is disabled during profiling (perf and oprofile) by
-> > calling disable_lapic_nmi_watchdog().
-> > 
-> > -Robert
-> >
+On 23.08.10 04:53:39, Ingo Molnar wrote:
+> Ok, to not hold up the perf/urgent flow i zapped these two commits for 
+> the time being:
 > 
-> Huh? iirc Don have switched nmi watchdog to native perf subsystem, ie watchdog
-> uses PERF_COUNT_HW_CPU_CYCLES event, letme check...
->  
-> 	-- Cyrill
+>  4a31beb: perf, x86: Fix handle_irq return values
+>  8e3e42b: perf, x86: Try to handle unknown nmis with an enabled PMU
 
-False alarm, perf watchdog uses own handler. Sorry for noise ;)
+Ingo, are those commits in some branch to fetch them for testing? I
+did not find them in tip/master.
 
-	-- Cyrill
+Thanks,
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
