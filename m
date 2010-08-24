@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab0HXWj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:39:26 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:60910 "EHLO mail.vyatta.com"
+	id S1756230Ab0HXWqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:46:53 -0400
+Received: from kroah.org ([198.145.64.141]:59767 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753283Ab0HXWjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:39:24 -0400
-Date: Tue, 24 Aug 2010 15:39:20 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Marc Aurele La France <tsi@ualberta.ca>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-Message-ID: <20100824153920.63360072@s6510>
-In-Reply-To: <1282688441.22839.34.camel@localhost>
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca>
-	<20100823080543.319143e3@nehalam>
-	<alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
-	<1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
-	<alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
-	<1282688441.22839.34.camel@localhost>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755219Ab0HXWqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:46:48 -0400
+Date: Tue, 24 Aug 2010 15:46:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [0/8] 2.6.27.53-stable review
+Message-ID: <20100824224631.GA5458@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010 23:20:41 +0100
-Ben Hutchings <bhutchings@solarflare.com> wrote:
+This is the start of the stable review cycle for the 2.6.27.53 release.
+There are 8 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-> On Tue, 2010-08-24 at 13:49 -0600, Marc Aurele La France wrote:
-> > On Tue, 24 Aug 2010, Ben Hutchings wrote:
-> > > On Tue, 2010-08-24 at 09:14 -0600, Marc Aurele La France wrote:
-> > >> On Mon, 23 Aug 2010, Stephen Hemminger wrote:
-> > >>> On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
-> > >>> Marc Aurele La France <tsi@ualberta.ca> wrote:
-> > >>>> In regrouping for my next tack at this, I noticed that all stack traces go
-> > >>>> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
-> > >>>> A _very_ rough draft that would have ip_append_data() temporarily drop down
-> > >>>> to a smaller fake MTU follows ...
-> > 
-> > >>> Why doesn't NFS generate page size fragments?  Does Infiniband or your
-> > >>> device not support this?  Any thing that requires higher order allocation
-> > >>> is going to unstable under load.  Let's fix the cause not the apply bandaid
-> > >>> solution to the symptom.
-> > 
-> > >> From what I can tell, IP fragmentation is done centrally.
-> > > [...]
-> > 
-> > > Stephen and I are not talking about IP fragmentation, but about the
-> > > ability to append 'fragments' to an skb rather than putting the entire
-> > > packet payload in a linear buffer.  See
-> > > <http://vger.kernel.org/~davem/skb_data.html>.
-> > 
-> > Any payload has to either fit in the MTU, or has to be broken up into 
-> > MTU-sized (or less) fragments, come hell or high water.  That this is done 
-> > centrally is a good thing.
-> 
-> Not necessarily.  Offloading it to hardware, where possible, is usually
-> a performance win.
-> 
-> > It is the "(or less)" part that I am working towards here.
-> 
-> The inability to allocate large linear buffers is not a good reason to
-> generate packets smaller than the MTU.  You are working around the real
-> problem.
+Responses should be made by Thursday, August 26, 2010 22:00:00 UTC
+Anything received after that time might be too late.
 
-IF NFS server is smart enough to generate:
-   Header (skb) + one or more pages in fragment list
-then IP fragmentation could do fragmentation by allocating
-new headers skb (small) and assigning the same pages to
-multiple skb's using page ref count.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.53-rc1.gz
+and the diffstat can be found below.
 
-It obviously isn't working that way.
+thanks,
 
-The whole problem is moot because NFS over UDP has known data corruption
-issues in the face of packet loss.  The sequence number of the IP fragment
-can easily wrap around causing old data to be grouped with new data and
-the UDP checksum is so weak that the resulting UDP packet will be consumed by the NFS
-client ans passed to the user application as corrupted disk block.
+greg k-h
 
-DON'T USE NFS OVER UDP!
-
-
-
-
+ Makefile                      |   14 +++++++++++---
+ arch/arm/include/asm/ptrace.h |   17 +++++++++++++----
+ drivers/gpu/drm/drm_drv.c     |    4 +++-
+ drivers/usb/serial/io_ti.c    |    2 +-
+ drivers/usb/serial/navman.c   |    1 +
+ firmware/Makefile             |    2 +-
+ net/can/bcm.c                 |   38 +++++++++++++++++++++++++-------------
+ scripts/mkmakefile            |    4 +++-
+ security/selinux/hooks.c      |    2 +-
+ 9 files changed, 59 insertions(+), 25 deletions(-)
