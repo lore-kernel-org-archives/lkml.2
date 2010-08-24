@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934452Ab0HXXrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:47:47 -0400
-Received: from kroah.org ([198.145.64.141]:52072 "EHLO coco.kroah.org"
+	id S934464Ab0HXXrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:47:49 -0400
+Received: from kroah.org ([198.145.64.141]:52068 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756376Ab0HXWxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:34 -0400
+	id S1756370Ab0HXWxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:33 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:23 2010
-Message-Id: <20100824222523.357304306@clark.site>
+Message-Id: <20100824222523.266066196@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:23 -0700
+Date: Tue, 24 Aug 2010 15:24:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wengang Wang <wen.gang.wang@oracle.com>,
-        Srinivas Eeda <srinivas.eeda@oracle.com>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: [11/59] ocfs2/dlm: avoid incorrect bit set in refmap on recovery master
+        Tao Ma <tao.ma@oracle.com>, Joel Becker <joel.becker@oracle.com>
+Subject: [10/59] ocfs2: Count more refcount records in file system fragmentation.
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,118 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wengang Wang <wen.gang.wang@oracle.com>
+From: Tao Ma <tao.ma@oracle.com>
 
-commit a524812b7eaa7783d7811198921100f079034e61 upstream.
+commit 8a2e70c40ff58f82dde67770e6623ca45f0cb0c8 upstream.
 
-In the following situation, there remains an incorrect bit in refmap on the
-recovery master. Finally the recovery master will fail at purging the lockres
-due to the incorrect bit in refmap.
+The refcount record calculation in ocfs2_calc_refcount_meta_credits
+is too optimistic that we can always allocate contiguous clusters
+and handle an already existed refcount rec as a whole. Actually
+because of file system fragmentation, we may have the chance to split
+a refcount record into 3 parts during the transaction. So consider
+the worst case in record calculation.
 
-1) node A has no interest on lockres A any longer, so it is purging it.
-2) the owner of lockres A is node B, so node A is sending de-ref message
-to node B.
-3) at this time, node B crashed. node C becomes the recovery master. it recovers
-lockres A(because the master is the dead node B).
-4) node A migrated lockres A to node C with a refbit there.
-5) node A failed to send de-ref message to node B because it crashed. The failure
-is ignored. no other action is done for lockres A any more.
-
-For mormal, re-send the deref message to it to recovery master can fix it. Well,
-ignoring the failure of deref to the original master and not recovering the lockres
-to recovery master has the same effect. And the later is simpler.
-
-Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
-Acked-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
 Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/dlm/dlmrecovery.c |   22 ++++++++++------------
- fs/ocfs2/dlm/dlmthread.c   |   34 +++++++++++++++++++++-------------
- 2 files changed, 31 insertions(+), 25 deletions(-)
+ fs/ocfs2/refcounttree.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -1941,6 +1941,8 @@ void dlm_move_lockres_to_recovery_list(s
- 	struct list_head *queue;
- 	struct dlm_lock *lock, *next;
- 
-+	assert_spin_locked(&dlm->spinlock);
-+	assert_spin_locked(&res->spinlock);
- 	res->state |= DLM_LOCK_RES_RECOVERING;
- 	if (!list_empty(&res->recovering)) {
- 		mlog(0,
-@@ -2265,19 +2267,15 @@ static void dlm_do_local_recovery_cleanu
- 			/* zero the lvb if necessary */
- 			dlm_revalidate_lvb(dlm, res, dead_node);
- 			if (res->owner == dead_node) {
--				if (res->state & DLM_LOCK_RES_DROPPING_REF)
--					mlog(0, "%s:%.*s: owned by "
--					     "dead node %u, this node was "
--					     "dropping its ref when it died. "
--					     "continue, dropping the flag.\n",
--					     dlm->name, res->lockname.len,
--					     res->lockname.name, dead_node);
--
--				/* the wake_up for this will happen when the
--				 * RECOVERING flag is dropped later */
--				res->state &= ~DLM_LOCK_RES_DROPPING_REF;
-+				if (res->state & DLM_LOCK_RES_DROPPING_REF) {
-+					mlog(ML_NOTICE, "Ignore %.*s for "
-+					     "recovery as it is being freed\n",
-+					     res->lockname.len,
-+					     res->lockname.name);
-+				} else
-+					dlm_move_lockres_to_recovery_list(dlm,
-+									  res);
- 
--				dlm_move_lockres_to_recovery_list(dlm, res);
- 			} else if (res->owner == dlm->node_num) {
- 				dlm_free_dead_locks(dlm, res, dead_node);
- 				__dlm_lockres_calc_usage(dlm, res);
---- a/fs/ocfs2/dlm/dlmthread.c
-+++ b/fs/ocfs2/dlm/dlmthread.c
-@@ -93,19 +93,27 @@ int __dlm_lockres_has_locks(struct dlm_l
-  * truly ready to be freed. */
- int __dlm_lockres_unused(struct dlm_lock_resource *res)
- {
--	if (!__dlm_lockres_has_locks(res) &&
--	    (list_empty(&res->dirty) && !(res->state & DLM_LOCK_RES_DIRTY))) {
--		/* try not to scan the bitmap unless the first two
--		 * conditions are already true */
--		int bit = find_next_bit(res->refmap, O2NM_MAX_NODES, 0);
--		if (bit >= O2NM_MAX_NODES) {
--			/* since the bit for dlm->node_num is not
--			 * set, inflight_locks better be zero */
--			BUG_ON(res->inflight_locks != 0);
--			return 1;
--		}
--	}
--	return 0;
-+	int bit;
-+
-+	if (__dlm_lockres_has_locks(res))
-+		return 0;
-+
-+	if (!list_empty(&res->dirty) || res->state & DLM_LOCK_RES_DIRTY)
-+		return 0;
-+
-+	if (res->state & DLM_LOCK_RES_RECOVERING)
-+		return 0;
-+
-+	bit = find_next_bit(res->refmap, O2NM_MAX_NODES, 0);
-+	if (bit < O2NM_MAX_NODES)
-+		return 0;
-+
-+	/*
-+	 * since the bit for dlm->node_num is not set, inflight_locks better
-+	 * be zero
-+	 */
-+	BUG_ON(res->inflight_locks != 0);
-+	return 1;
- }
- 
- 
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -2454,16 +2454,26 @@ static int ocfs2_calc_refcount_meta_cred
+ 		len = min((u64)cpos + clusters, le64_to_cpu(rec.r_cpos) +
+ 			  le32_to_cpu(rec.r_clusters)) - cpos;
+ 		/*
+-		 * If the refcount rec already exist, cool. We just need
+-		 * to check whether there is a split. Otherwise we just need
+-		 * to increase the refcount.
+-		 * If we will insert one, increases recs_add.
+-		 *
+ 		 * We record all the records which will be inserted to the
+ 		 * same refcount block, so that we can tell exactly whether
+ 		 * we need a new refcount block or not.
++		 *
++		 * If we will insert a new one, this is easy and only happens
++		 * during adding refcounted flag to the extent, so we don't
++		 * have a chance of spliting. We just need one record.
++		 *
++		 * If the refcount rec already exists, that would be a little
++		 * complicated. we may have to:
++		 * 1) split at the beginning if the start pos isn't aligned.
++		 *    we need 1 more record in this case.
++		 * 2) split int the end if the end pos isn't aligned.
++		 *    we need 1 more record in this case.
++		 * 3) split in the middle because of file system fragmentation.
++		 *    we need 2 more records in this case(we can't detect this
++		 *    beforehand, so always think of the worst case).
+ 		 */
+ 		if (rec.r_refcount) {
++			recs_add += 2;
+ 			/* Check whether we need a split at the beginning. */
+ 			if (cpos == start_cpos &&
+ 			    cpos != le64_to_cpu(rec.r_cpos))
 
 
