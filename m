@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab0HXLKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 07:10:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48567 "EHLO mx1.redhat.com"
+	id S1755000Ab0HXLKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 07:10:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58712 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab0HXLKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754756Ab0HXLKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Aug 2010 07:10:33 -0400
 From: Avi Kivity <avi@redhat.com>
 To: x86@kernel.org, kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] KVM: x86 emulator: add macros for executing instructions that may trap
-Date: Tue, 24 Aug 2010 14:10:28 +0300
-Message-Id: <1282648229-19575-3-git-send-email-avi@redhat.com>
+Subject: [PATCH 3/3] KVM: x86 emulator: trap and propagate #DE from DIV and IDIV
+Date: Tue, 24 Aug 2010 14:10:29 +0300
+Message-Id: <1282648229-19575-4-git-send-email-avi@redhat.com>
 In-Reply-To: <1282648229-19575-1-git-send-email-avi@redhat.com>
 References: <1282648229-19575-1-git-send-email-avi@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like DIV and IDIV.
-
 Signed-off-by: Avi Kivity <avi@redhat.com>
 ---
- arch/x86/kvm/emulate.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+ arch/x86/kvm/emulate.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 808934c..f82e43a 100644
+index f82e43a..a7e26d0 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -331,6 +331,27 @@ struct group_dual {
- 			  "a" (_rax), "d" (_rdx));			\
- 	} while (0)
+@@ -505,6 +505,12 @@ static void emulate_ts(struct x86_emulate_ctxt *ctxt, int err)
+ 	emulate_exception(ctxt, TS_VECTOR, err, true);
+ }
  
-+#define __emulate_1op_rax_rdx_ex(_op, _src, _rax, _rdx, _eflags, _suffix, _ex) \
-+	do {								\
-+		unsigned long _tmp;					\
-+									\
-+		__asm__ __volatile__ (					\
-+			_PRE_EFLAGS("0", "5", "1")			\
-+			"1: \n\t"					\
-+			_op _suffix " %6; "				\
-+			"2: \n\t"					\
-+			_POST_EFLAGS("0", "5", "1")			\
-+			".pushsection .fixup,\"ax\" \n\t"		\
-+			"3: movb $1, %4 \n\t"				\
-+			"jmp 2b \n\t"					\
-+			".popsection \n\t"				\
-+			_ASM_EXTABLE(1b, 3b)				\
-+			: "=m" (_eflags), "=&r" (_tmp),			\
-+			  "+a" (_rax), "+d" (_rdx), "+qm"(_ex)		\
-+			: "i" (EFLAGS_MASK), "m" ((_src).val),		\
-+			  "a" (_rax), "d" (_rdx));			\
-+	} while (0)
++static int emulate_de(struct x86_emulate_ctxt *ctxt)
++{
++	emulate_exception(ctxt, DE_VECTOR, 0, false);
++	return X86EMUL_PROPAGATE_FAULT;
++}
 +
- /* instruction has only one source operand, destination is implicit (e.g. mul, div, imul, idiv) */
- #define emulate_1op_rax_rdx(_op, _src, _rax, _rdx, _eflags)			\
- 	do {									\
-@@ -342,6 +363,28 @@ struct group_dual {
- 		}							\
- 	} while (0)
+ static int do_fetch_insn_byte(struct x86_emulate_ctxt *ctxt,
+ 			      struct x86_emulate_ops *ops,
+ 			      unsigned long eip, u8 *dest)
+@@ -1459,6 +1465,7 @@ static inline int emulate_grp3(struct x86_emulate_ctxt *ctxt,
+ 	struct decode_cache *c = &ctxt->decode;
+ 	unsigned long *rax = &c->regs[VCPU_REGS_RAX];
+ 	unsigned long *rdx = &c->regs[VCPU_REGS_RDX];
++	u8 de = 0;
  
-+#define emulate_1op_rax_rdx_ex(_op, _src, _rax, _rdx, _eflags, _ex)	\
-+	do {								\
-+		switch((_src).bytes) {					\
-+		case 1:							\
-+			__emulate_1op_rax_rdx_ex(_op, _src, _rax, _rdx,	\
-+						 _eflags, "b", _ex);	\
-+			break;						\
-+		case 2:							\
-+			__emulate_1op_rax_rdx_ex(_op, _src, _rax, _rdx, \
-+						 _eflags, "w", _ex);	\
-+			break;						\
-+		case 4:							\
-+			__emulate_1op_rax_rdx_ex(_op, _src, _rax, _rdx, \
-+						 _eflags, "l", _ex);	\
-+			break;						\
-+		case 8: ON64(						\
-+			__emulate_1op_rax_rdx_ex(_op, _src, _rax, _rdx, \
-+						 _eflags, "q", _ex));	\
-+			break;						\
-+		}							\
-+	} while (0)
-+
- /* Fetch next part of the instruction being emulated. */
- #define insn_fetch(_type, _size, _eip)                                  \
- ({	unsigned long _x;						\
+ 	switch (c->modrm_reg) {
+ 	case 0 ... 1:	/* test */
+@@ -1477,14 +1484,18 @@ static inline int emulate_grp3(struct x86_emulate_ctxt *ctxt,
+ 		emulate_1op_rax_rdx("imul", c->src, *rax, *rdx, ctxt->eflags);
+ 		break;
+ 	case 6: /* div */
+-		emulate_1op_rax_rdx("div", c->src, *rax, *rdx, ctxt->eflags);
++		emulate_1op_rax_rdx_ex("div", c->src, *rax, *rdx,
++				       ctxt->eflags, de);
+ 		break;
+ 	case 7: /* idiv */
+-		emulate_1op_rax_rdx("idiv", c->src, *rax, *rdx, ctxt->eflags);
++		emulate_1op_rax_rdx_ex("idiv", c->src, *rax, *rdx,
++				       ctxt->eflags, de);
+ 		break;
+ 	default:
+ 		return X86EMUL_UNHANDLEABLE;
+ 	}
++	if (de)
++		return emulate_de(ctxt);
+ 	return X86EMUL_CONTINUE;
+ }
+ 
+@@ -3363,7 +3374,7 @@ special_insn:
+ 		break;
+ 	case 0xf6 ... 0xf7:	/* Grp3 */
+ 		if (emulate_grp3(ctxt, ops) != X86EMUL_CONTINUE)
+-			goto cannot_emulate;
++			goto done;
+ 		break;
+ 	case 0xf8: /* clc */
+ 		ctxt->eflags &= ~EFLG_CF;
 -- 
 1.7.1
 
