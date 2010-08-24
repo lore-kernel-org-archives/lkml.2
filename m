@@ -1,206 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab0HXU5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 16:57:20 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:40480 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755899Ab0HXU5S (ORCPT
+	id S1756022Ab0HXU6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:58:07 -0400
+Received: from smtp-good-out-2.t-2.net ([84.255.208.44]:47466 "EHLO
+	smtp-good-out-2.t-2.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755496Ab0HXU6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 16:57:18 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: hn6FCGkVM1luHhGfi9h6Yf9O084F.vdi3gmIC_JfUAZZg4H
- hOMnGKZ7DVcr0sOJ_.gNFH6xCaXkDONppBtPGKGyErAf7CnCC_ng8UlBCXJm
- 0UhOi5cjl3V1FSDhwYX83vSbHfY14PRJC3l2fmjSOiVMTGC8mAJh.JEIv6IV
- gw.OR8_DMU_xbnfw_DH86Am7.d03O3_z02giIVq_5KSW.d0o8HyvFMVn7zYJ
- 1Pn09N4838Lbpx5zYZGr154xV4UGMMme7yll3mbCaLV1NxegEb92rwCTracl
- sW_PNciOA4VN3Y0hXoAXNuWqvCaXqbXjTw.PS0nfSa0JJMSVbfac8Owww
-X-Yahoo-Newman-Property: ymail-3
-Subject: tcm: Add Documentation/target/tcm_mod_builder.py script and
-	mini-HOWTO
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Joel Becker <joel.becker@oracle.com>
+	Tue, 24 Aug 2010 16:58:05 -0400
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: linux kernel <linux-kernel@vger.kernel.org>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+In-Reply-To: <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
+References: <1273918658.2341.17.camel@itpsd6lap>
+	 <1275171436.2122.29.camel@itpsd6lap>
+	 <20100529235402.296406d9@lxorguk.ukuu.org.uk>
+	 <1275175983.2122.42.camel@itpsd6lap> <1276123020.16010.97.camel@itpsd6lap>
+	 <20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	 <1276291932.2154.45.camel@itpsd6lap>
+	 <20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	 <1277244410.2195.47.camel@itpsd6lap>
+	 <20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+	 <1277462596.2143.101.camel@itpsd6lap>
+	 <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
 Content-Type: text/plain
-Date: Tue, 24 Aug 2010 13:53:27 -0700
-Message-Id: <1282683207.32007.40.camel@haakon2.linux-iscsi.org>
+Date: Tue, 24 Aug 2010 22:57:50 +0200
+Message-Id: <1282683470.8020.66.camel@itpsd6lap>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings all,
+On 25.06.2010 (Fri) at 12:03 +0100 Alan Cox wrote: 
+> With my devices.txt owner hat on I'll allocate the minor as you suggest
+> (and double check this causes no problems), with my tty hat on can you
+> send it to GregKH for merging into the tree.
 
-The initial commit for the new tcm_mod_builder.py script has been pushed
-into lio-core-2.6.git/lio-4.0!  Included is a brief mini-HOWTO as to how
-the TCM fabric module generation logic actually functions, and what is
-currently supported.  I thought instead of spamming the kernel lists
-with 1K LOC of python for actually generating *new* TCM kernel fabric
-modules, it might be easier to post the HOWTO to the list and a gitweb
-URL of the script itself for those interested parties here:
+Hi,
 
-http://www.kernel.org/pub/linux/kernel/people/nab/Documentation/target/tcm_mod_builder.py
+I hope that this TTY driver is ok for merging. It is very basic -
+removed all flow control and rate limiting. Patch has been generated
+against 2.6.34 kernel version.
 
-So after a single day of python coding things are working remarkably
-well, so far I am able to generate functioning ConfigFS skeletons with
-proper target_core_fabric_lib.c Transport / WWPN handlers, eg:
-multi-fabric transitional SPC-3 PR and ALUA (configfs attributes
-included) that work right out of the box.
+Ttyprintk is a pseudo TTY driver, which allows users to make printk messages,
+via output to ttyprintk device. It is possible to store "console" messages
+inline with kernel messages for better analyses of the boot process, for
+example.
 
-There are are a list of remaining TODO items at the bottom of the doc,
-but I hope that people will actually give this script a shot and see for
-themselves how easy the generation of new configfs code for TCM fabric
-modules can really be!
-
-Comments are welcome, Enjoy!
-
---nab
-
->>>>>>>>>> The TCM v4 fabric module script generator <<<<<<<<<<
-
-Greetings all,
-
-This document is intended to be a mini-HOWTO for using the tcm_mod_builder.py
-script to generate a brand new functional TCM v4 fabric .ko module of your very own,
-that once built can be immediately be loaded to start access the new TCM/ConfigFS
-fabric skeleton, by simplying using:
-
-        modprobe $TCM_NEW_MOD
-        mkdir -p /sys/kernel/config/target/$TCM_NEW_MOD
-
-This script will create a new drivers/target/$TCM_NEW_MOD/, and will do the following
-
-        *) Generate new API callers for drivers/target/target_core_fabric_configs.c logic
-           ->make_nodeacl(), ->drop_nodeacl(), ->make_tpg(), ->drop_tpg()
-           ->make_wwn(), ->drop_wwn().  These are created into $TCM_NEW_MOD/$TCM_NEW_MOD_configfs.c
-        *) Generate basic infrastructure for loading/unloading LKMs and TCM/ConfigFS fabric module
-           using a skeleton struct target_core_fabric_ops API template.
-        *) Based on user defined T10 Proto_Ident for the new fabric module being built,
-           the TransportID / Initiator and Target WWPN related handlers for
-           SPC-3 persistent reservation are automatically generated in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-           using drivers/target/target_core_fabric_lib.c logic.
-        *) NOP API calls for all other Data I/O path and fabric dependent attribute logic
-           in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-
-So far the generation of new functional ConfigFS skeletons supports for FC,
-SAS and iSCSI proto_idents, which is defined at the top of tcm_mod_builder.py:main().
-Once proto_ident is selected in main(), and the handful of other global variables at top
-of tcm_mod_builder.py are correct, actually running the script looks like:
-
-target:/mnt/sdb/lio-core-2.6.git/Documentation/target# ./tcm_mod_builder.py
-Writing file:
-/mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000/tcm_nab5000_base.h
-Using tcm_mod_scan_fabric_ops:
-/mnt/sdb/lio-core-2.6.git/include/target/target_core_fabric_ops.h
-Writing file:
-/mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000/tcm_nab5000_fabric.c
-Writing file:
-/mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000/tcm_nab5000_fabric.h
-Writing file:
-/mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000/tcm_nab5000_configfs.c
-Writing file: /mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000/Kbuild
-Writing file: /mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000/Kconfig
-
-*) Edit drivers/target/Kbuild and drivers/target/Kconfig before compling
-
-Add the following line to Kbuild for the newly generated fabric module:
-
-        obj-$(CONFIG_TCM_NAB5000)       += tcm_nab5000/
-
-and the same for Kconfig:
-
-        source "drivers/target/tcm_nab5000/Kconfig"
-
-*) Build using 'make modules', once completed you will have:
-
-target:/mnt/sdb/lio-core-2.6.git# ls -la drivers/target/tcm_nab5000/
-total 1292
-drwxr-xr-x 2 root root   4096 2010-08-24 12:49 .
-drwxr-xr-x 9 root root   4096 2010-08-24 12:10 ..
--rw-r--r-- 1 root root      8 2010-08-24 12:26 built-in.o
--rw-r--r-- 1 root root    136 2010-08-24 12:26 .built-in.o.cmd
--rw-r--r-- 1 root root    282 2010-08-24 13:06 Kbuild
--rw-r--r-- 1 root root    171 2010-08-24 13:06 Kconfig
--rw-r--r-- 1 root root     49 2010-08-24 12:49 modules.order
--rw-r--r-- 1 root root    738 2010-08-24 13:06 tcm_nab5000_base.h
--rw-r--r-- 1 root root   9096 2010-08-24 13:06 tcm_nab5000_configfs.c
--rw-r--r-- 1 root root 172584 2010-08-24 12:48 tcm_nab5000_configfs.o
--rw-r--r-- 1 root root  38842 2010-08-24 12:48 .tcm_nab5000_configfs.o.cmd
--rw-r--r-- 1 root root   5414 2010-08-24 13:06 tcm_nab5000_fabric.c
--rw-r--r-- 1 root root   2016 2010-08-24 13:06 tcm_nab5000_fabric.h
--rw-r--r-- 1 root root 187244 2010-08-24 12:48 tcm_nab5000_fabric.o
--rw-r--r-- 1 root root  40195 2010-08-24 12:48 .tcm_nab5000_fabric.o.cmd
--rw-r--r-- 1 root root 379449 2010-08-24 12:49 tcm_nab5000.ko
--rw-r--r-- 1 root root    264 2010-08-24 12:49 .tcm_nab5000.ko.cmd
--rw-r--r-- 1 root root    459 2010-08-24 12:49 tcm_nab5000.mod.c
--rw-r--r-- 1 root root  23780 2010-08-24 12:49 tcm_nab5000.mod.o
--rw-r--r-- 1 root root  22475 2010-08-24 12:49 .tcm_nab5000.mod.o.cmd
--rw-r--r-- 1 root root 356722 2010-08-24 12:48 tcm_nab5000.o
--rw-r--r-- 1 root root    211 2010-08-24 12:48 .tcm_nab5000.o.cmd
-
-*) Load the new module, create a lun_0 configfs group, and add new TCM Core
-   IBLOCK backstore symlink to port:
-
-target:/mnt/sdb/lio-core-2.6.git# insmod drivers/target/tcm_nab5000.ko
-target:/mnt/sdb/lio-core-2.6.git# mkdir -p /sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0
-target:/mnt/sdb/lio-core-2.6.git# cd /sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0/
-target:/sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0# ln -s /sys/kernel/config/target/core/iblock_0/lvm_test0 nab5000_port
-
-target:/sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0# cd -
-target:/mnt/sdb/lio-core-2.6.git# tree /sys/kernel/config/target/nab5000/
-/sys/kernel/config/target/nab5000/
-|-- discovery_auth
-|-- iqn.foo
-|   `-- tpgt_1
-|       |-- acls
-|       |-- attrib
-|       |-- lun
-|       |   `-- lun_0
-|       |       |-- alua_tg_pt_gp
-|       |       |-- alua_tg_pt_offline
-|       |       |-- alua_tg_pt_status
-|       |       |-- alua_tg_pt_write_md
-|       |       `-- nab5000_port -> ../../../../../../target/core/iblock_0/lvm_test0
-|       |-- np
-|       `-- param
-`-- version
-
-target:/mnt/sdb/lio-core-2.6.git# lsmod
-Module                  Size  Used by
-tcm_nab5000             3923  4
-iscsi_target_mod      189925  1
-tcm_loop               13173  5
-target_core_stgt        8049  0
-target_core_pscsi      10472  1
-target_core_file        7175  2
-target_core_iblock      8164  2
-target_core_mod       209392  44
-tcm_nab5000,iscsi_target_mod,tcm_loop,target_core_stgt,target_core_pscsi,target_core_file,target_core_iblock
-scsi_debug             56768  1
-scsi_tgt                8658  1 target_core_stgt
-configfs               20660  2 target_core_mod
-
-----------------------------------------------------------------------
-
-Future TODO items:
-
-        *) Make global variables in tcm_mod_builder.py accessable as parameters
-        *) Add more T10 proto_idents
-        *) Make tcm_mod_dump_fabric_ops() smater and generate function pointer
-           defs directly from include/target/target_core_fabric_ops.h:struct target_core_fabric_ops
-           structure members.
-        *) Make it optional to add drivers/target/K[build,config] lines in
-           order to build new module
-
-August 24th, 2010
-Nicholas A. Bellinger <nab@linux-iscsi.org>
+regards, Samo
+---
+Signed-off-by: Samo Pogacnik <samo_pogacnik@t-2.net>
+diff --git a_linux/Documentation/devices.txt b_linux/Documentation/devices.txt
+index 53d64d3..71aef33 100644
+--- a_linux/Documentation/devices.txt
++++ b_linux/Documentation/devices.txt
+@@ -239,6 +239,7 @@ Your cooperation is appreciated.
+ 		  0 = /dev/tty		Current TTY device
+ 		  1 = /dev/console	System console
+ 		  2 = /dev/ptmx		PTY master multiplex
++		  3 = /dev/ttyprintk	User messages via printk TTY device
+ 		 64 = /dev/cua0		Callout device for ttyS0
+ 		    ...
+ 		255 = /dev/cua191	Callout device for ttyS191
+diff --git a_linux/drivers/char/Kconfig b_linux/drivers/char/Kconfig
+index 3141dd3..5c38a06 100644
+--- a_linux/drivers/char/Kconfig
++++ b_linux/drivers/char/Kconfig
+@@ -485,6 +485,20 @@ config LEGACY_PTY_COUNT
+ 	  When not in use, each legacy PTY occupies 12 bytes on 32-bit
+ 	  architectures and 24 bytes on 64-bit architectures.
+ 
++config TTY_PRINTK
++	bool "TTY driver to output user messages via printk"
++	default n
++	---help---
++	  If you say Y here, the support for writing user messages (i.e.
++	  console messages) via printk is available.
++
++	  The feature is useful to inline user messages with kernel
++	  messages.
++	  In order to use this feature, you should output user messages
++	  to /dev/ttyprintk or redirect console to this TTY.
++
++	  If unsure, say N.
++
+ config BRIQ_PANEL
+ 	tristate 'Total Impact briQ front panel driver'
+ 	depends on PPC_CHRP
+diff --git a_linux/drivers/char/Makefile b_linux/drivers/char/Makefile
+index f957edf..ed60f45 100644
+--- a_linux/drivers/char/Makefile
++++ b_linux/drivers/char/Makefile
+@@ -11,6 +11,7 @@ obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o t
+ 
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
++obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
+ obj-y				+= misc.o
+ obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
+ obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+diff --git a_linux/drivers/char/ttyprintk.c b_linux/drivers/char/ttyprintk.c
+new file mode 100644
+index 0000000..c40c161
+--- /dev/null
++++ b_linux/drivers/char/ttyprintk.c
+@@ -0,0 +1,225 @@
++/*
++ *  linux/drivers/char/ttyprintk.c
++ *
++ *  Copyright (C) 2010  Samo Pogacnik
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the smems of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ */
++
++/*
++ * This pseudo device allows user to make printk messages. It is possible
++ * to store "console" messages inline with kernel messages for better analyses
++ * of the boot process, for example.
++ */
++
++#include <linux/device.h>
++#include <linux/serial.h>
++#include <linux/tty.h>
++
++struct ttyprintk_port {
++	struct tty_port port;
++	struct mutex port_write_mutex;
++};
++
++static struct ttyprintk_port tpk_port;
++
++/*
++ * Our simple preformatting supports transparent output of (time-stamped)
++ * printk messages (also suitable for logging service):
++ * - any cr is replaced by nl
++ * - adds a ttyprintk source tag in front of each line
++ * - too long message is fragmeted, with '\'nl between fragments
++ * - TPK_STR_SIZE isn't really the write_room limiting factor, bcause
++ *   it is emptied on the fly during preformatting.
++ */
++#define TPK_STR_SIZE 508 /* should be bigger then max expected line length */
++#define TPK_MAX_ROOM 4096 /* we could assume 4K for instance */
++static const char *tpk_tag = "[U] "; /* U for User */
++static int tpk_curr;
++
++static int tpk_printk(const unsigned char *buf, int count)
++{
++	static char tmp[TPK_STR_SIZE + 4];
++	int i = tpk_curr;
++
++	if (buf == NULL) {
++		/* flush tmp[] */
++		if (tpk_curr > 0) {
++			/* non nl or cr terminated message - add nl */
++			tmp[tpk_curr + 0] = '\n';
++			tmp[tpk_curr + 1] = '\0';
++			printk(KERN_INFO "%s%s", tpk_tag, tmp);
++			tpk_curr = 0;
++		}
++		return i;
++	}
++
++	for (i = 0; i < count; i++) {
++		tmp[tpk_curr] = buf[i];
++		if (tpk_curr < TPK_STR_SIZE) {
++			switch (buf[i]) {
++			case '\r':
++				/* replace cr with nl */
++				tmp[tpk_curr + 0] = '\n';
++				tmp[tpk_curr + 1] = '\0';
++				printk(KERN_INFO "%s%s", tpk_tag, tmp);
++				tpk_curr = 0;
++				if (buf[i + 1] == '\n')
++					i++;
++				break;
++			case '\n':
++				tmp[tpk_curr + 1] = '\0';
++				printk(KERN_INFO "%s%s", tpk_tag, tmp);
++				tpk_curr = 0;
++				break;
++			default:
++				tpk_curr++;
++			}
++		} else {
++			/* end of tmp buffer reached: cut the message in two */
++			tmp[tpk_curr + 1] = '\\';
++			tmp[tpk_curr + 2] = '\n';
++			tmp[tpk_curr + 3] = '\0';
++			printk(KERN_INFO "%s%s", tpk_tag, tmp);
++			tpk_curr = 0;
++		}
++	}
++
++	return count;
++}
++
++/*
++ * TTY operations open function.
++ */
++static int tpk_open(struct tty_struct *tty, struct file *filp)
++{
++	tty->driver_data = &tpk_port;
++
++	return tty_port_open(&tpk_port.port, tty, filp);
++}
++
++/*
++ * TTY operations close function.
++ */
++static void tpk_close(struct tty_struct *tty, struct file *filp)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++
++	mutex_lock(&tpkp->port_write_mutex);
++	/* flush tpk_printk buffer */
++	tpk_printk(NULL, 0);
++	mutex_unlock(&tpkp->port_write_mutex);
++
++	tty_port_close(&tpkp->port, tty, filp);
++}
++
++/*
++ * TTY operations write function.
++ */
++static int tpk_write(struct tty_struct *tty,
++		const unsigned char *buf, int count)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++	int ret;
++
++
++	/* exclusive use of tpk_printk within this tty */
++	mutex_lock(&tpkp->port_write_mutex);
++	ret = tpk_printk(buf, count);
++	mutex_unlock(&tpkp->port_write_mutex);
++
++	return ret;
++}
++
++/*
++ * TTY operations write_room function.
++ */
++static int tpk_write_room(struct tty_struct *tty)
++{
++	return TPK_MAX_ROOM;
++}
++
++/*
++ * TTY operations ioctl function.
++ */
++static int tpk_ioctl(struct tty_struct *tty, struct file *file,
++			unsigned int cmd, unsigned long arg)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++
++	if (!tpkp)
++		return -EINVAL;
++
++	switch (cmd) {
++	/* Stop TIOCCONS */
++	case TIOCCONS:
++		return -EOPNOTSUPP;
++	default:
++		return -ENOIOCTLCMD;
++	}
++	return 0;
++}
++
++static const struct tty_operations ttyprintk_ops = {
++	.open = tpk_open,
++	.close = tpk_close,
++	.write = tpk_write,
++	.write_room = tpk_write_room,
++	.ioctl = tpk_ioctl,
++};
++
++struct tty_port_operations null_ops = { };
++
++static struct tty_driver *ttyprintk_driver;
++
++static int __init ttyprintk_init(void)
++{
++	int ret = -ENOMEM;
++	void *rp;
++
++	ttyprintk_driver = alloc_tty_driver(1);
++	if (!ttyprintk_driver)
++		return ret;
++
++	ttyprintk_driver->owner = THIS_MODULE;
++	ttyprintk_driver->driver_name = "ttyprintk";
++	ttyprintk_driver->name = "ttyprintk";
++	ttyprintk_driver->major = TTYAUX_MAJOR;
++	ttyprintk_driver->minor_start = 3;
++	ttyprintk_driver->num = 1;
++	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
++	ttyprintk_driver->init_termios = tty_std_termios;
++	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
++	ttyprintk_driver->flags = TTY_DRIVER_RESET_TERMIOS |
++		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
++	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
++
++	ret = tty_register_driver(ttyprintk_driver);
++	if (ret < 0) {
++		printk(KERN_ERR "Couldn't register ttyprintk driver\n");
++		goto error;
++	}
++
++	/* create our unnumbered device */
++	rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
++				ttyprintk_driver->name);
++	if (IS_ERR(rp)) {
++		printk(KERN_ERR "Couldn't create ttyprintk device\n");
++		ret = PTR_ERR(rp);
++		goto error;
++	}
++
++	tty_port_init(&tpk_port.port);
++	tpk_port.port.ops = &null_ops;
++	mutex_init(&tpk_port.port_write_mutex);
++
++	return 0;
++
++error:
++	put_tty_driver(ttyprintk_driver);
++	ttyprintk_driver = NULL;
++	return ret;
++}
++module_init(ttyprintk_init);
 
 
