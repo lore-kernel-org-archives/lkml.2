@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab0HXVKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 17:10:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40276 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755637Ab0HXVKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 17:10:38 -0400
-Date: Tue, 24 Aug 2010 14:10:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: Samo Pogacnik <samo_pogacnik@t-2.net>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-Message-ID: <20100824211016.GA7176@suse.de>
-References: <1275175983.2122.42.camel@itpsd6lap>
- <1276123020.16010.97.camel@itpsd6lap>
- <20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
- <1276291932.2154.45.camel@itpsd6lap>
- <20100621153858.444695c0@lxorguk.ukuu.org.uk>
- <1277244410.2195.47.camel@itpsd6lap>
- <20100622232108.26752ff8@lxorguk.ukuu.org.uk>
- <1277462596.2143.101.camel@itpsd6lap>
- <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
- <1282683470.8020.66.camel@itpsd6lap>
+	id S1755877Ab0HXVRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 17:17:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34125 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755932Ab0HXVRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 17:17:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QEM2KS1lPmkYdGtvq93hzcO0LbQ9YTe4ZE+orAZKNWOMM+1YoXO9KhfKLar4zpd7dM
+         Dmo8VCmZVEXT4AyNHq3elq40ZY7pTqp8JAGENqiBDeV/8JB9OIttfHhFxI8nP+8waHLT
+         W/bP5Pke5+XWZBhOIe/xnbfc93J1mVDsjvfNs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282683470.8020.66.camel@itpsd6lap>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <496565EC904933469F292DDA3F1663E602F0FA39BA@dlee06.ent.ti.com>
+References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
+	<1277943660-4112-2-git-send-email-x0095840@ti.com>
+	<1277943660-4112-3-git-send-email-x0095840@ti.com>
+	<1277943660-4112-4-git-send-email-x0095840@ti.com>
+	<1277943660-4112-5-git-send-email-x0095840@ti.com>
+	<1277943660-4112-6-git-send-email-x0095840@ti.com>
+	<1277943660-4112-7-git-send-email-x0095840@ti.com>
+	<1277943660-4112-8-git-send-email-x0095840@ti.com>
+	<1277943660-4112-9-git-send-email-x0095840@ti.com>
+	<8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
+	<496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
+	<8F7AF80515AF0D4D93307E594F3CB40E4CAD39F6@dlee03.ent.ti.com>
+	<496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
+	<AANLkTimENxUjUWJQSZ1dmdkX_9hQ0pjat-kyR9oNjVxf@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA3883@dlee06.ent.ti.com>
+	<AANLkTi=NuPu6bvv6KF7sXRp02bvfz7oRkG1SG1PstA-H@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA397F@dlee06.ent.ti.com>
+	<AANLkTinaJ=xn_CAJznVtMcA0nwK_-gbo05OQKM7PuoYA@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA3995@dlee06.ent.ti.com>
+	<AANLkTinjMujus-28DcLzZ+16GAGpLohwhPhuTi5uKhB8@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA39BA@dlee06.ent.ti.com>
+Date: Wed, 25 Aug 2010 00:17:50 +0300
+Message-ID: <AANLkTikQCTtwOkAmt3PZrOkxi=VzJtfNKGsH=YXawt9t@mail.gmail.com>
+Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 10:57:50PM +0200, Samo Pogacnik wrote:
-> On 25.06.2010 (Fri) at 12:03 +0100 Alan Cox wrote: 
-> > With my devices.txt owner hat on I'll allocate the minor as you suggest
-> > (and double check this causes no problems), with my tty hat on can you
-> > send it to GregKH for merging into the tree.
-> 
-> Hi,
-> 
-> I hope that this TTY driver is ok for merging. It is very basic -
-> removed all flow control and rate limiting. Patch has been generated
-> against 2.6.34 kernel version.
-> 
-> Ttyprintk is a pseudo TTY driver, which allows users to make printk messages,
-> via output to ttyprintk device. It is possible to store "console" messages
-> inline with kernel messages for better analyses of the boot process, for
-> example.
+On Tue, Aug 24, 2010 at 10:30 PM, Guzman Lugo, Fernando
+<fernando.lugo@ti.com> wrote:
+>> Oh, I actually meant the DMM pool.
+>>
+>> a) 1. Migrate to iommu, 2. Remove DMM completely
+>> b) 1. Remove DMM pool, 2. Migrate to iommu 3. Remove DMM completely
+>
+> Ok, what is the issue with DMM pool?
 
-Why does this need to be a tty driver?  Why not a misc device?
+>From what I've heard; fragmentation.
 
-And what about the normal way of just writing to /dev/kmsg to do this?
-Why a whole new driver for this same functionality?
+> The issue I see removing DMM pool in this moment and making all the DMM
+> Available (from 0x11000000 to 0xFFFFFFFF omap3 case) that is:
+>
+> The DMM module allocates a list of "struct map_page" elements base on
+> DMM_POOL_SIZE to keep track of memory reserved and mapped.
+>
+> Memory allocated = DMM_POOL_SIZE / PAGE_SIZE * sizeof(struct map_page);
+>
+> So making all memory avalible it will increase the memory used for DMM
+> Module and it could be quite significant.
+>
+> Iovmm.c module, the list is increased dynamically when it is needed so
+> It does no have that problem. Then when the migration is done and
+> Iovmm.c module is used the DMM_POOL_SIZE can be removed without issues.
 
-confused,
+It seems that this "memory allocated" you are taking about is an
+array, but what we would like is a list, like apparently iovmm is
+using. I think I can give that a try if needed.
 
-greg k-h
+However, from what I can see iovmm can be used instead of dmm even if
+the switch to iommu is not yet there.
+
+-- 
+Felipe Contreras
