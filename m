@@ -1,103 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab0HXTFT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 15:05:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54866 "EHLO arroyo.ext.ti.com"
+	id S1755252Ab0HXTGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 15:06:37 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36863 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661Ab0HXTFQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 15:05:16 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Date: Tue, 24 Aug 2010 14:05:13 -0500
-Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Topic: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Index: ActDveHcPkKL5eXsQbyO/EpIjkWjwAAAOygA
-Message-ID: <496565EC904933469F292DDA3F1663E602F0FA3995@dlee06.ent.ti.com>
-References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
-	<1277943660-4112-2-git-send-email-x0095840@ti.com>
-	<1277943660-4112-3-git-send-email-x0095840@ti.com>
-	<1277943660-4112-4-git-send-email-x0095840@ti.com>
-	<1277943660-4112-5-git-send-email-x0095840@ti.com>
-	<1277943660-4112-6-git-send-email-x0095840@ti.com>
-	<1277943660-4112-7-git-send-email-x0095840@ti.com>
-	<1277943660-4112-8-git-send-email-x0095840@ti.com>
-	<1277943660-4112-9-git-send-email-x0095840@ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD39F6@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
-	<AANLkTimENxUjUWJQSZ1dmdkX_9hQ0pjat-kyR9oNjVxf@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F0FA3883@dlee06.ent.ti.com>
-	<AANLkTi=NuPu6bvv6KF7sXRp02bvfz7oRkG1SG1PstA-H@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F0FA397F@dlee06.ent.ti.com>
- <AANLkTinaJ=xn_CAJznVtMcA0nwK_-gbo05OQKM7PuoYA@mail.gmail.com>
-In-Reply-To: <AANLkTinaJ=xn_CAJznVtMcA0nwK_-gbo05OQKM7PuoYA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753138Ab0HXTGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 15:06:35 -0400
+Date: Tue, 24 Aug 2010 21:06:20 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20100824190620.GA7636@elte.hu>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
+
+Please pull the latest perf-fixes-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Arjan van de Ven (1):
+      tracing: Fix timer tracing
+
+Peter Zijlstra (1):
+      watchdog: Don't throttle the watchdog
+
+
+ include/trace/events/timer.h |    8 ++++++--
+ kernel/watchdog.c            |    3 +++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/include/trace/events/timer.h b/include/trace/events/timer.h
+index c624126..425bcfe 100644
+--- a/include/trace/events/timer.h
++++ b/include/trace/events/timer.h
+@@ -81,14 +81,16 @@ TRACE_EVENT(timer_expire_entry,
+ 	TP_STRUCT__entry(
+ 		__field( void *,	timer	)
+ 		__field( unsigned long,	now	)
++		__field( void *,	function)
+ 	),
  
-
-> -----Original Message-----
-> From: Felipe Contreras [mailto:felipe.contreras@gmail.com] 
-> Sent: Tuesday, August 24, 2010 1:55 PM
-> To: Guzman Lugo, Fernando
-> Cc: Kanigeri, Hari; linux-omap@vger.kernel.org; 
-> linux-kernel@vger.kernel.org; ohad@wizery.com; 
-> hiroshi.doyu@nokia.com; ameya.palande@nokia.com; 
-> felipe.contreras@nokia.com
-> Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
-> 
-> On Tue, Aug 24, 2010 at 9:44 PM, Guzman Lugo, Fernando 
-> <fernando.lugo@ti.com> wrote:
-> >> However, I still have the question about the dependency on iommu; 
-> >> AFAICS the DMM removal doesn't depend on the migration to iommu, 
-> >> which AFAIK has been stalled for some time.
-> >
-> > Yeah, DMM removal does not depend on iommu migration. 
-> However, After 
-> > the changes for iommu migration the DMM module is not 
-> Needed anymore, 
-> > so it is better to remove it too.
-> 
-> Yes, but there are two options:
-> 
-> a) 1. Migrate to iommu, 2. Remove DMM
-> 
-> or:
-> 
-> b) 1. Remove DMM, 2. Migrate to iommu
-> 
-> I've heard there are some problems regarding DMM, and since 
-> you say you have already done the changes, and since iommu 
-> migration is not yet ready AFAIK, it might make sense to go 
-> for option b).
-> 
-> Anyway, thanks for the clarification :)
-
-But DMM is used in this momment, it is after the IOMMU migration
-When DMM is not needed anymore. So we need to go for option a).
-
-Regards,
-Fernando.
-
-> 
-> --
-> Felipe Contreras
-> 
+ 	TP_fast_assign(
+ 		__entry->timer		= timer;
+ 		__entry->now		= jiffies;
++		__entry->function	= timer->function;
+ 	),
+ 
+-	TP_printk("timer=%p now=%lu", __entry->timer, __entry->now)
++	TP_printk("timer=%p function=%pf now=%lu", __entry->timer, __entry->function,__entry->now)
+ );
+ 
+ /**
+@@ -200,14 +202,16 @@ TRACE_EVENT(hrtimer_expire_entry,
+ 	TP_STRUCT__entry(
+ 		__field( void *,	hrtimer	)
+ 		__field( s64,		now	)
++		__field( void *,	function)
+ 	),
+ 
+ 	TP_fast_assign(
+ 		__entry->hrtimer	= hrtimer;
+ 		__entry->now		= now->tv64;
++		__entry->function	= hrtimer->function;
+ 	),
+ 
+-	TP_printk("hrtimer=%p now=%llu", __entry->hrtimer,
++	TP_printk("hrtimer=%p function=%pf now=%llu", __entry->hrtimer, __entry->function,
+ 		  (unsigned long long)ktime_to_ns((ktime_t) { .tv64 = __entry->now }))
+  );
+ 
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 613bc1f..0d53c8e 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -206,6 +206,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 		 struct perf_sample_data *data,
+ 		 struct pt_regs *regs)
+ {
++	/* Ensure the watchdog never gets throttled */
++	event->hw.interrupts = 0;
++
+ 	if (__get_cpu_var(watchdog_nmi_touch) == true) {
+ 		__get_cpu_var(watchdog_nmi_touch) = false;
+ 		return;
