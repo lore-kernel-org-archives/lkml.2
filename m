@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934232Ab0HXXeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:34:36 -0400
-Received: from kroah.org ([198.145.64.141]:40416 "EHLO coco.kroah.org"
+	id S934245Ab0HXXeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:34:50 -0400
+Received: from kroah.org ([198.145.64.141]:40411 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932497Ab0HXW6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:49 -0400
+	id S932907Ab0HXW6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:47 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:15 2010
-Message-Id: <20100824224215.340430899@clark.site>
+Message-Id: <20100824224215.257144673@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:00 -0700
+Date: Tue, 24 Aug 2010 15:41:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Patrick LoPresti <lopresti@gmail.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [38/91] dm mpath: fix NULL pointer dereference when path parameters missing
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>
+Subject: [37/91] drm/i915/edp: Flush the write before waiting for PLLs
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +25,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alasdair G Kergon <agk@redhat.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 6bbf79a14080a0c61212f53b4b87dc1a99fedf9c upstream.
+commit 5ddb954b9ee50824977d2931e0ff58b3050b337d upstream.
 
-multipath_ctr() forgets to return an error after detecting
-missing path parameters.  Fix this.
-
-Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-mpath.c |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -706,6 +706,7 @@ static struct priority_group *parse_prio
- 
- 		if (as->argc < nr_params) {
- 			ti->error = "not enough path parameters";
-+			r = -EINVAL;
- 			goto bad;
- 		}
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -1470,6 +1470,7 @@ static void ironlake_enable_pll_edp (str
+ 	dpa_ctl = I915_READ(DP_A);
+ 	dpa_ctl |= DP_PLL_ENABLE;
+ 	I915_WRITE(DP_A, dpa_ctl);
++	POSTING_READ(DP_A);
+ 	udelay(200);
+ }
  
 
 
