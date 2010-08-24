@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab0HXXBe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:01:34 -0400
-Received: from kroah.org ([198.145.64.141]:40857 "EHLO coco.kroah.org"
+	id S933341Ab0HXXBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:01:41 -0400
+Received: from kroah.org ([198.145.64.141]:40872 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933291Ab0HXXB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:26 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:02 2010
-Message-Id: <20100824224502.764686320@clark.site>
+	id S933299Ab0HXXBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:03 2010
+Message-Id: <20100824224502.939023191@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:22 -0700
+Date: Tue, 24 Aug 2010 15:44:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wengang Wang <wen.gang.wang@oracle.com>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: [017/114] ocfs2/dlm: remove potential deadlock -V3
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [019/114] nilfs2: fix list corruption after ifile creation failure
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wengang Wang <wen.gang.wang@oracle.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit b11f1f1ab73fd358b1b734a9427744802202ba68 upstream.
+commit af4e36318edb848fcc0a8d5f75000ca00cdc7595 upstream.
 
-When we need to take both dlm_domain_lock and dlm->spinlock, we should take
-them in order of: dlm_domain_lock then dlm->spinlock.
+If nilfs_attach_checkpoint() gets a memory allocation failure during
+creation of ifile, it will return without removing nilfs_sb_info
+struct from ns_supers list.  When a concurrently mounted snapshot is
+unmounted or another new snapshot is mounted after that, this causes
+kernel oops as below:
 
-There is pathes disobey this order. That is calling dlm_lockres_put() with
-dlm->spinlock held in dlm_run_purge_list. dlm_lockres_put() calls dlm_put() at
-the ref and dlm_put() locks on dlm_domain_lock.
+> BUG: unable to handle kernel NULL pointer dereference at (null)
+> IP: [<f83662ff>] nilfs_find_sbinfo+0x74/0xa4 [nilfs2]
+> *pde = 00000000
+> Oops: 0000 [#1] SMP
+<snip>
+> Call Trace:
+>  [<f835dc29>] ? nilfs_get_sb+0x165/0x532 [nilfs2]
+>  [<c1173c87>] ? ida_get_new_above+0x16d/0x187
+>  [<c109a7f8>] ? alloc_vfsmnt+0x7e/0x10a
+>  [<c1070790>] ? kstrdup+0x2c/0x40
+>  [<c1089041>] ? vfs_kern_mount+0x96/0x14e
+>  [<c108913d>] ? do_kern_mount+0x32/0xbd
+>  [<c109b331>] ? do_mount+0x642/0x6a1
+>  [<c101a415>] ? do_page_fault+0x0/0x2d1
+>  [<c1099c00>] ? copy_mount_options+0x80/0xe2
+>  [<c10705d8>] ? strndup_user+0x48/0x67
+>  [<c109b3f1>] ? sys_mount+0x61/0x90
+>  [<c10027cc>] ? sysenter_do_call+0x12/0x22
 
-Fix:
-Don't grab/put the dlm when the initialising/releasing lockres.
-That grab is not required because we don't call dlm_unregister_domain()
-based on refcount.
+This fixes the problem.
 
-Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/dlm/dlmmaster.c |    4 ----
- 1 file changed, 4 deletions(-)
+ fs/nilfs2/super.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/ocfs2/dlm/dlmmaster.c
-+++ b/fs/ocfs2/dlm/dlmmaster.c
-@@ -511,8 +511,6 @@ static void dlm_lockres_release(struct k
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@ -336,9 +336,10 @@ int nilfs_attach_checkpoint(struct nilfs
+ 	list_add(&sbi->s_list, &nilfs->ns_supers);
+ 	up_write(&nilfs->ns_super_sem);
  
- 	atomic_dec(&dlm->res_cur_count);
++	err = -ENOMEM;
+ 	sbi->s_ifile = nilfs_ifile_new(sbi, nilfs->ns_inode_size);
+ 	if (!sbi->s_ifile)
+-		return -ENOMEM;
++		goto delist;
  
--	dlm_put(dlm);
--
- 	if (!hlist_unhashed(&res->hash_node) ||
- 	    !list_empty(&res->granted) ||
- 	    !list_empty(&res->converting) ||
-@@ -585,8 +583,6 @@ static void dlm_init_lockres(struct dlm_
- 	res->migration_pending = 0;
- 	res->inflight_locks = 0;
+ 	down_read(&nilfs->ns_segctor_sem);
+ 	err = nilfs_cpfile_get_checkpoint(nilfs->ns_cpfile, cno, 0, &raw_cp,
+@@ -369,6 +370,7 @@ int nilfs_attach_checkpoint(struct nilfs
+ 	nilfs_mdt_destroy(sbi->s_ifile);
+ 	sbi->s_ifile = NULL;
  
--	/* put in dlm_lockres_release */
--	dlm_grab(dlm);
- 	res->dlm = dlm;
- 
- 	kref_init(&res->refs);
++ delist:
+ 	down_write(&nilfs->ns_super_sem);
+ 	list_del_init(&sbi->s_list);
+ 	up_write(&nilfs->ns_super_sem);
 
 
