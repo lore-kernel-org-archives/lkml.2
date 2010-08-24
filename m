@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933923Ab0HXXRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:17:41 -0400
-Received: from kroah.org ([198.145.64.141]:41048 "EHLO coco.kroah.org"
+	id S933934Ab0HXXSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:18:06 -0400
+Received: from kroah.org ([198.145.64.141]:41040 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933430Ab0HXXCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:13 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
-Message-Id: <20100824224505.005332069@clark.site>
+	id S933422Ab0HXXCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
+Message-Id: <20100824224504.914485894@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:48 -0700
+Date: Tue, 24 Aug 2010 15:44:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Sauerbeck <tilman@code-monkey.de>,
-        Brian Norris <norris@broadcom.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [043/114] mtd: nand: Fix probe of Samsung NAND chips
+        Ondrej Zary <linux@rainbow-software.org>,
+        Brian Gerst <brgerst@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [042/114] matroxfb: fix incorrect use of memcpy_toio()
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Sauerbeck <tilman@code-monkey.de>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit cfe3fdadb16162327773ef01a575a32000b8c7f4 upstream.
+commit c81476df1b4241aefba4ff83a7701b3a926bd7ce upstream.
 
-Apparently, the check for a 6-byte ID string introduced by commit
-426c457a3216fac74e3d44dd39729b0689f4c7ab ("mtd: nand: extend NAND flash
-detection to new MLC chips") is NOT sufficient to determine whether or
-not a Samsung chip uses their new MLC detection scheme or the old,
-standard scheme. This adds a condition to check cell type.
+Screen is completely corrupted since 2.6.34.  Bisection revealed that it's
+caused by commit 6175ddf06b61720 ("x86: Clean up mem*io functions.").
 
-Signed-off-by: Tilman Sauerbeck <tilman@code-monkey.de>
-Signed-off-by: Brian Norris <norris@broadcom.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+H.  Peter Anvin explained that memcpy_toio() does not copy data in 32bit
+chunks anymore on x86.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Cc: Brian Gerst <brgerst@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Petr Vandrovec <vandrove@vc.cvut.cz>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/nand/nand_base.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/video/matrox/matroxfb_base.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2852,6 +2852,7 @@ static struct nand_flash_dev *nand_get_f
- 		 */
- 		if (id_data[0] == id_data[6] && id_data[1] == id_data[7] &&
- 				id_data[0] == NAND_MFR_SAMSUNG &&
-+				(chip->cellinfo & NAND_CI_CELLTYPE_MSK) &&
- 				id_data[5] != 0x00) {
- 			/* Calc pagesize */
- 			mtd->writesize = 2048 << (extid & 0x03);
+--- a/drivers/video/matrox/matroxfb_base.h
++++ b/drivers/video/matrox/matroxfb_base.h
+@@ -151,13 +151,13 @@ static inline void mga_writel(vaddr_t va
+ static inline void mga_memcpy_toio(vaddr_t va, const void* src, int len) {
+ #if defined(__alpha__) || defined(__i386__) || defined(__x86_64__)
+ 	/*
+-	 * memcpy_toio works for us if:
++	 * iowrite32_rep works for us if:
+ 	 *  (1) Copies data as 32bit quantities, not byte after byte,
+ 	 *  (2) Performs LE ordered stores, and
+ 	 *  (3) It copes with unaligned source (destination is guaranteed to be page
+ 	 *      aligned and length is guaranteed to be multiple of 4).
+ 	 */
+-	memcpy_toio(va.vaddr, src, len);
++	iowrite32_rep(va.vaddr, src, len >> 2);
+ #else
+         u_int32_t __iomem* addr = va.vaddr;
+ 
 
 
