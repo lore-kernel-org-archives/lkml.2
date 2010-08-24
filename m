@@ -1,46 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab0HXA7B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 20:59:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12114 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592Ab0HXA66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 20:58:58 -0400
-Message-ID: <4C731949.4010207@redhat.com>
-Date: Mon, 23 Aug 2010 14:58:49 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1754029Ab0HXA7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 20:59:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51303 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753966Ab0HXA7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 20:59:17 -0400
+Message-ID: <4C731A8D.2010402@cn.fujitsu.com>
+Date: Tue, 24 Aug 2010 09:04:13 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 11/35] Add helper functions for time computation
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-12-git-send-email-zamsden@redhat.com> <20100820173440.GF2937@mothafucka.localdomain>
-In-Reply-To: <20100820173440.GF2937@mothafucka.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Josef Bacik <josef@redhat.com>
+CC: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] btrfs: check mergeable free space when removing a
+ cluster
+References: <4C71CD4B.10606@cn.fujitsu.com> <4C71CDB7.6000602@cn.fujitsu.com> <20100823131504.GE2404@localhost.localdomain>
+In-Reply-To: <20100823131504.GE2404@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2010 07:34 AM, Glauber Costa wrote:
-> On Thu, Aug 19, 2010 at 10:07:25PM -1000, Zachary Amsden wrote:
->    
->> Add a helper function to compute the kernel time and convert nanoseconds
->> back to CPU specific cycles.  Note that these must not be called in preemptible
->> context, as that would mean the kernel could enter software suspend state,
->> which would cause non-atomic operation.
+Josef Bacik wrote:
+> On Mon, Aug 23, 2010 at 09:24:07AM +0800, Li Zefan wrote:
+>> After returing extents from a cluster to the block group, some
+>> extents in the block group may be mergeable.
 >>
->> Also, convert the KVM_SET_CLOCK / KVM_GET_CLOCK ioctls to use the kernel
->> time helper, these should be bootbased as well.
->>      
-> This is one of the things I believe should be applied right now.
-> Maybe we want a cut version of this patch, that exposes this API while
-> adjusting KVM_SET_CLOCK / KVM_GET_CLOCK to get in early rather than late?
->    
+>> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+>> ---
+>>  fs/btrfs/free-space-cache.c |   26 ++++++++++++++++++++------
+>>  1 files changed, 20 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+>> index faeec8f..c11f4f7 100644
+>> --- a/fs/btrfs/free-space-cache.c
+>> +++ b/fs/btrfs/free-space-cache.c
+>> @@ -234,11 +234,18 @@ tree_search_offset(struct btrfs_block_group_cache *block_group,
+>>  	return entry;
+>>  }
+>>  
+>> -static void unlink_free_space(struct btrfs_block_group_cache *block_group,
+>> -			      struct btrfs_free_space *info)
+>> +static inline void
+>> +__unlink_free_space(struct btrfs_block_group_cache *block_group,
+>> +		    struct btrfs_free_space *info)
+>>  {
+>>  	rb_erase(&info->offset_index, &block_group->free_space_offset);
+>>  	block_group->free_extents--;
+>> +}
+>> +
+>> +static void unlink_free_space(struct btrfs_block_group_cache *block_group,
+>> +			      struct btrfs_free_space *info)
+>> +{
+>> +	__unlink_free_space(block_group, info);
+>>  	block_group->free_space -= info->bytes;
+>>  }
+>>  
+>> @@ -611,7 +618,7 @@ out:
+>>  }
+>>  
+>>  bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
+>> -			  struct btrfs_free_space *info)
+>> +			  struct btrfs_free_space *info, bool update_stat)
+>>  {
+>>  	struct btrfs_free_space *left_info;
+>>  	struct btrfs_free_space *right_info;
+>> @@ -632,7 +639,10 @@ bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
+>>  		left_info = tree_search_offset(block_group, offset - 1, 0, 0);
+>>  
+>>  	if (right_info && !right_info->bitmap) {
+>> -		unlink_free_space(block_group, right_info);
+>> +		if (update_stat)
+>> +			unlink_free_space(block_group, right_info);
+>> +		else
+>> +			__unlink_free_space(block_group, right_info);
+>>  		info->bytes += right_info->bytes;
+>>  		kfree(right_info);
+>>  		merged = true;
+>> @@ -640,7 +650,10 @@ bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
+>>  
+>>  	if (left_info && !left_info->bitmap &&
+>>  	    left_info->offset + left_info->bytes == offset) {
+>> -		unlink_free_space(block_group, left_info);
+>> +		if (update_stat)
+>> +			unlink_free_space(block_group, left_info);
+>> +		else
+>> +			__unlink_free_space(block_group, left_info);
+>>  		info->offset = left_info->offset;
+>>  		info->bytes += left_info->bytes;
+>>  		kfree(left_info);
+>> @@ -665,7 +678,7 @@ int btrfs_add_free_space(struct btrfs_block_group_cache *block_group,
+>>  
+>>  	spin_lock(&block_group->tree_lock);
+>>  
+>> -	if (try_merge_free_space(block_group, info))
+>> +	if (try_merge_free_space(block_group, info, true))
+>>  		goto link;
+>>  
+>>  	/*
+>> @@ -883,6 +896,7 @@ __btrfs_return_cluster_to_free_space(
+>>  		node = rb_next(&entry->offset_index);
+>>  		rb_erase(&entry->offset_index, &cluster->root);
+>>  		BUG_ON(entry->bitmap);
+>> +		try_merge_free_space(block_group, entry, false);
+>>  		tree_insert_offset(&block_group->free_space_offset,
+>>  				   entry->offset, &entry->offset_index, 0);
+> 
+> It's early in the morning here, so forgive me if I'm missing something obvious,
+> but if try_merge_free_space() succeeds here, then won't tree_insert_offset()
+> then add an entry that overlaps the same spot?  Should we do something like
+> 
+> merged = try_merge_free_space();
+> if (!merged)
+> 	tree_insert_offset();
+> 
+> ?  Thanks,
+> 
 
-The first half of the series, at least, is good to go upstream and ready 
-for backport.  The trapping and later stuff obviously needs to get some 
-upstream testing.
+In try_merge_free_space() we try to merge the left and right entry into
+@entry, and then the caller has to insert the @entry into the tree by
+itself.
+
+Similarly, In btrfs_add_free_space() we call link_free_space() no matter
+try_merge_free_space() returns success or not.
