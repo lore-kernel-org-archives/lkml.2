@@ -1,359 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab0HXHb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:31:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45766 "EHLO mx1.redhat.com"
+	id S1752331Ab0HXHd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:33:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47924 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128Ab0HXHbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 03:31:55 -0400
-Date: Tue, 24 Aug 2010 10:31:21 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 04/12] Provide special async page fault handler when
- async PF capability is detected
-Message-ID: <20100824073121.GW10499@redhat.com>
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
- <1279553462-7036-5-git-send-email-gleb@redhat.com>
- <4C729865.3050409@redhat.com>
+	id S1751862Ab0HXHdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 03:33:53 -0400
+Date: Tue, 24 Aug 2010 09:33:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@amd64.org>, Joerg Roedel <joro@8bytes.org>,
+        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Initial working version (Re: [PATCH 1/2] x86-32: Fix crashes with
+ CPU hotplug on AMD machines)
+Message-ID: <20100824073344.GA4793@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
+	Joerg Roedel <joro@8bytes.org>,
+	"Roedel, Joerg" <Joerg.Roedel@amd.com>,
+	"mingo@elte.hu" <mingo@elte.hu>,
+	"tglx@linutronix.de" <tglx@linutronix.de>,
+	"Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+	"Seidel, Conny" <Conny.Seidel@amd.com>,
+	"Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+	"greg@kroah.com" <greg@kroah.com>,
+	"x86@kernel.org" <x86@kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1280940316-7966-1-git-send-email-bp@amd64.org>
+ <1280940316-7966-2-git-send-email-bp@amd64.org>
+ <4C59F24B.1010702@zytor.com>
+ <20100805074503.GI18307@amd.com>
+ <4C5AC736.20903@zytor.com>
+ <20100812144142.GY23755@8bytes.org>
+ <4C64148D.5080305@zytor.com>
+ <20100812154756.GD2070@aftab>
+ <4C6417AB.1050105@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4C729865.3050409@redhat.com>
+In-Reply-To: <4C6417AB.1050105@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 06:48:53PM +0300, Avi Kivity wrote:
->  On 07/19/2010 06:30 PM, Gleb Natapov wrote:
-> >When async PF capability is detected hook up special page fault handler
-> >that will handle async page fault events and bypass other page faults to
-> >regular page fault handler.
-> >
-> >Acked-by: Rik van Riel<riel@redhat.com>
-> >Signed-off-by: Gleb Natapov<gleb@redhat.com>
-> >---
-> >  arch/x86/include/asm/kvm_para.h |    3 +
-> >  arch/x86/include/asm/traps.h    |    1 +
-> >  arch/x86/kernel/entry_32.S      |   10 +++
-> >  arch/x86/kernel/entry_64.S      |    3 +
-> >  arch/x86/kernel/kvm.c           |  170 +++++++++++++++++++++++++++++++++++++++
-> >  5 files changed, 187 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> >index f1662d7..edf07cf 100644
-> >--- a/arch/x86/include/asm/kvm_para.h
-> >+++ b/arch/x86/include/asm/kvm_para.h
-> >@@ -65,6 +65,9 @@ struct kvm_mmu_op_release_pt {
-> >  	__u64 pt_phys;
-> >  };
-> >
-> >+#define KVM_PV_REASON_PAGE_NOT_PRESENT 1
-> >+#define KVM_PV_REASON_PAGE_READY 2
-> >+
-> >  struct kvm_vcpu_pv_apf_data {
-> >  	__u32 reason;
-> >  	__u32 enabled;
-> >diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-> >index f66cda5..0310da6 100644
-> >--- a/arch/x86/include/asm/traps.h
-> >+++ b/arch/x86/include/asm/traps.h
-> >@@ -30,6 +30,7 @@ asmlinkage void segment_not_present(void);
-> >  asmlinkage void stack_segment(void);
-> >  asmlinkage void general_protection(void);
-> >  asmlinkage void page_fault(void);
-> >+asmlinkage void async_page_fault(void);
-> >  asmlinkage void spurious_interrupt_bug(void);
-> >  asmlinkage void coprocessor_error(void);
-> >  asmlinkage void alignment_check(void);
-> >diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> >index cd49141..95e13da 100644
-> >--- a/arch/x86/kernel/entry_32.S
-> >+++ b/arch/x86/kernel/entry_32.S
-> >@@ -1494,6 +1494,16 @@ ENTRY(general_protection)
-> >  	CFI_ENDPROC
-> >  END(general_protection)
-> >
-> >+#ifdef CONFIG_KVM_GUEST
-> >+ENTRY(async_page_fault)
-> >+	RING0_EC_FRAME
-> >+	pushl $do_async_page_fault
-> >+	CFI_ADJUST_CFA_OFFSET 4
-> >+	jmp error_code
-> >+	CFI_ENDPROC
-> >+END(apf_page_fault)
-> >+#endif
-> >+
-> >  /*
-> >   * End of kprobes section
-> >   */
-> >diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> >index 0697ff1..65c3eb6 100644
-> >--- a/arch/x86/kernel/entry_64.S
-> >+++ b/arch/x86/kernel/entry_64.S
-> >@@ -1346,6 +1346,9 @@ errorentry xen_stack_segment do_stack_segment
-> >  #endif
-> >  errorentry general_protection do_general_protection
-> >  errorentry page_fault do_page_fault
-> >+#ifdef CONFIG_KVM_GUEST
-> >+errorentry async_page_fault do_async_page_fault
-> >+#endif
-> >  #ifdef CONFIG_X86_MCE
-> >  paranoidzeroentry machine_check *machine_check_vector(%rip)
-> >  #endif
-> >diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> >index 5177dd1..a6db92e 100644
-> >--- a/arch/x86/kernel/kvm.c
-> >+++ b/arch/x86/kernel/kvm.c
-> >@@ -29,8 +29,14 @@
-> >  #include<linux/hardirq.h>
-> >  #include<linux/notifier.h>
-> >  #include<linux/reboot.h>
-> >+#include<linux/hash.h>
-> >+#include<linux/sched.h>
-> >+#include<linux/slab.h>
-> >+#include<linux/kprobes.h>
-> >  #include<asm/timer.h>
-> >  #include<asm/cpu.h>
-> >+#include<asm/traps.h>
-> >+#include<asm/desc.h>
-> >
-> >  #define MMU_QUEUE_SIZE 1024
-> >
-> >@@ -54,6 +60,158 @@ static void kvm_io_delay(void)
-> >  {
-> >  }
-> >
-> >+#define KVM_TASK_SLEEP_HASHBITS 8
-> >+#define KVM_TASK_SLEEP_HASHSIZE (1<<KVM_TASK_SLEEP_HASHBITS)
-> >+
-> >+struct kvm_task_sleep_node {
-> >+	struct hlist_node link;
-> >+	wait_queue_head_t wq;
-> >+	u32 token;
-> >+	int cpu;
-> >+};
-> >+
-> >+static struct kvm_task_sleep_head {
-> >+	spinlock_t lock;
-> >+	struct hlist_head list;
-> >+} async_pf_sleepers[KVM_TASK_SLEEP_HASHSIZE];
-> >+
-> >+static struct kvm_task_sleep_node *_find_apf_task(struct kvm_task_sleep_head *b,
-> >+						  u64 token)
-> 
-> u64 token?
-> 
-Should be u32. Will fix.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, Aug 12, 2010 at 08:47:55AM -0700
 
-> >+{
-> >+	struct hlist_node *p;
-> >+
-> >+	hlist_for_each(p,&b->list) {
-> >+		struct kvm_task_sleep_node *n =
-> >+			hlist_entry(p, typeof(*n), link);
-> >+		if (n->token == token)
-> >+			return n;
+> > I've been working on what you suggested and the patch boots on a 32-bit
+> > PAE kernel but keeps rebooting on non-PAE after setting the stack_start
+> > on the AP. I could send it out later for you to look at, if you like -
+> > you should be able to spot what I'm missing :)...
+> > 
 > 
-> Do you need to match cpu here as well?  Or is token globally unique?
-Tokens are globally unique.
+> Sounds good.  This is obviously .37-or-higher material.
 
-> 
-> Perhaps we should make it locally unique to remove a requirement
-> from the host to synchronize?  I haven't seen how you generate it
-> yet.
-Host does not need to synchronize to generate globally unique token
-since vcpu id is part of a token.
+Ok, here we go, the version below boots a !PAE and a PAE kernel fine
+in kvm. The approach taken is, IMHO, the least intrusive in trying
+to touch code assuming swapper_pg_dir as little as possible and use
+initial_page_table for boot/acpi sleep/reboot only.
 
-> 
-> >+	}
-> >+
-> >+	return NULL;
-> >+}
-> >+
-> >+static void apf_task_wait(struct task_struct *tsk, u32 token)
-> >+{
-> >+	u32 key = hash_32(token, KVM_TASK_SLEEP_HASHBITS);
-> >+	struct kvm_task_sleep_head *b =&async_pf_sleepers[key];
-> >+	struct kvm_task_sleep_node n, *e;
-> >+	DEFINE_WAIT(wait);
-> >+
-> >+	spin_lock(&b->lock);
-> >+	e = _find_apf_task(b, token);
-> >+	if (e) {
-> >+		/* dummy entry exist ->  wake up was delivered ahead of PF */
-> >+		hlist_del(&e->link);
-> >+		kfree(e);
-> >+		spin_unlock(&b->lock);
-> >+		return;
-> >+	}
-> >+
-> >+	n.token = token;
-> >+	n.cpu = smp_processor_id();
-> 
-> What's the meaning of cpu?  Won't the waiter migrate to other cpus?
-Waiter cannot migrate to other cpu since it is sleeping. It may be
-scheduled to run on any cpu when it will be waked.
+For example, paths like init_memory_mapping ->
+kernel_physical_mapping_init -> ... which fill in the kernel mappings
+into swapper_pg_dir are left unchanged by switching to swapper_pg_dir
+at the beginning of setup_arch() BTW, I guess this could be done even
+earlier since I copy the mappings from initial_page_table so there's no
+difference between the two at the switch point.
 
-> Can apf_task_wait() start on a different cpu than the one we got our
-> apf on?
-No. It is called directly from exception handler.
+Later, after paging_init(), synching back all swapper_pg_dir changes
+into initial_page_table is done for the APs to boot and have a stack
+mapping in the initial_page_table so that they don't pagefault into a
+triple fault (this was the problem with the previous version, btw.)
 
-> 
-> >+	init_waitqueue_head(&n.wq);
-> >+	hlist_add_head(&n.link,&b->list);
-> >+	spin_unlock(&b->lock);
-> >+
-> >+	for (;;) {
-> >+		prepare_to_wait(&n.wq,&wait, TASK_UNINTERRUPTIBLE);
-> 
-> In theory we could make it interruptible if it's in user context.
-> The signal could arrive before the page and we could handle it.  Not
-> worth the complexity I think (having a wakeup with no task to wake).
-> 
-> The user might be confused why they have uninterruptible tasks and
-> no disk load, but more than likely they're confused already, so no
-> big loss.
-> 
-> >+		if (hlist_unhashed(&n.link))
-> >+			break;
-> >+		schedule();
-> >+	}
-> >+	finish_wait(&n.wq,&wait);
-> >+
-> >+	return;
-> >+}
-> >+
-> >+static void apf_task_wake_one(struct kvm_task_sleep_node *n)
-> >+{
-> >+	hlist_del_init(&n->link);
-> >+	if (waitqueue_active(&n->wq))
-> >+		wake_up(&n->wq);
-> >+}
-> >+
-> >+static void apf_task_wake(u32 token)
-> >+{
-> >+	u32 key = hash_32(token, KVM_TASK_SLEEP_HASHBITS);
-> >+	struct kvm_task_sleep_head *b =&async_pf_sleepers[key];
-> >+	struct kvm_task_sleep_node *n;
-> >+
-> >+again:
-> >+	spin_lock(&b->lock);
-> >+	n = _find_apf_task(b, token);
-> >+	if (!n) {
-> >+		/*
-> >+		 * async PF was not yet handled.
-> >+		 * Add dummy entry for the token.
-> >+		 */
-> >+		n = kmalloc(sizeof(*n), GFP_ATOMIC);
-> >+		if (!n) {
-> >+			/*
-> >+			 * Allocation failed! Busy wait while other vcpu
-> >+			 * handles async PF.
-> >+			 */
-> 
-> In guest code, please use 'cpu', not 'vcpu'.
-> 
-OK. This is just a comment :)
+Please take a look and let me know if I've forgotten something before I
+start hammering on it on a real hardware.
 
-> >+			spin_unlock(&b->lock);
-> >+			cpu_relax();
-> >+			goto again;
-> >+		}
-> 
-> The other cpu might be waiting for us to yield.  We can fix it later
-> with the the pv spinlock infrastructure.
-> 
-This busy wait happens only if (very small) allocation fails, so if
-a guest ever hits this code path I expect it to be on his way to die
-anyway.
+Thanks.
 
-> Or, we can avoid the allocation.  If at most one apf can be pending
-> (is this true?), we can use a per-cpu variable for this dummy entry.
-> 
-We can have may outstanding apfs.
+---
+diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
+index f686f49..8abde9e 100644
+--- a/arch/x86/include/asm/pgtable_32.h
++++ b/arch/x86/include/asm/pgtable_32.h
+@@ -26,7 +26,7 @@ struct mm_struct;
+ struct vm_area_struct;
+ 
+ extern pgd_t swapper_pg_dir[1024];
+-extern pgd_t trampoline_pg_dir[1024];
++extern pgd_t initial_page_table[1024];
+ 
+ static inline void pgtable_cache_init(void) { }
+ static inline void check_pgt_cache(void) { }
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 7f3eba0..169be89 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -172,6 +172,4 @@ static inline void flush_tlb_kernel_range(unsigned long start,
+ 	flush_tlb_all();
+ }
+ 
+-extern void zap_low_mappings(bool early);
+-
+ #endif /* _ASM_X86_TLBFLUSH_H */
+diff --git a/arch/x86/include/asm/trampoline.h b/arch/x86/include/asm/trampoline.h
+index 4dde797..f4500fb 100644
+--- a/arch/x86/include/asm/trampoline.h
++++ b/arch/x86/include/asm/trampoline.h
+@@ -13,16 +13,13 @@ extern unsigned char *trampoline_base;
+ 
+ extern unsigned long init_rsp;
+ extern unsigned long initial_code;
+-extern unsigned long initial_page_table;
+ extern unsigned long initial_gs;
+ 
+ #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data, PAGE_SIZE)
+ 
+ extern unsigned long setup_trampoline(void);
+-extern void __init setup_trampoline_page_table(void);
+ extern void __init reserve_trampoline_memory(void);
+ #else
+-static inline void setup_trampoline_page_table(void) {}
+ static inline void reserve_trampoline_memory(void) {}
+ #endif /* CONFIG_X86_TRAMPOLINE */
+ 
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 33cec15..d04500e 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -12,6 +12,11 @@
+ #include <asm/segment.h>
+ #include <asm/desc.h>
+ 
++#ifdef CONFIG_X86_32
++#include <asm/pgtable.h>
++#include <asm/pgtable_32.h>
++#endif
++
+ #include "realmode/wakeup.h"
+ #include "sleep.h"
+ 
+@@ -90,7 +95,7 @@ int acpi_save_state_mem(void)
+ 
+ #ifndef CONFIG_64BIT
+ 	header->pmode_entry = (u32)&wakeup_pmode_return;
+-	header->pmode_cr3 = (u32)(swsusp_pg_dir - __PAGE_OFFSET);
++	header->pmode_cr3 = (u32)(initial_page_table - __PAGE_OFFSET);
+ 	saved_magic = 0x12345678;
+ #else /* CONFIG_64BIT */
+ 	header->trampoline_segment = setup_trampoline() >> 4;
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index 784360c..8b9c201 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -17,6 +17,7 @@
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
+ #include <asm/bios_ebda.h>
++#include <asm/tlbflush.h>
+ 
+ static void __init i386_default_early_setup(void)
+ {
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index fa8c1b8..005646a 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -183,7 +183,7 @@ default_entry:
+ #ifdef CONFIG_X86_PAE
+ 
+ 	/*
+-	 * In PAE mode swapper_pg_dir is statically defined to contain enough
++	 * In PAE mode initial_page_table is statically defined to contain enough
+ 	 * entries to cover the VMSPLIT option (that is the top 1, 2 or 3
+ 	 * entries). The identity mapping is handled by pointing two PGD
+ 	 * entries to the first kernel PMD.
+@@ -197,7 +197,7 @@ default_entry:
+ 	xorl %ebx,%ebx				/* %ebx is kept at zero */
+ 
+ 	movl $pa(__brk_base), %edi
+-	movl $pa(swapper_pg_pmd), %edx
++	movl $pa(initial_pg_pmd), %edx
+ 	movl $PTE_IDENT_ATTR, %eax
+ 10:
+ 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PMD entry */
+@@ -226,14 +226,14 @@ default_entry:
+ 	movl %eax, pa(max_pfn_mapped)
+ 
+ 	/* Do early initialization of the fixmap area */
+-	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
+-	movl %eax,pa(swapper_pg_pmd+0x1000*KPMDS-8)
++	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
++	movl %eax,pa(initial_pg_pmd+0x1000*KPMDS-8)
+ #else	/* Not PAE */
+ 
+ page_pde_offset = (__PAGE_OFFSET >> 20);
+ 
+ 	movl $pa(__brk_base), %edi
+-	movl $pa(swapper_pg_dir), %edx
++	movl $pa(initial_page_table), %edx
+ 	movl $PTE_IDENT_ATTR, %eax
+ 10:
+ 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PDE entry */
+@@ -257,8 +257,8 @@ page_pde_offset = (__PAGE_OFFSET >> 20);
+ 	movl %eax, pa(max_pfn_mapped)
+ 
+ 	/* Do early initialization of the fixmap area */
+-	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
+-	movl %eax,pa(swapper_pg_dir+0xffc)
++	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
++	movl %eax,pa(initial_page_table+0xffc)
+ #endif
+ 	jmp 3f
+ /*
+@@ -334,7 +334,7 @@ ENTRY(startup_32_smp)
+ /*
+  * Enable paging
+  */
+-	movl pa(initial_page_table), %eax
++	movl $pa(initial_page_table), %eax
+ 	movl %eax,%cr3		/* set the page table pointer.. */
+ 	movl %cr0,%eax
+ 	orl  $X86_CR0_PG,%eax
+@@ -614,8 +614,6 @@ ignore_int:
+ .align 4
+ ENTRY(initial_code)
+ 	.long i386_start_kernel
+-ENTRY(initial_page_table)
+-	.long pa(swapper_pg_dir)
+ 
+ /*
+  * BSS section
+@@ -623,20 +621,18 @@ ENTRY(initial_page_table)
+ __PAGE_ALIGNED_BSS
+ 	.align PAGE_SIZE_asm
+ #ifdef CONFIG_X86_PAE
+-swapper_pg_pmd:
++initial_pg_pmd:
+ 	.fill 1024*KPMDS,4,0
+ #else
+-ENTRY(swapper_pg_dir)
++ENTRY(initial_page_table)
+ 	.fill 1024,4,0
+ #endif
+-swapper_pg_fixmap:
++initial_pg_fixmap:
+ 	.fill 1024,4,0
+-#ifdef CONFIG_X86_TRAMPOLINE
+-ENTRY(trampoline_pg_dir)
+-	.fill 1024,4,0
+-#endif
+ ENTRY(empty_zero_page)
+ 	.fill 4096,1,0
++ENTRY(swapper_pg_dir)
++	.fill 1024,4,0
+ 
+ /*
+  * This starts the data section.
+@@ -645,20 +641,20 @@ ENTRY(empty_zero_page)
+ __PAGE_ALIGNED_DATA
+ 	/* Page-aligned for the benefit of paravirt? */
+ 	.align PAGE_SIZE_asm
+-ENTRY(swapper_pg_dir)
+-	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
++ENTRY(initial_page_table)
++	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
+ # if KPMDS == 3
+-	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
+-	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
+-	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x2000),0
++	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
++	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
++	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x2000),0
+ # elif KPMDS == 2
+ 	.long	0,0
+-	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
+-	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
++	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
++	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
+ # elif KPMDS == 1
+ 	.long	0,0
+ 	.long	0,0
+-	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
++	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
+ # else
+ #  error "Kernel PMDs should be 1, 2 or 3"
+ # endif
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index e3af342..ce5566e 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -371,16 +371,10 @@ void machine_real_restart(const unsigned char *code, int length)
+ 	CMOS_WRITE(0x00, 0x8f);
+ 	spin_unlock(&rtc_lock);
+ 
+-	/* Remap the kernel at virtual address zero, as well as offset zero
+-	   from the kernel segment.  This assumes the kernel segment starts at
+-	   virtual address PAGE_OFFSET. */
+-	memcpy(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+-		sizeof(swapper_pg_dir [0]) * KERNEL_PGD_PTRS);
+-
+ 	/*
+-	 * Use `swapper_pg_dir' as our page directory.
++	 * Switch back to the initial page table.
+ 	 */
+-	load_cr3(swapper_pg_dir);
++	load_cr3(initial_page_table);
+ 
+ 	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
+ 	   this on booting to tell it to "Bypass memory test (also warm
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index c3a4fbb..32322df 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -730,6 +730,17 @@ void __init setup_arch(char **cmdline_p)
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
++
++	/*
++	 * copy kernel address range established so far and switch
++	 * to the proper swapper page table
++	 */
++	clone_pgd_range(swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
++			initial_page_table + KERNEL_PGD_BOUNDARY,
++			min_t(unsigned long, KERNEL_PGD_PTRS, KERNEL_PGD_BOUNDARY));
++
++	load_cr3(swapper_pg_dir);
++	__flush_tlb_all();
+ #else
+ 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
+ #endif
+@@ -1014,7 +1025,12 @@ void __init setup_arch(char **cmdline_p)
+ 	paging_init();
+ 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
+ 
+-	setup_trampoline_page_table();
++#ifdef CONFIG_X86_32
++	/* sync back kernel address range */
++	clone_pgd_range(initial_page_table + KERNEL_PGD_BOUNDARY,
++			swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
++			min_t(unsigned long, KERNEL_PGD_PTRS, KERNEL_PGD_BOUNDARY));
++#endif
+ 
+ 	tboot_probe();
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 8b3bfc4..0d86d0b 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -300,22 +300,17 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	 * most necessary things.
+ 	 */
+ 
+-#ifdef CONFIG_X86_32
+-	/*
+-	 * Switch away from the trampoline page-table
+-	 *
+-	 * Do this before cpu_init() because it needs to access per-cpu
+-	 * data which may not be mapped in the trampoline page-table.
+-	 */
+-	load_cr3(swapper_pg_dir);
+-	__flush_tlb_all();
+-#endif
+-
+ 	vmi_bringup();
+ 	cpu_init();
+ 	preempt_disable();
+ 	smp_callin();
+ 
++#ifdef CONFIG_X86_32
++	/* switch away from the initial page table */
++	load_cr3(swapper_pg_dir);
++	__flush_tlb_all();
++#endif
++
+ 	/* otherwise gcc will move up smp_processor_id before the cpu_init */
+ 	barrier();
+ 	/*
+@@ -774,7 +769,6 @@ do_rest:
+ #ifdef CONFIG_X86_32
+ 	/* Stack for startup_32 can be just as for start_secondary onwards */
+ 	irq_ctx_init(cpu);
+-	initial_page_table = __pa(&trampoline_pg_dir);
+ #else
+ 	clear_tsk_thread_flag(c_idle.idle, TIF_FORK);
+ 	initial_gs = per_cpu_offset(cpu);
+@@ -923,7 +917,6 @@ int __cpuinit native_cpu_up(unsigned int cpu)
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
+ 
+ 	err = do_boot_cpu(apicid, cpu);
+-
+ 	if (err) {
+ 		pr_debug("do_boot_cpu failed %d\n", err);
+ 		return -EIO;
+diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
+index a874495..f1488a3 100644
+--- a/arch/x86/kernel/trampoline.c
++++ b/arch/x86/kernel/trampoline.c
+@@ -38,20 +38,3 @@ unsigned long __trampinit setup_trampoline(void)
+ 	memcpy(trampoline_base, trampoline_data, TRAMPOLINE_SIZE);
+ 	return virt_to_phys(trampoline_base);
+ }
+-
+-void __init setup_trampoline_page_table(void)
+-{
+-#ifdef CONFIG_X86_32
+-	/* Copy kernel address range */
+-	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
+-			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+-			min_t(unsigned long, KERNEL_PGD_PTRS,
+-			      KERNEL_PGD_BOUNDARY));
+-
+-	/* Initialize low mappings */
+-	clone_pgd_range(trampoline_pg_dir,
+-			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+-			min_t(unsigned long, KERNEL_PGD_PTRS,
+-			      KERNEL_PGD_BOUNDARY));
+-#endif
+-}
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index bca7909..adad48b 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -548,48 +548,6 @@ static void __init pagetable_init(void)
+ 	permanent_kmaps_init(pgd_base);
+ }
+ 
+-#ifdef CONFIG_ACPI_SLEEP
+-/*
+- * ACPI suspend needs this for resume, because things like the intel-agp
+- * driver might have split up a kernel 4MB mapping.
+- */
+-char swsusp_pg_dir[PAGE_SIZE]
+-	__attribute__ ((aligned(PAGE_SIZE)));
+-
+-static inline void save_pg_dir(void)
+-{
+-	memcpy(swsusp_pg_dir, swapper_pg_dir, PAGE_SIZE);
+-}
+-#else /* !CONFIG_ACPI_SLEEP */
+-static inline void save_pg_dir(void)
+-{
+-}
+-#endif /* !CONFIG_ACPI_SLEEP */
+-
+-void zap_low_mappings(bool early)
+-{
+-	int i;
+-
+-	/*
+-	 * Zap initial low-memory mappings.
+-	 *
+-	 * Note that "pgd_clear()" doesn't do it for
+-	 * us, because pgd_clear() is a no-op on i386.
+-	 */
+-	for (i = 0; i < KERNEL_PGD_BOUNDARY; i++) {
+-#ifdef CONFIG_X86_PAE
+-		set_pgd(swapper_pg_dir+i, __pgd(1 + __pa(empty_zero_page)));
+-#else
+-		set_pgd(swapper_pg_dir+i, __pgd(0));
+-#endif
+-	}
+-
+-	if (early)
+-		__flush_tlb();
+-	else
+-		flush_tlb_all();
+-}
+-
+ pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL | _PAGE_IOMAP);
+ EXPORT_SYMBOL_GPL(__supported_pte_mask);
+ 
+@@ -958,9 +916,6 @@ void __init mem_init(void)
+ 
+ 	if (boot_cpu_data.wp_works_ok < 0)
+ 		test_wp_bit();
+-
+-	save_pg_dir();
+-	zap_low_mappings(true);
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG
 
-> >+		n->token = token;
-> >+		n->cpu = smp_processor_id();
-> >+		init_waitqueue_head(&n->wq);
-> >+		hlist_add_head(&n->link,&b->list);
-> >+	} else
-> >+		apf_task_wake_one(n);
-> >+	spin_unlock(&b->lock);
-> >+	return;
-> >+}
-> >+
-> >+static void apf_task_wake_all(void)
-> >+{
-> >+	int i;
-> >+
-> >+	for (i = 0; i<  KVM_TASK_SLEEP_HASHSIZE; i++) {
-> >+		struct hlist_node *p, *next;
-> >+		struct kvm_task_sleep_head *b =&async_pf_sleepers[i];
-> >+		spin_lock(&b->lock);
-> >+		hlist_for_each_safe(p, next,&b->list) {
-> >+			struct kvm_task_sleep_node *n =
-> >+				hlist_entry(p, typeof(*n), link);
-> >+			if (n->cpu == smp_processor_id())
-> >+				apf_task_wake_one(n);
-> >+		}
-> >+		spin_unlock(&b->lock);
-> >+	}
-> >+}
-> >+
-> >+dotraplinkage void __kprobes
-> >+do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-> >+{
-> >+	u32 reason = 0, token;
-> >+
-> >+	if (__get_cpu_var(apf_reason).enabled) {
-> >+		reason = __get_cpu_var(apf_reason).reason;
-> >+		__get_cpu_var(apf_reason).reason = 0;
-> 
-> Can per-cpu vars be in vmalloc space?  if so they may trigger nested faults.
-> 
-> I don't think that's the case for core code, so probably safe here.
-> 
-> >+
-> >+		token = (u32)read_cr2();
-> >+	}
-> >+
-> >+	switch (reason) {
-> >+	default:
-> >+		do_page_fault(regs, error_code);
-> >+		break;
-> >+	case KVM_PV_REASON_PAGE_NOT_PRESENT:
-> >+		/* page is swapped out by the host. */
-> >+		apf_task_wait(current, token);
-> >+		break;
-> >+	case KVM_PV_REASON_PAGE_READY:
-> >+		if (unlikely(token == ~0))
-> >+			apf_task_wake_all();
-> >+		else
-> >+			apf_task_wake(token);
-> >+		break;
-> >+	}
-> >+}
-> >+
-> >  static void kvm_mmu_op(void *buffer, unsigned len)
-> >  {
-> >  	int r;
-> >@@ -303,13 +461,25 @@ static struct notifier_block __cpuinitdata kvm_cpu_notifier = {
-> >  };
-> >  #endif
-> >
-> >+static void __init kvm_apf_trap_init(void)
-> >+{
-> >+	set_intr_gate(14,&async_page_fault);
-> >+}
-> 
-> Nice!  Zero impact on non-virt.
-> 
-> -- 
-> error compiling committee.c: too many arguments to function
-
---
-			Gleb.
+-- 
+Regards/Gruss,
+    Boris.
