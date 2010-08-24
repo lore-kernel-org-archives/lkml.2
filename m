@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab0HXRly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:41:54 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:34887 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab0HXRlx (ORCPT
+	id S932188Ab0HXRmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:42:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21921 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab0HXRmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:41:53 -0400
-Message-ID: <4C740450.3030000@cs.helsinki.fi>
-Date: Tue, 24 Aug 2010 20:41:36 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Christoph Lameter <cl@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (slab
- tree related)
-References: <20100824120714.8918f8de.sfr@canb.auug.org.au>
-In-Reply-To: <20100824120714.8918f8de.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 24 Aug 2010 13:42:10 -0400
+Date: Tue, 24 Aug 2010 10:40:46 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Richard Hartmann <richih.mailinglist@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernelnewbies@nl.linux.org
+Subject: Re: System silently not booting with 2.6.35 nor with 2.6.35.3 -- It
+ works fine with 2.6.32.x and 2.6.18.x
+Message-Id: <20100824104046.a8018469.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTikQXxmzC1LxOC7wUWj40nRyLvBgGa0NO3_2s5oX@mail.gmail.com>
+References: <AANLkTinzaRBaWX9EJTAt70Qk+bifFicUUGh=vRJaWL+N@mail.gmail.com>
+	<AANLkTikQXxmzC1LxOC7wUWj40nRyLvBgGa0NO3_2s5oX@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.8.2010 5.07, Stephen Rothwell wrote:
-> Hi all,
->
-> After merging the final tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
->
-> mm/slub.c: In function 'alloc_kmem_cache_cpus':
-> mm/slub.c:2094: error: 'PERCPU_DYNAMIC_EARLY_SIZE' undeclared (first use in this function)
-> mm/slub.c:2094: error: (Each undeclared identifier is reported only once
-> mm/slub.c:2094: error: for each function it appears in.)
-> mm/slub.c:2094: error: bit-field '<anonymous>' width not an integer constant
->
-> Caused by commit e18d65f0500b95d8724b17d8ea9f1116cf390bbe ("slub: Remove
-> static kmem_cache_cpu array for boot"). PERCPU_DYNAMIC_EARLY_SIZE is only
-> defined for SMP (and only in linux/percpu.h which is not explicitly
-> included).  This build does not have CONFIG_SMP set.
->
-> I have used the version of the slab tree from next-20100823 for today.
+On Tue, 24 Aug 2010 15:58:38 +0200 Richard Hartmann wrote:
 
-Thanks for the report. The problem should be fixed by this commit:
+> As a follow-up, we restarted with a minimal confugiration from scratch and
+> it boots. Please disregard the lacking root filesystem, that is of no concern
+> to us atm. Note that there is one special char in the paste below. No idea
+> where that is coming from.
+> 
+> I will try to hunt down the option(s) that caused this, but if anyone has any
+> suggestions...
 
-http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=5792949c540c9fd719c3fc0d6edc97374222e792
+
+I would try enabling CONFIG_DEVTMPFS and CONFIG_DEVTMPFS_MOUNT.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
