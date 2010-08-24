@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab0HXTNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 15:13:49 -0400
-Received: from www84.your-server.de ([213.133.104.84]:60339 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab0HXTNr (ORCPT
+	id S1755159Ab0HXTOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 15:14:07 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51456 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab0HXTN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 15:13:47 -0400
-Subject: Re: [RFC -v2] kfifo writer side lock-less support
-From: Stefani Seibold <stefani@seibold.net>
-To: huang.ying.caritas@gmail.com
-Cc: Huang Ying <ying.huang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282654207.11483.32.camel@caritas-mobile.ml.org>
-References: <1282614146.2708.13.camel@yhuang-dev>
-	 <1282636558.7357.28.camel@wall-e.seibold.net>
-	 <1282639425.2708.40.camel@yhuang-dev>
-	 <1282640663.7896.17.camel@wall-e.seibold.net>
-	 <1282654207.11483.32.camel@caritas-mobile.ml.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 24 Aug 2010 21:13:50 +0200
-Message-ID: <1282677230.10219.22.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Tue, 24 Aug 2010 15:13:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=EzuVAVgaxlCITyJpIZPKu4Iqt5kQdB7Caqzksbm0eY+7siVU9FsmKbZBrDPZLGcC3J
+         jqe0MjuCXN59gMuLwM/BQIWnPZTa8ajPSg3E9wnj4nMvMYNKLDhvnpqiIzYqRLLOvtwx
+         jB6/LfODDrcVTi+nsffcssLSrkBDqxocKFZxs=
+MIME-Version: 1.0
+In-Reply-To: <496565EC904933469F292DDA3F1663E602F0FA3995@dlee06.ent.ti.com>
+References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
+	<1277943660-4112-2-git-send-email-x0095840@ti.com>
+	<1277943660-4112-3-git-send-email-x0095840@ti.com>
+	<1277943660-4112-4-git-send-email-x0095840@ti.com>
+	<1277943660-4112-5-git-send-email-x0095840@ti.com>
+	<1277943660-4112-6-git-send-email-x0095840@ti.com>
+	<1277943660-4112-7-git-send-email-x0095840@ti.com>
+	<1277943660-4112-8-git-send-email-x0095840@ti.com>
+	<1277943660-4112-9-git-send-email-x0095840@ti.com>
+	<8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
+	<496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
+	<8F7AF80515AF0D4D93307E594F3CB40E4CAD39F6@dlee03.ent.ti.com>
+	<496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
+	<AANLkTimENxUjUWJQSZ1dmdkX_9hQ0pjat-kyR9oNjVxf@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA3883@dlee06.ent.ti.com>
+	<AANLkTi=NuPu6bvv6KF7sXRp02bvfz7oRkG1SG1PstA-H@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA397F@dlee06.ent.ti.com>
+	<AANLkTinaJ=xn_CAJznVtMcA0nwK_-gbo05OQKM7PuoYA@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F0FA3995@dlee06.ent.ti.com>
+Date: Tue, 24 Aug 2010 22:13:57 +0300
+Message-ID: <AANLkTinjMujus-28DcLzZ+16GAGpLohwhPhuTi5uKhB8@mail.gmail.com>
+Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 24, 2010 at 10:05 PM, Guzman Lugo, Fernando
+<fernando.lugo@ti.com> wrote:
+>> I've heard there are some problems regarding DMM, and since
+>> you say you have already done the changes, and since iommu
+>> migration is not yet ready AFAIK, it might make sense to go
+>> for option b).
+>>
+>> Anyway, thanks for the clarification :)
+>
+> But DMM is used in this momment, it is after the IOMMU migration
+> When DMM is not needed anymore. So we need to go for option a).
 
-> > > The patch adds only 1 field (unsigned int) to struct __kfifo. I think
-> > > that should be acceptable. Because sizeof(struct __kfifo) should be much
-> > > smaller that __kfifo->mask + 1 in most cases.
-> > 
-> > I don't know what you mean with "because sizeof(struct __kfifo) should
-> > be much smaller that __kfifo->mask + 1 in most cases". I am convinced
-> > that you did not really understand the kfifo code. sizeof(struct
-> > __kfifo) is constant and __kfifo->mask + 1 is the fifo size in elements,
-> > which is not constant. Before you answering study the code first!
-> > 
-> > And is not acceptable to bload the struct __kfifo, because it will never
-> > need by the most users.
-> 
-> I mean, for most user, __kfifo->mask + 1 > sizeof(struct __kfifo), so
-> another 4 bytes for each user is relatively small.
-> 
+Oh, I actually meant the DMM pool.
 
-You have no idea. As i wrote you should study the code before answering!
+a) 1. Migrate to iommu, 2. Remove DMM completely
+b) 1. Remove DMM pool, 2. Migrate to iommu 3. Remove DMM completely
 
-sizeof(struct __kfifo) is always 20 bytes on a 32 bit cpu, and
-kfifo->mask +1 depends on the size of the number of fifo elements and it
-is an initialization parameter. 
-
-
-If you will be able to shrink the footprint of the struct __kfifo,
-whithout wasting the code, you are welcome to do. 
-
-Currently you generate only a lot of hot air. The assertion in your
-"number of elements or bytes for kfifo_in etc" thread was also wrong.
-You should first study code and understand it.
-
-Until you have can prove your assertion by measurements and working
-patches, please stop bothering.
-
-- Stefani
-
-
+-- 
+Felipe Contreras
