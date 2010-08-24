@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab0HXH5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:57:46 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:37027 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab0HXH5n (ORCPT
+	id S1751892Ab0HXH67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:58:59 -0400
+Received: from mail.karo-electronics.de ([213.146.116.110]:47925 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab0HXH66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 03:57:43 -0400
-Date: Tue, 24 Aug 2010 08:57:41 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: Re: [REGRESSION, i915]: Periodic stalls with 2.6.36-rc2
-Message-ID: <20100824075741.GA11000@sucs.org>
-References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <89kc63$hrmse5@fmsmga002.fm.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 24 Aug 2010 03:58:58 -0400
+Message-ID: <19571.31677.407213.580581@ipc1.ka-ro>
+Date: Tue, 24 Aug 2010 09:58:53 +0200
+From: =?iso-8859-15?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.ml.walleij@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 3/3 v2] dmaengine: Add Freescale i.MX SDMA support
+In-Reply-To: <20100823125704.GU27749@pengutronix.de>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de>
+	<1281956870-12463-4-git-send-email-s.hauer@pengutronix.de>
+	<20100823125704.GU27749@pengutronix.de>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 01:12:22AM +0100, Chris Wilson wrote:
+Hi,
+
+> This patch adds support for the Freescale i.MX SDMA engine.
 > 
-> From the error message, I'd suggest we'd tackle hangcheck - it simply
-> shouldn't be firing at all under normal circumstances. (Looking at it we
-> don't handle the introduction of the BSD ring correctly, but that is
-> irrelevant on the EeePC 900.)
+> The SDMA engine is a scatter/gather DMA engine which is implemented
+> as a seperate coprocessor. SDMA needs its own firmware which is
+> requested using the standard request_firmware mechanism. The firmware
+> has different entry points for each peripheral type, so drivers
+> have to pass the peripheral type to the DMA engine which in turn
+> picks the correct firmware entry point from a table contained in
+> the firmware image itself.
+> The original Freescale code also supports support for transfering
+> data to the internal SRAM which needs different entry points to
+> the firmware. Support for this is currently not implemented. Also,
+> support for the ASRC (asymmetric sample rate converter) is skipped.
 > 
-> Do the stalls and tearing go away with:
+> I took a very simple approach to implement dmaengine support. Only
+> a single descriptor is statically assigned to a each channel. This
+> means that transfers can't be queued up but only a single transfer
+> is in progress. This simplifies implementation a lot and is sufficient
+> for the usual device/memory transfers.
+> 
+> Changes since v1:
+> 
+[...]
+> +static int __devinit sdma_probe(struct platform_device *pdev)
+>
+__devinit/__devexit is for hot-pluggable devices. I don't think the
+SDMA controller is hot-pluggable, so __init/__exit could be used here.
 
-The stalls became a bit better with the patch but there were still very
-small pauses but the tearing with more recent X bits is definitely still
-there. Additionally videos in totem would play as a tiny one pixel high
-row about a quarter of the screen across at the top left of the screen.
-It also seems that X has started having trouble refreshing itself so
-sometimes new windows are invisible (especially with compiz).
+> +{
+> +	int ret;
+> +	const struct firmware *fw;
+> +	const struct sdma_firmware_header *header;
+> +	const struct sdma_script_start_addrs *addr;
+> +	int irq;
+> +	unsigned short *ram_code;
+> +	struct resource *iores;
+> +	struct sdma_platform_data *pdata = pdev->dev.platform_data;
+> +	char *fwname;
+> +	int i;
+> +	dma_cap_mask_t mask;
+> +	struct sdma_engine *sdma;
+> +
+> +	sdma = kzalloc(sizeof(*sdma), GFP_KERNEL);
+> +	if (!sdma)
+> +		return -ENOMEM;
+> +
+> +	sdma->dev = &pdev->dev;
+> +
+> +	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (!iores || irq < 0 || !pdata) {
+> +		ret = -EINVAL;
+> +		goto err_irq;
+> +	}
+> +
+> +	sdma->clk = clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(sdma->clk)) {
+> +		ret = PTR_ERR(sdma->clk);
+> +		goto err_clk;
+> +	}
+> +
+request_mem_region()?
+> +	sdma->regs = ioremap(iores->start, resource_size(iores));
+> +	if (!sdma->regs) {
+> +		ret = -ENOMEM;
+> +		goto err_ioremap;
+> +	}
+> +
+> +
 
-I've also noticed a couple of other things. Sometimes (but without any
-pattern) an extra display is detected even though no external display is
-plugged in. Here's an example of the xrandr output:
-Screen 0: minimum 320 x 200, current 2384 x 768, maximum 4096 x 4096
-LVDS1 connected 1024x600+0+0 (normal left inverted right x axis y axis) 0mm x 0mm
-   1024x600       59.5*+
-   800x600        85.1     72.2     75.0     60.3     56.2  
-   640x480        85.0     72.8     75.0     59.9  
-   720x400        85.0  
-   640x400        85.1  
-   640x350        85.1  
-VGA1 disconnected (normal left inverted right x axis y axis)
-TV1 disconnected (normal left inverted right x axis y axis)
-  1360x768 (0xbc)   84.8MHz
-        h: width  1360 start 1432 end 1568 total 1776 skew    0 clock   47.7KHz
-        v: height  768 start  771 end  781 total  798           clock   59.8Hz
+> +static int __devexit sdma_remove(struct platform_device *pdev)
+>
+see above.
 
-Sometimes the output is TV1 sometimes it is VGA1 and sometimes these
-extra outputs will disappear. Another issue is that switching from X to
-a console for the first time causes a LCD "blooming" effect.
 
+Lothar Waßmann
 -- 
-Sitsofe | http://sucs.org/~sits/
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
