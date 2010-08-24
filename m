@@ -1,32 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933946Ab0HXXSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:18:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26158 "EHLO mga14.intel.com"
+	id S933938Ab0HXXST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:18:19 -0400
+Received: from kroah.org ([198.145.64.141]:41029 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933456Ab0HXXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:18:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
-   d="scan'208";a="316566915"
-Date: Wed, 25 Aug 2010 07:18:18 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH v2 2/2] compaction: fix COMPACTPAGEFAILED counting
-Message-ID: <20100824231818.GB7283@localhost>
-References: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933412Ab0HXXCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
+Message-Id: <20100824224504.824455824@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 24 Aug 2010 15:44:46 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Axel Lin <axel.lin@gmail.com>, Lei Wen <leiwen@marvell.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [041/114] pxa3xx: fix ns2cycle equation
+In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
+
+------------------
+
+From: Axel Lin <axel.lin@gmail.com>
+
+commit 93b352fce679945845664b56b0c3afbd655a7a12 upstream.
+
+Test on a PXA310 platform with Samsung K9F2G08X0B NAND flash,
+with tCH=5 and clk is 156MHz, ns2cycle(5, 156000000) returns -1.
+
+ns2cycle returns negtive value will break NDTR0_tXX macros.
+
+After checking the commit log, I found the problem is introduced by
+commit 5b0d4d7c8a67c5ba3d35e6ceb0c5530cc6846db7
+"[MTD] [NAND] pxa3xx: convert from ns to clock ticks more accurately"
+
+To get num of clock cycles, we use below equation:
+num of clock cycles = time (ns) / one clock cycle (ns) + 1
+We need to add 1 cycle here because integer division will truncate the result.
+It is possible the developers set the Min values in SPEC for timing settings.
+Thus the truncate may cause problem, and it is safe to add an extra cycle here.
+
+The various fields in NDTR{01} are in units of clock ticks minus one,
+thus we should subtract 1 cycle then.
+
+Thus the correct equation should be:
+num of clock cycles = time (ns) / one clock cycle (ns) + 1 - 1
+                    = time (ns) / one clock cycle (ns)
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/mtd/nand/pxa3xx_nand.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/mtd/nand/pxa3xx_nand.c
++++ b/drivers/mtd/nand/pxa3xx_nand.c
+@@ -363,7 +363,7 @@ static struct pxa3xx_nand_flash *builtin
+ #define tAR_NDTR1(r)	(((r) >> 0) & 0xf)
+ 
+ /* convert nano-seconds to nand flash controller clock cycles */
+-#define ns2cycle(ns, clk)	(int)(((ns) * (clk / 1000000) / 1000) - 1)
++#define ns2cycle(ns, clk)	(int)((ns) * (clk / 1000000) / 1000)
+ 
+ /* convert nand flash controller clock cycles to nano-seconds */
+ #define cycle2ns(c, clk)	((((c) + 1) * 1000000 + clk / 500) / (clk / 1000))
+
+
