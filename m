@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934389Ab0HXXki (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:40:38 -0400
-Received: from kroah.org ([198.145.64.141]:52434 "EHLO coco.kroah.org"
+	id S932781Ab0HXW6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:58:04 -0400
+Received: from kroah.org ([198.145.64.141]:52400 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932801Ab0HXW6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:13 2010
-Message-Id: <20100824224212.935320510@clark.site>
+	id S932548Ab0HXW56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:57:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:12 2010
+Message-Id: <20100824224212.323274331@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:32 -0700
+Date: Tue, 24 Aug 2010 15:41:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [10/91] ALSA: hda - Add quirk for Dell Vostro 1220
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [03/91] ASoC: Fix inverted mute controls for WM8580
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit c3e68fad88143fd1fe8fe640207fb19c0f087dbc upstream.
+commit 4f0ed9a51bc8ef16c2589112fdb110479e4b0df1 upstream.
 
-model=dell-vostro is needed for Dell Vostro 1220 with Coexnat 5067.
-
-Reference: Novell bnc#631066
-	https://bugzilla.novell.com/show_bug.cgi?id=631066
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/wm8580.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -2843,6 +2843,7 @@ static struct snd_pci_quirk cxt5066_cfg_
- 	SND_PCI_QUIRK(0x1028, 0x02f5, "Dell",
- 		      CXT5066_DELL_LAPTOP),
- 	SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
-+	SND_PCI_QUIRK(0x1028, 0x02d8, "Dell Vostro", CXT5066_DELL_VOSTO),
- 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTO),
- 	SND_PCI_QUIRK(0x1028, 0x0408, "Dell Inspiron One 19T", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x1179, 0xff50, "Toshiba Satellite P500-PSPGSC-01800T", CXT5066_OLPC_XO_1_5),
+--- a/sound/soc/codecs/wm8580.c
++++ b/sound/soc/codecs/wm8580.c
+@@ -269,9 +269,9 @@ SOC_DOUBLE("DAC2 Invert Switch", WM8580_
+ SOC_DOUBLE("DAC3 Invert Switch", WM8580_DAC_CONTROL4,  4, 5, 1, 0),
+ 
+ SOC_SINGLE("DAC ZC Switch", WM8580_DAC_CONTROL5, 5, 1, 0),
+-SOC_SINGLE("DAC1 Switch", WM8580_DAC_CONTROL5, 0, 1, 0),
+-SOC_SINGLE("DAC2 Switch", WM8580_DAC_CONTROL5, 1, 1, 0),
+-SOC_SINGLE("DAC3 Switch", WM8580_DAC_CONTROL5, 2, 1, 0),
++SOC_SINGLE("DAC1 Switch", WM8580_DAC_CONTROL5, 0, 1, 1),
++SOC_SINGLE("DAC2 Switch", WM8580_DAC_CONTROL5, 1, 1, 1),
++SOC_SINGLE("DAC3 Switch", WM8580_DAC_CONTROL5, 2, 1, 1),
+ 
+ SOC_DOUBLE("ADC Mute Switch", WM8580_ADC_CONTROL1, 0, 1, 1, 0),
+ SOC_SINGLE("ADC High-Pass Filter Switch", WM8580_ADC_CONTROL1, 4, 1, 0),
 
 
