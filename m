@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab0HXWut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:50:49 -0400
-Received: from smtp-good-out-2.t-2.net ([84.255.208.44]:42446 "EHLO
-	smtp-good-out-2.t-2.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633Ab0HXWup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:50:45 -0400
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-From: Samo Pogacnik <samo_pogacnik@t-2.net>
-To: Greg KH <gregkh@suse.de>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100824222035.GA10625@suse.de>
-References: <20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
-	 <1276291932.2154.45.camel@itpsd6lap>
-	 <20100621153858.444695c0@lxorguk.ukuu.org.uk>
-	 <1277244410.2195.47.camel@itpsd6lap>
-	 <20100622232108.26752ff8@lxorguk.ukuu.org.uk>
-	 <1277462596.2143.101.camel@itpsd6lap>
-	 <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
-	 <1282683470.8020.66.camel@itpsd6lap> <20100824211016.GA7176@suse.de>
-	 <1282687797.8020.108.camel@itpsd6lap>  <20100824222035.GA10625@suse.de>
-Content-Type: text/plain
-Date: Wed, 25 Aug 2010 00:50:32 +0200
-Message-Id: <1282690232.8020.116.camel@itpsd6lap>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1755731Ab0HXWxW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:53:22 -0400
+Received: from kroah.org ([198.145.64.141]:52027 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138Ab0HXWxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:22 2010
+Message-Id: <20100824222522.444845513@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 24 Aug 2010 15:24:13 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>
+Subject: [01/59] memstick: fix hangs on unexpected device removal in mspro_blk
+In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 24.08.2010 (tor) ob 15:20 -0700 je Greg KH zapisal(a):
-> > > And what about the normal way of just writing to /dev/kmsg to do this?
-> > > Why a whole new driver for this same functionality?
-> > I must admit, i was not aware of the /dev/kmsg driver, but i made a few
-> > tests and found out that it seems not to be possible to redirect console
-> > to kmsg.
-> 
-> See how systemd does this, as it sounds like exactly what you want to
-> do.  Look in either Fedora 14, or openSUSE Factory for examples of this,
-> with no kernel changes needed.
-> 
-I'll check out systemd. 
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-however:)
-It may be that systemd does not cover the initrd part of the
-initialization and it may be an overkill do introduce systemd to an
-existing system just to be analyzed.
+------------------
 
-regards, Samo
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+
+commit d862b13bc8cbab9692fbe0ef44c40d0488b81af1 upstream.
+
+mspro_block_remove() is called from detect thread that first calls the
+mspro_block_stop(), which stops the request queue.  If we call
+del_gendisk() with the queue stopped we get a deadlock.
+
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Alex Dubov <oakad@yahoo.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/memstick/core/mspro_block.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/memstick/core/mspro_block.c
++++ b/drivers/memstick/core/mspro_block.c
+@@ -1330,13 +1330,14 @@ static void mspro_block_remove(struct me
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	unsigned long flags;
+ 
+-	del_gendisk(msb->disk);
+-	dev_dbg(&card->dev, "mspro block remove\n");
+ 	spin_lock_irqsave(&msb->q_lock, flags);
+ 	msb->eject = 1;
+ 	blk_start_queue(msb->queue);
+ 	spin_unlock_irqrestore(&msb->q_lock, flags);
+ 
++	del_gendisk(msb->disk);
++	dev_dbg(&card->dev, "mspro block remove\n");
++
+ 	blk_cleanup_queue(msb->queue);
+ 	msb->queue = NULL;
+ 
+
 
