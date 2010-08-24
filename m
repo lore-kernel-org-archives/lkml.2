@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab0HXDxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 23:53:06 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49047
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752871Ab0HXDxC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 23:53:02 -0400
-Date: Mon, 23 Aug 2010 20:53:19 -0700 (PDT)
-Message-Id: <20100823.205319.146374452.davem@davemloft.net>
-To: sanagi.koki@jp.fujitsu.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
-        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: Re: [PATCH v4 5/5] perf:add a script shows a process of packet
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4C72439D.3040001@jp.fujitsu.com>
-References: <4C72422C.5070102@jp.fujitsu.com>
-	<4C72439D.3040001@jp.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752243Ab0HXEFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 00:05:35 -0400
+Received: from kroah.org ([198.145.64.141]:39649 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab0HXEFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 00:05:25 -0400
+Date: Mon, 23 Aug 2010 21:05:03 -0700
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] driver core fixes for .36-rc2
+Message-ID: <20100824040503.GB16749@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Date: Mon, 23 Aug 2010 18:47:09 +0900
+Here are some fixes for .36-rc2 for the driver core.
 
-> Add a perf script which shows a process of packets and processed time.
-> It helps us to investigate networking or network device.
- ...
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+It fixes a firmware oops that a lot of people are hitting, and a build
+error for older versions of gcc that it seems all of the ARM developers
+are hitting.  And there's documentation fix as well.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/
+
+All of these patches have been in the linux-next and mm trees.
+
+The patches will be sent as a follow-on to this message to lkml for
+people to see.
+
+thanks,
+
+greg k-h
+
+------------
+
+ drivers/base/firmware_class.c |    2 +-
+ include/linux/kobject.h       |   35 +-------------------------
+ include/linux/kobject_ns.h    |   56 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/sysfs.h         |    1 +
+ lib/kobject_uevent.c          |    4 +-
+ 5 files changed, 61 insertions(+), 37 deletions(-)
+ create mode 100644 include/linux/kobject_ns.h
+
+---------------
+
+David Howells (1):
+      kobject: Break the kobject namespace defs into their own header
+
+Johannes Berg (1):
+      firmware_class: fix typo in error path
+
+Xiaotian Feng (1):
+      kobject_uevent: fix typo in comments
+
