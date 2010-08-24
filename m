@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab0HXFmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 01:42:42 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42193 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab0HXFmj (ORCPT
+	id S1753903Ab0HXFoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 01:44:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60317 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331Ab0HXFoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 01:42:39 -0400
+	Tue, 24 Aug 2010 01:44:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=WWPThpwaOm7CDMatEEY7sGw8UaxcwNnuvrjzpNu8daEW09ze7EVAKkJHoue7NVdCNK
-         N+SkbQD4C8uOn64uBP8k1rsA1jcCWx7GVNSIILXw1v8xthh42g8hFgvzijM1KLyNWOVF
-         Is4rjTgIJwoOvNVDSJiqtSYfNYHqSXCyeZqP8=
-Subject: [PATCH 2/3] mfd: ezx-pcap - fix pcap_add_subdev error path
+        b=KSlxYbE/WzrPFj/bA3qgkai1qdBDkzNyBENl1SCy/M2nLBh4t/Jr3xS6dUIc2mSoSA
+         3+5K72NdZAPtied5Jhy2Tn0kUx1W3I8yxQIzOHhZbviZL7y5x5u/Nvt9DiZ0AJGvNSt0
+         eXfqh2Q8qBQuHz/0wbuUpKzXGlTSTN5mgP5t4=
+Subject: [PATCH 3/3] mfd: tps6586x - fix tps6586x_add_subdevs error path
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Daniel Ribeiro <drwyrm@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mike Rapoport <mike@compulab.co.il>
 In-Reply-To: <1282628645.6074.1.camel@mola>
 References: <1282628645.6074.1.camel@mola>
 Content-Type: text/plain
-Date: Tue, 24 Aug 2010 13:45:49 +0800
-Message-Id: <1282628749.6074.3.camel@mola>
+Date: Tue, 24 Aug 2010 13:47:22 +0800
+Message-Id: <1282628842.6074.6.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -35,35 +35,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/mfd/ezx-pcap.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ drivers/mfd/tps6586x.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
-index 134c69a..d283d77 100644
---- a/drivers/mfd/ezx-pcap.c
-+++ b/drivers/mfd/ezx-pcap.c
-@@ -384,12 +384,20 @@ static int __devinit pcap_add_subdev(struct pcap_chip *pcap,
- 						struct pcap_subdev *subdev)
- {
- 	struct platform_device *pdev;
-+	int ret;
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index 4cde31e..1c91936 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -273,13 +273,19 @@ static int __devinit tps6586x_add_subdevs(struct tps6586x *tps6586x,
+ 		subdev = &pdata->subdevs[i];
  
- 	pdev = platform_device_alloc(subdev->name, subdev->id);
-+	if (!pdev)
-+		return -ENOMEM;
-+
- 	pdev->dev.parent = &pcap->spi->dev;
- 	pdev->dev.platform_data = subdev->platform_data;
+ 		pdev = platform_device_alloc(subdev->name, subdev->id);
++		if (!pdev) {
++			ret = -ENOMEM;
++			goto failed;
++		}
  
--	return platform_device_add(pdev);
-+	ret = platform_device_add(pdev);
-+	if (ret)
-+		platform_device_put(pdev);
-+
-+	return ret;
- }
+ 		pdev->dev.parent = tps6586x->dev;
+ 		pdev->dev.platform_data = subdev->platform_data;
  
- static int __devexit ezx_pcap_remove(struct spi_device *spi)
+ 		ret = platform_device_add(pdev);
+-		if (ret)
++		if (ret) {
++			platform_device_put(pdev);
+ 			goto failed;
++		}
+ 	}
+ 	return 0;
+ 
 -- 
 1.7.2
 
