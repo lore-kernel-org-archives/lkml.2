@@ -1,168 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab0HXXAV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:00:21 -0400
-Received: from kroah.org ([198.145.64.141]:40696 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933160Ab0HXXAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:00:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:19 2010
-Message-Id: <20100824224219.902865707@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        <jbohac@novell.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kerstin Jonsson <kerstin.jonsson@ericsson.com>,
-        Avi Kivity <avi@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Renninger <trenn@suse.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [91/91] x86, apic: ack all pending irqs when crashed/on kexec
-In-Reply-To: <20100824224617.GA5440@kroah.com>
+	id S933208Ab0HXXAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:00:51 -0400
+Received: from mailout-us.gmx.com ([74.208.5.67]:42693 "HELO
+	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933123Ab0HXXAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:00:44 -0400
+X-Authenticated: #65048216
+X-Provags-ID: V01U2FsdGVkX1+L3ls/jHCLPoqIMDLhB1gsmwJ3V+NMnXeJNtLvZ/
+	8LCAtmg4yphRBK
+Subject: Re: [PATCH] drm/i915/tv: After disabling the pipe, use
+ wait_for_vblank_off()
+From: Ivan Bulatovic <combuster@gmx.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-gfx@lists.freedesktop.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <89k83a$9drtkt@azsmga001.ch.intel.com>
+References: <1282647815.2221.15.camel@localhost.localdomain>
+	 <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk>
+	 <1282684130.2199.25.camel@localhost.localdomain>
+	 <89k83a$9drtkt@azsmga001.ch.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Aug 2010 01:00:38 +0200
+Message-ID: <1282690838.2120.26.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 2010-08-24 at 22:52 +0100, Chris Wilson wrote: 
+> On Tue, 24 Aug 2010 23:08:50 +0200, Ivan Bulatovic <combuster@gmx.com> wrote:
+> > Unfotunately I still get TV connection detected :(
+> 
+> Jesse spotted the root cause and Linus has now pushed that fix for
+> intel_wait_for_vblank() out. This is just a very minor bug in comparison.
+> Can you please test against linus/master and check that resolves the
+> spurious TV detection for you?
+> Thanks.
+> 
+> -- 
+> Chris Wilson, Intel Open Source Technology Centre
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-------------------
+Spurious TV detection is still here and + I have a new problem with
+resolution in init3 when KMS fires up, it occupies only 1/3rd of the
+screen when booting.
 
-From: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
+I've tried patching the kernel I used for testing so far with that one
+liner and I've tried without patches we tried so far (git pull on a
+clean linux-git) and the symptoms are the same on both of them.
 
-commit 8c3ba8d049247dc06b6dcee1711a11b26647aa44 upstream.
-
-When the SMP kernel decides to crash_kexec() the local APICs may have
-pending interrupts in their vector tables.
-
-The setup routine for the local APIC has a deficient mechanism for
-clearing these interrupts, it only handles interrupts that has already
-been dispatched to the local core for servicing (the ISR register) safely,
-it doesn't consider lower prioritized queued interrupts stored in the IRR
-register.
-
-If you have more than one pending interrupt within the same 32 bit word in
-the LAPIC vector table registers you may find yourself entering the IO
-APIC setup with pending interrupts left in the LAPIC.  This is a situation
-for wich the IO APIC setup is not prepared.  Depending of what/which
-interrupt vector/vectors are stuck in the APIC tables your system may show
-various degrees of malfunctioning.  That was the reason why the
-check_timer() failed in our system, the timer interrupts was blocked by
-pending interrupts from the old kernel when routed trough the IO APIC.
-
-Additional comment from Jiri Bohac:
-==============
-If this should go into stable release,
-I'd add some kind of limit on the number of iterations, just to be safe from
-hard to debug lock-ups:
-
-+if (loops++  > MAX_LOOPS) {
-+        printk("LAPIC pending clean-up")
-+        break;
-+}
- while (queued);
-
-with MAX_LOOPS something like 1E9 this would leave plenty of time for the
-pending IRQs to be cleared and would and still cause at most a second of delay
-if the loop were to lock-up for whatever reason.
-
-[trenn@suse.de:
-
-V2: Use tsc if avail to bail out after 1 sec due to possible virtual
-    apic_read calls which may take rather long (suggested by: Avi Kivity
-    <avi@redhat.com>) If no tsc is available bail out quickly after
-    cpu_khz, if we broke out too early and still have irqs pending (which
-    should never happen?) we still get a WARN_ON...
-
-V3: - Fixed indentation -> checkpatch clean
-    - max_loops must be signed
-
-V4: - Fix typo, mixed up tsc and ntsc in first rdtscll() call
-
-V5: Adjust WARN_ON() condition to also catch error in cpu_has_tsc case]
-
-Cc: <jbohac@novell.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Tested-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-LKML-Reference: <201005241913.o4OJDGWM010865@imap1.linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/kernel/apic/apic.c |   41 +++++++++++++++++++++++++++++++++--------
- 1 file changed, 33 insertions(+), 8 deletions(-)
-
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -51,6 +51,7 @@
- #include <asm/smp.h>
- #include <asm/mce.h>
- #include <asm/kvm_para.h>
-+#include <asm/tsc.h>
- 
- unsigned int num_processors;
- 
-@@ -1151,8 +1152,13 @@ static void __cpuinit lapic_setup_esr(vo
-  */
- void __cpuinit setup_local_APIC(void)
- {
--	unsigned int value;
--	int i, j;
-+	unsigned int value, queued;
-+	int i, j, acked = 0;
-+	unsigned long long tsc = 0, ntsc;
-+	long long max_loops = cpu_khz;
-+
-+	if (cpu_has_tsc)
-+		rdtscll(tsc);
- 
- 	if (disable_apic) {
- 		arch_disable_smp_support();
-@@ -1204,13 +1210,32 @@ void __cpuinit setup_local_APIC(void)
- 	 * the interrupt. Hence a vector might get locked. It was noticed
- 	 * for timer irq (vector 0x31). Issue an extra EOI to clear ISR.
- 	 */
--	for (i = APIC_ISR_NR - 1; i >= 0; i--) {
--		value = apic_read(APIC_ISR + i*0x10);
--		for (j = 31; j >= 0; j--) {
--			if (value & (1<<j))
--				ack_APIC_irq();
-+	do {
-+		queued = 0;
-+		for (i = APIC_ISR_NR - 1; i >= 0; i--)
-+			queued |= apic_read(APIC_IRR + i*0x10);
-+
-+		for (i = APIC_ISR_NR - 1; i >= 0; i--) {
-+			value = apic_read(APIC_ISR + i*0x10);
-+			for (j = 31; j >= 0; j--) {
-+				if (value & (1<<j)) {
-+					ack_APIC_irq();
-+					acked++;
-+				}
-+			}
- 		}
--	}
-+		if (acked > 256) {
-+			printk(KERN_ERR "LAPIC pending interrupts after %d EOI\n",
-+			       acked);
-+			break;
-+		}
-+		if (cpu_has_tsc) {
-+			rdtscll(ntsc);
-+			max_loops = (cpu_khz << 10) - (ntsc - tsc);
-+		} else
-+			max_loops--;
-+	} while (queued && max_loops > 0);
-+	WARN_ON(max_loops <= 0);
- 
- 	/*
- 	 * Now that we are all set up, enable the APIC
-
+So
+- PIPE_VBLANK_INTERRUPT_STATUS) == 0,
++ PIPE_VBLANK_INTERRUPT_STATUS),
+in intel_display.c doesn't fix the issue, plus it brings a new one in my
+case.
 
