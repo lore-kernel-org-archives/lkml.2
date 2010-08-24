@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0HXJAD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:00:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50906 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab0HXJAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:00:01 -0400
-Message-ID: <4C738B34.6070602@cn.fujitsu.com>
-Date: Tue, 24 Aug 2010 17:04:52 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kamezawa.hiroyuki@gmail.com, "menage@google.com" <menage@google.com>
-Subject: Re: [PATCH 1/5] cgroup: ID notification call back
-References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com> <20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754472Ab0HXJAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:00:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57361 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488Ab0HXJAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 05:00:51 -0400
+Message-Id: <89kc63$hrqoho@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,262,1280732400"; 
+   d="scan'208";a="599614008"
+Date: Tue, 24 Aug 2010 10:00:47 +0100
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: Re: [REGRESSION, i915]: Periodic stalls with 2.6.36-rc2
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com> <20100824075741.GA11000@sucs.org> <8u3s8d$jcg467@orsmga001.jf.intel.com> <20100824084902.GA27569@sucs.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100824084902.GA27569@sucs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> CC'ed to Paul Menage and Li Zefan.
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Tue, 24 Aug 2010 09:49:02 +0100, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
+> On Tue, Aug 24, 2010 at 09:16:50AM +0100, Chris Wilson wrote:
+> > 
+> > Ok, I'm a little happier that the hangcheck could be just another symptom
+> > of the problem...
+> > 
+> > I think it is safe to assume that the bug is in i915, so restricting the
+> > bisect to just drm seems plausible:
+> > 
+> > git bisect start drivers/gpu/drm
+> > git bisect good 2.6.36-rc1
+> > git bisect bad 2.6.36-rc2
 > 
-> When cgroup subsystem use ID (ss->use_id==1), each css's ID is assigned
-> after successful call of ->create(). css_ID is tightly coupled with
-> css struct itself but it is allocated by ->create() call, IOW,
-> per-subsystem special allocations.
-> 
-> To know css_id before creation, this patch adds id_attached() callback.
-> after css_ID allocation. This will be used by memory cgroup's quick lookup
-> routine.
-> 
-> Maybe you can think of other implementations as
-> 	- pass ID to ->create()
-> 	or
-> 	- add post_create()
-> 	etc...
-> But when considering dirtiness of codes, this straightforward patch seems
-> good to me. If someone wants post_create(), this patch can be replaced.
-> 
-> Changelog: 20100820
->  - new approarch.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> I should mention that I ran a similar bisect yesterday but it led to a dead
+> end:
+[snip]
+> All the bad kernels above boot EXTREMELY slowly and it's not clear why. Using
+> the results above to run your tests produced the following:
 
-Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+I was hoping that git would be more intelligent than that. Is there a way
+to simply bisect down one side of a merge?
 
-...
->  
-> Index: mmotm-0811/include/linux/cgroup.h
-> ===================================================================
-> --- mmotm-0811.orig/include/linux/cgroup.h
-> +++ mmotm-0811/include/linux/cgroup.h
-> @@ -475,6 +475,7 @@ struct cgroup_subsys {
->  			struct cgroup *cgrp);
->  	void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
->  	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
-> +	void (*id_attached)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+The slow boot is probably fixed by 4936a3b90d79dd8775c6ac23c2cf2dcebe29abde.
+A trivial patch you can apply on each step is:
 
-Maybe pass the id number to id_attached() is better.
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 33dbcc4..88f3b6c 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -837,7 +837,7 @@ static int hpet_clocksource_register(void)
+         * cyc/sec = FSEC_PER_SEC/hpet_period(fsec/cyc)
+         * cyc/sec = (FSEC_PER_NSEC * NSEC_PER_SEC)/hpet_period
+         */
+-       hpet_freq = FSEC_PER_NSEC * NSEC_PER_SEC;
++       hpet_freq = (u64) FSEC_PER_NSEC * NSEC_PER_SEC;
+        do_div(hpet_freq, hpet_period);
+        clocksource_register_hz(&clocksource_hpet, (u32)hpet_freq);
 
-And actually the @ss argument is not necessary, because the memcg's
-id_attached() handler of course knows it's dealing with the memory
-cgroup subsystem.
-
-So I suspect we can just remove all the @ss from all the callbacks..
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
