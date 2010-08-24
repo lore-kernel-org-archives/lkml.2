@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab0HXQjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 12:39:01 -0400
-Received: from owa.skola.saffle.se ([195.84.66.73]:6673 "EHLO
-	owa.skola.saffle.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab0HXQjA (ORCPT
+	id S1755729Ab0HXQjo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 12:39:44 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:49774 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754343Ab0HXQjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 12:39:00 -0400
-X-Greylist: delayed 929 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 12:38:59 EDT
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-class: urn:content-classes:message
-Subject: =?utf-8?B?Tm90aWZpY2FjacOzbiBJbXBvcnRhbnRl?=
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Date: Tue, 24 Aug 2010 18:23:26 +0200
-Message-ID: <FD758DE5F34BD24FAF03F7249275032C0209DC3C@it-skolmail-w2k.saffle.edu>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: =?utf-8?B?Tm90aWZpY2FjacOzbiBJbXBvcnRhbnRl?=
-Thread-Index: ActDqKlB5lVaJkEzSAeCpkAckXs3nw==
-From: "malin ljung" <malin.ljung@skola.saffle.se>
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 24 Aug 2010 12:39:42 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=UnERp8kGWGkj7Mm0MjOz12MowGEMd+9g3RPvNEusfztjFxCnRtAzZhZ0jlAzRQYepP8xeEUCjR4o6GohRX7GpFrz2/qdKhkbCmd4ja4MkaT5mOfpYjnaUlrlHrxOT1Du;
+Date: Tue, 24 Aug 2010 09:39:39 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: intel-gfx@lists.freedesktop.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 1/2] drm/i915: Revert wait for vblank to prevent X
+ refresh issues
+Message-ID: <20100824093939.3166fa8a@virtuousgeek.org>
+In-Reply-To: <20100824155359.GB10473@sucs.org>
+References: <20100823233551.GA31920@sucs.org>
+	<89kc63$hrmse5@fmsmga002.fm.intel.com>
+	<20100824075741.GA11000@sucs.org>
+	<8u3s8d$jcg467@orsmga001.jf.intel.com>
+	<20100824084902.GA27569@sucs.org>
+	<89kc63$hrqoho@fmsmga002.fm.intel.com>
+	<20100824095535.GA14020@sucs.org>
+	<20100824155359.GB10473@sucs.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7OGd53Q024439
 
- 
- 
-MASTERCARD Â® / MICROSOFT Â® PREMIO MAYOR SÃšPER INTERNACIONAL.
-Director Ejecutivo: Sr. Adam Smith.
+On Tue, 24 Aug 2010 16:53:59 +0100
+Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
 
-Querido Ganador en Efectivo,
+> In commit 9d0498a2bf7455159b317f19531a3e5db2ecc9c4 20ms waits were
+> converted into vblank waits. One of these caused tearing, mode detection
+> and redraw issues on an EeePC 900 with a more recent intel userspace (
+> http://lkml.org/lkml/2010/8/23/432 ). Restoring the 20ms wait resolves
+> the issue.
+> 
+> Signed-off-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+> ---
+>  drivers/gpu/drm/i915/intel_display.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index 23157e1..116d938 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -4539,7 +4539,7 @@ struct drm_crtc *intel_get_load_detect_pipe(struct intel_encoder *intel_encoder,
+>  		encoder_funcs->commit(encoder);
+>  	}
+>  	/* let the connector get through one full cycle before testing */
+> -	intel_wait_for_vblank(dev, intel_crtc->pipe);
+> +	msleep(20);
+>  
+>  	return crtc;
+>  }
 
-Su direcciÃ³n de correo electrÃ³nico fue seleccionada y confirmada por nuestro copatrocinador Microsoft Internacional, por su Ãºltimo software de Internet. Usted tiene por lo tanto sido aprobado por MasterCard Â® Int'l/Microsoft Â® CorporaciÃ³n el Reino Unido la suma de Â£952,000.00GBP (Novecientas cincuenta y dos mil Grandes Libras Esterlinas). Estos fondos estÃ¡n en el efectivo, CreÃ­do a un cheque de caja vÃ¡lido, con a ganancia de Registro. No de MCIMJ: 36925/0751. Sea informado que su premio ha sido asegurado y listo para le gastan. Usted debe ponerse en contacto con su adjudicado oficial de reclamaciones abajo con su informaciÃ³n requerida:
+Wow, tearing, mode detection and redraw problems all because of this
+line?  Maybe because we wait for a longer period here now?  Can you
+check and see if we're timing out in the wait_for_vblank function?
 
-Nombre Srs. Helen Thomason
-Correo electrÃ³nico: helen.thomason@live.com
-Departamento de VerificaciÃ³n de Reclamaciones.
-
-EnvÃ­e realmente al susodicho Administrador de Reclamaciones por correo electrÃ³nico, inmediatamente con este Reclama Exigencias; 1. El Nombre 2 Lleno. DirecciÃ³n: 3. Nacionalidad: 4. Edad: 5.OcupaciÃ³n: Naturaleza de Trabajo: 6. Telefonear: Fax: 7. Estado de Origen: PaÃ­s: 8.Sexo: 9. Ganancia de Correo electrÃ³nico DirecciÃ³n:
-
-Modo de Premio Entrega de Remittance:Courier de su Cheque de Ganancia Certificadoy otros Documentos de Ganancia sin peligro a usted.
- 
-Atentamente,
-Malin Ljung.
-DirÃ­jasse Cliente Se preocupan el Servicio.
-Copyright Â© 2010 MasterCard Inc el Reino Unido
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Jesse Barnes, Intel Open Source Technology Center
