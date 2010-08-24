@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab0HXJjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 05:39:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754058Ab0HXJjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 05:39:12 -0400
-Message-ID: <4C73932A.3030709@redhat.com>
-Date: Tue, 24 Aug 2010 12:38:50 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1754653Ab0HXJlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 05:41:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55780 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab0HXJlL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 05:41:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UryyUgE1FWvHNqzEqJ0xsfTQlC9HKiD/mexIMBTrHhVCBcWJwsxjArVsugcenIXCOh
+         aWLjtdj/FX52IM1UpsNIihTqEAVSPF8bHzEMkAMg9QpZB8S1zBIN0K8KGjBAh6d/3wZF
+         PjMZaQPeDl4ImucqLJMoK/FwNWjw0lgicMg2c=
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 09/12] Retry fault before vmentry
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com> <1279553462-7036-10-git-send-email-gleb@redhat.com> <4C73900D.1080404@redhat.com> <20100824093356.GY10499@redhat.com>
-In-Reply-To: <20100824093356.GY10499@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100823090604.6c735c80@notabene>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100820083057.GA10039@infradead.org>
+	<20100820195303.20b17210@notabene>
+	<20100820115135.GQ31363@ZenIV.linux.org.uk>
+	<20100821100900.4b15fe08@notabene>
+	<17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
+	<20100823090604.6c735c80@notabene>
+Date: Tue, 24 Aug 2010 11:41:10 +0200
+Message-ID: <AANLkTi=vYJDT_6YrfugE1N-k0Sj+abQBw7vQeG1GPhUP@mail.gmail.com>
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Andreas Dilger <andreas.dilger@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>,
+        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
+        "philippe.deniel@CEA.FR" <philippe.deniel@cea.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/24/2010 12:33 PM, Gleb Natapov wrote:
+On Mon, Aug 23, 2010 at 1:06 AM, Neil Brown <neilb@suse.de> wrote:
+> On Sat, 21 Aug 2010 01:13:52 -0600
+> Andreas Dilger <andreas.dilger@oracle.com> wrote:
 >
->
->>> @@ -505,6 +506,37 @@ out_unlock:
->>>   	return 0;
->>>   }
->>>
->>> +static int FNAME(page_fault_other_cr3)(struct kvm_vcpu *vcpu, gpa_t cr3,
->>> +				       gva_t addr, u32 error_code)
->>> +{
->>> +	int r = 0;
->>> +	gpa_t curr_cr3 = vcpu->arch.cr3;
->>> +
->>> +	if (curr_cr3 != cr3) {
->>> +		/*
->>> +		 * We do page fault on behalf of a process that is sleeping
->>> +		 * because of async PF. PV guest takes reference to mm that cr3
->>> +		 * belongs too, so it has to be valid here.
->>> +		 */
->>> +		kvm_set_cr3(vcpu, cr3);
->>> +		if (kvm_mmu_reload(vcpu))
->>> +			goto switch_cr3;
->>> +	}
->> With nested virtualization, we need to switch cr0, cr4, and efer as well...
->>
-> On SVM or VMX or both?
+>> On 2010-08-20, at 18:09, Neil Brown <neilb@suse.de> wrote:
+>> > How about a new AT flag:  AT_FILE_HANDLE
+>> >
+>> > Meaning is that the 'dirfd' is used only to identify a filesystem (vfsmnt) and
+>> > the 'name' pointer actually points to a filehandle fragment interpreted in
+>> > that filesystem.
 
-Both.  Let's defer this patch since it's an optimization, this is really 
-complicated.
+Why ot creating a special file system for this kind of operation ?
+I mean a vfsmnt filesystem, with each directory on the root is a
+symlink to the root of the real vfsmnt root ?
 
->>> +
->>> +	r = FNAME(page_fault)(vcpu, addr, error_code, true);
->>> +
->>> +	if (kvm_check_request(KVM_REQ_MMU_SYNC, vcpu))
->>> +		kvm_mmu_sync_roots(vcpu);
->> Why is this needed?
->>
-> http://www.mail-archive.com/kvm@vger.kernel.org/msg37827.html
->
->   KVM_REQ_MMU_SYNC request generated here must be processed before
->   switching to a different cr3 (otherwise vcpu_enter_guest will process it
->   with the wrong cr3 in place).
+I could be even be in proc space like /proc/self/vfsmnt
 
-Ah, it should be part of the cr3 switch block above.
+path_to_handle will return a relative path from this directory like
+0x75843558/somehandle (if X is on /usr/bin/X and usr is mounted by
+filesystem 0x75843558)
+path_to_fshandle() will return 0x75843558
 
->>> +
->>> +switch_cr3:
->>> +	if (curr_cr3 != vcpu->arch.cr3) {
->>> +		kvm_set_cr3(vcpu, curr_cr3);
->>> +		kvm_mmu_reload(vcpu);
->>> +	}
->>> +
->>> +	return r;
->>> +}
->> This has the nasty effect of flushing the TLB on AMD.
->>
-> What is more expansive reenter the guest and handle one more fault, or
-> flash TLB here?
+opening file handle will be just a matter to thus open
+/proc/self/vfsmount/0x75843558/somehandle
 
-No idea.  Probably the reentry.  On Intel the tlb is flushed anyway.
+Permission will be determined by vfsmount filesystem.
 
--- 
-error compiling committee.c: too many arguments to function
+No need to create new syscall all te handle to filename will be handle
+by the vfsmount filesystem
 
+We could even use at existing command. The dirfd will need to be only
+/proc/self/vfsmnt (and if you need to get a fd without mounting /proc
+create a syscall to get this fd).
+
+Does sound plausible ?
+
+Bastien
