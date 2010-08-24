@@ -1,25 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab0HXHNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 03:13:50 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:40538 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab0HXHNs (ORCPT
+	id S1754168Ab0HXHPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 03:15:00 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38168 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab0HXHO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 03:13:48 -0400
-Date: Tue, 24 Aug 2010 09:13:44 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: linux-next: manual merge of the block tree with the s390 tree
-Message-ID: <20100824091344.3945ccdc@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20100824105328.9bf22335.sfr@canb.auug.org.au>
-References: <20100824105328.9bf22335.sfr@canb.auug.org.au>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Tue, 24 Aug 2010 03:14:58 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 24 Aug 2010 16:09:48 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 1/6] mm: strictly nested kmap_atomic
+Message-Id: <20100824160948.4923ff0e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100819202753.595997973@chello.nl>
+References: <20100819201317.673172547@chello.nl>
+	<20100819202753.595997973@chello.nl>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,29 +35,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Thu, 19 Aug 2010 22:13:18 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-On Tue, 24 Aug 2010 10:53:28 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi Jens,
+> Ensure kmap_atomic usage is strictly nested
 > 
-> Today's linux-next merge of the block tree got a conflict in
-> drivers/s390/char/tape_block.c between commit
-> 7dc74a8fdb22f4410a2d8e45353c9ea75821a9ba ("[S390] tape: fix kernel panic
-> when setting tape device offline") from the s390 tree and commit
-> 52cc2eef31587b22ce9fbe77b064a031a9613ab0 ("block: switch s390 tape_block
-> and mg_disk to elevator_change()") from the block tree.
-> 
-> I assume that the latter removes the need for the former, so I used that.
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-The patch in the block tree includes the fix for the s390 tape driver.
-So I guess its best if I remove the s390 specific patch from the
-git390 tree.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
