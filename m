@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab0HXPpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:45:08 -0400
-Received: from iku-turso.techk.org ([201.17.8.2]:47018 "EHLO
-	Iku-turso.techk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab0HXPpF (ORCPT
+	id S1755499Ab0HXPpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:45:51 -0400
+Received: from mtagate2.de.ibm.com ([195.212.17.162]:55603 "EHLO
+	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab0HXPpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:45:05 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Aug 2010 11:45:05 EDT
-Date: Tue, 24 Aug 2010 12:39:50 -0300 (BRT)
-From: Decio Fonini <fonini@techk.org>
-To: Jiri Kosina <jkosina@suse.cz>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 2.6.35.3] usbhid: USB 5543:6001 needs HID_QUIRK_MULTI_INPUT
-Message-ID: <alpine.LFD.2.00.1008241235200.29566@Tk.techk.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Aug 2010 11:45:49 -0400
+Date: Tue, 24 Aug 2010 17:47:41 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2] ARM: uaccess: Implement strict user copy checks
+Message-ID: <20100824154740.GD2160@osiris.boeblingen.de.ibm.com>
+References: <4C61EE55.5030506@codeaurora.org>
+ <201008191309.15425.arnd@arndb.de>
+ <20100824150655.GB2160@osiris.boeblingen.de.ibm.com>
+ <201008241726.08797.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008241726.08797.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Decio Fonini <fonini@techk.org>
+On Tue, Aug 24, 2010 at 05:26:08PM +0200, Arnd Bergmann wrote:
+> On Tuesday 24 August 2010, Heiko Carstens wrote:
+> > > (Taking Martin and Heiko on Cc for s390)
+> > > 
+> > > I'd strongly suggest making the behavior the same for everyone. It should
+> > > be fairly easy to make sure none of these warnings ever triggers
+> > > on s390, because most of the Linux device driver code does not get build
+> > > there anyway.
+> > 
+> > Please don't do that. An s390 allyesconfig still triggers 45 warnings and
+> > I'm currently not willing to "patch" working code just to get rid of these
+> > warnings which are most likely all false positives.
+> > That's the reason why we currently don't error out and only generate
+> > warnings.
+> 
+> Can't you just turn that option off then? Or are you worried about
+> allyesconfig builds?
 
-The Kanvus Note A5 tablet (with USB ID 5543:6001, USB vendor UC_Logic) needs 
-the HID_QUIRK_MULTI_INPUT in order to work out of the box; otherwise, we get 
-the usual "cursor stuck at the upper left corner of the screen".
+I'd like to keep an allyesconfig compiling and booting.
+With the proposed change we would never see a green entry at
+http://kisskb.ellerman.id.au/kisskb/branch/9/ for s390's allyesconfig
+build ;)
+And it would make it a bit harder to find the usual !HAS_DMA and
+!HAS_IOMEM build breakages we see quite frequently. No reason to make
+it even more difficult to keep s390 compiling.
 
-Signed-off-by: Decio Fonini <fonini@techk.org>
+> The current state is confusing because on s390
+> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS means that gcc will warn rather
+> than ignore the finding, while on all others, the same option turns
+> a warning into an error.
 
----
-
-diff -uprN -X a/Documentation/dontdiff a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
---- a/drivers/hid/hid-ids.h	2010-08-20 15:55:55.000000000 -0300
-+++ b/drivers/hid/hid-ids.h	2010-08-24 10:17:12.244384470 -0300
-@@ -490,6 +490,7 @@
-  #define USB_VENDOR_ID_UCLOGIC		0x5543
-  #define USB_DEVICE_ID_UCLOGIC_TABLET_PF1209	0x0042
-  #define USB_DEVICE_ID_UCLOGIC_TABLET_WP4030U	0x0003
-+#define USB_DEVICE_ID_UCLOGIC_TABLET_KNA5	0x6001
-
-  #define USB_VENDOR_ID_VERNIER		0x08f7
-  #define USB_DEVICE_ID_VERNIER_LABPRO	0x0001
-diff -uprN -X a/Documentation/dontdiff a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
---- a/drivers/hid/usbhid/hid-quirks.c	2010-08-20 15:55:55.000000000 -0300
-+++ b/drivers/hid/usbhid/hid-quirks.c	2010-08-24 11:07:51.388410656 -0300
-@@ -69,6 +69,7 @@ static const struct hid_blacklist {
-  	{ USB_VENDOR_ID_TURBOX, USB_DEVICE_ID_TURBOX_KEYBOARD, HID_QUIRK_NOGET },
-  	{ USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_PF1209, HID_QUIRK_MULTI_INPUT },
-  	{ USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP4030U, HID_QUIRK_MULTI_INPUT },
-+	{ USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_KNA5, HID_QUIRK_MULTI_INPUT },
-  	{ USB_VENDOR_ID_WISEGROUP, USB_DEVICE_ID_DUAL_USB_JOYPAD, HID_QUIRK_NOGET | HID_QUIRK_MULTI_INPUT | HID_QUIRK_SKIP_OUTPUT_REPORTS },
-  	{ USB_VENDOR_ID_WISEGROUP, USB_DEVICE_ID_QUAD_USB_JOYPAD, HID_QUIRK_NOGET | HID_QUIRK_MULTI_INPUT },
-
+Then maybe add a "choice" Kconfig option in a way that both allyesconfig
+as well as allnoconfig will build?
