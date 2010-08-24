@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323Ab0HXXi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:38:28 -0400
-Received: from kroah.org ([198.145.64.141]:40325 "EHLO coco.kroah.org"
+	id S934329Ab0HXXin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:38:43 -0400
+Received: from kroah.org ([198.145.64.141]:40320 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932834Ab0HXW6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:25 -0400
+	id S932827Ab0HXW6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:13 2010
-Message-Id: <20100824224213.887386067@clark.site>
+Message-Id: <20100824224213.796513884@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:43 -0700
+Date: Tue, 24 Aug 2010 15:41:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [21/91] cfg80211: fix locking in action frame TX
+        Huang Ying <ying.huang@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [20/91] tracing: Fix ring_buffer_read_page reading out of page boundary
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Huang Ying <ying.huang@intel.com>
 
-commit fe100acddf438591ecf3582cb57241e560da70b7 upstream.
+commit 18fab912d4fa70133df164d2dcf3310be0c38c34 upstream.
 
-Accesses to "wdev->current_bss" must be
-locked with the wdev lock, which action
-frame transmission is missing.
+With the configuration: CONFIG_DEBUG_PAGEALLOC=y and Shaohua's patch:
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[PATCH]x86: make spurious_fault check correct pte bit
+
+Function call graph trace with the following will trigger a page fault.
+
+# cd /sys/kernel/debug/tracing/
+# echo function_graph > current_tracer
+# cat per_cpu/cpu1/trace_pipe_raw > /dev/null
+
+BUG: unable to handle kernel paging request at ffff880006e99000
+IP: [<ffffffff81085572>] rb_event_length+0x1/0x3f
+PGD 1b19063 PUD 1b1d063 PMD 3f067 PTE 6e99160
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+last sysfs file: /sys/devices/virtual/net/lo/operstate
+CPU 1
+Modules linked in:
+
+Pid: 1982, comm: cat Not tainted 2.6.35-rc6-aes+ #300 /Bochs
+RIP: 0010:[<ffffffff81085572>]  [<ffffffff81085572>] rb_event_length+0x1/0x3f
+RSP: 0018:ffff880006475e38  EFLAGS: 00010006
+RAX: 0000000000000ff0 RBX: ffff88000786c630 RCX: 000000000000001d
+RDX: ffff880006e98000 RSI: 0000000000000ff0 RDI: ffff880006e99000
+RBP: ffff880006475eb8 R08: 000000145d7008bd R09: 0000000000000000
+R10: 0000000000008000 R11: ffffffff815d9336 R12: ffff880006d08000
+R13: ffff880006e605d8 R14: 0000000000000000 R15: 0000000000000018
+FS:  00007f2b83e456f0(0000) GS:ffff880002100000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: ffff880006e99000 CR3: 00000000064a8000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process cat (pid: 1982, threadinfo ffff880006474000, task ffff880006e40770)
+Stack:
+ ffff880006475eb8 ffffffff8108730f 0000000000000ff0 000000145d7008bd
+<0> ffff880006e98010 ffff880006d08010 0000000000000296 ffff88000786c640
+<0> ffffffff81002956 0000000000000000 ffff8800071f4680 ffff8800071f4680
+Call Trace:
+ [<ffffffff8108730f>] ? ring_buffer_read_page+0x15a/0x24a
+ [<ffffffff81002956>] ? return_to_handler+0x15/0x2f
+ [<ffffffff8108a575>] tracing_buffers_read+0xb9/0x164
+ [<ffffffff810debfe>] vfs_read+0xaf/0x150
+ [<ffffffff81002941>] return_to_handler+0x0/0x2f
+ [<ffffffff810248b0>] __bad_area_nosemaphore+0x17e/0x1a1
+ [<ffffffff81002941>] return_to_handler+0x0/0x2f
+ [<ffffffff810248e6>] bad_area_nosemaphore+0x13/0x15
+Code: 80 25 b2 16 b3 00 fe c9 c3 55 48 89 e5 f0 80 0d a4 16 b3 00 02 c9 c3 55 31 c0 48 89 e5 48 83 3d 94 16 b3 00 01 c9 0f 94 c0 c3 55 <8a> 0f 48 89 e5 83 e1 1f b8 08 00 00 00 0f b6 d1 83 fa 1e 74 27
+RIP  [<ffffffff81085572>] rb_event_length+0x1/0x3f
+ RSP <ffff880006475e38>
+CR2: ffff880006e99000
+---[ end trace a6877bb92ccb36bb ]---
+
+The root cause is that ring_buffer_read_page() may read out of page
+boundary, because the boundary checking is done after reading. This is
+fixed via doing boundary checking before reading.
+
+Reported-by: Shaohua Li <shaohua.li@intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+LKML-Reference: <1280297641.2771.307.camel@yhuang-dev>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/mlme.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ kernel/trace/ring_buffer.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/wireless/mlme.c
-+++ b/net/wireless/mlme.c
-@@ -825,12 +825,18 @@ int cfg80211_mlme_action(struct cfg80211
- 		return -EINVAL;
- 	if (mgmt->u.action.category != WLAN_CATEGORY_PUBLIC) {
- 		/* Verify that we are associated with the destination AP */
-+		wdev_lock(wdev);
-+
- 		if (!wdev->current_bss ||
- 		    memcmp(wdev->current_bss->pub.bssid, mgmt->bssid,
- 			   ETH_ALEN) != 0 ||
- 		    memcmp(wdev->current_bss->pub.bssid, mgmt->da,
--			   ETH_ALEN) != 0)
-+			    ETH_ALEN) != 0) {
-+			wdev_unlock(wdev);
- 			return -ENOTCONN;
-+		}
-+		wdev_unlock(wdev);
-+
- 	}
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3757,6 +3757,9 @@ int ring_buffer_read_page(struct ring_bu
+ 			rpos = reader->read;
+ 			pos += size;
  
- 	if (memcmp(mgmt->sa, dev->dev_addr, ETH_ALEN) != 0)
++			if (rpos >= commit)
++				break;
++
+ 			event = rb_reader_event(cpu_buffer);
+ 			size = rb_event_length(event);
+ 		} while (len > size);
 
 
