@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187Ab0HXXAQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:00:16 -0400
-Received: from kroah.org ([198.145.64.141]:40679 "EHLO coco.kroah.org"
+	id S933197Ab0HXXAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:00:21 -0400
+Received: from kroah.org ([198.145.64.141]:40696 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932943Ab0HXXAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:00:02 -0400
+	id S933160Ab0HXXAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:00:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:19 2010
-Message-Id: <20100824224219.715468009@clark.site>
+Message-Id: <20100824224219.902865707@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:51 -0700
+Date: Tue, 24 Aug 2010 15:42:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Galen Seitz <galens@seitzassoc.com>
-Subject: [89/91] USB: ftdi_sio: add product ID for Lenz LI-USB
+        <jbohac@novell.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kerstin Jonsson <kerstin.jonsson@ericsson.com>,
+        Avi Kivity <avi@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Renninger <trenn@suse.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [91/91] x86, apic: ack all pending irqs when crashed/on kexec
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +29,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Galen Seitz <galens@seitzassoc.com>
+From: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
 
-commit ea233f805537f5da16c2b34d85b6c5cf88a0f9aa upstream.
+commit 8c3ba8d049247dc06b6dcee1711a11b26647aa44 upstream.
 
-Add ftdi product ID for Lenz LI-USB, a model train interface.  This
-was NOT tested against 2.6.35, but a similar patch was tested with the
-CentOS 2.6.18-194.11.1.el5 kernel.  It wasn't clear to me what
-ordering is being used in ftdi_sio.c, so I inserted the ID after another
-model train entry(SPROG_II).
+When the SMP kernel decides to crash_kexec() the local APICs may have
+pending interrupts in their vector tables.
 
-Signed-off-by: Galen Seitz <galens@seitzassoc.com>
+The setup routine for the local APIC has a deficient mechanism for
+clearing these interrupts, it only handles interrupts that has already
+been dispatched to the local core for servicing (the ISR register) safely,
+it doesn't consider lower prioritized queued interrupts stored in the IRR
+register.
+
+If you have more than one pending interrupt within the same 32 bit word in
+the LAPIC vector table registers you may find yourself entering the IO
+APIC setup with pending interrupts left in the LAPIC.  This is a situation
+for wich the IO APIC setup is not prepared.  Depending of what/which
+interrupt vector/vectors are stuck in the APIC tables your system may show
+various degrees of malfunctioning.  That was the reason why the
+check_timer() failed in our system, the timer interrupts was blocked by
+pending interrupts from the old kernel when routed trough the IO APIC.
+
+Additional comment from Jiri Bohac:
+==============
+If this should go into stable release,
+I'd add some kind of limit on the number of iterations, just to be safe from
+hard to debug lock-ups:
+
++if (loops++  > MAX_LOOPS) {
++        printk("LAPIC pending clean-up")
++        break;
++}
+ while (queued);
+
+with MAX_LOOPS something like 1E9 this would leave plenty of time for the
+pending IRQs to be cleared and would and still cause at most a second of delay
+if the loop were to lock-up for whatever reason.
+
+[trenn@suse.de:
+
+V2: Use tsc if avail to bail out after 1 sec due to possible virtual
+    apic_read calls which may take rather long (suggested by: Avi Kivity
+    <avi@redhat.com>) If no tsc is available bail out quickly after
+    cpu_khz, if we broke out too early and still have irqs pending (which
+    should never happen?) we still get a WARN_ON...
+
+V3: - Fixed indentation -> checkpatch clean
+    - max_loops must be signed
+
+V4: - Fix typo, mixed up tsc and ntsc in first rdtscll() call
+
+V5: Adjust WARN_ON() condition to also catch error in cpu_has_tsc case]
+
+Cc: <jbohac@novell.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Tested-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+LKML-Reference: <201005241913.o4OJDGWM010865@imap1.linux-foundation.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    3 +++
- 2 files changed, 4 insertions(+)
+ arch/x86/kernel/apic/apic.c |   41 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 33 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -185,6 +185,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_547_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -110,6 +110,9 @@
- /* Propox devices */
- #define FTDI_PROPOX_JTAGCABLEII_PID	0xD738
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -51,6 +51,7 @@
+ #include <asm/smp.h>
+ #include <asm/mce.h>
+ #include <asm/kvm_para.h>
++#include <asm/tsc.h>
  
-+/* Lenz LI-USB Computer Interface. */
-+#define FTDI_LENZ_LIUSB_PID	0xD780
-+
- /*
-  * Xsens Technologies BV products (http://www.xsens.com).
+ unsigned int num_processors;
+ 
+@@ -1151,8 +1152,13 @@ static void __cpuinit lapic_setup_esr(vo
   */
+ void __cpuinit setup_local_APIC(void)
+ {
+-	unsigned int value;
+-	int i, j;
++	unsigned int value, queued;
++	int i, j, acked = 0;
++	unsigned long long tsc = 0, ntsc;
++	long long max_loops = cpu_khz;
++
++	if (cpu_has_tsc)
++		rdtscll(tsc);
+ 
+ 	if (disable_apic) {
+ 		arch_disable_smp_support();
+@@ -1204,13 +1210,32 @@ void __cpuinit setup_local_APIC(void)
+ 	 * the interrupt. Hence a vector might get locked. It was noticed
+ 	 * for timer irq (vector 0x31). Issue an extra EOI to clear ISR.
+ 	 */
+-	for (i = APIC_ISR_NR - 1; i >= 0; i--) {
+-		value = apic_read(APIC_ISR + i*0x10);
+-		for (j = 31; j >= 0; j--) {
+-			if (value & (1<<j))
+-				ack_APIC_irq();
++	do {
++		queued = 0;
++		for (i = APIC_ISR_NR - 1; i >= 0; i--)
++			queued |= apic_read(APIC_IRR + i*0x10);
++
++		for (i = APIC_ISR_NR - 1; i >= 0; i--) {
++			value = apic_read(APIC_ISR + i*0x10);
++			for (j = 31; j >= 0; j--) {
++				if (value & (1<<j)) {
++					ack_APIC_irq();
++					acked++;
++				}
++			}
+ 		}
+-	}
++		if (acked > 256) {
++			printk(KERN_ERR "LAPIC pending interrupts after %d EOI\n",
++			       acked);
++			break;
++		}
++		if (cpu_has_tsc) {
++			rdtscll(ntsc);
++			max_loops = (cpu_khz << 10) - (ntsc - tsc);
++		} else
++			max_loops--;
++	} while (queued && max_loops > 0);
++	WARN_ON(max_loops <= 0);
+ 
+ 	/*
+ 	 * Now that we are all set up, enable the APIC
 
 
