@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934416Ab0HXXr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:47:29 -0400
-Received: from kroah.org ([198.145.64.141]:52075 "EHLO coco.kroah.org"
+	id S1756383Ab0HXWxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:53:35 -0400
+Received: from kroah.org ([198.145.64.141]:52053 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756386Ab0HXWxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:53:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:23 2010
-Message-Id: <20100824222523.445519169@clark.site>
+	id S1756332Ab0HXWxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:22 2010
+Message-Id: <20100824222522.874151882@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:24 -0700
+Date: Tue, 24 Aug 2010 15:24:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wengang Wang <wen.gang.wang@oracle.com>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: [12/59] ocfs2/dlm: remove potential deadlock -V3
+        Jonathan Woithe <jwoithe@physics.adelaide.edu.au>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [06/59] ALSA: hda - Fix missing stream for second ADC on Realtek ALC260 HDA codec
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wengang Wang <wen.gang.wang@oracle.com>
+From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
 
-commit b11f1f1ab73fd358b1b734a9427744802202ba68 upstream.
+commit 53bacfbbb2ddd981287b58a511c8b8f5df179886 upstream.
 
-When we need to take both dlm_domain_lock and dlm->spinlock, we should take
-them in order of: dlm_domain_lock then dlm->spinlock.
+I discovered tonight that ALSA no longer sets up a stream for the second ADC
+provided by the Realtek ALC260 HDA codec.  At some point alc_build_pcms()
+started using stream_analog_alt_capture when constructing the second ADC
+stream, but patch_alc260() was never updated accordingly.  I have no idea
+when this regression occurred.  The trivial patch to patch_alc260() given
+below fixes the problem as far as I can tell.  The patch is against 2.6.35.
 
-There is pathes disobey this order. That is calling dlm_lockres_put() with
-dlm->spinlock held in dlm_run_purge_list. dlm_lockres_put() calls dlm_put() at
-the ref and dlm_put() locks on dlm_domain_lock.
-
-Fix:
-Don't grab/put the dlm when the initialising/releasing lockres.
-That grab is not required because we don't call dlm_unregister_domain()
-based on refcount.
-
-Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Signed-off-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/dlm/dlmmaster.c |    4 ----
- 1 file changed, 4 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ocfs2/dlm/dlmmaster.c
-+++ b/fs/ocfs2/dlm/dlmmaster.c
-@@ -511,8 +511,6 @@ static void dlm_lockres_release(struct k
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6455,6 +6455,7 @@ static int patch_alc260(struct hda_codec
  
- 	atomic_dec(&dlm->res_cur_count);
+ 	spec->stream_analog_playback = &alc260_pcm_analog_playback;
+ 	spec->stream_analog_capture = &alc260_pcm_analog_capture;
++	spec->stream_analog_alt_capture = &alc260_pcm_analog_capture;
  
--	dlm_put(dlm);
--
- 	if (!hlist_unhashed(&res->hash_node) ||
- 	    !list_empty(&res->granted) ||
- 	    !list_empty(&res->converting) ||
-@@ -585,8 +583,6 @@ static void dlm_init_lockres(struct dlm_
- 	res->migration_pending = 0;
- 	res->inflight_locks = 0;
- 
--	/* put in dlm_lockres_release */
--	dlm_grab(dlm);
- 	res->dlm = dlm;
- 
- 	kref_init(&res->refs);
+ 	spec->stream_digital_playback = &alc260_pcm_digital_playback;
+ 	spec->stream_digital_capture = &alc260_pcm_digital_capture;
 
 
