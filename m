@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433Ab0HXXCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:02:14 -0400
-Received: from kroah.org ([198.145.64.141]:40993 "EHLO coco.kroah.org"
+	id S933494Ab0HXXCh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:02:37 -0400
+Received: from kroah.org ([198.145.64.141]:41091 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933397Ab0HXXCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:02 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
-Message-Id: <20100824224504.400213091@clark.site>
+	id S933402Ab0HXXCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
+Message-Id: <20100824224505.611274744@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:41 -0700
+Date: Tue, 24 Aug 2010 15:44:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marek.vasut@gmail.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [036/114] BFIN: Fix gen_nand probe structures contents
+        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [050/114] dm: prevent access to md being deleted
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marek.vasut@gmail.com>
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
 
-commit ef56609f9c7fdf5baa9d9f86f84a7bd8a717cd25 upstream.
+commit abdc568b0540bec6d3e0afebac496adef1189b77 upstream.
 
-These two platforms didn't properly fill nr_chips in gen_nand
-registration and therefore depended on gen_nand bug fixed by by commit
-81cbb0b17796d81cbd92defe113cf2a7c7a21fbb ("mtd: gen_nand: fix support for
-multiple chips")
+This patch prevents access to mapped_device which is being deleted.
 
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Currently, even after a mapped_device has been removed from the hash,
+it could be accessed through idr_find() using minor number.
+That could cause a race and NULL pointer reference below:
+  CPU0                          CPU1
+  ------------------------------------------------------------------
+  dev_remove(param)
+    down_write(_hash_lock)
+    dm_lock_for_deletion(md)
+      spin_lock(_minor_lock)
+      set_bit(DMF_DELETING)
+      spin_unlock(_minor_lock)
+    __hash_remove(hc)
+    up_write(_hash_lock)
+                                dev_status(param)
+                                  md = find_device(param)
+                                         down_read(_hash_lock)
+                                         __find_device_hash_cell(param)
+                                           dm_get_md(param->dev)
+                                             md = dm_find_md(dev)
+                                                    spin_lock(_minor_lock)
+                                                    md = idr_find(MINOR(dev))
+                                                    spin_unlock(_minor_lock)
+    dm_put(md)
+      free_dev(md)
+                                             dm_get(md)
+                                         up_read(_hash_lock)
+                                  __dev_status(md, param)
+                                  dm_put(md)
+
+This patch fixes such problems.
+
+Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/blackfin/mach-bf537/boards/stamp.c   |    1 +
- arch/blackfin/mach-bf561/boards/acvilon.c |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/md/dm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/blackfin/mach-bf537/boards/stamp.c
-+++ b/arch/blackfin/mach-bf537/boards/stamp.c
-@@ -400,6 +400,7 @@ static int bfin_plat_nand_dev_ready(stru
- 
- static struct platform_nand_data bfin_plat_nand_data = {
- 	.chip = {
-+		.nr_chips = 1,
- 		.chip_delay = 30,
- #ifdef CONFIG_MTD_PARTITIONS
- 		.part_probe_types = part_probes,
---- a/arch/blackfin/mach-bf561/boards/acvilon.c
-+++ b/arch/blackfin/mach-bf561/boards/acvilon.c
-@@ -284,6 +284,7 @@ static int bfin_plat_nand_dev_ready(stru
- 
- static struct platform_nand_data bfin_plat_nand_data = {
- 	.chip = {
-+		 .nr_chips = 1,
- 		 .chip_delay = 30,
- #ifdef CONFIG_MTD_PARTITIONS
- 		 .part_probe_types = part_probes,
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -2141,6 +2141,7 @@ static struct mapped_device *dm_find_md(
+ 	md = idr_find(&_minor_idr, minor);
+ 	if (md && (md == MINOR_ALLOCED ||
+ 		   (MINOR(disk_devt(dm_disk(md))) != minor) ||
++		   dm_deleting_md(md) ||
+ 		   test_bit(DMF_FREEING, &md->flags))) {
+ 		md = NULL;
+ 		goto out;
 
 
