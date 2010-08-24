@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab0HXWXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:23:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932347Ab0HXWXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:23:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] NOMMU: Stub out vm_get_page_prot() if there's no MMU
-To: vapier@gentoo.org
-Cc: linux-kernel@vger.kernel.org, uclinux-dev@uclinux.org,
-        konrad.wilk@oracle.com, dgdegra@tycho.nsa.gov, hugh@veritas.com,
-        airlied@linux.ie, davej@redhat.com,
-        David Howells <dhowells@redhat.com>
-Date: Tue, 24 Aug 2010 23:22:38 +0100
-Message-ID: <20100824222238.6372.8897.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1756093Ab0HXWX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:23:26 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57925 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1755842Ab0HXWXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:23:23 -0400
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX1/aNQYwF4TacZu3M5VUBLWNTVMVnqAF+q4b1WnVYA
+	3lPvWbxyrnV0sx
+Date: Wed, 25 Aug 2010 00:23:20 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Henrique Camargo <henrique@henriquecamargo.com>
+cc: "Aguirre, Sergio" <saaguirre@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mt9t031: Fixes field names that changed
+In-Reply-To: <1282243015.2213.13.camel@lemming>
+Message-ID: <Pine.LNX.4.64.1008250020540.19669@axis700.grange>
+References: <1282243015.2213.13.camel@lemming>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stub out vm_get_page_prot() if there's no MMU.
+On Thu, 19 Aug 2010, Henrique Camargo wrote:
 
-This was added by commit:
+> If CONFIG_VIDEO_ADV_DEBUG was set, the driver failed to compile 
+> because the fields get_register and set_register changed names to 
+> g_register and s_register in the struct v4l2_subdev_core_ops.
+> 
+> Signed-off-by: Henrique Camargo <henrique@henriquecamargo.com>
+> ---
+>  drivers/media/video/mt9t031.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/video/mt9t031.c b/drivers/media/video/mt9t031.c
+> index 716fea6..f3d1995 100644
+> --- a/drivers/media/video/mt9t031.c
+> +++ b/drivers/media/video/mt9t031.c
+> @@ -499,8 +499,8 @@ static const struct v4l2_subdev_core_ops mt9t031_core_ops = {
+>  	.g_ctrl	= mt9t031_get_control,
+>  	.s_ctrl	= mt9t031_set_control,
+>  #ifdef CONFIG_VIDEO_ADV_DEBUG
+> -	.get_register = mt9t031_get_register,
+> -	.set_register = mt9t031_set_register,
+> +	.g_register = mt9t031_get_register,
+> +	.s_register = mt9t031_set_register,
+>  #endif
+>  };
+>  
+> -- 
+> 1.7.0.4
 
-	commit 804af2cf6e7af31d2e664b54e657dddd9b531dbd
-	Author: Hugh Dickins <hugh@veritas.com>
-	Date:   Wed Jul 26 21:39:49 2006 +0100
-	Subject: [AGPGART] remove private page protection map
+I might be missing something obvious, but I do not understand against 
+which tree / version is this patch? I don't see this problem in the 
+mainline.
 
-and is used in commit:
-
-	commit c07fbfd17e614a76b194f371c5331e21e6cffb54
-	Author: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-	Date:   Tue Aug 10 18:02:45 2010 -0700
-	Subject: fbmem: VM_IO set, but not propagated
-
-in the fbmem video driver, but the function doesn't exist on NOMMU, resulting
-in an undefined symbol at link time.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Thanks
+Guennadi
 ---
-
- include/linux/mm.h |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 709f672..6b258c5 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1357,7 +1357,15 @@ static inline unsigned long vma_pages(struct vm_area_struct *vma)
- 	return (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
- }
- 
-+#ifdef CONFIG_MMU
- pgprot_t vm_get_page_prot(unsigned long vm_flags);
-+#else
-+static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
-+{
-+	return __pgprot(0);
-+}
-+#endif
-+
- struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
- int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
- 			unsigned long pfn, unsigned long size, pgprot_t);
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
