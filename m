@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab0HXXRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:17:39 -0400
-Received: from kroah.org ([198.145.64.141]:41058 "EHLO coco.kroah.org"
+	id S933923Ab0HXXRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:17:41 -0400
+Received: from kroah.org ([198.145.64.141]:41048 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933436Ab0HXXCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:15 -0400
+	id S933430Ab0HXXCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:13 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
-Message-Id: <20100824224505.098533989@clark.site>
+Message-Id: <20100824224505.005332069@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:49 -0700
+Date: Tue, 24 Aug 2010 15:44:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefani Seibold <stefani@seibold.net>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Tilman Sauerbeck <tilman@code-monkey.de>,
+        Brian Norris <norris@broadcom.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [044/114] mtd: change struct flchip_shared spinlock locking into mutex
+Subject: [043/114] mtd: nand: Fix probe of Samsung NAND chips
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,213 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefani Seibold <stefani@seibold.net>
+From: Tilman Sauerbeck <tilman@code-monkey.de>
 
-commit 8ae664184c45def51ff0b61d4bd6c6671db6cb4f upstream.
+commit cfe3fdadb16162327773ef01a575a32000b8c7f4 upstream.
 
-This patch prevent to schedule while atomic by changing the
-flchip_shared spinlock into a mutex. This should be save since no atomic
-path will use this lock.
+Apparently, the check for a 6-byte ID string introduced by commit
+426c457a3216fac74e3d44dd39729b0689f4c7ab ("mtd: nand: extend NAND flash
+detection to new MLC chips") is NOT sufficient to determine whether or
+not a Samsung chip uses their new MLC detection scheme or the old,
+standard scheme. This adds a condition to check cell type.
 
-It was suggested by Arnd Bergmann and Vasiliy Kulikov.
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Tilman Sauerbeck <tilman@code-monkey.de>
+Signed-off-by: Brian Norris <norris@broadcom.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/chips/cfi_cmdset_0001.c |   20 ++++++++++----------
- drivers/mtd/lpddr/lpddr_cmds.c      |   20 ++++++++++----------
- include/linux/mtd/flashchip.h       |    2 +-
- 3 files changed, 21 insertions(+), 21 deletions(-)
+ drivers/mtd/nand/nand_base.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mtd/chips/cfi_cmdset_0001.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-@@ -717,7 +717,7 @@ static int cfi_intelext_partition_fixup(
- 		chip = &newcfi->chips[0];
- 		for (i = 0; i < cfi->numchips; i++) {
- 			shared[i].writing = shared[i].erasing = NULL;
--			spin_lock_init(&shared[i].lock);
-+			mutex_init(&shared[i].lock);
- 			for (j = 0; j < numparts; j++) {
- 				*chip = cfi->chips[i];
- 				chip->start += j << partshift;
-@@ -886,7 +886,7 @@ static int get_chip(struct map_info *map
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2852,6 +2852,7 @@ static struct nand_flash_dev *nand_get_f
  		 */
- 		struct flchip_shared *shared = chip->priv;
- 		struct flchip *contender;
--		spin_lock(&shared->lock);
-+		mutex_lock(&shared->lock);
- 		contender = shared->writing;
- 		if (contender && contender != chip) {
- 			/*
-@@ -899,7 +899,7 @@ static int get_chip(struct map_info *map
- 			 * get_chip returns success we're clear to go ahead.
- 			 */
- 			ret = mutex_trylock(&contender->mutex);
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			if (!ret)
- 				goto retry;
- 			mutex_unlock(&chip->mutex);
-@@ -914,7 +914,7 @@ static int get_chip(struct map_info *map
- 				mutex_unlock(&contender->mutex);
- 				return ret;
- 			}
--			spin_lock(&shared->lock);
-+			mutex_lock(&shared->lock);
- 
- 			/* We should not own chip if it is already
- 			 * in FL_SYNCING state. Put contender and retry. */
-@@ -930,7 +930,7 @@ static int get_chip(struct map_info *map
- 		 * on this chip. Sleep. */
- 		if (mode == FL_ERASING && shared->erasing
- 		    && shared->erasing->oldstate == FL_ERASING) {
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
- 			mutex_unlock(&chip->mutex);
-@@ -944,7 +944,7 @@ static int get_chip(struct map_info *map
- 		shared->writing = chip;
- 		if (mode == FL_ERASING)
- 			shared->erasing = chip;
--		spin_unlock(&shared->lock);
-+		mutex_unlock(&shared->lock);
- 	}
- 	ret = chip_ready(map, chip, adr, mode);
- 	if (ret == -EAGAIN)
-@@ -959,7 +959,7 @@ static void put_chip(struct map_info *ma
- 
- 	if (chip->priv) {
- 		struct flchip_shared *shared = chip->priv;
--		spin_lock(&shared->lock);
-+		mutex_lock(&shared->lock);
- 		if (shared->writing == chip && chip->oldstate == FL_READY) {
- 			/* We own the ability to write, but we're done */
- 			shared->writing = shared->erasing;
-@@ -967,7 +967,7 @@ static void put_chip(struct map_info *ma
- 				/* give back ownership to who we loaned it from */
- 				struct flchip *loaner = shared->writing;
- 				mutex_lock(&loaner->mutex);
--				spin_unlock(&shared->lock);
-+				mutex_unlock(&shared->lock);
- 				mutex_unlock(&chip->mutex);
- 				put_chip(map, loaner, loaner->start);
- 				mutex_lock(&chip->mutex);
-@@ -985,11 +985,11 @@ static void put_chip(struct map_info *ma
- 			 * Don't let the switch below mess things up since
- 			 * we don't have ownership to resume anything.
- 			 */
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			wake_up(&chip->wq);
- 			return;
- 		}
--		spin_unlock(&shared->lock);
-+		mutex_unlock(&shared->lock);
- 	}
- 
- 	switch(chip->oldstate) {
---- a/drivers/mtd/lpddr/lpddr_cmds.c
-+++ b/drivers/mtd/lpddr/lpddr_cmds.c
-@@ -98,7 +98,7 @@ struct mtd_info *lpddr_cmdset(struct map
- 	numchips = lpddr->numchips / lpddr->qinfo->HWPartsNum;
- 	for (i = 0; i < numchips; i++) {
- 		shared[i].writing = shared[i].erasing = NULL;
--		spin_lock_init(&shared[i].lock);
-+		mutex_init(&shared[i].lock);
- 		for (j = 0; j < lpddr->qinfo->HWPartsNum; j++) {
- 			*chip = lpddr->chips[i];
- 			chip->start += j << lpddr->chipshift;
-@@ -217,7 +217,7 @@ static int get_chip(struct map_info *map
- 		 */
- 		struct flchip_shared *shared = chip->priv;
- 		struct flchip *contender;
--		spin_lock(&shared->lock);
-+		mutex_lock(&shared->lock);
- 		contender = shared->writing;
- 		if (contender && contender != chip) {
- 			/*
-@@ -230,7 +230,7 @@ static int get_chip(struct map_info *map
- 			 * get_chip returns success we're clear to go ahead.
- 			 */
- 			ret = mutex_trylock(&contender->mutex);
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			if (!ret)
- 				goto retry;
- 			mutex_unlock(&chip->mutex);
-@@ -245,7 +245,7 @@ static int get_chip(struct map_info *map
- 				mutex_unlock(&contender->mutex);
- 				return ret;
- 			}
--			spin_lock(&shared->lock);
-+			mutex_lock(&shared->lock);
- 
- 			/* We should not own chip if it is already in FL_SYNCING
- 			 * state. Put contender and retry. */
-@@ -261,7 +261,7 @@ static int get_chip(struct map_info *map
- 		   Must sleep in such a case. */
- 		if (mode == FL_ERASING && shared->erasing
- 		    && shared->erasing->oldstate == FL_ERASING) {
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
- 			mutex_unlock(&chip->mutex);
-@@ -275,7 +275,7 @@ static int get_chip(struct map_info *map
- 		shared->writing = chip;
- 		if (mode == FL_ERASING)
- 			shared->erasing = chip;
--		spin_unlock(&shared->lock);
-+		mutex_unlock(&shared->lock);
- 	}
- 
- 	ret = chip_ready(map, chip, mode);
-@@ -348,7 +348,7 @@ static void put_chip(struct map_info *ma
- {
- 	if (chip->priv) {
- 		struct flchip_shared *shared = chip->priv;
--		spin_lock(&shared->lock);
-+		mutex_lock(&shared->lock);
- 		if (shared->writing == chip && chip->oldstate == FL_READY) {
- 			/* We own the ability to write, but we're done */
- 			shared->writing = shared->erasing;
-@@ -356,7 +356,7 @@ static void put_chip(struct map_info *ma
- 				/* give back the ownership */
- 				struct flchip *loaner = shared->writing;
- 				mutex_lock(&loaner->mutex);
--				spin_unlock(&shared->lock);
-+				mutex_unlock(&shared->lock);
- 				mutex_unlock(&chip->mutex);
- 				put_chip(map, loaner);
- 				mutex_lock(&chip->mutex);
-@@ -374,11 +374,11 @@ static void put_chip(struct map_info *ma
- 			 * Don't let the switch below mess things up since
- 			 * we don't have ownership to resume anything.
- 			 */
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			wake_up(&chip->wq);
- 			return;
- 		}
--		spin_unlock(&shared->lock);
-+		mutex_unlock(&shared->lock);
- 	}
- 
- 	switch (chip->oldstate) {
---- a/include/linux/mtd/flashchip.h
-+++ b/include/linux/mtd/flashchip.h
-@@ -92,7 +92,7 @@ struct flchip {
- /* This is used to handle contention on write/erase operations
-    between partitions of the same physical chip. */
- struct flchip_shared {
--	spinlock_t lock;
-+	struct mutex lock;
- 	struct flchip *writing;
- 	struct flchip *erasing;
- };
+ 		if (id_data[0] == id_data[6] && id_data[1] == id_data[7] &&
+ 				id_data[0] == NAND_MFR_SAMSUNG &&
++				(chip->cellinfo & NAND_CI_CELLTYPE_MSK) &&
+ 				id_data[5] != 0x00) {
+ 			/* Calc pagesize */
+ 			mtd->writesize = 2048 << (extid & 0x03);
 
 
