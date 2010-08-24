@@ -1,106 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab0HXPkM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:40:12 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:47804 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755451Ab0HXPjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:39:53 -0400
-From: Nicolas Palix <npalix@diku.dk>
-To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>
-Cc: cocci@diku.dk, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Nicolas Palix <npalix@diku.dk>
-Subject: [PATCH 07/18] Coccinelle: Add iterators/fen.cocci
-Date: Tue, 24 Aug 2010 17:39:01 +0200
-Message-Id: <1282664352-15882-8-git-send-email-npalix@diku.dk>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282664352-15882-1-git-send-email-npalix@diku.dk>
-References: <1282664352-15882-1-git-send-email-npalix@diku.dk>
+	id S1755517Ab0HXPmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:42:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41067 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431Ab0HXPmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 11:42:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JWR2rdroCIYqfqmAGwkgnPdvTgawnL+zMtu9fFth/ZPPz2514A2J5UnjgZv5jHJhHz
+         0wmVR2nEDBVAEOAjKSl7ELSO+2QfLvnm4Rn6GoWOKXuaHHlwhtpt8IA8ZmwtN35x81y6
+         2yqjBV8jK27z1tAh2p5HUsiOOOjG+bcvTHMl4=
+Date: Wed, 25 Aug 2010 00:42:38 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
+        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH v2 2/2] compaction: fix COMPACTPAGEFAILED counting
+Message-ID: <20100824154238.GA4500@barrios-desktop>
+References: <1282663879-4130-1-git-send-email-minchan.kim@gmail.com>
+ <1282663879-4130-2-git-send-email-minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282663879-4130-2-git-send-email-minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for_each_node iterators only exit normally when the loop cursor is
-NULL, so there is no point to call of_node_put on the final value.
+Broken description. Will resend 
 
-Signed-off-by: Nicolas Palix <npalix@diku.dk>
-Signed-off-by: Julia Lawall <julia@diku.dk>
----
- scripts/coccinelle/iterators/fen.cocci |   64 ++++++++++++++++++++++++++++++++
- 1 files changed, 64 insertions(+), 0 deletions(-)
- create mode 100644 scripts/coccinelle/iterators/fen.cocci
-
-diff --git a/scripts/coccinelle/iterators/fen.cocci b/scripts/coccinelle/iterators/fen.cocci
-new file mode 100644
-index 0000000..77bc108
---- /dev/null
-+++ b/scripts/coccinelle/iterators/fen.cocci
-@@ -0,0 +1,64 @@
-+/// These iterators only exit normally when the loop cursor is NULL, so there
-+/// is no point to call of_node_put on the final value.
-+///
-+// Confidence: High
-+// Copyright: (C) 2010 Nicolas Palix, DIKU.  GPLv2.
-+// Copyright: (C) 2010 Julia Lawall, DIKU.  GPLv2.
-+// Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Comments:
-+// Options: -no_includes -include_headers
-+
-+virtual patch
-+
-+@@
-+iterator name for_each_node_by_name;
-+expression np,E;
-+identifier l;
-+@@
-+
-+for_each_node_by_name(np,...) {
-+  ... when != break;
-+      when != goto l;
-+}
-+... when != np = E
-+- of_node_put(np);
-+
-+@@
-+iterator name for_each_node_by_type;
-+expression np,E;
-+identifier l;
-+@@
-+
-+for_each_node_by_type(np,...) {
-+  ... when != break;
-+      when != goto l;
-+}
-+... when != np = E
-+- of_node_put(np);
-+
-+@@
-+iterator name for_each_compatible_node;
-+expression np,E;
-+identifier l;
-+@@
-+
-+for_each_compatible_node(np,...) {
-+  ... when != break;
-+      when != goto l;
-+}
-+... when != np = E
-+- of_node_put(np);
-+
-+@@
-+iterator name for_each_matching_node;
-+expression np,E;
-+identifier l;
-+@@
-+
-+for_each_matching_node(np,...) {
-+  ... when != break;
-+      when != goto l;
-+}
-+... when != np = E
-+- of_node_put(np);
 -- 
-1.7.0.4
-
+Kind regards,
+Minchan Kim
