@@ -1,170 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab0HXMkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 08:40:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60095 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab0HXMkI convert rfc822-to-8bit (ORCPT
+	id S1754449Ab0HXMkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 08:40:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38249 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab0HXMkb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 08:40:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type:content-transfer-encoding;
-        b=E+sM0XO5AzAbduF7IJm3YViAamqltlwHJs/gJYwdWJp44an6AJSs2fWmSUaCAG/ome
-         y0fLBzNQY+d23mV0EaghTqFv9ggcyQX99REv8vksgyqOnys1sceu5NZWscAGP31cLVRw
-         vaumZDVslI1dEhc7ZxsJekURUuaPvUEbJhKJ4=
-MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-Date: Tue, 24 Aug 2010 13:40:06 +0100
-Message-ID: <AANLkTikZvog+uKMz4ZhRrxuDMjjW3k+Q6QK14DKJQ-Xc@mail.gmail.com>
-Subject: Re: # 16881 [REGRESSION, Radeon-KMS] 2.6.36-rc1,2 - graphic issues in
- 0 A.D.
-From: trapDoor <trapdoor6@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: airlied@linux.ie, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        trapDoor <trapdoor6@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 24 Aug 2010 08:40:31 -0400
+Subject: Re: [PATCH 0/4] Finer granularity and task/cgroup irq time
+ accounting
+From: Peter Zijlstra <peterz@infradead.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: balbir@linux.vnet.ibm.com, Venkatesh Pallipadi <venki@google.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Menage <menage@google.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
+In-Reply-To: <20100824140619.35850ae9@mschwide.boeblingen.de.ibm.com>
+References: <1279583835-22854-1-git-send-email-venki@google.com>
+	 <20100720095546.2f899e04@mschwide.boeblingen.de.ibm.com>
+	 <AANLkTiktBNr3pVOHwxX3piwagtkGxHpp5TepBFS3UGhb@mail.gmail.com>
+	 <20100722131239.208d9501@mschwide.boeblingen.de.ibm.com>
+	 <AANLkTim==2J3Fo8Axz0yLvpfWf1bq_e0c0EYWi6y3xRe@mail.gmail.com>
+	 <1282636286.2605.2307.camel@laptop>
+	 <20100824080515.GK4684@balbir.in.ibm.com>
+	 <1282640953.2605.2428.camel@laptop>
+	 <20100824113801.GO4684@balbir.in.ibm.com>
+	 <1282650835.2605.2629.camel@laptop>
+	 <20100824140619.35850ae9@mschwide.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Tue, 24 Aug 2010 14:39:56 +0200
+Message-ID: <1282653596.2605.2679.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 12:27 PM, trapDoor <trapdoor6@gmail.com> wrote:
-> On Tue, Aug 24, 2010 at 6:09 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->> On Mon, Aug 23, 2010 at 12:00 PM, trapDoor <trapdoor6@gmail.com> wrote:
->>> On Mon, Aug 23, 2010 at 6:12 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>> On Sun, Aug 22, 2010 at 3:41 PM, trapDoor <trapdoor6@gmail.com> wrote:
->>>>> Hello,
->>>>> Just wanted to let you know about this before bisecting which
->>>>> hopefully I will be able to start tomorrow. Please take a look at the
->>>>> screenshots in below links to see the difference with rendering
->>>>> textures in 0 A.D. alpha1 on kernel 2.6.35.3 and 2.6.36-rc1-git3. [0
->>>>> A.D. - strategic game, OS clone of Age of Empires; home page:
->>>>> http://wildfiregames.com/0ad/]
->>>>>
->>>>> 0 A.D. on kernel 2.6.35.3 [good]:
->>>>> http://picasaweb.google.co.uk/104351852606666221362/0ad?authkey=Gv1sRgCMne0NqXpuzR_gE#5508312214769142226
->>>>>
->>>>> 0 A.D. on kernel 2.6.36-rc1-git3:
->>>>> http://picasaweb.google.co.uk/104351852606666221362/0ad?authkey=Gv1sRgCMne0NqXpuzR_gE#5508312218519295058
->>>>>
->>>>> Please note that in both cases only kernel was different. The other
->>>>> components [including hardware] were in the same versions and had the
->>>>> same options (like the game itself, xorg-ati drivers, mesa, libdrm
->>>>> [S3TC disabled], etc.). So it must be kernel then.
->>>>
->>>> What card?  Anything in your dmesg?
->>>>
->>>> Alex
->>>>
->>>
->>> Hi Alex,
->>> Sorry for lack of details in my first e-mail. I was hoping to send you
->>> the logs together with bisecting results. Unfortunately there are
->>> other issues between 2.6.35-git2 - the last 'good' kernel (which
->>> doesn't include the first drm pull for 2.6.36 window merge) - and
->>> 2.6.36-rc1. Due to those issues I can't bisect.
->>>
->>> For example:
->>> 1) First I tried to narrow the problem down to the closest affected
->>> kernel snapshot. So I marked 2.6.35-git2 as good and I was expecting
->>> that 2.6.35-git3 will be a bad one (as -git3 is the first snapshot
->>> that includes drm patches from the first drm pull). But on -git3 0
->>> A.D. even fails to start.
->>>
->>> 2) Then I was hoping to do bisecting between 2.6.35-git11 and
->>> 2.6.35-git12 (-git12 is the first snapshot that includes patches from
->>> the second drm pull). But these both snapshots won't even compile for
->>> me. It stops suddenly at the second stage of making modules without
->>> giving any errors (despite kernel debugging enabled in .config). I
->>> remember I had this problem for a while, AFAIR since around
->>> 2.6.35-git5 to -git15 - between these I couldn't compile any snapshot
->>> I had tried.
->>>
->>> It's very likely that the issue I wanted to bisect is related to one
->>> of or both drm pulls . So doing bisect between e.g. these kernels:
->>> 2.6.35-git16 (which includes both drm pulls; assuming it's the first
->>> snapshot since -git5 I could compile) and 2.6.36-rc1 would be
->>> pointless - they both will be bad.
->>>
->>>
->>> ------------
->>> Now, this is my card:
->>>
->>> Asus ATI Radeon HD3650 Silent 512MB
->>> some glxinfo details:
->>>        OpenGL vendor string: Advanced Micro Devices, Inc.
->>>        OpenGL renderer string: Mesa DRI R600 (RV635 9598) 20090101  TCL DRI2
->>>        OpenGL version string: 2.1 Mesa 7.9-devel
->>>        OpenGL shading language version string: 1.20
->>>
->>>
->>> ------------
->>> About the logs. It happens that 0 A.D. does produce really huge logs.
->>> Running the game just for about 10 SECONDS (counting after chosen map
->>> has been loaded) relulted in these:
->>>
->>> On a 'good' kernel 2.6.35.3
->>>        60K     ./Xorg.0.log
->>>        48K     ./dmesg
->>>        27M     ./kern.log
->>>        27M     ./syslog
->>>        27M     ./messages
->>>        81M     [total]
->>>
->>> on a bad kernel 2.6.36-rc1
->>>        60K     ./Xorg.0.log
->>>        52K     ./dmesg
->>>        21M     ./kern.log
->>>        21M     ./syslog
->>>        21M     ./messages
->>>        63M     [total]
->>>
->>> There's no mistake above: 3 logs had been blown up to over 20M during
->>> only the little time when the game was running.
->>> How I did it: deleted all those logs completely, re-booted from the
->>> 'good' kernel, run the game and stopped. Then archived the logs,
->>> deleted again and repeated the same on the 'bad' kernel.
->>>
->>> So it looks like 99,999% of all lines in: kern.log, messages in syslog
->>> were produced on both kernels when 0 A.D. was running. Before I first
->>> time run it, I had never seen kern.log and messages in /var/log at
->>> all, and syslog was never bigger than around 1,5M (with logs collected
->>> from several boots and during a couple of days). Running 0 A.D. for a
->>> couple of minutes results in about 1G for each of those 3 logs.
->>>
->>> After compressing, the archive files are relatively small:
->>>        2.0M    ./2.6.35.3_0ad-logs.tar.bz2
->>>        680K    ./2.6.35.3_0ad-logs.tar.lzma
->>>
->>>        1.6M    ./2.6.36-rc1-00159-g36423a5_0ad-logs.tar.bz2
->>>        748K    ./2.6.36-rc1-00159-g36423a5_0ad-logs.tar.lzma [yes, somehow this
->>> came up bigger than 2.6.35.3(...).lzma]
->>>
->>>
->>> Do you mind if I send the .lzma's to you (unless you prefer .bz2)? I
->>> won't cc LKML or anyone of course, they will be sent only to you.
->>> Please let me know.
->>
->> I don't really need the whole files, likely it's just a few messages
->> repeated.  Go ahead and send me the files and I'll take a look.
->>
->> Alex
->>
->
-> Files attached.
-> The problem still occurs on 2.6.36-rc2-00098-gd1b113b (which includes
-> drm patches from yesterday's pull).
->
-> --
-> Thanks
-> Tomasz
->
+On Tue, 2010-08-24 at 14:06 +0200, Martin Schwidefsky wrote:
+> Well, I have sent a patch back in 2006 that stops adding the hardirq /
+> softirq time to the currently running process. See
+> http://lkml.org/lkml/2006/8/24/139
 
-I have opened bugzilla entry #16881 for this. Related screenshots and
-log files are attached with the ticket.
+Time to maybe revisit that ;-)
 
--- 
-Tomasz
+> It did not get very far, so that answer to the question if we need
+> accounting madness seems to be yes .. 
+
+Well, that's only a little accounting, but trying to infer to what task
+to account IRQ time is going to become madness.
