@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab0HXWVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:21:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32376 "EHLO mx1.redhat.com"
+	id S932360Ab0HXWXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:23:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6805 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932097Ab0HXWVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:21:37 -0400
+	id S932347Ab0HXWXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:23:08 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
@@ -14,9 +14,11 @@ From: David Howells <dhowells@redhat.com>
 Subject: [PATCH] NOMMU: Stub out vm_get_page_prot() if there's no MMU
 To: vapier@gentoo.org
 Cc: linux-kernel@vger.kernel.org, uclinux-dev@uclinux.org,
+        konrad.wilk@oracle.com, dgdegra@tycho.nsa.gov, hugh@veritas.com,
+        airlied@linux.ie, davej@redhat.com,
         David Howells <dhowells@redhat.com>
-Date: Tue, 24 Aug 2010 23:21:30 +0100
-Message-ID: <20100824222130.3667.11971.stgit@warthog.procyon.org.uk>
+Date: Tue, 24 Aug 2010 23:22:38 +0100
+Message-ID: <20100824222238.6372.8897.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
