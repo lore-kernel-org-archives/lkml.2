@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab0HXOma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 10:42:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43844 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752382Ab0HXOm1 (ORCPT
+	id S1755147Ab0HXOn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 10:43:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62167 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab0HXOnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 10:42:27 -0400
-Date: Tue, 24 Aug 2010 10:42:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jens Axboe <axboe@kernel.dk>
-cc: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Runtime PM and the block layer
-In-Reply-To: <4C73CB53.9030506@kernel.dk>
-Message-ID: <Pine.LNX.4.44L0.1008241030340.1652-100000@iolanthe.rowland.org>
+	Tue, 24 Aug 2010 10:43:24 -0400
+Message-ID: <4C73DA91.9040101@vlnb.net>
+Date: Tue, 24 Aug 2010 18:43:29 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?ISO-8859-1?Q?Pasi_K=E4rkk=E4inen?= <pasik@iki.fi>
+CC: Chetan Loke <chetanloke@gmail.com>, Bart Van Assche <bvanassche@acm.org>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@suse.de>,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Subject: Re: Linux I/O subsystem performance (was: linuxcon 2010...)
+References: <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de> <1282256949.30453.278.camel@haakon2.linux-iscsi.org> <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site> <AANLkTikcReFsYMhs1RkCHoRkL1+Q9WuptHj1xbx49YsA@mail.gmail.com> <1282508953.3042.102.camel@mulgrave.site> <4C727BEB.9020100@scalableinformatics.com> <AANLkTim-M6dfLvJQnbieFqZCGG33E+-i+u_soCq2p9f1@mail.gmail.com> <AANLkTinDY8hEABHaPsCC+3wGMCn0ZLcyfDa9U9jXJ3d4@mail.gmail.com> <AANLkTim+fj-OL+Bixfbrxv6AgSVv_NpT-KdG6vrc6ub-@mail.gmail.com> <20100824072557.GK2804@reaktio.net>
+In-Reply-To: <20100824072557.GK2804@reaktio.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:v4+NgGUk6brmdgDBQzr11aYYbzaWSediOrmudRoObsE
+ A0TIrsqzN4bTS9XVnaGL9iXVk95OyuuKQMhA9PvJBwaL/WUi1N
+ LckDQ6CsvtVW7j17jMSADyR0UMRiu1/3oajZdFWx5n51t9p4u3
+ m269prpLJoazPCJTevu/fmyJLO6t4cxWC2yfphdobu1ZpZ20hx
+ Fg3zpAa8BaWW0NKrul1eQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010, Jens Axboe wrote:
+Pasi Kärkkäinen, on 08/24/2010 11:25 AM wrote:
+> On Mon, Aug 23, 2010 at 02:03:26PM -0400, Chetan Loke wrote:
+>> I actually received 3+ off-post emails asking whether I was talking
+>> about initiator or target in the 100K IOPS case below and what did I
+>> mean by the ACKs.
+>> I was referring to the 'Initiator' side.
+>> ACKs == When scsi-ML down-calls the LLD via the queue-command, process
+>> the sgl's(if you like) and then trigger the scsi_done up-call path.
+>>
+>
+> Uhm, Intel and Microsoft demonstrated over 1 million IOPS
+> using software iSCSI and a single 10 Gbit Ethernet NIC (Intel 82599).
+>
+> How come there is such a huge difference? What are we lacking in Linux?
 
-> > Hmm.  That doesn't sound quite like what I need.  Ideally the request
-> > would go back to the head of the queue and stay there until the driver
-> > tells the block layer to let it through (when the device is ready to 
-> > accept it).
-> 
-> It depends on where you want to handle it. If you want the driver to
-> reject it, then we don't have to change the block layer bits a lot. We
-> could add a DEFER_AND_STOP or something, which would never retry and it
-> would stop the queue. If the driver passed that back, then it would be
-> responsible for starting the queue at some point in the future.
-> 
-> >>> How does this all relate to the queue being stopped or plugged?
-> >>
-> >> A stopped queue is usually the driver telling the block layer to bugger
-> >> off for a while, and the driver will tell us when it's ok to resume
-> >> operations.
-> > 
-> > Yes, that sounds more like it.  Put the request back on the queue 
-> > and stop the queue.  If the prep fn calls blk_stop_queue() and then 
-> > returns BLKPREP_DEFER, will that do it?
-> 
-> I think it will be a lot cleaner to add specific support for this, as
-> per the DEFER_AND_STOP above.
+I also have an impression that Linux I/O subsystem has some performance 
+problems. For instance, in one recent SCST performance test only 8 Linux 
+initiators with fio as a load generator were able to saturate a single 
+SCST target with dual IB cards (SRP) on 4K AIO direct accesses over an 
+SSD backend. This rawly means that any initiator took several times (8?) 
+more processing time than the target. Hardware used for that target and 
+initiators was the same. I can't see on this load why the initiators 
+would need to do something more than the target. Well, I know we in SCST 
+did an excellent work to maximize performance, but such a difference 
+looks too much ;)
 
-Okay, good.  I'll try to implement that and see how it goes.
+Also it looks very suspicious why nobody even tried to match that 
+Microsoft/Intel record, even Intel itself who closely works with Linux 
+community in the storage area and could do it using the same hardware.
 
-> Sounds like all you need is a way to return BLKPREP_DEFER_AND_STOP and
-> have the block layer stop the queue for you. When you need to restart,
-> you would insert a special request at the head of the queue and call
-> blk_start_queue() to get things going again.
-
-Yes.
-
-Suppose the driver needs to send two of these special requests before
-going back to normal operation.  Won't restarting the queue for the
-first special request also cause the following regular request to be
-passed to the driver before the second special request can be inserted?  
-Of course, the driver could cope with this simply by returning another
-BLKPREP_DEFER_AND_STOP.
-
-> The only missing bit would then be the idle detection. That would need
-> to be in the block layer itself, and the scheme I described should be
-> fine for that still.
-
-Are you sure it needs to be in the block layer?  Is there no way for 
-the driver's completion handler to tell whether the queue is now empty?  
-Certainly it already has enough information to know whether the device 
-is still busy processing another request.  When the device is no longer 
-busy and the queue is empty, that's when the idle timer should be 
-started or restarted.
-
-Alan Stern
-
+Vlad
