@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab0HXUUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 16:20:49 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39974 "EHLO mgw2.diku.dk"
+	id S1755670Ab0HXU1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:27:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755390Ab0HXUUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 16:20:47 -0400
-Date: Tue, 24 Aug 2010 22:20:45 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Dan Carpenter <error27@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 4/5] drivers/char/agp: Eliminate memory leak
-In-Reply-To: <20100824171644.GL29330@bicker>
-Message-ID: <Pine.LNX.4.64.1008242220170.14009@ask.diku.dk>
-References: <Pine.LNX.4.64.1008241639130.15172@ask.diku.dk>
- <20100824171644.GL29330@bicker>
+	id S1755328Ab0HXU1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 16:27:39 -0400
+Date: Tue, 24 Aug 2010 16:27:18 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100824202718.GC4879@redhat.com>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100823085339.GA26713@elte.hu>
+ <20100824171504.GI26154@erda.amd.com>
+ <20100824172806.GF5723@lenovo>
+ <20100824184658.GB4879@redhat.com>
+ <20100824185458.GG5723@lenovo>
+ <20100824195240.GA5281@lenovo>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100824195240.GA5281@lenovo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Tue, Aug 24, 2010 at 11:52:40PM +0400, Cyrill Gorcunov wrote:
+> > I use 2.6.34 atm. Letme try 2.6.36 (which might require some time to recompile).
+> > 
+> > 	-- Cyrill
+> 
+> Don, for me it fails with somehow unrelated page handling fault - in
+> reiserfs_evict_inode O_o Fails in __get_cpu_var I suspect might means
+> a problem either in per-cpu allocator itself or we screw pointer somehow.
+> Weird.
 
-alloc_pci_dev allocates some memory, so that memory should be freed before
-leaving the function in an error case.
+I just found out (with the help of the crash utility and Dave A.) that
+Robert's percpu struct nmi clashes with the exception entry point .nmi.
+I only see this problem in 2.6.36, so I am not sure what changed with
+regards to compiler flags to confuse variables with text segments.
 
-A simplified version of the semantic match that finds this problem is:
-(http://coccinelle.lip6.fr/)
+But renaming the percpu struct nmi to nmidon fixed the problem for me (I
+am open to other suggestions :-) ).
 
-// <smpl>
-@r exists@
-local idexpression x;
-expression E;
-identifier f1;
-iterator I;
-@@
+Regarding your reiserfs, what was the variable's name?
 
-x = alloc_pci_dev(...);
-<... when != x
-     when != true (x == NULL || ...)
-     when != if (...) { <+...x...+> }
-     when != I (...) { <+...x...+> }
-(
- x == NULL
-|
- x == E
-|
- x->f1
-)
-...>
-* return ...;
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/char/agp/parisc-agp.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/char/agp/parisc-agp.c b/drivers/char/agp/parisc-agp.c
-index 1c12921..17e380f 100644
---- a/drivers/char/agp/parisc-agp.c
-+++ b/drivers/char/agp/parisc-agp.c
-@@ -358,8 +358,12 @@ parisc_agp_setup(void __iomem *ioc_hpa, void __iomem *lba_hpa)
- 	bridge->dev = fake_bridge_dev;
- 
- 	error = agp_add_bridge(bridge);
-+	if (error)
-+		goto fail;
-+	return 0;
- 
- fail:
-+	kfree(fake_bridge_dev);
- 	return error;
- }
- 
+Cheers,
+Don
