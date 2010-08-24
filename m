@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab0HXRMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:12:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57244 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811Ab0HXRMM (ORCPT
+	id S1755835Ab0HXRN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:13:28 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:37109 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754406Ab0HXRN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:12:12 -0400
-Message-ID: <4C73FD52.7000305@vlnb.net>
-Date: Tue, 24 Aug 2010 21:11:46 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Tue, 24 Aug 2010 13:13:26 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 5V_dv_MVM1mZKCpvbdubGM78txHfeDg0Ym1J6CccVL_9ZxP
+ uVDrfGVaqu5FYk6I80RBGCfRIEKYaRV1zWvVlFx.xjU9rlLykdKU.4yR6i9h
+ WZnwCSlQxPVSaemkeWHpgh0Bn5XprTQZNUtzgsKEirtB2Woc8Igd7Z74ck6c
+ BVozIZi5aqjbK.esxjQCpBeWZ4opCv.mNyIM4.8Ww0O9uMRolHCbD9diBcFs
+ A5.HnoFT77DqYa9LHn8f5W44Zkx_K
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 24 Aug 2010 12:13:23 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Stan Hoeppner <stan@hardwarefreak.com>
+cc: Pekka Enberg <penberg@kernel.org>, Mikael Abrahamsson <swmike@swm.pp.se>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: 2.6.34.1 page allocation failure
+In-Reply-To: <4C72F7C6.3020109@hardwarefreak.com>
+Message-ID: <alpine.DEB.2.00.1008241210570.3695@router.home>
+References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home> <4C724141.8060000@kernel.org>
+ <4C72F7C6.3020109@hardwarefreak.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Christoph Hellwig <hch@lst.de>,
-        jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, jack@suse.cz, rwheeler@redhat.com, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org>
-In-Reply-To: <4C72660A.7070009@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:UpqIwEFWe7clA0iPB3B/SneA2aqM33/HVpjEb0eCmm6
- 98kriCXUt2haDXqbstArKYNSpGHSRFzhJDklGfQE0roCpTc8At
- 6NelDi8Fyxbnks3dMHQs4vmFU2cbD8yw3g8sgQeEndECQitOdO
- CSCRqTC+CWg3GMQYLFx2LvmpWrrHO8uJ5vfkWp33WU4+qZmu9R
- pwWww7/gdVhVF1jWOHonA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo, on 08/23/2010 04:14 PM wrote:
->> I think that's correct and changing the priority of DM_ENDIO_REQUEUE
->> for REQ_FLUSH down to the lowest should be fine.
->> (I didn't know that FLUSH failure implies data loss possibility.)
->
-> At least on ATA, FLUSH failure implies that data is already lost, so
-> the error can't be ignored or retried.
+On Mon, 23 Aug 2010, Stan Hoeppner wrote:
 
-In SCSI there are conditions when a command, including FLUSH 
-(SYNC_CACHE), failed which don't imply lost data. For them the caller 
-expected to retry the failed command. Most common cases are Unit 
-Attentions and TASK QUEUE FULL status.
+> Should I be using SLUB instead?  Any downsides to SLUB on an old and
+> slow (500 MHz) single core dual CPU box with <512MB RAM?
 
-Vlad
+SLUB has a smaller memory footprint so you may come out ahead for
+such a small system in particular.
+
+> Also, what is the impact of these oopses?  Despite the entries in dmesg,
+> the system "seems" to be running ok.  Or is this simply the calm before
+> the impending storm?
+
+The system does not guarantee that GFP_ATOMIC allocation succeed so any
+caller must provide logic to fall back if no memory is allocated. So the
+effect may just be that certain OS operations have to be retried.
+
+
