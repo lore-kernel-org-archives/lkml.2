@@ -1,50 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab0HXGZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 02:25:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50864 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752871Ab0HXGZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 02:25:26 -0400
-Date: Mon, 23 Aug 2010 23:28:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xiaotian Feng <dfeng@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Roland McGrath <roland@redhat.com>
-Subject: Re: [RFC PATCH v3] core_pattern: fix long parameters was truncated
- by core_pattern handler
-Message-Id: <20100823232819.38869a41.akpm@linux-foundation.org>
-In-Reply-To: <4C736438.8010206@redhat.com>
-References: <20100803105941.GA2996@hmsreliant.think-freely.org>
-	<1282296958-2427-1-git-send-email-dfeng@redhat.com>
-	<20100823141843.f177bf1f.akpm@linux-foundation.org>
-	<4C736438.8010206@redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1754126Ab0HXGfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 02:35:08 -0400
+Received: from gate.crashing.org ([63.228.1.57]:32942 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751953Ab0HXGfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 02:35:05 -0400
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 16:34:53 +1000
+Message-ID: <1282631693.22370.526.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010 14:18:32 +0800 Xiaotian Feng <dfeng@redhat.com> wrote:
+Hi Linus !
 
-> >
-> > Something like this, although I didn't try very hard.  Just a
-> > suggestion to work with ;)
-> >
-> Yep,  we just need change a little on your patch
-> 
-> 	- err = cn_printf(cn, "%%");
-> 	+ err = cn_printf(cn, "%");
+Here's a few powerpc bits & fixes for 2.6.36, some of them for some of
+the new stuff that went in, along with the powerpc rwsem update to
+atomic_long_t (not yet moved to asm-generic) and wiring up of some new
+syscalls.
 
-whoa.  Closer than I usually achieve.
+Cheers,
+Ben.
 
-> Do you need me to resend a v4 patch?
+The following changes since commit d1b113bb028999e82a8528e1484be8c23fb5a7d9:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/net-2.6
 
-Yes please - something which was nicely tested ;)
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git master
+
+Anatolij Gustschin (1):
+      powerpc: Fix typo in uImage target
+
+Andreas Schwab (3):
+      powerpc: Wire up fanotify_init, fanotify_mark, prlimit64 syscalls
+      via-pmu: Add compat_pmu_ioctl
+      powerpc: Fix config dependency problem with MPIC_U3_HT_IRQS
+
+Anton Blanchard (4):
+      powerpc/mm: Fix vsid_scrample typo
+      powerpc/kdump: Stop all other CPUs before running crash handlers
+      powerpc: Inline ppc64_runlatch_off
+      powerpc: Fix bogus it_blocksize in VIO iommu code
+
+Benjamin Herrenschmidt (2):
+      Merge remote branch 'jwb/merge' into merge
+      powerpc: Make rwsem use "long" type
+
+Dave Kleikamp (4):
+      powerpc/47x: Make sure mcsr is cleared before enabling machine check interrupts
+      powerpc/47x: Remove redundant line from cputable.c
+      powerpc/4xx: Index interrupt stacks by physical cpu
+      powerpc/47x: Add an isync before the tlbivax instruction
+
+Denis Kirjanov (1):
+      powerpc: Use is_32bit_task() helper to test 32 bit binary
+
+Grant Likely (1):
+      powerpc/pci: Fix checking for child bridges in PCI code.
+
+Julia Lawall (3):
+      powerpc/powermac: Drop unnecessary of_node_put
+      powerpc/powermac: Drop unnecessary null test
+      powerpc/pci: Drop unnecessary null test
+
+Matt Evans (1):
+      powerpc: Initialise paca->kstack before early_setup_secondary
+
+Nathan Fontenot (1):
+      powerpc: Correct smt_enabled=X boot option for > 2 threads per core
+
+Rupjyoti Sarmah (1):
+      powerpc/4xx: Device tree update for the 460ex DWC SATA
+
+Signed-off-by: Darren Hart (3):
+      powerpc: Re-enable preemption before cpu_die()
+      powerpc: Silence __cpu_up() under normal operation
+      powerpc: Silence xics_migrate_irqs_away() during cpu offline
+
+Sonny Rao (1):
+      powerpc: Export memstart_addr and kernstart_addr on ppc64
+
+ arch/powerpc/Makefile                     |    2 +-
+ arch/powerpc/boot/dts/canyonlands.dts     |    8 ++++
+ arch/powerpc/include/asm/mmu-hash64.h     |    2 +-
+ arch/powerpc/include/asm/reg.h            |    9 ++++-
+ arch/powerpc/include/asm/rwsem.h          |   64 +++++++++++++++++------------
+ arch/powerpc/include/asm/systbl.h         |    3 +
+ arch/powerpc/include/asm/unistd.h         |    5 ++-
+ arch/powerpc/kernel/cputable.c            |    1 -
+ arch/powerpc/kernel/crash.c               |   24 ++++++-----
+ arch/powerpc/kernel/head_44x.S            |    4 ++
+ arch/powerpc/kernel/head_64.S             |    6 +-
+ arch/powerpc/kernel/idle.c                |    2 +-
+ arch/powerpc/kernel/irq.c                 |   16 ++++---
+ arch/powerpc/kernel/pci_of_scan.c         |    2 +-
+ arch/powerpc/kernel/process.c             |   20 ++++-----
+ arch/powerpc/kernel/setup_32.c            |    9 ++--
+ arch/powerpc/kernel/setup_64.c            |   63 ++++++++++++++++------------
+ arch/powerpc/kernel/smp.c                 |    4 +-
+ arch/powerpc/kernel/sys_ppc32.c           |    8 ++++
+ arch/powerpc/kernel/vio.c                 |    3 +-
+ arch/powerpc/mm/init_64.c                 |    2 +
+ arch/powerpc/mm/tlb_nohash_low.S          |    1 +
+ arch/powerpc/platforms/Kconfig            |    3 +-
+ arch/powerpc/platforms/cell/iommu.c       |    2 +-
+ arch/powerpc/platforms/iseries/iommu.c    |    2 +-
+ arch/powerpc/platforms/powermac/feature.c |    3 +-
+ arch/powerpc/platforms/powermac/pci.c     |    2 -
+ arch/powerpc/platforms/pseries/iommu.c    |    8 ++--
+ arch/powerpc/platforms/pseries/smp.c      |   11 +++--
+ arch/powerpc/platforms/pseries/xics.c     |    6 ++-
+ drivers/macintosh/via-pmu.c               |   42 +++++++++++++++++++
+ 31 files changed, 219 insertions(+), 118 deletions(-)
+
+
