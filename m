@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933746Ab0HXXDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:03:52 -0400
-Received: from kroah.org ([198.145.64.141]:32855 "EHLO coco.kroah.org"
+	id S933762Ab0HXXD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:03:58 -0400
+Received: from kroah.org ([198.145.64.141]:32861 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933658Ab0HXXDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:41 -0400
+	id S933708Ab0HXXDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:42 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:10 2010
-Message-Id: <20100824224510.125443543@clark.site>
+Message-Id: <20100824224510.208629910@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:47 -0700
+Date: Tue, 24 Aug 2010 15:45:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anatolij Gustschin <agust@denx.de>,
+        Matt Evans <matt@ozlabs.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [102/114] powerpc: Fix typo in uImage target
+Subject: [103/114] powerpc: Initialise paca->kstack before early_setup_secondary
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatolij Gustschin <agust@denx.de>
+From: Matt Evans <matt@ozlabs.org>
 
-commit c686ecf5040d287a68d4fca7f1948472f556a6d3 upstream.
+commit f761622e59433130bc33ad086ce219feee9eb961 upstream.
 
-Commit e32e78c5ee8aadef020fbaecbe6fb741ed9029fd
-(powerpc: fix build with make 3.82) introduced a
-typo in uImage target and broke building uImage:
+As early setup calls down to slb_initialize(), we must have kstack
+initialised before checking "should we add a bolted SLB entry for our kstack?"
 
-make: *** No rule to make target `uImage'.  Stop.
+Failing to do so means stack access requires an SLB miss exception to refill
+an entry dynamically, if the stack isn't accessible via SLB(0) (kernel text
+& static data).  It's not always allowable to take such a miss, and
+intermittent crashes will result.
 
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Primary CPUs don't have this issue; an SLB entry is not bolted for their
+stack anyway (as that lives within SLB(0)).  This patch therefore only
+affects the init of secondaries.
+
+Signed-off-by: Matt Evans <matt@ozlabs.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/head_64.S |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/Makefile
-+++ b/arch/powerpc/Makefile
-@@ -164,7 +164,7 @@ drivers-$(CONFIG_OPROFILE)	+= arch/power
- all: zImage
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -572,9 +572,6 @@ __secondary_start:
+ 	/* Set thread priority to MEDIUM */
+ 	HMT_MEDIUM
  
- # With make 3.82 we cannot mix normal and wildcard targets
--BOOT_TARGETS1 := zImage zImage.initrd uImaged
-+BOOT_TARGETS1 := zImage zImage.initrd uImage
- BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
+-	/* Do early setup for that CPU (stab, slb, hash table pointer) */
+-	bl	.early_setup_secondary
+-
+ 	/* Initialize the kernel stack.  Just a repeat for iSeries.	 */
+ 	LOAD_REG_ADDR(r3, current_set)
+ 	sldi	r28,r24,3		/* get current_set[cpu#]	 */
+@@ -582,6 +579,9 @@ __secondary_start:
+ 	addi	r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
+ 	std	r1,PACAKSAVE(r13)
  
- PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
++	/* Do early setup for that CPU (stab, slb, hash table pointer) */
++	bl	.early_setup_secondary
++
+ 	/* Clear backchain so we get nice backtraces */
+ 	li	r7,0
+ 	mtlr	r7
 
 
