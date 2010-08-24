@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab0HXXh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:37:28 -0400
-Received: from kroah.org ([198.145.64.141]:40350 "EHLO coco.kroah.org"
+	id S932848Ab0HXW6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:58:30 -0400
+Received: from kroah.org ([198.145.64.141]:40301 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab0HXW6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:14 2010
-Message-Id: <20100824224214.297462365@clark.site>
+	id S932823Ab0HXW6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:13 2010
+Message-Id: <20100824224213.438176084@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:48 -0700
+Date: Tue, 24 Aug 2010 15:41:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [26/91] drm/radeon/kms: add additional quirk for Acer rv620 laptop
+        Wengang Wang <wen.gang.wang@oracle.com>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: [16/91] ocfs2/dlm: remove potential deadlock -V3
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Wengang Wang <wen.gang.wang@oracle.com>
 
-commit 9ea2c4be978d597076ddc6c550557de5d243cea8 upstream.
+commit b11f1f1ab73fd358b1b734a9427744802202ba68 upstream.
 
-HPD pins are reversed
+When we need to take both dlm_domain_lock and dlm->spinlock, we should take
+them in order of: dlm_domain_lock then dlm->spinlock.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=29387
+There is pathes disobey this order. That is calling dlm_lockres_put() with
+dlm->spinlock held in dlm_run_purge_list. dlm_lockres_put() calls dlm_put() at
+the ref and dlm_put() locks on dlm_domain_lock.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fix:
+Don't grab/put the dlm when the initialising/releasing lockres.
+That grab is not required because we don't call dlm_unregister_domain()
+based on refcount.
+
+Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ fs/ocfs2/dlm/dlmmaster.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -206,6 +206,7 @@ static bool radeon_atom_apply_quirks(str
- 				     uint16_t *line_mux,
- 				     struct radeon_hpd *hpd)
- {
-+	struct radeon_device *rdev = dev->dev_private;
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -511,8 +511,6 @@ static void dlm_lockres_release(struct k
  
- 	/* Asus M2A-VM HDMI board lists the DVI port as HDMI */
- 	if ((dev->pdev->device == 0x791e) &&
-@@ -308,13 +309,22 @@ static bool radeon_atom_apply_quirks(str
- 		}
- 	}
+ 	atomic_dec(&dlm->res_cur_count);
  
--	/* Acer laptop reports DVI-D as DVI-I */
-+	/* Acer laptop reports DVI-D as DVI-I and hpd pins reversed */
- 	if ((dev->pdev->device == 0x95c4) &&
- 	    (dev->pdev->subsystem_vendor == 0x1025) &&
- 	    (dev->pdev->subsystem_device == 0x013c)) {
-+		struct radeon_gpio_rec gpio;
-+
- 		if ((*connector_type == DRM_MODE_CONNECTOR_DVII) &&
--		    (supported_device == ATOM_DEVICE_DFP1_SUPPORT))
-+		    (supported_device == ATOM_DEVICE_DFP1_SUPPORT)) {
-+			gpio = radeon_lookup_gpio(rdev, 6);
-+			*hpd = radeon_atom_get_hpd_info_from_gpio(rdev, &gpio);
- 			*connector_type = DRM_MODE_CONNECTOR_DVID;
-+		} else if ((*connector_type == DRM_MODE_CONNECTOR_HDMIA) &&
-+			   (supported_device == ATOM_DEVICE_DFP1_SUPPORT)) {
-+			gpio = radeon_lookup_gpio(rdev, 7);
-+			*hpd = radeon_atom_get_hpd_info_from_gpio(rdev, &gpio);
-+		}
- 	}
+-	dlm_put(dlm);
+-
+ 	if (!hlist_unhashed(&res->hash_node) ||
+ 	    !list_empty(&res->granted) ||
+ 	    !list_empty(&res->converting) ||
+@@ -585,8 +583,6 @@ static void dlm_init_lockres(struct dlm_
+ 	res->migration_pending = 0;
+ 	res->inflight_locks = 0;
  
- 	/* XFX Pine Group device rv730 reports no VGA DDC lines
+-	/* put in dlm_lockres_release */
+-	dlm_grab(dlm);
+ 	res->dlm = dlm;
+ 
+ 	kref_init(&res->refs);
 
 
