@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933873Ab0HXXQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:16:28 -0400
-Received: from kroah.org ([198.145.64.141]:41111 "EHLO coco.kroah.org"
+	id S933881Ab0HXXQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:16:45 -0400
+Received: from kroah.org ([198.145.64.141]:41106 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933463Ab0HXXC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:28 -0400
+	id S933457Ab0HXXC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:26 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
-Message-Id: <20100824224505.868110695@clark.site>
+Message-Id: <20100824224505.785387263@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:58 -0700
+Date: Tue, 24 Aug 2010 15:44:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [053/114] mm: make the mlock() stack guard page checks stricter
+Subject: [052/114] mm: make the vma list be doubly linked
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +26,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 7798330ac8114c731cfab83e634c6ecedaa233d7 upstream.
+commit 297c5eee372478fc32fec5fe8eed711eedb13f3d upstream.
 
-If we've split the stack vma, only the lowest one has the guard page.
-Now that we have a doubly linked list of vma's, checking this is trivial.
+It's a really simple list, and several of the users want to go backwards
+in it to find the previous vma.  So rather than have to look up the
+previous entry with 'find_vma_prev()' or something similar, just make it
+doubly linked instead.
 
 Tested-by: Ian Campbell <ijc@hellion.org.uk>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mlock.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ include/linux/mm_types.h |    2 +-
+ kernel/fork.c            |    7 +++++--
+ mm/mmap.c                |   21 +++++++++++++++++----
+ mm/nommu.c               |    7 +++++--
+ 4 files changed, 28 insertions(+), 9 deletions(-)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -135,6 +135,19 @@ void munlock_vma_page(struct page *page)
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -134,7 +134,7 @@ struct vm_area_struct {
+ 					   within vm_mm. */
+ 
+ 	/* linked list of VM areas per task, sorted by address */
+-	struct vm_area_struct *vm_next;
++	struct vm_area_struct *vm_next, *vm_prev;
+ 
+ 	pgprot_t vm_page_prot;		/* Access permissions of this VMA. */
+ 	unsigned long vm_flags;		/* Flags, see mm.h. */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -300,7 +300,7 @@ out:
+ #ifdef CONFIG_MMU
+ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ {
+-	struct vm_area_struct *mpnt, *tmp, **pprev;
++	struct vm_area_struct *mpnt, *tmp, *prev, **pprev;
+ 	struct rb_node **rb_link, *rb_parent;
+ 	int retval;
+ 	unsigned long charge;
+@@ -328,6 +328,7 @@ static int dup_mmap(struct mm_struct *mm
+ 	if (retval)
+ 		goto out;
+ 
++	prev = NULL;
+ 	for (mpnt = oldmm->mmap; mpnt; mpnt = mpnt->vm_next) {
+ 		struct file *file;
+ 
+@@ -359,7 +360,7 @@ static int dup_mmap(struct mm_struct *mm
+ 			goto fail_nomem_anon_vma_fork;
+ 		tmp->vm_flags &= ~VM_LOCKED;
+ 		tmp->vm_mm = mm;
+-		tmp->vm_next = NULL;
++		tmp->vm_next = tmp->vm_prev = NULL;
+ 		file = tmp->vm_file;
+ 		if (file) {
+ 			struct inode *inode = file->f_path.dentry->d_inode;
+@@ -392,6 +393,8 @@ static int dup_mmap(struct mm_struct *mm
+ 		 */
+ 		*pprev = tmp;
+ 		pprev = &tmp->vm_next;
++		tmp->vm_prev = prev;
++		prev = tmp;
+ 
+ 		__vma_link_rb(mm, tmp, rb_link, rb_parent);
+ 		rb_link = &tmp->vm_rb.rb_right;
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -388,17 +388,23 @@ static inline void
+ __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct vm_area_struct *prev, struct rb_node *rb_parent)
+ {
++	struct vm_area_struct *next;
++
++	vma->vm_prev = prev;
+ 	if (prev) {
+-		vma->vm_next = prev->vm_next;
++		next = prev->vm_next;
+ 		prev->vm_next = vma;
+ 	} else {
+ 		mm->mmap = vma;
+ 		if (rb_parent)
+-			vma->vm_next = rb_entry(rb_parent,
++			next = rb_entry(rb_parent,
+ 					struct vm_area_struct, vm_rb);
+ 		else
+-			vma->vm_next = NULL;
++			next = NULL;
  	}
++	vma->vm_next = next;
++	if (next)
++		next->vm_prev = vma;
  }
  
-+/* Is the vma a continuation of the stack vma above it? */
-+static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
-+}
+ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -485,7 +491,11 @@ static inline void
+ __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct vm_area_struct *prev)
+ {
+-	prev->vm_next = vma->vm_next;
++	struct vm_area_struct *next = vma->vm_next;
 +
-+static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return (vma->vm_flags & VM_GROWSDOWN) &&
-+		(vma->vm_start == addr) &&
-+		!vma_stack_continue(vma->vm_prev, addr);
-+}
-+
- /**
-  * __mlock_vma_pages_range() -  mlock a range of pages in the vma.
-  * @vma:   target vma
-@@ -168,11 +181,9 @@ static long __mlock_vma_pages_range(stru
- 		gup_flags |= FOLL_WRITE;
++	prev->vm_next = next;
++	if (next)
++		next->vm_prev = prev;
+ 	rb_erase(&vma->vm_rb, &mm->mm_rb);
+ 	if (mm->mmap_cache == vma)
+ 		mm->mmap_cache = prev;
+@@ -1900,6 +1910,7 @@ detach_vmas_to_be_unmapped(struct mm_str
+ 	unsigned long addr;
  
- 	/* We don't try to access the guard page of a stack vma */
--	if (vma->vm_flags & VM_GROWSDOWN) {
--		if (start == vma->vm_start) {
--			start += PAGE_SIZE;
--			nr_pages--;
--		}
-+	if (stack_guard_page(vma, start)) {
-+		addr += PAGE_SIZE;
-+		nr_pages--;
+ 	insertion_point = (prev ? &prev->vm_next : &mm->mmap);
++	vma->vm_prev = NULL;
+ 	do {
+ 		rb_erase(&vma->vm_rb, &mm->mm_rb);
+ 		mm->map_count--;
+@@ -1907,6 +1918,8 @@ detach_vmas_to_be_unmapped(struct mm_str
+ 		vma = vma->vm_next;
+ 	} while (vma && vma->vm_start < end);
+ 	*insertion_point = vma;
++	if (vma)
++		vma->vm_prev = prev;
+ 	tail_vma->vm_next = NULL;
+ 	if (mm->unmap_area == arch_unmap_area)
+ 		addr = prev ? prev->vm_end : mm->mmap_base;
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -609,7 +609,7 @@ static void protect_vma(struct vm_area_s
+  */
+ static void add_vma_to_mm(struct mm_struct *mm, struct vm_area_struct *vma)
+ {
+-	struct vm_area_struct *pvma, **pp;
++	struct vm_area_struct *pvma, **pp, *next;
+ 	struct address_space *mapping;
+ 	struct rb_node **p, *parent;
+ 
+@@ -669,8 +669,11 @@ static void add_vma_to_mm(struct mm_stru
+ 			break;
  	}
  
- 	while (nr_pages > 0) {
+-	vma->vm_next = *pp;
++	next = *pp;
+ 	*pp = vma;
++	vma->vm_next = next;
++	if (next)
++		next->vm_prev = vma;
+ }
+ 
+ /*
 
 
