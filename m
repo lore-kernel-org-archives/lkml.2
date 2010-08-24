@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933545Ab0HXXN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:13:28 -0400
-Received: from kroah.org ([198.145.64.141]:41202 "EHLO coco.kroah.org"
+	id S933586Ab0HXXNm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:13:42 -0400
+Received: from kroah.org ([198.145.64.141]:41193 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933537Ab0HXXCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:52 -0400
+	id S933533Ab0HXXCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:07 2010
-Message-Id: <20100824224507.063154747@clark.site>
+Message-Id: <20100824224506.980115803@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:12 -0700
+Date: Tue, 24 Aug 2010 15:45:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Dan Carpenter <error27@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [067/114] net: Fix napi_gro_frags vs netpoll path
+Subject: [066/114] isdn: fix information leak
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,42 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jarek Poplawski <jarkao2@gmail.com>
+From: Dan Carpenter <error27@gmail.com>
 
-[ Upstream commit ce9e76c8450fc248d3e1fc16ef05e6eb50c02fa5 ]
+[ Upstream commit 4b030d4288a569d6bdeca884d7f102d951f097f2 ]
 
-The netpoll_rx_on() check in __napi_gro_receive() skips part of the
-"common" GRO_NORMAL path, especially "pull:" in dev_gro_receive(),
-where at least eth header should be copied for entirely paged skbs.
+The main motivation of this patch changing strcpy() to strlcpy().
+We strcpy() to copy a 48 byte buffers into a 49 byte buffers.  So at
+best the last byte has leaked information, or maybe there is an
+overflow?  Anyway, this patch closes the information leaks by zeroing
+the memory and the calls to strlcpy() prevent overflows.
 
-Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/core/dev.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/isdn/sc/ioctl.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3064,7 +3064,7 @@ enum gro_result dev_gro_receive(struct n
- 	int mac_len;
- 	enum gro_result ret;
+--- a/drivers/isdn/sc/ioctl.c
++++ b/drivers/isdn/sc/ioctl.c
+@@ -174,7 +174,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 		pr_debug("%s: SCIOGETSPID: ioctl received\n",
+ 				sc_adapter[card]->devicename);
  
--	if (!(skb->dev->features & NETIF_F_GRO))
-+	if (!(skb->dev->features & NETIF_F_GRO) || netpoll_rx_on(skb))
- 		goto normal;
+-		spid = kmalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
++		spid = kzalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
+ 		if (!spid) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
+@@ -194,7 +194,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 			kfree(rcvmsg);
+ 			return status;
+ 		}
+-		strcpy(spid, rcvmsg->msg_data.byte_array);
++		strlcpy(spid, rcvmsg->msg_data.byte_array, SCIOC_SPIDSIZE);
  
- 	if (skb_is_gso(skb) || skb_has_frags(skb))
-@@ -3151,9 +3151,6 @@ __napi_gro_receive(struct napi_struct *n
- {
- 	struct sk_buff *p;
+ 		/*
+ 		 * Package the switch type and send to user space
+@@ -272,12 +272,12 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 			return status;
+ 		}
  
--	if (netpoll_rx_on(skb))
--		return GRO_NORMAL;
--
- 	for (p = napi->gro_list; p; p = p->next) {
- 		NAPI_GRO_CB(p)->same_flow =
- 			(p->dev == skb->dev) &&
+-		dn = kmalloc(SCIOC_DNSIZE, GFP_KERNEL);
++		dn = kzalloc(SCIOC_DNSIZE, GFP_KERNEL);
+ 		if (!dn) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
+ 		}
+-		strcpy(dn, rcvmsg->msg_data.byte_array);
++		strlcpy(dn, rcvmsg->msg_data.byte_array, SCIOC_DNSIZE);
+ 		kfree(rcvmsg);
+ 
+ 		/*
+@@ -348,7 +348,7 @@ int sc_ioctl(int card, scs_ioctl *data)
+ 		pr_debug("%s: SCIOSTAT: ioctl received\n",
+ 				sc_adapter[card]->devicename);
+ 
+-		bi = kmalloc (sizeof(boardInfo), GFP_KERNEL);
++		bi = kzalloc(sizeof(boardInfo), GFP_KERNEL);
+ 		if (!bi) {
+ 			kfree(rcvmsg);
+ 			return -ENOMEM;
 
 
