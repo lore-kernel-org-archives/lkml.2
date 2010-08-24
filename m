@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab0HXCat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 22:30:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63871 "EHLO mga09.intel.com"
+	id S1754078Ab0HXCbP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 22:31:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45614 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab0HXCaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 22:30:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,260,1280732400"; 
-   d="scan'208";a="650568050"
-Date: Tue, 24 Aug 2010 10:30:28 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_entered_writeback in
- /proc/vmstat
-Message-ID: <20100824023028.GA9005@localhost>
-References: <1282296689-25618-1-git-send-email-mrubin@google.com>
- <1282296689-25618-4-git-send-email-mrubin@google.com>
- <20100820100855.GC8440@localhost>
- <AANLkTi=+uNFq5=5gmjfAOhngXqR8RS3dX3E2uEWG33Ot@mail.gmail.com>
- <20100821004804.GA11030@localhost>
- <AANLkTim4NZrV18a2LYpyTz9+MSBgVw6KKo4tCUmu9GHZ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim4NZrV18a2LYpyTz9+MSBgVw6KKo4tCUmu9GHZ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753248Ab0HXCbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 22:31:13 -0400
+From: Xiaotian Feng <dfeng@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: [PATCH -kvm] kvm: fix regression from rework KVM mmu_shrink() code
+Date: Tue, 24 Aug 2010 10:31:07 +0800
+Message-Id: <1282617067-7686-1-git-send-email-dfeng@redhat.com>
+In-Reply-To: <20100824020721.GA14726@amt.cnet>
+References: <20100824020721.GA14726@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 01:45:41AM +0800, Michael Rubin wrote:
-> On Fri, Aug 20, 2010 at 5:48 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > I wonder if you'll still stick to the fake NUMA scenario two years
-> > later -- when memcg grows powerful enough. What do we do then? "Hey
-> > let's rip these counters, their major consumer has dumped them.."
-> 
-> I think the counters will still be useful for NUMA also. Is there a
-> performance hit here I am missing to having the per node counters?
-> Just want to make sure we are only wondering about whether or not we
-> are polluting the interface? Also since we plan to change the name to
-> vmstat instead doesn't that make it more generic in the future?
+Latest kvm mmu_shrink code rework makes kernel changes kvm->arch.n_used_mmu_pages/
+kvm->arch.n_max_mmu_pages at kvm_mmu_free_page/kvm_mmu_alloc_page, which is called
+by kvm_mmu_commit_zap_page. So the kvm->arch.n_used_mmu_pages or
+kvm_mmu_available_pages(vcpu->kvm) is unchanged after kvm_mmu_prepare_zap_page(),
+This caused kvm_mmu_change_mmu_pages/__kvm_mmu_free_some_pages loops forever.
+Moving kvm_mmu_commit_zap_page would make the while loop performs as normal.
 
-It's about the interface, I don't mind you adding the per-node vmstat
-entries which may be convenient for you and mostly harmless to others.
+Reported-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+Tested-by: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-My concern is, what do you think about the existing
-/proc/<pid>/io:write_bytes interface and is it good enough for your?
-You'll have to iterate through tasks to collect numbers for one job or
-for the whole system, however that should be easy and more flexible?
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index f52a965..0991de3 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1724,10 +1724,9 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
+ 
+ 			page = container_of(kvm->arch.active_mmu_pages.prev,
+ 					    struct kvm_mmu_page, link);
+-			kvm_mmu_prepare_zap_page(kvm, page,
+-							       &invalid_list);
++			kvm_mmu_prepare_zap_page(kvm, page, &invalid_list);
++			kvm_mmu_commit_zap_page(kvm, &invalid_list);
+ 		}
+-		kvm_mmu_commit_zap_page(kvm, &invalid_list);
+ 		goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
+ 	}
+ 
+@@ -2976,9 +2975,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
+ 		sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
+ 				  struct kvm_mmu_page, link);
+ 		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
++		kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+ 		++vcpu->kvm->stat.mmu_recycled;
+ 	}
+-	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+ }
+ 
+ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code)
+-- 
+1.7.2.1
 
-Thanks,
-Fengguang
