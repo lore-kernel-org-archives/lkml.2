@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab0HXDvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Aug 2010 23:51:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752102Ab0HXDvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Aug 2010 23:51:21 -0400
-Subject: Re: [PATCH] audit: speedup for syscalls when auditing is disabled
-From: Eric Paris <eparis@redhat.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: Michael Neuling <mikey@neuling.org>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <20100824021625.GA2425@kryten>
-References: <29151.1282270393@neuling.org>
-	 <1282586177.2681.43.camel@localhost.localdomain>
-	 <20100824021625.GA2425@kryten>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Aug 2010 23:51:12 -0400
-Message-ID: <1282621872.26616.420.camel@localhost.localdomain>
+	id S1754005Ab0HXDwh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Aug 2010 23:52:37 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49018
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751708Ab0HXDwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Aug 2010 23:52:34 -0400
+Date: Mon, 23 Aug 2010 20:52:50 -0700 (PDT)
+Message-Id: <20100823.205250.67893208.davem@davemloft.net>
+To: sanagi.koki@jp.fujitsu.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: Re: [PATCH v4 2/5] napi: convert trace_napi_poll to TRACE_EVENT
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C7242D7.4050009@jp.fujitsu.com>
+References: <4C72422C.5070102@jp.fujitsu.com>
+	<4C7242D7.4050009@jp.fujitsu.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-24 at 12:16 +1000, Anton Blanchard wrote:
-> Hi Eric,
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Date: Mon, 23 Aug 2010 18:43:51 +0900
+
+> From: Neil Horman <nhorman@tuxdriver.com>
 > 
-> > I don't think this works at all.  I don't see how syscall audit'ing can
-> > work.  What if I have nothing in the AUDIT_FILTER_TASK list but I want
-> > to audit all 'open(2)' syscalls?  This patch is going to leave the task
-> > in the DISABLED state and we won't ever be able to match on the syscall
-> > rules.
+> This patch converts trace_napi_poll from DECLARE_EVENT to TRACE_EVENT to improve
+> the usability of napi_poll tracepoint.
 > 
-> That's a good point. What if we went through and created an audit context
-> for each thread at the point where we add a rule to the audit subsystem?
+>           <idle>-0     [001] 241302.750777: napi_poll: napi poll on napi struct f6acc480 for device eth3
+>           <idle>-0     [000] 241302.852389: napi_poll: napi poll on napi struct f5d0d70c for device eth1
 > 
-> That would make the common case where no one touches audit go fast. It's
-> only once you add a rule that you get the syscall entry/exit overhead of
-> audit.
+> An original patch is below.
+> http://marc.info/?l=linux-kernel&m=126021713809450&w=2
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 > 
-> Anton
+> And add a fix by Steven Rostedt.
+> http://marc.info/?l=linux-kernel&m=126150506519173&w=2
+> 
+> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
 
-It might be viable but I certainly couldn't say.  I'm a bit scared of
-allocating and attaching a struct audit_context to a running task as we
-have no idea if that task is about to exit a syscall with an unfilled
-out audit_context struct nor do I personally off the top of my head know
-the task flag setting rules (especially when you want to set other
-people's flags)
-
-Maybe another approach would be to move audit_alloc() into the syscall
-entry path rather than only at fork().
-
-I think the best solution is going to be some better way of
-setting/clearing TIF_SYSCALL_AUDIT. (notice the thing is never cleared,
-ever, today)
-
--Eric
-
+Acked-by: David S. Miller <davem@davemloft.net>
