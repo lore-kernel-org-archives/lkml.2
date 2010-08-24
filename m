@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934440Ab0HXXnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:43:39 -0400
-Received: from kroah.org ([198.145.64.141]:52237 "EHLO coco.kroah.org"
+	id S932481Ab0HXWyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:54:08 -0400
+Received: from kroah.org ([198.145.64.141]:52179 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932486Ab0HXWyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:09 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
-Message-Id: <20100824222525.528405312@clark.site>
+	id S932414Ab0HXWx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:24 2010
+Message-Id: <20100824222524.826277150@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:48 -0700
+Date: Tue, 24 Aug 2010 15:24:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [36/59] isdn: fix information leak
+        Dave Airlie <airlied@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Subject: [28/59] drm/i915: add reclaimable to i915 self-reclaimable page allocations
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: Dan Carpenter <error27@gmail.com>
+commit cd9f040df6ce46573760a507cb88192d05d27d86 upstream.
 
-[ Upstream commit 4b030d4288a569d6bdeca884d7f102d951f097f2 ]
+The hibernate issues that got fixed in commit 985b823b9192 ("drm/i915:
+fix hibernation since i915 self-reclaim fixes") turn out to have been
+incomplete.  Vefa Bicakci tested lots of hibernate cycles, and without
+the __GFP_RECLAIMABLE flag the system eventually fails to resume.
 
-The main motivation of this patch changing strcpy() to strlcpy().
-We strcpy() to copy a 48 byte buffers into a 49 byte buffers.  So at
-best the last byte has leaked information, or maybe there is an
-overflow?  Anyway, this patch closes the information leaks by zeroing
-the memory and the calls to strlcpy() prevent overflows.
+With the flag added, Vefa can apparently hibernate forever (or until he
+gets bored running his automated scripts, whichever comes first).
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The reclaimable flag was there originally, and was one of the flags that
+were dropped (unintentionally) by commit 4bdadb978569 ("drm/i915:
+Selectively enable self-reclaim") that introduced all these problems,
+but I didn't want to just blindly add back all the flags in commit
+985b823b9192, and it looked like __GFP_RECLAIM wasn't necessary.  It
+clearly was.
+
+I still suspect that there is some subtle reason we're missing that
+causes the problems, but __GFP_RECLAIMABLE is certainly not wrong to use
+in this context, and is what the code historically used.  And we have no
+idea what the causes the corruption without it.
+
+Reported-and-tested-by: M. Vefa Bicakci <bicave@superonline.com>
+Cc: Dave Airlie <airlied@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/isdn/sc/ioctl.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/isdn/sc/ioctl.c
-+++ b/drivers/isdn/sc/ioctl.c
-@@ -174,7 +174,7 @@ int sc_ioctl(int card, scs_ioctl *data)
- 		pr_debug("%s: SCIOGETSPID: ioctl received\n",
- 				sc_adapter[card]->devicename);
- 
--		spid = kmalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
-+		spid = kzalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
- 		if (!spid) {
- 			kfree(rcvmsg);
- 			return -ENOMEM;
-@@ -194,7 +194,7 @@ int sc_ioctl(int card, scs_ioctl *data)
- 			kfree(rcvmsg);
- 			return status;
- 		}
--		strcpy(spid, rcvmsg->msg_data.byte_array);
-+		strlcpy(spid, rcvmsg->msg_data.byte_array, SCIOC_SPIDSIZE);
- 
- 		/*
- 		 * Package the switch type and send to user space
-@@ -272,12 +272,12 @@ int sc_ioctl(int card, scs_ioctl *data)
- 			return status;
- 		}
- 
--		dn = kmalloc(SCIOC_DNSIZE, GFP_KERNEL);
-+		dn = kzalloc(SCIOC_DNSIZE, GFP_KERNEL);
- 		if (!dn) {
- 			kfree(rcvmsg);
- 			return -ENOMEM;
- 		}
--		strcpy(dn, rcvmsg->msg_data.byte_array);
-+		strlcpy(dn, rcvmsg->msg_data.byte_array, SCIOC_DNSIZE);
- 		kfree(rcvmsg);
- 
- 		/*
-@@ -348,7 +348,7 @@ int sc_ioctl(int card, scs_ioctl *data)
- 		pr_debug("%s: SCIOSTAT: ioctl received\n",
- 				sc_adapter[card]->devicename);
- 
--		bi = kmalloc (sizeof(boardInfo), GFP_KERNEL);
-+		bi = kzalloc(sizeof(boardInfo), GFP_KERNEL);
- 		if (!bi) {
- 			kfree(rcvmsg);
- 			return -ENOMEM;
+---
+ drivers/gpu/drm/i915/i915_gem.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2264,6 +2264,7 @@ i915_gem_object_get_pages(struct drm_gem
+ 		page = read_cache_page_gfp(mapping, i,
+ 					   GFP_HIGHUSER |
+ 					   __GFP_COLD |
++					   __GFP_RECLAIMABLE |
+ 					   gfpmask);
+ 		if (IS_ERR(page))
+ 			goto err_pages;
 
 
