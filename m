@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab0HXW6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:58:48 -0400
-Received: from kroah.org ([198.145.64.141]:40387 "EHLO coco.kroah.org"
+	id S934216Ab0HXXeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:34:06 -0400
+Received: from kroah.org ([198.145.64.141]:40438 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932887Ab0HXW6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:14 2010
-Message-Id: <20100824224214.903736706@clark.site>
+	id S932932Ab0HXW64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:56 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:15 2010
+Message-Id: <20100824224215.764188618@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:41:55 -0700
+Date: Tue, 24 Aug 2010 15:42:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Axel Lin <axel.lin@gmail.com>, Lei Wen <leiwen@marvell.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [33/91] pxa3xx: fix ns2cycle equation
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [43/91] mm: make the vma list be doubly linked
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,52 +24,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 93b352fce679945845664b56b0c3afbd655a7a12 upstream.
+commit 297c5eee372478fc32fec5fe8eed711eedb13f3d upstream.
 
-Test on a PXA310 platform with Samsung K9F2G08X0B NAND flash,
-with tCH=5 and clk is 156MHz, ns2cycle(5, 156000000) returns -1.
+It's a really simple list, and several of the users want to go backwards
+in it to find the previous vma.  So rather than have to look up the
+previous entry with 'find_vma_prev()' or something similar, just make it
+doubly linked instead.
 
-ns2cycle returns negtive value will break NDTR0_tXX macros.
-
-After checking the commit log, I found the problem is introduced by
-commit 5b0d4d7c8a67c5ba3d35e6ceb0c5530cc6846db7
-"[MTD] [NAND] pxa3xx: convert from ns to clock ticks more accurately"
-
-To get num of clock cycles, we use below equation:
-num of clock cycles = time (ns) / one clock cycle (ns) + 1
-We need to add 1 cycle here because integer division will truncate the result.
-It is possible the developers set the Min values in SPEC for timing settings.
-Thus the truncate may cause problem, and it is safe to add an extra cycle here.
-
-The various fields in NDTR{01} are in units of clock ticks minus one,
-thus we should subtract 1 cycle then.
-
-Thus the correct equation should be:
-num of clock cycles = time (ns) / one clock cycle (ns) + 1 - 1
-                    = time (ns) / one clock cycle (ns)
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Lei Wen <leiwen@marvell.com>
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Tested-by: Ian Campbell <ijc@hellion.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/nand/pxa3xx_nand.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mm_types.h |    2 +-
+ kernel/fork.c            |    7 +++++--
+ mm/mmap.c                |   21 +++++++++++++++++----
+ mm/nommu.c               |    7 +++++--
+ 4 files changed, 28 insertions(+), 9 deletions(-)
 
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -363,7 +363,7 @@ static struct pxa3xx_nand_flash *builtin
- #define tAR_NDTR1(r)	(((r) >> 0) & 0xf)
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -134,7 +134,7 @@ struct vm_area_struct {
+ 					   within vm_mm. */
  
- /* convert nano-seconds to nand flash controller clock cycles */
--#define ns2cycle(ns, clk)	(int)(((ns) * (clk / 1000000) / 1000) - 1)
-+#define ns2cycle(ns, clk)	(int)((ns) * (clk / 1000000) / 1000)
+ 	/* linked list of VM areas per task, sorted by address */
+-	struct vm_area_struct *vm_next;
++	struct vm_area_struct *vm_next, *vm_prev;
  
- /* convert nand flash controller clock cycles to nano-seconds */
- #define cycle2ns(c, clk)	((((c) + 1) * 1000000 + clk / 500) / (clk / 1000))
+ 	pgprot_t vm_page_prot;		/* Access permissions of this VMA. */
+ 	unsigned long vm_flags;		/* Flags, see mm.h. */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -287,7 +287,7 @@ out:
+ #ifdef CONFIG_MMU
+ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ {
+-	struct vm_area_struct *mpnt, *tmp, **pprev;
++	struct vm_area_struct *mpnt, *tmp, *prev, **pprev;
+ 	struct rb_node **rb_link, *rb_parent;
+ 	int retval;
+ 	unsigned long charge;
+@@ -315,6 +315,7 @@ static int dup_mmap(struct mm_struct *mm
+ 	if (retval)
+ 		goto out;
+ 
++	prev = NULL;
+ 	for (mpnt = oldmm->mmap; mpnt; mpnt = mpnt->vm_next) {
+ 		struct file *file;
+ 
+@@ -346,7 +347,7 @@ static int dup_mmap(struct mm_struct *mm
+ 			goto fail_nomem_anon_vma_fork;
+ 		tmp->vm_flags &= ~VM_LOCKED;
+ 		tmp->vm_mm = mm;
+-		tmp->vm_next = NULL;
++		tmp->vm_next = tmp->vm_prev = NULL;
+ 		file = tmp->vm_file;
+ 		if (file) {
+ 			struct inode *inode = file->f_path.dentry->d_inode;
+@@ -379,6 +380,8 @@ static int dup_mmap(struct mm_struct *mm
+ 		 */
+ 		*pprev = tmp;
+ 		pprev = &tmp->vm_next;
++		tmp->vm_prev = prev;
++		prev = tmp;
+ 
+ 		__vma_link_rb(mm, tmp, rb_link, rb_parent);
+ 		rb_link = &tmp->vm_rb.rb_right;
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -388,17 +388,23 @@ static inline void
+ __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct vm_area_struct *prev, struct rb_node *rb_parent)
+ {
++	struct vm_area_struct *next;
++
++	vma->vm_prev = prev;
+ 	if (prev) {
+-		vma->vm_next = prev->vm_next;
++		next = prev->vm_next;
+ 		prev->vm_next = vma;
+ 	} else {
+ 		mm->mmap = vma;
+ 		if (rb_parent)
+-			vma->vm_next = rb_entry(rb_parent,
++			next = rb_entry(rb_parent,
+ 					struct vm_area_struct, vm_rb);
+ 		else
+-			vma->vm_next = NULL;
++			next = NULL;
+ 	}
++	vma->vm_next = next;
++	if (next)
++		next->vm_prev = vma;
+ }
+ 
+ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -485,7 +491,11 @@ static inline void
+ __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct vm_area_struct *prev)
+ {
+-	prev->vm_next = vma->vm_next;
++	struct vm_area_struct *next = vma->vm_next;
++
++	prev->vm_next = next;
++	if (next)
++		next->vm_prev = prev;
+ 	rb_erase(&vma->vm_rb, &mm->mm_rb);
+ 	if (mm->mmap_cache == vma)
+ 		mm->mmap_cache = prev;
+@@ -1900,6 +1910,7 @@ detach_vmas_to_be_unmapped(struct mm_str
+ 	unsigned long addr;
+ 
+ 	insertion_point = (prev ? &prev->vm_next : &mm->mmap);
++	vma->vm_prev = NULL;
+ 	do {
+ 		rb_erase(&vma->vm_rb, &mm->mm_rb);
+ 		mm->map_count--;
+@@ -1907,6 +1918,8 @@ detach_vmas_to_be_unmapped(struct mm_str
+ 		vma = vma->vm_next;
+ 	} while (vma && vma->vm_start < end);
+ 	*insertion_point = vma;
++	if (vma)
++		vma->vm_prev = prev;
+ 	tail_vma->vm_next = NULL;
+ 	if (mm->unmap_area == arch_unmap_area)
+ 		addr = prev ? prev->vm_end : mm->mmap_base;
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -609,7 +609,7 @@ static void protect_vma(struct vm_area_s
+  */
+ static void add_vma_to_mm(struct mm_struct *mm, struct vm_area_struct *vma)
+ {
+-	struct vm_area_struct *pvma, **pp;
++	struct vm_area_struct *pvma, **pp, *next;
+ 	struct address_space *mapping;
+ 	struct rb_node **p, *parent;
+ 
+@@ -669,8 +669,11 @@ static void add_vma_to_mm(struct mm_stru
+ 			break;
+ 	}
+ 
+-	vma->vm_next = *pp;
++	next = *pp;
+ 	*pp = vma;
++	vma->vm_next = next;
++	if (next)
++		next->vm_prev = vma;
+ }
+ 
+ /*
 
 
