@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab0HXWX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:23:26 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57925 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755842Ab0HXWXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:23:23 -0400
-X-Authenticated: #20450766
-X-Provags-ID: V01U2FsdGVkX1/aNQYwF4TacZu3M5VUBLWNTVMVnqAF+q4b1WnVYA
-	3lPvWbxyrnV0sx
-Date: Wed, 25 Aug 2010 00:23:20 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: Henrique Camargo <henrique@henriquecamargo.com>
-cc: "Aguirre, Sergio" <saaguirre@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mt9t031: Fixes field names that changed
-In-Reply-To: <1282243015.2213.13.camel@lemming>
-Message-ID: <Pine.LNX.4.64.1008250020540.19669@axis700.grange>
-References: <1282243015.2213.13.camel@lemming>
+	id S1756181Ab0HXWY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:24:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41663 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755720Ab0HXWYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:24:53 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Y-GMX-Trusted: 0
+In-Reply-To: <4c74419664798b8c9@agluck-desktop.sc.intel.com>
+References: <4c74419664798b8c9@agluck-desktop.sc.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 Aug 2010 15:23:52 -0700
+Message-ID: <AANLkTin5mxbyH9BOcrGAW2nFiDBOeUE8=HsBR8U=x3bc@mail.gmail.com>
+Subject: Re: [PATCH] hide guard page for stacks that grow upwards
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        linux-ia64@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Aug 2010, Henrique Camargo wrote:
+On Tue, Aug 24, 2010 at 3:03 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>
+> This looks useful too ... but I can't see where the code is that
+> made vm_start be PAGE_SIZE lower to begin with. I'd expect to have
+> to make a matching change to make vm_end PAGE_SIZE higher for the
+> VM_GROWSUP areas.
 
-> If CONFIG_VIDEO_ADV_DEBUG was set, the driver failed to compile 
-> because the fields get_register and set_register changed names to 
-> g_register and s_register in the struct v4l2_subdev_core_ops.
-> 
-> Signed-off-by: Henrique Camargo <henrique@henriquecamargo.com>
-> ---
->  drivers/media/video/mt9t031.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/media/video/mt9t031.c b/drivers/media/video/mt9t031.c
-> index 716fea6..f3d1995 100644
-> --- a/drivers/media/video/mt9t031.c
-> +++ b/drivers/media/video/mt9t031.c
-> @@ -499,8 +499,8 @@ static const struct v4l2_subdev_core_ops mt9t031_core_ops = {
->  	.g_ctrl	= mt9t031_get_control,
->  	.s_ctrl	= mt9t031_set_control,
->  #ifdef CONFIG_VIDEO_ADV_DEBUG
-> -	.get_register = mt9t031_get_register,
-> -	.set_register = mt9t031_set_register,
-> +	.g_register = mt9t031_get_register,
-> +	.s_register = mt9t031_set_register,
->  #endif
->  };
->  
-> -- 
-> 1.7.0.4
+That's the fault path - the very check_stack_guard_page() logic itself.
 
-I might be missing something obvious, but I do not understand against 
-which tree / version is this patch? I don't see this problem in the 
-mainline.
+In other words, nowhere do we _explicitly_ make the stack larger by
+one page, but nowhere do we explicitly size the stack in the first
+place! The stack grows by being populated, and every time a new page
+is populated, check_stack_guard_page() will have expanded the stack
+vma by one extra page.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+                   Linus
