@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab0HXR0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 13:26:00 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25166
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932081Ab0HXRZ6 (ORCPT
+	id S932158Ab0HXR2O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 13:28:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:54068 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126Ab0HXR2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 13:25:58 -0400
-X-SpamScore: 2
-X-BigFish: VPS2(z3cfcs329eqzbb2cK1432N98dN4015Lzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L7O2ZJ-02-4I2-02
-X-M-MSG: 
-Date: Tue, 24 Aug 2010 19:15:05 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+	Tue, 24 Aug 2010 13:28:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TVpzFI7xV7kFfvoZCitYEYBkVTRw2Z84iOT3CvAnaUR0K+CZFCx6IsGvYsAmDhdwPx
+         r9bSEq6rtsurPrLZQvx2CMfwe96+cX+JmJSRKtH8hy0yK5fyP1OXFlPmLA6rSMNoa28G
+         fNnHWbCn4zHaPiqhwX97RwrYoIXsvSWDXX/Gs=
+Date: Tue, 24 Aug 2010 21:28:06 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
         "fweisbec@gmail.com" <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
         Andi Kleen <andi@firstfloor.org>
 Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100824171504.GI26154@erda.amd.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
+	perfctrs
+Message-ID: <20100824172806.GF5723@lenovo>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu> <20100824171504.GI26154@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100823085339.GA26713@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <20100824171504.GI26154@erda.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.08.10 04:53:39, Ingo Molnar wrote:
-> Ok, to not hold up the perf/urgent flow i zapped these two commits for 
-> the time being:
+On Tue, Aug 24, 2010 at 07:15:05PM +0200, Robert Richter wrote:
+> On 23.08.10 04:53:39, Ingo Molnar wrote:
+> > Ok, to not hold up the perf/urgent flow i zapped these two commits for 
+> > the time being:
+> > 
+> >  4a31beb: perf, x86: Fix handle_irq return values
+> >  8e3e42b: perf, x86: Try to handle unknown nmis with an enabled PMU
 > 
->  4a31beb: perf, x86: Fix handle_irq return values
->  8e3e42b: perf, x86: Try to handle unknown nmis with an enabled PMU
+> Ingo, are those commits in some branch to fetch them for testing? I
+> did not find them in tip/master.
+> 
+> Thanks,
+> 
+> -Robert
+> 
+> -- 
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
 
-Ingo, are those commits in some branch to fetch them for testing? I
-did not find them in tip/master.
+Robert, they should be in -tip tree, I have
 
-Thanks,
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+| commit 4a31bebe71ab2e4f6ecd6e5f9f2ac9f0ff38ff76
+| Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+| Date:   Thu Aug 19 16:28:00 2010 +0200
+|
+|    perf, x86: Fix handle_irq return values
+    
+	-- Cyrill
