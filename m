@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab0HXIoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:44:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58781 "EHLO mga11.intel.com"
+	id S1753834Ab0HXIp4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 04:45:56 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44674 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754279Ab0HXInz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:43:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,262,1280732400"; 
-   d="scan'208";a="599610273"
-Subject: Re: [PATCH] ACPI: Don't report current_now if battery reports in
- mWh
-From: Zhang Rui <rui.zhang@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Alexey Starikovskiy <astarikovskiy@suse.de>
-In-Reply-To: <20100824081822.GA7963@oksana.dev.rtsoft.ru>
-References: <1282595132-5026-1-git-send-email-mjg@redhat.com>
-	 <201008232337.19715.rjw@sisk.pl>
-	 <20100824081822.GA7963@oksana.dev.rtsoft.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Aug 2010 16:47:06 +0800
-Message-ID: <1282639626.3707.10.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751190Ab0HXIpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 04:45:52 -0400
+Date: Tue, 24 Aug 2010 10:45:28 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: [PATCH] V4L/DVB: mantis: Fix IR_CORE dependency
+Message-ID: <20100824084528.GA26618@elte.hu>
+References: <4C643A08.3000605@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C643A08.3000605@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0016]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-24 at 16:18 +0800, Anton Vorontsov wrote:
-> On Mon, Aug 23, 2010 at 11:37:19PM +0200, Rafael J. Wysocki wrote:
-> > On Monday, August 23, 2010, Matthew Garrett wrote:
-> > > ACPI batteries can report in units of either current or energy. Right
-> > > now we expose the current_now file even if the battery is reporting
-> > > energy units, resulting in a file that should contain mA instead
-> > > containing mW. Don't expose this value unless the battery is reporting
-> > > current.
-> > > 
-> > > Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> > > Cc: Arjan van de Ven <arjan@linux.intel.com>
-> > 
-> > Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Looks good to me as well.
-> 
-> Should I merge this into the battery-2.6.git tree, or
-> ACPI folks are gonna handle this patch?
-> 
-Acked-by: Zhang Rui <rui.zhang@intel.com>
 
-I think Len may want to handle this patch. :)
+* Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
 
-thanks,
-rui
-
-> Thanks,
+> Linus,
 > 
-> > > ---
-> > >  drivers/acpi/battery.c |    1 -
-> > >  1 files changed, 0 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-> > > index dc58402..9841720 100644
-> > > --- a/drivers/acpi/battery.c
-> > > +++ b/drivers/acpi/battery.c
-> > > @@ -273,7 +273,6 @@ static enum power_supply_property energy_battery_props[] = {
-> > >  	POWER_SUPPLY_PROP_CYCLE_COUNT,
-> > >  	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
-> > >  	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-> > > -	POWER_SUPPLY_PROP_CURRENT_NOW,
-> > >  	POWER_SUPPLY_PROP_POWER_NOW,
-> > >  	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
-> > >  	POWER_SUPPLY_PROP_ENERGY_FULL,
-> > > 
+> Please pull from:
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 > 
+> For 3 build fixes.
+> 
+> Cheers,
+> Mauro.
+> 
+> The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
+> 
+>   Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
+> 
+> are available in the git repository at:
+> 
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+> 
+> Mauro Carvalho Chehab (2):
+>       V4L/DVB: Fix IR_CORE dependencies
+>       V4L/DVB: fix Kconfig to depends on VIDEO_IR
+> 
+> Randy Dunlap (1):
+>       V4L/DVB: v4l2-ctrls.c: needs to include slab.h
 
+FYI, there's one more IR_CORE related build bug which triggers 
+frequently in randconfig tests - see the fix below.
 
+Thanks,
+
+	Ingo
+
+------------------->
+>From c56aef270d7ec01564c632c1f7ebab6b8f9f032c Mon Sep 17 00:00:00 2001
+From: Ingo Molnar <mingo@elte.hu>
+Date: Tue, 24 Aug 2010 10:41:33 +0200
+Subject: [PATCH] V4L/DVB: mantis: Fix IR_CORE dependency
+
+This build bug triggers:
+
+ drivers/built-in.o: In function `mantis_exit':
+ (.text+0x377413): undefined reference to `ir_input_unregister'
+ drivers/built-in.o: In function `mantis_input_init':
+ (.text+0x3774ff): undefined reference to `__ir_input_register'
+
+If MANTIS_CORE is enabled but IR_CORE is not. Add the correct
+dependency.
+
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ drivers/media/dvb/mantis/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/dvb/mantis/Kconfig b/drivers/media/dvb/mantis/Kconfig
+index decdeda..fd0830e 100644
+--- a/drivers/media/dvb/mantis/Kconfig
++++ b/drivers/media/dvb/mantis/Kconfig
+@@ -1,6 +1,6 @@
+ config MANTIS_CORE
+ 	tristate "Mantis/Hopper PCI bridge based devices"
+-	depends on PCI && I2C && INPUT
++	depends on PCI && I2C && INPUT && IR_CORE
+ 
+ 	help
+ 	  Support for PCI cards based on the Mantis and Hopper PCi bridge.
