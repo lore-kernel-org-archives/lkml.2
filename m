@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab0HXV6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 17:58:12 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:7773 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932093Ab0HXV6L (ORCPT
+	id S932193Ab0HXV7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 17:59:50 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48984 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755435Ab0HXV7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 17:58:11 -0400
-Subject: Re: [PATCH] x86, apic: Add apic calibration hook.
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1008242350430.2768@localhost.localdomain>
-References: <1282153304.15158.39.camel@ank32.eng.vmware.com>
-	 <1282159660.15158.56.camel@ank32.eng.vmware.com>
-	 <alpine.LFD.2.00.1008241532210.2768@localhost.localdomain>
-	 <1282669564.24498.2.camel@ank32.eng.vmware.com>
-	 <alpine.LFD.2.00.1008242350430.2768@localhost.localdomain>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Tue, 24 Aug 2010 14:58:10 -0700
-Message-Id: <1282687090.24498.30.camel@ank32.eng.vmware.com>
+	Tue, 24 Aug 2010 17:59:47 -0400
+Date: Tue, 24 Aug 2010 23:16:41 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Samo Pogacnik <samo_pogacnik@t-2.net>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100824231641.33d5679b@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100824211016.GA7176@suse.de>
+References: <1275175983.2122.42.camel@itpsd6lap>
+	<1276123020.16010.97.camel@itpsd6lap>
+	<20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	<1276291932.2154.45.camel@itpsd6lap>
+	<20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	<1277244410.2195.47.camel@itpsd6lap>
+	<20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+	<1277462596.2143.101.camel@itpsd6lap>
+	<20100625120329.1303aa61@lxorguk.ukuu.org.uk>
+	<1282683470.8020.66.camel@itpsd6lap>
+	<20100824211016.GA7176@suse.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Why does this need to be a tty driver?  Why not a misc device?
 
-On Tue, 2010-08-24 at 14:51 -0700, Thomas Gleixner wrote:
-> Alok,
-> 
-> On Tue, 24 Aug 2010, Alok Kataria wrote:
-> 
-> > Hi Thomas,
-> > 
-> > Thanks for taking a look.
-> > 
-> > On Tue, 2010-08-24 at 06:37 -0700, Thomas Gleixner wrote:
-> > > On Wed, 18 Aug 2010, Alok Kataria wrote:
-> > > >  
-> > > > +static void __init initialize_lapic_clkevt(long delta)
-> > > > +{
-> > > > +	/* Calculate the scaled math multiplication factor */
-> > > > +	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
-> > > > +				       lapic_clockevent.shift);
-> > > > +	lapic_clockevent.max_delta_ns =
-> > > > +		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
-> > > > +	lapic_clockevent.min_delta_ns =
-> > > > +		clockevent_delta2ns(0xF, &lapic_clockevent);
-> > > > +}
-> > > > +
-> > > >  static int __init calibrate_APIC_clock(void)
-> > > >  {
-> > > > +	apic_calibration_res = x86_init.timers.calibrate_apic();
-> > > > +	if (apic_calibration_res) {
-> > > > +		struct clock_event_device *levt = &__get_cpu_var(lapic_events);
-> > > > +		long delta;
-> > > > +
-> > > > +		if (lapic_clockevent.mult)
-> > > > +			return 0;
-> > > 
-> > >   Why is this necessary ? calibrate_APIC_clock() is only called once.
-> > > 
-> > 
-> > Yes, though timer.calibrate_apci() could behave differently on different
-> > platforms. For eg. the vmware_calibrate_apic doesn't initialize any of
-> > the lapic_clockevent state and we need this to set it up in that case.
-> 
-> Can we please make this consistent ?
+So you can use it as a"console" (in the user space sense) tty device on
+embedded devices which don't have a meaningful normal output subsystem.
 
-Let me rework this patch and get back in a day or two.
-
-Thanks,
-Alok
-> 
-> Thanks,
-> 
-> 	tglx
-
+Alan
