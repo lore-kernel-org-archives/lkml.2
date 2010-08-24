@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab0HXXbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:31:50 -0400
-Received: from kroah.org ([198.145.64.141]:40492 "EHLO coco.kroah.org"
+	id S932686Ab0HXW7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:59:10 -0400
+Received: from kroah.org ([198.145.64.141]:40441 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932833Ab0HXW7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:13 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:16 2010
-Message-Id: <20100824224216.875508796@clark.site>
+	id S932935Ab0HXW65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:15 2010
+Message-Id: <20100824224215.843600964@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:18 -0700
+Date: Tue, 24 Aug 2010 15:42:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Greear <greearb@candelatech.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [56/91] net: dev_forward_skb should call nf_reset
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [44/91] mm: make the mlock() stack guard page checks stricter
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +24,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: Ben Greear <greearb@candelatech.com>
+commit 7798330ac8114c731cfab83e634c6ecedaa233d7 upstream.
 
-[ Upstream commit c736eefadb71a01a5e61e0de700f28f6952b4444 ]
+If we've split the stack vma, only the lowest one has the guard page.
+Now that we have a doubly linked list of vma's, checking this is trivial.
 
-With conn-track zones and probably with different network
-namespaces, the netfilter logic needs to be re-calculated
-on packet receive.  If the netfilter logic is not reset,
-it will not be recalculated properly.  This patch adds
-the nf_reset logic to dev_forward_skb.
-
-Signed-off-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested-by: Ian Campbell <ijc@hellion.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/core/dev.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1464,6 +1464,7 @@ static inline void net_timestamp(struct
- int dev_forward_skb(struct net_device *dev, struct sk_buff *skb)
- {
- 	skb_orphan(skb);
-+	nf_reset(skb);
+---
+ mm/mlock.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
+
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -135,6 +135,19 @@ void munlock_vma_page(struct page *page)
+ 	}
+ }
  
- 	if (!(dev->flags & IFF_UP) ||
- 	    (skb->len > (dev->mtu + dev->hard_header_len))) {
++/* Is the vma a continuation of the stack vma above it? */
++static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
++{
++	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
++}
++
++static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
++{
++	return (vma->vm_flags & VM_GROWSDOWN) &&
++		(vma->vm_start == addr) &&
++		!vma_stack_continue(vma->vm_prev, addr);
++}
++
+ /**
+  * __mlock_vma_pages_range() -  mlock a range of pages in the vma.
+  * @vma:   target vma
+@@ -168,11 +181,9 @@ static long __mlock_vma_pages_range(stru
+ 		gup_flags |= FOLL_WRITE;
+ 
+ 	/* We don't try to access the guard page of a stack vma */
+-	if (vma->vm_flags & VM_GROWSDOWN) {
+-		if (start == vma->vm_start) {
+-			start += PAGE_SIZE;
+-			nr_pages--;
+-		}
++	if (stack_guard_page(vma, start)) {
++		addr += PAGE_SIZE;
++		nr_pages--;
+ 	}
+ 
+ 	while (nr_pages > 0) {
 
 
