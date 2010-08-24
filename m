@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab0HXXoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:44:05 -0400
-Received: from kroah.org ([198.145.64.141]:52220 "EHLO coco.kroah.org"
+	id S932451Ab0HXWyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:54:03 -0400
+Received: from kroah.org ([198.145.64.141]:52154 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932461Ab0HXWyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:05 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:25 2010
-Message-Id: <20100824222525.261588606@clark.site>
+	id S932387Ab0HXWxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:53:55 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:24 2010
+Message-Id: <20100824222524.569637694@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:45 -0700
+Date: Tue, 24 Aug 2010 15:24:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [33/59] sparc64: Fix atomic64_t routine return values.
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [25/59] mm: make the mlock() stack guard page checks stricter
 In-Reply-To: <20100824224625.GA5449@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +24,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commits 86fa04b8742ac681d470786f55e2403ada0075b2
-  and b10f997bb0f4e5b34d447f498fb85834a40d3acb ]
+commit 7798330ac8114c731cfab83e634c6ecedaa233d7 upstream.
 
-Should return 'long' instead of 'int'.
+If we've split the stack vma, only the lowest one has the guard page.
+Now that we have a doubly linked list of vma's, checking this is trivial.
 
-Thanks to Dimitris Michailidis and Tony Luck.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested-by: Ian Campbell <ijc@hellion.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/include/asm/atomic_64.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/sparc/include/asm/atomic_64.h
-+++ b/arch/sparc/include/asm/atomic_64.h
-@@ -20,14 +20,14 @@
- #define atomic64_set(v, i)	(((v)->counter) = i)
+---
+ mm/mlock.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
+
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -138,6 +138,19 @@ void munlock_vma_page(struct page *page)
+ 	}
+ }
  
- extern void atomic_add(int, atomic_t *);
--extern void atomic64_add(int, atomic64_t *);
-+extern void atomic64_add(long, atomic64_t *);
- extern void atomic_sub(int, atomic_t *);
--extern void atomic64_sub(int, atomic64_t *);
-+extern void atomic64_sub(long, atomic64_t *);
++/* Is the vma a continuation of the stack vma above it? */
++static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
++{
++	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
++}
++
++static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
++{
++	return (vma->vm_flags & VM_GROWSDOWN) &&
++		(vma->vm_start == addr) &&
++		!vma_stack_continue(vma->vm_prev, addr);
++}
++
+ /**
+  * __mlock_vma_pages_range() -  mlock a range of pages in the vma.
+  * @vma:   target vma
+@@ -171,11 +184,9 @@ static long __mlock_vma_pages_range(stru
+ 		gup_flags |= FOLL_WRITE;
  
- extern int atomic_add_ret(int, atomic_t *);
--extern int atomic64_add_ret(int, atomic64_t *);
-+extern long atomic64_add_ret(long, atomic64_t *);
- extern int atomic_sub_ret(int, atomic_t *);
--extern int atomic64_sub_ret(int, atomic64_t *);
-+extern long atomic64_sub_ret(long, atomic64_t *);
+ 	/* We don't try to access the guard page of a stack vma */
+-	if (vma->vm_flags & VM_GROWSDOWN) {
+-		if (start == vma->vm_start) {
+-			start += PAGE_SIZE;
+-			nr_pages--;
+-		}
++	if (stack_guard_page(vma, start)) {
++		addr += PAGE_SIZE;
++		nr_pages--;
+ 	}
  
- #define atomic_dec_return(v) atomic_sub_ret(1, v)
- #define atomic64_dec_return(v) atomic64_sub_ret(1, v)
-@@ -91,7 +91,7 @@ static inline int atomic_add_unless(atom
- 	((__typeof__((v)->counter))cmpxchg(&((v)->counter), (o), (n)))
- #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
- 
--static inline int atomic64_add_unless(atomic64_t *v, long a, long u)
-+static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
- {
- 	long c, old;
- 	c = atomic64_read(v);
+ 	while (nr_pages > 0) {
 
 
