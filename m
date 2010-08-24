@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933990Ab0HXXTo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:19:44 -0400
-Received: from kroah.org ([198.145.64.141]:40981 "EHLO coco.kroah.org"
+	id S934007Ab0HXXUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:20:07 -0400
+Received: from kroah.org ([198.145.64.141]:40964 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932810Ab0HXXB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:01:58 -0400
+	id S933375Ab0HXXBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:01:53 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
-Message-Id: <20100824224504.229397256@clark.site>
+Message-Id: <20100824224503.975895740@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:39 -0700
+Date: Tue, 24 Aug 2010 15:44:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dima Zavin <dima@android.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [034/114] ARM: Tighten check for allowable CPSR values
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [031/114] drm/radeon/kms: add additional quirk for Acer rv620 laptop
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 41e2e8fd34fff909a0e40129f6ac4233ecfa67a9 upstream.
+commit 9ea2c4be978d597076ddc6c550557de5d243cea8 upstream.
 
-Reviewed-by: Arve Hjønnevåg <arve@android.com>
-Acked-by: Dima Zavin <dima@android.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+HPD pins are reversed
+
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=29387
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/include/asm/ptrace.h |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/ptrace.h
-+++ b/arch/arm/include/asm/ptrace.h
-@@ -158,15 +158,24 @@ struct pt_regs {
-  */
- static inline int valid_user_regs(struct pt_regs *regs)
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -206,6 +206,7 @@ static bool radeon_atom_apply_quirks(str
+ 				     uint16_t *line_mux,
+ 				     struct radeon_hpd *hpd)
  {
--	if (user_mode(regs) && (regs->ARM_cpsr & PSR_I_BIT) == 0) {
--		regs->ARM_cpsr &= ~(PSR_F_BIT | PSR_A_BIT);
--		return 1;
-+	unsigned long mode = regs->ARM_cpsr & MODE_MASK;
-+
-+	/*
-+	 * Always clear the F (FIQ) and A (delayed abort) bits
-+	 */
-+	regs->ARM_cpsr &= ~(PSR_F_BIT | PSR_A_BIT);
-+
-+	if ((regs->ARM_cpsr & PSR_I_BIT) == 0) {
-+		if (mode == USR_MODE)
-+			return 1;
-+		if (elf_hwcap & HWCAP_26BIT && mode == USR26_MODE)
-+			return 1;
++	struct radeon_device *rdev = dev->dev_private;
+ 
+ 	/* Asus M2A-VM HDMI board lists the DVI port as HDMI */
+ 	if ((dev->pdev->device == 0x791e) &&
+@@ -308,13 +309,22 @@ static bool radeon_atom_apply_quirks(str
+ 		}
  	}
  
- 	/*
- 	 * Force CPSR to something logical...
- 	 */
--	regs->ARM_cpsr &= PSR_f | PSR_s | (PSR_x & ~PSR_A_BIT) | PSR_T_BIT | MODE32_BIT;
-+	regs->ARM_cpsr &= PSR_f | PSR_s | PSR_x | PSR_T_BIT | MODE32_BIT;
- 	if (!(elf_hwcap & HWCAP_26BIT))
- 		regs->ARM_cpsr |= USR_MODE;
+-	/* Acer laptop reports DVI-D as DVI-I */
++	/* Acer laptop reports DVI-D as DVI-I and hpd pins reversed */
+ 	if ((dev->pdev->device == 0x95c4) &&
+ 	    (dev->pdev->subsystem_vendor == 0x1025) &&
+ 	    (dev->pdev->subsystem_device == 0x013c)) {
++		struct radeon_gpio_rec gpio;
++
+ 		if ((*connector_type == DRM_MODE_CONNECTOR_DVII) &&
+-		    (supported_device == ATOM_DEVICE_DFP1_SUPPORT))
++		    (supported_device == ATOM_DEVICE_DFP1_SUPPORT)) {
++			gpio = radeon_lookup_gpio(rdev, 6);
++			*hpd = radeon_atom_get_hpd_info_from_gpio(rdev, &gpio);
+ 			*connector_type = DRM_MODE_CONNECTOR_DVID;
++		} else if ((*connector_type == DRM_MODE_CONNECTOR_HDMIA) &&
++			   (supported_device == ATOM_DEVICE_DFP1_SUPPORT)) {
++			gpio = radeon_lookup_gpio(rdev, 7);
++			*hpd = radeon_atom_get_hpd_info_from_gpio(rdev, &gpio);
++		}
+ 	}
  
+ 	/* XFX Pine Group device rv730 reports no VGA DDC lines
 
 
