@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743Ab0HXW5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:57:44 -0400
-Received: from kroah.org ([198.145.64.141]:52322 "EHLO coco.kroah.org"
+	id S932820Ab0HXW6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:58:15 -0400
+Received: from kroah.org ([198.145.64.141]:52431 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932497Ab0HXWyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:54:25 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:25:26 2010
-Message-Id: <20100824222526.504596500@clark.site>
+	id S932800Ab0HXW6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:58:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:12 2010
+Message-Id: <20100824224212.844885163@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:24:59 -0700
+Date: Tue, 24 Aug 2010 15:41:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@redhat.com>
-Subject: [47/59] drm: stop information leak of old kernel stack.
-In-Reply-To: <20100824224625.GA5449@kroah.com>
+        Jonathan Woithe <jwoithe@physics.adelaide.edu.au>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [09/91] ALSA: hda - Fix missing stream for second ADC on Realtek ALC260 HDA codec
+In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
 
-commit b9f0aee83335db1f3915f4e42a5e21b351740afd upstream.
+commit 53bacfbbb2ddd981287b58a511c8b8f5df179886 upstream.
 
-non-critical issue, CVE-2010-2803
+I discovered tonight that ALSA no longer sets up a stream for the second ADC
+provided by the Realtek ALC260 HDA codec.  At some point alc_build_pcms()
+started using stream_analog_alt_capture when constructing the second ADC
+stream, but patch_alc260() was never updated accordingly.  I have no idea
+when this regression occurred.  The trivial patch to patch_alc260() given
+below fixes the problem as far as I can tell.  The patch is against 2.6.35.
 
-Userspace controls the amount of memory to be allocate, so it can
-get the ioctl to allocate more memory than the kernel uses, and get
-access to kernel stack. This can only be done for processes authenticated
-to the X server for DRI access, and if the user has DRI access.
-
-Fix is to just memset the data to 0 if the user doesn't copy into
-it in the first place.
-
-Reported-by: Kees Cook <kees@ubuntu.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_drv.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/drm_drv.c
-+++ b/drivers/gpu/drm/drm_drv.c
-@@ -470,7 +470,9 @@ int drm_ioctl(struct inode *inode, struc
- 				retcode = -EFAULT;
- 				goto err_i1;
- 			}
--		}
-+		} else
-+			memset(kdata, 0, _IOC_SIZE(cmd));
-+
- 		retcode = func(dev, kdata, file_priv);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6757,6 +6757,7 @@ static int patch_alc260(struct hda_codec
  
- 		if (cmd & IOC_OUT) {
+ 	spec->stream_analog_playback = &alc260_pcm_analog_playback;
+ 	spec->stream_analog_capture = &alc260_pcm_analog_capture;
++	spec->stream_analog_alt_capture = &alc260_pcm_analog_capture;
+ 
+ 	spec->stream_digital_playback = &alc260_pcm_digital_playback;
+ 	spec->stream_digital_capture = &alc260_pcm_digital_capture;
 
 
