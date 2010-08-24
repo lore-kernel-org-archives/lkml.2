@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933868Ab0HXXQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:16:03 -0400
-Received: from kroah.org ([198.145.64.141]:41116 "EHLO coco.kroah.org"
+	id S933873Ab0HXXQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:16:28 -0400
+Received: from kroah.org ([198.145.64.141]:41111 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933470Ab0HXXC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:29 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:06 2010
-Message-Id: <20100824224505.948376120@clark.site>
+	id S933463Ab0HXXC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:28 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
+Message-Id: <20100824224505.868110695@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:59 -0700
+Date: Tue, 24 Aug 2010 15:44:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [054/114] mm: make stack guard page logic use vm_prev pointer
+Subject: [053/114] mm: make the mlock() stack guard page checks stricter
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 0e8e50e20c837eeec8323bba7dcd25fe5479194c upstream.
+commit 7798330ac8114c731cfab83e634c6ecedaa233d7 upstream.
 
-Like the mlock() change previously, this makes the stack guard check
-code use vma->vm_prev to see what the mapping below the current stack
-is, rather than have to look it up with find_vma().
-
-Also, accept an abutting stack segment, since that happens naturally if
-you split the stack with mlock or mprotect.
+If we've split the stack vma, only the lowest one has the guard page.
+Now that we have a doubly linked list of vma's, checking this is trivial.
 
 Tested-by: Ian Campbell <ijc@hellion.org.uk>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ mm/mlock.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2770,11 +2770,18 @@ static inline int check_stack_guard_page
- {
- 	address &= PAGE_MASK;
- 	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
--		address -= PAGE_SIZE;
--		if (find_vma(vma->vm_mm, address) != vma)
--			return -ENOMEM;
-+		struct vm_area_struct *prev = vma->vm_prev;
- 
--		expand_stack(vma, address);
-+		/*
-+		 * Is there a mapping abutting this one below?
-+		 *
-+		 * That's only ok if it's the same stack mapping
-+		 * that has gotten split..
-+		 */
-+		if (prev && prev->vm_end == address)
-+			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
-+
-+		expand_stack(vma, address - PAGE_SIZE);
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -135,6 +135,19 @@ void munlock_vma_page(struct page *page)
  	}
- 	return 0;
  }
+ 
++/* Is the vma a continuation of the stack vma above it? */
++static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
++{
++	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
++}
++
++static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
++{
++	return (vma->vm_flags & VM_GROWSDOWN) &&
++		(vma->vm_start == addr) &&
++		!vma_stack_continue(vma->vm_prev, addr);
++}
++
+ /**
+  * __mlock_vma_pages_range() -  mlock a range of pages in the vma.
+  * @vma:   target vma
+@@ -168,11 +181,9 @@ static long __mlock_vma_pages_range(stru
+ 		gup_flags |= FOLL_WRITE;
+ 
+ 	/* We don't try to access the guard page of a stack vma */
+-	if (vma->vm_flags & VM_GROWSDOWN) {
+-		if (start == vma->vm_start) {
+-			start += PAGE_SIZE;
+-			nr_pages--;
+-		}
++	if (stack_guard_page(vma, start)) {
++		addr += PAGE_SIZE;
++		nr_pages--;
+ 	}
+ 
+ 	while (nr_pages > 0) {
 
 
