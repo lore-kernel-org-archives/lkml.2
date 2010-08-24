@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab0HXXHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:07:52 -0400
-Received: from kroah.org ([198.145.64.141]:32848 "EHLO coco.kroah.org"
+	id S933685Ab0HXXDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:03:36 -0400
+Received: from kroah.org ([198.145.64.141]:32773 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933689Ab0HXXDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:10 2010
-Message-Id: <20100824224510.037385334@clark.site>
+	id S933631Ab0HXXDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:09 2010
+Message-Id: <20100824224509.055662244@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:46 -0700
+Date: Tue, 24 Aug 2010 15:45:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sven Eckelmann <sven.eckelmann@gmx.de>
-Subject: [101/114] Staging: batman-adv: Dont write in not allocated packet_buff
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [090/114] netlink: fix compat recvmsg
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit f86b9984250fa2b71ce36d4693a939a58579583b upstream.
+commit 68d6ac6d2740b6a55f3ae92a4e0be6d881904b32 upstream.
 
-Each net_device in a system will automatically managed as a possible
-batman_if and holds different informations like a buffer with a prepared
-originator messages. To reduce the memory usage, the packet_buff will
-only be allocated when the interface is really added/enabled for
-batman-adv.
+Since
+commit 1dacc76d0014a034b8aca14237c127d7c19d7726
+Author: Johannes Berg <johannes@sipsolutions.net>
+Date:   Wed Jul 1 11:26:02 2009 +0000
 
-The function to update the hw address information inside the packet_buff
-just assumes that the packet_buff is always initialised and thus the
-kernel will just oops when we try to change the hw address of a not
-already fully enabled interface.
+    net/compat/wext: send different messages to compat tasks
 
-We must always check if the packet_buff is allocated before we try to
-change information inside of it.
+we had a race condition when setting and then
+restoring frag_list. Eric attempted to fix it,
+but the fix created even worse problems.
 
-Reported-by: Tim Glaremin <Tim.Glaremin@web.de>
-Reported-by: Kazuki Shimada <zukky@bb.banban.jp>
-Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+However, the original motivation I had when I
+added the code that turned out to be racy is
+no longer clear to me, since we only copy up
+to skb->len to userspace, which doesn't include
+the frag_list length. As a result, not doing
+any frag_list clearing and restoring avoids
+the race condition, while not introducing any
+other problems.
+
+Additionally, while preparing this patch I found
+that since none of the remaining netlink code is
+really aware of the frag_list, we need to use the
+original skb's information for packet information
+and credentials. This fixes, for example, the
+group information received by compat tasks.
+
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/batman-adv/hard-interface.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/netlink/af_netlink.c |   46 ++++++++++++++++------------------------------
+ 1 file changed, 16 insertions(+), 30 deletions(-)
 
---- a/drivers/staging/batman-adv/hard-interface.c
-+++ b/drivers/staging/batman-adv/hard-interface.c
-@@ -128,6 +128,9 @@ static bool hardif_is_iface_up(struct ba
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1400,7 +1400,7 @@ static int netlink_recvmsg(struct kiocb
+ 	struct netlink_sock *nlk = nlk_sk(sk);
+ 	int noblock = flags&MSG_DONTWAIT;
+ 	size_t copied;
+-	struct sk_buff *skb, *frag __maybe_unused = NULL;
++	struct sk_buff *skb, *data_skb;
+ 	int err;
  
- static void update_mac_addresses(struct batman_if *batman_if)
- {
-+	if (!batman_if || !batman_if->packet_buff)
-+		return;
+ 	if (flags&MSG_OOB)
+@@ -1412,45 +1412,35 @@ static int netlink_recvmsg(struct kiocb
+ 	if (skb == NULL)
+ 		goto out;
+ 
++	data_skb = skb;
 +
- 	addr_to_string(batman_if->addr_str, batman_if->net_dev->dev_addr);
+ #ifdef CONFIG_COMPAT_NETLINK_MESSAGES
+ 	if (unlikely(skb_shinfo(skb)->frag_list)) {
+-		bool need_compat = !!(flags & MSG_CMSG_COMPAT);
+-
+ 		/*
+-		 * If this skb has a frag_list, then here that means that
+-		 * we will have to use the frag_list skb for compat tasks
+-		 * and the regular skb for non-compat tasks.
++		 * If this skb has a frag_list, then here that means that we
++		 * will have to use the frag_list skb's data for compat tasks
++		 * and the regular skb's data for normal (non-compat) tasks.
+ 		 *
+-		 * The skb might (and likely will) be cloned, so we can't
+-		 * just reset frag_list and go on with things -- we need to
+-		 * keep that. For the compat case that's easy -- simply get
+-		 * a reference to the compat skb and free the regular one
+-		 * including the frag. For the non-compat case, we need to
+-		 * avoid sending the frag to the user -- so assign NULL but
+-		 * restore it below before freeing the skb.
++		 * If we need to send the compat skb, assign it to the
++		 * 'data_skb' variable so that it will be used below for data
++		 * copying. We keep 'skb' for everything else, including
++		 * freeing both later.
+ 		 */
+-		if (need_compat) {
+-			struct sk_buff *compskb = skb_shinfo(skb)->frag_list;
+-			skb_get(compskb);
+-			kfree_skb(skb);
+-			skb = compskb;
+-		} else {
+-			frag = skb_shinfo(skb)->frag_list;
+-			skb_shinfo(skb)->frag_list = NULL;
+-		}
++		if (flags & MSG_CMSG_COMPAT)
++			data_skb = skb_shinfo(skb)->frag_list;
+ 	}
+ #endif
  
- 	memcpy(((struct batman_packet *)(batman_if->packet_buff))->orig,
-@@ -338,6 +341,7 @@ static struct batman_if *hardif_add_inte
- 	batman_if->if_num = -1;
- 	batman_if->net_dev = net_dev;
- 	batman_if->if_status = IF_NOT_IN_USE;
-+	batman_if->packet_buff = NULL;
- 	INIT_LIST_HEAD(&batman_if->list);
+ 	msg->msg_namelen = 0;
  
- 	check_known_mac_addr(batman_if->net_dev->dev_addr);
+-	copied = skb->len;
++	copied = data_skb->len;
+ 	if (len < copied) {
+ 		msg->msg_flags |= MSG_TRUNC;
+ 		copied = len;
+ 	}
+ 
+-	skb_reset_transport_header(skb);
+-	err = skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
++	skb_reset_transport_header(data_skb);
++	err = skb_copy_datagram_iovec(data_skb, 0, msg->msg_iov, copied);
+ 
+ 	if (msg->msg_name) {
+ 		struct sockaddr_nl *addr = (struct sockaddr_nl *)msg->msg_name;
+@@ -1470,11 +1460,7 @@ static int netlink_recvmsg(struct kiocb
+ 	}
+ 	siocb->scm->creds = *NETLINK_CREDS(skb);
+ 	if (flags & MSG_TRUNC)
+-		copied = skb->len;
+-
+-#ifdef CONFIG_COMPAT_NETLINK_MESSAGES
+-	skb_shinfo(skb)->frag_list = frag;
+-#endif
++		copied = data_skb->len;
+ 
+ 	skb_free_datagram(sk, skb);
+ 
 
 
