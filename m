@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab0HXVsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 17:48:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13253 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755718Ab0HXVsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 17:48:50 -0400
-Date: Tue, 24 Aug 2010 17:48:25 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100824214825.GE4879@redhat.com>
-References: <1282214753.1926.4669.camel@laptop>
- <20100819141240.GO4879@redhat.com>
- <1282228033.2605.204.camel@laptop>
- <20100820015017.GA4879@redhat.com>
- <20100820081605.GD17551@elte.hu>
- <1282298651.2605.769.camel@laptop>
- <20100820123901.GE4879@redhat.com>
- <20100820132737.GD3321@elte.hu>
- <20100820135118.GI4879@redhat.com>
- <20100820141703.GA29697@elte.hu>
+	id S1756138Ab0HXVtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 17:49:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61345 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756120Ab0HXVs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 17:48:58 -0400
+Message-ID: <4C743E00.1040601@kernel.org>
+Date: Tue, 24 Aug 2010 14:47:44 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100820141703.GA29697@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Daniel Kiper <dkiper@net-space.pl>
+CC: "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, apic: Fix apic=debug boot crash
+References: <20100819224616.GB9967@router-fw-old.local.net-space.pl> <tip-05e407603e527f9d808dd3866d3a17c2ce4dfcc5@git.kernel.org> <AANLkTim9kjBp68LqieU3MDLbkRDiWLNQjtUvjEbc9Hca@mail.gmail.com> <20100823081212.GA13297@router-fw-old.local.net-space.pl> <9cca0990-1b78-40e7-a71d-f550b4f504aa@email.android.com> <4C72B6F7.8010706@kernel.org> <20100824213931.GA1192@router-fw-old.local.net-space.pl>
+In-Reply-To: <20100824213931.GA1192@router-fw-old.local.net-space.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 04:17:03PM +0200, Ingo Molnar wrote:
+On 08/24/2010 02:39 PM, Daniel Kiper wrote:
+> Hello,
 > 
-> it's not working so well, i'm getting:
+> On 08/23/2010 07:54 AM, H. Peter Anvin wrote:
+>> It's already applied.
 > 
->  Uhhuh. NMI received for unknown reason 00 on CPU 9.
->  Do you have a strange power saving mode enabled?
->  Dazed and confused, but trying to continue
+> Thx.
 > 
-> on a nehalem box, after a perf top and perf stat run.
+> On Mon, Aug 23, 2010 at 10:59:19AM -0700, Yinghai Lu wrote:
+> [...]
+>>>>>> x86, apic: Fix apic=debug boot crash
+>>>>>>
+>>>>>> Fix a boot crash when apic=debug is used and the APIC is
+>>>>>> not properly initialized.
+>>>>>>
+>>>>>> This issue appears during Xen Dom0 kernel boot but the
+>>>>>> fix is generic and the crash could occur on real hardware
+>>>>>> as well.
+>>>>>
+>>>>> Do you have any report on real hardware?
+>>>>> that could not happen on real hardware.
+>>>>
+>>>> Till now no, however I think it is good idea
+>>>> to apply this patch now. It is not worth to wait
+>>>> for another null pointer dereference.
+>>
+>> no, we should add BUG_ON() etc debug info there to see why that null cfg could happen.
+>> because according to code, we should have null there.
+> 
+> I think that BUG_ON() is too strong here because
+> it is "debug" function and it should work also
+> with let's say "invalid" data (in Xen case it is
+> normal because APIC state is managed directly
+> by hypervisor).
+> 
+> Additionally, with this patch it is easy to
+> differentiate between cfg != NULL and
+> cfg == NULL. Please look below:
+> 
+> cfg != NULL:
+> IRQ to pin mappings:
+> IRQ0 -> 0:2
+> IRQ1 -> 0:1
+> IRQ3 -> 0:3
+> IRQ4 -> 0:4
+> IRQ5 -> 0:5
+> IRQ6 -> 0:6
+> IRQ7 -> 0:7
+> IRQ8 -> 0:8
+> IRQ9 -> 0:9
+> IRQ10 -> 0:10
+> IRQ11 -> 0:11
+> IRQ12 -> 0:12
+> IRQ13 -> 0:13
+> IRQ14 -> 0:14
+> IRQ15 -> 0:15
+> .................................... done.
+> 
+> cfg == NULL:
+> IRQ to pin mappings:
+> .................................... done.
+> 
+> If I missed something or if you have any
+> questions please drop me a line.
 
-After applying the patch below, I ran the following commands on my nehalem
-box without reproducing what you are seeing.  Any thing else I can run
-that might trigger it? (I also ran them on an amd phenom quad-core box).
+I mean you should figure out why xen ops could have null cfg.
 
-I used 2.6.32-rc2 plus Robert's and 2 of PeterZ's patches.
-
-perf top
-perf stat -a -e cycles -e instructions -e cache-references -e cache-misses -e branch-misses -- sleep 5
-perf record -f -a -e cycles -e instructions -e cache-references -e cache-misses -e branch-misses -- sleep 5
-
-Cheers,
-Don
-
-
->From 198be1044fa603bc9582a5c19134fdf9a433fff0 Mon Sep 17 00:00:00 2001
-From: Don Zickus <dzickus@redhat.com>
-Date: Tue, 24 Aug 2010 17:43:17 -0400
-Subject: [PATCH] [x86] perf: rename nmi variable to avoid clash with entry point
-
-There is already an entry point named .nmi in entry.S and that seems to clash
-with the per_cpu variable nmi defined in commit f3a860d8.  Renaming this
-variable avoids the namespace collision.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/cpu/perf_event.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index dd2fceb..2a05ea4 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1205,7 +1205,7 @@ struct pmu_nmi_state {
- 	int		handled;
- };
- 
--static DEFINE_PER_CPU(struct pmu_nmi_state, nmi);
-+static DEFINE_PER_CPU_PAGE_ALIGNED(struct pmu_nmi_state, pmu_nmi);
- 
- static int __kprobes
- perf_event_nmi_handler(struct notifier_block *self,
-@@ -1224,7 +1224,7 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		break;
- 	case DIE_NMIUNKNOWN:
- 		this_nmi = percpu_read(irq_stat.__nmi_count);
--		if (this_nmi != __get_cpu_var(nmi).marked)
-+		if (this_nmi != __get_cpu_var(pmu_nmi).marked)
- 			/* let the kernel handle the unknown nmi */
- 			return NOTIFY_DONE;
- 		/*
-@@ -1248,8 +1248,8 @@ perf_event_nmi_handler(struct notifier_block *self,
- 	this_nmi = percpu_read(irq_stat.__nmi_count);
- 	if ((handled > 1) ||
- 		/* the next nmi could be a back-to-back nmi */
--	    ((__get_cpu_var(nmi).marked == this_nmi) &&
--	     (__get_cpu_var(nmi).handled > 1))) {
-+	    ((__get_cpu_var(pmu_nmi).marked == this_nmi) &&
-+	     (__get_cpu_var(pmu_nmi).handled > 1))) {
- 		/*
- 		 * We could have two subsequent back-to-back nmis: The
- 		 * first handles more than one counter, the 2nd
-@@ -1260,8 +1260,8 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		 * handling more than one counter. We will mark the
- 		 * next (3rd) and then drop it if unhandled.
- 		 */
--		__get_cpu_var(nmi).marked	= this_nmi + 1;
--		__get_cpu_var(nmi).handled	= handled;
-+		__get_cpu_var(pmu_nmi).marked	= this_nmi + 1;
-+		__get_cpu_var(pmu_nmi).handled	= handled;
- 	}
- 
- 	return NOTIFY_STOP;
--- 
-1.7.2.1
-
+Yinghai
