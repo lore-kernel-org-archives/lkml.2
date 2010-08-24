@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab0HXW7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:59:12 -0400
-Received: from kroah.org ([198.145.64.141]:40464 "EHLO coco.kroah.org"
+	id S932997Ab0HXW7P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 18:59:15 -0400
+Received: from kroah.org ([198.145.64.141]:40473 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932833Ab0HXW7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:59:05 -0400
+	id S932856Ab0HXW7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:16 2010
-Message-Id: <20100824224216.354425785@clark.site>
+Message-Id: <20100824224216.526881360@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:12 -0700
+Date: Tue, 24 Aug 2010 15:42:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dmitry Popov <dp@highloadlab.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [50/91] sparc64: Fix rwsem constant bug leading to hangs.
+Subject: [52/91] tcp: cookie transactions setsockopt memory leak
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit ef201bebe5afc91a2b99b45dacc8c6dd88ca9e58 ]
+From: Dmitry Popov <dp@highloadlab.com>
 
-As noticed by Linus, it is critical that some of the
-rwsem constants be signed.  Yet, hex constants are
-unsigned unless explicitly casted or negated.
+[ Upstream commit a3bdb549e30e7a263f7a589747c40e9c50110315 ]
 
-The most critical one is RWSEM_WAITING_BIAS.
+There is a bug in do_tcp_setsockopt(net/ipv4/tcp.c),
+TCP_COOKIE_TRANSACTIONS case.
+In some cases (when tp->cookie_values == NULL) new tcp_cookie_values
+structure can be allocated (at cvp), but not bound to
+tp->cookie_values. So a memory leak occurs.
 
-This bug was exacerbated by commit
-424acaaeb3a3932d64a9b4bd59df6cf72c22d8f3 ("rwsem: wake queued readers
-when writer blocks on active read lock")
-
+Signed-off-by: Dmitry Popov <dp@highloadlab.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/include/asm/rwsem-const.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/include/asm/rwsem-const.h
-+++ b/arch/sparc/include/asm/rwsem-const.h
-@@ -5,7 +5,7 @@
- #define RWSEM_UNLOCKED_VALUE		0x00000000
- #define RWSEM_ACTIVE_BIAS		0x00000001
- #define RWSEM_ACTIVE_MASK		0x0000ffff
--#define RWSEM_WAITING_BIAS		0xffff0000
-+#define RWSEM_WAITING_BIAS		(-0x00010000)
- #define RWSEM_ACTIVE_READ_BIAS		RWSEM_ACTIVE_BIAS
- #define RWSEM_ACTIVE_WRITE_BIAS		(RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2175,6 +2175,8 @@ static int do_tcp_setsockopt(struct sock
+ 				      GFP_KERNEL);
+ 			if (cvp == NULL)
+ 				return -ENOMEM;
++
++			kref_init(&cvp->kref);
+ 		}
+ 		lock_sock(sk);
+ 		tp->rx_opt.cookie_in_always =
+@@ -2189,12 +2191,11 @@ static int do_tcp_setsockopt(struct sock
+ 				 */
+ 				kref_put(&tp->cookie_values->kref,
+ 					 tcp_cookie_values_release);
+-				kref_init(&cvp->kref);
+-				tp->cookie_values = cvp;
+ 			} else {
+ 				cvp = tp->cookie_values;
+ 			}
+ 		}
++
+ 		if (cvp != NULL) {
+ 			cvp->cookie_desired = ctd.tcpct_cookie_desired;
  
+@@ -2208,6 +2209,8 @@ static int do_tcp_setsockopt(struct sock
+ 				cvp->s_data_desired = ctd.tcpct_s_data_desired;
+ 				cvp->s_data_constant = 0; /* false */
+ 			}
++
++			tp->cookie_values = cvp;
+ 		}
+ 		release_sock(sk);
+ 		return err;
 
 
