@@ -1,91 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab0HXVRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 17:17:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34125 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab0HXVRw (ORCPT
+	id S1756017Ab0HXV1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 17:27:25 -0400
+Received: from smtp107.sbc.mail.gq1.yahoo.com ([67.195.14.110]:20203 "HELO
+	smtp107.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755877Ab0HXV1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 17:17:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QEM2KS1lPmkYdGtvq93hzcO0LbQ9YTe4ZE+orAZKNWOMM+1YoXO9KhfKLar4zpd7dM
-         Dmo8VCmZVEXT4AyNHq3elq40ZY7pTqp8JAGENqiBDeV/8JB9OIttfHhFxI8nP+8waHLT
-         W/bP5Pke5+XWZBhOIe/xnbfc93J1mVDsjvfNs=
-MIME-Version: 1.0
-In-Reply-To: <496565EC904933469F292DDA3F1663E602F0FA39BA@dlee06.ent.ti.com>
-References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
-	<1277943660-4112-2-git-send-email-x0095840@ti.com>
-	<1277943660-4112-3-git-send-email-x0095840@ti.com>
-	<1277943660-4112-4-git-send-email-x0095840@ti.com>
-	<1277943660-4112-5-git-send-email-x0095840@ti.com>
-	<1277943660-4112-6-git-send-email-x0095840@ti.com>
-	<1277943660-4112-7-git-send-email-x0095840@ti.com>
-	<1277943660-4112-8-git-send-email-x0095840@ti.com>
-	<1277943660-4112-9-git-send-email-x0095840@ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD39F6@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
-	<AANLkTimENxUjUWJQSZ1dmdkX_9hQ0pjat-kyR9oNjVxf@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F0FA3883@dlee06.ent.ti.com>
-	<AANLkTi=NuPu6bvv6KF7sXRp02bvfz7oRkG1SG1PstA-H@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F0FA397F@dlee06.ent.ti.com>
-	<AANLkTinaJ=xn_CAJznVtMcA0nwK_-gbo05OQKM7PuoYA@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F0FA3995@dlee06.ent.ti.com>
-	<AANLkTinjMujus-28DcLzZ+16GAGpLohwhPhuTi5uKhB8@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F0FA39BA@dlee06.ent.ti.com>
-Date: Wed, 25 Aug 2010 00:17:50 +0300
-Message-ID: <AANLkTikQCTtwOkAmt3PZrOkxi=VzJtfNKGsH=YXawt9t@mail.gmail.com>
-Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Aug 2010 17:27:22 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: KGhutGYVM1nZhDh0HYI3XJiPbM81y4ea9jU6QpPr.RmiLSx
+ Ed7mybvLNNgZxjDOymgHm_Td7zEuOs1h7KrMxeLDIUd9Rnh3aWcVZ9VEV8dQ
+ oCp_p7FwgTf29bJBZa8FurJREuEpZkerIOqgE5XV_f8svr0oh0WWgt0uARy2
+ B4furqkEKdd4h7wLS.vkDpUVsI9f_LMd.SFIH0s602.dIoB82YL4bdiNqt72
+ qDV8lJn6Xr0veAjE2VBoLtzAXorwSlgc5nrO.gXg0XtHleC1DBgPi9M22lSM
+ q1vkt2rqGKGMPkht_YOSyaP8-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C7421FB.2060007@vlnb.net>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	 <1282144271.3035.31.camel@mulgrave.site>
+	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
+	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>
+	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
+	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>
+	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>
+	 <4C73DA15.2010207@vlnb.net> <1282661876.2993.20.camel@mulgrave.site>
+	 <4C7421FB.2060007@vlnb.net>
+Content-Type: text/plain
+Date: Tue, 24 Aug 2010 14:23:34 -0700
+Message-Id: <1282685014.32007.51.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 10:30 PM, Guzman Lugo, Fernando
-<fernando.lugo@ti.com> wrote:
->> Oh, I actually meant the DMM pool.
->>
->> a) 1. Migrate to iommu, 2. Remove DMM completely
->> b) 1. Remove DMM pool, 2. Migrate to iommu 3. Remove DMM completely
->
-> Ok, what is the issue with DMM pool?
+On Tue, 2010-08-24 at 23:48 +0400, Vladislav Bolkhovitin wrote:
+> James Bottomley, on 08/24/2010 06:57 PM wrote:
+> > On Tue, 2010-08-24 at 18:41 +0400, Vladislav Bolkhovitin wrote:
+> >> James Bottomley, on 08/22/2010 12:43 AM wrote:
+> >>> Interface re-use (or at least ABI compatibility) is the whole point,
+> >>> it's what makes the solution a drop in replacement.
+> >>
+> >> I see now. You want ABI compatibility to keep the "contract" that no
+> >> kernel changes can break applications binary compatibility for unlimited
+> >> time.
+> >>
+> >> OK, we will write the compatibility module. It shouldn't take much time.
+> >>
+> >> But before we start, I'd like to clear 2 related questions:
+> >>
+> >> 1. How far the ABI compatibility "contract" goes? Are there cases, where
+> >> it isn't so strong? I'm asking, because I can recall that open-iscsi at
+> >> least once has broken ABI compatibility with user space tools. Was it an
+> >> accidental (but not corrected) mistake or was it deliberate? If the
+> >> latter, then, I guess, there must be some exceptions defining when ABI
+> >> compatibility can be not followed.
+> > 
+> > I don't think it has to be complete.  As long as the STGT people think
+> > it's good enough, that's fine by me.
+> 
+> Tomonori, Mike, could you comment on that, please?
+>  
+> >> 2. Currently STGT in the kernel is just 2 files, scsi_tgt_if.c and
+> >> scsi_tgt_lib.c (with headers), + ibmvstgt driver. The C files define the
+> >> STGT interface in question. So, if we keep ABI compatibility with the
+> >> new target engine, we would have to keep those 2 files included in the
+> >> kernel,
+> > 
+> > This isn't really correct.  The ABI is defined by the headers not the
+> > implementation.
+> 
+> Yes, but we on the target side would not be able to implement the ABI compatible interface without using library functions provided by those C files. Or, at least, it would be much harder.
+> 
+> So, would it be OK for you to keep those files?
+>  
+> >> which would effectively mean that STGT would stay in the kernel.
+> >> This would lead to the situation you are trying to avoid: 2 SCSI target
+> >> infrastructures in the kernel. Would it be OK?
+> > 
+> > If you mean is the marketing solution of wedging two products into the
+> > kernel and calling it a single one going to fly, the answer is no.
+> 
+> I mean that if we keep those 2 files to ease our ABI compatibility effort, it would effectively mean that we would leave STGT merged. It isn't something we would create, it just would be so itself as a matter of fact. Ultimately, STGT is an user space engine. What it has in the kernel is the interface helper functions to interact with the in-kernel drivers. The simplest way to achieve the ABI compatibility is to make a backend module acting as an STGT in-target driver.
+> 
+> (Actually, I may not ask it, because this is the way how LIO seems[1] implemented that, which was approved on the LSF summit. I only want to make all pros and cons clear from the very beginning.)
+> 
+> Thanks,
+> Vlad
+> 
+> 1. I wrote "seems", because currently LIO has the following code for STGT commands execution: 
+> 
+> int stgt_do_task(se_task_t *task)
+> {
+> 	stgt_plugin_task_t *st = (stgt_plugin_task_t *) task->transport_req;
+> 	struct Scsi_Host *sh = task->se_dev->se_hba->hba_ptr;
+> 	struct scsi_cmnd *sc;
+> 	int tag = MSG_SIMPLE_TAG;
+> 
+> 	sc = scsi_host_get_command(sh, st->stgt_direction, GFP_KERNEL);
+> 	if (!sc) {
+> 		printk(KERN_ERR "Unable to allocate memory for struct"
+> 			" scsi_cmnd\n");
+> 		return PYX_TRANSPORT_LU_COMM_FAILURE;
+> 	}
+> 
+> 	memcpy(sc->cmnd, st->stgt_cdb, MAX_COMMAND_SIZE);
+> 	sc->sdb.length = task->task_size;
+> 	sc->sdb.table.sgl = task->task_sg;
+> 	sc->tag = tag;
+> 
+> 	BUG();
+> #warning FIXME: Get struct scsi_lun for scsi_tgt_queue_command()
+> #if 0
+> 	err = scsi_tgt_queue_command(sc, itn_id, (struct scsi_lun *)&cmd->lun,
+> 			cmd->tag);
+> 	if (err) {
+> 		printk(KERN_INFO "scsi_tgt_queue_command() failed for sc:"
+> 			" %p\n", sc);
+> 		scsi_host_put_command(sh, sc);
+> 	}
+> #endif
+> 	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
+> }
 
->From what I've heard; fragmentation.
+Vlad,
 
-> The issue I see removing DMM pool in this moment and making all the DMM
-> Available (from 0x11000000 to 0xFFFFFFFF omap3 case) that is:
->
-> The DMM module allocates a list of "struct map_page" elements base on
-> DMM_POOL_SIZE to keep track of memory reserved and mapped.
->
-> Memory allocated = DMM_POOL_SIZE / PAGE_SIZE * sizeof(struct map_page);
->
-> So making all memory avalible it will increase the memory used for DMM
-> Module and it could be quite significant.
->
-> Iovmm.c module, the list is increased dynamically when it is needed so
-> It does no have that problem. Then when the migration is done and
-> Iovmm.c module is used the DMM_POOL_SIZE can be removed without issues.
+As mentioned explictly earlier in this thread, my WIP code for the
+kernel level subsystem backstore using STGT kernel <-> user CDB
+passthrough logic in drivers/target/target_core_stgt.c is a item on my
+TODO list, but I will repeat, is NOT being tagged as a mainline .37
+item.
 
-It seems that this "memory allocated" you are taking about is an
-array, but what we would like is a list, like apparently iovmm is
-using. I think I can give that a try if needed.
+Tomo-san, mnc, and other storage folks have been briefed on the
+remaining issues that would be involved to get a prototype functioning
+with drivers/target/target_core_stgt.c, and rough idea of what it would
+take in existing mainline drivers/scsi/scsi_tgt_*.c code.  With the
+current WIP code this will allow the userspace CDB -> LUN passthrough to
+function transparently with all TCM SPC-4 compliant logic as a
+standalone struct se_subsystem_api tcm_core_stgt.ko backstore.
 
-However, from what I can see iovmm can be used instead of dmm even if
-the switch to iommu is not yet there.
+Best,
 
--- 
-Felipe Contreras
+--nab
+
