@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933972Ab0HXXTQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:19:16 -0400
-Received: from kroah.org ([198.145.64.141]:41014 "EHLO coco.kroah.org"
+	id S933982Ab0HXXTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:19:19 -0400
+Received: from kroah.org ([198.145.64.141]:41001 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933386Ab0HXXCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:06 -0400
+	id S933401Ab0HXXCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:03 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:04 2010
-Message-Id: <20100824224504.659172571@clark.site>
+Message-Id: <20100824224504.486191412@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:44 -0700
+Date: Tue, 24 Aug 2010 15:44:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [039/114] NFS: Fix an Oops in the NFSv4 atomic open code
+        Rajkumar Manoharan <rmanoharan@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [037/114] ath9k_htc: fix panic on packet injection using airbase-ng tool.
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,141 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-commit 0a377cff9428af2da2b293d11e07bc4dbf064ee5 upstream.
+commit da93f10684bfba2983a70c10b5d417232b6a5245 upstream.
 
-Adam Lackorzynski reports:
+This should fix the oops which occurs during the packet injection
+on monitor interface.
 
-with 2.6.35.2 I'm getting this reproducible Oops:
+EIP is at ath9k_htc_tx_start+0x69/0x220 [ath9k_htc]
+ [<f84dc8ea>] ? invoke_tx_handlers+0xa5a/0xee0 [mac80211]
+ [<f82c84f4>] ? ath9k_htc_tx+0x44/0xe0 [ath9k_htc]
+ [<f84db7b8>] ? __ieee80211_tx+0xf8/0x190 [mac80211]
+ [<f84dce0d>] ? ieee80211_tx+0x9d/0x1a0 [mac80211]
+ [<f84dcfac>] ? ieee80211_xmit+0x9c/0x1c0 [mac80211]
+ [<f84dd1b5>] ? ieee80211_monitor_start_xmit+0x85/0xb0 [mac80211]
+ [<c04c30cd>] ? dev_hard_start_xmit+0x1ad/0x210
+ [<c04b97c2>] ? __alloc_skb+0x52/0x130
+ [<c04d7cd5>] ? sch_direct_xmit+0x105/0x170
+ [<c04c5e9f>] ? dev_queue_xmit+0x37f/0x4b0
+ [<c0567e1e>] ? packet_snd+0x21e/0x250
+ [<c05684a2>] ? packet_sendmsg+0x32/0x40
+ [<c04b4c63>] ? sock_aio_write+0x113/0x130
+ [<c0207934>] ? do_sync_write+0xc4/0x100
+ [<c0167740>] ? autoremove_wake_function+0x0/0x50
+ [<c02f4414>] ? security_file_permission+0x14/0x20
+ [<c0207ad4>] ? rw_verify_area+0x64/0xe0
+ [<c01e6458>] ? handle_mm_fault+0x338/0x390
+ [<c0207cd5>] ? vfs_write+0x185/0x1a0
+ [<c058db20>] ? do_page_fault+0x160/0x3a0
+ [<c0208512>] ? sys_write+0x42/0x70
+ [<c01033ec>] ? syscall_call+0x7/0xb
 
-[  110.825396] BUG: unable to handle kernel NULL pointer dereference at
-(null)
-[  110.828638] IP: [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638] PGD be89f067 PUD bf18f067 PMD 0
-[  110.828638] Oops: 0000 [#1] SMP
-[  110.828638] last sysfs file: /sys/class/net/lo/operstate
-[  110.828638] CPU 2
-[  110.828638] Modules linked in: rtc_cmos rtc_core rtc_lib amd64_edac_mod
-i2c_amd756 edac_core i2c_core dm_mirror dm_region_hash dm_log dm_snapshot
-sg sr_mod usb_storage ohci_hcd mptspi tg3 mptscsih mptbase usbcore nls_base
-[last unloaded: scsi_wait_scan]
-[  110.828638]
-[  110.828638] Pid: 11264, comm: setchecksum Not tainted 2.6.35.2 #1
-[  110.828638] RIP: 0010:[<ffffffff811247b7>]  [<ffffffff811247b7>]
-encode_attrs+0x1a/0x2a4
-[  110.828638] RSP: 0000:ffff88003bf5b878  EFLAGS: 00010296
-[  110.828638] RAX: ffff8800bddb48a8 RBX: ffff88003bf5bb18 RCX:
-0000000000000000
-[  110.828638] RDX: ffff8800be258800 RSI: 0000000000000000 RDI:
-ffff88003bf5b9f8
-[  110.828638] RBP: 0000000000000000 R08: ffff8800bddb48a8 R09:
-0000000000000004
-[  110.828638] R10: 0000000000000003 R11: ffff8800be779000 R12:
-ffff8800be258800
-[  110.828638] R13: ffff88003bf5b9f8 R14: ffff88003bf5bb20 R15:
-ffff8800be258800
-[  110.828638] FS:  0000000000000000(0000) GS:ffff880041e00000(0063)
-knlGS:00000000556bd6b0
-[  110.828638] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-[  110.828638] CR2: 0000000000000000 CR3: 00000000be8ef000 CR4:
-00000000000006e0
-[  110.828638] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[  110.828638] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[  110.828638] Process setchecksum (pid: 11264, threadinfo
-ffff88003bf5a000, task ffff88003f232210)
-[  110.828638] Stack:
-[  110.828638]  0000000000000000 ffff8800bfbcf920 0000000000000000
-0000000000000ffe
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000
-0000000000000000
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000
-0000000000000000
-[  110.828638] Call Trace:
-[  110.828638]  [<ffffffff81124c1f>] ? nfs4_xdr_enc_setattr+0x90/0xb4
-[  110.828638]  [<ffffffff81371161>] ? call_transmit+0x1c3/0x24a
-[  110.828638]  [<ffffffff813774d9>] ? __rpc_execute+0x78/0x22a
-[  110.828638]  [<ffffffff81371a91>] ? rpc_run_task+0x21/0x2b
-[  110.828638]  [<ffffffff81371b7e>] ? rpc_call_sync+0x3d/0x5d
-[  110.828638]  [<ffffffff8111e284>] ? _nfs4_do_setattr+0x11b/0x147
-[  110.828638]  [<ffffffff81109466>] ? nfs_init_locked+0x0/0x32
-[  110.828638]  [<ffffffff810ac521>] ? ifind+0x4e/0x90
-[  110.828638]  [<ffffffff8111e2fb>] ? nfs4_do_setattr+0x4b/0x6e
-[  110.828638]  [<ffffffff8111e634>] ? nfs4_do_open+0x291/0x3a6
-[  110.828638]  [<ffffffff8111ed81>] ? nfs4_open_revalidate+0x63/0x14a
-[  110.828638]  [<ffffffff811056c4>] ? nfs_open_revalidate+0xd7/0x161
-[  110.828638]  [<ffffffff810a2de4>] ? do_lookup+0x1a4/0x201
-[  110.828638]  [<ffffffff810a4733>] ? link_path_walk+0x6a/0x9d5
-[  110.828638]  [<ffffffff810a42b6>] ? do_last+0x17b/0x58e
-[  110.828638]  [<ffffffff810a5fbe>] ? do_filp_open+0x1bd/0x56e
-[  110.828638]  [<ffffffff811cd5e0>] ? _atomic_dec_and_lock+0x30/0x48
-[  110.828638]  [<ffffffff810a9b1b>] ? dput+0x37/0x152
-[  110.828638]  [<ffffffff810ae063>] ? alloc_fd+0x69/0x10a
-[  110.828638]  [<ffffffff81099f39>] ? do_sys_open+0x56/0x100
-[  110.828638]  [<ffffffff81027a22>] ? ia32_sysret+0x0/0x5
-[  110.828638] Code: 83 f1 01 e8 f5 ca ff ff 48 83 c4 50 5b 5d 41 5c c3 41
-57 41 56 41 55 49 89 fd 41 54 49 89 d4 55 48 89 f5 53 48 81 ec 18 01 00 00
-<8b> 06 89 c2 83 e2 08 83 fa 01 19 db 83 e3 f8 83 c3 18 a8 01 8d
-[  110.828638] RIP  [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638]  RSP <ffff88003bf5b878>
-[  110.828638] CR2: 0000000000000000
-[  112.840396] ---[ end trace 95282e83fd77358f ]---
-
-We need to ensure that the O_EXCL flag is turned off if the user doesn't
-set O_CREAT.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/dir.c      |    2 +-
- fs/nfs/nfs4proc.c |    8 +++++---
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1103,7 +1103,7 @@ static int nfs_open_revalidate(struct de
- 	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
- 		goto no_open_dput;
- 	/* We can't create new files, or truncate existing ones here */
--	openflags &= ~(O_CREAT|O_TRUNC);
-+	openflags &= ~(O_CREAT|O_EXCL|O_TRUNC);
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+@@ -68,18 +68,23 @@ int ath9k_htc_tx_start(struct ath9k_htc_
+ 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
+ 	struct ieee80211_sta *sta = tx_info->control.sta;
+ 	struct ath9k_htc_sta *ista;
+-	struct ath9k_htc_vif *avp;
+ 	struct ath9k_htc_tx_ctl tx_ctl;
+ 	enum htc_endpoint_id epid;
+ 	u16 qnum, hw_qnum;
+ 	__le16 fc;
+ 	u8 *tx_fhdr;
+-	u8 sta_idx;
++	u8 sta_idx, vif_idx;
  
- 	/*
- 	 * Note: we're not holding inode->i_mutex and so may be racing with
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2023,7 +2023,8 @@ nfs4_atomic_open(struct inode *dir, stru
- 	struct rpc_cred *cred;
- 	struct nfs4_state *state;
- 	struct dentry *res;
--	fmode_t fmode = nd->intent.open.flags & (FMODE_READ | FMODE_WRITE | FMODE_EXEC);
-+	int open_flags = nd->intent.open.flags;
-+	fmode_t fmode = open_flags & (FMODE_READ | FMODE_WRITE | FMODE_EXEC);
+ 	hdr = (struct ieee80211_hdr *) skb->data;
+ 	fc = hdr->frame_control;
  
- 	if (nd->flags & LOOKUP_CREATE) {
- 		attr.ia_mode = nd->intent.open.create_mode;
-@@ -2031,8 +2032,9 @@ nfs4_atomic_open(struct inode *dir, stru
- 		if (!IS_POSIXACL(dir))
- 			attr.ia_mode &= ~current_umask();
- 	} else {
-+		open_flags &= ~O_EXCL;
- 		attr.ia_valid = 0;
--		BUG_ON(nd->intent.open.flags & O_CREAT);
-+		BUG_ON(open_flags & O_CREAT);
- 	}
+-	avp = (struct ath9k_htc_vif *) tx_info->control.vif->drv_priv;
++	if (tx_info->control.vif &&
++			(struct ath9k_htc_vif *) tx_info->control.vif->drv_priv)
++		vif_idx = ((struct ath9k_htc_vif *)
++				tx_info->control.vif->drv_priv)->index;
++	else
++		vif_idx = priv->nvifs;
++
+ 	if (sta) {
+ 		ista = (struct ath9k_htc_sta *) sta->drv_priv;
+ 		sta_idx = ista->index;
+@@ -96,7 +101,7 @@ int ath9k_htc_tx_start(struct ath9k_htc_
+ 		memset(&tx_hdr, 0, sizeof(struct tx_frame_hdr));
  
- 	cred = rpc_lookup_cred();
-@@ -2041,7 +2043,7 @@ nfs4_atomic_open(struct inode *dir, stru
- 	parent = dentry->d_parent;
- 	/* Protect against concurrent sillydeletes */
- 	nfs_block_sillyrename(parent);
--	state = nfs4_do_open(dir, &path, fmode, nd->intent.open.flags, &attr, cred);
-+	state = nfs4_do_open(dir, &path, fmode, open_flags, &attr, cred);
- 	put_rpccred(cred);
- 	if (IS_ERR(state)) {
- 		if (PTR_ERR(state) == -ENOENT) {
+ 		tx_hdr.node_idx = sta_idx;
+-		tx_hdr.vif_idx = avp->index;
++		tx_hdr.vif_idx = vif_idx;
+ 
+ 		if (tx_info->flags & IEEE80211_TX_CTL_AMPDU) {
+ 			tx_ctl.type = ATH9K_HTC_AMPDU;
+@@ -156,7 +161,7 @@ int ath9k_htc_tx_start(struct ath9k_htc_
+ 		tx_ctl.type = ATH9K_HTC_NORMAL;
+ 
+ 		mgmt_hdr.node_idx = sta_idx;
+-		mgmt_hdr.vif_idx = avp->index;
++		mgmt_hdr.vif_idx = vif_idx;
+ 		mgmt_hdr.tidno = 0;
+ 		mgmt_hdr.flags = 0;
+ 
 
 
