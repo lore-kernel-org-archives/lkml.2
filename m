@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab0HXOlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 10:41:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:63286 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab0HXOle (ORCPT
+	id S1755029Ab0HXOma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 10:42:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43844 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752382Ab0HXOm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 10:41:34 -0400
-Message-ID: <4C73DA15.2010207@vlnb.net>
-Date: Tue, 24 Aug 2010 18:41:25 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Tue, 24 Aug 2010 10:42:27 -0400
+Date: Tue, 24 Aug 2010 10:42:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jens Axboe <axboe@kernel.dk>
+cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Runtime PM and the block layer
+In-Reply-To: <4C73CB53.9030506@kernel.dk>
+Message-ID: <Pine.LNX.4.44L0.1008241030340.1652-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>
-In-Reply-To: <1282423398.3015.39.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:O0ZxVj1wU+/CAFBnUSBVgRDNWYgxKVtzwurnv7wIZku
- Ldm89HnUsoAJqNx8Q6BLjQfVgGMbOiY6HUKFn9qyXTbQWg1HpW
- fQtnADaxiRlHKd/s8NW9ldpmyJ7fMq57gwkLYXWc5bfn9Pn/jg
- 9W6yUqp1EDHQYvaDZgvEvM3Yl5LCe/oJy9ktvgh8iM65DgBUef
- FVssSqCpv9Q+0QIR2230Q==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley, on 08/22/2010 12:43 AM wrote:
-> Interface re-use (or at least ABI compatibility) is the whole point,
-> it's what makes the solution a drop in replacement.
+On Tue, 24 Aug 2010, Jens Axboe wrote:
 
-I see now. You want ABI compatibility to keep the "contract" that no 
-kernel changes can break applications binary compatibility for unlimited 
-time.
+> > Hmm.  That doesn't sound quite like what I need.  Ideally the request
+> > would go back to the head of the queue and stay there until the driver
+> > tells the block layer to let it through (when the device is ready to 
+> > accept it).
+> 
+> It depends on where you want to handle it. If you want the driver to
+> reject it, then we don't have to change the block layer bits a lot. We
+> could add a DEFER_AND_STOP or something, which would never retry and it
+> would stop the queue. If the driver passed that back, then it would be
+> responsible for starting the queue at some point in the future.
+> 
+> >>> How does this all relate to the queue being stopped or plugged?
+> >>
+> >> A stopped queue is usually the driver telling the block layer to bugger
+> >> off for a while, and the driver will tell us when it's ok to resume
+> >> operations.
+> > 
+> > Yes, that sounds more like it.  Put the request back on the queue 
+> > and stop the queue.  If the prep fn calls blk_stop_queue() and then 
+> > returns BLKPREP_DEFER, will that do it?
+> 
+> I think it will be a lot cleaner to add specific support for this, as
+> per the DEFER_AND_STOP above.
 
-OK, we will write the compatibility module. It shouldn't take much time.
+Okay, good.  I'll try to implement that and see how it goes.
 
-But before we start, I'd like to clear 2 related questions:
+> Sounds like all you need is a way to return BLKPREP_DEFER_AND_STOP and
+> have the block layer stop the queue for you. When you need to restart,
+> you would insert a special request at the head of the queue and call
+> blk_start_queue() to get things going again.
 
-1. How far the ABI compatibility "contract" goes? Are there cases, where 
-it isn't so strong? I'm asking, because I can recall that open-iscsi at 
-least once has broken ABI compatibility with user space tools. Was it an 
-accidental (but not corrected) mistake or was it deliberate? If the 
-latter, then, I guess, there must be some exceptions defining when ABI 
-compatibility can be not followed.
+Yes.
 
-2. Currently STGT in the kernel is just 2 files, scsi_tgt_if.c and
-scsi_tgt_lib.c (with headers), + ibmvstgt driver. The C files define the 
-STGT interface in question. So, if we keep ABI compatibility with the 
-new target engine, we would have to keep those 2 files included in the 
-kernel, which would effectively mean that STGT would stay in the kernel. 
-This would lead to the situation you are trying to avoid: 2 SCSI target 
-infrastructures in the kernel. Would it be OK?
+Suppose the driver needs to send two of these special requests before
+going back to normal operation.  Won't restarting the queue for the
+first special request also cause the following regular request to be
+passed to the driver before the second special request can be inserted?  
+Of course, the driver could cope with this simply by returning another
+BLKPREP_DEFER_AND_STOP.
 
-Thanks for (eventually!) defining clear rules and removing confusions!
+> The only missing bit would then be the idle detection. That would need
+> to be in the block layer itself, and the scheme I described should be
+> fine for that still.
 
-Vlad
+Are you sure it needs to be in the block layer?  Is there no way for 
+the driver's completion handler to tell whether the queue is now empty?  
+Certainly it already has enough information to know whether the device 
+is still busy processing another request.  When the device is no longer 
+busy and the queue is empty, that's when the idle timer should be 
+started or restarted.
+
+Alan Stern
+
