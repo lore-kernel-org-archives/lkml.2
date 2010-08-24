@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933774Ab0HXXEE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:04:04 -0400
-Received: from kroah.org ([198.145.64.141]:32883 "EHLO coco.kroah.org"
+	id S933811Ab0HXXEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:04:15 -0400
+Received: from kroah.org ([198.145.64.141]:32901 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933737Ab0HXXDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:47 -0400
+	id S933744Ab0HXXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:51 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:10 2010
-Message-Id: <20100824224510.606581371@clark.site>
+Message-Id: <20100824224510.856248901@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:52 -0700
+Date: Tue, 24 Aug 2010 15:45:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Craig Shelley <craig@microtron.org.uk>
-Subject: [107/114] USB: CP210x Fix Break On/Off
+        John Youn <johnyoun@synopsys.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [110/114] USB: xhci: Remove buggy assignment in next_trb()
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Craig Shelley <craig@microtron.org.uk>
+From: John Youn <John.Youn@synopsys.com>
 
-commit 72916791cbeb9cc607ae620cfba207dea481cd76 upstream.
+commit a1669b2c64a9c8b031e0ac5cbf2692337a577f7c upstream.
 
-The definitions for BREAK_ON and BREAK_OFF are inverted, causing break
-requests to fail. This patch sets BREAK_ON and BREAK_OFF to the correct
-values.
+The code to increment the TRB pointer has a slight ambiguity that could
+lead to a bug on different compilers.  The ANSI C specification does not
+specify the precedence of the assignment operator over the postfix
+operator.  gcc 4.4 produced the correct code (increment the pointer and
+assign the value), but a MIPS compiler that one of John's clients used
+assigned the old (unincremented) value.
 
-Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+Remove the unnecessary assignment to make all compilers produce the
+correct assembly.
+
+Signed-off-by: John Youn <johnyoun@synopsys.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -222,8 +222,8 @@ static struct usb_serial_driver cp210x_d
- #define BITS_STOP_2		0x0002
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -131,7 +131,7 @@ static void next_trb(struct xhci_hcd *xh
+ 		*seg = (*seg)->next;
+ 		*trb = ((*seg)->trbs);
+ 	} else {
+-		*trb = (*trb)++;
++		(*trb)++;
+ 	}
+ }
  
- /* CP210X_SET_BREAK */
--#define BREAK_ON		0x0000
--#define BREAK_OFF		0x0001
-+#define BREAK_ON		0x0001
-+#define BREAK_OFF		0x0000
- 
- /* CP210X_(SET_MHS|GET_MDMSTS) */
- #define CONTROL_DTR		0x0001
 
 
