@@ -1,133 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0HXInu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:43:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51102 "EHLO mga01.intel.com"
+	id S1752227Ab0HXIoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 04:44:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58781 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab0HXInr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:43:47 -0400
+	id S1754279Ab0HXInz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 04:43:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,262,1280732400"; 
-   d="scan'208";a="599610253"
-Subject: Re: [RFC -v2] kfifo writer side lock-less support
-From: Huang Ying <ying.huang@intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282636558.7357.28.camel@wall-e.seibold.net>
-References: <1282614146.2708.13.camel@yhuang-dev>
-	 <1282636558.7357.28.camel@wall-e.seibold.net>
+   d="scan'208";a="599610273"
+Subject: Re: [PATCH] ACPI: Don't report current_now if battery reports in
+ mWh
+From: Zhang Rui <rui.zhang@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Alexey Starikovskiy <astarikovskiy@suse.de>
+In-Reply-To: <20100824081822.GA7963@oksana.dev.rtsoft.ru>
+References: <1282595132-5026-1-git-send-email-mjg@redhat.com>
+	 <201008232337.19715.rjw@sisk.pl>
+	 <20100824081822.GA7963@oksana.dev.rtsoft.ru>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Aug 2010 16:43:45 +0800
-Message-ID: <1282639425.2708.40.camel@yhuang-dev>
+Date: Tue, 24 Aug 2010 16:47:06 +0800
+Message-ID: <1282639626.3707.10.camel@rui>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-24 at 15:55 +0800, Stefani Seibold wrote:
-> Hi Huang,
-> 
-> Am Dienstag, den 24.08.2010, 09:42 +0800 schrieb Huang Ying:
-> > Hi, Stefani,
+On Tue, 2010-08-24 at 16:18 +0800, Anton Vorontsov wrote:
+> On Mon, Aug 23, 2010 at 11:37:19PM +0200, Rafael J. Wysocki wrote:
+> > On Monday, August 23, 2010, Matthew Garrett wrote:
+> > > ACPI batteries can report in units of either current or energy. Right
+> > > now we expose the current_now file even if the battery is reporting
+> > > energy units, resulting in a file that should contain mA instead
+> > > containing mW. Don't expose this value unless the battery is reporting
+> > > current.
+> > > 
+> > > Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> > > Cc: Arjan van de Ven <arjan@linux.intel.com>
 > > 
-> > The sample code is attached with the mail too. If it is necessary, I
-> > can put the sample code into samples/kfifo directory if the basic
-> > idea of the patch is accepted.
-> > 
+> > Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> The samples use a own implementation of a record handling. Please use
-> the one provided by the kfifo API.
+> Looks good to me as well.
 > 
-> > This patch add lock-less support for kfifo writer side amongst
-> > different contexts on one CPU, such as NMI, IRQ, soft_irq, process,
-> > etc. This makes kfifo can be used to implement per-CPU lock-less data
-> > structure.
-> > 
-> > The different contexts on one CPU have some kind of preemption
-> > priority as follow:
-> > 
-> > process -> soft_irq -> IRQ -> NMI
-> > 
-> > Where preemption priority increases from left to right. That is, the
-> > right side context can preempt left side context, but not in the
-> > reverse direction, that means the right side context will run to the
-> > end before return to the left side context. The lock-less algorithm
-> > used in the patch take advantage of this.
-> > 
-> > The algorithm works in reserve/commit style, where "reserve" only
-> > allocate the space, while "commit" really makes the data into buffer,
-> > data is prepared in between. cmpxchg is used in "reserve", this
-> > guarantees different spaces will be allocated for different
-> > contexts. Only the "commit" in lowest context will commit all
-> > allocated spaces. Because all contexts preempting lowest context
-> > between "reserve" and "commit" will run to the end, all data put into
-> > buffer are valid.
-> > 
+> Should I merge this into the battery-2.6.git tree, or
+> ACPI folks are gonna handle this patch?
 > 
-> I don't like it, because it handles a very rare use case. The batch is
-> bloating the code of the fifo API and the macros, so user of this get
-> also an increase of the code size. most and increase the size of the
-> kfifo structure. Most of the user, i think more than 99 percent will not
-> need it.
+Acked-by: Zhang Rui <rui.zhang@intel.com>
 
-The patch adds only 1 field (unsigned int) to struct __kfifo. I think
-that should be acceptable. Because sizeof(struct __kfifo) should be much
-smaller that __kfifo->mask + 1 in most cases.
+I think Len may want to handle this patch. :)
 
-For macros, only INIT_KFIFO, kfifo_reset and kfifo_put is enlarged a
-little (one instruction?).
+thanks,
+rui
 
-And yes, I added some new functions and macros. But if I implement
-another ring buffer instead of making kfifo lock-less (for multiple
-writers), I need to implement more functions and macros, the code size
-increment will be larger, isn't it?
-
-> And there a lot of bugs on a first small review.
+> Thanks,
 > 
-> Your kfifo_skip_len does not handle record fifos. User of kfifo_put,
-> kfifo_avail will get an increased code size. Your kfifo_is_full isn't
-> longer working correctly. You did not fixed kfifo_in(), so this function
-> will not work. And so on....
-
-After we reach the consensus on the general idea, we can look at these
-issues one by one.
-
-> > Some idea of the lock-less algorithm in the patch comes from Steven
-> > Rostedt's trace ring buffer implementation.
-> > 
-> > The new xxx_ptr interface and kfifo_iter makes it possible to
-> > write/read content of kfifo in-place in addition to copying out/in.
-> > 
+> > > ---
+> > >  drivers/acpi/battery.c |    1 -
+> > >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> > > index dc58402..9841720 100644
+> > > --- a/drivers/acpi/battery.c
+> > > +++ b/drivers/acpi/battery.c
+> > > @@ -273,7 +273,6 @@ static enum power_supply_property energy_battery_props[] = {
+> > >  	POWER_SUPPLY_PROP_CYCLE_COUNT,
+> > >  	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+> > >  	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> > > -	POWER_SUPPLY_PROP_CURRENT_NOW,
+> > >  	POWER_SUPPLY_PROP_POWER_NOW,
+> > >  	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
+> > >  	POWER_SUPPLY_PROP_ENERGY_FULL,
+> > > 
 > 
-> The regular use case of a fifo is that there is one write and one
-> reader. In this case, the current implementation of the kfifo structure
-> is lock less.
-> 
-> So i you need this, than it would be better to use the ring buffer.
-
-I really need multiple-writers and one reader in APEI GHES support, and
-I need lock-less in writer side (because the buffer need to be written
-in NMI handler). So I can not use the original kfifo implementation.
-
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> 
-> I was never CC by a mail where Andi has signed off this patch. It would
-> be great if i will get some infos why he like it.
-> 
-> But i think you will never get an ACK for this by me, because it bloats
-> the most-used functions of the hand optimized kfifo API.
-> 
-> Rule number one: do not increase the code size if the functionality is
-> not needed and used!
-
-There is at least one user. I will post the corresponding patches later.
-
-Best Regards,
-Huang Ying
 
 
