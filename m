@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab0HXISb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 04:18:31 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58407 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab0HXIS1 (ORCPT
+	id S1752907Ab0HXITx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 04:19:53 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:29376 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab0HXITv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 04:18:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VF19mcCH3mTz95ojbRlSIBD8TSOrsEm2TpuElGtwwz5uvPU3APbobpXiLnTSZCTPJu
-         6RQS+P8AvEwfRBzuTNYYkhudp5KDWjVkVazOoXgNtFix5FxhLwRC3Hn1q8IuXyGndXhA
-         ejiaRvlhmDDhd0bt6xeakKyRa33NjwemDnGKY=
-Date: Tue, 24 Aug 2010 12:18:22 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Matthew Garrett <mjg@redhat.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org, lenb@kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Alexey Starikovskiy <astarikovskiy@suse.de>
-Subject: Re: [PATCH] ACPI: Don't report current_now if battery reports in
- mWh
-Message-ID: <20100824081822.GA7963@oksana.dev.rtsoft.ru>
-References: <1282595132-5026-1-git-send-email-mjg@redhat.com>
- <201008232337.19715.rjw@sisk.pl>
+	Tue, 24 Aug 2010 04:19:51 -0400
+Message-ID: <4C73807F.4090007@atmel.com>
+Date: Tue, 24 Aug 2010 10:19:11 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.11) Gecko/20100711 Lightning/1.0b1 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201008232337.19715.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Brownell <david-b@pacbell.net>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bn@niasdigital.com, ryan@bluewatersys.com, avictor.za@gmail.com
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+References: <30193.50267.qm@web180305.mail.gq1.yahoo.com>
+In-Reply-To: <30193.50267.qm@web180305.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 11:37:19PM +0200, Rafael J. Wysocki wrote:
-> On Monday, August 23, 2010, Matthew Garrett wrote:
-> > ACPI batteries can report in units of either current or energy. Right
-> > now we expose the current_now file even if the battery is reporting
-> > energy units, resulting in a file that should contain mA instead
-> > containing mW. Don't expose this value unless the battery is reporting
-> > current.
-> > 
-> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> > Cc: Arjan van de Ven <arjan@linux.intel.com>
+Le 23/08/2010 18:36, David Brownell :
 > 
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> --- On Mon, 8/23/10, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> 
+>> From: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> Subject: [PATCH] pio: add arch specific gpio_is_valid() function
+> 
+> What's the rationale?  It's valid or not.  And there's already a
+> function whose job it is to report that status ... which is set up
+> for arch customization.
 
-Looks good to me as well.
+How do you customize it? I would like to keep the benefit of gpiolib
+implementation.
+In arch/arm/mach-at91/include/mach/gpio.h we include the
+asm-generic/gpio.h. That is why I protect the generic code with
+__HAVE_ARCH_GPIO_IS_VALID.
 
-Should I merge this into the battery-2.6.git tree, or
-ACPI folks are gonna handle this patch?
+With this, we can keep the benefit of having an inline function.
 
-Thanks,
+>  Which ISTR worked fine for AT91 (among other
+> platforms) ...
 
-> > ---
-> >  drivers/acpi/battery.c |    1 -
-> >  1 files changed, 0 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-> > index dc58402..9841720 100644
-> > --- a/drivers/acpi/battery.c
-> > +++ b/drivers/acpi/battery.c
-> > @@ -273,7 +273,6 @@ static enum power_supply_property energy_battery_props[] = {
-> >  	POWER_SUPPLY_PROP_CYCLE_COUNT,
-> >  	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
-> >  	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-> > -	POWER_SUPPLY_PROP_CURRENT_NOW,
-> >  	POWER_SUPPLY_PROP_POWER_NOW,
-> >  	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
-> >  	POWER_SUPPLY_PROP_ENERGY_FULL,
-> > 
+Well the standard function:
+return ((unsigned)number) < ARCH_NR_GPIOS;
+is not suitable for AT91 as said in the thread.
 
+Best regards,
 -- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+Nicolas Ferre
+
