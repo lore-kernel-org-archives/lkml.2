@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab0HXQyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 12:54:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47096 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755766Ab0HXQyM (ORCPT
+	id S1755826Ab0HXQ7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 12:59:09 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:26080 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755770Ab0HXQ7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 12:54:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <4c73f3ed34663af90@agluck-desktop.sc.intel.com>
-References: <4c73f3ed34663af90@agluck-desktop.sc.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Aug 2010 09:53:12 -0700
-Message-ID: <AANLkTinQ_0zGJnPHw7AMJ+q+oo4nmA9Z4irw8dqRH9S8@mail.gmail.com>
-Subject: Re: [PATCH] guard page for stacks that grow upwards
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        linux-ia64@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 24 Aug 2010 12:59:06 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6083"; a="51941448"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH 3/5 v2] msm: convert 8x50 to gpiomux.
+Date: Tue, 24 Aug 2010 09:58:57 -0700
+Message-Id: <1282669139-17640-3-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1282669139-17640-1-git-send-email-gbean@codeaurora.org>
+References: <1282669139-17640-1-git-send-email-gbean@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 9:31 AM, Luck, Tony <tony.luck@intel.com> wrote:
->
-> Updated to match the new code - still not tested on pa-risc.
+Change the gpio-init code from deprecated gpio_tlmm_config
+to the new gpiomux api.
 
-But the ia64 grows-up case is tested?
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ arch/arm/mach-msm/board-qsd8x50.c |   12 ------------
+ arch/arm/mach-msm/gpiomux-8x50.c  |   11 ++++++++++-
+ 2 files changed, 10 insertions(+), 13 deletions(-)
 
-> The #ifdefs are ugly - suggestions welcome on how to make
-> the code prettier.
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index e3cc807..fb0fe67 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -35,21 +35,10 @@
+ 
+ extern struct sys_timer msm_timer;
+ 
+-static struct msm_gpio uart3_config_data[] = {
+-	{ GPIO_CFG(86, 1, GPIO_INPUT,   GPIO_PULL_DOWN, GPIO_2MA), "UART2_Rx"},
+-	{ GPIO_CFG(87, 1, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_Tx"},
+-};
+-
+ static struct platform_device *devices[] __initdata = {
+ 	&msm_device_uart3,
+ };
+ 
+-static void msm8x50_init_uart3(void)
+-{
+-	msm_gpios_request_enable(uart3_config_data,
+-				ARRAY_SIZE(uart3_config_data));
+-}
+-
+ static void __init qsd8x50_map_io(void)
+ {
+ 	msm_map_qsd8x50_io();
+@@ -64,7 +53,6 @@ static void __init qsd8x50_init_irq(void)
+ 
+ static void __init qsd8x50_init(void)
+ {
+-	msm8x50_init_uart3();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
+ }
+ 
+diff --git a/arch/arm/mach-msm/gpiomux-8x50.c b/arch/arm/mach-msm/gpiomux-8x50.c
+index 7b380b3..4406e0f 100644
+--- a/arch/arm/mach-msm/gpiomux-8x50.c
++++ b/arch/arm/mach-msm/gpiomux-8x50.c
+@@ -16,4 +16,13 @@
+  */
+ #include "gpiomux.h"
+ 
+-struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {};
++struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
++	[86] = { /* UART3 RX */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_1 | GPIOMUX_VALID,
++	},
++	[87] = { /* UART3 TX */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_1 | GPIOMUX_VALID,
++	},
++};
+-- 
+1.7.0.4
 
-One thing I've considered is to get rid of the CONFIG_STACK_GROWSUP
-crap entirely in code, and instead just make the VM_GROWSUP #define be
-0 for architectures that don't want it. The compiler should then just
-automatically remove all the code that says
-
-   if (vma->vm_flags & VM_GROWSUP) {
-     ...
-
-and the code would look more straightforward. Hmm?
-
-                    Linus
+/usr2/gbean/.signature.codeaurora.org
