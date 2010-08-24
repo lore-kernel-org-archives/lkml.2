@@ -1,112 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab0HXUd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 16:33:57 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:64058 "EHLO
-	mail4.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755601Ab0HXUdz (ORCPT
+	id S1755918Ab0HXUjk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:39:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43382 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab0HXUji convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 16:33:55 -0400
-Date: Tue, 24 Aug 2010 14:33:02 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Ben Hutchings <bhutchings@solarflare.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-In-Reply-To: <1282680572.2467.78.camel@edumazet-laptop>
-Message-ID: <alpine.WNT.2.00.1008241422540.312@cluij.ucs.ualberta.ca>
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca> <20100823080543.319143e3@nehalam> <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca> <1282672647.2302.15.camel@achroite.uk.solarflarecom.com> <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
- <1282680572.2467.78.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1152640-27923-1282681983=:312"
+	Tue, 24 Aug 2010 16:39:38 -0400
+Subject: Re: [PATCH 0/4] Finer granularity and task/cgroup irq time
+ accounting
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: balbir@linux.vnet.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Menage <menage@google.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>,
+        ikael Starvik <starvik@axis.com>, dhowells <dhowells@redhat.com>
+In-Reply-To: <AANLkTi=QuD7v1PP9PaJt_Dz1N-JKC1e6km1TE_YE6iJk@mail.gmail.com>
+References: <1279583835-22854-1-git-send-email-venki@google.com>
+	 <20100720095546.2f899e04@mschwide.boeblingen.de.ibm.com>
+	 <AANLkTiktBNr3pVOHwxX3piwagtkGxHpp5TepBFS3UGhb@mail.gmail.com>
+	 <20100722131239.208d9501@mschwide.boeblingen.de.ibm.com>
+	 <AANLkTim==2J3Fo8Axz0yLvpfWf1bq_e0c0EYWi6y3xRe@mail.gmail.com>
+	 <1282636286.2605.2307.camel@laptop>
+	 <20100824080515.GK4684@balbir.in.ibm.com>
+	 <1282640953.2605.2428.camel@laptop>
+	 <20100824113801.GO4684@balbir.in.ibm.com>
+	 <1282650835.2605.2629.camel@laptop>
+	 <AANLkTi=QuD7v1PP9PaJt_Dz1N-JKC1e6km1TE_YE6iJk@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 24 Aug 2010 22:39:17 +0200
+Message-ID: <1282682357.2605.3219.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, 2010-08-24 at 12:20 -0700, Venkatesh Pallipadi wrote:
 
---1152640-27923-1282681983=:312
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+> (long email alert)
+> I have two different answers for why we ended up with this madness.
+> 
+> My personal take on why we need this and the actual flow why I ended
+> up with this patchset.
+> 
+> - Current /proc/stat hardirq and softirq time reporting is broken for
+> most archs as it does tick sampling. Hardirq time specifically is
+> further broken due to interrupts being disabled during irq -
+> http://kerneltrap.org/mailarchive/linux-kernel/2010/5/25/4574864
 
-On Tue, 24 Aug 2010, Eric Dumazet wrote:
-> Le mardi 24 août 2010 à 13:49 -0600, Marc Aurele La France a écrit :
->> Any payload has to either fit in the MTU, or has to be broken up into
->> MTU-sized (or less) fragments, come hell or high water.  That this is done
->> centrally is a good thing.  It is the "(or less)" part that I am working
->> towards here.
+Yeah, architectures without a decent clock are a pain (x86 is still on
+that list although nhm/wsm don't suck too bad), but it might be
+worthwhile to look at what arch/$foo are strictly tick based.
 
-> Could you post a full stack trace, to help me understand the path from
-> NFS to ip_append_data ?
+A quick look suggests:
 
-  [<ffffffff810a5abe>] __alloc_pages_nodemask+0x617/0x692
-  [<ffffffff81061688>] ? mark_held_locks+0x49/0x64
-  [<ffffffff810d018b>] kmalloc_large_node+0x61/0x9e
-  [<ffffffff810d3050>] __kmalloc_node_track_caller+0x32/0x159
-  [<ffffffff812612da>] ? sock_alloc_send_pskb+0xc9/0x2ea
-  [<ffffffff81265cc6>] __alloc_skb+0x74/0x163
-  [<ffffffff812612da>] sock_alloc_send_pskb+0xc9/0x2ea
-  [<ffffffff81061688>] ? mark_held_locks+0x49/0x64
-  [<ffffffff81261510>] sock_alloc_send_skb+0x15/0x17
-  [<ffffffff81299317>] ip_append_data+0x500/0x9d0
-  [<ffffffff8103feae>] ? local_bh_enable+0xb7/0xbd
-  [<ffffffff8129a804>] ? ip_generic_getfrag+0x0/0x92
-  [<ffffffff81292bcd>] ? ip_route_output_flow+0x82/0x1f9
-  [<ffffffff812b8990>] udp_sendmsg+0x4ec/0x60c
-  [<ffffffff812bf2ac>] inet_sendmsg+0x4b/0x58
-  [<ffffffff8125dd89>] sock_sendmsg+0xd9/0xfa
-  [<ffffffff81063fb0>] ? __lock_acquire+0x787/0x7f5
-  [<ffffffff81063fb0>] ? __lock_acquire+0x787/0x7f5
-  [<ffffffff8125fcf5>] kernel_sendmsg+0x37/0x43
-  [<ffffffffa0267cd2>] xs_send_kvec+0x88/0x93 [sunrpc]
-  [<ffffffff812f08dc>] ? _raw_spin_unlock_irqrestore+0x44/0x4c
-  [<ffffffffa0267d5c>] xs_sendpages+0x7f/0x1be [sunrpc]
-  [<ffffffffa026952f>] xs_udp_send_request+0x5b/0x103 [sunrpc]
-  [<ffffffffa0266c0a>] xprt_transmit+0x11f/0x1f5 [sunrpc]
-  [<ffffffffa02ea140>] ? nfs3_xdr_writeargs+0x0/0x82 [nfs]
-  [<ffffffffa02648b9>] call_transmit+0x218/0x25e [sunrpc]
-  [<ffffffffa026aced>] __rpc_execute+0x9b/0x288 [sunrpc]
-  [<ffffffffa026aeef>] rpc_async_schedule+0x15/0x17 [sunrpc]
-  [<ffffffff81051137>] worker_thread+0x1ed/0x2e6
-  [<ffffffff810510e1>] ? worker_thread+0x197/0x2e6
-  [<ffffffffa026aeda>] ? rpc_async_schedule+0x0/0x17 [sunrpc]
-  [<ffffffff8105450f>] ? autoremove_wake_function+0x0/0x3d
-  [<ffffffff81050f4a>] ? worker_thread+0x0/0x2e6
-  [<ffffffff810541b2>] kthread+0x82/0x8a
-  [<ffffffff81002f14>] kernel_thread_helper+0x4/0x10
-  [<ffffffff81030d20>] ? finish_task_switch+0x0/0xd6
-  [<ffffffff81002f10>] ? kernel_thread_helper+0x0/0x10
+ alpha
+ arm (some)
+ avr32
+ cris (it could remove its implementation, its identical
+       to the weak function provided by kernel/sched_clock.c)
+ frv  (idem)
+ h8300
+ m32r
+ m68k* (except nommu-coldfire)
+ mips (except cavium-octeon)
+ parisc
+ score
+ sh
+ xtensa
 
-There are many other variations as well.
+which seems to mean too damn many, I bet we can't simply move those to
+staging? :-)
 
-> I suspect this is UDP transport ?
+> OK. Lets fix /proc/stat. But, that doesn't seem enough. We should also
+> not account this time to tasks themselves.
 
-Yes.
+Right
 
-> This reminds me a patch I wrote for IPV6 : We were allocating a huge
-> (MTU sized) buffer, just to fill few bytes in it...
+> - I started looking as not accounting this time to tasks themselves.
+> This was really tricky as things are tightly tied to scheduler
+> vruntime to get it right. 
 
-Humm.  Interesting.  Thanks for the pointer.
+I'm not exactly sure where that would get complicated, simply treat
+interrupts the same as preemptions by other tasks and things should
+basically work out rather straight forward from that.
 
-Marc.
+> I am not even sure I got it totally right
+> :(, but I did play with the patch a bit. And noticed there were
+> multiple issues. 1) A silly case as in of two tasks on one CPU, one
+> task totally CPU bound and another task doing network recv. This is
+> how task and softirq time looks like for this (10s samples)
+> (loop)  (nc)
+> 503 9   502 301
+> 502 8   502 303
+> 502 9   501 302
+> 502 8   502 302
+> 503 9   501 302
+> Now, when I did "not account si time to task", the loop task ended up
+> getting a lot less CPU time and doing less work as nc task doing rcv
+> got more CPU share, which was not right thing to do. IIRC, I had
+> something like <300 centiseconds for loop after the change (with si
+> activity increasing due to higher runtime of nc task).
 
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
---1152640-27923-1282681983=:312--
+Well, that actually makes sense and I wouldn't call it wrong.
+
+> 2) Also, a minor problem of breaking current userspace API for
+> tasks/cgroup stats assume that irq times are included.
+
+Is that actually specified or simply assumed because our implementation
+always had that bug? I would really call not accounting irq time to
+tasks a bug-fix.
+
+> So, even though it seems accounting irq time as "system time" seems
+> the right thing to do, it can break scheduling in many ways. May be
+> hardirq can be accounted as system time. But, dealing with softirq is
+> tricky as they can be related to the task.
+
+I haven't yet seen any scheduler breakage here, it will divide time
+differently, but not in a broken way, if the system consumes 1/3rd of
+the time, there's only 2/3rd left to fairly distribute between tasks, so
+something like, 1/3-loop 1/3-nc 1/3-softirq makes perfect sense.
+
+You'd get exactly the same kind of thing if you replace (soft)irq with a
+FIFO task.
+
+The whole schizo softirq infrastructure (hardirq tails and tasks) is a
+pain though, I would really love to rid the kernel of it, but I've got
+no idea how to do something like that given that things like the whole
+network subsystem are tightly woven into it.
+
+> Figuring out si time and accouting to the right task is a non-starter.
+> There are so many different ways in which si will come into picture.
+> finding and accounting it to right task will be almost impossible.
+
+Agreed, hence:
+
+> So, why not do the simple things first. Do not disturb any existing
+> scheduling decisions, account accurate hi and si times system wide,
+> per task, per cgroup (with as less overhead as possible). Give this
+> info to users and admin programs and they may make a higher level
+> sense of this. 
+> 
+> Having looked at both the options, I feel having these export is an
+> immediate first step. 
+
+This is where I strongly disagree, providing an interface that cannot
+possibly be implemented correctly just so you can fudge something (still
+not sure what from userspace) seems a very bad idea indeed.
+
+
