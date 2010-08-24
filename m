@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab0HXO1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 10:27:33 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33306 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab0HXO1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 10:27:31 -0400
-Date: Tue, 24 Aug 2010 19:57:18 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Boaz Harrosh <bharrosh@panasas.com>,
-        ngupta@vflare.org, akpm@linux-foundation.org,
-        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        Andreas Dilger <andreas.dilger@oracle.com>, tytso@mit.edu,
-        mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>,
-        Mel Gorman <mel@csn.ul.ie>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>
-Subject: Re: cleancache followup from LSF10/MM summit
-Message-ID: <20100824142718.GA24164@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <66336896-4396-458f-b8a5-51282a925816@default>
+	id S1755366Ab0HXOa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 10:30:28 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37839 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751407Ab0HXOaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 10:30:25 -0400
+Date: Tue, 24 Aug 2010 10:30:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Raj Kumar <rajkumar278@hotmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Runtime power management during system resume
+In-Reply-To: <BLU102-W1030ED196ED7B94722F2A7EB830@phx.gbl>
+Message-ID: <Pine.LNX.4.44L0.1008241029000.1652-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <66336896-4396-458f-b8a5-51282a925816@default>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* dan.magenheimer@oracle.com <dan.magenheimer@oracle.com> [2010-08-20 08:14:59]:
+On Tue, 24 Aug 2010, Raj Kumar wrote:
 
-> Hi Christophe (and others interested in cleancache progress) --
-> 
-> Thanks for taking some time to talk with me about cleancache
-> at LSF summit!  You had some interesting thoughts and suggestions
-> that I said I would investigate.  They are:
-> 
-> 1) use inode kva as key instead of i_ino
-> 2) eliminate cleancache shim and call zcache directly
-> 3) fs's requiring key > inode_t (e.g. 64-bit-fs on 32-bit-kernel)
-> 4) eliminate fs-specific code entirely (e.g. "opt-in")
-> 5) eliminate global variable
-> 
-> Here's my conclusions:
-> 
-> 1) You suggested using the inode kva as a "key" for cleancache.
->    I think your goal was to make it more fs-independent and also
->    to eliminate the need for using a per-fs enabler and "pool id".
->    I looked at this but it will not work because cleancache
->    retains page cache data pages persistently even when the
->    inode has been pruned from the inode_unused_list and only
->    flushes the data pages if the file gets removed/truncated.  If
->    cleancache used the inode kva, there would be coherency issues
->    when the inode kva is reused.  Alternately, if cleancache
->    flushed the pages when the inode kva was freed, much of
->    the value of cleancache would be lost because the cache
->    of pages in cleancache is potentially much larger than
->    the page cache and is most useful if the pages survive
->    inode cache removal.
-> 
->    If I misunderstood your proposal or if you disagree, please
->    let me know.
-> 
-> 2) You suggested eliminating the cleancache shim layer and just
->    directly calling zcache, effectively eliminating Xen as
->    a user.  During and after LSF summit, I talked to developers
->    from Google who are interested in investigating the cleancache
->    interface for use with cgroups, an IBM developer who was
->    interested in cleancache for optimizing NUMA, and soon I
->    will be talking to HP Labs about using it as an interface
->    for "memory blades".  I also think Rik van Riel and Mel Gorman
->    were intrigued about its use for collecting better memory
->    utilization statistics to drive guest/host memory "rightsizing".
->    While it is true that none of these are current users yet, even
->    if you prefer to ignore Xen tmem as a user, it seems silly to
->    throw away the cleanly-layered generic cleancache interface now,
->    only to add it back later when more users are added.
-> 
-> 3) You re-emphasized the problem where cleancache's use of
->    the inode number as a key will cause problems on many 64-bit
->    filesystems especially running on a 32-bit kernel.  With
->    help from Andreas Dilger, I'm trying to work out a generic
->    solution for this using s_export_op->encode_fh which would
->    be used for any fs that provides it to guarantee a unique
->    multi-word key for a file, while preserving the
->    shorter i_ino as a key for fs's for which i_ino is unique.
-> 
-> 4) Though you were out of the room during the cleancache
->    lightning talk, other filesystem developers seemed OK
->    with the "opt-in" approach (as documented in lwn.net)...
->    one even asked "can't you just add a bit to the superblock?"
->    to which I answered "that's essentially what the one
->    line opt-in addition does".  Not sure if you are still
->    objecting to that, but especially given that the 64-bit-fs-on
->    32-bit-kernel issue above only affects some filesystems,
->    I'm still thinking it is necessary.
-> 
-> 5) You commented (before LSF) that the global variable should
->    be avoided which is certainly valid, and I will try Nitin's
->    suggestion to add a registration interface.
-> 
-> Did I miss anything?
-> 
-> I plan to submit a V4 for cleancache soon, and hope you will
-> be inclined to ack this time.
->
+> Hi Alan,
+>  
+> I have implemented the run time power management in my drivers. I have one
+> issue regarding System resume.
+>  
+> When the system sleep is triggered as it is mentioned that Power management
+> core will increment the power_usage counter during prepare and decrements when complete
+> is called.
+>  
+> Now I have few questions:
+>  
+> 1) When the system resume is done, it does not increase the power_usage counter.
+>  right?
 
-Hi, Dan,
+That's right.
 
-Sorry for commenting on your post so late. I've had some time to read
-through your approach and compare it to my approach 
-(http://www.linuxsymposium.org/2010/view_abstract.php?content_key=32)
-and I had a few quick questions
+> So Does then the driver need to update the power_usage counter with run time power management
+> core and again set it to active means RPM_ACTIVE?
 
-1. Can't this be done at the MM layer - why the filesystem hooks? Is
-it to enable faster block devices in the reclaim hierarchy?
-2. I don't see a mention of slabcache in your approach, reclaim free
-pages or freeing potentially free slab pages.
+Read section 6 of Documentation/power/runtime_pm.h.  It explains this.
 
--- 
-	Three Cheers,
-	Balbir
+> 2) Suppose device is active, means its power_usage counter is already one, Now during system
+> sleep, does the driver first suspend it with run time power management core and then continue
+> System suspend?
+
+No.
+
+> 3) Because I have seen the code of power management core and I did not see the that during
+> system suspend, run time power management status is updated means RPM_SUSPENDED.
+> right?
+
+I don't understand your question.
+
+Alan Stern
+
