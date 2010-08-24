@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab0HXNTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 09:19:50 -0400
-Received: from fieldses.org ([174.143.236.118]:38875 "EHLO fieldses.org"
+	id S1755112Ab0HXNUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 09:20:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46873 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab0HXNTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 09:19:49 -0400
-Date: Tue, 24 Aug 2010 09:19:19 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Neil Brown <neilb@suse.de>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, adilger@sun.com, corbet@lwn.net,
-        hooanon05@yahoo.co.jp, miklos@szeredi.hu,
-        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-Message-ID: <20100824131919.GA25706@fieldses.org>
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20100820083057.GA10039@infradead.org>
- <20100820195303.20b17210@notabene>
- <20100820115135.GQ31363@ZenIV.linux.org.uk>
- <20100821100900.4b15fe08@notabene>
- <20100821083024.GB3448@amd>
- <m3zkwgqp3c.fsf@linux.vnet.ibm.com>
- <20100824072155.GA3948@amd>
+	id S1752037Ab0HXNUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 09:20:33 -0400
+Message-ID: <4C73C5EE.2060501@kernel.org>
+Date: Tue, 24 Aug 2010 15:15:26 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100824072155.GA3948@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: workqueue destruction BUG_ON
+References: <1282640156.3695.5.camel@jlt3.sipsolutions.net>	 <4C739DC6.1040309@kernel.org>	 <1282646268.3695.9.camel@jlt3.sipsolutions.net>	 <4C73BC96.6000003@kernel.org>	 <1282655414.3695.25.camel@jlt3.sipsolutions.net>	 <4C73C425.20503@kernel.org> <1282655865.3695.27.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1282655865.3695.27.camel@jlt3.sipsolutions.net>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 Aug 2010 13:20:29 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 05:21:55PM +1000, Nick Piggin wrote:
-> Right. Is this a really important goal, I'm wondering? Is it realistic
-> (ie. to be able to remove the nfs server from the kernel)?
+Hello,
 
-I think so.
+On 08/24/2010 03:17 PM, Johannes Berg wrote:
+> On Tue, 2010-08-24 at 15:07 +0200, Tejun Heo wrote:
+> 
+>>> [  500.874185] ------------[ cut here ]------------
+>>> [  500.875212] kernel BUG at kernel/workqueue.c:2849!
+>>
+>> Are you sure you're running the patched kernel?  With the patch
+>> applied, the BUG_ON() wouldn't be on line 2849 (on both rc1 and 2).
+> 
+> Yes:
+> 
+> void destroy_workqueue(struct workqueue_struct *wq)
+> {
+>         unsigned int cpu;
+>    
+>         wq->flags |= WQ_DYING;
+>         flush_workqueue(wq);
+>   
+>         /*
+>          * wq list is used to freeze wq, remove from list after
+>          * flushing is complete in case freeze races us.
+>          */
+>         spin_lock(&workqueue_lock);
+>         list_del(&wq->list);
+>         spin_unlock(&workqueue_lock);
+> 
+>         /* sanity check */
+>         for_each_cwq_cpu(cpu, wq) {
+>                 struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+>                 int i;
+> 
+>                 for (i = 0; i < WORK_NR_COLORS; i++)
+>                         BUG_ON(cwq->nr_in_flight[i]);
+> 2849:           BUG_ON(cwq->nr_active);
+>                 BUG_ON(!list_empty(&cwq->delayed_works));
+> 
+> 
+> Applying the patch reported some offset, but the kernel is just rc1 +
+> wireless stuff.
 
-The hardest part is if you want to export a filesystem that also has
-non-nfs users--in the kernel it's much easier to maintain consistency
-between local users of the filesystem and nfs clients.
+I see, thanks for verifying.  I probably got confused about the line
+number.  Hmm... weird.  I'll prep further debug patch but can you
+please tell me what you did to trigger the bug?
 
-If the server has no local users, then userspace may turn out to be
-easier.
+Thanks.
 
-In that case you might ask why the server needs a real filesystem to
-export at all--in theory it could maintain all its data on its own.  But
-I suspect if you try that you find you're reinventing a lot of wheels.
-
---b.
+-- 
+tejun
