@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab0HXUUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 16:20:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46314 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755390Ab0HXUUQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 16:20:16 -0400
+	id S1755932Ab0HXUUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:20:49 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39974 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755390Ab0HXUUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 16:20:47 -0400
+Date: Tue, 24 Aug 2010 22:20:45 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Dan Carpenter <error27@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 4/5] drivers/char/agp: Eliminate memory leak
+In-Reply-To: <20100824171644.GL29330@bicker>
+Message-ID: <Pine.LNX.4.64.1008242220170.14009@ask.diku.dk>
+References: <Pine.LNX.4.64.1008241639130.15172@ask.diku.dk>
+ <20100824171644.GL29330@bicker>
 MIME-Version: 1.0
-In-Reply-To: <4c7413025613b269c@agluck-desktop.sc.intel.com>
-References: <4c7413025613b269c@agluck-desktop.sc.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Aug 2010 13:19:51 -0700
-Message-ID: <AANLkTinMbTu6H9m70sapfpGHC4secUsaUqZKkg_=CWA6@mail.gmail.com>
-Subject: Re: [PATCH v2] guard page for stacks that grow upwards
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        linux-ia64@vger.kernel.org,
-        John David Anglin <dave.anglin@nrc-cnrc.gc.ca>,
-        Kyle McMartin <kyle@parisc-linux.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 11:44 AM, Luck, Tony <tony.luck@intel.com> wrote:
->
-> Built, booted & tested on ia64
-> Built for x86_64 (but not booted or tested)
-> pa-risc - untested
+From: Julia Lawall <julia@diku.dk>
 
-Ok, applied. I do think we could do the "VM_GROWSDOWN = 0" trick for
-PA-RISC  (so that the code for the growsdown case would be compiled
-away there), but that definitely needs somebody who actually cares
-specifically about PA-RISC.
+alloc_pci_dev allocates some memory, so that memory should be freed before
+leaving the function in an error case.
 
-Adding the people who have signed off on parisc-specific patches in
-recent memory to the cc. Maybe somebody could be convinced to care.
+A simplified version of the semantic match that finds this problem is:
+(http://coccinelle.lip6.fr/)
 
-                         Linus
+// <smpl>
+@r exists@
+local idexpression x;
+expression E;
+identifier f1;
+iterator I;
+@@
+
+x = alloc_pci_dev(...);
+<... when != x
+     when != true (x == NULL || ...)
+     when != if (...) { <+...x...+> }
+     when != I (...) { <+...x...+> }
+(
+ x == NULL
+|
+ x == E
+|
+ x->f1
+)
+...>
+* return ...;
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/char/agp/parisc-agp.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/char/agp/parisc-agp.c b/drivers/char/agp/parisc-agp.c
+index 1c12921..17e380f 100644
+--- a/drivers/char/agp/parisc-agp.c
++++ b/drivers/char/agp/parisc-agp.c
+@@ -358,8 +358,12 @@ parisc_agp_setup(void __iomem *ioc_hpa, void __iomem *lba_hpa)
+ 	bridge->dev = fake_bridge_dev;
+ 
+ 	error = agp_add_bridge(bridge);
++	if (error)
++		goto fail;
++	return 0;
+ 
+ fail:
++	kfree(fake_bridge_dev);
+ 	return error;
+ }
+ 
