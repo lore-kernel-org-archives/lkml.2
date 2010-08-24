@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab0HXUKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 16:10:04 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:51067 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094Ab0HXUKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 16:10:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UXSZ/wxtteVTfBH0L5eHba1VEOPpLcdbfu57tLOAYYvEWt3mTzoHLLgBXc1Z+wWM53
-         7/u0URuX8vBqQQI5zx8RWIkJzBWeqYEs+IgbxRO3TtHLm3kUZeAkCB6yCZOx8vuEd1nc
-         Dh0aWj+p/aAwq9/Rr4IANSY+QJLtKsZZAReiE=
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Marc Aurele La France <tsi@ualberta.ca>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-In-Reply-To: <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca>
-	 <20100823080543.319143e3@nehalam>
-	 <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
-	 <1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
-	 <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Aug 2010 22:09:32 +0200
-Message-ID: <1282680572.2467.78.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1755641Ab0HXUKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:10:37 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59515 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755468Ab0HXUKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 16:10:35 -0400
+Message-ID: <4C74273B.4000308@kernel.dk>
+Date: Tue, 24 Aug 2010 22:10:35 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Runtime PM and the block layer
+References: <Pine.LNX.4.44L0.1008241550170.1652-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1008241550170.1652-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 24 août 2010 à 13:49 -0600, Marc Aurele La France a écrit :
-
+On 08/24/2010 10:06 PM, Alan Stern wrote:
+> On Tue, 24 Aug 2010, Jens Axboe wrote:
 > 
-> Any payload has to either fit in the MTU, or has to be broken up into 
-> MTU-sized (or less) fragments, come hell or high water.  That this is done 
-> centrally is a good thing.  It is the "(or less)" part that I am working 
-> towards here.
+>> On 2010-08-24 16:42, Alan Stern wrote:
+>>>> Sounds like all you need is a way to return BLKPREP_DEFER_AND_STOP and
+>>>> have the block layer stop the queue for you. When you need to restart,
+>>>> you would insert a special request at the head of the queue and call
+>>>> blk_start_queue() to get things going again.
+>>>
+>>> Yes.
+>>>
+>>> Suppose the driver needs to send two of these special requests before
+>>> going back to normal operation.  Won't restarting the queue for the
+>>> first special request also cause the following regular request to be
+>>> passed to the driver before the second special request can be inserted?  
+>>> Of course, the driver could cope with this simply by returning another
+>>> BLKPREP_DEFER_AND_STOP.
+>>
+>> For that special request, you are sure to have some ->end_io() hook to
+>> know when it's complete. When that triggers, you queue the 2nd special
+>> request. And so on, for how many you need.
 > 
+> That's not what I meant.  Suppose the driver wants to carry out special
+> requests A and B before carrying out request R, which is initially at
+> the head of the queue.  The driver inserts A at the front, calls
+> blk_start_queue(), and inserts B at the front when A completes.  
+> What's to prevent the block layer from sending R to the driver while A
+> is running?
 
-Could you post a full stack trace, to help me understand the path from
-NFS to ip_append_data ?
+Nothing, you will have to maintain that state and defer when
+appropriate. Which should happen automatically, since you would not be
+switching your state to running until request B has completed anyway.
 
-I suspect this is UDP transport ?
+>>>> The only missing bit would then be the idle detection. That would need
+>>>> to be in the block layer itself, and the scheme I described should be
+>>>> fine for that still.
+>>>
+>>> Are you sure it needs to be in the block layer?  Is there no way for 
+>>> the driver's completion handler to tell whether the queue is now empty?  
+>>> Certainly it already has enough information to know whether the device 
+>>> is still busy processing another request.  When the device is no longer 
+>>> busy and the queue is empty, that's when the idle timer should be 
+>>> started or restarted.
+>>
+>> To some extent there is, but there can be context outside of the queue
+>> it doesn't know about. That is the case for the plugging rework, for
+>> instance. That also removes the queue_empty() call. Then there's
+>> blk_fetch_request(), but that may return NULL while there's IO pending
+>> in the block layer - so not reliable for that either. The block layer is
+>> tracking this state anyway, if you are leaving it to the driver then it
+>> would have to check everytime it completes the last request it has. It's
+>> cheaper to do in the block layer.
+> 
+> I see.  You're suggesting we add a new "power_mode" or "queue_idle"  
+> callback to the request_queue struct, and make the block layer invoke
+> this callback whenever a request completes and there are no other
+> requests pending or in flight.  Right?  And similarly, invoke the
+> callback (with a different argument) when the first request gets added
+> to an otherwise empty queue.
+> 
+> That would suit my needs.
 
-This reminds me a patch I wrote for IPV6 : We were allocating a huge
-(MTU sized) buffer, just to fill few bytes in it...
+Yep, that is what I'm suggesting.
 
-
-commit 72e09ad107e78d69ff4d3b97a69f0aad2b77280f
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Sat Jun 5 03:03:30 2010 -0700
-
-    ipv6: avoid high order allocations
-    
-    With mtu=9000, mld_newpack() use order-2 GFP_ATOMIC allocations, that
-    are very unreliable, on machines where PAGE_SIZE=4K
-    
-    Limit allocated skbs to be at most one page. (order-0 allocations)
-    
-    Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
+-- 
+Jens Axboe
 
