@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab0HXW7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 18:59:10 -0400
-Received: from kroah.org ([198.145.64.141]:40441 "EHLO coco.kroah.org"
+	id S933024Ab0HXXce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:32:34 -0400
+Received: from kroah.org ([198.145.64.141]:40469 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935Ab0HXW65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 18:58:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:15 2010
-Message-Id: <20100824224215.843600964@clark.site>
+	id S1755780Ab0HXW7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 18:59:06 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:42:16 2010
+Message-Id: <20100824224216.438352699@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:42:06 -0700
+Date: Tue, 24 Aug 2010 15:42:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [44/91] mm: make the mlock() stack guard page checks stricter
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [51/91] bridge: add rcu_read_lock on transmit
 In-Reply-To: <20100824224617.GA5440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,57 +26,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 7798330ac8114c731cfab83e634c6ecedaa233d7 upstream.
+From: Stephen Hemminger <shemminger@vyatta.com>
 
-If we've split the stack vma, only the lowest one has the guard page.
-Now that we have a doubly linked list of vma's, checking this is trivial.
+[ Upstream commit eeaf61d8891f9c9ed12c1a667e72bf83f0857954 ]
 
-Tested-by: Ian Campbell <ijc@hellion.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Long ago, when bridge was converted to RCU, rcu lock was equivalent
+to having preempt disabled. RCU has changed a lot since then and
+bridge code was still assuming the since transmit was called with
+bottom half disabled, it was RCU safe.
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Tested-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/mlock.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ net/bridge/br_device.c   |    4 +++-
+ net/bridge/br_fdb.c      |    2 +-
+ net/bridge/br_input.c    |    6 +++---
+ net/bridge/br_stp_bpdu.c |    2 +-
+ 4 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -135,6 +135,19 @@ void munlock_vma_page(struct page *page)
- 	}
+--- a/net/bridge/br_device.c
++++ b/net/bridge/br_device.c
+@@ -19,7 +19,7 @@
+ #include <asm/uaccess.h>
+ #include "br_private.h"
+ 
+-/* net device transmit always called with no BH (preempt_disabled) */
++/* net device transmit always called with BH disabled */
+ netdev_tx_t br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	struct net_bridge *br = netdev_priv(dev);
+@@ -35,6 +35,7 @@ netdev_tx_t br_dev_xmit(struct sk_buff *
+ 	skb_reset_mac_header(skb);
+ 	skb_pull(skb, ETH_HLEN);
+ 
++	rcu_read_lock();
+ 	if (dest[0] & 1) {
+ 		if (br_multicast_rcv(br, NULL, skb))
+ 			goto out;
+@@ -50,6 +51,7 @@ netdev_tx_t br_dev_xmit(struct sk_buff *
+ 		br_flood_deliver(br, skb);
+ 
+ out:
++	rcu_read_unlock();
+ 	return NETDEV_TX_OK;
  }
  
-+/* Is the vma a continuation of the stack vma above it? */
-+static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
-+}
-+
-+static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return (vma->vm_flags & VM_GROWSDOWN) &&
-+		(vma->vm_start == addr) &&
-+		!vma_stack_continue(vma->vm_prev, addr);
-+}
-+
- /**
-  * __mlock_vma_pages_range() -  mlock a range of pages in the vma.
-  * @vma:   target vma
-@@ -168,11 +181,9 @@ static long __mlock_vma_pages_range(stru
- 		gup_flags |= FOLL_WRITE;
+--- a/net/bridge/br_fdb.c
++++ b/net/bridge/br_fdb.c
+@@ -214,7 +214,7 @@ void br_fdb_delete_by_port(struct net_br
+ 	spin_unlock_bh(&br->hash_lock);
+ }
  
- 	/* We don't try to access the guard page of a stack vma */
--	if (vma->vm_flags & VM_GROWSDOWN) {
--		if (start == vma->vm_start) {
--			start += PAGE_SIZE;
--			nr_pages--;
--		}
-+	if (stack_guard_page(vma, start)) {
-+		addr += PAGE_SIZE;
-+		nr_pages--;
- 	}
+-/* No locking or refcounting, assumes caller has no preempt (rcu_read_lock) */
++/* No locking or refcounting, assumes caller has rcu_read_lock */
+ struct net_bridge_fdb_entry *__br_fdb_get(struct net_bridge *br,
+ 					  const unsigned char *addr)
+ {
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -35,7 +35,7 @@ static int br_pass_frame_up(struct sk_bu
+ 		       netif_receive_skb);
+ }
  
- 	while (nr_pages > 0) {
+-/* note: already called with rcu_read_lock (preempt_disabled) */
++/* note: already called with rcu_read_lock */
+ int br_handle_frame_finish(struct sk_buff *skb)
+ {
+ 	const unsigned char *dest = eth_hdr(skb)->h_dest;
+@@ -106,7 +106,7 @@ drop:
+ 	goto out;
+ }
+ 
+-/* note: already called with rcu_read_lock (preempt_disabled) */
++/* note: already called with rcu_read_lock */
+ static int br_handle_local_finish(struct sk_buff *skb)
+ {
+ 	struct net_bridge_port *p = rcu_dereference(skb->dev->br_port);
+@@ -131,7 +131,7 @@ static inline int is_link_local(const un
+ /*
+  * Called via br_handle_frame_hook.
+  * Return NULL if skb is handled
+- * note: already called with rcu_read_lock (preempt_disabled)
++ * note: already called with rcu_read_lock
+  */
+ struct sk_buff *br_handle_frame(struct net_bridge_port *p, struct sk_buff *skb)
+ {
+--- a/net/bridge/br_stp_bpdu.c
++++ b/net/bridge/br_stp_bpdu.c
+@@ -131,7 +131,7 @@ void br_send_tcn_bpdu(struct net_bridge_
+ /*
+  * Called from llc.
+  *
+- * NO locks, but rcu_read_lock (preempt_disabled)
++ * NO locks, but rcu_read_lock
+  */
+ void br_stp_rcv(const struct stp_proto *proto, struct sk_buff *skb,
+ 		struct net_device *dev)
 
 
