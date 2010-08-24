@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933881Ab0HXXQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:16:45 -0400
-Received: from kroah.org ([198.145.64.141]:41106 "EHLO coco.kroah.org"
+	id S933882Ab0HXXQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:16:47 -0400
+Received: from kroah.org ([198.145.64.141]:41100 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933457Ab0HXXC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:02:26 -0400
+	id S933455Ab0HXXCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:02:25 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:05 2010
-Message-Id: <20100824224505.785387263@clark.site>
+Message-Id: <20100824224505.697208850@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:44:57 -0700
+Date: Tue, 24 Aug 2010 15:44:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [052/114] mm: make the vma list be doubly linked
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [051/114] dm ioctl: release _hash_lock between devices in remove_all
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,156 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
 
-commit 297c5eee372478fc32fec5fe8eed711eedb13f3d upstream.
+commit 98f332855effef02aeb738e4d62e9a5b903c52fd upstream.
 
-It's a really simple list, and several of the users want to go backwards
-in it to find the previous vma.  So rather than have to look up the
-previous entry with 'find_vma_prev()' or something similar, just make it
-doubly linked instead.
+This patch changes dm_hash_remove_all() to release _hash_lock when
+removing a device.  After removing the device, dm_hash_remove_all()
+takes _hash_lock and searches the hash from scratch again.
 
-Tested-by: Ian Campbell <ijc@hellion.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch is a preparation for the next patch, which changes device
+deletion code to wait for md reference to be 0.  Without this patch,
+the wait in the next patch may cause AB-BA deadlock:
+  CPU0                                CPU1
+  -----------------------------------------------------------------------
+  dm_hash_remove_all()
+    down_write(_hash_lock)
+                                      table_status()
+                                        md = find_device()
+                                               dm_get(md)
+                                                 <increment md->holders>
+                                        dm_get_live_or_inactive_table()
+                                          dm_get_inactive_table()
+                                            down_write(_hash_lock)
+    <in the md deletion code>
+      <wait for md->holders to be 0>
+
+Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/mm_types.h |    2 +-
- kernel/fork.c            |    7 +++++--
- mm/mmap.c                |   21 +++++++++++++++++----
- mm/nommu.c               |    7 +++++--
- 4 files changed, 28 insertions(+), 9 deletions(-)
+ drivers/md/dm-ioctl.c |   44 +++++++++++++++++++++++++-------------------
+ 1 file changed, 25 insertions(+), 19 deletions(-)
 
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -134,7 +134,7 @@ struct vm_area_struct {
- 					   within vm_mm. */
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -249,40 +249,46 @@ static void __hash_remove(struct hash_ce
  
- 	/* linked list of VM areas per task, sorted by address */
--	struct vm_area_struct *vm_next;
-+	struct vm_area_struct *vm_next, *vm_prev;
- 
- 	pgprot_t vm_page_prot;		/* Access permissions of this VMA. */
- 	unsigned long vm_flags;		/* Flags, see mm.h. */
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -300,7 +300,7 @@ out:
- #ifdef CONFIG_MMU
- static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ static void dm_hash_remove_all(int keep_open_devices)
  {
--	struct vm_area_struct *mpnt, *tmp, **pprev;
-+	struct vm_area_struct *mpnt, *tmp, *prev, **pprev;
- 	struct rb_node **rb_link, *rb_parent;
- 	int retval;
- 	unsigned long charge;
-@@ -328,6 +328,7 @@ static int dup_mmap(struct mm_struct *mm
- 	if (retval)
- 		goto out;
- 
-+	prev = NULL;
- 	for (mpnt = oldmm->mmap; mpnt; mpnt = mpnt->vm_next) {
- 		struct file *file;
- 
-@@ -359,7 +360,7 @@ static int dup_mmap(struct mm_struct *mm
- 			goto fail_nomem_anon_vma_fork;
- 		tmp->vm_flags &= ~VM_LOCKED;
- 		tmp->vm_mm = mm;
--		tmp->vm_next = NULL;
-+		tmp->vm_next = tmp->vm_prev = NULL;
- 		file = tmp->vm_file;
- 		if (file) {
- 			struct inode *inode = file->f_path.dentry->d_inode;
-@@ -392,6 +393,8 @@ static int dup_mmap(struct mm_struct *mm
- 		 */
- 		*pprev = tmp;
- 		pprev = &tmp->vm_next;
-+		tmp->vm_prev = prev;
-+		prev = tmp;
- 
- 		__vma_link_rb(mm, tmp, rb_link, rb_parent);
- 		rb_link = &tmp->vm_rb.rb_right;
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -388,17 +388,23 @@ static inline void
- __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
- 		struct vm_area_struct *prev, struct rb_node *rb_parent)
- {
-+	struct vm_area_struct *next;
+-	int i, dev_skipped, dev_removed;
++	int i, dev_skipped;
+ 	struct hash_cell *hc;
+-	struct list_head *tmp, *n;
++	struct mapped_device *md;
 +
-+	vma->vm_prev = prev;
- 	if (prev) {
--		vma->vm_next = prev->vm_next;
-+		next = prev->vm_next;
- 		prev->vm_next = vma;
- 	} else {
- 		mm->mmap = vma;
- 		if (rb_parent)
--			vma->vm_next = rb_entry(rb_parent,
-+			next = rb_entry(rb_parent,
- 					struct vm_area_struct, vm_rb);
- 		else
--			vma->vm_next = NULL;
-+			next = NULL;
- 	}
-+	vma->vm_next = next;
-+	if (next)
-+		next->vm_prev = vma;
- }
++retry:
++	dev_skipped = 0;
  
- void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
-@@ -485,7 +491,11 @@ static inline void
- __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
- 		struct vm_area_struct *prev)
- {
--	prev->vm_next = vma->vm_next;
-+	struct vm_area_struct *next = vma->vm_next;
+ 	down_write(&_hash_lock);
+ 
+-retry:
+-	dev_skipped = dev_removed = 0;
+ 	for (i = 0; i < NUM_BUCKETS; i++) {
+-		list_for_each_safe (tmp, n, _name_buckets + i) {
+-			hc = list_entry(tmp, struct hash_cell, name_list);
++		list_for_each_entry(hc, _name_buckets + i, name_list) {
++			md = hc->md;
++			dm_get(md);
+ 
+-			if (keep_open_devices &&
+-			    dm_lock_for_deletion(hc->md)) {
++			if (keep_open_devices && dm_lock_for_deletion(md)) {
++				dm_put(md);
+ 				dev_skipped++;
+ 				continue;
+ 			}
 +
-+	prev->vm_next = next;
-+	if (next)
-+		next->vm_prev = prev;
- 	rb_erase(&vma->vm_rb, &mm->mm_rb);
- 	if (mm->mmap_cache == vma)
- 		mm->mmap_cache = prev;
-@@ -1900,6 +1910,7 @@ detach_vmas_to_be_unmapped(struct mm_str
- 	unsigned long addr;
+ 			__hash_remove(hc);
+-			dev_removed = 1;
+-		}
+-	}
  
- 	insertion_point = (prev ? &prev->vm_next : &mm->mmap);
-+	vma->vm_prev = NULL;
- 	do {
- 		rb_erase(&vma->vm_rb, &mm->mm_rb);
- 		mm->map_count--;
-@@ -1907,6 +1918,8 @@ detach_vmas_to_be_unmapped(struct mm_str
- 		vma = vma->vm_next;
- 	} while (vma && vma->vm_start < end);
- 	*insertion_point = vma;
-+	if (vma)
-+		vma->vm_prev = prev;
- 	tail_vma->vm_next = NULL;
- 	if (mm->unmap_area == arch_unmap_area)
- 		addr = prev ? prev->vm_end : mm->mmap_base;
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -609,7 +609,7 @@ static void protect_vma(struct vm_area_s
-  */
- static void add_vma_to_mm(struct mm_struct *mm, struct vm_area_struct *vma)
- {
--	struct vm_area_struct *pvma, **pp;
-+	struct vm_area_struct *pvma, **pp, *next;
- 	struct address_space *mapping;
- 	struct rb_node **p, *parent;
+-	/*
+-	 * Some mapped devices may be using other mapped devices, so if any
+-	 * still exist, repeat until we make no further progress.
+-	 */
+-	if (dev_skipped) {
+-		if (dev_removed)
+-			goto retry;
++			up_write(&_hash_lock);
  
-@@ -669,8 +669,11 @@ static void add_vma_to_mm(struct mm_stru
- 			break;
+-		DMWARN("remove_all left %d open device(s)", dev_skipped);
++			dm_put(md);
++
++			/*
++			 * Some mapped devices may be using other mapped
++			 * devices, so repeat until we make no further
++			 * progress.  If a new mapped device is created
++			 * here it will also get removed.
++			 */
++			goto retry;
++		}
  	}
  
--	vma->vm_next = *pp;
-+	next = *pp;
- 	*pp = vma;
-+	vma->vm_next = next;
-+	if (next)
-+		next->vm_prev = vma;
+ 	up_write(&_hash_lock);
++
++	if (dev_skipped)
++		DMWARN("remove_all left %d open device(s)", dev_skipped);
  }
  
- /*
+ static int dm_hash_rename(uint32_t cookie, uint32_t *flags, const char *old,
 
 
