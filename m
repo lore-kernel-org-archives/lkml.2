@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab0HXKZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 06:25:51 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:53701 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab0HXKZs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 06:25:48 -0400
-Message-ID: <4C739DE9.5070803@ct.jp.nec.com>
-Date: Tue, 24 Aug 2010 19:24:41 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	id S1754838Ab0HXK3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 06:29:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51464 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754453Ab0HXK3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 06:29:11 -0400
+Message-ID: <4C739DC6.1040309@kernel.org>
+Date: Tue, 24 Aug 2010 12:24:06 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Mike Snitzer <snitzer@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
-        jack@suse.cz, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
-        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
-        dm-devel@redhat.com
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com>
-In-Reply-To: <20100823141733.GA21158@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: workqueue destruction BUG_ON
+References: <1282640156.3695.5.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1282640156.3695.5.camel@jlt3.sipsolutions.net>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 Aug 2010 10:29:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Hello,
 
-On 08/23/2010 11:17 PM +0900, Mike Snitzer wrote:
-> On Mon, Aug 23 2010 at  8:14am -0400, Tejun Heo <tj@kernel.org> wrote:
->> On 08/20/2010 10:26 AM, Kiyoshi Ueda wrote:
->>> By the way, if these patch-set with the change above are included,
->>> even one path failure for REQ_FLUSH on multipath configuration will
->>> be reported to upper layer as error, although it's retried using
->>> other paths currently.
->>> Then, if an upper layer won't take correct recovery action for the error,
->>> it would be seen as a regression for users. (e.g. Frequent EXT3-error
->>> resulting in read-only mount on multipath configuration.)
->>>
->>> Although I think the explicit error is fine rather than implicit data
->>> corruption, please check upper layers carefully so that users won't see
->>> such errors as much as possible.
->> 
->> Argh... then it will have to discern why FLUSH failed.  It can retry
->> for transport errors but if it got aborted by the device it should
->> report upwards.
+On 08/24/2010 10:55 AM, Johannes Berg wrote:
+> In our testing with iwlwifi, we keep running into this BUG_ON:
 > 
-> Yes, we discussed this issue of needing to train dm-multipath to know if
-> there was a transport failure or not (at LSF).  But I'm not sure when
-> Hannes intends to repost his work in this area (updated to account for
-> feedback from LSF).
+> 	BUG_ON(cwq->nr_active);
+> 
+> in destroy_workqueue(). This is quite unhelpful, and since the code
+> flushes the workqueue I really don't see how this could be happening,
+> unless maybe there's cross-talk between this and other workqueues?
 
-Yes, checking whether it's a transport error in lower layer is
-the right solution.
-(Since I know it's not available yet, I just hoped if upper layers
- had some other options.)
+Flushing the workqueue doesn't guarantee that the workqueue stays
+empty.  It just flushes the currently pending works.  If there are
+requeueing works or something else is queueing new works, workqueue
+won't be empty.  The check is new.  Previously, workqueue code didn't
+check whether the workqueue is actually empty.  Now that the worklist
+is shared, we need such check in place.  There was also a similar
+report on ath9k.  I think it's most likely that something is queueing
+works on a dying wokrqueue in the wireless common code.  I'll prep a
+debug patch to print out some details.
 
-Anyway, only reporting errors for REQ_FLUSH to upper layer without
-such a solution would make dm-multipath almost unusable in real world,
-although it's better than implicit data loss.
+Thanks.
 
-
->> Maybe just turn off barrier support in mpath for now?
-
-If it's possible, it could be a workaround for a short term.
-But how can you do that?
-
-I think it's not enough to just drop REQ_FLUSH flag from q->flush_flags.
-Underlying devices of a mpath device may have write-back cache and
-it may be enabled.
-So if a mpath device doesn't set REQ_FLUSH flag in q->flush_flags, it
-becomes a device which has write-back cache but doesn't support flush.
-Then, upper layer can do nothing to ensure cache flush?
-
-Thanks,
-Kiyoshi Ueda
+-- 
+tejun
