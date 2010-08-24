@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab0HXT7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 15:59:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55423 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab0HXT7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 15:59:04 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C73F25D.5010205@suse.com>
-References: <4C73F25D.5010205@suse.com>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: dhowells@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH] s390: Fix prototype for execve
-Date: Tue, 24 Aug 2010 20:58:54 +0100
-Message-ID: <4102.1282679934@redhat.com>
+	id S1755496Ab0HXUGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:06:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56415 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752664Ab0HXUGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 16:06:36 -0400
+Date: Tue, 24 Aug 2010 16:06:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jens Axboe <axboe@kernel.dk>
+cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Runtime PM and the block layer
+In-Reply-To: <4C73FCBE.7020305@kernel.dk>
+Message-ID: <Pine.LNX.4.44L0.1008241550170.1652-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Mahoney <jeffm@suse.com> wrote:
+On Tue, 24 Aug 2010, Jens Axboe wrote:
 
->  Commit d7627467b7a8dd6944885290a03a07ceb28c10eb constified the
->  arguments to execve but missed the s390 prototype.
+> On 2010-08-24 16:42, Alan Stern wrote:
+> >> Sounds like all you need is a way to return BLKPREP_DEFER_AND_STOP and
+> >> have the block layer stop the queue for you. When you need to restart,
+> >> you would insert a special request at the head of the queue and call
+> >> blk_start_queue() to get things going again.
+> > 
+> > Yes.
+> > 
+> > Suppose the driver needs to send two of these special requests before
+> > going back to normal operation.  Won't restarting the queue for the
+> > first special request also cause the following regular request to be
+> > passed to the driver before the second special request can be inserted?  
+> > Of course, the driver could cope with this simply by returning another
+> > BLKPREP_DEFER_AND_STOP.
 > 
->  This patch fixes it up.
-> 
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> For that special request, you are sure to have some ->end_io() hook to
+> know when it's complete. When that triggers, you queue the 2nd special
+> request. And so on, for how many you need.
 
-Acked-by: David Howells <dhowells@redhat.com>
+That's not what I meant.  Suppose the driver wants to carry out special
+requests A and B before carrying out request R, which is initially at
+the head of the queue.  The driver inserts A at the front, calls
+blk_start_queue(), and inserts B at the front when A completes.  
+What's to prevent the block layer from sending R to the driver while A
+is running?
+
+> >> The only missing bit would then be the idle detection. That would need
+> >> to be in the block layer itself, and the scheme I described should be
+> >> fine for that still.
+> > 
+> > Are you sure it needs to be in the block layer?  Is there no way for 
+> > the driver's completion handler to tell whether the queue is now empty?  
+> > Certainly it already has enough information to know whether the device 
+> > is still busy processing another request.  When the device is no longer 
+> > busy and the queue is empty, that's when the idle timer should be 
+> > started or restarted.
+> 
+> To some extent there is, but there can be context outside of the queue
+> it doesn't know about. That is the case for the plugging rework, for
+> instance. That also removes the queue_empty() call. Then there's
+> blk_fetch_request(), but that may return NULL while there's IO pending
+> in the block layer - so not reliable for that either. The block layer is
+> tracking this state anyway, if you are leaving it to the driver then it
+> would have to check everytime it completes the last request it has. It's
+> cheaper to do in the block layer.
+
+I see.  You're suggesting we add a new "power_mode" or "queue_idle"  
+callback to the request_queue struct, and make the block layer invoke
+this callback whenever a request completes and there are no other
+requests pending or in flight.  Right?  And similarly, invoke the
+callback (with a different argument) when the first request gets added
+to an otherwise empty queue.
+
+That would suit my needs.
+
+Alan Stern
+
