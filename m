@@ -1,111 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab0HXUqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 16:46:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58802 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab0HXUqO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 16:46:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Subject: Re: [PATCH 1/3] drm: kill BKL from common code
-Date: Tue, 24 Aug 2010 22:45:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.5.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-References: <1278798701-11171-1-git-send-email-arnd@arndb.de> <1278798701-11171-2-git-send-email-arnd@arndb.de> <m262yzyhkf.fsf@igel.home>
-In-Reply-To: <m262yzyhkf.fsf@igel.home>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008242245.35907.arnd@arndb.de>
-X-Provags-ID: V02:K0:wbLTGlrbkRaea+8IlDJZaK7BbWpBSAYDAmCYEQsYODA
- D+tItBZCYYKu212dBQXD7efZwbh88M/gEvHI8UQNjnYb/XJKWM
- FVE3k0lni3EATxGn4iSJo1rQ5O0afIlwkdSRmDlIGipnx0r3xX
- MJhduXp/MNU8Xd1qIS9d7ewkzsXVjP2qgqiZuoMYIXIetuIyHM
- YkJf1ww2A++Xc91Mfdc7g==
+	id S1755972Ab0HXUtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 16:49:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755618Ab0HXUtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 16:49:02 -0400
+Date: Tue, 24 Aug 2010 16:48:39 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Neil Brown <neilb@suse.de>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 14/39] union-mount: Union mounts documentation
+Message-ID: <20100824204839.GB28718@shell>
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-15-git-send-email-vaurora@redhat.com> <20100810085641.2b9a714c@notabene> <20100817204430.GE5556@shell> <6820.1282094632@jrobl> <20100818185542.GA10850@shell> <16318.1282181699@jrobl> <20100824000505.GA20909@shell> <6881.1282616917@jrobl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6881.1282616917@jrobl>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 August 2010 20:46:40 Andreas Schwab wrote:
-> Arnd Bergmann <arnd@arndb.de> writes:
+On Tue, Aug 24, 2010 at 11:28:37AM +0900, J. R. Okajima wrote:
 > 
-> > diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
-> > index 4a66201..76d98f4 100644
-> > --- a/drivers/gpu/drm/drm_drv.c
-> > +++ b/drivers/gpu/drm/drm_drv.c
-> > @@ -506,9 +506,9 @@ long drm_ioctl(struct file *filp,
-> >               if (ioctl->flags & DRM_UNLOCKED)
-> >                       retcode = func(dev, kdata, file_priv);
-> >               else {
-> > -                     lock_kernel();
-> > +                     mutex_lock(&drm_global_mutex);
-> >                       retcode = func(dev, kdata, file_priv);
-> > -                     unlock_kernel();
-> > +                     mutex_unlock(&drm_global_mutex);
-> 
-> How is this supposed to work in the context of sleeping ioctls, like
-> drm_lock?
-> 
-> [drm:drm_ioctl], pid=2461, cmd=0x8008642a, nr=0x2a, dev 0xe200, auth=1
-> [drm:drm_lock], 1 (pid 2461) requests lock (0x80000003), flags = 0x00000000
-> [drm:drm_ioctl], pid=2520, cmd=0x8008642b, nr=0x2b, dev 0xe200, auth=1
-> 
-> # ps 2461 2520
->   PID TTY      STAT   TIME COMMAND
->  2461 tty7     Ss+    0:01 /usr/bin/Xorg -br :0 vt7 -nolisten tcp -auth /var/lib
->  2520 pts/2    D+     0:00 glxgears
+> Thank you for explanation, very much.
 
-I was assuming that no ioctl sleeps indefinitely, which is normally the
-case. As I described in the changelog, all locked ioctls are serialized
-with the drm_global_mutex, while they used to be only serialized when
-not sleeping before.
+You are welcome!
 
-I did not realize that DRM has mutexes that are held across ioctls.
-To restore the old behavior, apply this patch:
+> When a rename happens on a layer directly, aufs receives a
+> inotify/fsnotify event. Following the event type, aufs makes the cached
+> dentry/inode obsoleted and they will be lookup-ed again in the
+> succeeding access. Finally aufs will know the upper parent_dir1 is not
+> covering the lower parent_dir2 anymore.
+> This notification is the main purpose of the strict option which is
+> called "udba=notify" (User's Direct Branch Access).
 
-diff --git a/drivers/gpu/drm/drm_lock.c b/drivers/gpu/drm/drm_lock.c
-index e2f70a5..9bf93bc 100644
---- a/drivers/gpu/drm/drm_lock.c
-+++ b/drivers/gpu/drm/drm_lock.c
-@@ -92,7 +92,9 @@ int drm_lock(struct drm_device *dev, void *data, struct drm_file *file_priv)
- 		}
- 
- 		/* Contention */
-+		mutex_unlock(&drm_global_mutex);
- 		schedule();
-+		mutex_lock(&drm_global_mutex);
- 		if (signal_pending(current)) {
- 			ret = -EINTR;
- 			break;
+No, that's not a sufficient description and leaves open questions
+about all sorts of deadlocks and race conditions.  For example,
+inotify events occur while holding locks only on one layer.  You
+obviously need to lock the top layer to update the inheritance and
+parent-child relationships.  Now you are locking the lower layer first
+and the top layer second, which is the reverse of the usual order.
+Also, it should not be an option.
 
-However, it would be better instead to mark the drm_lock and drm_unlock
-ioctls as DRM_UNLOCKED so they are not called under drm_global_mutex to
-start with, like this:
+If Al Viro says it's wrong, you need a very detailed explanation of
+why it is right.  See Documentation/filesystem/directory-locking for
+an example of the argument you have to make to show that moving things
+around on the lower layer is safe.  In general, your first task is to
+show a global lock ordering to prove lack of deadlocks (which I don't
+think you should spend time on because most VFS experts think it is
+impossible to do with two read-write layers).
 
-diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
-index 90288ec..469bc18 100644
---- a/drivers/gpu/drm/drm_drv.c
-+++ b/drivers/gpu/drm/drm_drv.c
-@@ -91,8 +91,8 @@ static struct drm_ioctl_desc drm_ioctls[] = {
- 	DRM_IOCTL_DEF(DRM_IOCTL_ADD_DRAW, drm_adddraw, DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY),
- 	DRM_IOCTL_DEF(DRM_IOCTL_RM_DRAW, drm_rmdraw, DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY),
- 
--	DRM_IOCTL_DEF(DRM_IOCTL_LOCK, drm_lock, DRM_AUTH),
--	DRM_IOCTL_DEF(DRM_IOCTL_UNLOCK, drm_unlock, DRM_AUTH),
-+	DRM_IOCTL_DEF(DRM_IOCTL_LOCK, drm_lock, DRM_AUTH|DRM_UNLOCKED),
-+	DRM_IOCTL_DEF(DRM_IOCTL_UNLOCK, drm_unlock, DRM_AUTH|DRM_UNLOCKED),
- 
- 	DRM_IOCTL_DEF(DRM_IOCTL_FINISH, drm_noop, DRM_AUTH),
+I'm not going to explain any more how aufs is wrong; it's the
+maintainer's job to convince Al Viro and other maintainers that aufs
+is right.  But I hope this gave you a start and showed why union
+mounts is a preferred approach for many people.
 
-Ideally, all the ioctls should be marked as DRM_UNLOCKED and the path calling
-ioctl under drm_global_mutex be removed, but that requires auditing of each
-call by someone who understands the drm locking better than I do.
+Thanks,
 
-Apply only one of the two patches at a time, they are mutually exclusive.
-
-	Arnd
+-VAL
