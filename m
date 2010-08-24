@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab0HXXKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:10:14 -0400
-Received: from kroah.org ([198.145.64.141]:60995 "EHLO coco.kroah.org"
+	id S1756656Ab0HXXKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:10:19 -0400
+Received: from kroah.org ([198.145.64.141]:60986 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933571Ab0HXXDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:21 -0400
+	id S933619Ab0HXXDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:08 2010
-Message-Id: <20100824224508.888155117@clark.site>
+Message-Id: <20100824224508.807237098@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:33 -0700
+Date: Tue, 24 Aug 2010 15:45:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [088/114] fixes for using make 3.82
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [087/114] iwlwifi: fix 3945 filter flags
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,231 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 3c955b407a084810f57260d61548cc92c14bc627 upstream.
+commit 8b8ab9d5e352aae0dcae53c657b25ab61bb73f0f upstream.
 
-It doesn't like pattern and explicit rules to be on the same line,
-and it seems to be more picky when matching file (or really directory)
-names with different numbers of trailing slashes.
+Applying the filter flags directly as done since
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-Andrew Benton <b3nton@gmail.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+commit 3474ad635db371b0d8d0ee40086f15d223d5b6a4
+Author: Johannes Berg <johannes.berg@intel.com>
+Date:   Thu Apr 29 04:43:05 2010 -0700
+
+    iwlwifi: apply filter flags directly
+
+broke 3945 under some unknown circumstances, as
+reported by Alex.
+
+Since I want to keep the direct application of
+filter flags on iwlagn, duplicate the code into
+both 3945 and agn and remove committing the
+RXON that broke things from the 3945 version.
+
+Reported-by: Alex Romosan <romosan@sycorax.lbl.gov>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- firmware/Makefile  |    2 +-
- scripts/mkmakefile |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   45 ++++++++++++++++++++++++
+ drivers/net/wireless/iwlwifi/iwl-core.c     |   45 ------------------------
+ drivers/net/wireless/iwlwifi/iwl-core.h     |    3 -
+ drivers/net/wireless/iwlwifi/iwl3945-base.c |   51 +++++++++++++++++++++++++++-
+ 4 files changed, 94 insertions(+), 50 deletions(-)
 
---- a/firmware/Makefile
-+++ b/firmware/Makefile
-@@ -142,7 +142,7 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin
- fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -3443,6 +3443,49 @@ static int iwlagn_mac_sta_add(struct iee
+ 	return 0;
+ }
  
- # Directories which we _might_ need to create, so we have a rule for them.
--firmware-dirs := $(sort $(patsubst %,$(objtree)/$(obj)/%/,$(dir $(fw-external-y) $(fw-shipped-all))))
-+firmware-dirs := $(sort $(addprefix $(objtree)/$(obj)/,$(dir $(fw-external-y) $(fw-shipped-all))))
++static void iwlagn_configure_filter(struct ieee80211_hw *hw,
++				    unsigned int changed_flags,
++				    unsigned int *total_flags,
++				    u64 multicast)
++{
++	struct iwl_priv *priv = hw->priv;
++	__le32 filter_or = 0, filter_nand = 0;
++
++#define CHK(test, flag)	do { \
++	if (*total_flags & (test))		\
++		filter_or |= (flag);		\
++	else					\
++		filter_nand |= (flag);		\
++	} while (0)
++
++	IWL_DEBUG_MAC80211(priv, "Enter: changed: 0x%x, total: 0x%x\n",
++			changed_flags, *total_flags);
++
++	CHK(FIF_OTHER_BSS | FIF_PROMISC_IN_BSS, RXON_FILTER_PROMISC_MSK);
++	CHK(FIF_CONTROL, RXON_FILTER_CTL2HOST_MSK);
++	CHK(FIF_BCN_PRBRESP_PROMISC, RXON_FILTER_BCON_AWARE_MSK);
++
++#undef CHK
++
++	mutex_lock(&priv->mutex);
++
++	priv->staging_rxon.filter_flags &= ~filter_nand;
++	priv->staging_rxon.filter_flags |= filter_or;
++
++	iwlcore_commit_rxon(priv);
++
++	mutex_unlock(&priv->mutex);
++
++	/*
++	 * Receiving all multicast frames is always enabled by the
++	 * default flags setup in iwl_connection_init_rx_config()
++	 * since we currently do not support programming multicast
++	 * filters into the device.
++	 */
++	*total_flags &= FIF_OTHER_BSS | FIF_ALLMULTI | FIF_PROMISC_IN_BSS |
++			FIF_BCN_PRBRESP_PROMISC | FIF_CONTROL;
++}
++
+ /*****************************************************************************
+  *
+  * driver setup and teardown
+@@ -3603,7 +3646,7 @@ static struct ieee80211_ops iwl_hw_ops =
+ 	.add_interface = iwl_mac_add_interface,
+ 	.remove_interface = iwl_mac_remove_interface,
+ 	.config = iwl_mac_config,
+-	.configure_filter = iwl_configure_filter,
++	.configure_filter = iwlagn_configure_filter,
+ 	.set_key = iwl_mac_set_key,
+ 	.update_tkip_key = iwl_mac_update_tkip_key,
+ 	.conf_tx = iwl_mac_conf_tx,
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -1311,51 +1311,6 @@ out:
+ EXPORT_SYMBOL(iwl_apm_init);
  
- quiet_cmd_mkdir = MKDIR   $(patsubst $(objtree)/%,%,$@)
-       cmd_mkdir = mkdir -p $@
---- a/scripts/mkmakefile
-+++ b/scripts/mkmakefile
-@@ -44,7 +44,9 @@ all:
  
- Makefile:;
+-
+-void iwl_configure_filter(struct ieee80211_hw *hw,
+-			  unsigned int changed_flags,
+-			  unsigned int *total_flags,
+-			  u64 multicast)
+-{
+-	struct iwl_priv *priv = hw->priv;
+-	__le32 filter_or = 0, filter_nand = 0;
+-
+-#define CHK(test, flag)	do { \
+-	if (*total_flags & (test))		\
+-		filter_or |= (flag);		\
+-	else					\
+-		filter_nand |= (flag);		\
+-	} while (0)
+-
+-	IWL_DEBUG_MAC80211(priv, "Enter: changed: 0x%x, total: 0x%x\n",
+-			changed_flags, *total_flags);
+-
+-	CHK(FIF_OTHER_BSS | FIF_PROMISC_IN_BSS, RXON_FILTER_PROMISC_MSK);
+-	CHK(FIF_CONTROL, RXON_FILTER_CTL2HOST_MSK);
+-	CHK(FIF_BCN_PRBRESP_PROMISC, RXON_FILTER_BCON_AWARE_MSK);
+-
+-#undef CHK
+-
+-	mutex_lock(&priv->mutex);
+-
+-	priv->staging_rxon.filter_flags &= ~filter_nand;
+-	priv->staging_rxon.filter_flags |= filter_or;
+-
+-	iwlcore_commit_rxon(priv);
+-
+-	mutex_unlock(&priv->mutex);
+-
+-	/*
+-	 * Receiving all multicast frames is always enabled by the
+-	 * default flags setup in iwl_connection_init_rx_config()
+-	 * since we currently do not support programming multicast
+-	 * filters into the device.
+-	 */
+-	*total_flags &= FIF_OTHER_BSS | FIF_ALLMULTI | FIF_PROMISC_IN_BSS |
+-			FIF_BCN_PRBRESP_PROMISC | FIF_CONTROL;
+-}
+-EXPORT_SYMBOL(iwl_configure_filter);
+-
+ int iwl_set_hw_params(struct iwl_priv *priv)
+ {
+ 	priv->hw_params.max_rxq_size = RX_QUEUE_SIZE;
+--- a/drivers/net/wireless/iwlwifi/iwl-core.h
++++ b/drivers/net/wireless/iwlwifi/iwl-core.h
+@@ -356,9 +356,6 @@ int iwl_set_decrypted_flag(struct iwl_pr
+ 			   u32 decrypt_res,
+ 			   struct ieee80211_rx_status *stats);
+ void iwl_irq_handle_error(struct iwl_priv *priv);
+-void iwl_configure_filter(struct ieee80211_hw *hw,
+-			  unsigned int changed_flags,
+-			  unsigned int *total_flags, u64 multicast);
+ int iwl_set_hw_params(struct iwl_priv *priv);
+ void iwl_post_associate(struct iwl_priv *priv, struct ieee80211_vif *vif);
+ void iwl_bss_info_changed(struct ieee80211_hw *hw,
+--- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
++++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+@@ -3462,6 +3462,55 @@ static int iwl3945_mac_sta_add(struct ie
  
--\$(all) %/: all
-+\$(all): all
- 	@:
- 
-+%/: all
-+	@:
- EOF
+ 	return 0;
+ }
++
++static void iwl3945_configure_filter(struct ieee80211_hw *hw,
++				     unsigned int changed_flags,
++				     unsigned int *total_flags,
++				     u64 multicast)
++{
++	struct iwl_priv *priv = hw->priv;
++	__le32 filter_or = 0, filter_nand = 0;
++
++#define CHK(test, flag)	do { \
++	if (*total_flags & (test))		\
++		filter_or |= (flag);		\
++	else					\
++		filter_nand |= (flag);		\
++	} while (0)
++
++	IWL_DEBUG_MAC80211(priv, "Enter: changed: 0x%x, total: 0x%x\n",
++			changed_flags, *total_flags);
++
++	CHK(FIF_OTHER_BSS | FIF_PROMISC_IN_BSS, RXON_FILTER_PROMISC_MSK);
++	CHK(FIF_CONTROL, RXON_FILTER_CTL2HOST_MSK);
++	CHK(FIF_BCN_PRBRESP_PROMISC, RXON_FILTER_BCON_AWARE_MSK);
++
++#undef CHK
++
++	mutex_lock(&priv->mutex);
++
++	priv->staging_rxon.filter_flags &= ~filter_nand;
++	priv->staging_rxon.filter_flags |= filter_or;
++
++	/*
++	 * Committing directly here breaks for some reason,
++	 * but we'll eventually commit the filter flags
++	 * change anyway.
++	 */
++
++	mutex_unlock(&priv->mutex);
++
++	/*
++	 * Receiving all multicast frames is always enabled by the
++	 * default flags setup in iwl_connection_init_rx_config()
++	 * since we currently do not support programming multicast
++	 * filters into the device.
++	 */
++	*total_flags &= FIF_OTHER_BSS | FIF_ALLMULTI | FIF_PROMISC_IN_BSS |
++			FIF_BCN_PRBRESP_PROMISC | FIF_CONTROL;
++}
++
++
+ /*****************************************************************************
+  *
+  * sysfs attributes
+@@ -3867,7 +3916,7 @@ static struct ieee80211_ops iwl3945_hw_o
+ 	.add_interface = iwl_mac_add_interface,
+ 	.remove_interface = iwl_mac_remove_interface,
+ 	.config = iwl_mac_config,
+-	.configure_filter = iwl_configure_filter,
++	.configure_filter = iwl3945_configure_filter,
+ 	.set_key = iwl3945_mac_set_key,
+ 	.conf_tx = iwl_mac_conf_tx,
+ 	.reset_tsf = iwl_mac_reset_tsf,
 
 
