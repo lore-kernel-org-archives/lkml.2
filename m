@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab0HXXIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 19:08:14 -0400
-Received: from kroah.org ([198.145.64.141]:32830 "EHLO coco.kroah.org"
+	id S933670Ab0HXXDd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 19:03:33 -0400
+Received: from kroah.org ([198.145.64.141]:60980 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933675Ab0HXXDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 19:03:35 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:09 2010
-Message-Id: <20100824224509.777887272@clark.site>
+	id S933614Ab0HXXDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 19:03:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue Aug 24 15:45:08 2010
+Message-Id: <20100824224508.714340472@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 24 Aug 2010 15:45:43 -0700
+Date: Tue, 24 Aug 2010 15:45:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        Sven Eckelmann <sven.eckelmann@gmx.de>
-Subject: [098/114] Staging: batman-adv: unify orig_hash_lock spinlock handling to avoid deadlocks
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [086/114] e1000e: dont check for alternate MAC addr on parts that dont support it
 In-Reply-To: <20100824224610.GA5424@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Lindner <lindner_marek@yahoo.de>
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-commit 9abc10238e1df7ce81c58a441f65efd5e905b9e8 upstream.
+commit 1aef70ef125165e0114a8e475636eff242a52030 upstream.
 
-The orig_hash_lock spinlock always has to be locked with IRQs being
-disabled to avoid deadlocks between code that is being executed in
-IRQ context and code that is being executed in non-IRQ context.
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-Reported-by: Sven Eckelmann <sven.eckelmann@gmx.de>
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
-Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+The alternate MAC address feature is only supported by 80003ES2LAN and
+82571 LOMs as well as a couple 82571 mezzanine cards.  Checking for an
+alternate MAC address on other parts can fail leading to the driver not
+able to load.  This patch limits the check for an alternate MAC address
+to be done only for parts that support the feature.
+
+This issue has been around since support for the feature was introduced
+to the e1000e driver in 2.6.34.
+
+Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+Reported-by: Fabio Varesano <fax8@users.sourceforge.net>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/batman-adv/originator.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/net/e1000e/82571.c   |   30 +++++++++++++++++-------------
+ drivers/net/e1000e/defines.h |    4 ++++
+ drivers/net/e1000e/lib.c     |   10 ++++++++++
+ 3 files changed, 31 insertions(+), 13 deletions(-)
 
---- a/drivers/staging/batman-adv/originator.c
-+++ b/drivers/staging/batman-adv/originator.c
-@@ -401,11 +401,12 @@ static int orig_node_add_if(struct orig_
- int orig_hash_add_if(struct batman_if *batman_if, int max_if_num)
+--- a/drivers/net/e1000e/82571.c
++++ b/drivers/net/e1000e/82571.c
+@@ -936,12 +936,14 @@ static s32 e1000_reset_hw_82571(struct e
+ 	ew32(IMC, 0xffffffff);
+ 	icr = er32(ICR);
+ 
+-	/* Install any alternate MAC address into RAR0 */
+-	ret_val = e1000_check_alt_mac_addr_generic(hw);
+-	if (ret_val)
+-		return ret_val;
++	if (hw->mac.type == e1000_82571) {
++		/* Install any alternate MAC address into RAR0 */
++		ret_val = e1000_check_alt_mac_addr_generic(hw);
++		if (ret_val)
++			return ret_val;
+ 
+-	e1000e_set_laa_state_82571(hw, true);
++		e1000e_set_laa_state_82571(hw, true);
++	}
+ 
+ 	/* Reinitialize the 82571 serdes link state machine */
+ 	if (hw->phy.media_type == e1000_media_type_internal_serdes)
+@@ -1618,14 +1620,16 @@ static s32 e1000_read_mac_addr_82571(str
  {
- 	struct orig_node *orig_node;
-+	unsigned long flags;
- 	HASHIT(hashit);
+ 	s32 ret_val = 0;
  
- 	/* resize all orig nodes because orig_node->bcast_own(_sum) depend on
- 	 * if_num */
--	spin_lock(&orig_hash_lock);
-+	spin_lock_irqsave(&orig_hash_lock, flags);
+-	/*
+-	 * If there's an alternate MAC address place it in RAR0
+-	 * so that it will override the Si installed default perm
+-	 * address.
+-	 */
+-	ret_val = e1000_check_alt_mac_addr_generic(hw);
+-	if (ret_val)
+-		goto out;
++	if (hw->mac.type == e1000_82571) {
++		/*
++		 * If there's an alternate MAC address place it in RAR0
++		 * so that it will override the Si installed default perm
++		 * address.
++		 */
++		ret_val = e1000_check_alt_mac_addr_generic(hw);
++		if (ret_val)
++			goto out;
++	}
  
- 	while (hash_iterate(orig_hash, &hashit)) {
- 		orig_node = hashit.bucket->data;
-@@ -414,11 +415,11 @@ int orig_hash_add_if(struct batman_if *b
- 			goto err;
- 	}
+ 	ret_val = e1000_read_mac_addr_generic(hw);
  
--	spin_unlock(&orig_hash_lock);
-+	spin_unlock_irqrestore(&orig_hash_lock, flags);
- 	return 0;
+--- a/drivers/net/e1000e/defines.h
++++ b/drivers/net/e1000e/defines.h
+@@ -620,6 +620,7 @@
+ #define E1000_FLASH_UPDATES  2000
  
- err:
--	spin_unlock(&orig_hash_lock);
-+	spin_unlock_irqrestore(&orig_hash_lock, flags);
- 	return -ENOMEM;
- }
+ /* NVM Word Offsets */
++#define NVM_COMPAT                 0x0003
+ #define NVM_ID_LED_SETTINGS        0x0004
+ #define NVM_INIT_CONTROL2_REG      0x000F
+ #define NVM_INIT_CONTROL3_PORT_B   0x0014
+@@ -642,6 +643,9 @@
+ /* Mask bits for fields in Word 0x1a of the NVM */
+ #define NVM_WORD1A_ASPM_MASK  0x000C
  
-@@ -480,12 +481,13 @@ int orig_hash_del_if(struct batman_if *b
- {
- 	struct batman_if *batman_if_tmp;
- 	struct orig_node *orig_node;
-+	unsigned long flags;
- 	HASHIT(hashit);
- 	int ret;
++/* Mask bits for fields in Word 0x03 of the EEPROM */
++#define NVM_COMPAT_LOM    0x0800
++
+ /* For checksumming, the sum of all words in the NVM should equal 0xBABA. */
+ #define NVM_SUM                    0xBABA
  
- 	/* resize all orig nodes because orig_node->bcast_own(_sum) depend on
- 	 * if_num */
--	spin_lock(&orig_hash_lock);
-+	spin_lock_irqsave(&orig_hash_lock, flags);
+--- a/drivers/net/e1000e/lib.c
++++ b/drivers/net/e1000e/lib.c
+@@ -183,6 +183,16 @@ s32 e1000_check_alt_mac_addr_generic(str
+ 	u16 offset, nvm_alt_mac_addr_offset, nvm_data;
+ 	u8 alt_mac_addr[ETH_ALEN];
  
- 	while (hash_iterate(orig_hash, &hashit)) {
- 		orig_node = hashit.bucket->data;
-@@ -512,10 +514,10 @@ int orig_hash_del_if(struct batman_if *b
- 	rcu_read_unlock();
- 
- 	batman_if->if_num = -1;
--	spin_unlock(&orig_hash_lock);
-+	spin_unlock_irqrestore(&orig_hash_lock, flags);
- 	return 0;
- 
- err:
--	spin_unlock(&orig_hash_lock);
-+	spin_unlock_irqrestore(&orig_hash_lock, flags);
- 	return -ENOMEM;
- }
++	ret_val = e1000_read_nvm(hw, NVM_COMPAT, 1, &nvm_data);
++	if (ret_val)
++		goto out;
++
++	/* Check for LOM (vs. NIC) or one of two valid mezzanine cards */
++	if (!((nvm_data & NVM_COMPAT_LOM) ||
++	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_DUAL) ||
++	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_QUAD)))
++		goto out;
++
+ 	ret_val = e1000_read_nvm(hw, NVM_ALT_MAC_ADDR_PTR, 1,
+ 	                         &nvm_alt_mac_addr_offset);
+ 	if (ret_val) {
 
 
