@@ -1,65 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0HXKJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 06:09:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56856 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab0HXKJC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754780Ab0HXKJG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 06:09:06 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:29531 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751634Ab0HXKJC (ORCPT
+	<rfc822;groupwise-jlee@novell.com:3:2>);
 	Tue, 24 Aug 2010 06:09:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kcDVeviCAvD0Dl0/1Q6sFiiSr3DiH1dOaqRHKODYid+5R6tM4ix05Fl18gr0WkNSQO
-         a5EIkGNRF7FZv/6CCS8cLkuUoEtW4kdWi1N5mjawGSSrUGfIiK+qV/PeWl/JCEOcgNAk
-         px91MKYcFKJjDKnLr0/YhvDSR7HUcThe8S2+8=
-MIME-Version: 1.0
-In-Reply-To: <496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
-References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
-	<1277943660-4112-2-git-send-email-x0095840@ti.com>
-	<1277943660-4112-3-git-send-email-x0095840@ti.com>
-	<1277943660-4112-4-git-send-email-x0095840@ti.com>
-	<1277943660-4112-5-git-send-email-x0095840@ti.com>
-	<1277943660-4112-6-git-send-email-x0095840@ti.com>
-	<1277943660-4112-7-git-send-email-x0095840@ti.com>
-	<1277943660-4112-8-git-send-email-x0095840@ti.com>
-	<1277943660-4112-9-git-send-email-x0095840@ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
-	<8F7AF80515AF0D4D93307E594F3CB40E4CAD39F6@dlee03.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CBDD3BB2@dlee06.ent.ti.com>
-Date: Tue, 24 Aug 2010 13:09:01 +0300
-Message-ID: <AANLkTimENxUjUWJQSZ1dmdkX_9hQ0pjat-kyR9oNjVxf@mail.gmail.com>
-Subject: Re: [PATCH 8/9] dspbridge: add map support for big buffers
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Message-Id: <4C7426DB020000230001F3A8@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Tue, 24 Aug 2010 04:08:59 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>, <trenn@suse.de>
+Cc: <gregkh@suse.de>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
+ detect
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="=__PartE6CBD42B.2__="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 2, 2010 at 9:39 PM, Guzman Lugo, Fernando
-<fernando.lugo@ti.com> wrote:
-> I think, it would be good if we get rid of DMMPOOL size, if the liked list grow up as it is needed, there is no memory penalty of have all the possible iommu addresses valid (11000000 - FFFFFFFF). The reservation will only fail when there is no memory. If a software restriction is needed we could define a start and end addresses for iommu module (maybe as a parameter when the iommu handle for iva2 is got) and that boundaries can be taking in account at the moment of reserve the memory.
+This is a MIME message. If you are reading this text, you may want to 
+consider changing to a mail reader or gateway that understands how to 
+properly handle MIME multipart messages.
 
-What happened to this?
+--=__PartE6CBD42B.2__=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 
-IIUC what you are proposing is to remove the DMM pool completely, that
-makes sense to me. However, is it really needed to finish the iommu
-migration to do this?
+Hi Matthew, Thomas, 
 
-> I think the reserve/unreserved dspbridge api can disappear and just return the da address in the map function.
+於 二，2010-08-24 於 01:03 -0600，Joey Lee 提到：
+> Hi Matthew, 
+> 
+> 於 一，2010-08-23 於 18:51 +0100，Matthew Garrett 提到：
+> > On Mon, Aug 23, 2010 at 07:53:21PM +0200, Thomas Renninger wrote:
+> > 
+> > > Hm, needing a module option to get a system running is not what the user expects.
+> > > By default, the system should run fine and a module option should be added
+> > > as a workaround or for debugging only.
+> > 
+> > How about we do this instead: add a psb stub driver that does nothing 
+> > other than call acpi_backlight_register()?
+> > 
+> 
+> The attached file is a draft stub driver for poulsbo. Like you said, it
+> will only call acpi_video_register and acpi_video_unregister when
+> initial and exit.
+> And I added the Poulsbo pci id in the module alias.
+> 
+> It's works to me, where can we put the driver? in driver/staging ? or
+> put in driver/gpu/stub ?
+> 
 
-This is something I've proposed before, so I agree :)
+The attached file is the patch to add a poulsbo stub module in
+drivers/gpu/stub.
 
--- 
-Felipe Contreras
+Please kindly review it and give me any suggestions.
+
+
+Thank's a lot!
+Joey Lee
+
+
+--=__PartE6CBD42B.2__=
+Content-Type: text/plain; name="0001-Add-Intel-Poulsbo-Stub-Driver.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename="0001-Add-Intel-Poulsbo-Stub-Driver.patch"
+
+>From 18d66ed453e4052874280ff0c17b68f5ce3cbc3a Mon Sep 17 00:00:00 =
+2001=0AFrom: Lee, Chun-Yi <jlee@novell.com>=0ADate: Tue, 24 Aug 2010 =
+17:55:23 +0800=0ASubject: [PATCH] Add Intel Poulsbo Stub Driver=0A=0ACurren=
+tly, there have no Poulsbo native video driver to support=0Aintel =
+opregion. So, use this stub driver to call acpi_video_register=0Ato enable =
+the acpi backlight control sysfs entry files.=0A=0ASigned-off-by: Lee, =
+Chun-Yi <jlee@novell.com>=0A---=0A drivers/gpu/Makefile       |    2 +-=0A =
+drivers/gpu/stub/Kconfig   |   13 +++++++++++++=0A drivers/gpu/stub/Makefil=
+e  |    1 +=0A drivers/gpu/stub/poulsbo.c |   44 ++++++++++++++++++++++++++=
+++++++++++++++++++=0A drivers/video/Kconfig      |    2 ++=0A 5 files =
+changed, 61 insertions(+), 1 deletions(-)=0A create mode 100644 drivers/gpu=
+/stub/Kconfig=0A create mode 100644 drivers/gpu/stub/Makefile=0A create =
+mode 100644 drivers/gpu/stub/poulsbo.c=0A=0Adiff --git a/drivers/gpu/Makefi=
+le b/drivers/gpu/Makefile=0Aindex 30879df..cc92778 100644=0A--- a/drivers/g=
+pu/Makefile=0A+++ b/drivers/gpu/Makefile=0A@@ -1 +1 @@=0A-obj-y			=
++=3D drm/ vga/=0A+obj-y			+=3D drm/ vga/ stub/=0Adiff --git =
+a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig=0Anew file mode =
+100644=0Aindex 0000000..88fd919=0A--- /dev/null=0A+++ b/drivers/gpu/stub/Kc=
+onfig=0A@@ -0,0 +1,13 @@=0A+config STUB_POULSBO=0A+	tristate "Intel =
+Poulsbo Stub Driver"=0A+        default m=0A+        # Poulsbo stub =
+depends on ACPI_VIDEO when ACPI is enabled=0A+        # but for select to =
+work, need to select ACPI_VIDEO's dependencies, ick=0A+        select =
+ACPI_VIDEO if ACPI=0A+	help=0A+	  Choose this option if you have a =
+system that has Intel Poulsbo=0A+	  integrated graphics. If M is =
+selected, the module will be called=0A+	  Poulsbo. This driver is a stub =
+driver for Poulsbo that will call=0A+	  acpi_video_register to enable =
+the acpi backlight control sysfs=0A+	  entry file because there have no =
+poulsbo native driver can support=0A+	  intel opregion.=0Adiff --git =
+a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile=0Anew file mode =
+100644=0Aindex 0000000..cd940cc=0A--- /dev/null=0A+++ b/drivers/gpu/stub/Ma=
+kefile=0A@@ -0,0 +1 @@=0A+obj-$(CONFIG_STUB_POULSBO) +=3D poulsbo.o=0Adiff =
+--git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c=0Anew file =
+mode 100644=0Aindex 0000000..c93cd67=0A--- /dev/null=0A+++ b/drivers/gpu/st=
+ub/poulsbo.c=0A@@ -0,0 +1,44 @@=0A+/*=0A+ * Intel Poulsbo Stub=0A+ *=0A+ * =
+Copyright (C) 2010 Novell <jlee@novell.com>=0A+ *=0A+ *  This program is =
+free software; you can redistribute it and/or modify=0A+ *  it under the =
+terms of the GNU General Public License as published by=0A+ *  the Free =
+Software Foundation; either version 2 of the License, or=0A+ *  (at your =
+option) any later version.=0A+ *=0A+ *  This program is distributed in the =
+hope that it will be useful,=0A+ *  but WITHOUT ANY WARRANTY; without even =
+the implied warranty of=0A+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR =
+PURPOSE.  See the=0A+ *  GNU General Public License for more details.=0A+ =
+*=0A+ *  You should have received a copy of the GNU General Public =
+License=0A+ *  along with this program; if not, write to the Free =
+Software=0A+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  =
+02111-1307  USA=0A+ */=0A+=0A+#include <linux/module.h>=0A+#include =
+<acpi/video.h>=0A+=0A+static int __init poulsbo_init(void)=0A+{=0A+	=
+printk(KERN_INFO "poulsbo: stub driver load.\n");=0A+	return acpi_video_r=
+egister();=0A+}=0A+=0A+static void __exit poulsbo_cleanup(void)=0A+{=0A+	=
+acpi_video_unregister();=0A+	printk(KERN_INFO "poulsbo: stub driver =
+unloaded.\n");=0A+}=0A+=0A+module_init(poulsbo_init);=0A+module_exit(poulsb=
+o_cleanup);=0A+=0A+MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");=0A+MODU=
+LE_DESCRIPTION("Poulsbo Stub Driver");=0A+MODULE_LICENSE("GPL");=0A+=0A+MOD=
+ULE_ALIAS("pci:v00008086d00008108sv*sd*bc*sc*i*");=0A+MODULE_ALIAS("pci:v00=
+008086d00008109sv*sd*bc*sc*i*");=0Adiff --git a/drivers/video/Kconfig =
+b/drivers/video/Kconfig=0Aindex 8b31fdf..8807ae5 100644=0A--- a/drivers/vid=
+eo/Kconfig=0A+++ b/drivers/video/Kconfig=0A@@ -17,6 +17,8 @@ source =
+"drivers/gpu/vga/Kconfig"=0A =0A source "drivers/gpu/drm/Kconfig"=0A =
+=0A+source "drivers/gpu/stub/Kconfig"=0A+=0A config VGASTATE=0A        =
+tristate=0A        default n=0A-- =0A1.6.0.2=0A=0A
+--=__PartE6CBD42B.2__=--
