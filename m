@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab0HXPyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 11:54:07 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:35990 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab0HXPyG (ORCPT
+	id S1755658Ab0HXPyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 11:54:39 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:37562 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425Ab0HXPyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 11:54:06 -0400
-Date: Tue, 24 Aug 2010 16:53:59 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: intel-gfx@lists.freedesktop.org
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/2] drm/i915: Revert wait for vblank to prevent X refresh
-	issues
-Message-ID: <20100824155359.GB10473@sucs.org>
-References: <20100823233551.GA31920@sucs.org> <89kc63$hrmse5@fmsmga002.fm.intel.com> <20100824075741.GA11000@sucs.org> <8u3s8d$jcg467@orsmga001.jf.intel.com> <20100824084902.GA27569@sucs.org> <89kc63$hrqoho@fmsmga002.fm.intel.com> <20100824095535.GA14020@sucs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100824095535.GA14020@sucs.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 24 Aug 2010 11:54:37 -0400
+Subject: Re: workqueue destruction BUG_ON
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C73E995.9030709@kernel.org>
+References: <1282640156.3695.5.camel@jlt3.sipsolutions.net>
+	 <4C739DC6.1040309@kernel.org>
+	 <1282646268.3695.9.camel@jlt3.sipsolutions.net>
+	 <4C73BC96.6000003@kernel.org>
+	 <1282655414.3695.25.camel@jlt3.sipsolutions.net>
+	 <4C73C425.20503@kernel.org>
+	 <1282655865.3695.27.camel@jlt3.sipsolutions.net>
+	 <4C73C5EE.2060501@kernel.org>
+	 <1282656218.3695.29.camel@jlt3.sipsolutions.net>
+	 <4C73DD81.2020300@kernel.org>
+	 <1282665139.3695.30.camel@jlt3.sipsolutions.net>
+	 <4C73E995.9030709@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 17:56:14 +0200
+Message-ID: <1282665374.3695.31.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 9d0498a2bf7455159b317f19531a3e5db2ecc9c4 20ms waits were
-converted into vblank waits. One of these caused tearing, mode detection
-and redraw issues on an EeePC 900 with a more recent intel userspace (
-http://lkml.org/lkml/2010/8/23/432 ). Restoring the 20ms wait resolves
-the issue.
+On Tue, 2010-08-24 at 17:47 +0200, Tejun Heo wrote:
 
-Signed-off-by: Sitsofe Wheeler <sitsofe@yahoo.com>
----
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > Not sure. I can't seem to reproduce the exact conditions (firmware
+> > crash) right now... However I just ran into the WARN_ON_ONCE() your
+> > previous patch added as well, so that might explain the ath9k problem...
+> 
+> Can you please post the log of the WARN_ON_ONCE()?  That's something
+> which needs to be fixed from the caller.
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 23157e1..116d938 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4539,7 +4539,7 @@ struct drm_crtc *intel_get_load_detect_pipe(struct intel_encoder *intel_encoder,
- 		encoder_funcs->commit(encoder);
- 	}
- 	/* let the connector get through one full cycle before testing */
--	intel_wait_for_vblank(dev, intel_crtc->pipe);
-+	msleep(20);
- 
- 	return crtc;
- }
--- 
-1.7.1
+Yeah, I know, there's a timer that never gets cancelled, I'll fix it.
+
+johannes
 
