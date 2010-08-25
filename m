@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0HYJRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:17:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51327 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab0HYJRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:17:23 -0400
-Message-ID: <4C74DE62.6040208@kernel.org>
-Date: Wed, 25 Aug 2010 11:12:02 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] workqueue: fix cwq->nr_active underflow
-References: <4C74D9E4.5070403@kernel.org> <1282727501.3685.7.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1282727501.3685.7.camel@jlt3.sipsolutions.net>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+	id S1752972Ab0HYJSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:18:09 -0400
+Received: from mailout-us.gmx.com ([74.208.5.67]:47137 "HELO
+	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751710Ab0HYJSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 05:18:07 -0400
+X-Authenticated: #65048216
+X-Provags-ID: V01U2FsdGVkX18ehFs/ZnYeUNfu7gE9qbRX/oFdoQRr4WzezYns0H
+	xhV0O7FlHucOPk
+Subject: Re: [PATCH] drm/i915/tv: After disabling the pipe, use
+ wait_for_vblank_off()
+From: Ivan Bulatovic <combuster@gmx.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <20100825081530.GB30504@sucs.org>
+References: <1282647815.2221.15.camel@localhost.localdomain>
+	 <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk>
+	 <1282684130.2199.25.camel@localhost.localdomain>
+	 <89k83a$9drtkt@azsmga001.ch.intel.com>
+	 <1282691196.2120.30.camel@localhost.localdomain>
+	 <20100825081530.GB30504@sucs.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Aug 2010 11:17:59 +0200
+Message-ID: <1282727879.2343.86.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 09:17:19 +0000 (UTC)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2010-08-25 at 09:15 +0100, Sitsofe Wheeler wrote: 
+> On Wed, Aug 25, 2010 at 01:06:36AM +0200, Ivan Bulatovic wrote:
+> > 
+> > Spurious TV detection is still here and + I have a new problem with
+> > resolution in init3 when KMS fires up, it occupies only 1/3rd of the
+> > screen when booting.
+> 
+> Does the patch in http://lkml.org/lkml/2010/8/24/280 change anything for
+> you? If so I'm guessing we are seeing the same issue...
+> 
+> -- 
+> Sitsofe | http://sucs.org/~sits/
 
-On 08/25/2010 11:11 AM, Johannes Berg wrote:
-> Thanks Tejun. Come to think of it, since it's an underflow it should be
-> easier for me to change the BUG_ON into a printk + BUG_ON() to print out
-> the current value, and then reproduce -- that way I'll know when I hit
-> the situation, which isn't trivial, and also whether I hit the
-> underflow. Does that sound like a good thing to try to you?
+Ok, gonna try it out now. As for Jesse's question about whether there
+are timeouts on the wait_for_vblank function, I can see at least 30
+[drm_intel_wait_for_vblank], vblank wait timed out printks all over my
+dmesg.
 
-Yeap, without the fix patch applied, that should confirm that we're
-seeing the same failure, and with the patch applied, you can add a
-printk in the else part of !delayed check in cwq_dec_nr_in_flight().
-If the printk triggers and later rmmod dosen't trigger BUG_ON(), we
-can be fairly sure the problem is fixed.
-
-Thanks.
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a2dccfc..b0d6ca4 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1702,7 +1702,9 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
- 			if (cwq->nr_active < cwq->max_active)
- 				cwq_activate_first_delayed(cwq);
- 		}
--	}
-+	} else
-+		printk("XXX %s: cwq_dec_nr_in_flight for a delayed work\n",
-+		       cwq->wq->name);
-
- 	/* is flush in progress and are we at the flushing tip? */
- 	if (likely(cwq->flush_color != color))
-
--- 
-tejun
