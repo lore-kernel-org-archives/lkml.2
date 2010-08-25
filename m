@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934505Ab0HYABd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 20:01:33 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:65442 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933681Ab0HYABG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 20:01:06 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/8] page-types.c: fix name of unpoison interface
-Date: Wed, 25 Aug 2010 08:55:27 +0900
-Message-Id: <1282694127-14609-9-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S932375Ab0HYADr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 20:03:47 -0400
+Received: from mail.perches.com ([173.55.12.10]:1321 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755646Ab0HYADn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 20:03:43 -0400
+Subject: Re: [PATCH] lib: fix scnprintf() if @size is == 0
+From: Joe Perches <joe@perches.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1282692902-2981-1-git-send-email-xiaosuo@gmail.com>
+References: <1282692902-2981-1-git-send-email-xiaosuo@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Aug 2010 17:03:41 -0700
+Message-ID: <1282694621.25208.19.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs:hwpoison/renew-pfn is the old interface.
-This patch renames and fixes it.
+On Wed, 2010-08-25 at 07:35 +0800, Changli Gao wrote:
+> scnprintf() should return 0 if @size is == 0. Update the comment for it,
+> as @size is unsigned.
+> 
+> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+> ---
+>  lib/vsprintf.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index 7af9d84..0c66ae9 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -1497,7 +1497,7 @@ EXPORT_SYMBOL(snprintf);
+>   * @...: Arguments for the format string
+>   *
+>   * The return value is the number of characters written into @buf not including
+> - * the trailing '\0'. If @size is <= 0 the function returns 0.
+> + * the trailing '\0'. If @size is == 0 the function returns 0.
+>   */
+>  
+>  int scnprintf(char *buf, size_t size, const char *fmt, ...)
+> @@ -1509,7 +1509,7 @@ int scnprintf(char *buf, size_t size, const char *fmt, ...)
+>  	i = vsnprintf(buf, size, fmt, args);
+>  	va_end(args);
+>  
+> -	return (i >= size) ? (size - 1) : i;
+> +	return (i >= size) ? (size != 0 ? (size - 1) : 0) : i;
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
----
- Documentation/vm/page-types.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Isn't simpler to check size at the beginning of the function?
 
-diff --git v2.6.36-rc2/Documentation/vm/page-types.c v2.6.36-rc2/Documentation/vm/page-types.c
-index ccd951f..cc96ee2 100644
---- v2.6.36-rc2/Documentation/vm/page-types.c
-+++ v2.6.36-rc2/Documentation/vm/page-types.c
-@@ -478,7 +478,7 @@ static void prepare_hwpoison_fd(void)
- 	}
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 7af9d84..779236f 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1505,6 +1505,9 @@ int scnprintf(char *buf, size_t size, const char *fmt, ...)
+ 	va_list args;
+ 	int i;
  
- 	if (opt_unpoison && !hwpoison_forget_fd) {
--		sprintf(buf, "%s/renew-pfn", hwpoison_debug_fs);
-+		sprintf(buf, "%s/unpoison-pfn", hwpoison_debug_fs);
- 		hwpoison_forget_fd = checked_open(buf, O_WRONLY);
- 	}
- }
--- 
-1.7.2.1
++	if (!size)
++		return 0;
++
+ 	va_start(args, fmt);
+ 	i = vsnprintf(buf, size, fmt, args);
+ 	va_end(args);
+
 
