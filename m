@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab0HYGo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 02:44:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32122 "EHLO mx1.redhat.com"
+	id S1752368Ab0HYGrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 02:47:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34472 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281Ab0HYGox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 02:44:53 -0400
-Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
-From: Tomas Mraz <tmraz@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Miloslav Trma? <mitr@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100825062000.GA1424@ucw.cz>
-References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
-	 <20100825062000.GA1424@ucw.cz>
-Content-Type: text/plain; charset="ISO-8859-2"
-Date: Wed, 25 Aug 2010 08:44:39 +0200
-Message-ID: <1282718679.2930.42.camel@vespa.frost.loc>
+	id S1752326Ab0HYGrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 02:47:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,267,1280732400"; 
+   d="scan'208";a="651036861"
+Subject: [PATCH] perf: Fix build warning
+From: Lin Ming <ming.m.lin@intel.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Aug 2010 14:49:09 +0800
+Message-ID: <1282718949.16443.75.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 08:20 +0200, Pavel Machek wrote: 
-> Hi!
-> 
-> > Motivations for the extensions: governments are asking for more security
-> > features in the operating systems they procure, which make user-space
-> > implementations impractical.  A few examples:
-> > 
-> > * Advanced crypto module for OSPP for Common Criteria requires OS services
-> >   implementing several low-level crypto algorithms (e.g. AES, RSA).  This
-> >   requires the separation of crypto services from the consumer of those
-> >   services. (The threat model is that apps tend to have more vulnerabilities
-> >   than libraries and compromise of the app will lead to the ability to access
-> >   key material.) An user-space library is not separated, options are a) root
-> >   running daemon that does crypto, but this would be slow due to context
-> >   switches, scheduler mismatching and all the IPC overhead and b) use crypto
-> >   that is in the kernel.
-> 
-> Hmm, root daemon seems like a way to go. You already do the switch
-> into the kernel... and "IPC is slow" is not good enough reason to put
-> everything in kernel. Plus, you should be able to get better usage of
-> multicore with daemon.
+Fixes build warning introduced by the callchain rework
 
-Actually not, and the arguments why multicore would not be really used
-better anyway were stated here as well. If an application needs some
-cryptography function in most of the cases it has to wait for the
-operation to finish before it can proceed  further. To use asynchronous
-crypto interfaces efficiently would require serious redesign and rewrite
-of the existing applications which is nowhere near to be accomplished.
-In case of applications where the benefits of asynchronous crypto would
-be obvious and easily utilized it is quite easier just to split the
-threads for crypto processing and the rest of the application directly
-inside the application process.
--- 
-Tomas Mraz
-No matter how far down the wrong road you've gone, turn back.
-                                              Turkish proverb
+arch/x86/kernel/cpu/perf_event.c:1574: warning: ‘perf_callchain_entry_nmi’ defined but not used
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index acc52af..bcddac6 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1571,9 +1571,6 @@ const struct pmu *hw_perf_event_init(struct perf_event *event)
+  * callchain support
+  */
+ 
+-static DEFINE_PER_CPU(struct perf_callchain_entry, perf_callchain_entry_nmi);
+-
+-
+ static void
+ backtrace_warning_symbol(void *data, char *msg, unsigned long symbol)
+ {
+
 
