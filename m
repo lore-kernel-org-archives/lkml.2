@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab0HYFrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 01:47:52 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:40241 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab0HYFru (ORCPT
+	id S1751852Ab0HYFzI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 01:55:08 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55105 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab0HYFzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 01:47:50 -0400
-X-AuditID: b753bd60-aa2deba000000a18-47-4c74ae836b45
-Message-ID: <4C74AE7B.1010705@hitachi.com>
-Date: Wed, 25 Aug 2010 14:47:39 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Using perf probe with arguments throws a fatal error.
-References: <20100824045758.GA14431@linux.vnet.ibm.com> <4C738411.8080602@hitachi.com> <20100824085401.GB14431@linux.vnet.ibm.com> <4C738F09.3080108@hitachi.com> <20100824095658.GC14431@linux.vnet.ibm.com>
-In-Reply-To: <20100824095658.GC14431@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+	Wed, 25 Aug 2010 01:55:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=CV/ii/Zt13h4uu/bjKZPmlPBmvg4XeDIxRlJvPq5uhD4KO3HWSttX7+iqfeTIXHgNV
+         h0c+V41ppDGX90A168JE3L/laupB3RuVpxb9I2ttNEJHif9EtU3Wamc0kTvMYm+L9dHB
+         Xeb++1J4O+ngREJ5XsYbWBIs09DEO9y7vDS0k=
+Subject: Re: RFC: MTU for serving NFS on Infiniband
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Marc Aurele La France <tsi@ualberta.ca>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+In-Reply-To: <20100824153920.63360072@s6510>
+References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca>
+	 <20100823080543.319143e3@nehalam>
+	 <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
+	 <1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
+	 <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
+	 <1282688441.22839.34.camel@localhost>  <20100824153920.63360072@s6510>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Aug 2010 07:54:58 +0200
+Message-ID: <1282715698.2467.681.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/08/24 18:56), Srikar Dronamraju wrote:
->>>
->>> 1000 [srikar@llm69 uprobesv3.git]$  cat
->>> /sys/kernel/debug/tracing/events/probe/do_fork/format
->>> name: do_fork
->>> ID: 817
->>> format:
->>>         field:unsigned short common_type;       offset:0; size:2; signed:0;
->>>         field:unsigned char common_flags;       offset:2; size:1; signed:0;
->>>         field:unsigned char common_preempt_count;       offset:3; size:1; signed:0;
->>>         field:int common_pid;   offset:4;       size:4; signed:1;
->>>         field:int common_lock_depth;    offset:8;       size:4; signed:1;
->>>
->>>         field:unsigned long __probe_ip; offset:16;      size:8; signed:0;
->>>         field:u64 %ip;  offset:24;      size:8; signed:0;
->>
->> Hmm, it could be caused by "u64"...
->> OK, maybe I should update perf to support those.
->>
->> BTW, let me check that you use perf for the latest kernel?
->>
-> 
-> 
-> Yes, I am using perf from latest kernel and this happens on both x86
-> and x86_64 boxes.
-> 
-> Just for curiosity I tried printing the format for perf probe
-> do_fork ip=%ip and here it is 
-> 
-> 1001 [srikar@llm69 uprobesv3.git]$ sudo perf probe do_fork ip=%ip 
-> 1001 [srikar@llm69 uprobesv3.git]$ cat /sys/kernel/debug/tracing/events/probe/do_fork/format 
-> name: do_fork
-> ID: 818
-> format:
->         field:unsigned short common_type;       offset:0; size:2; signed:0;
->         field:unsigned char common_flags;       offset:2; size:1; signed:0;
->         field:unsigned char common_preempt_count;       offset:3; size:1; signed:0;
->         field:int common_pid;   offset:4;       size:4; signed:1;
->         field:int common_lock_depth;    offset:8;       size:4; signed:1;
-> 
->         field:unsigned long __probe_ip; offset:16;      size:8; signed:0;
->         field:u64 ip;   offset:24;      size:8; signed:0;
-> 	          ^^
-> 
-> print fmt: "(%lx) ip=%llx", REC->__probe_ip, REC->ip
->                   ^^				 ^^
-> 
-> The differences I see when a name is given we refer the name, while in
-> the previous case we refer the register %ip.
+Le mardi 24 août 2010 à 15:39 -0700, Stephen Hemminger a écrit :
 
-Ah, I remembered that, yeah, perf doesn't support those raw regsiters,
-dereferences, etc.
-Hmm, this should be solved, but not so simple as just removing "%",
-because there are also special variables ($retval, $stack) and
-dereferences(+8(+10(%sp)), etc).
+> IF NFS server is smart enough to generate:
+>    Header (skb) + one or more pages in fragment list
+> then IP fragmentation could do fragmentation by allocating
+> new headers skb (small) and assigning the same pages to
+> multiple skb's using page ref count.
+> 
+> It obviously isn't working that way.
+> 
 
-I think the simplest solution is just setting "argX" name for each
-argument (if user omitted its name) in kprobe-tracer (because
-trace-cmd will face same problem).
-e.g.
- # echo "p do_fork %ip" > tracing/kprobe_events
-will be translated as below
- # echo "p do_fork arg1=%ip" > tracing/kprobe_events
+It is, but ip_append_data() is allocating a huge head if MTU is huge.
 
-Thank you,
+NFS is trying to build paged skb, to avoid order-X allocations (X > 0)
+
+> The whole problem is moot because NFS over UDP has known data corruption
+> issues in the face of packet loss.  The sequence number of the IP fragment
+> can easily wrap around causing old data to be grouped with new data and
+> the UDP checksum is so weak that the resulting UDP packet will be consumed by the NFS
+> client ans passed to the user application as corrupted disk block.
+> 
+> DON'T USE NFS OVER UDP!
+
+But Marc point is using a big MTU, so that no IP fragmentation is
+needed.
+
+All UDP applications using MSG_MORE will hit the order-2 allocations if
+MTU=9000 for example...
 
 
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+
