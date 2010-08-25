@@ -1,65 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab0HYVfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:35:13 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25222 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752989Ab0HYVfL (ORCPT
+	id S1754620Ab0HYVfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:35:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34237 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754384Ab0HYVfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:35:11 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: dvwMZrEVM1kaQxwBdnVoYJO08HMeDwMbWSWt8OOD8.KSIda
- ArIKkYrBfZ01tBnHOnFi3bS7n1OcQ3HMB20vqm8IAErEcQncxDSV2FnbkLrG
- 2ZPnp37hfHXqUhQtvFNIXY3OX8n7PKJpcr35895UVKNV_VmuMFEBJ6W40QcN
- Aowu1JXtldp8Rj0Wy67RMvsKQJeushWIaETCVtvKeXUswe9WknK36ZuAf1Op
- Z
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 25 Aug 2010 16:35:04 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-In-Reply-To: <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1008251630270.25660@router.home>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
- <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop> <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop> <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1008251604120.24931@router.home> <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 25 Aug 2010 17:35:43 -0400
+Date: Wed, 25 Aug 2010 14:35:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ben Blum <bblum@google.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] cgroups: fix API thinko
+Message-Id: <20100825143520.9954d3f9.akpm@linux-foundation.org>
+In-Reply-To: <1281112704.10055.0.camel@x201>
+References: <20100805225914.GA26772@redhat.com>
+	<4C5C3985.5060706@us.ibm.com>
+	<1281112704.10055.0.camel@x201>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, David Rientjes wrote:
+On Fri, 06 Aug 2010 10:38:24 -0600
+Alex Williamson <alex.williamson@redhat.com> wrote:
 
-> It all depends on what flags are passed to kmalloc(), slab nor slub
-> enforce __GFP_NOFAIL behavior themselves.  In slab, cache_grow() will
-> return NULL depending on whether the page allocator returns NULL, and that
-> would only happen for __GFP_NORETRY or
-> cachep->gfp->gfporder >= PAGE_ALLOC_COSTLY_ORDER.  In slub, the default
-> order is tried with __GFP_NORETRY and if it returns NULL, the higher order
-> alloc will fail under the same circumstances.  So the nofail behavior for
-> slab depends only on the flags passed from the caller.
+> On Fri, 2010-08-06 at 09:34 -0700, Sridhar Samudrala wrote:
+> > On 8/5/2010 3:59 PM, Michael S. Tsirkin wrote:
+> > > cgroup_attach_task_current_cg API that have upstream is backwards: we
+> > > really need an API to attach to the cgroups from another process A to
+> > > the current one.
+> > >
+> > > In our case (vhost), a priveledged user wants to attach it's task to cgroups
+> > > from a less priveledged one, the API makes us run it in the other
+> > > task's context, and this fails.
+> > >
+> > > So let's make the API generic and just pass in 'from' and 'to' tasks.
+> > > Add an inline wrapper for cgroup_attach_task_current_cg to avoid
+> > > breaking bisect.
+> > >
+> > > Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
+> > > ---
+> > >
+> > > Paul, Li, Sridhar, could you please review the following
+> > > patch?
+> > >
+> > > I only compile-tested it due to travel, but looks
+> > > straight-forward to me.
+> > > Alex Williamson volunteered to test and report the results.
+> > > Sending out now for review as I might be offline for a bit.
+> > > Will only try to merge when done, obviously.
+> > >
+> > > If OK, I would like to merge this through -net tree,
+> > > together with the patch fixing vhost-net.
+> > > Let me know if that sounds ok.
+> > >
+> > > Thanks!
+> > >
+> > > This patch is on top of net-next, it is needed for fix
+> > > vhost-net regression in net-next, where a non-priveledged
+> > > process can't enable the device anymore:
+> > >
+> > > when qemu uses vhost, inside the ioctl call it
+> > > creates a thread, and tries to add
+> > > this thread to the groups of current, and it fails.
+> > > But we control the thread, so to solve the problem,
+> > > we really should tell it 'connect to out cgroups'.
 
-If the higher order fails in slub then an order 0 alloc is attempted
-without __GFP_NORETRY. In both cases the nofail behavior of the page
-allocator determines the outcode.
+So am I correct to assume that this change is now needed in 2.6.36, and
+unneeded in 2.6.35?
 
-True if the caller mixes in __GFP_NORETRY then you may still get NULL. But
-that is an issue that can be resolved by the caller.
+Can it affect the userspace<->kernel API in amy manner?  If so, it
+should be backported into earlier kernels to reduce the number of
+incompatible kernels out there.
+
+Paul, did you have any comments?
+
+I didn't see any update in response to the minor review comments, so...
+
+
+ include/linux/cgroup.h |    1 +
+ kernel/cgroup.c        |    6 +++---
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff -puN include/linux/cgroup.h~cgroups-fix-api-thinko-fix include/linux/cgroup.h
+--- a/include/linux/cgroup.h~cgroups-fix-api-thinko-fix
++++ a/include/linux/cgroup.h
+@@ -579,6 +579,7 @@ void cgroup_iter_end(struct cgroup *cgrp
+ int cgroup_scan_tasks(struct cgroup_scanner *scan);
+ int cgroup_attach_task(struct cgroup *, struct task_struct *);
+ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
++
+ static inline int cgroup_attach_task_current_cg(struct task_struct *tsk)
+ {
+ 	return cgroup_attach_task_all(current, tsk);
+diff -puN kernel/cgroup.c~cgroups-fix-api-thinko-fix kernel/cgroup.c
+--- a/kernel/cgroup.c~cgroups-fix-api-thinko-fix
++++ a/kernel/cgroup.c
+@@ -1798,13 +1798,13 @@ out:
+ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *tsk)
+ {
+ 	struct cgroupfs_root *root;
+-	struct cgroup *cur_cg;
+ 	int retval = 0;
+ 
+ 	cgroup_lock();
+ 	for_each_active_root(root) {
+-		cur_cg = task_cgroup_from_root(from, root);
+-		retval = cgroup_attach_task(cur_cg, tsk);
++		struct cgroup *from_cg = task_cgroup_from_root(from, root);
++
++		retval = cgroup_attach_task(from_cg, tsk);
+ 		if (retval)
+ 			break;
+ 	}
+_
 
