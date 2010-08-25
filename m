@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab0HYQAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 12:00:06 -0400
-Received: from verein.lst.de ([213.95.11.210]:52690 "EHLO verein.lst.de"
+	id S1753937Ab0HYQA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 12:00:56 -0400
+Received: from verein.lst.de ([213.95.11.210]:52679 "EHLO verein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab0HYQAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 12:00:00 -0400
-Date: Wed, 25 Aug 2010 17:59:20 +0200
+	id S1752522Ab0HYP72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:59:28 -0400
+Date: Wed, 25 Aug 2010 17:58:42 +0200
 From: Christoph Hellwig <hch@lst.de>
 To: Tejun Heo <tj@kernel.org>
 Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
@@ -18,28 +18,24 @@ Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com,
         Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 29/30] block: remove the BLKDEV_IFL_BARRIER flag
-Message-ID: <20100825155920.GB3229@lst.de>
-References: <1282751267-3530-1-git-send-email-tj@kernel.org> <1282751267-3530-30-git-send-email-tj@kernel.org>
+Subject: Re: [PATCH 26/30] ext4: do not send discards as barriers
+Message-ID: <20100825155842.GA3229@lst.de>
+References: <1282751267-3530-1-git-send-email-tj@kernel.org> <1282751267-3530-27-git-send-email-tj@kernel.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282751267-3530-30-git-send-email-tj@kernel.org>
+In-Reply-To: <1282751267-3530-27-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.3.28i
 X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 05:47:46PM +0200, Tejun Heo wrote:
+On Wed, Aug 25, 2010 at 05:47:43PM +0200, Tejun Heo wrote:
 > From: Christoph Hellwig <hch@infradead.org>
 > 
-> Remove support for barriers on discards, which is unused now.  Also
-> remove the DISCARD_NOBARRIER I/O type in favour of just setting the
-> rw flags up locally in blkdev_issue_discard.
-> 
-> tj: Also remove DISCARD_SECURE and use REQ_SECURE directly.
+> ext4 already uses synchronous discards, no need to add I/O barriers.
 
-REQ_SECURE was just added for mmc.  I assume they plan to submit the
-driver support soon.
+This needs the patch that Jan sent in reply to my initial version merged
+into it.
 
