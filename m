@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab0HYAZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 20:25:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32847 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab0HYAZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 20:25:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=on5NDC5Rk67TA3Wft/jOHtlwX/zGI280lpkSDJTE0G6xtggSP/OeN7Kqu+pO6T/fPj
-         qqu5EbCf1TVkbGLeonAw==
+	id S1755677Ab0HYA2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 20:28:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:38493 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755151Ab0HYA2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 20:28:02 -0400
+Date: Wed, 25 Aug 2010 10:22:58 +1000
+From: Anton Blanchard <anton@samba.org>
+To: benh@kernel.crashing.org, ebiederm@xmission.com, akpm@linux-foundation.org
+Cc: kexec@lists.infradead.org, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] kdump: Allow shrinking of kdump region to be overridden
+Message-ID: <20100825002258.GD28360@kryten>
 MIME-Version: 1.0
-In-Reply-To: <20100825091747.f6ea9e0e.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
-	<4C738B34.6070602@cn.fujitsu.com>
-	<AANLkTi=HwPeWafzTBh66g37XxZouKicsemmnTE-Cvz=Y@mail.gmail.com>
-	<20100825091747.f6ea9e0e.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 24 Aug 2010 17:25:30 -0700
-Message-ID: <AANLkTi=e9NfdQSTHk2DFEPWT3uVEnQAreCZPpRDFjxgC@mail.gmail.com>
-Subject: Re: [PATCH 1/5] cgroup: ID notification call back
-From: Paul Menage <menage@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kamezawa.hiroyuki@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 5:17 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
->
-> Hmm, then, should I remove it in the next version, or leave it as it is
-> now and should be removed by another total clean up ?
 
-I think these are two separate issues. A cleanup to remove the ss
-parameters from the existing callback methods would be separate from
-your proposed id callback, which I think is better done (as I
-mentioned above) by passing the id to create()
+On ppc64 the crashkernel region almost always overlaps an area of firmware.
+This works fine except when using the sysfs interface to reduce the kdump
+region. If we free the firmware area we are guaranteed to crash.
 
-Paul
+Rename free_reserved_phys_range to crash_free_reserved_phys_range and make
+it a weak function so we can override it.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+Index: powerpc.git/kernel/kexec.c
+===================================================================
+--- powerpc.git.orig/kernel/kexec.c	2010-08-25 10:12:11.493863566 +1000
++++ powerpc.git/kernel/kexec.c	2010-08-25 10:12:35.907264327 +1000
+@@ -1097,7 +1097,8 @@ size_t crash_get_memory_size(void)
+ 	return size;
+ }
+ 
+-static void free_reserved_phys_range(unsigned long begin, unsigned long end)
++void __weak crash_free_reserved_phys_range(unsigned long begin,
++					   unsigned long end)
+ {
+ 	unsigned long addr;
+ 
+@@ -1133,7 +1134,7 @@ int crash_shrink_memory(unsigned long ne
+ 	start = roundup(start, PAGE_SIZE);
+ 	end = roundup(start + new_size, PAGE_SIZE);
+ 
+-	free_reserved_phys_range(end, crashk_res.end);
++	crash_free_reserved_phys_range(end, crashk_res.end);
+ 
+ 	if ((start == end) && (crashk_res.parent != NULL))
+ 		release_resource(&crashk_res);
+Index: powerpc.git/include/linux/kexec.h
+===================================================================
+--- powerpc.git.orig/include/linux/kexec.h	2010-08-25 10:12:11.483862172 +1000
++++ powerpc.git/include/linux/kexec.h	2010-08-25 10:12:13.664166570 +1000
+@@ -208,6 +208,7 @@ int __init parse_crashkernel(char *cmdli
+ 		unsigned long long *crash_size, unsigned long long *crash_base);
+ int crash_shrink_memory(unsigned long new_size);
+ size_t crash_get_memory_size(void);
++void crash_free_reserved_phys_range(unsigned long begin, unsigned long end);
+ 
+ #else /* !CONFIG_KEXEC */
+ struct pt_regs;
