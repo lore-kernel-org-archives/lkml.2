@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab0HYAkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 20:40:53 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44815 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753478Ab0HYAku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 20:40:50 -0400
-Date: Tue, 24 Aug 2010 17:41:34 -0700
-From: Greg KH <gregkh@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Samo Pogacnik <samo_pogacnik@t-2.net>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-Message-ID: <20100825004134.GA28884@suse.de>
-References: <20100625120329.1303aa61@lxorguk.ukuu.org.uk> <1282683470.8020.66.camel@itpsd6lap> <20100824211016.GA7176@suse.de> <1282687797.8020.108.camel@itpsd6lap> <20100824222035.GA10625@suse.de> <1282690232.8020.116.camel@itpsd6lap> <20100824225703.GA5913@suse.de> <20100825002221.68fc09a4@lxorguk.ukuu.org.uk> <20100824231241.GA6971@suse.de> <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1756068Ab0HYAmt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 20:42:49 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:52012 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab0HYAmr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 20:42:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 25 Aug 2010 09:37:47 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Paul Menage <menage@google.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 1/5] cgroup: ID notification call back
+Message-Id: <20100825093747.24085b28.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTikD3CFRPo7WvWwCnLQ+jzEs6rUk1sivYM3aRbGJ@mail.gmail.com>
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=imK6Px+JrdVupg2V3jtN9pgmEdWv=+aB1XKLY@mail.gmail.com>
+	<20100825092010.cfe91b1a.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikD3CFRPo7WvWwCnLQ+jzEs6rUk1sivYM3aRbGJ@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 12:51:52AM +0100, Alan Cox wrote:
-> > > - formatting
-> > 
-> > Ick, we really want to format things from userspace here?
+On Tue, 24 Aug 2010 17:34:38 -0700
+Paul Menage <menage@google.com> wrote:
+
+> On Tue, Aug 24, 2010 at 5:20 PM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >
+> > Hmm, sure. I'll change the ->create() interface.  O.K. ?
+> >
 > 
-> Depends what you are trying to do.
+> Hmm. An alternative (possibly cleaner) would be:
 > 
-> Put an embedded hat on
+> 1) add a css_size field in cgroup_subsys that contains the size of the
+> per-subsystem structure
+> 2) change cgroups to allocate and populate the css *before* calling
+> create(), since it now knows the actual size
+> 3) simplify all the subsystem create() methods since they no longer
+> have to worry about allocation or out-of-memory handling
+> 4) also add a top_css field in cgroups that allows cpusets to use the
+> statically-allocated top_cpuset since it's initialized prior to memory
+> allocation being reliable
 > 
-> Do you want to be able to flip between a real debug interface and a
-> logging device on the same software set without risking changing behaviour
+> This avoids us having to pass in any new parameters to the create()
+> method in future since they can be populated in the CSS.
+> 
 
-I don't understand this point.
+Ou...I'm sorry but I would like to use attach_id() for this time.
+Forgive me, above seems a big change.
+I'd like to write a series of patch to do above, later.
+At least, to do a trial.
 
-> Do you want to load a 70K daemon and an initrd or burn about 1.5K on a
-> kernel interface ?
+Thanks,
+-Kame
 
-I'd rather burn 0K on the one we have today :)
-
-Seriously, look at how Fedora 14 handles this, why can't you do the same
-for embedded systems all from userspace, no additional code needed
-anywhere.
-
-thanks,
-
-greg k-h
