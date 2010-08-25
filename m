@@ -1,252 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab0HYUo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 16:44:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62597 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab0HYUoy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 16:44:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=d+UHLOHYRECU3oEdd/zwNOU53qRXxNCf3nDZpcD56Za02OouLViKkRRg6hpIx979aY
-         KiMOeRR5DAcCLzVTOBRnhMpXnogyB2h9/dFCaVjghVjfmOE+IQoBo0jTK4idGLgskSzR
-         8Wy25dNRLGGbob01eEfziFtJb/Tm7Hm9hqJR0=
-Subject: Re: [2.6.35-rc1] page alloc failure order:1, mode:0x4020
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nikhil Sethi
-	 =?UTF-8?Q?=28=E0=A4=A8=E0=A4=BF=E0=A4=96=E0=A4=BF=E0=A4=B2_?=
-	 =?UTF-8?Q?=E0=A4=B8=E0=A5=87=E0=A4=A0=E0=A5=80=29?= 
-	<nikhil@sethi.ws>
-Cc: Michael Guntsche <mike@it-loops.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTimf5iZV2ytoymCXJ=B2Vgowr6qb6u2nBg+RtBUg@mail.gmail.com>
-References: <20100604092025.GA96690@trillian.comsick.at>
-	 <1275656014.2482.169.camel@edumazet-laptop>
-	 <20100604161644.GA98048@trillian.local>
-	 <20100606095640.GA4436@trillian.comsick.at>
-	 <1275820945.5238.987.camel@edumazet-laptop>
-	 <AANLkTimf5iZV2ytoymCXJ=B2Vgowr6qb6u2nBg+RtBUg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Aug 2010 22:44:49 +0200
-Message-ID: <1282769089.2681.159.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754032Ab0HYUsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 16:48:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615Ab0HYUsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 16:48:30 -0400
+Message-ID: <4C758194.5060203@redhat.com>
+Date: Wed, 25 Aug 2010 10:48:20 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM timekeeping 25/35] Add clock catchup mode
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-26-git-send-email-zamsden@redhat.com> <20100825172718.GA28380@amt.cnet>
+In-Reply-To: <20100825172718.GA28380@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 25 août 2010 à 13:25 -0700, Nikhil Sethi (निखिल सेठी) a
-écrit :
-> Hello.
-> 
-> I am running 2.5.35.3 with the above patch, and I still get these
-> failures. Though they are much less often than without the patch. A
-> snippet from dmesg below.
-> 
-> Please let me know what other details I should provide. Thanks
-> 
-> skbuff alloc of size 3872 failed
-> java: page allocation failure. order:1, mode:0x4020
-> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
-> Call Trace:
->  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
->  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
->  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
->  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
->  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
->  [<c0334097>] ? __alloc_skb+0x57/0x100
->  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
->  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
->  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
->  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
->  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
->  [<c02195bf>] ? tasklet_action+0x5f/0x65
->  [<c0219873>] ? __do_softirq+0x60/0xc6
->  [<c0219907>] ? do_softirq+0x2e/0x30
->  [<c02199f9>] ? irq_exit+0x53/0x55
->  [<c020392c>] ? do_IRQ+0x3a/0x72
->  [<c0202be9>] ? common_interrupt+0x29/0x30
-> Mem-Info:
-> DMA per-cpu:
-> CPU    0: hi:    0, btch:   1 usd:   0
-> Normal per-cpu:
-> CPU    0: hi:   90, btch:  15 usd:  32
-> active_anon:6158 inactive_anon:15748 isolated_anon:0
->  active_file:11477 inactive_file:22926 isolated_file:0
->  unevictable:468 dirty:5788 writeback:0 unstable:0
->  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
->  mapped:1410 shmem:5 pagetables:227 bounce:0
-> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
-> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
-> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
-> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
-> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
-> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
-> pages_scanned:0 all_unreclaimable? no
-> lowmem_reserve[]: 0 238 238
-> Normal free:2960kB min:1908kB low:2384kB high:2860kB
-> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
-> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
-> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
-> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
-> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
-> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-> all_unreclaimable? no
-> lowmem_reserve[]: 0 0 0
-> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
-> 0*1024kB 0*2048kB 0*4096kB = 1000kB
-> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-> 0*1024kB 0*2048kB 0*4096kB = 2960kB
-> 37964 total pagecache pages
-> 3160 pages in swap cache
-> Swap cache stats: add 164954, delete 161794, find 97931/115609
-> Free swap  = 937284kB
-> Total swap = 963896kB
-> 65535 pages RAM
-> 1237 pages reserved
-> 29042 pages shared
-> 38802 pages non-shared
-> SLUB: Unable to allocate memory on node -1 (gfp=0x20)
->   cache: kmalloc-8192, object size: 8192, buffer size: 8192, default
-> order: 3, min order: 1
->   node 0: slabs: 0, objs: 0, free: 0
-> skbuff alloc of size 3872 failed
-> java: page allocation failure. order:1, mode:0x4020
-> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
-> Call Trace:
->  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
->  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
->  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
->  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
->  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
->  [<c0334097>] ? __alloc_skb+0x57/0x100
->  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
->  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
->  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
->  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
->  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
->  [<c02195bf>] ? tasklet_action+0x5f/0x65
->  [<c0219873>] ? __do_softirq+0x60/0xc6
->  [<c0219907>] ? do_softirq+0x2e/0x30
->  [<c02199f9>] ? irq_exit+0x53/0x55
->  [<c020392c>] ? do_IRQ+0x3a/0x72
->  [<c0202be9>] ? common_interrupt+0x29/0x30
-> Mem-Info:
-> DMA per-cpu:
-> CPU    0: hi:    0, btch:   1 usd:   0
-> Normal per-cpu:
-> CPU    0: hi:   90, btch:  15 usd:  32
-> active_anon:6158 inactive_anon:15748 isolated_anon:0
->  active_file:11477 inactive_file:22926 isolated_file:0
->  unevictable:468 dirty:5788 writeback:0 unstable:0
->  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
->  mapped:1410 shmem:5 pagetables:227 bounce:0
-> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
-> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
-> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
-> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
-> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
-> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
-> pages_scanned:0 all_unreclaimable? no
-> lowmem_reserve[]: 0 238 238
-> Normal free:2960kB min:1908kB low:2384kB high:2860kB
-> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
-> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
-> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
-> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
-> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
-> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-> all_unreclaimable? no
-> lowmem_reserve[]: 0 0 0
-> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
-> 0*1024kB 0*2048kB 0*4096kB = 1000kB
-> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-> 0*1024kB 0*2048kB 0*4096kB = 2960kB
-> 37964 total pagecache pages
-> 3160 pages in swap cache
-> 
-> On Sun, Jun 6, 2010 at 3:42 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >
-> > Le dimanche 06 juin 2010 à 11:56 +0200, Michael Guntsche a écrit :
-> > > On 2010.06.04 18:16:44 , Michael Guntsche wrote:
-> > > > I applied the patch recompiled and run it on the routerboard, trying
-> > > > to trigger the bug again.
-> > >
-> > > Hi Eric,
-> > >
-> > > Up to now I was not able to reproduce the bug, do you think this patch
-> > > can be pushed to mainline or is there a "better"/other  fix for it?
-> > >
-> > > Kind regards,
-> > > Michael
-> > >
-> > >
-> >
-> > Thanks Michael for testing.
-> >
-> > I'll submit ASAP an official patch, sent to all people involved in this
-> > driver to get their Ack (or Nack).
-> >
-> > IEEE80211_MAX_MPDU_LEN being 3840 + somebits is suspect, since it doesnt
-> > match 802.11 specs.
-> >
-> > It should be more close of 2304 + MAC header (32bytes) + FCS (4 bytes) ?
-> >
-> >
-> >
-> > --
+On 08/25/2010 07:27 AM, Marcelo Tosatti wrote:
+> On Thu, Aug 19, 2010 at 10:07:39PM -1000, Zachary Amsden wrote:
+>    
+>> Make the clock update handler handle generic clock synchronization,
+>> not just KVM clock.  We add a catchup mode which keeps passthrough
+>> TSC in line with absolute guest TSC.
+>>
+>> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+>> ---
+>>   arch/x86/include/asm/kvm_host.h |    1 +
+>>   arch/x86/kvm/x86.c              |   55 ++++++++++++++++++++++++++------------
+>>   2 files changed, 38 insertions(+), 18 deletions(-)
+>>
+>>      
+>    
+>>   	kvm_x86_ops->vcpu_load(vcpu, cpu);
+>> -	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+>> +	if (unlikely(vcpu->cpu != cpu) || vcpu->arch.tsc_rebase) {
+>>   		/* Make sure TSC doesn't go backwards */
+>>   		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+>>   				native_read_tsc() - vcpu->arch.last_host_tsc;
+>>   		if (tsc_delta<  0)
+>>   			mark_tsc_unstable("KVM discovered backwards TSC");
+>> -		if (check_tsc_unstable())
+>> +		if (check_tsc_unstable()) {
+>>   			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+>> -		kvm_migrate_timers(vcpu);
+>> +			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>> +		}
+>> +		if (vcpu->cpu != cpu)
+>> +			kvm_migrate_timers(vcpu);
+>>   		vcpu->cpu = cpu;
+>> +		vcpu->arch.tsc_rebase = 0;
+>>   	}
+>>   }
+>>
+>> @@ -1947,6 +1961,12 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+>>   	kvm_x86_ops->vcpu_put(vcpu);
+>>   	kvm_put_guest_fpu(vcpu);
+>>   	vcpu->arch.last_host_tsc = native_read_tsc();
+>> +
+>> +	/* For unstable TSC, force compensation and catchup on next CPU */
+>> +	if (check_tsc_unstable()) {
+>> +		vcpu->arch.tsc_rebase = 1;
+>> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>> +	}
+>>      
+> The mix between catchup,trap versus stable,unstable TSC is confusing and
+> difficult to grasp. Can you please introduce all the infrastructure
+> first, then control usage of them in centralized places? Examples:
+>
+> +static void kvm_update_tsc_trapping(struct kvm *kvm)
+> +{
+> +       int trap, i;
+> +       struct kvm_vcpu *vcpu;
+> +
+> +       trap = check_tsc_unstable()&&  atomic_read(&kvm->online_vcpus)>  1;
+> +       kvm_for_each_vcpu(i, vcpu, kvm)
+> +               kvm_x86_ops->set_tsc_trap(vcpu, trap&&  !vcpu->arch.time_page);
+> +}
+>
+> +       /* For unstable TSC, force compensation and catchup on next CPU */
+> +       if (check_tsc_unstable()) {
+> +               vcpu->arch.tsc_rebase = 1;
+> +               kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> +       }
+>
+>
+> kvm_guest_time_update is becoming very confusing too. I understand this
+> is due to the many cases its dealing with, but please make it as simple
+> as possible.
+>    
 
+I tried to comment as best as I could.  I think the whole 
+"kvm_update_tsc_trapping" thing is probably a poor design choice.  It 
+works, but it's thoroughly unintelligible right now without spending 
+some days figuring out why.
 
-reading my former patch, I believe I mistakenly used a max_t() instead
-of a min_() macro :
+I'll rework the tail series of patches to try to make them more clear.
 
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-index ca6065b..0a0dc3a 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
-        u32 size;
- 
- 
--       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
--                                    ah->caps.rx_status_len,
--                                    min(common->cachelsz, (u16)64));
--
-+       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
-+                      min(common->cachelsz, (u16)64));
-+       common->rx_bufsize = max_t(u32, size,
-+                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
-        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
-                                    ah->caps.rx_status_len);
- 
+> +       /*
+> +        * If we are trapping and no longer need to, use catchup to
+> +        * ensure passthrough TSC will not be less than trapped TSC
+> +        */
+> +       if (vcpu->tsc_mode == TSC_MODE_PASSTHROUGH&&  vcpu->tsc_trapping&&
+> +           ((this_tsc_khz<= v->kvm->arch.virtual_tsc_khz || kvmclock))) {
+> +               catchup = 1;
+>
+> What, TSC trapping with kvmclock enabled?
+>    
 
+Transitioning to use of kvmclock after a cold boot means we may have 
+been trapping and now we will not be.
 
-Please use instead this one :
+> For both catchup and trapping the resolution of the host clock is
+> important, as Glauber commented for kvmclock. Can you comment on the
+> problems that arrive from a low res clock for both modes?
+>
+> Similarly for catchup mode, the effect of exit frequency. No need for
+> any guarantees?
+>    
 
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-index ca6065b..0a0dc3a 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
-        u32 size;
- 
- 
--       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
--                                    ah->caps.rx_status_len,
--                                    min(common->cachelsz, (u16)64));
--
-+       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
-+                      min(common->cachelsz, (u16)64));
-+       common->rx_bufsize = min_t(u32, size,
-+                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
-        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
-                                    ah->caps.rx_status_len);
- 
+The scheduler will do something to get an IRQ at whatever resolution it 
+uses for it's timeslice.  That guarantees an exit per timeslice, so 
+we'll never be behind by more than one slice while scheduling.  While 
+not scheduling, we're dormant anyway, waiting on either an IRQ or shared 
+memory variable change.  Local timers could end up behind when dormant.
 
+We may need a hack to accelerate firing of timers in such a case, or 
+perhaps bounds on when to use catchup mode and when to not.
 
+Partly, the lack of implementation is by deliberate choice; the logic 
+involved with setting such bounds and wisdom of doing so is a choice 
+most likely to be done by a policy agent in userspace, in our case, 
+qemu.  In the end, that is what has full control over the setting or not 
+of guest TSC rate and choice of TSC mode.
 
+What's lacking is the ability to force the use of a certain mode.  I 
+think it's clear now, that needs to be a per-VM choice, not a global one.
+
+Zach
