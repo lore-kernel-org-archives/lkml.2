@@ -1,30 +1,34 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab0HVM2z (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 22 Aug 2010 08:28:55 -0400
-Received: from [202.29.16.249] ([202.29.16.249]:34141 "EHLO samet.skru.ac.th"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752215Ab0HVM2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Aug 2010 08:28:52 -0400
-From: "Liu Ling" <tailing_liu@yahoo.com.hk>
-Reply-To: liuling_icbc_tai@yahoo.com.hk
-Subject: Hello
-Date: Sun, 22 Aug 2010 21:39:21 +0900
-Message-Id: <20100822123642.M95297@yahoo.com.hk>
-X-Mailer: Open WebMail 2.51 20050228
-X-OriginatingIP: 41.184.24.168 (ceo)
+	id S1753529Ab0HZAQH (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 25 Aug 2010 20:16:07 -0400
+Received: from srv.sigmacomm.it ([95.141.34.226]:26372 "EHLO srv.sigmacomm.it"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752574Ab0HZAQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 20:16:06 -0400
+X-Greylist: delayed 47013 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Aug 2010 20:16:06 EDT
+Date: Wed, 25 Aug 2010 10:09:50 -0100
+Message-Id: <E1OoDra-000595-FU@srv.sigmacomm.it>
+To: linux-kernel@vger.kernel.org
+Subject: From Kip Indrek
+X-PHP-Script: arlemarredamenti.it/main.php for 82.128.80.27
+From: Kip Indrek <kipindrek@rediffmail.com>
+Reply-To: kpindrek@aim.com
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
 
-Good day,
-I have a Business Proposal of $21,300,000.00 for you to handle with me from my
-bank. If you agree to work with me, reach me with your: {1}Full
-Names{2}Contact Address{3}Contact Telephone Number and Occupation.
-Liu T. Ling.
+I am sending you this communication to seek your kind attention in carrying out some projects.
+
+I need someone to partner with on a mutually beneficial deal and also on some charitable work. I will give you more details on your response.
+
+Yours sincerely,
+
+Kip Indrek
+
 
