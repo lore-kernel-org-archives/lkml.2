@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab0HYR2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 13:28:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab0HYR2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 13:28:00 -0400
-Date: Wed, 25 Aug 2010 14:27:18 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 25/35] Add clock catchup mode
-Message-ID: <20100825172718.GA28380@amt.cnet>
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
- <1282291669-25709-26-git-send-email-zamsden@redhat.com>
+	id S1753315Ab0HYR26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 13:28:58 -0400
+Received: from smarthost02.mail.zen.net.uk ([212.23.3.141]:55781 "EHLO
+	smarthost02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752687Ab0HYR24 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 13:28:56 -0400
+X-Greylist: delayed 11861 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Aug 2010 13:28:56 EDT
+Date: Wed, 25 Aug 2010 18:28:52 +0100
+From: Colin Watson <cjwatson@canonical.com>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] Add new linearfb driver
+Message-ID: <20100825172851.GL21862@riva.ucam.org>
+References: <20100825141111.GI21862@riva.ucam.org> <20100825190438.55ecb34d@neptune.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1282291669-25709-26-git-send-email-zamsden@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100825190438.55ecb34d@neptune.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-Smarthost02-IP: [82.69.40.219]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 19, 2010 at 10:07:39PM -1000, Zachary Amsden wrote:
-> Make the clock update handler handle generic clock synchronization,
-> not just KVM clock.  We add a catchup mode which keeps passthrough
-> TSC in line with absolute guest TSC.
+On Wed, Aug 25, 2010 at 07:04:38PM +0200, Bruno Prémont wrote:
+> On Wed, 25 August 2010 Colin Watson <cjwatson@canonical.com> wrote:
+> > -config FB_EFI
+> > -	bool "EFI-based Framebuffer Support"
+> > -	depends on (FB = y) && X86 && EFI
+> > +config FB_LINEAR
+> > +	bool "Simple linear framebuffer support"
+> > +	depends on FB
+> >  	select FB_CFB_FILLRECT
+> >  	select FB_CFB_COPYAREA
+> >  	select FB_CFB_IMAGEBLIT
+>         ^^^^^^^^^^^^^^^^^^^^^^^
 > 
-> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    1 +
->  arch/x86/kvm/x86.c              |   55 ++++++++++++++++++++++++++------------
->  2 files changed, 38 insertions(+), 18 deletions(-)
-> 
+> > +config FB_EFI
+> > +	bool "EFI-based Framebuffer Support"
+> > +	depends on (FB = y) && X86 && EFI
+> > +	select FB_LINEAR
+>         ^^^^^^^^^^^^^^^^
+>   Has kconfig been adjusted to process select recursively?
+>   If not the selects from FB_LINEAR will have to be copied here.
 
->  	kvm_x86_ops->vcpu_load(vcpu, cpu);
-> -	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
-> +	if (unlikely(vcpu->cpu != cpu) || vcpu->arch.tsc_rebase) {
->  		/* Make sure TSC doesn't go backwards */
->  		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->  				native_read_tsc() - vcpu->arch.last_host_tsc;
->  		if (tsc_delta < 0)
->  			mark_tsc_unstable("KVM discovered backwards TSC");
-> -		if (check_tsc_unstable())
-> +		if (check_tsc_unstable()) {
->  			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
-> -		kvm_migrate_timers(vcpu);
-> +			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> +		}
-> +		if (vcpu->cpu != cpu)
-> +			kvm_migrate_timers(vcpu);
->  		vcpu->cpu = cpu;
-> +		vcpu->arch.tsc_rebase = 0;
->  	}
->  }
->  
-> @@ -1947,6 +1961,12 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
->  	kvm_x86_ops->vcpu_put(vcpu);
->  	kvm_put_guest_fpu(vcpu);
->  	vcpu->arch.last_host_tsc = native_read_tsc();
-> +
-> +	/* For unstable TSC, force compensation and catchup on next CPU */
-> +	if (check_tsc_unstable()) {
-> +		vcpu->arch.tsc_rebase = 1;
-> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> +	}
+When I start with a consistent .config with FB_CFB_FILLRECT unset, then
+'make menuconfig' and enable FB_EFI, the resulting .config has
+CONFIG_FB_CFB_FILLRECT=y.  That should be a sufficient test, shouldn't
+it?
 
-The mix between catchup,trap versus stable,unstable TSC is confusing and
-difficult to grasp. Can you please introduce all the infrastructure
-first, then control usage of them in centralized places? Examples:
+Thanks,
 
-+static void kvm_update_tsc_trapping(struct kvm *kvm)
-+{
-+       int trap, i;
-+       struct kvm_vcpu *vcpu;
-+
-+       trap = check_tsc_unstable() && atomic_read(&kvm->online_vcpus) > 1;
-+       kvm_for_each_vcpu(i, vcpu, kvm)
-+               kvm_x86_ops->set_tsc_trap(vcpu, trap && !vcpu->arch.time_page);
-+}
-
-+       /* For unstable TSC, force compensation and catchup on next CPU */
-+       if (check_tsc_unstable()) {
-+               vcpu->arch.tsc_rebase = 1;
-+               kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-+       }
-
-
-kvm_guest_time_update is becoming very confusing too. I understand this
-is due to the many cases its dealing with, but please make it as simple
-as possible.
-
-+       /*
-+        * If we are trapping and no longer need to, use catchup to
-+        * ensure passthrough TSC will not be less than trapped TSC
-+        */
-+       if (vcpu->tsc_mode == TSC_MODE_PASSTHROUGH && vcpu->tsc_trapping &&
-+           ((this_tsc_khz <= v->kvm->arch.virtual_tsc_khz || kvmclock))) {
-+               catchup = 1;
-
-What, TSC trapping with kvmclock enabled?
-
-For both catchup and trapping the resolution of the host clock is
-important, as Glauber commented for kvmclock. Can you comment on the
-problems that arrive from a low res clock for both modes?
-
-Similarly for catchup mode, the effect of exit frequency. No need for
-any guarantees?
-
+-- 
+Colin Watson                                    [cjwatson@canonical.com]
