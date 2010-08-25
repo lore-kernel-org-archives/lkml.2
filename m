@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab0HYWQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 18:16:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39312 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754384Ab0HYWQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 18:16:15 -0400
+	id S1754678Ab0HYWQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 18:16:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43366 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab0HYWQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 18:16:29 -0400
 From: Ivan Gomez Castellanos <ivan.gomez@ti.com>
 To: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, gregkh@suse.de
 Cc: Hiroshi.DOYU@nokia.com, ameya.palande@nokia.com,
         felipe.contreras@nokia.com, omar.ramirez@ti.com, ohad@wizery.com,
         rene.sapiens@ti.com, nm@ti.com, ernesto@ti.com, x0095078@ti.com,
         Ivan Gomez Castellanos <ivan.gomez@ti.com>
-Subject: [PATCH 01/11] staging: tidspbridge: Move sync.c from services to core
-Date: Wed, 25 Aug 2010 17:08:54 -0500
-Message-Id: <1282774144-11628-2-git-send-email-ivan.gomez@ti.com>
+Subject: [PATCH 03/11] staging: tidspbridge: Remove cfg_get_auto_start()
+Date: Wed, 25 Aug 2010 17:08:56 -0500
+Message-Id: <1282774144-11628-4-git-send-email-ivan.gomez@ti.com>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <1282774144-11628-1-git-send-email-ivan.gomez@ti.com>
 References: <1282774144-11628-1-git-send-email-ivan.gomez@ti.com>
@@ -22,38 +23,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the services directory is going to be removed, the file sync.c is moved
-from services to core.
+As the services directory is going to be removed, this patch is needed.
+
+The function cfg_get_auto_start() only assigns a value to the flag
+tmp, and it is only called by the function api_init_complete2(). So
+the function cfg_get_auto_start() is not required.
 
 Signed-off-by: Ivan Gomez Castellanos <ivan.gomez@ti.com>
 ---
- drivers/staging/tidspbridge/Makefile               |    4 ++--
- .../staging/tidspbridge/{services => core}/sync.c  |    0
- 2 files changed, 2 insertions(+), 2 deletions(-)
- rename drivers/staging/tidspbridge/{services => core}/sync.c (100%)
+ .../staging/tidspbridge/include/dspbridge/cfg.h    |   19 --------------
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |   10 ++++---
+ drivers/staging/tidspbridge/services/cfg.c         |   26 --------------------
+ 3 files changed, 6 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/Makefile b/drivers/staging/tidspbridge/Makefile
-index 6567172..50be983 100644
---- a/drivers/staging/tidspbridge/Makefile
-+++ b/drivers/staging/tidspbridge/Makefile
-@@ -1,11 +1,11 @@
- obj-$(CONFIG_TIDSPBRIDGE)	+= bridgedriver.o
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfg.h b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
+index 05a8999..a84fa2b 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cfg.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
+@@ -35,25 +35,6 @@
+ extern void cfg_exit(void);
  
- libgen = gen/gb.o gen/gs.o gen/gh.o gen/uuidutil.o
--libservices = services/sync.o services/cfg.o \
-+libservices = services/cfg.o \
- 		services/ntfy.o services/services.o
- libcore = core/chnl_sm.o core/msg_sm.o core/io_sm.o core/tiomap3430.o \
- 		core/tiomap3430_pwr.o core/tiomap_io.o \
--		core/ue_deh.o core/wdt.o core/dsp-clock.o
-+		core/ue_deh.o core/wdt.o core/dsp-clock.o core/sync.o
- libpmgr = pmgr/chnl.o pmgr/io.o pmgr/msg.o pmgr/cod.o pmgr/dev.o pmgr/dspapi.o \
- 		pmgr/dmm.o pmgr/cmm.o pmgr/dbll.o
- librmgr = rmgr/dbdcd.o rmgr/disp.o rmgr/drv.o rmgr/mgr.o rmgr/node.o \
-diff --git a/drivers/staging/tidspbridge/services/sync.c b/drivers/staging/tidspbridge/core/sync.c
-similarity index 100%
-rename from drivers/staging/tidspbridge/services/sync.c
-rename to drivers/staging/tidspbridge/core/sync.c
+ /*
+- *  ======== cfg_get_auto_start ========
+- *  Purpose:
+- *      Retreive the autostart mask, if any, for this board.
+- *  Parameters:
+- *      dev_node_obj:  Handle to the dev_node who's driver we are querying.
+- *      auto_start:   Ptr to location for 32 bit autostart mask.
+- *  Returns:
+- *      0:                Success.
+- *      -EFAULT:  dev_node_obj is invalid.
+- *      -ENODATA: Unable to retreive resource.
+- *  Requires:
+- *      CFG initialized.
+- *  Ensures:
+- *      0:        *auto_start contains autostart mask for this devnode.
+- */
+-extern int cfg_get_auto_start(struct cfg_devnode *dev_node_obj,
+-				     u32 *auto_start);
+-
+-/*
+  *  ======== cfg_get_cd_version ========
+  *  Purpose:
+  *      Retrieves the version of the PM Class Driver.
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index 7b42f72..d9bb3ea 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -381,8 +381,8 @@ int api_init_complete2(void)
+ 	int status = 0;
+ 	struct cfg_devnode *dev_node;
+ 	struct dev_object *hdev_obj;
++	struct drv_data *drv_datap;
+ 	u8 dev_type;
+-	u32 tmp;
+ 
+ 	DBC_REQUIRE(api_c_refs > 0);
+ 
+@@ -397,10 +397,12 @@ int api_init_complete2(void)
+ 		if (dev_get_dev_type(hdev_obj, &dev_type))
+ 			continue;
+ 
+-		if ((dev_type == DSP_UNIT) || (dev_type == IVA_UNIT))
+-			if (cfg_get_auto_start(dev_node, &tmp) == 0
+-									&& tmp)
++		if ((dev_type == DSP_UNIT) || (dev_type == IVA_UNIT)) {
++			drv_datap = dev_get_drvdata(bridge);
++
++			if (drv_datap && drv_datap->base_img)
+ 				proc_auto_start(dev_node, hdev_obj);
++		}
+ 	}
+ 
+ 	return status;
+diff --git a/drivers/staging/tidspbridge/services/cfg.c b/drivers/staging/tidspbridge/services/cfg.c
+index a7af74f..e9cdbf6 100644
+--- a/drivers/staging/tidspbridge/services/cfg.c
++++ b/drivers/staging/tidspbridge/services/cfg.c
+@@ -46,32 +46,6 @@ void cfg_exit(void)
+ }
+ 
+ /*
+- *  ======== cfg_get_auto_start ========
+- *  Purpose:
+- *      Retreive the autostart mask, if any, for this board.
+- */
+-int cfg_get_auto_start(struct cfg_devnode *dev_node_obj,
+-			      u32 *auto_start)
+-{
+-	int status = 0;
+-	u32 dw_buf_size;
+-	struct drv_data *drv_datap = dev_get_drvdata(bridge);
+-
+-	dw_buf_size = sizeof(*auto_start);
+-	if (!dev_node_obj)
+-		status = -EFAULT;
+-	if (!auto_start || !drv_datap)
+-		status = -EFAULT;
+-	if (!status)
+-		*auto_start = (drv_datap->base_img) ? 1 : 0;
+-
+-	DBC_ENSURE((status == 0 &&
+-		    (*auto_start == 0 || *auto_start == 1))
+-		   || status != 0);
+-	return status;
+-}
+-
+-/*
+  *  ======== cfg_get_dev_object ========
+  *  Purpose:
+  *      Retrieve the Device Object handle for a given devnode.
 -- 
 1.7.0.3
 
