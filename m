@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab0HYHGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:06:31 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58896 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab0HYHG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 03:06:29 -0400
-Date: Wed, 25 Aug 2010 09:06:53 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Alok Kataria <akataria@vmware.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>,
-        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH -v2] x86, tsc: Limit CPU frequency calibration on AMD
-Message-ID: <20100825070653.GA25672@aftab>
-References: <20100817070520.GD32714@liondog.tnic>
- <1282063532.4388.8.camel@ank32.eng.vmware.com>
- <20100817185634.GA10597@liondog.tnic>
- <20100818161639.GF9880@aftab>
- <4C6C08EC.2080404@zytor.com>
- <20100818173401.GG9880@aftab>
- <1282153895.15158.45.camel@ank32.eng.vmware.com>
- <20100818184534.GA12842@aftab>
- <20100824155305.GA18220@aftab>
- <4C7448A3.2030309@zytor.com>
+	id S1752476Ab0HYHGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:06:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48715 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752287Ab0HYHGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 03:06:44 -0400
+Message-ID: <4C74C0FA.3010304@zytor.com>
+Date: Wed, 25 Aug 2010 00:06:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C7448A3.2030309@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Borislav Petkov <borislav.petkov@amd.com>
+CC: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: fix CONFIG_VMSPLIT_1G and 2G_OPT trampoline
+References: <alpine.LSU.2.00.1008242235120.2515@sister.anvils> <20100825063041.GA25259@aftab>
+In-Reply-To: <20100825063041.GA25259@aftab>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, Aug 24, 2010 at 06:33:07PM -0400
-
-> Build failure:
+On 08/24/2010 11:30 PM, Borislav Petkov wrote:
+> From: Hugh Dickins <hughd@google.com>
+> Date: Wed, Aug 25, 2010 at 01:44:12AM -0400
 > 
-> /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c: In
-> function ‘amd_calibrate_cpu’:
-> /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:397: error:
-> implicit declaration of function ‘avail_to_resrv_perfctr_nmi_bit’
-> /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:409: error:
-> implicit declaration of function ‘reserve_perfctr_nmi’
-> /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:410: error:
-> implicit declaration of function ‘reserve_evntsel_nmi’
-> /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:429: error:
-> implicit declaration of function ‘release_perfctr_nmi’
-> /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:430: error:
-> implicit declaration of function ‘release_evntsel_nmi’
+>> rc2 kernel crashes when booting second cpu on this CONFIG_VMSPLIT_2G_OPT
+>> laptop: whereas cloning from kernel to low mappings pgd range does need
+>> to limit by both KERNEL_PGD_PTRS and KERNEL_PGD_BOUNDARY, cloning kernel
+>> pgd range itself must not be limited by the smaller KERNEL_PGD_BOUNDARY.
 > 
-> Reproducible by doing "make ARCH=i386 allnoconfig".
+> Yep, makes sense.
+> 
+> In looking around for other swapper_pg_dir manipulations, there's this
+> piece in <arch/x86/kernel/reboot.c:machine_real_restart()>:
+> 
+>        /* Remap the kernel at virtual address zero, as well as offset zero
+>           from the kernel segment.  This assumes the kernel segment starts at
+>           virtual address PAGE_OFFSET. */
+>        memcpy(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+>                sizeof(swapper_pg_dir [0]) * KERNEL_PGD_PTRS);
+> 
+> and we're cloning to low mappings here but still take KERNEL_PGD_PTRS.
+> 
+> In the CONFIG_VMSPLIT_2G_OPT case, KERNEL_PGD_BOUNDARY and
+> KERNEL_PGD_PTRS are 480 and 544, respectively, and IINM, and we end up
+> overwriting the virtual mappings beginning at PAGE_OFFSET.
+> 
+> I guess this doesn't matter on reboot or am I missing something else?
+> 
 
-Sh*t, I can't catch a break with that Kconfig dependency stuff, can I?
+It doesn't matter on reboot, but the right thing would be to switch to
+the trampoline page table here.  Same with suspend.
 
-This happens because perfctr-watchdog.c gets pulled in by
-CONFIG_X86_LOCAL_APIC which is, _of course_, not selected in an
-allnoconfig build. Fixing this would mean exporting all that perfcounter
-reservation functionality for the allnoconfig case, which is of course
-doable but I'm starting to question the need for recalibrating the TSC
-at all:
-
-I mean, in the 99% of the cases MSRC001_0015[24] should be set by the
-BIOS and if not then the BIOS which does that is pretty b0rked anyway.
-So I'm thinking of removing the recalibration code and simply warning
-the user instead, for the 1% case.
-
-Andreas, what do you think?
+	-hpa
 
 -- 
-Regards/Gruss,
-Boris.
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
