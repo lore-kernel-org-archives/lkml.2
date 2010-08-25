@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab0HYHsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:48:53 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48836 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab0HYHst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 03:48:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=Cyvq/jGga4u3zJO1DKhKNxaa0ub3MWhe+GZDeUk8sVdYJkKVRJAxv7nG4x7roZrwZx
-         X20ddAfe0ErphIVUPLRaPUEzfARDvU5aKoAoa8fL6J5Zk7USBNrog1jbRePuXzrg+mQJ
-         B0ZX9auexrAQLaCqqHU6b2yKSBIt580PgYy3g=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 RESEND] ptrace: cleanup address space conversion on ptrace_request()
-In-Reply-To: <201008241345.06507.arnd@arndb.de> (Arnd Bergmann's message of
-	"Tue, 24 Aug 2010 13:45:06 +0200")
-References: <201008222206.18523.arnd@arndb.de>
-	<20100823162105.GA19164@infradead.org>
-	<1282581489.1659.13.camel@leonhard> <201008241345.06507.arnd@arndb.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-Date: Wed, 25 Aug 2010 16:48:40 +0900
-Message-ID: <87sk23w2sn.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752258Ab0HYHwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:52:16 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:47989 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab0HYHwO convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:7:1>);
+	Wed, 25 Aug 2010 03:52:14 -0400
+Message-Id: <4C74E7C802000078000120C0@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 25 Aug 2010 08:52:08 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Jeremy Fitzhardinge" <jeremy@goop.org>
+Cc: "Tom Kopec" <tek@acm.org>, "Daniel Stodden" <daniel.stodden@citrix.com>,
+        "Stable Kernel" <stable@kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [GIT PULL] Fix lost interrupt race in Xen
+	 event channels
+References: <4C743B2C.8070208@goop.org>
+In-Reply-To: <4C743B2C.8070208@goop.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
-> I don't think we ever rely on 'data' being signed, and user space
-> sees it as 'void *' anyway, so it should be possible to just turn
-> it into 'unsigned long'.
->
+ >>> On 24.08.10 at 23:35, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+> We worked out the root cause was that it was incorrectly treating Xen
+> events as level rather than edge triggered interrupts, which works fine
+> unless you're handling one interrupt, the interrupt gets migrated to
+> another cpu and then re-raised.  This ends up losing the interrupt
+> because the edge-triggering of the second interrupt is lost.
 
-After I've checked all arch_ptrace() code, I can think there is no specific
-reason @addr and @data to be signed long types. Most of archs use them
-as if they were unsigned. So I'll prepare a patch series to change this
-and some cleanups of ptrace_request() and all of arch_ptrace() if no
-objection exists.
+While this description would seem plausible at the first glance, it
+doesn't match up with unmask_evtchn() already taking care of
+exactly this case. Or are you implicitly saying that this code is
+broken in some way (if so, how, and shouldn't it then be that
+code that needs fixing, or removing if you want to stay with the
+edge handling)?
 
-Thanks.
+I do however agree that using handle_level_irq() is problematic
+(see http://lists.xensource.com/archives/html/xen-devel/2010-04/msg01178.html),
+but as said there I think using the fasteoi logic is preferable. No
+matter whether using edge or level, the ->end() method will
+never be called (whereas fasteoi calls ->eoi(), which would
+just need to be vectored to the same function as ->end()).
+Without end_pirq() ever called, you can't let Xen know of
+bad PIRQs (so that it can disable them instead of continuing
+to call the [now shortcut] handler in the owning domain).
 
--- 
-Regards,
-Namhyung Kim
+> The other change changes IPI and VIRQ event sources to use
+> handle_percpu_irq, because treating them as level is also wrong, and
+> they're actually inherently percpu events, much like LAPIC vectors.
+
+This doesn't seem right for the general VIRQ case: global ones
+should not be disallowed migration between CPUs. Since in your
+model the requestor has to pass IRQF_PERCPU anyway,
+shouldn't you make the selection of the handler dependent
+upon this flag?
+
+Jan
+
