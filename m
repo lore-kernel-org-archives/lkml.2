@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab0HYNrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 09:47:47 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53609 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab0HYNrl (ORCPT
+	id S1753947Ab0HYNsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 09:48:01 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55252 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab0HYNqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 09:47:41 -0400
+	Wed, 25 Aug 2010 09:46:44 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -18,1755 +18,388 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Naren A Devaiah <naren.devaiah@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "Frank Ch. Eigler" <fche@redhat.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed, 25 Aug 2010 19:12:55 +0530
-Message-Id: <20100825134255.5447.86890.sendpatchset@localhost6.localdomain6>
+Date: Wed, 25 Aug 2010 19:11:56 +0530
+Message-Id: <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
 References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
-Subject: [PATCHv11 2.6.36-rc2-tip 8/15]  8: tracing: Extract out common code for kprobes/uprobes traceevents.
+Subject: [PATCHv11 2.6.36-rc2-tip 3/15]  3: uprobes: Slot allocation for Execution out of line(XOL)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Move parts of trace_kprobe.c that can be shared with upcoming
-trace_uprobe.c. Common code to kernel/trace/trace_probe.h and
-kernel/trace/trace_probe.c.
+Provides slot allocation mechanism for execution out of line for use
+with user space breakpointing.
 
-TODO: Merge both events to a single probe event.
+Traditional method of replacing the original instructions on
+breakpoint hit are racy when used on multithreaded applications.
 
+Alternatives for the traditional method include:
+	- Emulating the breakpointed instruction.
+	- Execution out of line.
+
+Emulating the instruction:
+	This approach would use a in-kernel instruction emulator to
+emulate the breakpointed instruction. This approach could be looked in
+at a later point of time.
+
+Execution out of line:
+	In execution out of line strategy, a new vma is injected into
+the target process, a copy of the instructions which are breakpointed
+is stored in one of the slots. On breakpoint hit, the copy of the
+instruction is single-stepped leaving the breakpoint instruction as
+is.  This method is architecture independent.
+
+This method is useful while handling multithreaded processes.
+
+This patch allocates one page per process for slots to be used to copy
+the breakpointed instructions.
+
+Current slot allocation mechanism:
+1. Allocate one dedicated slot per user breakpoint. Each slot is big
+enuf to accomodate the biggest instruction for that architecture. (16
+bytes for x86).
+2. We currently allocate only one page for slots. Hence the number of
+slots is limited to active breakpoint hits on that process.
+3. Bitmap to track used slots.
+
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
 
-Changelog from V10: delete references to is_kprobe and make
-         is_return a bool.
+Changelog from V5: Merged into uprobes.
 
-Changelog from V7: Merge changes due to string support in kprobes
-	traceevent.
+Changelog form V3:
+ * Added a memory barrier after the slot gets initialized.
 
-Changelog from V5: Addressed comments from Masami Hiramatsu
-	and Steven Rostedt. Also shared lot more code from kprobes
-        traceevents.
+Changelog from V2: (addressing Oleg's comments)
+ * Removed code in !CONFIG_UPROBES_XOL
+ * Functions now pass pointer to uprobes_xol_area instead of pointer
+   to void.
 
- kernel/trace/Kconfig        |    4 
- kernel/trace/Makefile       |    1 
- kernel/trace/trace_kprobe.c |  752 +------------------------------------------
- kernel/trace/trace_probe.c  |  648 +++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_probe.h  |  155 +++++++++
- 5 files changed, 822 insertions(+), 738 deletions(-)
- create mode 100644 kernel/trace/trace_probe.c
- create mode 100644 kernel/trace/trace_probe.h
+ include/linux/uprobes.h |    2 
+ kernel/uprobes.c        |  283 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 285 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 538501c..d709697 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -353,6 +353,7 @@ config KPROBE_EVENT
- 	depends on HAVE_REGS_AND_STACK_ACCESS_API
- 	bool "Enable kprobes-based dynamic events"
- 	select TRACING
-+	select PROBE_EVENTS
- 	default y
- 	help
- 	  This allows the user to add tracing events (similar to tracepoints)
-@@ -365,6 +366,9 @@ config KPROBE_EVENT
- 	  This option is also required by perf-probe subcommand of perf tools.
- 	  If you want to use perf tools, this option is strongly recommended.
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index faacb2f..84a078c 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -37,6 +37,8 @@ struct user_bkpt_task_arch_info {};
+ struct user_bkpt_arch_info;
+ #endif
  
-+config PROBE_EVENTS
-+	def_bool n
-+
- config DYNAMIC_FTRACE
- 	bool "enable/disable ftrace tracepoints dynamically"
- 	depends on FUNCTION_TRACER
-diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index 53f3381..95d2043 100644
---- a/kernel/trace/Makefile
-+++ b/kernel/trace/Makefile
-@@ -56,5 +56,6 @@ obj-$(CONFIG_EVENT_TRACING) += power-traces.o
- ifeq ($(CONFIG_TRACING),y)
- obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
- endif
-+obj-$(CONFIG_PROBE_EVENTS) +=trace_probe.o
++#define UINSNS_PER_PAGE	(PAGE_SIZE/UPROBES_XOL_SLOT_BYTES)
++#define MAX_UPROBES_XOL_SLOTS UINSNS_PER_PAGE
  
- libftrace-y := ftrace.o
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 8b27c98..e66450d 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -19,463 +19,15 @@
- 
- #include <linux/module.h>
+ struct task_struct;
+ struct pt_regs;
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 8a659c9..230adf3 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -30,6 +30,12 @@
  #include <linux/uaccess.h>
--#include <linux/kprobes.h>
--#include <linux/seq_file.h>
--#include <linux/slab.h>
--#include <linux/smp.h>
--#include <linux/debugfs.h>
--#include <linux/types.h>
--#include <linux/string.h>
--#include <linux/ctype.h>
--#include <linux/ptrace.h>
--#include <linux/perf_event.h>
--#include <linux/stringify.h>
--#include <linux/limits.h>
--#include <linux/uaccess.h>
--#include <asm/bitsperlong.h>
- 
--#include "trace.h"
--#include "trace_output.h"
-+#include "trace_probe.h"
- 
--#define MAX_TRACE_ARGS 128
--#define MAX_ARGSTR_LEN 63
--#define MAX_EVENT_NAME_LEN 64
--#define MAX_STRING_SIZE PATH_MAX
- #define KPROBE_EVENT_SYSTEM "kprobes"
- 
--/* Reserved field names */
--#define FIELD_STRING_IP "__probe_ip"
--#define FIELD_STRING_RETIP "__probe_ret_ip"
--#define FIELD_STRING_FUNC "__probe_func"
--
--const char *reserved_field_names[] = {
--	"common_type",
--	"common_flags",
--	"common_preempt_count",
--	"common_pid",
--	"common_tgid",
--	"common_lock_depth",
--	FIELD_STRING_IP,
--	FIELD_STRING_RETIP,
--	FIELD_STRING_FUNC,
--};
--
--/* Printing function type */
--typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *,
--				 void *);
--#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
--#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
--
--/* Printing  in basic type function template */
--#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
--static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
--						const char *name,	\
--						void *data, void *ent)\
--{									\
--	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
--}									\
--static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
--
--DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
--
--/* data_rloc: data relative location, compatible with u32 */
--#define make_data_rloc(len, roffs)	\
--	(((u32)(len) << 16) | ((u32)(roffs) & 0xffff))
--#define get_rloc_len(dl)	((u32)(dl) >> 16)
--#define get_rloc_offs(dl)	((u32)(dl) & 0xffff)
--
--static inline void *get_rloc_data(u32 *dl)
--{
--	return (u8 *)dl + get_rloc_offs(*dl);
--}
--
--/* For data_loc conversion */
--static inline void *get_loc_data(u32 *dl, void *ent)
--{
--	return (u8 *)ent + get_rloc_offs(*dl);
--}
--
--/*
-- * Convert data_rloc to data_loc:
-- *  data_rloc stores the offset from data_rloc itself, but data_loc
-- *  stores the offset from event entry.
-- */
--#define convert_rloc_to_loc(dl, offs)	((u32)(dl) + (offs))
--
--/* For defining macros, define string/string_size types */
--typedef u32 string;
--typedef u32 string_size;
--
--/* Print type function for string type */
--static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
--						  const char *name,
--						  void *data, void *ent)
--{
--	int len = *(u32 *)data >> 16;
--
--	if (!len)
--		return trace_seq_printf(s, " %s=(fault)", name);
--	else
--		return trace_seq_printf(s, " %s=\"%s\"", name,
--					(const char *)get_loc_data(data, ent));
--}
--static const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
--
--/* Data fetch function type */
--typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
--
--struct fetch_param {
--	fetch_func_t	fn;
--	void *data;
--};
--
--static __kprobes void call_fetch(struct fetch_param *fprm,
--				 struct pt_regs *regs, void *dest)
--{
--	return fprm->fn(regs, fprm->data, dest);
--}
--
--#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
--/*
-- * Define macro for basic types - we don't need to define s* types, because
-- * we have to care only about bitwidth at recording time.
-- */
--#define DEFINE_BASIC_FETCH_FUNCS(method) \
--DEFINE_FETCH_##method(u8)		\
--DEFINE_FETCH_##method(u16)		\
--DEFINE_FETCH_##method(u32)		\
--DEFINE_FETCH_##method(u64)
--
--#define CHECK_FETCH_FUNCS(method, fn)			\
--	(((FETCH_FUNC_NAME(method, u8) == fn) ||	\
--	  (FETCH_FUNC_NAME(method, u16) == fn) ||	\
--	  (FETCH_FUNC_NAME(method, u32) == fn) ||	\
--	  (FETCH_FUNC_NAME(method, u64) == fn) ||	\
--	  (FETCH_FUNC_NAME(method, string) == fn) ||	\
--	  (FETCH_FUNC_NAME(method, string_size) == fn)) \
--	 && (fn != NULL))
--
--/* Data fetch function templates */
--#define DEFINE_FETCH_reg(type)						\
--static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
--					void *offset, void *dest)	\
--{									\
--	*(type *)dest = (type)regs_get_register(regs,			\
--				(unsigned int)((unsigned long)offset));	\
--}
--DEFINE_BASIC_FETCH_FUNCS(reg)
--/* No string on the register */
--#define fetch_reg_string NULL
--#define fetch_reg_string_size NULL
--
--#define DEFINE_FETCH_stack(type)					\
--static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
--					  void *offset, void *dest)	\
--{									\
--	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
--				(unsigned int)((unsigned long)offset));	\
--}
--DEFINE_BASIC_FETCH_FUNCS(stack)
--/* No string on the stack entry */
--#define fetch_stack_string NULL
--#define fetch_stack_string_size NULL
--
--#define DEFINE_FETCH_retval(type)					\
--static __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,\
--					  void *dummy, void *dest)	\
--{									\
--	*(type *)dest = (type)regs_return_value(regs);			\
--}
--DEFINE_BASIC_FETCH_FUNCS(retval)
--/* No string on the retval */
--#define fetch_retval_string NULL
--#define fetch_retval_string_size NULL
--
--#define DEFINE_FETCH_memory(type)					\
--static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
--					  void *addr, void *dest)	\
--{									\
--	type retval;							\
--	if (probe_kernel_address(addr, retval))				\
--		*(type *)dest = 0;					\
--	else								\
--		*(type *)dest = retval;					\
--}
--DEFINE_BASIC_FETCH_FUNCS(memory)
--/*
-- * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
-- * length and relative data location.
-- */
--static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
--						      void *addr, void *dest)
--{
--	long ret;
--	int maxlen = get_rloc_len(*(u32 *)dest);
--	u8 *dst = get_rloc_data(dest);
--	u8 *src = addr;
--	mm_segment_t old_fs = get_fs();
--	if (!maxlen)
--		return;
--	/*
--	 * Try to get string again, since the string can be changed while
--	 * probing.
--	 */
--	set_fs(KERNEL_DS);
--	pagefault_disable();
--	do
--		ret = __copy_from_user_inatomic(dst++, src++, 1);
--	while (dst[-1] && ret == 0 && src - (u8 *)addr < maxlen);
--	dst[-1] = '\0';
--	pagefault_enable();
--	set_fs(old_fs);
--
--	if (ret < 0) {	/* Failed to fetch string */
--		((u8 *)get_rloc_data(dest))[0] = '\0';
--		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(*(u32 *)dest));
--	} else
--		*(u32 *)dest = make_data_rloc(src - (u8 *)addr,
--					      get_rloc_offs(*(u32 *)dest));
--}
--/* Return the length of string -- including null terminal byte */
--static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
--							void *addr, void *dest)
--{
--	int ret, len = 0;
--	u8 c;
--	mm_segment_t old_fs = get_fs();
--
--	set_fs(KERNEL_DS);
--	pagefault_disable();
--	do {
--		ret = __copy_from_user_inatomic(&c, (u8 *)addr + len, 1);
--		len++;
--	} while (c && ret == 0 && len < MAX_STRING_SIZE);
--	pagefault_enable();
--	set_fs(old_fs);
--
--	if (ret < 0)	/* Failed to check the length */
--		*(u32 *)dest = 0;
--	else
--		*(u32 *)dest = len;
--}
--
--/* Memory fetching by symbol */
--struct symbol_cache {
--	char *symbol;
--	long offset;
--	unsigned long addr;
--};
--
--static unsigned long update_symbol_cache(struct symbol_cache *sc)
--{
--	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
--	if (sc->addr)
--		sc->addr += sc->offset;
--	return sc->addr;
--}
--
--static void free_symbol_cache(struct symbol_cache *sc)
--{
--	kfree(sc->symbol);
--	kfree(sc);
--}
--
--static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
--{
--	struct symbol_cache *sc;
--
--	if (!sym || strlen(sym) == 0)
--		return NULL;
--	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
--	if (!sc)
--		return NULL;
--
--	sc->symbol = kstrdup(sym, GFP_KERNEL);
--	if (!sc->symbol) {
--		kfree(sc);
--		return NULL;
--	}
--	sc->offset = offset;
--
--	update_symbol_cache(sc);
--	return sc;
--}
--
--#define DEFINE_FETCH_symbol(type)					\
--static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
--					  void *data, void *dest)	\
--{									\
--	struct symbol_cache *sc = data;					\
--	if (sc->addr)							\
--		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
--	else								\
--		*(type *)dest = 0;					\
--}
--DEFINE_BASIC_FETCH_FUNCS(symbol)
--DEFINE_FETCH_symbol(string)
--DEFINE_FETCH_symbol(string_size)
--
--/* Dereference memory access function */
--struct deref_fetch_param {
--	struct fetch_param orig;
--	long offset;
--};
--
--#define DEFINE_FETCH_deref(type)					\
--static __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,\
--					    void *data, void *dest)	\
--{									\
--	struct deref_fetch_param *dprm = data;				\
--	unsigned long addr;						\
--	call_fetch(&dprm->orig, regs, &addr);				\
--	if (addr) {							\
--		addr += dprm->offset;					\
--		fetch_memory_##type(regs, (void *)addr, dest);		\
--	} else								\
--		*(type *)dest = 0;					\
--}
--DEFINE_BASIC_FETCH_FUNCS(deref)
--DEFINE_FETCH_deref(string)
--DEFINE_FETCH_deref(string_size)
--
--static __kprobes void free_deref_fetch_param(struct deref_fetch_param *data)
--{
--	if (CHECK_FETCH_FUNCS(deref, data->orig.fn))
--		free_deref_fetch_param(data->orig.data);
--	else if (CHECK_FETCH_FUNCS(symbol, data->orig.fn))
--		free_symbol_cache(data->orig.data);
--	kfree(data);
--}
--
--/* Default (unsigned long) fetch type */
--#define __DEFAULT_FETCH_TYPE(t) u##t
--#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
--#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
--#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
--
--/* Fetch types */
--enum {
--	FETCH_MTD_reg = 0,
--	FETCH_MTD_stack,
--	FETCH_MTD_retval,
--	FETCH_MTD_memory,
--	FETCH_MTD_symbol,
--	FETCH_MTD_deref,
--	FETCH_MTD_END,
--};
--
--#define ASSIGN_FETCH_FUNC(method, type)	\
--	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
--
--#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
--	{.name = _name,				\
--	 .size = _size,					\
--	 .is_signed = sign,				\
--	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
--	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
--	 .fmttype = _fmttype,				\
--	 .fetch = {					\
--ASSIGN_FETCH_FUNC(reg, ftype),				\
--ASSIGN_FETCH_FUNC(stack, ftype),			\
--ASSIGN_FETCH_FUNC(retval, ftype),			\
--ASSIGN_FETCH_FUNC(memory, ftype),			\
--ASSIGN_FETCH_FUNC(symbol, ftype),			\
--ASSIGN_FETCH_FUNC(deref, ftype),			\
--	  }						\
--	}
--
--#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
--	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
--
--#define FETCH_TYPE_STRING 0
--#define FETCH_TYPE_STRSIZE 1
--
--/* Fetch type information table */
--static const struct fetch_type {
--	const char	*name;		/* Name of type */
--	size_t		size;		/* Byte size of type */
--	int		is_signed;	/* Signed flag */
--	print_type_func_t	print;	/* Print functions */
--	const char	*fmt;		/* Fromat string */
--	const char	*fmttype;	/* Name in format file */
--	/* Fetch functions */
--	fetch_func_t	fetch[FETCH_MTD_END];
--} fetch_type_table[] = {
--	/* Special types */
--	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
--					sizeof(u32), 1, "__data_loc char[]"),
--	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
--					string_size, sizeof(u32), 0, "u32"),
--	/* Basic types */
--	ASSIGN_FETCH_TYPE(u8,  u8,  0),
--	ASSIGN_FETCH_TYPE(u16, u16, 0),
--	ASSIGN_FETCH_TYPE(u32, u32, 0),
--	ASSIGN_FETCH_TYPE(u64, u64, 0),
--	ASSIGN_FETCH_TYPE(s8,  u8,  1),
--	ASSIGN_FETCH_TYPE(s16, u16, 1),
--	ASSIGN_FETCH_TYPE(s32, u32, 1),
--	ASSIGN_FETCH_TYPE(s64, u64, 1),
--};
--
--static const struct fetch_type *find_fetch_type(const char *type)
--{
--	int i;
--
--	if (!type)
--		type = DEFAULT_FETCH_TYPE_STR;
--
--	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
--		if (strcmp(type, fetch_type_table[i].name) == 0)
--			return &fetch_type_table[i];
--	return NULL;
--}
--
--/* Special function : only accept unsigned long */
--static __kprobes void fetch_stack_address(struct pt_regs *regs,
--					  void *dummy, void *dest)
--{
--	*(unsigned long *)dest = kernel_stack_pointer(regs);
--}
--
--static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
--					    fetch_func_t orig_fn)
--{
--	int i;
--
--	if (type != &fetch_type_table[FETCH_TYPE_STRING])
--		return NULL;	/* Only string type needs size function */
--	for (i = 0; i < FETCH_MTD_END; i++)
--		if (type->fetch[i] == orig_fn)
--			return fetch_type_table[FETCH_TYPE_STRSIZE].fetch[i];
--
--	WARN_ON(1);	/* This should not happen */
--	return NULL;
--}
--
- /**
-  * Kprobe event core functions
-  */
- 
--struct probe_arg {
--	struct fetch_param	fetch;
--	struct fetch_param	fetch_size;
--	unsigned int		offset;	/* Offset from argument entry */
--	const char		*name;	/* Name of this argument */
--	const char		*comm;	/* Command of this argument */
--	const struct fetch_type	*type;	/* Type of this argument */
--};
--
--/* Flags for trace_probe */
--#define TP_FLAG_TRACE	1
--#define TP_FLAG_PROFILE	2
--
- struct trace_probe {
- 	struct list_head	list;
- 	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
-@@ -513,19 +65,6 @@ static LIST_HEAD(probe_list);
- static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
- static int kretprobe_dispatcher(struct kretprobe_instance *ri,
- 				struct pt_regs *regs);
--
--/* Check the name is good for event/group */
--static int check_event_name(const char *name)
--{
--	if (!isalpha(*name) && *name != '_')
--		return 0;
--	while (*++name != '\0') {
--		if (!isalpha(*name) && !isdigit(*name) && *name != '_')
--			return 0;
--	}
--	return 1;
--}
--
- /*
-  * Allocate new trace_probe and initialize it (including kprobes).
-  */
-@@ -534,7 +73,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 					     void *addr,
- 					     const char *symbol,
- 					     unsigned long offs,
--					     int nargs, int is_return)
-+					     int nargs, bool is_return)
- {
- 	struct trace_probe *tp;
- 	int ret = -ENOMEM;
-@@ -585,22 +124,12 @@ error:
- 	return ERR_PTR(ret);
- }
- 
--static void free_probe_arg(struct probe_arg *arg)
--{
--	if (CHECK_FETCH_FUNCS(deref, arg->fetch.fn))
--		free_deref_fetch_param(arg->fetch.data);
--	else if (CHECK_FETCH_FUNCS(symbol, arg->fetch.fn))
--		free_symbol_cache(arg->fetch.data);
--	kfree(arg->name);
--	kfree(arg->comm);
--}
--
- static void free_trace_probe(struct trace_probe *tp)
- {
- 	int i;
- 
- 	for (i = 0; i < tp->nr_args; i++)
--		free_probe_arg(&tp->args[i]);
-+		traceprobe_free_probe_arg(&tp->args[i]);
- 
- 	kfree(tp->call.class->system);
- 	kfree(tp->call.name);
-@@ -674,191 +203,6 @@ end:
- 	return ret;
- }
- 
--/* Split symbol and offset. */
--static int split_symbol_offset(char *symbol, unsigned long *offset)
--{
--	char *tmp;
--	int ret;
--
--	if (!offset)
--		return -EINVAL;
--
--	tmp = strchr(symbol, '+');
--	if (tmp) {
--		/* skip sign because strict_strtol doesn't accept '+' */
--		ret = strict_strtoul(tmp + 1, 0, offset);
--		if (ret)
--			return ret;
--		*tmp = '\0';
--	} else
--		*offset = 0;
--	return 0;
--}
--
--#define PARAM_MAX_ARGS 16
--#define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
--
--static int parse_probe_vars(char *arg, const struct fetch_type *t,
--			    struct fetch_param *f, int is_return)
--{
--	int ret = 0;
--	unsigned long param;
--
--	if (strcmp(arg, "retval") == 0) {
--		if (is_return)
--			f->fn = t->fetch[FETCH_MTD_retval];
--		else
--			ret = -EINVAL;
--	} else if (strncmp(arg, "stack", 5) == 0) {
--		if (arg[5] == '\0') {
--			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
--				f->fn = fetch_stack_address;
--			else
--				ret = -EINVAL;
--		} else if (isdigit(arg[5])) {
--			ret = strict_strtoul(arg + 5, 10, &param);
--			if (ret || param > PARAM_MAX_STACK)
--				ret = -EINVAL;
--			else {
--				f->fn = t->fetch[FETCH_MTD_stack];
--				f->data = (void *)param;
--			}
--		} else
--			ret = -EINVAL;
--	} else
--		ret = -EINVAL;
--	return ret;
--}
--
--/* Recursive argument parser */
--static int __parse_probe_arg(char *arg, const struct fetch_type *t,
--			     struct fetch_param *f, int is_return)
--{
--	int ret = 0;
--	unsigned long param;
--	long offset;
--	char *tmp;
--
--	switch (arg[0]) {
--	case '$':
--		ret = parse_probe_vars(arg + 1, t, f, is_return);
--		break;
--	case '%':	/* named register */
--		ret = regs_query_register_offset(arg + 1);
--		if (ret >= 0) {
--			f->fn = t->fetch[FETCH_MTD_reg];
--			f->data = (void *)(unsigned long)ret;
--			ret = 0;
--		}
--		break;
--	case '@':	/* memory or symbol */
--		if (isdigit(arg[1])) {
--			ret = strict_strtoul(arg + 1, 0, &param);
--			if (ret)
--				break;
--			f->fn = t->fetch[FETCH_MTD_memory];
--			f->data = (void *)param;
--		} else {
--			ret = split_symbol_offset(arg + 1, &offset);
--			if (ret)
--				break;
--			f->data = alloc_symbol_cache(arg + 1, offset);
--			if (f->data)
--				f->fn = t->fetch[FETCH_MTD_symbol];
--		}
--		break;
--	case '+':	/* deref memory */
--	case '-':
--		tmp = strchr(arg, '(');
--		if (!tmp)
--			break;
--		*tmp = '\0';
--		ret = strict_strtol(arg + 1, 0, &offset);
--		if (ret)
--			break;
--		if (arg[0] == '-')
--			offset = -offset;
--		arg = tmp + 1;
--		tmp = strrchr(arg, ')');
--		if (tmp) {
--			struct deref_fetch_param *dprm;
--			const struct fetch_type *t2 = find_fetch_type(NULL);
--			*tmp = '\0';
--			dprm = kzalloc(sizeof(struct deref_fetch_param),
--				       GFP_KERNEL);
--			if (!dprm)
--				return -ENOMEM;
--			dprm->offset = offset;
--			ret = __parse_probe_arg(arg, t2, &dprm->orig,
--						is_return);
--			if (ret)
--				kfree(dprm);
--			else {
--				f->fn = t->fetch[FETCH_MTD_deref];
--				f->data = (void *)dprm;
--			}
--		}
--		break;
--	}
--	if (!ret && !f->fn) {	/* Parsed, but do not find fetch method */
--		pr_info("%s type has no corresponding fetch method.\n",
--			t->name);
--		ret = -EINVAL;
--	}
--	return ret;
--}
--
--/* String length checking wrapper */
--static int parse_probe_arg(char *arg, struct trace_probe *tp,
--			   struct probe_arg *parg, int is_return)
--{
--	const char *t;
--	int ret;
--
--	if (strlen(arg) > MAX_ARGSTR_LEN) {
--		pr_info("Argument is too long.: %s\n",  arg);
--		return -ENOSPC;
--	}
--	parg->comm = kstrdup(arg, GFP_KERNEL);
--	if (!parg->comm) {
--		pr_info("Failed to allocate memory for command '%s'.\n", arg);
--		return -ENOMEM;
--	}
--	t = strchr(parg->comm, ':');
--	if (t) {
--		arg[t - parg->comm] = '\0';
--		t++;
--	}
--	parg->type = find_fetch_type(t);
--	if (!parg->type) {
--		pr_info("Unsupported type: %s\n", t);
--		return -EINVAL;
--	}
--	parg->offset = tp->size;
--	tp->size += parg->type->size;
--	ret = __parse_probe_arg(arg, parg->type, &parg->fetch, is_return);
--	if (ret >= 0) {
--		parg->fetch_size.fn = get_fetch_size_function(parg->type,
--							      parg->fetch.fn);
--		parg->fetch_size.data = parg->fetch.data;
--	}
--	return ret;
--}
--
--/* Return 1 if name is reserved or already used by another argument */
--static int conflict_field_name(const char *name,
--			       struct probe_arg *args, int narg)
--{
--	int i;
--	for (i = 0; i < ARRAY_SIZE(reserved_field_names); i++)
--		if (strcmp(reserved_field_names[i], name) == 0)
--			return 1;
--	for (i = 0; i < narg; i++)
--		if (strcmp(args[i].name, name) == 0)
--			return 1;
--	return 0;
--}
--
- static int create_trace_probe(int argc, char **argv)
- {
- 	/*
-@@ -881,7 +225,7 @@ static int create_trace_probe(int argc, char **argv)
- 	 */
- 	struct trace_probe *tp;
- 	int i, ret = 0;
--	int is_return = 0, is_delete = 0;
-+	bool is_return = false, is_delete = false;
- 	char *symbol = NULL, *event = NULL, *group = NULL;
- 	char *arg, *tmp;
- 	unsigned long offset = 0;
-@@ -890,11 +234,11 @@ static int create_trace_probe(int argc, char **argv)
- 
- 	/* argc must be >= 1 */
- 	if (argv[0][0] == 'p')
--		is_return = 0;
-+		is_return = false;
- 	else if (argv[0][0] == 'r')
--		is_return = 1;
-+		is_return = true;
- 	else if (argv[0][0] == '-')
--		is_delete = 1;
-+		is_delete = true;
- 	else {
- 		pr_info("Probe definition must be started with 'p', 'r' or"
- 			" '-'.\n");
-@@ -958,7 +302,7 @@ static int create_trace_probe(int argc, char **argv)
- 		/* a symbol specified */
- 		symbol = argv[1];
- 		/* TODO: support .init module functions */
--		ret = split_symbol_offset(symbol, &offset);
-+		ret = traceprobe_split_symbol_offset(symbol, &offset);
- 		if (ret) {
- 			pr_info("Failed to parse symbol.\n");
- 			return ret;
-@@ -1010,7 +354,8 @@ static int create_trace_probe(int argc, char **argv)
- 		if (tmp)
- 			*tmp = '_';	/* convert : to _ */
- 
--		if (conflict_field_name(tp->args[i].name, tp->args, i)) {
-+		if (traceprobe_conflict_field_name(tp->args[i].name,
-+							tp->args, i)) {
- 			pr_info("Argument%d name '%s' conflicts with "
- 				"another field.\n", i, argv[i]);
- 			ret = -EINVAL;
-@@ -1018,7 +363,8 @@ static int create_trace_probe(int argc, char **argv)
- 		}
- 
- 		/* Parse fetch argument */
--		ret = parse_probe_arg(arg, tp, &tp->args[i], is_return);
-+		ret = traceprobe_parse_probe_arg(arg, &tp->size, &tp->args[i],
-+								is_return);
- 		if (ret) {
- 			pr_info("Parse error at argument%d. (%d)\n", i, ret);
- 			kfree(tp->args[i].name);
-@@ -1108,70 +454,11 @@ static int probes_open(struct inode *inode, struct file *file)
- 	return seq_open(file, &probes_seq_op);
- }
- 
--static int command_trace_probe(const char *buf)
--{
--	char **argv;
--	int argc = 0, ret = 0;
--
--	argv = argv_split(GFP_KERNEL, buf, &argc);
--	if (!argv)
--		return -ENOMEM;
--
--	if (argc)
--		ret = create_trace_probe(argc, argv);
--
--	argv_free(argv);
--	return ret;
--}
--
--#define WRITE_BUFSIZE 128
--
- static ssize_t probes_write(struct file *file, const char __user *buffer,
- 			    size_t count, loff_t *ppos)
- {
--	char *kbuf, *tmp;
--	int ret;
--	size_t done;
--	size_t size;
--
--	kbuf = kmalloc(WRITE_BUFSIZE, GFP_KERNEL);
--	if (!kbuf)
--		return -ENOMEM;
--
--	ret = done = 0;
--	while (done < count) {
--		size = count - done;
--		if (size >= WRITE_BUFSIZE)
--			size = WRITE_BUFSIZE - 1;
--		if (copy_from_user(kbuf, buffer + done, size)) {
--			ret = -EFAULT;
--			goto out;
--		}
--		kbuf[size] = '\0';
--		tmp = strchr(kbuf, '\n');
--		if (tmp) {
--			*tmp = '\0';
--			size = tmp - kbuf + 1;
--		} else if (done + size < count) {
--			pr_warning("Line length is too long: "
--				   "Should be less than %d.", WRITE_BUFSIZE);
--			ret = -EINVAL;
--			goto out;
--		}
--		done += size;
--		/* Remove comments */
--		tmp = strchr(kbuf, '#');
--		if (tmp)
--			*tmp = '\0';
--
--		ret = command_trace_probe(kbuf);
--		if (ret)
--			goto out;
--	}
--	ret = done;
--out:
--	kfree(kbuf);
--	return ret;
-+	return traceprobe_probes_write(file, buffer, count, ppos,
-+			create_trace_probe);
- }
- 
- static const struct file_operations kprobe_events_ops = {
-@@ -1429,17 +716,6 @@ static void probe_event_disable(struct ftrace_event_call *call)
- 	}
- }
- 
--#undef DEFINE_FIELD
--#define DEFINE_FIELD(type, item, name, is_signed)			\
--	do {								\
--		ret = trace_define_field(event_call, #type, name,	\
--					 offsetof(typeof(field), item),	\
--					 sizeof(field.item), is_signed, \
--					 FILTER_OTHER);			\
--		if (ret)						\
--			return ret;					\
--	} while (0)
--
- static int kprobe_event_define_fields(struct ftrace_event_call *event_call)
- {
- 	int ret, i;
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-new file mode 100644
-index 0000000..4ca48c6
---- /dev/null
-+++ b/kernel/trace/trace_probe.c
-@@ -0,0 +1,648 @@
-+/*
-+ * Common code for probe-based Dynamic events.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * Copyright (C) IBM Corporation, 2010
-+ * Author:     Srikar Dronamraju
-+ *
-+ * Derived from kernel/trace/trace_kprobe.c written by
-+ * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-+ */
-+
-+#include "trace_probe.h"
-+
-+const char *reserved_field_names[] = {
-+	"common_type",
-+	"common_flags",
-+	"common_preempt_count",
-+	"common_pid",
-+	"common_tgid",
-+	"common_lock_depth",
-+	FIELD_STRING_IP,
-+	FIELD_STRING_RETIP,
-+	FIELD_STRING_FUNC,
-+};
-+
-+/* Printing function type */
-+#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
-+#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
-+
-+/* Printing  in basic type function template */
-+#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
-+static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
-+						const char *name,	\
-+						void *data, void *ent)\
-+{									\
-+	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
-+}									\
-+static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
-+
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
-+
-+static inline void *get_rloc_data(u32 *dl)
-+{
-+	return (u8 *)dl + get_rloc_offs(*dl);
-+}
-+
-+/* For data_loc conversion */
-+static inline void *get_loc_data(u32 *dl, void *ent)
-+{
-+	return (u8 *)ent + get_rloc_offs(*dl);
-+}
-+
-+/* For defining macros, define string/string_size types */
-+typedef u32 string;
-+typedef u32 string_size;
-+
-+/* Print type function for string type */
-+static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
-+						  const char *name,
-+						  void *data, void *ent)
-+{
-+	int len = *(u32 *)data >> 16;
-+
-+	if (!len)
-+		return trace_seq_printf(s, " %s=(fault)", name);
-+	else
-+		return trace_seq_printf(s, " %s=\"%s\"", name,
-+					(const char *)get_loc_data(data, ent));
-+}
-+static const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
-+
-+#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
-+/*
-+ * Define macro for basic types - we don't need to define s* types, because
-+ * we have to care only about bitwidth at recording time.
-+ */
-+#define DEFINE_BASIC_FETCH_FUNCS(method) \
-+DEFINE_FETCH_##method(u8)		\
-+DEFINE_FETCH_##method(u16)		\
-+DEFINE_FETCH_##method(u32)		\
-+DEFINE_FETCH_##method(u64)
-+
-+#define CHECK_FETCH_FUNCS(method, fn)			\
-+	(((FETCH_FUNC_NAME(method, u8) == fn) ||	\
-+	  (FETCH_FUNC_NAME(method, u16) == fn) ||	\
-+	  (FETCH_FUNC_NAME(method, u32) == fn) ||	\
-+	  (FETCH_FUNC_NAME(method, u64) == fn) ||	\
-+	  (FETCH_FUNC_NAME(method, string) == fn) ||	\
-+	  (FETCH_FUNC_NAME(method, string_size) == fn)) \
-+	 && (fn != NULL))
-+
-+/* Data fetch function templates */
-+#define DEFINE_FETCH_reg(type)						\
-+static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
-+					void *offset, void *dest)	\
-+{									\
-+	*(type *)dest = (type)regs_get_register(regs,			\
-+				(unsigned int)((unsigned long)offset));	\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(reg)
-+/* No string on the register */
-+#define fetch_reg_string NULL
-+#define fetch_reg_string_size NULL
-+
-+#define DEFINE_FETCH_stack(type)					\
-+static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
-+					  void *offset, void *dest)	\
-+{									\
-+	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
-+				(unsigned int)((unsigned long)offset));	\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(stack)
-+/* No string on the stack entry */
-+#define fetch_stack_string NULL
-+#define fetch_stack_string_size NULL
-+
-+#define DEFINE_FETCH_retval(type)					\
-+static __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,\
-+					  void *dummy, void *dest)	\
-+{									\
-+	*(type *)dest = (type)regs_return_value(regs);			\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(retval)
-+/* No string on the retval */
-+#define fetch_retval_string NULL
-+#define fetch_retval_string_size NULL
-+
-+#define DEFINE_FETCH_memory(type)					\
-+static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
-+					  void *addr, void *dest)	\
-+{									\
-+	type retval;							\
-+	if (probe_kernel_address(addr, retval))				\
-+		*(type *)dest = 0;					\
-+	else								\
-+		*(type *)dest = retval;					\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(memory)
-+/*
-+ * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
-+ * length and relative data location.
-+ */
-+static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
-+						      void *addr, void *dest)
-+{
-+	long ret;
-+	int maxlen = get_rloc_len(*(u32 *)dest);
-+	u8 *dst = get_rloc_data(dest);
-+	u8 *src = addr;
-+	mm_segment_t old_fs = get_fs();
-+	if (!maxlen)
-+		return;
-+	/*
-+	 * Try to get string again, since the string can be changed while
-+	 * probing.
-+	 */
-+	set_fs(KERNEL_DS);
-+	pagefault_disable();
-+	do
-+		ret = __copy_from_user_inatomic(dst++, src++, 1);
-+	while (dst[-1] && ret == 0 && src - (u8 *)addr < maxlen);
-+	dst[-1] = '\0';
-+	pagefault_enable();
-+	set_fs(old_fs);
-+
-+	if (ret < 0) {	/* Failed to fetch string */
-+		((u8 *)get_rloc_data(dest))[0] = '\0';
-+		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(*(u32 *)dest));
-+	} else
-+		*(u32 *)dest = make_data_rloc(src - (u8 *)addr,
-+					      get_rloc_offs(*(u32 *)dest));
-+}
-+/* Return the length of string -- including null terminal byte */
-+static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
-+							void *addr, void *dest)
-+{
-+	int ret, len = 0;
-+	u8 c;
-+	mm_segment_t old_fs = get_fs();
-+
-+	set_fs(KERNEL_DS);
-+	pagefault_disable();
-+	do {
-+		ret = __copy_from_user_inatomic(&c, (u8 *)addr + len, 1);
-+		len++;
-+	} while (c && ret == 0 && len < MAX_STRING_SIZE);
-+	pagefault_enable();
-+	set_fs(old_fs);
-+
-+	if (ret < 0)	/* Failed to check the length */
-+		*(u32 *)dest = 0;
-+	else
-+		*(u32 *)dest = len;
-+}
-+
-+/* Memory fetching by symbol */
-+struct symbol_cache {
-+	char *symbol;
-+	long offset;
-+	unsigned long addr;
-+};
-+
-+static unsigned long update_symbol_cache(struct symbol_cache *sc)
-+{
-+	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
-+	if (sc->addr)
-+		sc->addr += sc->offset;
-+	return sc->addr;
-+}
-+
-+static void free_symbol_cache(struct symbol_cache *sc)
-+{
-+	kfree(sc->symbol);
-+	kfree(sc);
-+}
-+
-+static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
-+{
-+	struct symbol_cache *sc;
-+
-+	if (!sym || strlen(sym) == 0)
-+		return NULL;
-+	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
-+	if (!sc)
-+		return NULL;
-+
-+	sc->symbol = kstrdup(sym, GFP_KERNEL);
-+	if (!sc->symbol) {
-+		kfree(sc);
-+		return NULL;
-+	}
-+	sc->offset = offset;
-+
-+	update_symbol_cache(sc);
-+	return sc;
-+}
-+
-+#define DEFINE_FETCH_symbol(type)					\
-+static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
-+					  void *data, void *dest)	\
-+{									\
-+	struct symbol_cache *sc = data;					\
-+	if (sc->addr)							\
-+		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
-+	else								\
-+		*(type *)dest = 0;					\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(symbol)
-+DEFINE_FETCH_symbol(string)
-+DEFINE_FETCH_symbol(string_size)
-+
-+/* Dereference memory access function */
-+struct deref_fetch_param {
-+	struct fetch_param orig;
-+	long offset;
-+};
-+
-+#define DEFINE_FETCH_deref(type)					\
-+static __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,\
-+					    void *data, void *dest)	\
-+{									\
-+	struct deref_fetch_param *dprm = data;				\
-+	unsigned long addr;						\
-+	call_fetch(&dprm->orig, regs, &addr);				\
-+	if (addr) {							\
-+		addr += dprm->offset;					\
-+		fetch_memory_##type(regs, (void *)addr, dest);		\
-+	} else								\
-+		*(type *)dest = 0;					\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(deref)
-+DEFINE_FETCH_deref(string)
-+DEFINE_FETCH_deref(string_size)
-+
-+static __kprobes void free_deref_fetch_param(struct deref_fetch_param *data)
-+{
-+	if (CHECK_FETCH_FUNCS(deref, data->orig.fn))
-+		free_deref_fetch_param(data->orig.data);
-+	else if (CHECK_FETCH_FUNCS(symbol, data->orig.fn))
-+		free_symbol_cache(data->orig.data);
-+	kfree(data);
-+}
-+
-+/* Default (unsigned long) fetch type */
-+#define __DEFAULT_FETCH_TYPE(t) u##t
-+#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
-+#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
-+#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
-+
-+#define ASSIGN_FETCH_FUNC(method, type)	\
-+	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
-+
-+#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
-+	{.name = _name,				\
-+	 .size = _size,					\
-+	 .is_signed = sign,				\
-+	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
-+	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
-+	 .fmttype = _fmttype,				\
-+	 .fetch = {					\
-+ASSIGN_FETCH_FUNC(reg, ftype),				\
-+ASSIGN_FETCH_FUNC(stack, ftype),			\
-+ASSIGN_FETCH_FUNC(retval, ftype),			\
-+ASSIGN_FETCH_FUNC(memory, ftype),			\
-+ASSIGN_FETCH_FUNC(symbol, ftype),			\
-+ASSIGN_FETCH_FUNC(deref, ftype),			\
-+	  }						\
-+	}
-+
-+#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
-+	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
-+
-+#define FETCH_TYPE_STRING 0
-+#define FETCH_TYPE_STRSIZE 1
-+
-+/* Fetch type information table */
-+static const struct fetch_type fetch_type_table[] = {
-+	/* Special types */
-+	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
-+					sizeof(u32), 1, "__data_loc char[]"),
-+	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
-+					string_size, sizeof(u32), 0, "u32"),
-+	/* Basic types */
-+	ASSIGN_FETCH_TYPE(u8,  u8,  0),
-+	ASSIGN_FETCH_TYPE(u16, u16, 0),
-+	ASSIGN_FETCH_TYPE(u32, u32, 0),
-+	ASSIGN_FETCH_TYPE(u64, u64, 0),
-+	ASSIGN_FETCH_TYPE(s8,  u8,  1),
-+	ASSIGN_FETCH_TYPE(s16, u16, 1),
-+	ASSIGN_FETCH_TYPE(s32, u32, 1),
-+	ASSIGN_FETCH_TYPE(s64, u64, 1),
-+};
-+
-+static const struct fetch_type *find_fetch_type(const char *type)
-+{
-+	int i;
-+
-+	if (!type)
-+		type = DEFAULT_FETCH_TYPE_STR;
-+
-+	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
-+		if (strcmp(type, fetch_type_table[i].name) == 0)
-+			return &fetch_type_table[i];
-+	return NULL;
-+}
-+
-+/* Special function : only accept unsigned long */
-+static __kprobes void fetch_stack_address(struct pt_regs *regs,
-+					  void *dummy, void *dest)
-+{
-+	*(unsigned long *)dest = kernel_stack_pointer(regs);
-+}
-+
-+static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
-+					    fetch_func_t orig_fn)
-+{
-+	int i;
-+
-+	if (type != &fetch_type_table[FETCH_TYPE_STRING])
-+		return NULL;	/* Only string type needs size function */
-+	for (i = 0; i < FETCH_MTD_END; i++)
-+		if (type->fetch[i] == orig_fn)
-+			return fetch_type_table[FETCH_TYPE_STRSIZE].fetch[i];
-+
-+	WARN_ON(1);	/* This should not happen */
-+	return NULL;
-+}
-+
-+/* Split symbol and offset. */
-+int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
-+{
-+	char *tmp;
-+	int ret;
-+
-+	if (!offset)
-+		return -EINVAL;
-+
-+	tmp = strchr(symbol, '+');
-+	if (tmp) {
-+		/* skip sign because strict_strtol doesn't accept '+' */
-+		ret = strict_strtoul(tmp + 1, 0, offset);
-+		if (ret)
-+			return ret;
-+		*tmp = '\0';
-+	} else
-+		*offset = 0;
-+	return 0;
-+}
-+
-+
-+#define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
-+
-+static int parse_probe_vars(char *arg, const struct fetch_type *t,
-+			    struct fetch_param *f, bool is_return)
-+{
-+	int ret = 0;
-+	unsigned long param;
-+
-+	if (strcmp(arg, "retval") == 0) {
-+		if (is_return)
-+			f->fn = t->fetch[FETCH_MTD_retval];
-+		else
-+			ret = -EINVAL;
-+	} else if (strncmp(arg, "stack", 5) == 0) {
-+		if (arg[5] == '\0') {
-+			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
-+				f->fn = fetch_stack_address;
-+			else
-+				ret = -EINVAL;
-+		} else if (isdigit(arg[5])) {
-+			ret = strict_strtoul(arg + 5, 10, &param);
-+			if (ret || param > PARAM_MAX_STACK)
-+				ret = -EINVAL;
-+			else {
-+				f->fn = t->fetch[FETCH_MTD_stack];
-+				f->data = (void *)param;
-+			}
-+		} else
-+			ret = -EINVAL;
-+	} else
-+		ret = -EINVAL;
-+	return ret;
-+}
-+
-+/* Recursive argument parser */
-+static int parse_probe_arg(char *arg, const struct fetch_type *t,
-+		     struct fetch_param *f, bool is_return)
-+{
-+	int ret = 0;
-+	unsigned long param;
-+	long offset;
-+	char *tmp;
-+
-+	switch (arg[0]) {
-+	case '$':
-+		ret = parse_probe_vars(arg + 1, t, f, is_return);
-+		break;
-+	case '%':	/* named register */
-+		ret = regs_query_register_offset(arg + 1);
-+		if (ret >= 0) {
-+			f->fn = t->fetch[FETCH_MTD_reg];
-+			f->data = (void *)(unsigned long)ret;
-+			ret = 0;
-+		}
-+		break;
-+	case '@':	/* memory or symbol */
-+		if (isdigit(arg[1])) {
-+			ret = strict_strtoul(arg + 1, 0, &param);
-+			if (ret)
-+				break;
-+			f->fn = t->fetch[FETCH_MTD_memory];
-+			f->data = (void *)param;
-+		} else {
-+			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
-+			if (ret)
-+				break;
-+			f->data = alloc_symbol_cache(arg + 1, offset);
-+			if (f->data)
-+				f->fn = t->fetch[FETCH_MTD_symbol];
-+		}
-+		break;
-+	case '+':	/* deref memory */
-+	case '-':
-+		tmp = strchr(arg, '(');
-+		if (!tmp)
-+			break;
-+		*tmp = '\0';
-+		ret = strict_strtol(arg + 1, 0, &offset);
-+		if (ret)
-+			break;
-+		if (arg[0] == '-')
-+			offset = -offset;
-+		arg = tmp + 1;
-+		tmp = strrchr(arg, ')');
-+		if (tmp) {
-+			struct deref_fetch_param *dprm;
-+			const struct fetch_type *t2 = find_fetch_type(NULL);
-+			*tmp = '\0';
-+			dprm = kzalloc(sizeof(struct deref_fetch_param),
-+				       GFP_KERNEL);
-+			if (!dprm)
-+				return -ENOMEM;
-+			dprm->offset = offset;
-+			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return);
-+			if (ret)
-+				kfree(dprm);
-+			else {
-+				f->fn = t->fetch[FETCH_MTD_deref];
-+				f->data = (void *)dprm;
-+			}
-+		}
-+		break;
-+	}
-+	if (!ret && !f->fn) {	/* Parsed, but do not find fetch method */
-+		pr_info("%s type has no corresponding fetch method.\n",
-+			t->name);
-+		ret = -EINVAL;
-+	}
-+	return ret;
-+}
-+
-+/* String length checking wrapper */
-+int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
-+		struct probe_arg *parg, bool is_return)
-+{
-+	const char *t;
-+	int ret;
-+
-+	if (strlen(arg) > MAX_ARGSTR_LEN) {
-+		pr_info("Argument is too long.: %s\n",  arg);
-+		return -ENOSPC;
-+	}
-+	parg->comm = kstrdup(arg, GFP_KERNEL);
-+	if (!parg->comm) {
-+		pr_info("Failed to allocate memory for command '%s'.\n", arg);
-+		return -ENOMEM;
-+	}
-+	t = strchr(parg->comm, ':');
-+	if (t) {
-+		arg[t - parg->comm] = '\0';
-+		t++;
-+	}
-+	parg->type = find_fetch_type(t);
-+	if (!parg->type) {
-+		pr_info("Unsupported type: %s\n", t);
-+		return -EINVAL;
-+	}
-+	parg->offset = *size;
-+	*size += parg->type->size;
-+	ret = parse_probe_arg(arg, parg->type, &parg->fetch, is_return);
-+
-+	if (ret >= 0) {
-+		parg->fetch_size.fn = get_fetch_size_function(parg->type,
-+							      parg->fetch.fn);
-+		parg->fetch_size.data = parg->fetch.data;
-+	}
-+	return ret;
-+}
-+
-+/* Return 1 if name is reserved or already used by another argument */
-+int traceprobe_conflict_field_name(const char *name,
-+			       struct probe_arg *args, int narg)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(reserved_field_names); i++)
-+		if (strcmp(reserved_field_names[i], name) == 0)
-+			return 1;
-+	for (i = 0; i < narg; i++)
-+		if (strcmp(args[i].name, name) == 0)
-+			return 1;
-+	return 0;
-+}
-+
-+void traceprobe_free_probe_arg(struct probe_arg *arg)
-+{
-+	if (CHECK_FETCH_FUNCS(deref, arg->fetch.fn))
-+		free_deref_fetch_param(arg->fetch.data);
-+	else if (CHECK_FETCH_FUNCS(symbol, arg->fetch.fn))
-+		free_symbol_cache(arg->fetch.data);
-+	kfree(arg->name);
-+	kfree(arg->comm);
-+}
-+
-+static int command_trace_probe(const char *buf,
-+			int (*createfn)(int, char**))
-+{
-+	char **argv;
-+	int argc = 0, ret = 0;
-+
-+	argv = argv_split(GFP_KERNEL, buf, &argc);
-+	if (!argv)
-+		return -ENOMEM;
-+
-+	if (argc)
-+		ret = createfn(argc, argv);
-+
-+	argv_free(argv);
-+	return ret;
-+}
-+
-+#define WRITE_BUFSIZE 128
-+
-+ssize_t traceprobe_probes_write(struct file *file, const char __user *buffer,
-+	    size_t count, loff_t *ppos, int (*createfn)(int, char**))
-+{
-+	char *kbuf, *tmp;
-+	int ret = 0;
-+	size_t done = 0;
-+	size_t size;
-+
-+	kbuf = kmalloc(WRITE_BUFSIZE, GFP_KERNEL);
-+	if (!kbuf)
-+		return -ENOMEM;
-+
-+	while (done < count) {
-+		size = count - done;
-+		if (size >= WRITE_BUFSIZE)
-+			size = WRITE_BUFSIZE - 1;
-+		if (copy_from_user(kbuf, buffer + done, size)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		kbuf[size] = '\0';
-+		tmp = strchr(kbuf, '\n');
-+		if (tmp) {
-+			*tmp = '\0';
-+			size = tmp - kbuf + 1;
-+		} else if (done + size < count) {
-+			pr_warning("Line length is too long: "
-+				   "Should be less than %d.", WRITE_BUFSIZE);
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		done += size;
-+		/* Remove comments */
-+		tmp = strchr(kbuf, '#');
-+		if (tmp)
-+			*tmp = '\0';
-+
-+		ret = command_trace_probe(kbuf, createfn);
-+		if (ret)
-+			goto out;
-+	}
-+	ret = done;
-+out:
-+	kfree(kbuf);
-+	return ret;
-+}
-+
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-new file mode 100644
-index 0000000..74311ea
---- /dev/null
-+++ b/kernel/trace/trace_probe.h
-@@ -0,0 +1,155 @@
-+/*
-+ * Common header file for probe-based Dynamic events.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * Copyright (C) IBM Corporation, 2010
-+ * Author:     Srikar Dronamraju
-+ *
-+ * Derived from kernel/trace/trace_kprobe.c written by
-+ * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-+ */
-+
-+#include <linux/seq_file.h>
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/mman.h>
++#include <linux/file.h>
++#include <linux/pid.h>
 +#include <linux/slab.h>
-+#include <linux/smp.h>
-+#include <linux/debugfs.h>
-+#include <linux/types.h>
-+#include <linux/string.h>
-+#include <linux/ctype.h>
-+#include <linux/ptrace.h>
-+#include <linux/perf_event.h>
-+#include <linux/kprobes.h>
-+#include <linux/stringify.h>
-+#include <linux/limits.h>
-+#include <linux/uaccess.h>
-+#include <asm/bitsperlong.h>
-+
-+#include "trace.h"
-+#include "trace_output.h"
-+
-+#define MAX_TRACE_ARGS 128
-+#define MAX_ARGSTR_LEN 63
-+#define MAX_EVENT_NAME_LEN 64
-+#define MAX_STRING_SIZE PATH_MAX
-+
-+/* Reserved field names */
-+#define FIELD_STRING_IP "__probe_ip"
-+#define FIELD_STRING_RETIP "__probe_ret_ip"
-+#define FIELD_STRING_FUNC "__probe_func"
-+
-+#undef DEFINE_FIELD
-+#define DEFINE_FIELD(type, item, name, is_signed)			\
-+	do {								\
-+		ret = trace_define_field(event_call, #type, name,	\
-+					 offsetof(typeof(field), item),	\
-+					 sizeof(field.item), is_signed, \
-+					 FILTER_OTHER);			\
-+		if (ret)						\
-+			return ret;					\
-+	} while (0)
-+
-+
-+/* Flags for trace_probe */
-+#define TP_FLAG_TRACE	1
-+#define TP_FLAG_PROFILE	2
-+
-+
-+/* data_rloc: data relative location, compatible with u32 */
-+#define make_data_rloc(len, roffs)	\
-+	(((u32)(len) << 16) | ((u32)(roffs) & 0xffff))
-+#define get_rloc_len(dl)	((u32)(dl) >> 16)
-+#define get_rloc_offs(dl)	((u32)(dl) & 0xffff)
+ 
+ struct user_bkpt_arch_info *arch = &user_bkpt_arch_info;
+ 
+@@ -458,6 +464,283 @@ static int bad_arch_param(const char *param_name, int value)
+ 	return -ENOSYS;
+ }
+ 
++/* Slot allocation for XOL */
 +
 +/*
-+ * Convert data_rloc to data_loc:
-+ *  data_rloc stores the offset from data_rloc itself, but data_loc
-+ *  stores the offset from event entry.
++ * Every probepoint gets its own slot.  Once it's assigned a slot, it
++ * keeps that slot until the probepoint goes away. Only definite number
++ * of slots are allocated.
 + */
-+#define convert_rloc_to_loc(dl, offs)	((u32)(dl) + (offs))
 +
-+/* Data fetch function type */
-+typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
-+/* Printing function type */
-+typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *,
-+				 void *);
++struct uprobes_xol_area {
++	spinlock_t lock;	/* protects bitmap and slot (de)allocation*/
++	unsigned long *bitmap;	/* 0 = free slot */
 +
-+/* Fetch types */
-+enum {
-+	FETCH_MTD_reg = 0,
-+	FETCH_MTD_stack,
-+	FETCH_MTD_retval,
-+	FETCH_MTD_memory,
-+	FETCH_MTD_symbol,
-+	FETCH_MTD_deref,
-+	FETCH_MTD_END,
++	/*
++	 * We keep the vma's vm_start rather than a pointer to the vma
++	 * itself.  The probed process or a naughty kernel module could make
++	 * the vma go away, and we must handle that reasonably gracefully.
++	 */
++	unsigned long vaddr;		/* Page(s) of instruction slots */
 +};
 +
-+/* Fetch type information table */
-+struct fetch_type {
-+	const char	*name;		/* Name of type */
-+	size_t		size;		/* Byte size of type */
-+	int		is_signed;	/* Signed flag */
-+	print_type_func_t	print;	/* Print functions */
-+	const char	*fmt;		/* Fromat string */
-+	const char	*fmttype;	/* Name in format file */
-+	/* Fetch functions */
-+	fetch_func_t	fetch[FETCH_MTD_END];
-+};
-+
-+struct fetch_param {
-+	fetch_func_t	fn;
-+	void *data;
-+};
-+
-+struct probe_arg {
-+	struct fetch_param	fetch;
-+	struct fetch_param	fetch_size;
-+	unsigned int		offset;	/* Offset from argument entry */
-+	const char		*name;	/* Name of this argument */
-+	const char		*comm;	/* Command of this argument */
-+	const struct fetch_type	*type;	/* Type of this argument */
-+};
-+
-+static inline __kprobes void call_fetch(struct fetch_param *fprm,
-+				 struct pt_regs *regs, void *dest)
++static int xol_add_vma(struct uprobes_xol_area *area)
 +{
-+	return fprm->fn(regs, fprm->data, dest);
-+}
++	struct vm_area_struct *vma;
++	struct mm_struct *mm;
++	struct file *file;
++	unsigned long addr;
 +
-+/* Check the name is good for event/group */
-+static inline int check_event_name(const char *name)
-+{
-+	if (!isalpha(*name) && *name != '_')
-+		return 0;
-+	while (*++name != '\0') {
-+		if (!isalpha(*name) && !isdigit(*name) && *name != '_')
-+			return 0;
++	mm = get_task_mm(current);
++	if (!mm)
++		return -ESRCH;
++
++	down_write(&mm->mmap_sem);
++	/*
++	 * Find the end of the top mapping and skip a page.
++	 * If there is no space for PAGE_SIZE above
++	 * that, mmap will ignore our address hint.
++	 *
++	 * We allocate a "fake" unlinked shmem file because
++	 * anonymous memory might not be granted execute
++	 * permission when the selinux security hooks have
++	 * their way.
++	 */
++	vma = rb_entry(rb_last(&mm->mm_rb), struct vm_area_struct, vm_rb);
++	addr = vma->vm_end + PAGE_SIZE;
++	file = shmem_file_setup("uprobes/xol", PAGE_SIZE, VM_NORESERVE);
++	if (!file) {
++		printk(KERN_ERR "uprobes_xol failed to setup shmem_file "
++			"while allocating vma for pid/tgid %d/%d for "
++			"single-stepping out of line.\n",
++			current->pid, current->tgid);
++		goto fail;
 +	}
-+	return 1;
++	addr = do_mmap_pgoff(file, addr, PAGE_SIZE, PROT_EXEC, MAP_PRIVATE, 0);
++	fput(file);
++
++	if (addr & ~PAGE_MASK) {
++		printk(KERN_ERR "uprobes_xol failed to allocate a vma for "
++				"pid/tgid %d/%d for single-stepping out of "
++				"line.\n", current->pid, current->tgid);
++		goto fail;
++	}
++	vma = find_vma(mm, addr);
++
++	/* Don't expand vma on mremap(). */
++	vma->vm_flags |= VM_DONTEXPAND | VM_DONTCOPY;
++	area->vaddr = vma->vm_start;
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	return 0;
++
++fail:
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	return -ENOMEM;
 +}
 +
-+extern int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
-+		   struct probe_arg *parg, bool is_return);
++/*
++ * xol_alloc_area - Allocate process's uprobes_xol_area.
++ * This area will be used for storing instructions for execution out of
++ * line.
++ *
++ * Called with mm->uproc->mutex locked.
++ * Returns the allocated area or NULL.
++ */
++static struct uprobes_xol_area *xol_alloc_area(void)
++{
++	struct uprobes_xol_area *area = NULL;
 +
-+extern int traceprobe_conflict_field_name(const char *name,
-+			       struct probe_arg *args, int narg);
++	area = kzalloc(sizeof(*area), GFP_USER);
++	if (unlikely(!area))
++		return NULL;
 +
-+extern void traceprobe_free_probe_arg(struct probe_arg *arg);
++	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
++								GFP_USER);
 +
-+extern int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset);
++	if (!area->bitmap)
++		goto fail;
++	if (xol_add_vma(area)) {
++		kfree(area->bitmap);
++		goto fail;
++	}
++	spin_lock_init(&area->lock);
++	return area;
 +
-+extern ssize_t traceprobe_probes_write(struct file *file,
-+		const char __user *buffer, size_t count, loff_t *ppos,
-+		int (*createfn)(int, char**));
++fail:
++	kfree(area);
++	return NULL;
++}
++
++/*
++ * xol_free_area - Free the area allocated for slots.
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ *
++ */
++static void xol_free_area(struct uprobes_xol_area *xol_area)
++{
++	kfree(xol_area->bitmap);
++	kfree(xol_area);
++}
++
++/*
++ * Find a slot
++ *  - searching in existing vmas for a free slot.
++ *  - If no free slot in existing vmas, return 0;
++ *
++ * Called when holding xol_area->lock
++ */
++static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
++{
++	unsigned long slot_addr;
++	int slot_nr;
++
++	slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
++	if (slot_nr < UINSNS_PER_PAGE) {
++		set_bit(slot_nr, area->bitmap);
++		slot_addr = area->vaddr +
++				(slot_nr * UPROBES_XOL_SLOT_BYTES);
++		return slot_addr;
++	}
++
++	return 0;
++}
++
++/*
++ * xol_get_insn_slot - If user_bkpt  was not allocated a slot, then
++ * allocate a slot. If uprobes_insert_bkpt is already called, (i.e
++ * user_bkpt.vaddr != 0) then copy the instruction into the slot.
++ * @user_bkpt: probepoint information
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ *
++ * Called with mm->uproc->mutex locked.
++ * Returns the allocated slot address or 0.
++ */
++static unsigned long xol_get_insn_slot(struct user_bkpt *user_bkpt,
++				struct uprobes_xol_area *xol_area)
++{
++	unsigned long flags, xol_vaddr = 0;
++	int len;
++
++	if (unlikely(!xol_area))
++		return 0;
++
++	if (user_bkpt->xol_vaddr)
++		return user_bkpt->xol_vaddr;
++
++	spin_lock_irqsave(&xol_area->lock, flags);
++	xol_vaddr = xol_take_insn_slot(xol_area);
++	spin_unlock_irqrestore(&xol_area->lock, flags);
++
++	/*
++	 * Initialize the slot if user_bkpt->vaddr points to valid
++	 * instruction slot.
++	 */
++	if (likely(xol_vaddr) && user_bkpt->vaddr) {
++		len = access_process_vm(current, xol_vaddr, user_bkpt->insn,
++						UPROBES_XOL_SLOT_BYTES, 1);
++		if (unlikely(len < UPROBES_XOL_SLOT_BYTES))
++			printk(KERN_ERR "Failed to copy instruction at %#lx "
++					"len = %d\n", user_bkpt->vaddr, len);
++	}
++
++	/*
++	 * Update user_bkpt->xol_vaddr after giving a chance for the slot to
++	 * be initialized.
++	 */
++	mb();
++	user_bkpt->xol_vaddr = xol_vaddr;
++	return user_bkpt->xol_vaddr;
++}
++
++/*
++ * xol_free_insn_slot - If slot was earlier allocated by
++ * @xol_get_insn_slot(), make the slot available for
++ * subsequent requests.
++ * @slot_addr: slot address as returned by
++ * @xol_get_insn_area().
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ */
++static void xol_free_insn_slot(unsigned long slot_addr,
++				struct uprobes_xol_area *xol_area)
++{
++	unsigned long vma_end;
++	int found = 0;
++
++	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
++		return;
++
++	if (unlikely(!xol_area))
++		return;
++
++	vma_end = xol_area->vaddr + PAGE_SIZE;
++	if (xol_area->vaddr <= slot_addr && slot_addr < vma_end) {
++		int slot_nr;
++		unsigned long offset = slot_addr - xol_area->vaddr;
++		unsigned long flags;
++
++		BUG_ON(offset % UPROBES_XOL_SLOT_BYTES);
++
++		slot_nr = offset / UPROBES_XOL_SLOT_BYTES;
++		BUG_ON(slot_nr >= UINSNS_PER_PAGE);
++
++		spin_lock_irqsave(&xol_area->lock, flags);
++		clear_bit(slot_nr, xol_area->bitmap);
++		spin_unlock_irqrestore(&xol_area->lock, flags);
++		found = 1;
++	}
++
++	if (!found)
++		printk(KERN_ERR "%s: no XOL vma for slot address %#lx\n",
++						__func__, slot_addr);
++}
++
++/*
++ * xol_validate_vaddr - Verify if the specified address is in an
++ * executable vma, but not in an XOL vma.
++ *	- Return 0 if the specified virtual address is in an
++ *	  executable vma, but not in an XOL vma.
++ *	- Return 1 if the specified virtual address is in an
++ *	  XOL vma.
++ *	- Return -EINTR otherwise.(i.e non executable vma, or
++ *	  not a valid address
++ * @pid: the probed process
++ * @vaddr: virtual address of the instruction to be validated.
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ */
++static int xol_validate_vaddr(struct pid *pid, unsigned long vaddr,
++				struct uprobes_xol_area *xol_area)
++{
++	struct task_struct *tsk;
++	unsigned long vma_end;
++	int result;
++
++	if (unlikely(!xol_area))
++		return 0;
++
++	tsk = get_pid_task(pid, PIDTYPE_PID);
++	if (unlikely(!tsk))
++		return -EINVAL;
++
++	result = validate_address(tsk, vaddr);
++	if (result != 0)
++		goto validate_end;
++
++	vma_end = xol_area->vaddr + PAGE_SIZE;
++	if (xol_area->vaddr <= vaddr && vaddr < vma_end)
++		result = 1;
++
++validate_end:
++	put_task_struct(tsk);
++	return result;
++}
++/* end of slot allocation for XOL */
++
+ static int __init init_uprobes(void)
+ {
+ 	int result = 0;
