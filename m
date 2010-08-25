@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab0HYP7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:59:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52875 "EHLO hera.kernel.org"
+	id S1754048Ab0HYP7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:59:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13326 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab0HYPyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:54:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
-Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 30/30] block: remove the BH_Eopnotsupp flag
-Date: Wed, 25 Aug 2010 17:47:47 +0200
-Message-Id: <1282751267-3530-31-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
-References: <1282751267-3530-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:26 +0000 (UTC)
+	id S1752478Ab0HYP7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:59:47 -0400
+Date: Wed, 25 Aug 2010 11:59:18 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Tejun Heo <tj@kernel.org>,
+        michaelc@cs.wisc.edu, James.Bottomley@suse.de,
+        Hannes Reinecke <hare@suse.de>
+Cc: tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
+        jack@suse.cz, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
+        vst@vlnb.net, rwheeler@redhat.com, Christoph Hellwig <hch@lst.de>,
+        chris.mason@oracle.com, dm-devel@redhat.com
+Subject: [RFC] training mpath to discern between SCSI errors (was: Re:
+ [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced
+ flush)
+Message-ID: <20100825155918.GB8509@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C74CD95.1000208@ct.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Hellwig <hch@infradead.org>
+On Wed, Aug 25 2010 at  4:00am -0400,
+Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
 
-This flag was only set for barrier buffers, which we don't submit
-anymore.
+> > I'm not sure how to proceed here.  How much work would
+> > discerning between transport and IO errors take?  If it can't be done
+> > quickly enough the retry logic can be kept around to keep the old
+> > behavior but that already was a broken behavior, so...  :-(
+> 
+> I'm not sure how long will it take.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/buffer.c                 |    7 +------
- fs/fat/misc.c               |    5 +----
- include/linux/buffer_head.h |    2 --
- 3 files changed, 2 insertions(+), 12 deletions(-)
+We first need to understand what direction we want to go with this.  We
+currently have 2 options.  But any other ideas are obviously welcome.
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 3e7dca2..7f0b9b0 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -156,7 +156,7 @@ void end_buffer_write_sync(struct buffer_head *bh, int uptodate)
- 	if (uptodate) {
- 		set_buffer_uptodate(bh);
- 	} else {
--		if (!buffer_eopnotsupp(bh) && !quiet_error(bh)) {
-+		if (!quiet_error(bh)) {
- 			buffer_io_error(bh);
- 			printk(KERN_WARNING "lost page write due to "
- 					"I/O error on %s\n",
-@@ -2891,7 +2891,6 @@ static void end_bio_bh_io_sync(struct bio *bio, int err)
- 
- 	if (err == -EOPNOTSUPP) {
- 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
--		set_bit(BH_Eopnotsupp, &bh->b_state);
- 	}
- 
- 	if (unlikely (test_bit(BIO_QUIET,&bio->bi_flags)))
-@@ -3031,10 +3030,6 @@ int __sync_dirty_buffer(struct buffer_head *bh, int rw)
- 		bh->b_end_io = end_buffer_write_sync;
- 		ret = submit_bh(rw, bh);
- 		wait_on_buffer(bh);
--		if (buffer_eopnotsupp(bh)) {
--			clear_buffer_eopnotsupp(bh);
--			ret = -EOPNOTSUPP;
--		}
- 		if (!ret && !buffer_uptodate(bh))
- 			ret = -EIO;
- 	} else {
-diff --git a/fs/fat/misc.c b/fs/fat/misc.c
-index 1736f23..970e682 100644
---- a/fs/fat/misc.c
-+++ b/fs/fat/misc.c
-@@ -255,10 +255,7 @@ int fat_sync_bhs(struct buffer_head **bhs, int nr_bhs)
- 
- 	for (i = 0; i < nr_bhs; i++) {
- 		wait_on_buffer(bhs[i]);
--		if (buffer_eopnotsupp(bhs[i])) {
--			clear_buffer_eopnotsupp(bhs[i]);
--			err = -EOPNOTSUPP;
--		} else if (!err && !buffer_uptodate(bhs[i]))
-+		if (!err && !buffer_uptodate(bhs[i]))
- 			err = -EIO;
- 	}
- 	return err;
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index fc999f5..dd1b25b 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -32,7 +32,6 @@ enum bh_state_bits {
- 	BH_Delay,	/* Buffer is not yet allocated on disk */
- 	BH_Boundary,	/* Block is followed by a discontiguity */
- 	BH_Write_EIO,	/* I/O error on write */
--	BH_Eopnotsupp,	/* DEPRECATED: operation not supported (barrier) */
- 	BH_Unwritten,	/* Buffer is allocated on disk but not written */
- 	BH_Quiet,	/* Buffer Error Prinks to be quiet */
- 
-@@ -124,7 +123,6 @@ BUFFER_FNS(Async_Write, async_write)
- BUFFER_FNS(Delay, delay)
- BUFFER_FNS(Boundary, boundary)
- BUFFER_FNS(Write_EIO, write_io_error)
--BUFFER_FNS(Eopnotsupp, eopnotsupp)
- BUFFER_FNS(Unwritten, unwritten)
- 
- #define bh_offset(bh)		((unsigned long)(bh)->b_data & ~PAGE_MASK)
--- 
-1.7.1
+1)
+Mike Christie has a patchset that introduce more specific
+target/transport/host error codes.  Mike shared these pointers but he'd
+have to put the work in to refresh them:
+http://marc.info/?l=linux-scsi&m=112487427230642&w=2
+http://marc.info/?l=linux-scsi&m=112487427306501&w=2
+http://marc.info/?l=linux-scsi&m=112487431524436&w=2
+http://marc.info/?l=linux-scsi&m=112487431524350&w=2
 
+errno.h new EXYZ
+http://marc.info/?l=linux-kernel&m=107715299008231&w=2
+
+add block layer blkdev.h error values
+http://marc.info/?l=linux-kernel&m=107961883915068&w=2
+
+add block layer blkdev.h error values (v2 convert more drivers)
+http://marc.info/?l=linux-scsi&m=112487427230642&w=2
+
+I think that patchset's appoach is fairly disruptive just to be able to
+train upper layers to differentiate (e.g. mpath).  But in the end maybe
+that change takes the code in a more desirable direction?
+
+2)
+Another option is Hannes' approach of having DM consume req->errors and
+SCSI sense more directly.
+
+I've refreshed Hannes' previous patchset against 2.6.36-rc2 but I
+haven't finished testing it yet (should be OK.. it boots, but still have
+FIXME to move scsi_uld_should_retry to scsi_error.c):
+http://people.redhat.com/msnitzer/patches/dm-scsi-sense/
+
+Would be great if James, Hannes and others had a look at this
+refreshed RFC patchset.  It's clearly not polished but it gives an idea
+of the approach.  Does this look worthwhile?
+
+Follow-on work is needed to refine scsi_uld_should_retry further.  Keep
+in mind that scsi_error.c is the intended location for this code.
+
+James, please note that I've attempted to make REQ_TYPE_FS set
+req->errors only for "genuine errors" by (ab)using
+scsi_decide_disposition:
+http://people.redhat.com/msnitzer/patches/dm-scsi-sense/scsi-Always-pass-error-result-and-sense-on-request-completion.patch
+
+If others think this may be worthwhile I can finish testing, cleanup the
+patches further, and post them.
+
+Mike
