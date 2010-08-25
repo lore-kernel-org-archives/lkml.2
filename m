@@ -1,124 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab0HYNWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 09:22:05 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55791 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab0HYNWD (ORCPT
+	id S1753607Ab0HYNXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 09:23:36 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:38494 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337Ab0HYNXd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 09:22:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LGOk6Ep2Wtc9UY5NyE34G+6Mo80WiPrzOQkm1CirO91iitogiF9GxgDS6u6WVdGvzP
-         POAkP+GOYBK4mIugbA5HSUtcmmCKPsS5uZjZNcd1lUYfjYyDgglByYpPMl0O/4o3D+m2
-         59DyNE0ET7JrOZpRxMr8N2DqLCcQbhJ1aEPbk=
-Date: Wed, 25 Aug 2010 21:21:50 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org
-Subject: Re: [RFC PATCH 1/3] timer: make try_to_del_timer_sync() safe on
- both hardirq context and UP
-Message-ID: <20100825132150.GA3468@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTimUb4GCdacq0C5+k=q9TrTMW956iUY-00ZpXsrX@mail.gmail.com>
+	Wed, 25 Aug 2010 09:23:33 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zz1dbaL1432N98dNzz1202hzz8275bhz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L7PMEM-01-B3V-02
+X-M-MSG: 
+Date: Wed, 25 Aug 2010 15:39:48 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Alok Kataria <akataria@vmware.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>,
+        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v2] x86, tsc: Limit CPU frequency calibration on AMD
+Message-ID: <20100825133948.GE4590@loge.amd.com>
+References: <20100817185634.GA10597@liondog.tnic>
+ <20100818161639.GF9880@aftab>
+ <4C6C08EC.2080404@zytor.com>
+ <20100818173401.GG9880@aftab>
+ <1282153895.15158.45.camel@ank32.eng.vmware.com>
+ <20100818184534.GA12842@aftab>
+ <20100824155305.GA18220@aftab>
+ <4C7448A3.2030309@zytor.com>
+ <20100825070653.GA25672@aftab>
+ <20100825130454.GB4891@loge.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <AANLkTimUb4GCdacq0C5+k=q9TrTMW956iUY-00ZpXsrX@mail.gmail.com>
+In-Reply-To: <20100825130454.GB4891@loge.amd.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops, web sending break the thread.
+On Wed, Aug 25, 2010 at 03:04:54PM +0200, Andreas Herrmann wrote:
+> On Wed, Aug 25, 2010 at 03:06:53AM -0400, Borislav Petkov wrote:
+> > From: "H. Peter Anvin" <hpa@zytor.com>
+> > Date: Tue, Aug 24, 2010 at 06:33:07PM -0400
+> > 
+> > > Build failure:
+> > > 
+> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c: In
+> > > function ‘amd_calibrate_cpu’:
+> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:397: error:
+> > > implicit declaration of function ‘avail_to_resrv_perfctr_nmi_bit’
+> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:409: error:
+> > > implicit declaration of function ‘reserve_perfctr_nmi’
+> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:410: error:
+> > > implicit declaration of function ‘reserve_evntsel_nmi’
+> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:429: error:
+> > > implicit declaration of function ‘release_perfctr_nmi’
+> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:430: error:
+> > > implicit declaration of function ‘release_evntsel_nmi’
+> > > 
+> > > Reproducible by doing "make ARCH=i386 allnoconfig".
+> > 
+> > Sh*t, I can't catch a break with that Kconfig dependency stuff, can I?
+> > 
+> > This happens because perfctr-watchdog.c gets pulled in by
+> > CONFIG_X86_LOCAL_APIC which is, _of course_, not selected in an
+> > allnoconfig build. Fixing this would mean exporting all that perfcounter
+> > reservation functionality for the allnoconfig case, which is of course
+> > doable but I'm starting to question the need for recalibrating the TSC
+> > at all:
+> > 
+> > I mean, in the 99% of the cases MSRC001_0015[24] should be set by the
+> > BIOS and if not then the BIOS which does that is pretty b0rked anyway.
+> > So I'm thinking of removing the recalibration code and simply warning
+> > the user instead, for the 1% case.
+> > 
+> > Andreas, what do you think?
+> 
+> I opt for removing the recalibration code plus keeping a FIRMWARE_WARN
+> for borked BIOSes (just in case that there are any old systems with
+> the wrong setting).
 
-Maybe I should show this change in V2.
-coming soon.
+... and checking the HWCR MSR and issuing the firmware warning should
+only happen if not running on a hypervisor. (Validate whether CPU has
+X86_FEATURE_HYPERVISOR bit set or not.)
 
--Yong
 
-On Wed, Aug 25, 2010 at 02:26:12PM +0800, Yong Zhang wrote:
-> From: Yong Zhang <yong.zhang@windriver.com>
-> 
-> In commit fd450b7318b75343fd76b3d95416853e34e72c95, it was saying
-> try_to_del_timer_sync() can be used in interrupt context.
-> 
-> But because base->running_timer is SMP special, this lead to
-> unsymmetry try_to_del_timer_sync() on UP and SMP.
-> 
-> We can make running_timer live on everywhere, then try_to_del_timer_sync()
-> is also UP safe and can be used in hardirq context.
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/linux/timer.h |    4 ++--
->  kernel/timer.c        |    6 +-----
->  2 files changed, 3 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/timer.h b/include/linux/timer.h
-> index 38cf093..225c4ce 100644
-> --- a/include/linux/timer.h
-> +++ b/include/linux/timer.h
-> @@ -248,11 +248,11 @@ static inline void
-> timer_stats_timer_clear_start_info(struct timer_list *timer)
-> 
->  extern void add_timer(struct timer_list *timer);
-> 
-> +extern int try_to_del_timer_sync(struct timer_list *timer);
-> +
->  #ifdef CONFIG_SMP
-> -  extern int try_to_del_timer_sync(struct timer_list *timer);
->    extern int del_timer_sync(struct timer_list *timer);
->  #else
-> -# define try_to_del_timer_sync(t)	del_timer(t)
->  # define del_timer_sync(t)		del_timer(t)
->  #endif
-> 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 97bf05b..e031eb4 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -347,9 +347,7 @@ EXPORT_SYMBOL_GPL(set_timer_slack);
->  static inline void set_running_timer(struct tvec_base *base,
->  					struct timer_list *timer)
->  {
-> -#ifdef CONFIG_SMP
->  	base->running_timer = timer;
-> -#endif
->  }
-> 
->  static void internal_add_timer(struct tvec_base *base, struct
-> timer_list *timer)
-> @@ -936,15 +934,12 @@ int del_timer(struct timer_list *timer)
->  }
->  EXPORT_SYMBOL(del_timer);
-> 
-> -#ifdef CONFIG_SMP
->  /**
->   * try_to_del_timer_sync - Try to deactivate a timer
->   * @timer: timer do del
->   *
->   * This function tries to deactivate a timer. Upon successful (ret >= 0)
->   * exit the timer is not queued and the handler is not running on any CPU.
-> - *
-> - * It must not be called from interrupt contexts.
->   */
->  int try_to_del_timer_sync(struct timer_list *timer)
->  {
-> @@ -973,6 +968,7 @@ out:
->  }
->  EXPORT_SYMBOL(try_to_del_timer_sync);
-> 
-> +#ifdef CONFIG_SMP
->  /**
->   * del_timer_sync - deactivate a timer and wait for the handler to finish.
->   * @timer: the timer to be deactivated
-> -- 
-> 1.7.0.4
+Andreas
+
+-- 
+Operating | Advanced Micro Devices GmbH
+  System  | Einsteinring 24, 85609 Dornach b. München, Germany
+ Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
+  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
+  (OSRC)  | Registergericht München, HRB Nr. 43632
+
+
