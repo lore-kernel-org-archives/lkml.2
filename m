@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab0HYHsm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:48:42 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37391 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab0HYHsj convert rfc822-to-8bit (ORCPT
+	id S1752194Ab0HYHsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:48:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48836 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab0HYHst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 03:48:39 -0400
+	Wed, 25 Aug 2010 03:48:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=Cyvq/jGga4u3zJO1DKhKNxaa0ub3MWhe+GZDeUk8sVdYJkKVRJAxv7nG4x7roZrwZx
+         X20ddAfe0ErphIVUPLRaPUEzfARDvU5aKoAoa8fL6J5Zk7USBNrog1jbRePuXzrg+mQJ
+         B0ZX9auexrAQLaCqqHU6b2yKSBIt580PgYy3g=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3 RESEND] ptrace: cleanup address space conversion on ptrace_request()
+In-Reply-To: <201008241345.06507.arnd@arndb.de> (Arnd Bergmann's message of
+	"Tue, 24 Aug 2010 13:45:06 +0200")
+References: <201008222206.18523.arnd@arndb.de>
+	<20100823162105.GA19164@infradead.org>
+	<1282581489.1659.13.camel@leonhard> <201008241345.06507.arnd@arndb.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+Date: Wed, 25 Aug 2010 16:48:40 +0900
+Message-ID: <87sk23w2sn.fsf@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=SkVv4tYUuAr9n03iYFdTJQr7wQnFaodrkHpom@mail.gmail.com>
-References: <20100622232108.26752ff8@lxorguk.ukuu.org.uk> <1277462596.2143.101.camel@itpsd6lap>
- <20100625120329.1303aa61@lxorguk.ukuu.org.uk> <1282683470.8020.66.camel@itpsd6lap>
- <20100824211016.GA7176@suse.de> <1282687797.8020.108.camel@itpsd6lap>
- <20100824222035.GA10625@suse.de> <1282690232.8020.116.camel@itpsd6lap>
- <20100824225703.GA5913@suse.de> <20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
- <20100824231241.GA6971@suse.de> <AANLkTi=SkVv4tYUuAr9n03iYFdTJQr7wQnFaodrkHpom@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 25 Aug 2010 09:48:23 +0200
-Message-ID: <AANLkTimTXKTHqmomfuTQMosPMyhrGLFk7YrEJikpPm6e@mail.gmail.com>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Samo Pogacnik <samo_pogacnik@t-2.net>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 09:40, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Wed, Aug 25, 2010 at 01:12, Greg KH <gregkh@suse.de> wrote:
->> On Wed, Aug 25, 2010 at 12:22:21AM +0100, Alan Cox wrote:
->>> > No, it does cover that.  You should be able to do that with a simple
->>> > console redirection to /dev/kmsg  What happened when you tried to do
->>> > that?
->>>
->>> stty: standard input: Inappropriate ioctl for device
->>
->> Kay, how does systemd handle the kmsg console redirection?
+Arnd Bergmann <arnd@arndb.de> writes:
+> I don't think we ever rely on 'data' being signed, and user space
+> sees it as 'void *' anyway, so it should be possible to just turn
+> it into 'unsigned long'.
 >
-> Systemd does not steal the console, this is done by plymouth, in the
-> same way blogd can do that. It uses a pty and rewrites the messages.
->
-> Systemd does pass syslog to the kernel buffer during early boot. Init
-> provides /dev/log. With systemd, the started services usually don't
-> get the console connected, but use syslog anyway or the stdout/err
-> gets redirected to syslog.
->
-> With systemd the console is not too useful because we start everything
-> in parallel. If all the services would put out stuff there like sysv
-> did, it would look like a real mess.
 
-Or isn't that what you asked for? We just write the stuff that arrives
-at syslog to /dev/kmsg to put things in the kernel log buffer.
+After I've checked all arch_ptrace() code, I can think there is no specific
+reason @addr and @data to be signed long types. Most of archs use them
+as if they were unsigned. So I'll prepare a patch series to change this
+and some cleanups of ptrace_request() and all of arch_ptrace() if no
+objection exists.
 
-Also initrds are usually using
-  exec < /dev/console > /dev/kmsg 2>&1
-to get stuff directly to the kernel buffer.
+Thanks.
 
-What does /dev/ttyprintk offer on top of that?
-
-Kay
+-- 
+Regards,
+Namhyung Kim
