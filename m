@@ -1,124 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab0HYVfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:35:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34237 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754384Ab0HYVfn (ORCPT
+	id S1754643Ab0HYVf4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:35:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44269 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab0HYVfw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:35:43 -0400
-Date: Wed, 25 Aug 2010 14:35:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Ben Blum <bblum@google.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] cgroups: fix API thinko
-Message-Id: <20100825143520.9954d3f9.akpm@linux-foundation.org>
-In-Reply-To: <1281112704.10055.0.camel@x201>
-References: <20100805225914.GA26772@redhat.com>
-	<4C5C3985.5060706@us.ibm.com>
-	<1281112704.10055.0.camel@x201>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 25 Aug 2010 17:35:52 -0400
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Dave Chinner <david@fromorbit.com>, David Rientjes <rientjes@google.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100825205342.GG4453@thunk.org>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+	 <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com>
+	 <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+	 <20100825112433.GB4453@thunk.org> <1282736132.2605.3563.camel@laptop>
+	 <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop>
+	 <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop>
+	 <20100825205342.GG4453@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 25 Aug 2010 23:35:25 +0200
+Message-ID: <1282772125.1975.153.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Aug 2010 10:38:24 -0600
-Alex Williamson <alex.williamson@redhat.com> wrote:
+On Wed, 2010-08-25 at 16:53 -0400, Ted Ts'o wrote:
+> On Wed, Aug 25, 2010 at 03:35:42PM +0200, Peter Zijlstra wrote:
+> > 
+> > While I appreciate that it might be somewhat (a lot) harder for a
+> > filesystem to provide that guarantee, I'd be deeply worried about your
+> > claim that its impossible.
+> > 
+> > It would render a system without swap very prone to deadlocks. Even with
+> > the very tight dirty page accounting we currently have you can fill all
+> > your memory with anonymous pages, at which point there's nothing free
+> > and you require writeout of dirty pages to succeed.
+> 
+> For file systems that do delayed allocation, the situation is very
+> similar to swapping over NFS.  Sometimes in order to make some free
+> memory, you need to spend some free memory... 
 
-> On Fri, 2010-08-06 at 09:34 -0700, Sridhar Samudrala wrote:
-> > On 8/5/2010 3:59 PM, Michael S. Tsirkin wrote:
-> > > cgroup_attach_task_current_cg API that have upstream is backwards: we
-> > > really need an API to attach to the cgroups from another process A to
-> > > the current one.
-> > >
-> > > In our case (vhost), a priveledged user wants to attach it's task to cgroups
-> > > from a less priveledged one, the API makes us run it in the other
-> > > task's context, and this fails.
-> > >
-> > > So let's make the API generic and just pass in 'from' and 'to' tasks.
-> > > Add an inline wrapper for cgroup_attach_task_current_cg to avoid
-> > > breaking bisect.
-> > >
-> > > Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> > > ---
-> > >
-> > > Paul, Li, Sridhar, could you please review the following
-> > > patch?
-> > >
-> > > I only compile-tested it due to travel, but looks
-> > > straight-forward to me.
-> > > Alex Williamson volunteered to test and report the results.
-> > > Sending out now for review as I might be offline for a bit.
-> > > Will only try to merge when done, obviously.
-> > >
-> > > If OK, I would like to merge this through -net tree,
-> > > together with the patch fixing vhost-net.
-> > > Let me know if that sounds ok.
-> > >
-> > > Thanks!
-> > >
-> > > This patch is on top of net-next, it is needed for fix
-> > > vhost-net regression in net-next, where a non-priveledged
-> > > process can't enable the device anymore:
-> > >
-> > > when qemu uses vhost, inside the ioctl call it
-> > > creates a thread, and tries to add
-> > > this thread to the groups of current, and it fails.
-> > > But we control the thread, so to solve the problem,
-> > > we really should tell it 'connect to out cgroups'.
+Which means you need to be able to compute a bounded amount of that
+memory.
 
-So am I correct to assume that this change is now needed in 2.6.36, and
-unneeded in 2.6.35?
+>  which implies that for
+> these file systems, being more aggressive about triggering writeout,
+> and being more aggressive about throttling processes which are
+> creating too many dirty pages, especially dirty delayed allocaiton
+> pages (regardless of whether this is via write(2) or accessing mmapped
+> memory), is a really good idea.
 
-Can it affect the userspace<->kernel API in amy manner?  If so, it
-should be backported into earlier kernels to reduce the number of
-incompatible kernels out there.
+That seems unrelated, the VM has a strict dirty limit and controls
+writeback when needed. That part works.
 
-Paul, did you have any comments?
+> A pool of free pages which is reserved for routines that are doing
+> page cleaning would probably also be a good idea.  Maybe that's just
+> retrying with GFP_ATOMIC if a normal allocation fails, or maybe we
+> need our own special pool, or maybe we need to dynamically resize the
+> GFP_ATOMIC pool based on how many subsystems might need to use it....
 
-I didn't see any update in response to the minor review comments, so...
+We have a smallish reserve, accessible with PF_MEMALLOC, but its use is
+not regulated nor bounded, it just mostly works good enough.
 
-
- include/linux/cgroup.h |    1 +
- kernel/cgroup.c        |    6 +++---
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
-diff -puN include/linux/cgroup.h~cgroups-fix-api-thinko-fix include/linux/cgroup.h
---- a/include/linux/cgroup.h~cgroups-fix-api-thinko-fix
-+++ a/include/linux/cgroup.h
-@@ -579,6 +579,7 @@ void cgroup_iter_end(struct cgroup *cgrp
- int cgroup_scan_tasks(struct cgroup_scanner *scan);
- int cgroup_attach_task(struct cgroup *, struct task_struct *);
- int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
-+
- static inline int cgroup_attach_task_current_cg(struct task_struct *tsk)
- {
- 	return cgroup_attach_task_all(current, tsk);
-diff -puN kernel/cgroup.c~cgroups-fix-api-thinko-fix kernel/cgroup.c
---- a/kernel/cgroup.c~cgroups-fix-api-thinko-fix
-+++ a/kernel/cgroup.c
-@@ -1798,13 +1798,13 @@ out:
- int cgroup_attach_task_all(struct task_struct *from, struct task_struct *tsk)
- {
- 	struct cgroupfs_root *root;
--	struct cgroup *cur_cg;
- 	int retval = 0;
- 
- 	cgroup_lock();
- 	for_each_active_root(root) {
--		cur_cg = task_cgroup_from_root(from, root);
--		retval = cgroup_attach_task(cur_cg, tsk);
-+		struct cgroup *from_cg = task_cgroup_from_root(from, root);
-+
-+		retval = cgroup_attach_task(from_cg, tsk);
- 		if (retval)
- 			break;
- 	}
-_
 
