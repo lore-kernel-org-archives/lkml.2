@@ -1,68 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab0HYKE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 06:04:29 -0400
-Received: from static-ip-62-75-137-225.inaddr.intergenia.de ([62.75.137.225]:42912
-	"EHLO vs137225.vserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab0HYKE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 06:04:26 -0400
-Subject: Re: [Xen-devel] [GIT PULL] Fix lost interrupt race in Xen	 event
- channels
-From: Daniel Stodden <daniel.stodden@citrix.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Tom Kopec <tek@acm.org>,
-        Stable Kernel <stable@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C74E7C802000078000120C0@vpn.id2.novell.com>
-References: <4C743B2C.8070208@goop.org>
-	 <4C74E7C802000078000120C0@vpn.id2.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix VMD
-Date: Wed, 25 Aug 2010 03:04:20 -0700
-Message-ID: <1282730660.3092.106.camel@ramone.somacoma.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753258Ab0HYKGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 06:06:39 -0400
+Received: from borg.medozas.de ([188.40.89.202]:38130 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069Ab0HYKGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 06:06:36 -0400
+Date: Wed, 25 Aug 2010 12:06:35 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Aijaz Baig <aijazbaig1@gmail.com>
+cc: brgerst@gmail.com, peterz@infradead.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fwd: help needed with EXPORT_SYMBOL
+In-Reply-To: <1282728478.17044.22.camel@aijazbaig1-desktop>
+Message-ID: <alpine.LNX.2.01.1008251204270.27274@obet.zrqbmnf.qr>
+References: <1282373834.4080.79.camel@aijazbaig1-desktop>  <1282540448.4080.86.camel@aijazbaig1-desktop>  <AANLkTimtNOyJCbLxAW8Ebsftb58EWoNFW7Xkevqb6oGo@mail.gmail.com>  <1282569477.2605.1798.camel@laptop>  <AANLkTinq5APN4CXWAGj9sTFiTf4Cn1_mDaJSrAOh=t+N@mail.gmail.com>
+  <1282572346.2605.1856.camel@laptop>  <AANLkTimQDV74kcM_84QySMKmdf-XxFOhqp48cQdQNN4s@mail.gmail.com>  <AANLkTinRyoHcSmmHv9tZ36X4wxVVCKGLDwGiZUTPPn+z@mail.gmail.com>  <1282625054.4080.152.camel@aijazbaig1-desktop>  <AANLkTi=cj+qCFxeT5hq0-x-XqSUCbcqQRAwmQ9h+cOxy@mail.gmail.com>
+  <AANLkTim9nvJR0K6xJc2kHGCeoMzFLzSxR8Avx59jsEbf@mail.gmail.com> <1282728478.17044.22.camel@aijazbaig1-desktop>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 03:52 -0400, Jan Beulich wrote:
-> >>> On 24.08.10 at 23:35, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> > We worked out the root cause was that it was incorrectly treating Xen
-> > events as level rather than edge triggered interrupts, which works fine
-> > unless you're handling one interrupt, the interrupt gets migrated to
-> > another cpu and then re-raised.  This ends up losing the interrupt
-> > because the edge-triggering of the second interrupt is lost.
-> 
-> While this description would seem plausible at the first glance, it
-> doesn't match up with unmask_evtchn() already taking care of
-> exactly this case. Or are you implicitly saying that this code is
-> broken in some way (if so, how, and shouldn't it then be that
-> code that needs fixing, or removing if you want to stay with the
-> edge handling)?
+On Wednesday 2010-08-25 11:27, Aijaz Baig wrote:
 
-Not broken, but a different problem. The unmask 'resend' only catches
-the edge lost if the event was raised while it was still masked. But
-level irq doesn't have to save PENDING state. In the Xen event migration
-case the edge isn't lost, but the upcall will drop the invocation when
-the handler is found inprogress on the previous cpu.
+>By the way Jan I couldnt find bridge.c although there is an object file
+>called bridge.o within /net/bridge.
 
-> I do however agree that using handle_level_irq() is problematic
-> (see http://lists.xensource.com/archives/html/xen-devel/2010-04/msg01178.html),
-> but as said there I think using the fasteoi logic is preferable. No
-> matter whether using edge or level, the ->end() method will
-> never be called (whereas fasteoi calls ->eoi(), which would
-> just need to be vectored to the same function as ->end()).
-> Without end_pirq() ever called, you can't let Xen know of
-> bad PIRQs (so that it can disable them instead of continuing
-> to call the [now shortcut] handler in the owning domain).
+$ git grep -e br_handle_frame_hook v2.6.35 net/bridge/
 
-Not an opinion, just confused: Isn't all that dealt with in
-chip->disable?
-
-Daniel
-
+See that, which is used kernel<-module. This frame hook has been changed 
+in 2.6.36-rc1 which is why looking at 2.6.35 would be the short route.
