@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab0HYIz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 04:55:59 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54370 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab0HYIz5 (ORCPT
+	id S1752780Ab0HYI4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 04:56:14 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:41214 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab0HYIz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 04:55:57 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "M. Vefa Bicakci" <bicave@superonline.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <4C715027.9060602@superonline.com>
-References: <20100820115449.5FF1.A69D9226@jp.fujitsu.com> <4C715027.9060602@superonline.com>
-Message-Id: <20100825175034.F3EA.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 25 Aug 2010 17:55:55 +0900 (JST)
+	Wed, 25 Aug 2010 04:55:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=SPthjakah96tLh3XIjgYTD1JCusGM0VdVpmmHWGwRieSYZBt8sdAnRJBIF4wrOswA6
+         9EsmgCA5h4w1NZ0pLKGGSBWevtLKPcqBW/HSxCxsmVCJ5Jg9KhhyrJd67oXGCyEe6N6/
+         pn15rGtkrQhx64H6iMcyBdcxtjG1g7KJidn1Y=
+Subject: [PATCH] ASoC: pxa-ssp: fix a memory leak in pxa_ssp_remove()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain
+Date: Wed, 25 Aug 2010 16:59:11 +0800
+Message-Id: <1282726751.5051.4.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > % cat /proc/meminfo
-> 
-> MemTotal:        3104484 kB
-> MemFree:         2817616 kB
-> Buffers:           31156 kB
-> Cached:           142124 kB
-> SwapCached:            0 kB
-> Active:           116464 kB
-> Inactive:         137424 kB
-> Active(anon):      80852 kB
-> Inactive(anon):    24820 kB
-> Active(file):      35612 kB
-> Inactive(file):   112604 kB
-> Unevictable:          32 kB
-> Mlocked:              32 kB
-> HighTotal:       2226632 kB
-> HighFree:        1994008 kB
-> LowTotal:         877852 kB
-> LowFree:          823608 kB
-> SwapTotal:       1999540 kB
-> SwapFree:        1999540 kB
+The "priv" allocated in pxa_ssp_probe() should be kfreed in pxa_ssp_remove().
 
-!! Your swap partition is smaller than physical memory. As far as I know,
-swap partition need physcal-mem x 2 size. Can you please try to change 
-swap configuration?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch is against 2.6.36-rc2-git3.
+ sound/soc/pxa/pxa-ssp.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Rafael, please correct me if I'm talking wrong.
-
-Thanks.
+diff --git a/sound/soc/pxa/pxa-ssp.c b/sound/soc/pxa/pxa-ssp.c
+index a1fd23e..2a9cac7 100644
+--- a/sound/soc/pxa/pxa-ssp.c
++++ b/sound/soc/pxa/pxa-ssp.c
+@@ -760,6 +760,7 @@ static void pxa_ssp_remove(struct platform_device *pdev,
+ {
+ 	struct ssp_priv *priv = dai->private_data;
+ 	pxa_ssp_free(priv->ssp);
++	kfree(priv);
+ }
+ 
+ #define PXA_SSP_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_11025 |\
+-- 
+1.7.2
 
 
 
