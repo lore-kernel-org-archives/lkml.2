@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0HYUPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 16:15:09 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24683 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab0HYUPF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 16:15:05 -0400
-Date: Wed, 25 Aug 2010 13:13:44 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm@kvack.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: linux-next: Tree for August 25 (mm/slub)
-Message-Id: <20100825131344.a2c26b31.randy.dunlap@oracle.com>
-In-Reply-To: <alpine.DEB.2.00.1008251447410.22117@router.home>
-References: <20100825132057.c8416bef.sfr@canb.auug.org.au>
-	<20100825094559.bc652afe.randy.dunlap@oracle.com>
-	<alpine.DEB.2.00.1008251409260.22117@router.home>
-	<20100825122134.2ac33360.randy.dunlap@oracle.com>
-	<alpine.DEB.2.00.1008251447410.22117@router.home>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1753624Ab0HYUQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 16:16:49 -0400
+Received: from tex.lwn.net ([70.33.254.29]:45433 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752464Ab0HYUQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 16:16:46 -0400
+Date: Wed, 25 Aug 2010 14:16:44 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
+Message-ID: <20100825141644.715258cc@bike.lwn.net>
+In-Reply-To: <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
+References: <20100825132815.108d8217@bike.lwn.net>
+	<AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.6; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 14:51:14 -0500 (CDT) Christoph Lameter wrote:
+On Wed, 25 Aug 2010 13:00:59 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> On Wed, 25 Aug 2010, Randy Dunlap wrote:
+> Grrr. Same disease as Nick and others. Why do you repeat the subject
+> line in the body? Don't do that. We don't want the summary line twice
+> in the commit message, and we don't want it twice in the email.
 > 
-> > Certainly.  config file is attached.
-> 
-> Ah. Memory hotplug....
-> 
-> 
-> 
-> Subject: Slub: Fix up missing kmalloc_cache -> kmem_cache_node case for memoryhotplug
-> 
-> Memory hotplug allocates and frees per node structures. Use the correct name.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+> We simply don't want it twice. Full stop.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Sorry, I just pasted in the "git format-patch" output.  Will never ever
+ever do it again I promise cross my heart.
 
-Thanks.
-
-> ---
->  mm/slub.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> > lg_lock_global() currently only acquires spinlocks for online CPUs, but
+> > it's meant to lock all possible CPUs.  At Nick's suggestion, change
+> > for_each_online_cpu() to for_each_possible_cpu() to get the expected
+> > behavior.  
 > 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2010-08-25 14:48:23.000000000 -0500
-> +++ linux-2.6/mm/slub.c	2010-08-25 14:49:03.000000000 -0500
-> @@ -2909,7 +2909,7 @@ static void slab_mem_offline_callback(vo
->  			BUG_ON(slabs_node(s, offline_node));
-> 
->  			s->node[offline_node] = NULL;
-> -			kmem_cache_free(kmalloc_caches, n);
-> +			kmem_cache_free(kmem_cache_node, n);
->  		}
->  	}
->  	up_read(&slub_lock);
-> @@ -2942,7 +2942,7 @@ static int slab_mem_going_online_callbac
->  		 *      since memory is not yet available from the node that
->  		 *      is brought up.
->  		 */
-> -		n = kmem_cache_alloc(kmalloc_caches, GFP_KERNEL);
-> +		n = kmem_cache_alloc(kmem_cache_node, GFP_KERNEL);
->  		if (!n) {
->  			ret = -ENOMEM;
->  			goto out;
+> Can you say what this actually matters for? Don't we do stop-machine
+> for CPU hotplug anyway? And if we don't, shouldn't we? Exactly because
+> otherwise "for_each_online_cpu()" is always racy (and that has nothing
+> to do with the lglock).
 
+As I understand it from Nick (after I asked him why the two lock
+primitives were identical): the files_lock scalability work puts a
+per-CPU list of open files into each superblock.  A CPU can be offlined
+while there are open files in "its" lists, and nothing is done to shift
+those files to a still-online CPU's list.  So there will still be
+cross-CPU accesses to those lists as those files are closed; that means
+we need to be sure to acquire locks associated with offline CPUs if we
+want to avoid races.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+lg_global_lock_online() is used (only) in the brlock implementation,
+instead.  In this case, there's no leftover data if a CPU goes
+offline, so no need to take locks associated with offline CPUs.
+
+jon
