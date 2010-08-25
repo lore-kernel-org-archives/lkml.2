@@ -1,126 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab0HYVJe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:09:34 -0400
-Received: from us-mx4.synaptics.com ([12.178.49.178]:48421 "EHLO
-	us-mx4.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab0HYVJb (ORCPT
+	id S1754428Ab0HYVLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:11:50 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:55772 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408Ab0HYVLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:09:31 -0400
-X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Aug 2010 17:09:31 EDT
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 25 Aug 2010 12:20:03 -0700
-Message-ID: <4C75843F.60400@synaptics.com>
-Date: Wed, 25 Aug 2010 13:59:43 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Wed, 25 Aug 2010 17:11:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=qpLQGOzayqQlS3EZAg1RhpnmIquV9uipVIbQmm2qMvpYokX5Pa9i/1aE8pEUEXfz8
+	axYZ1Y8fnNmlZftbwqqlA==
+Date: Wed, 25 Aug 2010 14:11:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Theodore Tso <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+In-Reply-To: <1282769729.1975.96.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1008251406260.20253@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
+ <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org>  <1282740516.2605.3644.camel@laptop> <1282740778.2605.3652.camel@laptop> <E25A6DCB-3188-4CF9-9DC4-631192B2F0E2@mit.edu> <1282743090.2605.3696.camel@laptop>
+ <alpine.DEB.2.00.1008251340420.16484@chino.kir.corp.google.com> <1282769729.1975.96.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>
-CC: Allie Xiong <axiong@synaptics.com>, William Manson <WManson@synaptics.com>,
-        "j.de.gram@gmail.com" <j.de.gram@gmail.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Pradeepkumar Kumar SUJUAR <pradeep.kumar.sujuar@stericsson.com>,
-        Sundar R IYER <sundar.iyer@stericsson.com>
-Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-References: <81C3A93C17462B4BBD7E272753C1057916DE5281A0@EXDCVYMBSTM005.EQ1STM.local>
-In-Reply-To: <81C3A93C17462B4BBD7E272753C1057916DE5281A0@EXDCVYMBSTM005.EQ1STM.local>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2010 02:29 AM, Naveen Kumar GADDIPATI wrote:
-> Hi Christopher,
->
-> Some generic review comments for this patch
->
-> 1. Normally, defconfig should be a separate patch. You need not
-> post the entire defconfig, but only the changes to the Makefiles and
-> the Kconfig files.
->
-> 2. All RMI specific files can be moved to a separate driver folder
-> in input/ like drivers/input/rmi/*.
->
-> 3. Lots of Hungarian notation in the code. Please refer this snippet.
->
->> ------------------------------------
->> CODE CONTAINS HUNGARIAN NOTATION
->>
->> Some coding guidlines at some companies require that you type the name
->> of your variables using the infamous hungarian notation:
->> http://en.wikipedia.org/wiki/Hungarian_notation
->>
->> We have an internal coding guideline that touches on the
->> subject:
->> http://swadvice.lud.stericsson.com/guideline.aspx?nr=57&ver=latest
->>
->> According to the Linux kernel inventor Linus Torvalds in his document
->> Documentation/CodingStyle in the Linux kernel:
->>
->> "Encoding the type of a function into the name (so-called Hungarian
->> notation) is brain damaged-the compiler knows the types anyway and can
->> check those, and it only confuses the programmer."
->>
->> Remove all instances of hungariang notation in the code please.
->> Includes prefixing pointers with p_*, naming structs with s_*, enums
->> with e_*, suffixes like *32b etc etc.
->> -----------------------------------
->>
->
-> We are also using the Synaptics RMI4 touch pad on our U8500 platform.
-> We had to make some changes to these posted drivers to make it work on
-> our platform. Also, we modified the touch screen driver to be compliant
-> to the kernel coding guidelines, but as a stand alone driver though.
->
-> I will soon post out an RFC for our patch which we got working on our board.
-> Please do have a look and we would like you guys to incorporate these changes
-> into your final patch sets as well, so that we can avoid any re-works later on
-> when your patch set gets merged into the mainline kernel.
+On Wed, 25 Aug 2010, Peter Zijlstra wrote:
 
-Hi Naveen,
+> > The cpusets case is actually the easiest to fix: use GFP_ATOMIC.  
+> 
+> I don't think that's a valid usage of GFP_ATOMIC, I think we should
+> fallback to outside the cpuset for kernel allocations by default.
 
-Thanks very much for your input!
+Cpusets doesn't enforce isolation for only user memory, it's always bound 
+_all_ allocations that aren't atomic or in irq context (or oom killed 
+tasks).  Allowing slab, for example, to be allocated in other cpusets 
+could cause them to oom themselves since they are bound by the same memory 
+isolation policy that all other cpusets are.  We'd get random oom 
+conditions in cpusets only depending on where the slab was allocated at 
+now fault to those applications themselves, and that's certainly not a 
+situation we want.  The memory controller cgroup also has slab accounting 
+on their TODO list.
 
-We'll be changing the patch structure with our next submission, as the 
-current patch file is getting kind of large and clumsy.  We'll split the 
-defconfig out into its own patch at that point.
+If you think GFP_ATOMIC is inappropriate in these contexts, then they are 
+by definition blockable.  So this seems like a good candidate for using 
+memory compaction since we're talking only about PAGE_ALLOC_COSTLY_ORDER 
+and higher allocs, even though it's only currently configurable for 
+hugepages.
 
-We'll also be eliminating the Hungarian notation in the next submission.
-
-Your suggestion regarding the location of the RMI specific files is 
-interesting.  We'll defer to Dmitry on where he'd like to see those 
-files placed, though.
-
-Unfortunately, the patch you submitted appears to be based on the older 
-monolithic RMI3/Android driver, which is limited in functionality and 
-maintainability.  Also, your submitted patch appears to be specific to 
-the U8500 platform.
-
-The aim of the current work is to develop a platform independent modular 
-driver that will support all RMI4 functionality in a generic fashion. 
-We'll be more than happy to work with your team to develop support for 
-the U8500 under the modular structure.  If we proceed in that direction, 
-it eliminates redundant effort and the need for any rework when our 
-driver gets merged into the mainline.
-
-I think the first step there should be for your team to resubmit your 
-work as modifications of the current development effort, rather than 
-backporting the current effort onto the obsolete framework.  Although 
-that involves upfront work for your team in the near term, it provides a 
-reduction in effort all around going forward:
-     - your team doesn't need to keep back-patching changes onto
-       the obsolete driver structure
-     - our team doesn't need to keep forward-patching U8500
-       related changes into the current driver structure
-
-In a recent email conversation with me, Dmitry indicated that he will be 
-creating a development branch for this work in the near future.  That 
-will greatly facilitate this effort.
-
-					Thanks,
-						Chris
+There's still no hard guarantee that the memory will allocatable 
+(GFP_KERNEL, the compaction, then GFP_ATOMIC could all still fail), but I 
+don't see how continuously looping the page allocator is possibly supposed 
+to help in these situations.
