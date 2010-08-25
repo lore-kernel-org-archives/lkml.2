@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab0HYAix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 20:38:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26314 "EHLO mga09.intel.com"
+	id S1754550Ab0HYAkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 20:40:53 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44815 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab0HYAiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 20:38:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
-   d="scan'208";a="650932424"
-Subject: Re: [RFC -v2] kfifo writer side lock-less support
-From: Huang Ying <ying.huang@intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: "huang.ying.caritas@gmail.com" <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282677230.10219.22.camel@wall-e.seibold.net>
-References: <1282614146.2708.13.camel@yhuang-dev>
-	 <1282636558.7357.28.camel@wall-e.seibold.net>
-	 <1282639425.2708.40.camel@yhuang-dev>
-	 <1282640663.7896.17.camel@wall-e.seibold.net>
-	 <1282654207.11483.32.camel@caritas-mobile.ml.org>
-	 <1282677230.10219.22.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Aug 2010 08:38:47 +0800
-Message-ID: <1282696727.2708.73.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1753478Ab0HYAku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 20:40:50 -0400
+Date: Tue, 24 Aug 2010 17:41:34 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Samo Pogacnik <samo_pogacnik@t-2.net>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100825004134.GA28884@suse.de>
+References: <20100625120329.1303aa61@lxorguk.ukuu.org.uk> <1282683470.8020.66.camel@itpsd6lap> <20100824211016.GA7176@suse.de> <1282687797.8020.108.camel@itpsd6lap> <20100824222035.GA10625@suse.de> <1282690232.8020.116.camel@itpsd6lap> <20100824225703.GA5913@suse.de> <20100825002221.68fc09a4@lxorguk.ukuu.org.uk> <20100824231241.GA6971@suse.de> <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 03:13 +0800, Stefani Seibold wrote:
-> > > > The patch adds only 1 field (unsigned int) to struct __kfifo. I think
-> > > > that should be acceptable. Because sizeof(struct __kfifo) should be much
-> > > > smaller that __kfifo->mask + 1 in most cases.
-> > > 
-> > > I don't know what you mean with "because sizeof(struct __kfifo) should
-> > > be much smaller that __kfifo->mask + 1 in most cases". I am convinced
-> > > that you did not really understand the kfifo code. sizeof(struct
-> > > __kfifo) is constant and __kfifo->mask + 1 is the fifo size in elements,
-> > > which is not constant. Before you answering study the code first!
-> > > 
-> > > And is not acceptable to bload the struct __kfifo, because it will never
-> > > need by the most users.
+On Wed, Aug 25, 2010 at 12:51:52AM +0100, Alan Cox wrote:
+> > > - formatting
 > > 
-> > I mean, for most user, __kfifo->mask + 1 > sizeof(struct __kfifo), so
-> > another 4 bytes for each user is relatively small.
-> > 
+> > Ick, we really want to format things from userspace here?
 > 
-> You have no idea. As i wrote you should study the code before answering!
+> Depends what you are trying to do.
 > 
-> sizeof(struct __kfifo) is always 20 bytes on a 32 bit cpu, and
-> kfifo->mask +1 depends on the size of the number of fifo elements and it
-> is an initialization parameter. 
+> Put an embedded hat on
+> 
+> Do you want to be able to flip between a real debug interface and a
+> logging device on the same software set without risking changing behaviour
 
-After my changing, sizeof(struct __kfifo) should be 24 on 32 bit CPU,
-that is 4 bytes more. But I think for most users, kfifo->mask + 1 should
-be hundreds or thousands. If the average(kfifo->mask + 1) = 256, the
-increment percentage for each user is about:
+I don't understand this point.
 
-4 / (256 + 20) = 1.45%
+> Do you want to load a 70K daemon and an initrd or burn about 1.5K on a
+> kernel interface ?
 
-So I think the changes to the size of struct __kfifo should be
-acceptable.
+I'd rather burn 0K on the one we have today :)
 
-Best Regards,
-Huang Ying
+Seriously, look at how Fedora 14 handles this, why can't you do the same
+for embedded systems all from userspace, no additional code needed
+anywhere.
 
+thanks,
 
+greg k-h
