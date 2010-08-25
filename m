@@ -1,194 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab0HYVdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:33:12 -0400
-Received: from claw.goop.org ([74.207.240.146]:48919 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752445Ab0HYVdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:33:10 -0400
-Message-ID: <4C758C12.2020107@goop.org>
-Date: Wed, 25 Aug 2010 14:33:06 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1754599Ab0HYVfN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:35:13 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25222 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752989Ab0HYVfL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 17:35:11 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: dvwMZrEVM1kaQxwBdnVoYJO08HMeDwMbWSWt8OOD8.KSIda
+ ArIKkYrBfZ01tBnHOnFi3bS7n1OcQ3HMB20vqm8IAErEcQncxDSV2FnbkLrG
+ 2ZPnp37hfHXqUhQtvFNIXY3OX8n7PKJpcr35895UVKNV_VmuMFEBJ6W40QcN
+ Aowu1JXtldp8Rj0Wy67RMvsKQJeushWIaETCVtvKeXUswe9WknK36ZuAf1Op
+ Z
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 25 Aug 2010 16:35:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+In-Reply-To: <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1008251630270.25660@router.home>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
+ <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop> <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop> <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1008251604120.24931@router.home> <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Daniel Kiper <dkiper@net-space.pl>
-CC: konrad.wilk@oracle.com, stefano.stabellini@eu.citrix.com,
-        linux-mm@kvack.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, v.tolstov@selfip.ru,
-        Dulloor <dulloor@gmail.com>
-Subject: Re: [PATCH] GSoC 2010 - Memory hotplug support for Xen guests - third
- fully working version
-References: <20100812012224.GA16479@router-fw-old.local.net-space.pl> <4C649535.8050800@goop.org> <20100816154444.GA28219@router-fw-old.local.net-space.pl>
-In-Reply-To: <20100816154444.GA28219@router-fw-old.local.net-space.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 08/16/2010 08:44 AM, Daniel Kiper wrote:
-> Hi,
->
-> On Thu, Aug 12, 2010 at 05:43:33PM -0700, Jeremy Fitzhardinge wrote:
->>  On 08/11/2010 06:22 PM, Daniel Kiper wrote:
->>>> Overall, this looks much better.  The next step is to split this into at
->>>> least two patches: one for the core code, and one for the Xen bits.
->>>> Each patch should do just one logical operation, so if you have several
->>>> distinct changes to the core code, put them in separate patches.
->>> I will do that if this patch will be accepted.
->> First step is to post it to lkml for discussion, cc:ing the relevant
->> maintainers. (I'm not really sure who that is at the moment.  It will
->> take some digging around in the history.)
-> I took all relevant addresses (sorry if I missed somebody) from MAINTAINERS
-> file and they are in To in most of e-mails from me.
+On Wed, 25 Aug 2010, David Rientjes wrote:
 
-Unfortunately MAINTAINERS is often poorly maintained.  While you should
-include those addresses, its also worth looking at the git history to
-see who has been active in that area recently.
+> It all depends on what flags are passed to kmalloc(), slab nor slub
+> enforce __GFP_NOFAIL behavior themselves.  In slab, cache_grow() will
+> return NULL depending on whether the page allocator returns NULL, and that
+> would only happen for __GFP_NORETRY or
+> cachep->gfp->gfporder >= PAGE_ALLOC_COSTLY_ORDER.  In slub, the default
+> order is tried with __GFP_NORETRY and if it returns NULL, the higher order
+> alloc will fail under the same circumstances.  So the nofail behavior for
+> slab depends only on the flags passed from the caller.
 
->>>> Can you find a clean way to prevent/disable ARCH_MEMORY_PROBE at runtime
->>>> when in a Xen context?
->>> There is no simple way to do that. It requiers to do some
->>> changes in drivers/base/memory.c code. I think it should
->>> be done as kernel boot option (on by default to not break
->>> things using this interface now). If it be useful for maintainers
->>> of mm/memory_hotplug.c and drivers/base/memory.c code then
->>> I could do that. Currently original arch/x86/Kconfig version
->>> is restored.
->> I think adding a global flag which the Xen balloon driver can disable
->> should be sufficient.  There's no need to make an separate user-settable
->> control.
-> OK.
->
->>>>> +/* we are OK calling __meminit stuff here - we have
->>>>> CONFIG_MEMORY_HOTPLUG
->>>>> */
->>>>> +static int __ref xen_add_memory(int nid, u64 start, u64 size)
->>>> Could this be __meminit too then?
->>> Good question. I looked throught the code and could
->>> not find any simple explanation why mm/memory_hotplug.c
->>> authors used __ref instead __meminit. Could you (mm/memory_hotplug.c
->>> authors/maintainers) tell us why ???
->> Quite possibly a left-over from something else.  You could just try
->> making it __meminit, then compile with, erm, the option which shows you
->> section conflicts (it shows the number of conflicts at the end of the
->> kernel build by default, and tells you how to explicitly list them).
-> Small reminder: make CONFIG_DEBUG_SECTION_MISMATCH=y
->
-> I reviewed kernel source code once again. It is OK. Normaly it is
-> not allowed to reference code/data tagged as .init.* because
-> that sections are freed at the end of kernel boot sequence and
-> they do not exists any more in memory. However it is sometimes
-> required to use code/data marked .init.*. To allow that __ref
-> tag is used and then referenced objects are not removed from
-> memory (and no warnings are displayed during kernel compilation).
->
->>>> What's this for?  I see all its other users are in the memory hotplug
->>>> code, but presumably they're concerned about a real S3 suspend.  Do we
->>>> care about that here?
->>> Yes, because as I know S3 state is supported by Xen guests.
->> Yes, but I'm assuming the interaction between S3 and ACPI hotplug memory
->> isn't something that concerns a Xen guest; our hotplug mechanism is
->> completely different.
-> Suspend/Hibernation code in Linux Kernel is platform independent
-> to some extent and it does not require ACPI. It means that
-> lock_system_sleep/unlock_system_sleep is required in that
-> place to have memory state intact during suspend/hibernation.
+If the higher order fails in slub then an order 0 alloc is attempted
+without __GFP_NORETRY. In both cases the nofail behavior of the page
+allocator determines the outcode.
 
-My question is more along the lines of whether there's an *inherent*
-dependency/interaction between suspend/hibernate and hotplug memory, or
-whether the interaction is a side-effect of the x86 implementation.
+True if the caller mixes in __GFP_NORETRY then you may still get NULL. But
+that is an issue that can be resolved by the caller.
 
-But it doesn't really matter either way for our purposes.
-
->>>>> +		r->name = "System RAM";
->>>> How about making it clear its Xen hotplug RAM?  Or do things care about
->>>> the "System RAM" name?
->>> As I know no however as I saw anybody do not differentiate between
->>> normal and hotplugged memory. I thought about that ealier however
->>> stated that this soultion does not give us any real gain. That is why
->>> I decided to use standard name for hotplugged memory.
->> Its cosmetic, but it would be useful to see what's going on.
-> If you wish I will do that, however then it should be changed
-> as well add_registered_memory() function syntax. It should
-> contain pointer to name published through /sys/firmware/memmap
-> interface. I am not sure it is good solution to change
-> add_registered_memory() function syntax which I think should be
-> same as add_memory() function syntax.
-
-OK, fair enough.
-
->>> +#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG + unsigned long
->>> boot_max_pfn; + u64 hotplug_start_paddr; + u64 hotplug_size;
->> So does this mean you only support adding a single hotplug region?  What
->> happens if your initial increase wasn't enough and you want to add
->> more?  Would you make this a list of hot-added memory or something?
->>
->> But I'm not even quite sure why you need to keep this as global data.
-> No. It supports multiple allocations. This variables are
-> used mostly for communication between allocate_additional_memory
-> and hotplug_allocated_memory functions.
-
-Using globals to communicate values between two functions is not
-generally good practice.  Could the code be restructured to avoid it (by
-passing them as parameters, for example)?
-
-
->>> + else if (is_memory_resource_reserved()) + hotplug_allocated_memory();
->> Why can't this be done in allocate_additional_memory()?
-> Because memory is allocated in relatively small
-> batches and then whole memory is hotplugged.
-
-Is the batch allocation just to avoid having a single great big piece,
-or is there some other deeper reason?  If not, I don't see why that
-detail can't be hidden in an inner loop.
-
-> Here is current algorithm:
->   - allocate_resource() with size requested by user,
->   - allocate memory in relatively small batches,
->   - add_registered_memory(),
->   - online_pages(),
->   - update /sys/devices/system/memory/memory*/state files.
-
-That's OK as far as it goes, but I do tend to see memory hotplug as an
-underlying implementation detail rather than something that should be
-directly exposed to users (ie memory hotplug as the mechanism to allow
-ballooning to expand beyond the initial domain size).
-
->> The tricky part is making sure that the memory for the page structures
->> has been populated so it can be used.  Aside from that, there should be
->> no need to have another call to
->> HYPERVISOR_memory_op(XENMEM_populate_physmap, ...) aside from the
->> existing one.
-> Currently it is.
->
->> 2 requires a deeper understanding of the existing hotplug code.  It
->> needs to be refactored so that you can use the core hotplug machinery
->> without enabling the sysfs page-onlining mechanism, while still leaving
->> it available for physical hotplug.  In the short term, having a boolean
->> to disable the onlining mechanism is probably the pragmatic solution, so
->> the balloon code can simply disable it.
-> I think that sysfs should stay intact because it contains some
-> useful information for admins. We should reconsider avaibilty
-> of /sys/devices/system/memory/probe. In physical systems it
-> is available however usage without real hotplug support
-> lead to big crash. I am not sure we should disable probe in Xen.
-> Maybe it is better to stay in sync with standard behavior.
-> Second solution is to prepare an interface (kernel option
-> or only some enable/disable functions) which give possibilty
-> to enable/disable probe interface when it is required.
-
-My understanding is that on systems with real physical hotplug memory,
-the process is:
-
-   1. you insert/enable a DIMM or whatever to make the memory
-      electrically active
-   2. the kernel notices this and generates a udev event
-   3. a usermode script sees this and, according to whatever policy it
-      wants to implement, choose to online the memory at some point
-
-I'm concerned that if we partially implement this but leave "online" as
-a timebomb then existing installs with hotplug scripts in place may poke
-at it - thinking they're dealing with physical hotplug - and cause problems.
-
-    J
