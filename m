@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab0HYNXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 09:23:36 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:38494 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab0HYNXd convert rfc822-to-8bit (ORCPT
+	id S1753708Ab0HYNYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 09:24:36 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:52817 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752362Ab0HYNYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 09:23:33 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz1dbaL1432N98dNzz1202hzz8275bhz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 0,
-X-WSS-ID: 0L7PMEM-01-B3V-02
-X-M-MSG: 
-Date: Wed, 25 Aug 2010 15:39:48 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Alok Kataria <akataria@vmware.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>,
-        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2] x86, tsc: Limit CPU frequency calibration on AMD
-Message-ID: <20100825133948.GE4590@loge.amd.com>
-References: <20100817185634.GA10597@liondog.tnic>
- <20100818161639.GF9880@aftab>
- <4C6C08EC.2080404@zytor.com>
- <20100818173401.GG9880@aftab>
- <1282153895.15158.45.camel@ank32.eng.vmware.com>
- <20100818184534.GA12842@aftab>
- <20100824155305.GA18220@aftab>
- <4C7448A3.2030309@zytor.com>
- <20100825070653.GA25672@aftab>
- <20100825130454.GB4891@loge.amd.com>
+	Wed, 25 Aug 2010 09:24:33 -0400
+Date: Wed, 25 Aug 2010 23:24:17 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, David Rientjes <rientjes@google.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+Message-ID: <20100825132417.GQ31488@dastard>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+ <1282656558.2605.2742.camel@laptop>
+ <4C73CA24.3060707@fusionio.com>
+ <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+ <20100825112433.GB4453@thunk.org>
+ <1282736132.2605.3563.camel@laptop>
+ <20100825115709.GD4453@thunk.org>
+ <1282740516.2605.3644.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100825130454.GB4891@loge.amd.com>
+In-Reply-To: <1282740516.2605.3644.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 03:04:54PM +0200, Andreas Herrmann wrote:
-> On Wed, Aug 25, 2010 at 03:06:53AM -0400, Borislav Petkov wrote:
-> > From: "H. Peter Anvin" <hpa@zytor.com>
-> > Date: Tue, Aug 24, 2010 at 06:33:07PM -0400
-> > 
-> > > Build failure:
+On Wed, Aug 25, 2010 at 02:48:36PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-08-25 at 07:57 -0400, Ted Ts'o wrote:
+> > On Wed, Aug 25, 2010 at 01:35:32PM +0200, Peter Zijlstra wrote:
+> > > On Wed, 2010-08-25 at 07:24 -0400, Ted Ts'o wrote:
+> > > > Part of the problem is that we have a few places in the kernel where
+> > > > failure is really not an option --- or rather, if we're going to fail
+> > > > while we're in the middle of doing a commit, our choices really are
+> > > > (a) retry the loop in the jbd layer (which Andrew really doesn't
+> > > > like), (b) keep our own private cache of free memory so we don't fail
+> > > > and/or loop, (c) fail the file system and mark it read-only, or (d)
+> > > > panic. 
 > > > 
-> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c: In
-> > > function ‘amd_calibrate_cpu’:
-> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:397: error:
-> > > implicit declaration of function ‘avail_to_resrv_perfctr_nmi_bit’
-> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:409: error:
-> > > implicit declaration of function ‘reserve_perfctr_nmi’
-> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:410: error:
-> > > implicit declaration of function ‘reserve_evntsel_nmi’
-> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:429: error:
-> > > implicit declaration of function ‘release_perfctr_nmi’
-> > > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:430: error:
-> > > implicit declaration of function ‘release_evntsel_nmi’
-> > > 
-> > > Reproducible by doing "make ARCH=i386 allnoconfig".
+> > > d) do the allocation before you're committed to going fwd and can still
+> > > fail and back out.
 > > 
-> > Sh*t, I can't catch a break with that Kconfig dependency stuff, can I?
-> > 
-> > This happens because perfctr-watchdog.c gets pulled in by
-> > CONFIG_X86_LOCAL_APIC which is, _of course_, not selected in an
-> > allnoconfig build. Fixing this would mean exporting all that perfcounter
-> > reservation functionality for the allnoconfig case, which is of course
-> > doable but I'm starting to question the need for recalibrating the TSC
-> > at all:
-> > 
-> > I mean, in the 99% of the cases MSRC001_0015[24] should be set by the
-> > BIOS and if not then the BIOS which does that is pretty b0rked anyway.
-> > So I'm thinking of removing the recalibration code and simply warning
-> > the user instead, for the 1% case.
-> > 
-> > Andreas, what do you think?
+> > Sure in some cases that can be done, but the commit has to happen at
+> > some point, or we run out of journal space, at which point we're back
+> > to (c) or (d).
 > 
-> I opt for removing the recalibration code plus keeping a FIRMWARE_WARN
-> for borked BIOSes (just in case that there are any old systems with
-> the wrong setting).
+> Well (b) sounds a lot saner than either of those. Simply revert to a
+> state that is sub-optimal but has bounded memory use and reserve that
+> memory up-front. That way you can always get out of a tight memory spot.
+> 
+> Its what the block layer has always done to avoid the memory deadlock
+> situation, it has a private stash of BIOs that is big enough to always
+> service some IO, and as long as IO is happening stuff keeps moving fwd
+> and we don't deadlock.
+> 
+> Filesystems might have a slightly harder time creating such a bounded
+> state because there might be more involved like journals and the like,
+> but still it should be possible to create something like that (my swap
+> over nfs patches created such a state for the network rx side of
+> things).
 
-... and checking the HWCR MSR and issuing the firmware warning should
-only happen if not running on a hypervisor. (Validate whether CPU has
-X86_FEATURE_HYPERVISOR bit set or not.)
+Filesystems are way more complex than the block layer - the block
+layer simply doesn't have to handle situations were thread X is
+holding A, B and C, while thread Y needs C to complete the
+transaction. thread Y is the user of the low memory pool, but has
+almost depleted it and so even if we swith to thread X, the pool doe
+snot have enouhg memory for X to complete and allow us to switch
+back to Y and have it complete, freeing the memory from the pool
+that it holds.
 
+That is, the guarantee that we will always make progress simply does
+not exist in filesystems, so a mempool-like concept seems to me to
+be doomed from the start....
 
-Andreas
+Cheers,
 
+Dave.
 -- 
-Operating | Advanced Micro Devices GmbH
-  System  | Einsteinring 24, 85609 Dornach b. München, Germany
- Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
-  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
-  (OSRC)  | Registergericht München, HRB Nr. 43632
-
-
+Dave Chinner
+david@fromorbit.com
