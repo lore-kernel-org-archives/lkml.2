@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab0HYGuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 02:50:25 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42159 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab0HYGuX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 02:50:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=d/Zn8BF3zL2NjFvVhp+tjXjvgrfsNIA1sFqzeKLBFNKdML2LD14mCY/cNw/rod3xjh
-         vrpf56/i3pSQAmlKSGXg/hevahPKt0xdzHriOMKqvdvWaMugc6ufsy9W90kUCSq8Qsic
-         /+oYTys8IDL4EDSkAQEn4DquApEt8V4sP+E4U=
+	id S1751604Ab0HYHAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:00:30 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:53460 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab0HYHA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 03:00:28 -0400
+Date: Wed, 25 Aug 2010 12:25:41 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        2nddept-manager@sdl.hitachi.co.jp, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Using perf probe with arguments throws a fatal error.
+Message-ID: <20100825065541.GE14431@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100824045758.GA14431@linux.vnet.ibm.com>
+ <4C738411.8080602@hitachi.com>
+ <20100824085401.GB14431@linux.vnet.ibm.com>
+ <4C738F09.3080108@hitachi.com>
+ <20100824095658.GC14431@linux.vnet.ibm.com>
+ <4C74AE7B.1010705@hitachi.com>
 MIME-Version: 1.0
-In-Reply-To: <20100825004134.GA28884@suse.de>
-References: <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
-	<1282683470.8020.66.camel@itpsd6lap>
-	<20100824211016.GA7176@suse.de>
-	<1282687797.8020.108.camel@itpsd6lap>
-	<20100824222035.GA10625@suse.de>
-	<1282690232.8020.116.camel@itpsd6lap>
-	<20100824225703.GA5913@suse.de>
-	<20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
-	<20100824231241.GA6971@suse.de>
-	<20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
-	<20100825004134.GA28884@suse.de>
-Date: Wed, 25 Aug 2010 08:50:22 +0200
-Message-ID: <AANLkTi=XwRD-oTfe7_qMEjAaupci+ch=AD8iVpok99Mi@mail.gmail.com>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Samo Pogacnik <samo_pogacnik@t-2.net>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4C74AE7B.1010705@hitachi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/25 Greg KH <gregkh@suse.de>:
-> On Wed, Aug 25, 2010 at 12:51:52AM +0100, Alan Cox wrote:
->
-> Seriously, look at how Fedora 14 handles this, why can't you do the same
-> for embedded systems all from userspace, no additional code needed
-> anywhere.
->
-> thanks,
->
-> greg k-h
-> --
+> > 
+> > The differences I see when a name is given we refer the name, while in
+> > the previous case we refer the register %ip.
+> 
+> Ah, I remembered that, yeah, perf doesn't support those raw regsiters,
+> dereferences, etc.
+> Hmm, this should be solved, but not so simple as just removing "%",
+> because there are also special variables ($retval, $stack) and
+> dereferences(+8(+10(%sp)), etc).
+> 
+> I think the simplest solution is just setting "argX" name for each
+> argument (if user omitted its name) in kprobe-tracer (because
+> trace-cmd will face same problem).
+> e.g.
+>  # echo "p do_fork %ip" > tracing/kprobe_events
+> will be translated as below
+>  # echo "p do_fork arg1=%ip" > tracing/kprobe_events
+> 
 
-Samo sometimes ago I gave you some information on the system startup
-about OpenSuse, have you look at it? It's possible that what Greg
-said, it's true.
+Okay, I will follow the same and fix the argX name in uprobe-tracer.
 
-Regards,
-
-Marco
+--
+Thanks and Regards
+Srikar
