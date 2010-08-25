@@ -1,308 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab0HYP5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:57:24 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:36401 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab0HYP5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:57:20 -0400
-Subject: [PATCH] Fix initramfs size calculation
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: sam@ravnborg.org, tabbott@ksplice.com, vda.linux@googlemail.com,
-        mmarek@suse.cz, hpa@linux.intel.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        brueckner@linux.vnet.ibm.com, schwidefsky@de.ibm.com
-Content-Type: text/plain; charset="us-ascii"
-Organization: IBM
-Date: Wed, 25 Aug 2010 17:57:12 +0200
-Message-ID: <1282751832.3676.17.camel@holzheu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753362Ab0HYP6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:58:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52919 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752551Ab0HYPyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:54:11 -0400
+From: Tejun Heo <tj@kernel.org>
+To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
+        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 06/30] block: misc cleanups in barrier code
+Date: Wed, 25 Aug 2010 17:47:23 +0200
+Message-Id: <1282751267-3530-7-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
+References: <1282751267-3530-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of a built-in initramfs is calculated in init/initramfs.c by 
-"__initramfs_end - __initramfs_start".  Those symbols are defined in the
-linker script include/asm-generic/vmlinux.lds.h:
+Make the following cleanups in preparation of barrier/flush update.
 
-#define INIT_RAM_FS                                                     \
-        . = ALIGN(PAGE_SIZE);                                           \
-        VMLINUX_SYMBOL(__initramfs_start) = .;                          \
-        *(.init.ramfs)                                                  \
-        VMLINUX_SYMBOL(__initramfs_end) = .;
+* blk_do_ordered() declaration is moved from include/linux/blkdev.h to
+  block/blk.h.
 
-If the initramfs file has an odd number of bytes, the "__initramfs_end"
-symbol points to an odd address, for example, the symbols in the System.map
-might look like:
+* blk_do_ordered() now returns pointer to struct request, with %NULL
+  meaning "try the next request" and ERR_PTR(-EAGAIN) "try again
+  later".  The third case will be dropped with further changes.
 
-    0000000000572000 T __initramfs_start
-    00000000005bcd05 T __initramfs_end	  <-- odd address
+* In the initialization of proxy barrier request, data direction is
+  already set by init_request_from_bio().  Drop unnecessary explicit
+  REQ_WRITE setting and move init_request_from_bio() above REQ_FUA
+  flag setting.
 
-At least on s390 this is a problem:
+* add_request() is collapsed into __make_request().
 
-Certain s390 instructions, especially instructions for loading addresses
-(larl) or branch addresses must be on even addresses. 
-The compiler loads the symbol addresses with the "larl". This instruction sets the
-last bit to 0, therefore, for odd size files, the calculated size is one byte
-less than it should be:
+These changes don't make any functional difference.
 
-    0000000000540a9c <populate_rootfs>:
-      540a9c:     eb cf f0 78 00 24       stmg    %r12,%r15,120(%r15),
-      540aa2:     c0 10 00 01 8a af       larl    %r1,572000 <__initramfs_start>
-      540aa8:     c0 c0 00 03 e1 2e       larl    %r12,5bcd04 <initramfs_end>
-                                                  (Instead of  5bcd05)
-      ...
-      540abe:     1b c1                   sr      %r12,%r1
-
-To fix the problem, this patch introduces the global variable
-__initramfs_size, which is calculated in the "usr/initramfs_data.xxx.S" files.
-The populate_rootfs() function can then use the init.ramfs section start and
-the value of __initramfs_size for loading the initramfs.
-
-The patch also restructures the "usr/initramfs_data.xxx.S" files to use a
-common macro that includes the (compressed) initramfs file and calculates
-the __initramfs_size.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/asm-generic/vmlinux.lds.h |    3 +-
- init/initramfs.c                  |    9 +++-----
- usr/initramfs_data.S              |   32 +---------------------------
- usr/initramfs_data.bz2.S          |   31 +---------------------------
- usr/initramfs_data.gz.S           |   31 +---------------------------
- usr/initramfs_data.h              |   42 ++++++++++++++++++++++++++++++++++++++
- usr/initramfs_data.lzma.S         |   31 +---------------------------
- 7 files changed, 56 insertions(+), 123 deletions(-)
+ block/blk-barrier.c    |   32 ++++++++++++++------------------
+ block/blk-core.c       |   21 ++++-----------------
+ block/blk.h            |    7 +++++--
+ include/linux/blkdev.h |    1 -
+ 4 files changed, 23 insertions(+), 38 deletions(-)
 
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -629,7 +629,8 @@
- 	. = ALIGN(PAGE_SIZE);						\
- 	VMLINUX_SYMBOL(__initramfs_start) = .;				\
- 	*(.init.ramfs)							\
--	VMLINUX_SYMBOL(__initramfs_end) = .;
-+	. = ALIGN(8);							\
-+	*(.init.ramfs.info)
- #else
- #define INIT_RAM_FS
- #endif
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -483,7 +483,8 @@ static int __init retain_initrd_param(ch
+diff --git a/block/blk-barrier.c b/block/blk-barrier.c
+index ed0aba5..f1be85b 100644
+--- a/block/blk-barrier.c
++++ b/block/blk-barrier.c
+@@ -110,9 +110,9 @@ static void queue_flush(struct request_queue *q, unsigned which)
+ 	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
  }
- __setup("retain_initrd", retain_initrd_param);
  
--extern char __initramfs_start[], __initramfs_end[];
-+extern char __initramfs_start[];
-+extern unsigned long __initramfs_size;
- #include <linux/initrd.h>
- #include <linux/kexec.h>
- 
-@@ -570,8 +571,7 @@ static void __init clean_rootfs(void)
- 
- static int __init populate_rootfs(void)
+-static inline bool start_ordered(struct request_queue *q, struct request **rqp)
++static inline struct request *start_ordered(struct request_queue *q,
++					    struct request *rq)
  {
--	char *err = unpack_to_rootfs(__initramfs_start,
--			 __initramfs_end - __initramfs_start);
-+	char *err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
- 	if (err)
- 		panic(err);	/* Failed to decompress INTERNAL initramfs */
- 	if (initrd_start) {
-@@ -585,8 +585,7 @@ static int __init populate_rootfs(void)
- 			return 0;
- 		} else {
- 			clean_rootfs();
--			unpack_to_rootfs(__initramfs_start,
--				 __initramfs_end - __initramfs_start);
-+			unpack_to_rootfs(__initramfs_start, __initramfs_size);
+-	struct request *rq = *rqp;
+ 	unsigned skip = 0;
+ 
+ 	q->orderr = 0;
+@@ -149,11 +149,9 @@ static inline bool start_ordered(struct request_queue *q, struct request **rqp)
+ 
+ 		/* initialize proxy request and queue it */
+ 		blk_rq_init(q, rq);
+-		if (bio_data_dir(q->orig_bar_rq->bio) == WRITE)
+-			rq->cmd_flags |= REQ_WRITE;
++		init_request_from_bio(rq, q->orig_bar_rq->bio);
+ 		if (q->ordered & QUEUE_ORDERED_DO_FUA)
+ 			rq->cmd_flags |= REQ_FUA;
+-		init_request_from_bio(rq, q->orig_bar_rq->bio);
+ 		rq->end_io = bar_end_io;
+ 
+ 		elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
+@@ -171,27 +169,26 @@ static inline bool start_ordered(struct request_queue *q, struct request **rqp)
+ 	else
+ 		skip |= QUEUE_ORDSEQ_DRAIN;
+ 
+-	*rqp = rq;
+-
+ 	/*
+ 	 * Complete skipped sequences.  If whole sequence is complete,
+-	 * return false to tell elevator that this request is gone.
++	 * return %NULL to tell elevator that this request is gone.
+ 	 */
+-	return !blk_ordered_complete_seq(q, skip, 0);
++	if (blk_ordered_complete_seq(q, skip, 0))
++		rq = NULL;
++	return rq;
+ }
+ 
+-bool blk_do_ordered(struct request_queue *q, struct request **rqp)
++struct request *blk_do_ordered(struct request_queue *q, struct request *rq)
+ {
+-	struct request *rq = *rqp;
+ 	const int is_barrier = rq->cmd_type == REQ_TYPE_FS &&
+ 				(rq->cmd_flags & REQ_HARDBARRIER);
+ 
+ 	if (!q->ordseq) {
+ 		if (!is_barrier)
+-			return true;
++			return rq;
+ 
+ 		if (q->next_ordered != QUEUE_ORDERED_NONE)
+-			return start_ordered(q, rqp);
++			return start_ordered(q, rq);
+ 		else {
+ 			/*
+ 			 * Queue ordering not supported.  Terminate
+@@ -199,8 +196,7 @@ bool blk_do_ordered(struct request_queue *q, struct request **rqp)
+ 			 */
+ 			blk_dequeue_request(rq);
+ 			__blk_end_request_all(rq, -EOPNOTSUPP);
+-			*rqp = NULL;
+-			return false;
++			return NULL;
  		}
- 		printk(KERN_INFO "rootfs image is not initramfs (%s)"
- 				"; looks like an initrd\n", err);
---- a/usr/initramfs_data.S
-+++ b/usr/initramfs_data.S
-@@ -1,30 +1,2 @@
+ 	}
+ 
+@@ -211,14 +207,14 @@ bool blk_do_ordered(struct request_queue *q, struct request **rqp)
+ 	/* Special requests are not subject to ordering rules. */
+ 	if (rq->cmd_type != REQ_TYPE_FS &&
+ 	    rq != &q->pre_flush_rq && rq != &q->post_flush_rq)
+-		return true;
++		return rq;
+ 
+ 	/* Ordered by draining.  Wait for turn. */
+ 	WARN_ON(blk_ordered_req_seq(rq) < blk_ordered_cur_seq(q));
+ 	if (blk_ordered_req_seq(rq) > blk_ordered_cur_seq(q))
+-		*rqp = NULL;
++		rq = ERR_PTR(-EAGAIN);
+ 
+-	return true;
++	return rq;
+ }
+ 
+ static void bio_end_empty_barrier(struct bio *bio, int err)
+diff --git a/block/blk-core.c b/block/blk-core.c
+index f063541..f8d37a8 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1037,22 +1037,6 @@ void blk_insert_request(struct request_queue *q, struct request *rq,
+ }
+ EXPORT_SYMBOL(blk_insert_request);
+ 
 -/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
+- * add-request adds a request to the linked list.
+- * queue lock is held and interrupts disabled, as we muck with the
+- * request queue list.
+- */
+-static inline void add_request(struct request_queue *q, struct request *req)
 -{
--       .init.ramfs : { *(.data) }
+-	drive_stat_acct(req, 1);
+-
+-	/*
+-	 * elevator indicated where it wants this request to be
+-	 * inserted at elevator_merge time
+-	 */
+-	__elv_add_request(q, req, ELEVATOR_INSERT_SORT, 0);
 -}
 -
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio"
--
-+#include "initramfs_data.h"
-+initramfs_inc "usr/initramfs_data.cpio";
---- a/usr/initramfs_data.bz2.S
-+++ b/usr/initramfs_data.bz2.S
-@@ -1,29 +1,2 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.bz2"
-+#include "initramfs_data.h"
-+initramfs_inc "usr/initramfs_data.cpio.bz2";
---- a/usr/initramfs_data.gz.S
-+++ b/usr/initramfs_data.gz.S
-@@ -1,29 +1,2 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.gz"
-+#include "initramfs_data.h"
-+initramfs_inc "usr/initramfs_data.cpio.gz";
---- /dev/null
-+++ b/usr/initramfs_data.h
-@@ -0,0 +1,42 @@
-+/*
-+  initramfs_data includes the compressed binary that is the
-+  filesystem used for early user space.
-+  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
-+  released on 2001-07-14) dit not support .incbin.
-+  If you are forced to use older binutils than that then the
-+  following trick can be applied to create the resulting binary:
+ static void part_round_stats_single(int cpu, struct hd_struct *part,
+ 				    unsigned long now)
+ {
+@@ -1316,7 +1300,10 @@ get_rq:
+ 		req->cpu = blk_cpu_to_group(smp_processor_id());
+ 	if (queue_should_plug(q) && elv_queue_empty(q))
+ 		blk_plug_device(q);
+-	add_request(q, req);
 +
++	/* insert the request into the elevator */
++	drive_stat_acct(req, 1);
++	__elv_add_request(q, req, ELEVATOR_INSERT_SORT, 0);
+ out:
+ 	if (unplug || !queue_should_plug(q))
+ 		__generic_unplug_device(q);
+diff --git a/block/blk.h b/block/blk.h
+index 6e7dc87..874eb4e 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -51,6 +51,8 @@ static inline void blk_clear_rq_complete(struct request *rq)
+  */
+ #define ELV_ON_HASH(rq)		(!hlist_unhashed(&(rq)->hash))
+ 
++struct request *blk_do_ordered(struct request_queue *q, struct request *rq);
 +
-+  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
-+  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
-+   ld -m elf_i386  -r -o built-in.o initramfs_data.o
-+
-+  For including the .init.ramfs sections, see include/asm-generic/vmlinux.lds.
-+
-+  The above example is for i386 - the parameters vary from architectures.
-+  Eventually look up LDFLAGS_BLOB in an older version of the
-+  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
-+
-+  Using .incbin has the advantage over ld that the correct flags are set
-+  in the ELF header, as required by certain architectures.
-+*/
-+
-+#ifndef __INITRAMFS_DATA_H
-+#define __INITRAMFS_DATA_H
-+
-+.macro initramfs_inc file:req
-+.section .init.ramfs,"a"
-+__irf_start:
-+.incbin "\file"
-+__irf_end:
-+.section .init.ramfs.info,"a"
-+.globl __initramfs_size
-+__initramfs_size:
-+#ifdef CONFIG_32BIT
-+        .long __irf_end - __irf_start
-+#else
-+        .quad __irf_end - __irf_start
-+#endif
-+.endm
-+
-+#endif /* __INITRAMFS_DATA_H */
---- a/usr/initramfs_data.lzma.S
-+++ b/usr/initramfs_data.lzma.S
-@@ -1,29 +1,2 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.lzma"
-+#include "initramfs_data.h"
-+initramfs_inc "usr/initramfs_data.cpio.lzma";
-
+ static inline struct request *__elv_next_request(struct request_queue *q)
+ {
+ 	struct request *rq;
+@@ -58,8 +60,9 @@ static inline struct request *__elv_next_request(struct request_queue *q)
+ 	while (1) {
+ 		while (!list_empty(&q->queue_head)) {
+ 			rq = list_entry_rq(q->queue_head.next);
+-			if (blk_do_ordered(q, &rq))
+-				return rq;
++			rq = blk_do_ordered(q, rq);
++			if (rq)
++				return !IS_ERR(rq) ? rq : NULL;
+ 		}
+ 
+ 		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index e97911d..996549d 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -869,7 +869,6 @@ extern void blk_queue_rq_timed_out(struct request_queue *, rq_timed_out_fn *);
+ extern void blk_queue_rq_timeout(struct request_queue *, unsigned int);
+ extern void blk_queue_flush(struct request_queue *q, unsigned int flush);
+ extern struct backing_dev_info *blk_get_backing_dev_info(struct block_device *bdev);
+-extern bool blk_do_ordered(struct request_queue *, struct request **);
+ extern unsigned blk_ordered_cur_seq(struct request_queue *);
+ extern unsigned blk_ordered_req_seq(struct request *);
+ extern bool blk_ordered_complete_seq(struct request_queue *, unsigned, int);
+-- 
+1.7.1
 
