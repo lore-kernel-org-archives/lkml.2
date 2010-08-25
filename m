@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab0HYPyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:54:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52892 "EHLO hera.kernel.org"
+	id S1752939Ab0HYPye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:54:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52894 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752392Ab0HYPyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752508Ab0HYPyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Aug 2010 11:54:08 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
@@ -16,13 +16,13 @@ To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
 Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 19/30] xfs: replace barriers with explicit flush / FUA usage
-Date: Wed, 25 Aug 2010 17:47:36 +0200
-Message-Id: <1282751267-3530-20-git-send-email-tj@kernel.org>
+Subject: [PATCH 22/30] reiserfs: replace barriers with explicit flush / FUA usage
+Date: Wed, 25 Aug 2010 17:47:39 +0200
+Message-Id: <1282751267-3530-23-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
 References: <1282751267-3530-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:23 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,117 +30,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Christoph Hellwig <hch@infradead.org>
 
 Switch to the WRITE_FLUSH_FUA flag for log writes and remove the EOPNOTSUPP
-detection for barriers.
+detection for barriers.  Note that reiserfs had a fairly different code
+path for barriers before as it wa the only filesystem actually making use
+of them.  The new code always uses the old non-barrier codepath and just
+sets the WRITE_FLUSH_FUA explicitly for the journal commits.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/xfs/linux-2.6/xfs_buf.c   |   16 ++--------------
- fs/xfs/linux-2.6/xfs_buf.h   |   11 +----------
- fs/xfs/linux-2.6/xfs_trace.h |    1 -
- fs/xfs/xfs_log.c             |   13 -------------
- 4 files changed, 3 insertions(+), 38 deletions(-)
+ fs/reiserfs/journal.c |  106 +++++++++---------------------------------------
+ 1 files changed, 20 insertions(+), 86 deletions(-)
 
-diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
-index ea79072..b93ea33 100644
---- a/fs/xfs/linux-2.6/xfs_buf.c
-+++ b/fs/xfs/linux-2.6/xfs_buf.c
-@@ -929,19 +929,7 @@ xfs_buf_iodone_work(
- 	xfs_buf_t		*bp =
- 		container_of(work, xfs_buf_t, b_iodone_work);
+diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
+index 812e2c0..076c8b1 100644
+--- a/fs/reiserfs/journal.c
++++ b/fs/reiserfs/journal.c
+@@ -138,13 +138,6 @@ static int reiserfs_clean_and_file_buffer(struct buffer_head *bh)
+ 	return 0;
+ }
  
--	/*
--	 * We can get an EOPNOTSUPP to ordered writes.  Here we clear the
--	 * ordered flag and reissue them.  Because we can't tell the higher
--	 * layers directly that they should not issue ordered I/O anymore, they
--	 * need to check if the _XFS_BARRIER_FAILED flag was set during I/O completion.
--	 */
--	if ((bp->b_error == EOPNOTSUPP) &&
--	    (bp->b_flags & (XBF_ORDERED|XBF_ASYNC)) == (XBF_ORDERED|XBF_ASYNC)) {
--		trace_xfs_buf_ordered_retry(bp, _RET_IP_);
--		bp->b_flags &= ~XBF_ORDERED;
--		bp->b_flags |= _XFS_BARRIER_FAILED;
--		xfs_buf_iorequest(bp);
--	} else if (bp->b_iodone)
-+	if (bp->b_iodone)
- 		(*(bp->b_iodone))(bp);
- 	else if (bp->b_flags & XBF_ASYNC)
- 		xfs_buf_relse(bp);
-@@ -1200,7 +1188,7 @@ _xfs_buf_ioapply(
- 
- 	if (bp->b_flags & XBF_ORDERED) {
- 		ASSERT(!(bp->b_flags & XBF_READ));
--		rw = WRITE_BARRIER;
-+		rw = WRITE_FLUSH_FUA;
- 	} else if (bp->b_flags & XBF_LOG_BUFFER) {
- 		ASSERT(!(bp->b_flags & XBF_READ_AHEAD));
- 		bp->b_flags &= ~_XBF_RUN_QUEUES;
-diff --git a/fs/xfs/linux-2.6/xfs_buf.h b/fs/xfs/linux-2.6/xfs_buf.h
-index d072e5f..d533d64 100644
---- a/fs/xfs/linux-2.6/xfs_buf.h
-+++ b/fs/xfs/linux-2.6/xfs_buf.h
-@@ -86,14 +86,6 @@ typedef enum {
-  */
- #define _XBF_PAGE_LOCKED	(1 << 22)
- 
--/*
-- * If we try a barrier write, but it fails we have to communicate
-- * this to the upper layers.  Unfortunately b_error gets overwritten
-- * when the buffer is re-issued so we have to add another flag to
-- * keep this information.
-- */
--#define _XFS_BARRIER_FAILED	(1 << 23)
+-static void disable_barrier(struct super_block *s)
+-{
+-	REISERFS_SB(s)->s_mount_opt &= ~(1 << REISERFS_BARRIER_FLUSH);
+-	printk("reiserfs: disabling flush barriers on %s\n",
+-	       reiserfs_bdevname(s));
+-}
 -
- typedef unsigned int xfs_buf_flags_t;
+ static struct reiserfs_bitmap_node *allocate_bitmap_node(struct super_block
+ 							 *sb)
+ {
+@@ -677,30 +670,6 @@ static void submit_ordered_buffer(struct buffer_head *bh)
+ 	submit_bh(WRITE, bh);
+ }
  
- #define XFS_BUF_FLAGS \
-@@ -114,8 +106,7 @@ typedef unsigned int xfs_buf_flags_t;
- 	{ _XBF_PAGES,		"PAGES" }, \
- 	{ _XBF_RUN_QUEUES,	"RUN_QUEUES" }, \
- 	{ _XBF_DELWRI_Q,	"DELWRI_Q" }, \
--	{ _XBF_PAGE_LOCKED,	"PAGE_LOCKED" }, \
--	{ _XFS_BARRIER_FAILED,	"BARRIER_FAILED" }
-+	{ _XBF_PAGE_LOCKED,	"PAGE_LOCKED" }
- 
- 
- typedef enum {
-diff --git a/fs/xfs/linux-2.6/xfs_trace.h b/fs/xfs/linux-2.6/xfs_trace.h
-index be5dffd..8fe311a 100644
---- a/fs/xfs/linux-2.6/xfs_trace.h
-+++ b/fs/xfs/linux-2.6/xfs_trace.h
-@@ -325,7 +325,6 @@ DEFINE_BUF_EVENT(xfs_buf_lock);
- DEFINE_BUF_EVENT(xfs_buf_lock_done);
- DEFINE_BUF_EVENT(xfs_buf_cond_lock);
- DEFINE_BUF_EVENT(xfs_buf_unlock);
--DEFINE_BUF_EVENT(xfs_buf_ordered_retry);
- DEFINE_BUF_EVENT(xfs_buf_iowait);
- DEFINE_BUF_EVENT(xfs_buf_iowait_done);
- DEFINE_BUF_EVENT(xfs_buf_delwri_queue);
-diff --git a/fs/xfs/xfs_log.c b/fs/xfs/xfs_log.c
-index 925d572..430a8fc 100644
---- a/fs/xfs/xfs_log.c
-+++ b/fs/xfs/xfs_log.c
-@@ -917,19 +917,6 @@ xlog_iodone(xfs_buf_t *bp)
- 	l = iclog->ic_log;
- 
- 	/*
--	 * If the _XFS_BARRIER_FAILED flag was set by a lower
--	 * layer, it means the underlying device no longer supports
--	 * barrier I/O. Warn loudly and turn off barriers.
--	 */
--	if (bp->b_flags & _XFS_BARRIER_FAILED) {
--		bp->b_flags &= ~_XFS_BARRIER_FAILED;
--		l->l_mp->m_flags &= ~XFS_MOUNT_BARRIER;
--		xfs_fs_cmn_err(CE_WARN, l->l_mp,
--				"xlog_iodone: Barriers are no longer supported"
--				" by device. Disabling barriers\n");
+-static int submit_barrier_buffer(struct buffer_head *bh)
+-{
+-	get_bh(bh);
+-	bh->b_end_io = reiserfs_end_ordered_io;
+-	clear_buffer_dirty(bh);
+-	if (!buffer_uptodate(bh))
+-		BUG();
+-	return submit_bh(WRITE_BARRIER, bh);
+-}
+-
+-static void check_barrier_completion(struct super_block *s,
+-				     struct buffer_head *bh)
+-{
+-	if (buffer_eopnotsupp(bh)) {
+-		clear_buffer_eopnotsupp(bh);
+-		disable_barrier(s);
+-		set_buffer_uptodate(bh);
+-		set_buffer_dirty(bh);
+-		reiserfs_write_unlock(s);
+-		sync_dirty_buffer(bh);
+-		reiserfs_write_lock(s);
 -	}
+-}
 -
--	/*
- 	 * Race to shutdown the filesystem if we see an error.
- 	 */
- 	if (XFS_TEST_ERROR((XFS_BUF_GETERROR(bp)), l->l_mp,
+ #define CHUNK_SIZE 32
+ struct buffer_chunk {
+ 	struct buffer_head *bh[CHUNK_SIZE];
+@@ -1009,7 +978,6 @@ static int flush_commit_list(struct super_block *s,
+ 	struct buffer_head *tbh = NULL;
+ 	unsigned int trans_id = jl->j_trans_id;
+ 	struct reiserfs_journal *journal = SB_JOURNAL(s);
+-	int barrier = 0;
+ 	int retval = 0;
+ 	int write_len;
+ 
+@@ -1094,24 +1062,6 @@ static int flush_commit_list(struct super_block *s,
+ 	}
+ 	atomic_dec(&journal->j_async_throttle);
+ 
+-	/* We're skipping the commit if there's an error */
+-	if (retval || reiserfs_is_journal_aborted(journal))
+-		barrier = 0;
+-
+-	/* wait on everything written so far before writing the commit
+-	 * if we are in barrier mode, send the commit down now
+-	 */
+-	barrier = reiserfs_barrier_flush(s);
+-	if (barrier) {
+-		int ret;
+-		lock_buffer(jl->j_commit_bh);
+-		ret = submit_barrier_buffer(jl->j_commit_bh);
+-		if (ret == -EOPNOTSUPP) {
+-			set_buffer_uptodate(jl->j_commit_bh);
+-			disable_barrier(s);
+-			barrier = 0;
+-		}
+-	}
+ 	for (i = 0; i < (jl->j_len + 1); i++) {
+ 		bn = SB_ONDISK_JOURNAL_1st_BLOCK(s) +
+ 		    (jl->j_start + i) % SB_ONDISK_JOURNAL_SIZE(s);
+@@ -1143,27 +1093,22 @@ static int flush_commit_list(struct super_block *s,
+ 
+ 	BUG_ON(atomic_read(&(jl->j_commit_left)) != 1);
+ 
+-	if (!barrier) {
+-		/* If there was a write error in the journal - we can't commit
+-		 * this transaction - it will be invalid and, if successful,
+-		 * will just end up propagating the write error out to
+-		 * the file system. */
+-		if (likely(!retval && !reiserfs_is_journal_aborted (journal))) {
+-			if (buffer_dirty(jl->j_commit_bh))
+-				BUG();
+-			mark_buffer_dirty(jl->j_commit_bh) ;
+-			reiserfs_write_unlock(s);
+-			sync_dirty_buffer(jl->j_commit_bh) ;
+-			reiserfs_write_lock(s);
+-		}
+-	} else {
++	/* If there was a write error in the journal - we can't commit
++	 * this transaction - it will be invalid and, if successful,
++	 * will just end up propagating the write error out to
++	 * the file system. */
++	if (likely(!retval && !reiserfs_is_journal_aborted (journal))) {
++		if (buffer_dirty(jl->j_commit_bh))
++			BUG();
++		mark_buffer_dirty(jl->j_commit_bh) ;
+ 		reiserfs_write_unlock(s);
+-		wait_on_buffer(jl->j_commit_bh);
++		if (reiserfs_barrier_flush(s))
++			__sync_dirty_buffer(jl->j_commit_bh, WRITE_FLUSH_FUA);
++		else
++			sync_dirty_buffer(jl->j_commit_bh);
+ 		reiserfs_write_lock(s);
+ 	}
+ 
+-	check_barrier_completion(s, jl->j_commit_bh);
+-
+ 	/* If there was a write error in the journal - we can't commit this
+ 	 * transaction - it will be invalid and, if successful, will just end
+ 	 * up propagating the write error out to the filesystem. */
+@@ -1319,26 +1264,15 @@ static int _update_journal_header_block(struct super_block *sb,
+ 		jh->j_first_unflushed_offset = cpu_to_le32(offset);
+ 		jh->j_mount_id = cpu_to_le32(journal->j_mount_id);
+ 
+-		if (reiserfs_barrier_flush(sb)) {
+-			int ret;
+-			lock_buffer(journal->j_header_bh);
+-			ret = submit_barrier_buffer(journal->j_header_bh);
+-			if (ret == -EOPNOTSUPP) {
+-				set_buffer_uptodate(journal->j_header_bh);
+-				disable_barrier(sb);
+-				goto sync;
+-			}
+-			reiserfs_write_unlock(sb);
+-			wait_on_buffer(journal->j_header_bh);
+-			reiserfs_write_lock(sb);
+-			check_barrier_completion(sb, journal->j_header_bh);
+-		} else {
+-		      sync:
+-			set_buffer_dirty(journal->j_header_bh);
+-			reiserfs_write_unlock(sb);
++		set_buffer_dirty(journal->j_header_bh);
++		reiserfs_write_unlock(sb);
++
++		if (reiserfs_barrier_flush(sb))
++			__sync_dirty_buffer(journal->j_header_bh, WRITE_FLUSH_FUA);
++		else
+ 			sync_dirty_buffer(journal->j_header_bh);
+-			reiserfs_write_lock(sb);
+-		}
++
++		reiserfs_write_lock(sb);
+ 		if (!buffer_uptodate(journal->j_header_bh)) {
+ 			reiserfs_warning(sb, "journal-837",
+ 					 "IO error during journal replay");
 -- 
 1.7.1
 
