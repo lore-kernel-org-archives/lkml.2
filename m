@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab0HYP6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:58:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52914 "EHLO hera.kernel.org"
+	id S1753316Ab0HYQGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 12:06:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43300 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab0HYPyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:54:10 -0400
-From: Tejun Heo <tj@kernel.org>
-To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/30] block/loop: queue ordered mode should be DRAIN_FLUSH
-Date: Wed, 25 Aug 2010 17:47:19 +0200
-Message-Id: <1282751267-3530-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
-References: <1282751267-3530-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:18 +0000 (UTC)
+	id S1752014Ab0HYQGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 12:06:38 -0400
+Date: Wed, 25 Aug 2010 08:57:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Samo Pogacnik <samo_pogacnik@t-2.net>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100825155716.GB16284@suse.de>
+References: <20100824211016.GA7176@suse.de>
+ <1282687797.8020.108.camel@itpsd6lap>
+ <20100824222035.GA10625@suse.de>
+ <1282690232.8020.116.camel@itpsd6lap>
+ <20100824225703.GA5913@suse.de>
+ <20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
+ <20100824231241.GA6971@suse.de>
+ <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
+ <20100825004134.GA28884@suse.de>
+ <20100825110813.5f7d7ac8@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100825110813.5f7d7ac8@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop implements FLUSH using fsync but was incorrectly setting its
-ordered mode to DRAIN.  Change it to DRAIN_FLUSH.  In practice, this
-doesn't change anything as loop doesn't make use of the block layer
-ordered implementation.
+On Wed, Aug 25, 2010 at 11:08:13AM +0100, Alan Cox wrote:
+> > > Do you want to be able to flip between a real debug interface and a
+> > > logging device on the same software set without risking changing behaviour
+> > 
+> > I don't understand this point.
+> 
+> A tty has a very specific set of behaviours simply by being a tty. Some
+> applications rely upon them so being able to flip between the two
+> interfaces is useful.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/block/loop.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Would that work for this driver in use as a console?
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index f3c636d..c3a4a2e 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -832,7 +832,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 	lo->lo_queue->unplug_fn = loop_unplug;
- 
- 	if (!(lo_flags & LO_FLAGS_READ_ONLY) && file->f_op->fsync)
--		blk_queue_ordered(lo->lo_queue, QUEUE_ORDERED_DRAIN);
-+		blk_queue_ordered(lo->lo_queue, QUEUE_ORDERED_DRAIN_FLUSH);
- 
- 	set_capacity(lo->lo_disk, size);
- 	bd_set_size(bdev, size << 9);
--- 
-1.7.1
+> > Seriously, look at how Fedora 14 handles this, why can't you do the same
+> > for embedded systems all from userspace, no additional code needed
+> > anywhere.
+> 
+> Its a whole set of extra processes and daemons and stuff, and
+> minimally uses something like 70K even if its very compact (8K stack, 40K+
+> page tables, 16K of buffers, code, data) - oh and I forgot the fifo
+> buffering and pty cost - so its near 100K. 1.5K v 100K - for something
+> 1.5K of kernel code that anyone else can turn off and would be off by
+> default ?
 
+  exec < /dev/console > /dev/kmsg 2>&1
+
+That's one extra process, not that much, right?
+
+> On a lot of embedded systems you don't have all the stuff Fedora carts
+> around. No modules, initrds, magic front end processes, graphical startup
+> daemons etc, all of which work to produce that feature IFF you have pty
+> support in your kernel, and for the current code also glibc.
+
+It sounded like they had an initrd that they cared about here.
+
+> You also want errors to get out (or stored) even if there are crashes -
+> which the Fedora one is not very good at. To be fair in the Fedora world
+> its not a big deal to say 'Oh dear, boot with ....'. Embedded isn't the
+> same, and you want to capture the odd rare error reliably.
+
+again, the above exec line should work for what the embedded people
+want, right?
+
+thanks,
+
+greg k-h
