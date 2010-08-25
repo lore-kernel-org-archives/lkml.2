@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab0HYG0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 02:26:15 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48893 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab0HYG0N (ORCPT
+	id S1752199Ab0HYGeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 02:34:44 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:30743 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab0HYGel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 02:26:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ULNlmjAQy8HJGy+2zyxkmJ2QCmnwNrMf5KokTzQxzQJ4y5PlGG6fLwx2vRgjFDAWNq
-         JQ8mCXejSfjLnWzPxdQBthsGcdmm8JWb39a6+sSd+mae05HZK6jjkyKVeAKjZDg5ayWQ
-         MfZ4WtPc+rq1NQTKChVSH63TX7Ra5lYY49QyY=
+	Wed, 25 Aug 2010 02:34:41 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz936eK1432Nzz1202hzz8275bh15d4Rz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L7P3DQ-01-INL-02
+X-M-MSG: 
+Date: Wed, 25 Aug 2010 08:30:41 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Hugh Dickins <hughd@google.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: fix CONFIG_VMSPLIT_1G and 2G_OPT trampoline
+Message-ID: <20100825063041.GA25259@aftab>
+References: <alpine.LSU.2.00.1008242235120.2515@sister.anvils>
 MIME-Version: 1.0
-Date: Wed, 25 Aug 2010 14:26:12 +0800
-Message-ID: <AANLkTimUb4GCdacq0C5+k=q9TrTMW956iUY-00ZpXsrX@mail.gmail.com>
-Subject: [RFC PATCH 1/3] timer: make try_to_del_timer_sync() safe on both
- hardirq context and UP
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1008242235120.2515@sister.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang@windriver.com>
+From: Hugh Dickins <hughd@google.com>
+Date: Wed, Aug 25, 2010 at 01:44:12AM -0400
 
-In commit fd450b7318b75343fd76b3d95416853e34e72c95, it was saying
-try_to_del_timer_sync() can be used in interrupt context.
+> rc2 kernel crashes when booting second cpu on this CONFIG_VMSPLIT_2G_OPT
+> laptop: whereas cloning from kernel to low mappings pgd range does need
+> to limit by both KERNEL_PGD_PTRS and KERNEL_PGD_BOUNDARY, cloning kernel
+> pgd range itself must not be limited by the smaller KERNEL_PGD_BOUNDARY.
 
-But because base->running_timer is SMP special, this lead to
-unsymmetry try_to_del_timer_sync() on UP and SMP.
+Yep, makes sense.
 
-We can make running_timer live on everywhere, then try_to_del_timer_sync()
-is also UP safe and can be used in hardirq context.
+In looking around for other swapper_pg_dir manipulations, there's this
+piece in <arch/x86/kernel/reboot.c:machine_real_restart()>:
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/timer.h |    4 ++--
- kernel/timer.c        |    6 +-----
- 2 files changed, 3 insertions(+), 7 deletions(-)
+       /* Remap the kernel at virtual address zero, as well as offset zero
+          from the kernel segment.  This assumes the kernel segment starts at
+          virtual address PAGE_OFFSET. */
+       memcpy(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+               sizeof(swapper_pg_dir [0]) * KERNEL_PGD_PTRS);
 
-diff --git a/include/linux/timer.h b/include/linux/timer.h
-index 38cf093..225c4ce 100644
---- a/include/linux/timer.h
-+++ b/include/linux/timer.h
-@@ -248,11 +248,11 @@ static inline void
-timer_stats_timer_clear_start_info(struct timer_list *timer)
+and we're cloning to low mappings here but still take KERNEL_PGD_PTRS.
 
- extern void add_timer(struct timer_list *timer);
+In the CONFIG_VMSPLIT_2G_OPT case, KERNEL_PGD_BOUNDARY and
+KERNEL_PGD_PTRS are 480 and 544, respectively, and IINM, and we end up
+overwriting the virtual mappings beginning at PAGE_OFFSET.
 
-+extern int try_to_del_timer_sync(struct timer_list *timer);
-+
- #ifdef CONFIG_SMP
--  extern int try_to_del_timer_sync(struct timer_list *timer);
-   extern int del_timer_sync(struct timer_list *timer);
- #else
--# define try_to_del_timer_sync(t)	del_timer(t)
- # define del_timer_sync(t)		del_timer(t)
- #endif
+I guess this doesn't matter on reboot or am I missing something else?
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 97bf05b..e031eb4 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -347,9 +347,7 @@ EXPORT_SYMBOL_GPL(set_timer_slack);
- static inline void set_running_timer(struct tvec_base *base,
- 					struct timer_list *timer)
- {
--#ifdef CONFIG_SMP
- 	base->running_timer = timer;
--#endif
- }
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
- static void internal_add_timer(struct tvec_base *base, struct
-timer_list *timer)
-@@ -936,15 +934,12 @@ int del_timer(struct timer_list *timer)
- }
- EXPORT_SYMBOL(del_timer);
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
--#ifdef CONFIG_SMP
- /**
-  * try_to_del_timer_sync - Try to deactivate a timer
-  * @timer: timer do del
-  *
-  * This function tries to deactivate a timer. Upon successful (ret >= 0)
-  * exit the timer is not queued and the handler is not running on any CPU.
-- *
-- * It must not be called from interrupt contexts.
-  */
- int try_to_del_timer_sync(struct timer_list *timer)
- {
-@@ -973,6 +968,7 @@ out:
- }
- EXPORT_SYMBOL(try_to_del_timer_sync);
+> ---
+> 
+>  arch/x86/kernel/trampoline.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> --- 2.6.36-rc2/arch/x86/kernel/trampoline.c.0	2010-08-22 18:56:44.000000000 -0700
+> +++ linux/arch/x86/kernel/trampoline.c	2010-08-24 22:11:08.000000000 -0700
+> @@ -45,8 +45,7 @@ void __init setup_trampoline_page_table(
+>  	/* Copy kernel address range */
+>  	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
+>  			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+> -			min_t(unsigned long, KERNEL_PGD_PTRS,
+> -			      KERNEL_PGD_BOUNDARY));
+> +			KERNEL_PGD_PTRS);
+>  
+>  	/* Initialize low mappings */
+>  	clone_pgd_range(trampoline_pg_dir,
+> 
 
-+#ifdef CONFIG_SMP
- /**
-  * del_timer_sync - deactivate a timer and wait for the handler to finish.
-  * @timer: the timer to be deactivated
 -- 
-1.7.0.4
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
+
