@@ -1,335 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab0HYSo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:44:28 -0400
-Received: from smtp-good-out-2.t-2.net ([84.255.208.44]:44326 "EHLO
-	smtp-good-out-2.t-2.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab0HYSoY (ORCPT
+	id S1752313Ab0HYS4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 14:56:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49318 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab0HYS4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:44:24 -0400
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-From: Samo Pogacnik <samo_pogacnik@t-2.net>
-To: linux kernel <linux-kernel@vger.kernel.org>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>
-In-Reply-To: <20100825171045.GA19401@suse.de>
-References: <20100824222035.GA10625@suse.de>
-	 <1282690232.8020.116.camel@itpsd6lap> <20100824225703.GA5913@suse.de>
-	 <20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
-	 <20100824231241.GA6971@suse.de>
-	 <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
-	 <20100825004134.GA28884@suse.de>
-	 <20100825110813.5f7d7ac8@lxorguk.ukuu.org.uk>
-	 <20100825155716.GB16284@suse.de>
-	 <20100825181108.1dcd0d80@lxorguk.ukuu.org.uk>
-	 <20100825171045.GA19401@suse.de>
-Content-Type: text/plain
-Date: Wed, 25 Aug 2010 20:44:07 +0200
-Message-Id: <1282761847.5857.9.camel@itpsd6lap>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	Wed, 25 Aug 2010 14:56:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=VPokvuvnBToDQkRstaOUQTH5+iZzUGOVYs2BgOfYp3x+ERf7f0bEt7TiRER8cB8joS
+         XkCdWHjXkUn4ts+C1fldWv7bJG3MHOkdOcjM4LIQuK+pdLceNQxBhXJ8Y2pR8pJXPEiD
+         3i4RW3cN+pFcanKfMFcrdqJnOWdVOHlg1zS1c=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 2.6.36-rc1 on zaurus: bluetooth regression
+Date: Wed, 25 Aug 2010 20:55:56 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1; KDE/4.4.5; i686; ; )
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-bluetooth@vger.kernel.org
+References: <20100821152445.GA1536@ucw.cz>
+In-Reply-To: <20100821152445.GA1536@ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008252055.56916.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.08.2010 Greg KH wrote:
-> Samo, care to resend the patch?
+On sobota, 21 sierpnia 2010 o 17:24:45 Pavel Machek wrote:
+> Hi!
 > 
-Sure, here it is:
----
-I hope that this TTY driver is ok for merging. It is very basic -
-removed all flow control and rate limiting. Patch has been generated
-against 2.6.34 kernel version.
-
-Ttyprintk is a pseudo TTY driver, which allows users to make printk
-messages, via output to ttyprintk device. It is possible to store
-"console" messages inline with kernel messages for better analyses of
-the boot process, for example.
-
-regards, Samo
----
-Signed-off-by: Samo Pogacnik <samo_pogacnik@t-2.net>
-diff --git a_linux/Documentation/devices.txt b_linux/Documentation/devices.txt
-index 53d64d3..71aef33 100644
---- a_linux/Documentation/devices.txt
-+++ b_linux/Documentation/devices.txt
-@@ -239,6 +239,7 @@ Your cooperation is appreciated.
- 		  0 = /dev/tty		Current TTY device
- 		  1 = /dev/console	System console
- 		  2 = /dev/ptmx		PTY master multiplex
-+		  3 = /dev/ttyprintk	User messages via printk TTY device
- 		 64 = /dev/cua0		Callout device for ttyS0
- 		    ...
- 		255 = /dev/cua191	Callout device for ttyS191
-diff --git a_linux/drivers/char/Kconfig b_linux/drivers/char/Kconfig
-index 3141dd3..5c38a06 100644
---- a_linux/drivers/char/Kconfig
-+++ b_linux/drivers/char/Kconfig
-@@ -485,6 +485,20 @@ config LEGACY_PTY_COUNT
- 	  When not in use, each legacy PTY occupies 12 bytes on 32-bit
- 	  architectures and 24 bytes on 64-bit architectures.
- 
-+config TTY_PRINTK
-+	bool "TTY driver to output user messages via printk"
-+	default n
-+	---help---
-+	  If you say Y here, the support for writing user messages (i.e.
-+	  console messages) via printk is available.
-+
-+	  The feature is useful to inline user messages with kernel
-+	  messages.
-+	  In order to use this feature, you should output user messages
-+	  to /dev/ttyprintk or redirect console to this TTY.
-+
-+	  If unsure, say N.
-+
- config BRIQ_PANEL
- 	tristate 'Total Impact briQ front panel driver'
- 	depends on PPC_CHRP
-diff --git a_linux/drivers/char/Makefile b_linux/drivers/char/Makefile
-index f957edf..ed60f45 100644
---- a_linux/drivers/char/Makefile
-+++ b_linux/drivers/char/Makefile
-@@ -11,6 +11,7 @@ obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o t
- 
- obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
- obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
-+obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
- obj-y				+= misc.o
- obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
- obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
-diff --git a_linux/drivers/char/ttyprintk.c b_linux/drivers/char/ttyprintk.c
-new file mode 100644
-index 0000000..c40c161
---- /dev/null
-+++ b_linux/drivers/char/ttyprintk.c
-@@ -0,0 +1,225 @@
-+/*
-+ *  linux/drivers/char/ttyprintk.c
-+ *
-+ *  Copyright (C) 2010  Samo Pogacnik
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the smems of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ */
-+
-+/*
-+ * This pseudo device allows user to make printk messages. It is possible
-+ * to store "console" messages inline with kernel messages for better analyses
-+ * of the boot process, for example.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/serial.h>
-+#include <linux/tty.h>
-+
-+struct ttyprintk_port {
-+	struct tty_port port;
-+	struct mutex port_write_mutex;
-+};
-+
-+static struct ttyprintk_port tpk_port;
-+
-+/*
-+ * Our simple preformatting supports transparent output of (time-stamped)
-+ * printk messages (also suitable for logging service):
-+ * - any cr is replaced by nl
-+ * - adds a ttyprintk source tag in front of each line
-+ * - too long message is fragmeted, with '\'nl between fragments
-+ * - TPK_STR_SIZE isn't really the write_room limiting factor, bcause
-+ *   it is emptied on the fly during preformatting.
-+ */
-+#define TPK_STR_SIZE 508 /* should be bigger then max expected line length */
-+#define TPK_MAX_ROOM 4096 /* we could assume 4K for instance */
-+static const char *tpk_tag = "[U] "; /* U for User */
-+static int tpk_curr;
-+
-+static int tpk_printk(const unsigned char *buf, int count)
-+{
-+	static char tmp[TPK_STR_SIZE + 4];
-+	int i = tpk_curr;
-+
-+	if (buf == NULL) {
-+		/* flush tmp[] */
-+		if (tpk_curr > 0) {
-+			/* non nl or cr terminated message - add nl */
-+			tmp[tpk_curr + 0] = '\n';
-+			tmp[tpk_curr + 1] = '\0';
-+			printk(KERN_INFO "%s%s", tpk_tag, tmp);
-+			tpk_curr = 0;
-+		}
-+		return i;
-+	}
-+
-+	for (i = 0; i < count; i++) {
-+		tmp[tpk_curr] = buf[i];
-+		if (tpk_curr < TPK_STR_SIZE) {
-+			switch (buf[i]) {
-+			case '\r':
-+				/* replace cr with nl */
-+				tmp[tpk_curr + 0] = '\n';
-+				tmp[tpk_curr + 1] = '\0';
-+				printk(KERN_INFO "%s%s", tpk_tag, tmp);
-+				tpk_curr = 0;
-+				if (buf[i + 1] == '\n')
-+					i++;
-+				break;
-+			case '\n':
-+				tmp[tpk_curr + 1] = '\0';
-+				printk(KERN_INFO "%s%s", tpk_tag, tmp);
-+				tpk_curr = 0;
-+				break;
-+			default:
-+				tpk_curr++;
-+			}
-+		} else {
-+			/* end of tmp buffer reached: cut the message in two */
-+			tmp[tpk_curr + 1] = '\\';
-+			tmp[tpk_curr + 2] = '\n';
-+			tmp[tpk_curr + 3] = '\0';
-+			printk(KERN_INFO "%s%s", tpk_tag, tmp);
-+			tpk_curr = 0;
-+		}
-+	}
-+
-+	return count;
-+}
-+
-+/*
-+ * TTY operations open function.
-+ */
-+static int tpk_open(struct tty_struct *tty, struct file *filp)
-+{
-+	tty->driver_data = &tpk_port;
-+
-+	return tty_port_open(&tpk_port.port, tty, filp);
-+}
-+
-+/*
-+ * TTY operations close function.
-+ */
-+static void tpk_close(struct tty_struct *tty, struct file *filp)
-+{
-+	struct ttyprintk_port *tpkp = tty->driver_data;
-+
-+	mutex_lock(&tpkp->port_write_mutex);
-+	/* flush tpk_printk buffer */
-+	tpk_printk(NULL, 0);
-+	mutex_unlock(&tpkp->port_write_mutex);
-+
-+	tty_port_close(&tpkp->port, tty, filp);
-+}
-+
-+/*
-+ * TTY operations write function.
-+ */
-+static int tpk_write(struct tty_struct *tty,
-+		const unsigned char *buf, int count)
-+{
-+	struct ttyprintk_port *tpkp = tty->driver_data;
-+	int ret;
-+
-+
-+	/* exclusive use of tpk_printk within this tty */
-+	mutex_lock(&tpkp->port_write_mutex);
-+	ret = tpk_printk(buf, count);
-+	mutex_unlock(&tpkp->port_write_mutex);
-+
-+	return ret;
-+}
-+
-+/*
-+ * TTY operations write_room function.
-+ */
-+static int tpk_write_room(struct tty_struct *tty)
-+{
-+	return TPK_MAX_ROOM;
-+}
-+
-+/*
-+ * TTY operations ioctl function.
-+ */
-+static int tpk_ioctl(struct tty_struct *tty, struct file *file,
-+			unsigned int cmd, unsigned long arg)
-+{
-+	struct ttyprintk_port *tpkp = tty->driver_data;
-+
-+	if (!tpkp)
-+		return -EINVAL;
-+
-+	switch (cmd) {
-+	/* Stop TIOCCONS */
-+	case TIOCCONS:
-+		return -EOPNOTSUPP;
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+	return 0;
-+}
-+
-+static const struct tty_operations ttyprintk_ops = {
-+	.open = tpk_open,
-+	.close = tpk_close,
-+	.write = tpk_write,
-+	.write_room = tpk_write_room,
-+	.ioctl = tpk_ioctl,
-+};
-+
-+struct tty_port_operations null_ops = { };
-+
-+static struct tty_driver *ttyprintk_driver;
-+
-+static int __init ttyprintk_init(void)
-+{
-+	int ret = -ENOMEM;
-+	void *rp;
-+
-+	ttyprintk_driver = alloc_tty_driver(1);
-+	if (!ttyprintk_driver)
-+		return ret;
-+
-+	ttyprintk_driver->owner = THIS_MODULE;
-+	ttyprintk_driver->driver_name = "ttyprintk";
-+	ttyprintk_driver->name = "ttyprintk";
-+	ttyprintk_driver->major = TTYAUX_MAJOR;
-+	ttyprintk_driver->minor_start = 3;
-+	ttyprintk_driver->num = 1;
-+	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
-+	ttyprintk_driver->init_termios = tty_std_termios;
-+	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
-+	ttyprintk_driver->flags = TTY_DRIVER_RESET_TERMIOS |
-+		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
-+	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
-+
-+	ret = tty_register_driver(ttyprintk_driver);
-+	if (ret < 0) {
-+		printk(KERN_ERR "Couldn't register ttyprintk driver\n");
-+		goto error;
-+	}
-+
-+	/* create our unnumbered device */
-+	rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
-+				ttyprintk_driver->name);
-+	if (IS_ERR(rp)) {
-+		printk(KERN_ERR "Couldn't create ttyprintk device\n");
-+		ret = PTR_ERR(rp);
-+		goto error;
-+	}
-+
-+	tty_port_init(&tpk_port.port);
-+	tpk_port.port.ops = &null_ops;
-+	mutex_init(&tpk_port.port_write_mutex);
-+
-+	return 0;
-+
-+error:
-+	put_tty_driver(ttyprintk_driver);
-+	ttyprintk_driver = NULL;
-+	return ret;
-+}
-+module_init(ttyprintk_init);
+> Good news is that it boots, suspends and resumes.
+> 
+> Bad news is that bluetooth broke for me. I'm using CF bluetooth
+> card.
+> 
+> Socket 0 Bridge:   	[pxa2xx-pcmcia] 	(bus ID: pxa2xx-pcmcia)
+> 	Configuration:	state: on	ready: yes
+> 			Voltage: 3.3V Vcc: 3.3V Vpp: 0.0V
+> Socket 0 Device 0:	[serial_cs]		(bus ID: 0.0)
+> 	Configuration:	state: on
+> 	Product Name:   Compact Flash Bluetooth Card
+> 	Identification:	manf_id: 0x0279	card_id: 0x950b
+> 			function: 2 (serial)
+> 			prod_id(1): "Compact Flash" (0x95521410)
+> 			prod_id(2): "Bluetooth Card" (0x7664fb1d)
+> 			prod_id(3): --- (---)
+> 			prod_id(4): --- (---)
+> Socket 1 Bridge:   	[pxa2xx-pcmcia] 	(bus ID: pxa2xx-pcmcia)
+> 	Configuration:	state: on	ready: yes
+> 			Voltage: 3.3V Vcc: 3.3V Vpp: 0.0V
+> Socket 1 Device 0:	[ide-cs]		(bus ID: 1.0)
+> 	Configuration:	state: on
+> 	Product Name:   HITACHI microdrive
+> 	Identification:	manf_id: 0x0319	card_id: 0x0000
+> 			function: 4 (fixed disk)
+> 			prod_id(1): "HITACHI" (0xf4f43949)
+> 			prod_id(2): "microdrive" (0xa6d76178)
+> 			prod_id(3): --- (---)
+> 			prod_id(4): --- (---)
+> 
+> 
+> In 2.6.35, I have lots of messages in the syslog, and speed is slow,
+> but it works.
+> 
+> Aug 19 08:01:06 toy kernel: bcsp_recv: Out-of-order packet arrived, got 3
+> expected 2 Aug 19 08:01:06 toy kernel: bcsp_recv: Out-of-order packet
+> arrived, got 4 expected 2 Aug 19 08:01:11 toy kernel: bcsp_recv: Short
+> BCSP packet
+> Aug 19 08:01:11 toy kernel: bcsp_recv: Out-of-order packet arrived, got 3
+> expected 2 Aug 19 08:01:11 toy kernel: bcsp_recv: Out-of-order packet
+> arrived, got 4 expected 2 Aug 19 08:01:12 toy kernel: bcsp_recv:
+> Out-of-order packet arrived, got 5 expected 2 Aug 19 08:01:16 toy kernel:
+> bcsp_recv: Short BCSP packet
+> Aug 19 08:01:16 toy kernel: bcsp_recv: Out-of-order packet arrived, got 2
+> expected 1 Aug 19 08:01:16 toy kernel: bcsp_recv: Out-of-order packet
+> arrived, got 3 expected 1 Aug 19 08:01:16 toy kernel: bcsp_recv:
+> Out-of-order packet arrived, got 4 expected 1
+> 
+> In 2.6.36-rc1, I get:
+> 
+> Aug 20 08:38:27 toy bluetoothd[1318]: HCI dev 0 down
+> Aug 20 08:38:27 toy bluetoothd[1318]: Adapter /org/bluez/1318/hci0 has been
+> disabled Aug 20 08:38:27 toy bluetoothd[1318]: Stopping security manager 0
+> Aug 20 08:38:27 toy kernel: pcmcia_socket pcmcia_socket0: pccard: card
+> ejected from slot 0 Aug 20 08:38:27 toy kernel: PM: Removing info for
+> pcmcia:0.0
+> Aug 20 08:38:27 toy kernel: PM: Removing info for No Bus:ttyS0
+> Aug 20 08:38:27 toy bluetoothd[1318]: HCI dev 0 unregistered
+> Aug 20 08:38:27 toy bluetoothd[1318]: Unregister path: /org/bluez/1318/hci0
+> Aug 20 08:38:27 toy kernel: PM: Removing info for No Bus:hci0
+> Aug 20 08:38:27 toy kernel: PM: Adding info for No Bus:ttyS0
+> Aug 20 08:38:31 toy kernel: pcmcia_socket pcmcia_socket0: pccard: PCMCIA
+> card inserted into slot 0 Aug 20 08:38:31 toy kernel: pcmcia 0.0: pcmcia:
+> registering new device pcmcia0.0 (IRQ: 201) Aug 20 08:38:31 toy kernel:
+> PM: Adding info for pcmcia:0.0
+> Aug 20 08:38:31 toy kernel: PM: Removing info for No Bus:ttyS0
+> Aug 20 08:38:31 toy kernel: 0.0: ttyS0 at I/O 0xc48402f8 (irq = 201) is a
+> 16C950/954 Aug 20 08:38:31 toy kernel: PM: Adding info for No Bus:ttyS0
+> Aug 20 08:38:36 toy bluetoothd[1318]: HCI dev 0 registered
+> Aug 20 08:38:36 toy kernel: PM: Adding info for No Bus:hci0
+> Aug 20 08:38:36 toy kernel: bcsp_recv: Out-of-order packet arrived, got 1
+> expected 0 Aug 20 08:38:37 toy bluetoothd[1318]: accept: Socket operation
+> on non-socket (88) Aug 20 08:38:37 toy bluetoothd[1318]: HCI dev 0 up
+> Aug 20 08:38:37 toy bluetoothd[1318]: Starting security manager 0
+> Aug 20 08:38:37 toy kernel: bcsp_recv: Short BCSP packet
+> Aug 20 08:38:39 toy kernel: PM: Removing info for No Bus:rfcomm1
+> Aug 20 08:38:39 toy kernel: PM: Adding info for No Bus:rfcomm1
+> Aug 20 08:38:40 toy pand[1546]: Bluetooth PAN daemon version 4.66
+> Aug 20 08:38:40 toy pand[1546]: Connecting to 00:21:BA:FF:2D:37
+> Aug 20 08:38:40 toy kernel: hci_cmd_task: hci0 command tx timeout
+> Aug 20 08:38:42 toy bluetoothd[1318]: Can't read version info for
+> /org/bluez/1318/hci0: Connection timed out (110) Aug 20 08:38:44 toy
+> modprobe: FATAL: Could not load /lib/modules/2.6.36-rc1/modules.dep: No
+> such file or directory
+> 
+> Any ideas?
+> 							Pavel
 
 
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=17061
+for your bug report, please add your address to the CC list in there, thanks!
+
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
