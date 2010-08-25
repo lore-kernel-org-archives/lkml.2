@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab0HYJNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:13:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58078 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab0HYJNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:13:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=pL5YaRqaS5xizahTndDY3ynHigzCKTeBS10YF5zX2cozuvV/FRV+O6zPvH1SgLG1KV
-         kks3OH+5k9uim0vats4zbMGYuojBmxKSIOPCmx2EF4RAJDNql6+LLA0Rq8Nv6XJyfIK+
-         jhiln7eHTQrM/zvwiM1fycyC0K8/Tiuj0hf00=
+	id S1752941Ab0HYJRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:17:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51327 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752772Ab0HYJRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 05:17:23 -0400
+Message-ID: <4C74DE62.6040208@kernel.org>
+Date: Wed, 25 Aug 2010 11:12:02 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <20100825120413.7d5c5994@notabene>
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<20100820083057.GA10039@infradead.org>
-	<20100820195303.20b17210@notabene>
-	<20100820115135.GQ31363@ZenIV.linux.org.uk>
-	<20100821100900.4b15fe08@notabene>
-	<17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
-	<20100823090604.6c735c80@notabene>
-	<AANLkTi=vYJDT_6YrfugE1N-k0Sj+abQBw7vQeG1GPhUP@mail.gmail.com>
-	<20100825120413.7d5c5994@notabene>
-Date: Wed, 25 Aug 2010 11:13:07 +0200
-Message-ID: <AANLkTimiW0_+qsVQo2gb2hi_=tGsvuYkiG38dLMqYr3+@mail.gmail.com>
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Andreas Dilger <andreas.dilger@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
-        "philippe.deniel@CEA.FR" <philippe.deniel@cea.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: fix cwq->nr_active underflow
+References: <4C74D9E4.5070403@kernel.org> <1282727501.3685.7.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1282727501.3685.7.camel@jlt3.sipsolutions.net>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 09:17:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 4:04 AM, Neil Brown <neilb@suse.de> wrote:
-> On Tue, 24 Aug 2010 11:41:10 +0200
->>
->> Why ot creating a special file system for this kind of operation ?
->> I mean a vfsmnt filesystem, with each directory on the root is a
->> symlink to the root of the real vfsmnt root ?
->>
->> I could be even be in proc space like /proc/self/vfsmnt
->>
->> path_to_handle will return a relative path from this directory like
->> 0x75843558/somehandle (if X is on /usr/bin/X and usr is mounted by
->> filesystem 0x75843558)
->> path_to_fshandle() will return 0x75843558
->>
->> opening file handle will be just a matter to thus open
->> /proc/self/vfsmount/0x75843558/somehandle
->>
->> Permission will be determined by vfsmount filesystem.
->>
->> No need to create new syscall all te handle to filename will be handle
->> by the vfsmount filesystem
->>
->> We could even use at existing command. The dirfd will need to be only
->> /proc/self/vfsmnt (and if you need to get a fd without mounting /proc
->> create a syscall to get this fd).
->>
->> Does sound plausible ?
->>
->
-> I don't think so.
->
-> I'm not 100% certain what you are proposing, but I think the basic idea is a
-> virtual filesystem where giving a textual filehandle as a name gives access
-> to the file with that filehandle.
+Hello,
 
-Exactly
+On 08/25/2010 11:11 AM, Johannes Berg wrote:
+> Thanks Tejun. Come to think of it, since it's an underflow it should be
+> easier for me to change the BUG_ON into a printk + BUG_ON() to print out
+> the current value, and then reproduce -- that way I'll know when I hit
+> the situation, which isn't trivial, and also whether I hit the
+> underflow. Does that sound like a good thing to try to you?
 
-> This could only work by creating a virtual symlink from the name to the
-> object in whichever filesystem - somewhat like /proc/self/fd/*.
-> This could be used to open the file, not to create a hard-link or read a
-> symlink which are two of the issues we are struggling with.
+Yeap, without the fix patch applied, that should confirm that we're
+seeing the same failure, and with the patch applied, you can add a
+printk in the else part of !delayed check in cwq_dec_nr_in_flight().
+If the printk triggers and later rmmod dosen't trigger BUG_ON(), we
+can be fairly sure the problem is fixed.
 
-This issue could be raised by the open O_NODE patch
-(http://lwn.net/Articles/364735/).
-For symlink it will allow to read the symlink.
+Thanks.
 
-For hard link some bsd have fsdb that allow this kind of stuff. in our
-case the security implication are huge, We could undelete a removed
-file. In fact you need a flink(fd, "new path"). I could be useful in
-some context note but seriously restricted.
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index a2dccfc..b0d6ca4 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1702,7 +1702,9 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
+ 			if (cwq->nr_active < cwq->max_active)
+ 				cwq_activate_first_delayed(cwq);
+ 		}
+-	}
++	} else
++		printk("XXX %s: cwq_dec_nr_in_flight for a delayed work\n",
++		       cwq->wq->name);
 
-Bastien
+ 	/* is flush in progress and are we at the flushing tip? */
+ 	if (likely(cwq->flush_color != color))
+
+-- 
+tejun
