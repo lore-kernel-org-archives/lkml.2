@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab0HYWQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 18:16:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59068 "EHLO arroyo.ext.ti.com"
+	id S1754727Ab0HYWQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 18:16:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59080 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754608Ab0HYWQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 18:16:20 -0400
+	id S1751700Ab0HYWQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 18:16:46 -0400
 From: Ivan Gomez Castellanos <ivan.gomez@ti.com>
 To: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, gregkh@suse.de
 Cc: Hiroshi.DOYU@nokia.com, ameya.palande@nokia.com,
         felipe.contreras@nokia.com, omar.ramirez@ti.com, ohad@wizery.com,
         rene.sapiens@ti.com, nm@ti.com, ernesto@ti.com, x0095078@ti.com,
         Ivan Gomez Castellanos <ivan.gomez@ti.com>
-Subject: [PATCH 02/11] staging: tidspbridge: Remove ntfy.c
-Date: Wed, 25 Aug 2010 17:08:55 -0500
-Message-Id: <1282774144-11628-3-git-send-email-ivan.gomez@ti.com>
+Subject: [PATCH 06/11] staging: tidspbridge: Remove cfg_get_exec_file()
+Date: Wed, 25 Aug 2010 17:08:59 -0500
+Message-Id: <1282774144-11628-7-git-send-email-ivan.gomez@ti.com>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <1282774144-11628-1-git-send-email-ivan.gomez@ti.com>
 References: <1282774144-11628-1-git-send-email-ivan.gomez@ti.com>
@@ -22,102 +22,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the services directory is going to be removed, this patch is needed.
+As the services directory is going to be removed, the cfg_get_exec_file
+function has also to be removed.
 
-ntfy.c only contained the function dsp_notifier_event(), and since this
-function calls sync_set_event(), then the dsp_notifier_event() is moved
-to the sync.c file.
+This patch also avoids a possible NULL pointer dereference in function
+cfg_get_exec_file(), when drv_datap is checked for NULL and then pass
+drv_datap->base_img as argument to strlen().
 
 Signed-off-by: Ivan Gomez Castellanos <ivan.gomez@ti.com>
 ---
- drivers/staging/tidspbridge/Makefile        |    2 +-
- drivers/staging/tidspbridge/core/sync.c     |   17 ++++++++++++++
- drivers/staging/tidspbridge/services/ntfy.c |   31 ---------------------------
- 3 files changed, 18 insertions(+), 32 deletions(-)
- delete mode 100644 drivers/staging/tidspbridge/services/ntfy.c
+ .../staging/tidspbridge/include/dspbridge/cfg.h    |   22 --------------
+ drivers/staging/tidspbridge/rmgr/proc.c            |   27 ++++++++++++-----
+ drivers/staging/tidspbridge/services/cfg.c         |   31 --------------------
+ 3 files changed, 19 insertions(+), 61 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/Makefile b/drivers/staging/tidspbridge/Makefile
-index 50be983..8a13982 100644
---- a/drivers/staging/tidspbridge/Makefile
-+++ b/drivers/staging/tidspbridge/Makefile
-@@ -2,7 +2,7 @@ obj-$(CONFIG_TIDSPBRIDGE)	+= bridgedriver.o
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfg.h b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
+index 9a259a1..11f5bde 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cfg.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
+@@ -41,28 +41,6 @@
+ extern int cfg_get_cd_version(u32 *version);
  
- libgen = gen/gb.o gen/gs.o gen/gh.o gen/uuidutil.o
- libservices = services/cfg.o \
--		services/ntfy.o services/services.o
-+		services/services.o
- libcore = core/chnl_sm.o core/msg_sm.o core/io_sm.o core/tiomap3430.o \
- 		core/tiomap3430_pwr.o core/tiomap_io.o \
- 		core/ue_deh.o core/wdt.o core/dsp-clock.o core/sync.o
-diff --git a/drivers/staging/tidspbridge/core/sync.c b/drivers/staging/tidspbridge/core/sync.c
-index 9010b37..995986a 100644
---- a/drivers/staging/tidspbridge/core/sync.c
-+++ b/drivers/staging/tidspbridge/core/sync.c
-@@ -21,6 +21,7 @@
+ /*
+- *  ======== cfg_get_exec_file ========
+- *  Purpose:
+- *      Retreive the default executable, if any, for this board.
+- *  Parameters:
+- *      dev_node_obj: Handle to the dev_node who's driver we are querying.
+- *      buf_size:       Size of buffer.
+- *      str_exec_file:  Ptr to character buf to hold ExecFile.
+- *  Returns:
+- *      0:                Success.
+- *      -EFAULT:  dev_node_obj is invalid or str_exec_file is invalid.
+- *      -ENODATA: The resource is not available.
+- *  Requires:
+- *      CFG initialized.
+- *  Ensures:
+- *      0:    Not more than buf_size bytes were copied into str_exec_file,
+- *                  and *str_exec_file contains default executable for this
+- *                  devnode.
+- */
+-extern int cfg_get_exec_file(struct cfg_devnode *dev_node_obj,
+-				    u32 buf_size, char *str_exec_file);
+-
+-/*
+  *  ======== cfg_get_object ========
+  *  Purpose:
+  *      Retrieve the Driver Object handle From the Registry
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+index 44c26e1..0a7e30b 100644
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -393,18 +393,29 @@ static int get_exec_file(struct cfg_devnode *dev_node_obj,
+ {
+ 	u8 dev_type;
+ 	s32 len;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
  
- /*  ----------------------------------- This */
- #include <dspbridge/sync.h>
-+#include <dspbridge/ntfy.h>
- 
- DEFINE_SPINLOCK(sync_lock);
- 
-@@ -102,3 +103,19 @@ func_end:
- 	return status;
+ 	dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
++
++	if (!exec_file)
++		return -EFAULT;
++
+ 	if (dev_type == DSP_UNIT) {
+-		return cfg_get_exec_file(dev_node_obj, size, exec_file);
+-	} else if (dev_type == IVA_UNIT) {
+-		if (iva_img) {
+-			len = strlen(iva_img);
+-			strncpy(exec_file, iva_img, len + 1);
+-			return 0;
+-		}
++		if (!drv_datap || !drv_datap->base_img)
++			return -EFAULT;
++
++		if (strlen(drv_datap->base_img) > size)
++			return -EINVAL;
++
++		strcpy(exec_file, drv_datap->base_img);
++	} else if (dev_type == IVA_UNIT && iva_img) {
++		len = strlen(iva_img);
++		strncpy(exec_file, iva_img, len + 1);
++	} else {
++		return -ENOENT;
+ 	}
+-	return -ENOENT;
++
++	return 0;
  }
  
-+/**
-+ * dsp_notifier_event() - callback function to nofity events
-+ * @this:		pointer to itself struct notifier_block
-+ * @event:	event to be notified.
-+ * @data:		Currently not used.
-+ *
-+ */
-+int dsp_notifier_event(struct notifier_block *this, unsigned long event,
-+							void *data)
-+{
-+	struct  ntfy_event *ne = container_of(this, struct ntfy_event,
-+							noti_block);
-+	if (ne->event & event)
-+		sync_set_event(&ne->sync_obj);
-+	return NOTIFY_OK;
-+}
-diff --git a/drivers/staging/tidspbridge/services/ntfy.c b/drivers/staging/tidspbridge/services/ntfy.c
-deleted file mode 100644
-index a2ea698..0000000
---- a/drivers/staging/tidspbridge/services/ntfy.c
-+++ /dev/null
-@@ -1,31 +0,0 @@
--/*
-- * ntfy.c
-- *
-- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-- *
-- * Manage lists of notification events.
-- *
-- * Copyright (C) 2005-2006 Texas Instruments, Inc.
-- *
-- * This package is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ /*
+diff --git a/drivers/staging/tidspbridge/services/cfg.c b/drivers/staging/tidspbridge/services/cfg.c
+index 587c71a..302eadd 100644
+--- a/drivers/staging/tidspbridge/services/cfg.c
++++ b/drivers/staging/tidspbridge/services/cfg.c
+@@ -31,37 +31,6 @@
+ #include <dspbridge/drv.h>
+ 
+ /*
+- *  ======== cfg_get_exec_file ========
+- *  Purpose:
+- *      Retreive the default executable, if any, for this board.
 - */
--
--/*  ----------------------------------- This */
--#include <dspbridge/ntfy.h>
--
--int dsp_notifier_event(struct notifier_block *this, unsigned long event,
--			   void *data)
+-int cfg_get_exec_file(struct cfg_devnode *dev_node_obj, u32 buf_size,
+-			     char *str_exec_file)
 -{
--	struct  ntfy_event *ne = container_of(this, struct ntfy_event,
--							noti_block);
--	if (ne->event & event)
--		sync_set_event(&ne->sync_obj);
--	return NOTIFY_OK;
+-	int status = 0;
+-	struct drv_data *drv_datap = dev_get_drvdata(bridge);
+-
+-	if (!dev_node_obj)
+-		status = -EFAULT;
+-
+-	else if (!str_exec_file || !drv_datap)
+-		status = -EFAULT;
+-
+-	if (strlen(drv_datap->base_img) > buf_size)
+-		status = -EINVAL;
+-
+-	if (!status && drv_datap->base_img)
+-		strcpy(str_exec_file, drv_datap->base_img);
+-
+-	if (status)
+-		pr_err("%s: Failed, status 0x%x\n", __func__, status);
+-	DBC_ENSURE(((status == 0) &&
+-		    (strlen(str_exec_file) <= buf_size))
+-		   || (status != 0));
+-	return status;
 -}
 -
+-/*
+  *  ======== cfg_get_object ========
+  *  Purpose:
+  *      Retrieve the Object handle from the Registry
 -- 
 1.7.0.3
 
