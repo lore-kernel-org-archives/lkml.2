@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab0HYTAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 15:00:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59794 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab0HYTAo (ORCPT
+	id S1752408Ab0HYTHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 15:07:22 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:41212 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751724Ab0HYTHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 15:00:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=lWFMArzj6PL7AyRzwmbl1b3DlMB3iPElmBuboXmk9sZNg08mjriIVGcoZ7ZBinmAWT
-         3hdjRJyvbUX7Cz5bmQ3C8K9QpCapP8lRKHmzpzXzppTjOU3YvK04qsSyvgTfFfqnDwu0
-         mLZ+RmPfIKUmGx3jpoLUbg4z+gy5VhV5ocvy4=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Nicolas Jungers <nicolas@jungers.net>
-Subject: Re: possible esata regression in 2.6.35
-Date: Wed, 25 Aug 2010 21:00:38 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <4C702070.5020809@jungers.net>
-In-Reply-To: <4C702070.5020809@jungers.net>
+	Wed, 25 Aug 2010 15:07:20 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: fFImBQkVM1nQH7Gjm4FeJLbQmxxF1ZG_Q_4HtOkPIX32UbS
+ rZZig.gWM4ZdGVqCtXKJROEZE3Rp3LFPreZU0jhFo2lZRCutOKNs2kQiV.aE
+ HKGZVjy65MuN6UiGOXx.J0DwPbgCxoYred_daDSrGP7eJTyT6ZlpLiagyuGw
+ IbQe7PLpjhktreDmmn0.H0G5qSIFPfVwRPamAFHLmd0xeIXBwPz2mT4Ro5ml
+ .Jg6cJYO5z8661OQAtbGFaJpOuVkKA_HYg4arcXkMyT9KEcQvrelMwH39FWr
+ g4g--
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 25 Aug 2010 14:07:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Randy Dunlap <randy.dunlap@oracle.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm@kvack.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: linux-next: Tree for August 25 (mm/slub)
+In-Reply-To: <20100825094559.bc652afe.randy.dunlap@oracle.com>
+Message-ID: <alpine.DEB.2.00.1008251405590.22117@router.home>
+References: <20100825132057.c8416bef.sfr@canb.auug.org.au> <20100825094559.bc652afe.randy.dunlap@oracle.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008252100.38534.maciej.rutecki@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sobota, 21 sierpnia 2010 o 20:52:32 Nicolas Jungers wrote:
-> My arm box doesn't succeed to use my esata port multiplier (addonics
-> sil3726 based).  It was working well with 2.6.34.1 and 2.6.34.4 but not
-> with both 2.6.35.2 and 2.6.35.3.  I haven't test other kernels.
-> 
-> The kernels are from http://sheeva.with-linux.com/sheeva/ with for
-> example the following config
-> http://sheeva.with-linux.com/sheeva/2.6.35.3/sheeva-2.6.35.3.config
-> 
-> The symptoms are in the console a loop on the esata links.  Here is the
-> start of it:
-> 
-> ata2: exception Emask 0x10 SAct 0x0 SErr 0x4010000 action 0xe frozen
-> ata2: edma_err_cause=00000010 pp_flags=00000000, dev connect
-> ata2: SError: { PHYRdyChg DevExch }
-> ata2: hard resetting link
-> ata2: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
-> ata2.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
-> ata2.00: hard resetting link
-> ata2.01: hard resetting link
-> ata2.02: hard resetting link
-> ata2.03: hard resetting link
-> ata2.04: hard resetting link
-> ata2.05: hard resetting link
-> ata2.00: qc timeout (cmd 0xec)
-> ata2.00: failed to IDENTIFY (I/O error, err_mask=0x4)
-> ata2.15: hard resetting link
-> ata2.15: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
-> ata2.00: hard resetting link
-> ata2.01: hard resetting link
-> ata2.02: hard resetting link
-> ata2.04: hard resetting link
-> ata2.05: hard resetting link
-> ata2.00: qc timeout (cmd 0xec)
-> ata2.00: failed to IDENTIFY (I/O error, err_mask=0x4)
-> ata2.15: hard resetting link
-> ata2.15: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
-> ata2.00: hard resetting link
-> ata2.01: hard resetting link
-> ata2.02: hard resetting link
-> ata2.03: hard resetting link
-> ata2.04: hard resetting link
-> ata2.05: hard resetting link
-> ata2.00: qc timeout (cmd 0xec)
-> ata2.00: failed to IDENTIFY (I/O error, err_mask=0x4)
-> ata2.00: failed to recover link after 3 tries, disabling
-> ata2.15: hard resetting link
-> ata2.15: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
-> 
+On Wed, 25 Aug 2010, Randy Dunlap wrote:
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=17071
-for your bug report, please add your address to the CC list in there, thanks!
+> mm/slub.c:1732: error: implicit declaration of function 'slab_pre_alloc_hook'
+> mm/slub.c:1751: error: implicit declaration of function 'slab_post_alloc_hook'
+> mm/slub.c:1881: error: implicit declaration of function 'slab_free_hook'
+> mm/slub.c:1886: error: implicit declaration of function 'slab_free_hook_irq'
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Empty functions are missing if the runtime debuggability option is
+compiled
+out.
+
+
+Subject: slub: Add dummy functions for the !SLUB_DEBUG case
+
+Provide the fall back functions to empty hooks if SLUB_DEBUG is not set.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+---
+ mm/slub.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2010-08-25 14:02:43.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-08-25 14:04:23.000000000 -0500
+@@ -1098,6 +1098,18 @@ static inline void inc_slabs_node(struct
+ 							int objects) {}
+ static inline void dec_slabs_node(struct kmem_cache *s, int node,
+ 							int objects) {}
++
++static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
++							{ return 0; }
++
++static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags,
++		void *object) {}
++
++static inline void slab_free_hook(struct kmem_cache *s, void *x) {}
++
++static inline void slab_free_hook_irq(struct kmem_cache *s,
++		void *object) {}
++
+ #endif
+
+ /*
