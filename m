@@ -1,355 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab0HYCSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 22:18:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab0HYCSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 22:18:04 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, nhorman@tuxdriver.com,
-        Xiaotian Feng <dfeng@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Roland McGrath <roland@redhat.com>
-Subject: [PATCH v5] core_pattern: fix long parameters was truncated by core_pattern handler
-Date: Wed, 25 Aug 2010 10:17:05 +0800
-Message-Id: <1282702625-2274-1-git-send-email-dfeng@redhat.com>
-In-Reply-To: <20100824154745.779ed12b.akpm@linux-foundation.org>
-References: <20100824154745.779ed12b.akpm@linux-foundation.org>
+	id S932480Ab0HYCbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 22:31:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61779 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413Ab0HYCbd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 22:31:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hm7Lq25U0hWvBjH8PWaqNK6pgGjwz1l8/wbfS8MOQgYChH4KZAA/39tPKgZLHDZhiq
+         QPLwDJUkV3B8L1LmazVHXb7VMVeIpHVV+TgCbs2CHpafC0FfM78I3Yp4ZNn+vYf44rRY
+         tmJHI5qVkl6HkUOjoiffVWcYTkj6liYfS10IE=
+MIME-Version: 1.0
+In-Reply-To: <1282701750-4949-2-git-send-email-mark.brown314@gmail.com>
+References: <1282701750-4949-1-git-send-email-mark.brown314@gmail.com> <1282701750-4949-2-git-send-email-mark.brown314@gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Wed, 25 Aug 2010 10:31:11 +0800
+Message-ID: <AANLkTimVYVEQ6gth2H7i7ogf_5n9FLEPjEPJXS+sTdzU@mail.gmail.com>
+Subject: Re: [PATCH 1/1] pxa168: added initial support for TPO TD043MTEA1 LCD
+ display on Aspenite
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We met a parameter truncated issue, consider following:
-> > echo "|/root/core_pattern_pipe_test %p /usr/libexec/blah-blah-blah \
-%s %c %p %u %g 11 12345678901234567890123456789012345678 %t" > \
-/proc/sys/kernel/core_pattern
+On Wed, Aug 25, 2010 at 10:02 AM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> ---
+>  arch/arm/configs/pxa168_defconfig       |   10 +++++
+>  arch/arm/mach-mmp/aspenite.c            |   59 +++++++++++++++++++++++++++++++
+>  arch/arm/mach-mmp/include/mach/pxa168.h |    8 ++++
+>  arch/arm/mach-mmp/pxa168.c              |    4 ++
+>  drivers/video/pxa168fb.c                |    4 +-
+>  5 files changed, 83 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/configs/pxa168_defconfig b/arch/arm/configs/pxa168_defconfig
+> index 74d7e01..32f433d 100644
+> --- a/arch/arm/configs/pxa168_defconfig
+> +++ b/arch/arm/configs/pxa168_defconfig
+> @@ -68,3 +68,13 @@ CONFIG_DEBUG_ERRORS=y
+>  CONFIG_DEBUG_LL=y
+>  # CONFIG_CRYPTO_ANSI_CPRNG is not set
+>  CONFIG_CRC_CCITT=y
+> +CONFIG_FB=y
+> +CONFIG_FB_PXA168=y
+> +CONFIG_FRAMEBUFFER_CONSOLE=y
+> +CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+> +CONFIG_FONTS=y
+> +CONFIG_FONT_8x8=y
+> +CONFIG_LOGO=y
+> +CONFIG_LOGO_LINUX_MONO=y
+> +CONFIG_LOGO_LINUX_VGA16=y
+> +CONFIG_LOGO_LINUX_CLUT224=y
 
-This is okay because the strings is less than CORENAME_MAX_SIZE.
-"cat /proc/sys/kernel/core_pattern" shows the whole string. but
-after we run core_pattern_pipe_test in man page, we found last
-parameter was truncated like below:
-        argc[10]=<12807486>
+Not sure about the status of the _defconfig story, but better to leave
+this part out at this moment until that's been completely figured out.
 
-The root cause is core_pattern allows % specifiers, which need to be
-replaced during parse time, but the replace may expand the strings
-to larger than CORENAME_MAX_SIZE. So if the last parameter is %
-specifiers, the replace code is using snprintf(out_ptr, out_end - out_ptr, ...),
-this will write out of corename array.
+> diff --git a/arch/arm/mach-mmp/aspenite.c b/arch/arm/mach-mmp/aspenite.c
+> index 0629394..4f5f4dd 100644
+> --- a/arch/arm/mach-mmp/aspenite.c
+> +++ b/arch/arm/mach-mmp/aspenite.c
+> @@ -23,6 +23,7 @@
+>  #include <mach/mfp-pxa168.h>
+>  #include <mach/pxa168.h>
+>  #include <mach/gpio.h>
+> +#include <video/pxa168fb.h>
+>
+>  #include "common.h"
+>
+> @@ -66,6 +67,36 @@ static unsigned long common_pin_config[] __initdata = {
+>        GPIO115_I2S_BCLK,
+>        GPIO116_I2S_RXD,
+>        GPIO117_I2S_TXD,
+> +
+> +       /* LCD */
+> +       GPIO56_LCD_FCLK_RD,
+> +       GPIO57_LCD_LCLK_A0,
+> +       GPIO58_LCD_PCLK_WR,
+> +       GPIO59_LCD_DENA_BIAS,
+> +       GPIO60_LCD_DD0,
+> +       GPIO61_LCD_DD1,
+> +       GPIO62_LCD_DD2,
+> +       GPIO63_LCD_DD3,
+> +       GPIO64_LCD_DD4,
+> +       GPIO65_LCD_DD5,
+> +       GPIO66_LCD_DD6,
+> +       GPIO67_LCD_DD7,
+> +       GPIO68_LCD_DD8,
+> +       GPIO69_LCD_DD9,
+> +       GPIO70_LCD_DD10,
+> +       GPIO71_LCD_DD11,
+> +       GPIO72_LCD_DD12,
+> +       GPIO73_LCD_DD13,
+> +       GPIO74_LCD_DD14,
+> +       GPIO75_LCD_DD15,
+> +       GPIO76_LCD_DD16,
+> +       GPIO77_LCD_DD17,
+> +       GPIO78_LCD_DD18,
+> +       GPIO79_LCD_DD19,
+> +       GPIO80_LCD_DD20,
+> +       GPIO81_LCD_DD21,
+> +       GPIO82_LCD_DD22,
+> +       GPIO83_LCD_DD23,
+>  };
+>
+>  static struct smc91x_platdata smc91x_info = {
+> @@ -134,6 +165,33 @@ static struct i2c_board_info aspenite_i2c_info[] __initdata = {
+>        { I2C_BOARD_INFO("wm8753", 0x1b), },
+>  };
+>
+> +static struct fb_videomode video_modes[] = {
+> +       [0] = {
+> +               .pixclock       = 30120,
+> +               .refresh        = 60,
+> +               .xres           = 800,
+> +               .yres           = 480,
+> +               .hsync_len      = 1,
+> +               .left_margin    = 215,
+> +               .right_margin   = 40,
+> +               .vsync_len      = 1,
+> +               .upper_margin   = 34,
+> +               .lower_margin   = 10,
+> +               .sync           = FB_SYNC_VERT_HIGH_ACT | FB_SYNC_HOR_HIGH_ACT,
+> +       },
+> +};
 
-Changes since v4:
-cn_printf needs to take trailing '\0' into account. Then we don't need to
-copy extra '\0' while parsing pat_ptr.
+Blank line would be good here, but I'm not picky.
 
-Changes since v3:
-make handling of single char also uses cn_printf, suggested by Andrew Morton.
+> +struct pxa168fb_mach_info aspenite_lcd_info __initdata = {
 
-Changes since v2:
-Introduced generic function cn_printf and make format_corename remember the time
-has been expanded, suggested by Olg Nesterov and Neil Horman.
+Need to check if this is referenced at run-time in pxa168fb.c, if that's true,
+the modes[] array above possibly won't be referenced as well, and can be
+marked as __initdata too. Otherwise, we'd want to remove this __initdata
+here.
 
-Changes since v1:
-This patch allocates corename at runtime, if the replace doesn't have enough
-memory, expand the corename dynamically, suggested by Neil Horman.
+> +       .id                     = "Graphic Frame",
+> +       .modes                  = video_modes,
+> +       .num_modes              = ARRAY_SIZE(video_modes),
+> +       .pix_fmt                = PIX_FMT_RGB565,
+> +       .io_pin_allocation_mode = PIN_MODE_DUMB_24,
+> +       .dumb_mode              = DUMB_MODE_RGB888,
+> +       .active                 = 1,
+> +       .panel_rbswap           = 0,
+> +       .invert_pixclock        = 0,
+> +};
+> +
+>  static void __init common_init(void)
+>  {
+>        mfp_config(ARRAY_AND_SIZE(common_pin_config));
+> @@ -143,6 +201,7 @@ static void __init common_init(void)
+>        pxa168_add_twsi(1, NULL, ARRAY_AND_SIZE(aspenite_i2c_info));
+>        pxa168_add_ssp(1);
+>        pxa168_add_nand(&aspenite_nand_info);
+> +       pxa168_add_fb(&aspenite_lcd_info);
+>
+>        /* off-chip devices */
+>        platform_device_register(&smc91x_device);
+> diff --git a/arch/arm/mach-mmp/include/mach/pxa168.h b/arch/arm/mach-mmp/include/mach/pxa168.h
+> index 27e1bc7..220738f 100644
+> --- a/arch/arm/mach-mmp/include/mach/pxa168.h
+> +++ b/arch/arm/mach-mmp/include/mach/pxa168.h
+> @@ -10,6 +10,7 @@ extern void __init pxa168_init_irq(void);
+>  #include <mach/devices.h>
+>  #include <plat/i2c.h>
+>  #include <plat/pxa3xx_nand.h>
+> +#include <video/pxa168fb.h>
+>
+>  extern struct pxa_device_desc pxa168_device_uart1;
+>  extern struct pxa_device_desc pxa168_device_uart2;
+> @@ -25,6 +26,7 @@ extern struct pxa_device_desc pxa168_device_ssp3;
+>  extern struct pxa_device_desc pxa168_device_ssp4;
+>  extern struct pxa_device_desc pxa168_device_ssp5;
+>  extern struct pxa_device_desc pxa168_device_nand;
+> +extern struct pxa_device_desc pxa168_device_fb;
+>
+>  static inline int pxa168_add_uart(int id)
+>  {
+> @@ -97,4 +99,10 @@ static inline int pxa168_add_nand(struct pxa3xx_nand_platform_data *info)
+>  {
+>        return pxa_register_device(&pxa168_device_nand, info, sizeof(*info));
+>  }
+> +
+> +static inline int pxa168_add_fb(struct pxa168fb_mach_info *mi)
+> +{
+> +       return pxa_register_device(&pxa168_device_fb, mi, sizeof(*mi));
+> +}
+> +
+>  #endif /* __ASM_MACH_PXA168_H */
+> diff --git a/arch/arm/mach-mmp/pxa168.c b/arch/arm/mach-mmp/pxa168.c
+> index 652ae66..9c57a32 100644
+> --- a/arch/arm/mach-mmp/pxa168.c
+> +++ b/arch/arm/mach-mmp/pxa168.c
+> @@ -25,6 +25,7 @@
+>  #include <mach/dma.h>
+>  #include <mach/devices.h>
+>  #include <mach/mfp.h>
+> +#include <video/pxa168fb.h>
+>
+>  #include "common.h"
+>  #include "clock.h"
+> @@ -79,6 +80,7 @@ static APBC_CLK(ssp4, PXA168_SSP4, 4, 0);
+>  static APBC_CLK(ssp5, PXA168_SSP5, 4, 0);
+>
+>  static APMU_CLK(nand, NAND, 0x01db, 208000000);
+> +static APMU_CLK(lcd, LCD, 0x7f, 312000000);
+>
+>  /* device and clock bindings */
+>  static struct clk_lookup pxa168_clkregs[] = {
+> @@ -96,6 +98,7 @@ static struct clk_lookup pxa168_clkregs[] = {
+>        INIT_CLKREG(&clk_ssp4, "pxa168-ssp.3", NULL),
+>        INIT_CLKREG(&clk_ssp5, "pxa168-ssp.4", NULL),
+>        INIT_CLKREG(&clk_nand, "pxa3xx-nand", NULL),
+> +       INIT_CLKREG(&clk_lcd, NULL, "LCDCLK"),
 
-I've tested with some core_pattern strings, it works fine now.
+Or
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Roland McGrath <roland@redhat.com>
----
- fs/exec.c |  155 +++++++++++++++++++++++++++++++++++++-----------------------
- 1 files changed, 95 insertions(+), 60 deletions(-)
+INIT_CLKREG(&clk_lcd, "pxa168-fb", NULL),
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 2d94552..ca3550c 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -65,6 +65,12 @@ char core_pattern[CORENAME_MAX_SIZE] = "core";
- unsigned int core_pipe_limit;
- int suid_dumpable = 0;
- 
-+struct core_name {
-+	char *corename;
-+	int used, size;
-+};
-+static atomic_t call_count = ATOMIC_INIT(1);
-+
- /* The maximal length of core_pattern is also specified in sysctl.c */
- 
- static LIST_HEAD(formats);
-@@ -1440,127 +1446,148 @@ void set_binfmt(struct linux_binfmt *new)
- 
- EXPORT_SYMBOL(set_binfmt);
- 
-+static int expand_corename(struct core_name *cn)
-+{
-+	char *old_corename = cn->corename;
-+
-+	cn->size = CORENAME_MAX_SIZE * atomic_inc_return(&call_count);
-+	cn->corename = krealloc(old_corename, cn->size, GFP_KERNEL);
-+
-+	if (!cn->corename) {
-+		kfree(old_corename);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
-+static int cn_printf(struct core_name *cn, const char *fmt, ...)
-+{
-+	char *cur;
-+	int need;
-+	int ret;
-+	va_list arg;
-+
-+	va_start(arg, fmt);
-+	need = vsnprintf(NULL, 0, fmt, arg);
-+	va_end(arg);
-+
-+	if (likely(need < cn->size - cn->used -1))
-+		goto out_printf;
-+
-+	ret = expand_corename(cn);
-+	if (ret)
-+		goto expand_fail;
-+
-+out_printf:
-+	cur = cn->corename + cn->used;
-+	va_start(arg, fmt);
-+	vsnprintf(cur, need + 1, fmt, arg);
-+	va_end(arg);
-+	cn->used += need;
-+	return 0;
-+
-+expand_fail:
-+	return ret;
-+}
-+
- /* format_corename will inspect the pattern parameter, and output a
-  * name into corename, which must have space for at least
-  * CORENAME_MAX_SIZE bytes plus one byte for the zero terminator.
-  */
--static int format_corename(char *corename, long signr)
-+static int format_corename(struct core_name *cn, long signr)
- {
- 	const struct cred *cred = current_cred();
- 	const char *pat_ptr = core_pattern;
- 	int ispipe = (*pat_ptr == '|');
--	char *out_ptr = corename;
--	char *const out_end = corename + CORENAME_MAX_SIZE;
--	int rc;
- 	int pid_in_pattern = 0;
-+	int err = 0;
-+
-+	cn->size = CORENAME_MAX_SIZE * atomic_read(&call_count);
-+	cn->corename = kmalloc(cn->size, GFP_KERNEL);
-+	cn->used = 0;
-+
-+	if (!cn->corename)
-+		return -ENOMEM;
- 
- 	/* Repeat as long as we have more pattern to process and more output
- 	   space */
- 	while (*pat_ptr) {
- 		if (*pat_ptr != '%') {
--			if (out_ptr == out_end)
-+			if (*pat_ptr == 0)
- 				goto out;
--			*out_ptr++ = *pat_ptr++;
-+			err = cn_printf(cn, "%c", *pat_ptr++);
- 		} else {
- 			switch (*++pat_ptr) {
-+			/* single % at the end, drop that */
- 			case 0:
- 				goto out;
- 			/* Double percent, output one percent */
- 			case '%':
--				if (out_ptr == out_end)
--					goto out;
--				*out_ptr++ = '%';
-+				err = cn_printf(cn, "%c", '%');
- 				break;
- 			/* pid */
- 			case 'p':
- 				pid_in_pattern = 1;
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%d", task_tgid_vnr(current));
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
-+				err = cn_printf(cn, "%d",
-+					      task_tgid_vnr(current));
- 				break;
- 			/* uid */
- 			case 'u':
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%d", cred->uid);
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
-+				err = cn_printf(cn, "%d", cred->uid);
- 				break;
- 			/* gid */
- 			case 'g':
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%d", cred->gid);
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
-+				err = cn_printf(cn, "%d", cred->gid);
- 				break;
- 			/* signal that caused the coredump */
- 			case 's':
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%ld", signr);
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
-+				err = cn_printf(cn, "%ld", signr);
- 				break;
- 			/* UNIX time of coredump */
- 			case 't': {
- 				struct timeval tv;
- 				do_gettimeofday(&tv);
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%lu", tv.tv_sec);
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
-+				err = cn_printf(cn, "%lu", tv.tv_sec);
- 				break;
- 			}
- 			/* hostname */
- 			case 'h':
- 				down_read(&uts_sem);
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%s", utsname()->nodename);
-+				err = cn_printf(cn, "%s",
-+					      utsname()->nodename);
- 				up_read(&uts_sem);
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
- 				break;
- 			/* executable */
- 			case 'e':
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%s", current->comm);
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
-+				err = cn_printf(cn, "%s", current->comm);
- 				break;
- 			/* core limit size */
- 			case 'c':
--				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%lu", rlimit(RLIMIT_CORE));
--				if (rc > out_end - out_ptr)
--					goto out;
--				out_ptr += rc;
-+				err = cn_printf(cn, "%lu",
-+					      rlimit(RLIMIT_CORE));
- 				break;
- 			default:
- 				break;
- 			}
- 			++pat_ptr;
- 		}
-+
-+		if (err)
-+			return err;
- 	}
-+
- 	/* Backward compatibility with core_uses_pid:
- 	 *
- 	 * If core_pattern does not include a %p (as is the default)
- 	 * and core_uses_pid is set, then .%pid will be appended to
- 	 * the filename. Do not do this for piped commands. */
- 	if (!ispipe && !pid_in_pattern && core_uses_pid) {
--		rc = snprintf(out_ptr, out_end - out_ptr,
--			      ".%d", task_tgid_vnr(current));
--		if (rc > out_end - out_ptr)
--			goto out;
--		out_ptr += rc;
-+		err = cn_printf(cn, ".%d", task_tgid_vnr(current));
-+		if (err)
-+			return err;
- 	}
- out:
--	*out_ptr = 0;
- 	return ispipe;
- }
- 
-@@ -1837,7 +1864,7 @@ static int umh_pipe_setup(struct subprocess_info *info)
- void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- {
- 	struct core_state core_state;
--	char corename[CORENAME_MAX_SIZE + 1];
-+	struct core_name cn;
- 	struct mm_struct *mm = current->mm;
- 	struct linux_binfmt * binfmt;
- 	const struct cred *old_cred;
-@@ -1892,7 +1919,13 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 	 */
- 	clear_thread_flag(TIF_SIGPENDING);
- 
--	ispipe = format_corename(corename, signr);
-+	ispipe = format_corename(&cn, signr);
-+
-+	if (ispipe == -ENOMEM) {
-+		printk(KERN_WARNING "format_corename failed\n");
-+		printk(KERN_WARNING "Aborting core\n");
-+		goto fail_corename;
-+	}
- 
-  	if (ispipe) {
- 		int dump_count;
-@@ -1929,7 +1962,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 			goto fail_dropcount;
- 		}
- 
--		helper_argv = argv_split(GFP_KERNEL, corename+1, NULL);
-+		helper_argv = argv_split(GFP_KERNEL, cn.corename+1, NULL);
- 		if (!helper_argv) {
- 			printk(KERN_WARNING "%s failed to allocate memory\n",
- 			       __func__);
-@@ -1942,7 +1975,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		argv_free(helper_argv);
- 		if (retval) {
-  			printk(KERN_INFO "Core dump to %s pipe failed\n",
--			       corename);
-+			       cn.corename);
- 			goto close_fail;
-  		}
- 	} else {
-@@ -1951,7 +1984,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		if (cprm.limit < binfmt->min_coredump)
- 			goto fail_unlock;
- 
--		cprm.file = filp_open(corename,
-+		cprm.file = filp_open(cn.corename,
- 				 O_CREAT | 2 | O_NOFOLLOW | O_LARGEFILE | flag,
- 				 0600);
- 		if (IS_ERR(cprm.file))
-@@ -1993,6 +2026,8 @@ fail_dropcount:
- 	if (ispipe)
- 		atomic_dec(&core_dump_count);
- fail_unlock:
-+	kfree(cn.corename);
-+fail_corename:
- 	coredump_finish(mm);
- 	revert_creds(old_cred);
- fail_creds:
--- 
-1.7.2.1
+clk_get() will match the dev_id name first, and then the clock name,
+so dev_id should be normally enough, and clock name can be NULL
+if there is no other clocks for this same device.
 
+>  };
+>
+>  static int __init pxa168_init(void)
+> @@ -147,3 +150,4 @@ PXA168_DEVICE(ssp2, "pxa168-ssp", 1, SSP2, 0xd401c000, 0x40, 54, 55);
+>  PXA168_DEVICE(ssp3, "pxa168-ssp", 2, SSP3, 0xd401f000, 0x40, 56, 57);
+>  PXA168_DEVICE(ssp4, "pxa168-ssp", 3, SSP4, 0xd4020000, 0x40, 58, 59);
+>  PXA168_DEVICE(ssp5, "pxa168-ssp", 4, SSP5, 0xd4021000, 0x40, 60, 61);
+> +PXA168_DEVICE(fb, "pxa168-fb", -1, LCD, 0xd420b000, 0x1c8);
+> diff --git a/drivers/video/pxa168fb.c b/drivers/video/pxa168fb.c
+> index c91a7f7..d3e597e 100644
+> --- a/drivers/video/pxa168fb.c
+> +++ b/drivers/video/pxa168fb.c
+> @@ -559,7 +559,7 @@ static struct fb_ops pxa168fb_ops = {
+>        .fb_imageblit   = cfb_imageblit,
+>  };
+>
+> -static int __init pxa168fb_init_mode(struct fb_info *info,
+> +static int pxa168fb_init_mode(struct fb_info *info,
+
+??
+
+>                              struct pxa168fb_mach_info *mi)
+>  {
+>        struct pxa168fb_info *fbi = info->par;
+> @@ -599,7 +599,7 @@ static int __init pxa168fb_init_mode(struct fb_info *info,
+>        return ret;
+>  }
+>
+> -static int __init pxa168fb_probe(struct platform_device *pdev)
+> +static int pxa168fb_probe(struct platform_device *pdev)
+
+??
+
+>  {
+>        struct pxa168fb_mach_info *mi;
+>        struct fb_info *info = 0;
+> --
+> 1.7.0.4
+>
+>
