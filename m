@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab0HYNsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 09:48:35 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55558 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab0HYNsc (ORCPT
+	id S1754057Ab0HYNsX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 09:48:23 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38087 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab0HYNsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 09:48:32 -0400
+	Wed, 25 Aug 2010 09:48:04 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -26,300 +26,193 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed, 25 Aug 2010 19:13:43 +0530
-Message-Id: <20100825134343.5447.44352.sendpatchset@localhost6.localdomain6>
+Date: Wed, 25 Aug 2010 19:13:15 +0530
+Message-Id: <20100825134315.5447.96501.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
 References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
-Subject: [PATCHv11 2.6.36-rc2-tip 12/15] 12: perf: show possible probes in a given file.
+Subject: [PATCHv11 2.6.36-rc2-tip 10/15] 10: tracing: config option to enable both kprobe-tracer and uprobe-tracer.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Introduces -S/--show_functions option for perf-probe.
-This lists function names in a File. If no file is specified, then lists
-functions in the current running kernel.
+Selecting CONFIG_PROBE_EVENTS enables both kprobe-based and
+uprobes-based dynamic events. However kprobe-tracer or uprobe-tracer
+can still be individually selected or disabled.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ kernel/trace/Kconfig |   51 +++++++++++++++++++++++++++++---------------------
+ 1 files changed, 30 insertions(+), 21 deletions(-)
 
-Changelog from V10: As suggested by Arnaldo, filtering is now
- based on sym.binding.
-
-Changelog from V9: Filter labels, weak, and local binding functions
-from listing as suggested by Christoph Hellwig.
-
-Show last 10 functions in /bin/zsh.
-
-# perf probe -S -D /bin/zsh | tail
-zstrtol
-ztrcmp
-ztrdup
-ztrduppfx
-ztrftime
-ztrlen
-ztrncpy
-ztrsub
-zwarn
-zwarnnam
-
-Show first 10 functions in /lib/libc.so.6
-
-# perf probe -S -D /lib/libc.so.6 | head
-_IO_adjust_column
-_IO_adjust_wcolumn
-_IO_default_doallocate
-_IO_default_finish
-_IO_default_pbackfail
-_IO_default_uflow
-_IO_default_xsgetn
-_IO_default_xsputn
-_IO_do_write@@GLIBC_2.2.5
-_IO_doallocbuf
-
-Show last 10 functions in kernel.
-
-# perf probe -S | tail
-zlib_inflateInit2
-zlib_inflateReset
-zlib_inflate_blob
-zlib_inflate_table
-zlib_inflate_workspacesize
-zone_pcp_update
-zone_reclaim
-zone_reclaimable_pages
-zone_statistics
-zone_watermark_ok
-
- tools/perf/builtin-probe.c    |   43 ++++++++++++++++++++++++
- tools/perf/util/probe-event.c |   72 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/probe-event.h |    1 +
- tools/perf/util/symbol.c      |    8 +++++
- tools/perf/util/symbol.h      |    1 +
- 5 files changed, 124 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 199d5e1..fa63245 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -50,9 +50,11 @@ static struct {
- 	bool list_events;
- 	bool force_add;
- 	bool show_lines;
-+	bool list_functions;
- 	int nevents;
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
-+	struct strlist *limitlist;
- 	struct line_range line_range;
- 	int max_probe_points;
- } params;
-@@ -132,6 +134,19 @@ static int opt_show_lines(const struct option *opt __used,
- }
- #endif
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 55ba474..205c12b 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -76,7 +76,7 @@ config RING_BUFFER_ALLOW_SWAP
+ # All tracer options should select GENERIC_TRACER. For those options that are
+ # enabled by all tracers (context switch and event tracer) they select TRACING.
+ # This allows those options to appear when no other tracer is selected. But the
+-# options do not appear when something else selects it. We need the two options
++# options do not appear when something else selects it. We need the two option
+ # GENERIC_TRACER and TRACING to avoid circular dependencies to accomplish the
+ # hiding of the automatic options.
  
-+static int opt_limit_dsos(const struct option *opt __used,
-+			       const char *str, int unset __used)
-+{
-+	if (str) {
-+		if (!params.limitlist)
-+			params.limitlist = strlist__new(true, NULL);
-+		if (!params.limitlist)
-+			return -1;
-+		strlist__add(params.limitlist, str);
-+	}
-+	return 0;
-+}
-+
- static const char * const probe_usage[] = {
- 	"perf probe [<options>] 'PROBEDEF' ['PROBEDEF' ...]",
- 	"perf probe [<options>] --add 'PROBEDEF' [--add 'PROBEDEF' ...]",
-@@ -188,6 +203,10 @@ static const struct option options[] = {
- 	OPT__DRY_RUN(&probe_event_dry_run),
- 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
- 		 "Set how many probe points can be found for a probe."),
-+	OPT_BOOLEAN('S', "show_functions", &params.list_functions,
-+				"Show potential probes."),
-+	OPT_CALLBACK('D', "limit_dsos", NULL, "DSO",
-+				"Limit Dsos.", opt_limit_dsos),
- 	OPT_END()
- };
+@@ -162,7 +162,7 @@ config IRQSOFF_TRACER
+ 	  This option measures the time spent in irqs-off critical
+ 	  sections, with microsecond accuracy.
  
-@@ -213,7 +232,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		params.max_probe_points = MAX_PROBES;
+-	  The default measurement method is a maximum search, which is
++	  The default measurement method is a maximum search, which i
+ 	  disabled by default and can be runtime (re-)started
+ 	  via:
  
- 	if ((!params.nevents && !params.dellist && !params.list_events &&
--	     !params.show_lines))
-+	     !params.show_lines && !params.list_functions))
- 		usage_with_options(probe_usage, options);
+@@ -184,7 +184,7 @@ config PREEMPT_TRACER
+ 	  This option measures the time spent in preemption-off critical
+ 	  sections, with microsecond accuracy.
  
- 	if (params.list_events) {
-@@ -225,12 +244,34 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			pr_err("  Error: Don't use --list with --line.\n");
- 			usage_with_options(probe_usage, options);
- 		}
-+		if (params.list_functions) {
-+			pr_warning("  Error: Don't use --list with"
-+						" --show_functions.\n");
-+			usage_with_options(probe_usage, options);
-+		}
- 		ret = show_perf_probe_events();
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show event list. (%d)\n",
- 			       ret);
- 		return ret;
- 	}
-+	if (params.list_functions) {
-+		if (params.nevents != 0 || params.dellist) {
-+			pr_err("  Error: Don't use --show_functions with"
-+					" --add/--del.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_lines) {
-+			pr_err("  Error: Don't use --show_functions with"
-+					" --line.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		ret = show_possible_probes(params.limitlist);
-+		if (ret < 0)
-+			pr_err("  Error: Failed to show possible"
-+					" probes (%d).\n", ret);
-+		return ret;
-+	}
+-	  The default measurement method is a maximum search, which is
++	  The default measurement method is a maximum search, which i
+ 	  disabled by default and can be runtime (re-)started
+ 	  via:
  
- #ifdef DWARF_SUPPORT
- 	if (params.show_lines) {
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index e72f05c..2efbe4b 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -31,6 +31,7 @@
- #include <string.h>
- #include <stdarg.h>
- #include <limits.h>
-+#include <gelf.h>
+@@ -228,7 +228,7 @@ choice
+ 	prompt "Branch Profiling"
+ 	default BRANCH_PROFILE_NONE
+ 	help
+-	 The branch profiling is a software profiler. It will add hooks
++	 The branch profiling is a software profiler. It will add hook
+ 	 into the C conditionals to test which path a branch takes.
  
- #undef _GNU_SOURCE
- #include "util.h"
-@@ -46,6 +47,7 @@
- #include "trace-event.h"	/* For __unused */
- #include "probe-event.h"
- #include "probe-finder.h"
-+#include "session.h"
+ 	 The likely/unlikely profiler only looks at the conditions that
+@@ -252,12 +252,12 @@ config PROFILE_ANNOTATED_BRANCHES
+ 	bool "Trace likely/unlikely profiler"
+ 	select TRACE_BRANCH_PROFILING
+ 	help
+-	  This tracer profiles all the the likely and unlikely macros
++	  This tracer profiles all the the likely and unlikely macro
+ 	  in the kernel. It will display the results in:
  
- #define MAX_CMDLEN 256
- #define MAX_PROBE_ARGS 128
-@@ -1752,3 +1754,73 @@ int del_perf_probe_events(struct strlist *dellist)
- 	return ret;
- }
+ 	  /sys/kernel/debug/tracing/profile_annotated_branch
  
-+/*
-+ * If a symbol corresponds to a function with global binding return 0.
-+ * For all others return 1.
-+ */
-+static int filter_non_global_functions(struct map *map __unused,
-+						struct symbol *sym)
-+{
-+	if (sym->binding != STB_GLOBAL)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static int print_list_available_symbols(struct map *map,
-+					const char *name __unused)
-+{
-+	if (map__load(map, filter_non_global_functions) < 0)
-+		return -EINVAL;
-+	if (!dso__sorted_by_name(map->dso, map->type))
-+		dso__sort_by_name(map->dso, map->type);
-+
-+	dso__fprintf_symbols(map->dso, map->type, stdout);
-+	return 0;
-+}
-+
-+int show_possible_probes(struct strlist *limitlist)
-+{
-+	struct str_node *ent;
-+	struct map *map = NULL;
-+	char *str;
-+	int ret = -EINVAL;
-+
-+	if (!limitlist) { /* Show functions in kernel */
-+		ret = init_vmlinux();
-+		if (ret < 0)
-+			return ret;
-+		return print_list_available_symbols(
-+				machine.vmlinux_maps[MAP__FUNCTION], NULL);
-+	}
-+
-+	symbol_conf.try_vmlinux_path = false;
-+	symbol_conf.sort_by_name = true;
-+	ret = symbol__init();
-+	if (ret < 0) {
-+		pr_debug("Failed to init symbol map.\n");
-+		return ret;
-+	}
-+
-+	strlist__for_each(ent, limitlist) {
-+		str = strdup(ent->s);
-+		if (!str) {
-+			ret = -ENOMEM;
-+			goto out_delete;
-+		}
-+
-+		map = dso__new_map(str);
-+		ret = print_list_available_symbols(map, NULL);
-+		if (ret)
-+			pr_warning("No Symbols in dso %s.\n", str);
-+
-+		dso__delete(map->dso);
-+		map__delete(map);
-+		free(str);
-+	}
-+
-+out_delete:
-+	if (ret)
-+		pr_warning("Failed to list available probes.\n");
-+	return ret;
-+}
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 5af3924..fcd0f08 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -115,6 +115,7 @@ extern int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- extern int del_perf_probe_events(struct strlist *dellist);
- extern int show_perf_probe_events(void);
- extern int show_line_range(struct line_range *lr);
-+extern int show_possible_probes(struct strlist *availlist);
+-	  Note: this will add a significant overhead; only turn this
++	  Note: this will add a significant overhead; only turn thi
+ 	  on if you need to profile the system's use of these macros.
  
+ config PROFILE_ALL_BRANCHES
+@@ -333,7 +333,7 @@ config BLK_DEV_IO_TRACE
+ 	select GENERIC_TRACER
+ 	select STACKTRACE
+ 	help
+-	  Say Y here if you want to be able to trace the block layer actions
++	  Say Y here if you want to be able to trace the block layer action
+ 	  on a given queue. Tracing allows you to see any traffic happening
+ 	  on a block device queue. For more information (and the userspace
+ 	  support tools needed), fetch the blktrace tools from:
+@@ -351,9 +351,8 @@ config BLK_DEV_IO_TRACE
+ config KPROBE_EVENT
+ 	depends on KPROBES
+ 	depends on HAVE_REGS_AND_STACK_ACCESS_API
++	depends on PROBE_EVENTS
+ 	bool "Enable kprobes-based dynamic events"
+-	select TRACING
+-	select PROBE_EVENTS
+ 	default y
+ 	help
+ 	  This allows the user to add tracing events (similar to tracepoints)
+@@ -370,10 +369,9 @@ config UPROBE_EVENT
+ 	bool "Enable uprobes-based dynamic events"
+ 	depends on ARCH_SUPPORTS_UPROBES
+ 	depends on MMU
++	depends on PROBE_EVENTS
+ 	select UPROBES
+-	select PROBE_EVENTS
+-	select TRACING
+-	default n
++	default y
+ 	help
+ 	  This allows the user to add tracing events on top of userspace dynamic
+ 	  events (similar to tracepoints) on the fly via the traceevents interface.
+@@ -383,7 +381,18 @@ config UPROBE_EVENT
+ 	  tools on user space applications.
  
- /* Maximum index number of event-name postfix */
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index ca22032..385f0a4 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2464,3 +2464,11 @@ int machine__load_vmlinux_path(struct machine *self, enum map_type type,
+ config PROBE_EVENTS
+-	def_bool n
++	bool "Enable kprobes and uprobe based dynamic events"
++	select TRACING
++	default n
++	help
++	  This allows a user to add dynamic tracing events in
++	  kernel using kprobe-tracer and in userspace using
++	  uprobe-tracer. However users can still selectively
++	  disable one of these events.
++
++	  For more information on kprobe-tracer and uprobe-tracer
++	  please refer help under KPROBE_EVENT and UPROBE_EVENT
++	  respectively.
  
- 	return ret;
- }
-+
-+struct map *dso__new_map(char *name)
-+{
-+	struct dso *dso = dso__new(name);
-+	struct map *map = map__new2(0, dso, MAP__FUNCTION);
-+
-+	return map;
-+}
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 72ef973..52a8126 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -202,6 +202,7 @@ char dso__symtab_origin(const struct dso *self);
- void dso__set_long_name(struct dso *self, char *name);
- void dso__set_build_id(struct dso *self, void *build_id);
- void dso__read_running_kernel_build_id(struct dso *self, struct machine *machine);
-+struct map *dso__new_map(char *name);
- struct symbol *dso__find_symbol(struct dso *self, enum map_type type, u64 addr);
- struct symbol *dso__find_symbol_by_name(struct dso *self, enum map_type type,
- 					const char *name);
+ config DYNAMIC_FTRACE
+ 	bool "enable/disable ftrace tracepoints dynamically"
+@@ -393,14 +402,14 @@ config DYNAMIC_FTRACE
+ 	help
+           This option will modify all the calls to ftrace dynamically
+ 	  (will patch them out of the binary image and replace them
+-	  with a No-Op instruction) as they are called. A table is
++	  with a No-Op instruction) as they are called. A table i
+ 	  created to dynamically enable them again.
+ 
+ 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
+ 	  otherwise has native performance as long as no tracing is active.
+ 
+ 	  The changes to the code are done by a kernel thread that
+-	  wakes up once a second and checks to see if any ftrace calls
++	  wakes up once a second and checks to see if any ftrace call
+ 	  were made. If so, it runs stop_machine (stops all CPUS)
+ 	  and modifies the code to jump over the call to ftrace.
+ 
+@@ -432,7 +441,7 @@ config FTRACE_STARTUP_TEST
+ 	select FTRACE_SELFTEST
+ 	help
+ 	  This option performs a series of startup tests on ftrace. On bootup
+-	  a series of tests are made to verify that the tracer is
++	  a series of tests are made to verify that the tracer i
+ 	  functioning properly. It will do tests on all the configured
+ 	  tracers of ftrace.
+ 
+@@ -441,12 +450,12 @@ config EVENT_TRACE_TEST_SYSCALLS
+ 	depends on FTRACE_STARTUP_TEST
+ 	help
+ 	 This option will also enable testing every syscall event.
+-	 It only enables the event and disables it and runs various loads
++	 It only enables the event and disables it and runs various load
+ 	 with the event enabled. This adds a bit more time for kernel boot
+ 	 up since it runs this on every system call defined.
+ 
+ 	 TBD - enable a way to actually call the syscalls as we test their
+-	       events
++	       event
+ 
+ config MMIOTRACE
+ 	bool "Memory mapped IO tracing"
+@@ -465,7 +474,7 @@ config MMIOTRACE_TEST
+ 	tristate "Test module for mmiotrace"
+ 	depends on MMIOTRACE && m
+ 	help
+-	  This is a dumb module for testing mmiotrace. It is very dangerous
++	  This is a dumb module for testing mmiotrace. It is very dangerou
+ 	  as it will write garbage to IO memory starting at a given address.
+ 	  However, it should be safe to use on e.g. unused portion of VRAM.
+ 
+@@ -477,9 +486,9 @@ config RING_BUFFER_BENCHMARK
+ 	help
+ 	  This option creates a test to stress the ring buffer and benchmark it.
+ 	  It creates its own ring buffer such that it will not interfere with
+-	  any other users of the ring buffer (such as ftrace). It then creates
++	  any other users of the ring buffer (such as ftrace). It then create
+ 	  a producer and consumer that will run for 10 seconds and sleep for
+-	  10 seconds. Each interval it will print out the number of events
++	  10 seconds. Each interval it will print out the number of event
+ 	  it recorded and give a rough estimate of how long each iteration took.
+ 
+ 	  It does not disable interrupts or raise its priority, so it may be
