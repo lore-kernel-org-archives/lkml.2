@@ -1,142 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab0HYVhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:37:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32996 "EHLO hera.kernel.org"
+	id S1754653Ab0HYViu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:38:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41781 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab0HYVhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:37:47 -0400
-Date: Wed, 25 Aug 2010 21:37:27 GMT
-From: tip-bot for Haicheng Li <haicheng.li@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, ak@linux.intel.com, tglx@linutronix.de,
-        fengguang.wu@intel.com, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, haicheng.li@linux.intel.com,
-        linux-kernel@vger.kernel.org, ak@linux.intel.com, tglx@linutronix.de,
-        fengguang.wu@intel.com, hpa@linux.intel.com
-In-Reply-To: <4C6E4FD8.6080100@linux.intel.com>
-References: <4C6E4FD8.6080100@linux.intel.com>
+	id S1751460Ab0HYVit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 17:38:49 -0400
+Date: Wed, 25 Aug 2010 21:36:45 GMT
+From: tip-bot for Borislav Petkov <bp@amd64.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com, bp@amd64.org,
+        borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@amd64.org, hpa@linux.intel.com,
+        borislav.petkov@amd.com
+In-Reply-To: <20100825162823.GE26438@aftab>
+References: <20100825162823.GE26438@aftab>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86-64, mem: Update all PGDs for direct mapping and vmemmap mapping changes
-Message-ID: <tip-f4a9f26dd0041423da94bb22dfed742540915487@git.kernel.org>
-Git-Commit-ID: f4a9f26dd0041423da94bb22dfed742540915487
+Subject: [tip:x86/cpu] x86, tsc: Remove CPU frequency calibration on AMD
+Message-ID: <tip-acf01734b1747b1ec4be6f159aff579ea5f7f8e2@git.kernel.org>
+Git-Commit-ID: acf01734b1747b1ec4be6f159aff579ea5f7f8e2
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 21:37:28 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 21:36:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f4a9f26dd0041423da94bb22dfed742540915487
-Gitweb:     http://git.kernel.org/tip/f4a9f26dd0041423da94bb22dfed742540915487
-Author:     Haicheng Li <haicheng.li@linux.intel.com>
-AuthorDate: Fri, 20 Aug 2010 17:50:16 +0800
+Commit-ID:  acf01734b1747b1ec4be6f159aff579ea5f7f8e2
+Gitweb:     http://git.kernel.org/tip/acf01734b1747b1ec4be6f159aff579ea5f7f8e2
+Author:     Borislav Petkov <bp@amd64.org>
+AuthorDate: Wed, 25 Aug 2010 18:28:23 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 25 Aug 2010 14:01:03 -0700
+CommitDate: Wed, 25 Aug 2010 13:32:52 -0700
 
-x86-64, mem: Update all PGDs for direct mapping and vmemmap mapping changes
+x86, tsc: Remove CPU frequency calibration on AMD
 
-When memory hotplug-adding happens for a large enough area
-that a new PGD entry is needed for the direct mapping, the PGDs
-of other processes would not get updated. This leads to some CPUs
-oopsing like below when they have to access the unmapped areas.
+6b37f5a20c0e5c334c010a587058354215433e92 introduced the CPU frequency
+calibration code for AMD CPUs whose TSCs didn't increment with the
+core's P0 frequency. From F10h, revB onward, however, the TSC increment
+rate is denoted by MSRC001_0015[24] and when this bit is set (which
+should be done by the BIOS) the TSC increments with the P0 frequency
+so the calibration is not needed and booting can be a couple of mcecs
+faster on those machines.
 
-[ 1139.243192] BUG: soft lockup - CPU#0 stuck for 61s! [bash:6534]
-[ 1139.243195] Modules linked in: ipv6 autofs4 rfcomm l2cap crc16 bluetooth rfkill binfmt_misc
-dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc fan battery ac parport_pc
-lp parport joydev usbhid processor thermal thermal_sys container button rtc_cmos rtc_core rtc_lib
-i2c_i801 i2c_core pcspkr uhci_hcd ohci_hcd ehci_hcd usbcore
-[ 1139.243229] irq event stamp: 8538759
-[ 1139.243230] hardirqs last  enabled at (8538759): [<ffffffff8100c3fc>] restore_args+0x0/0x30
-[ 1139.243236] hardirqs last disabled at (8538757): [<ffffffff810422df>] __do_softirq+0x106/0x146
-[ 1139.243240] softirqs last  enabled at (8538758): [<ffffffff81042310>] __do_softirq+0x137/0x146
-[ 1139.243245] softirqs last disabled at (8538743): [<ffffffff8100cb5c>] call_softirq+0x1c/0x34
-[ 1139.243249] CPU 0:
-[ 1139.243250] Modules linked in: ipv6 autofs4 rfcomm l2cap crc16 bluetooth rfkill binfmt_misc
-dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc fan battery ac parport_pc
-lp parport joydev usbhid processor thermal thermal_sys container button rtc_cmos rtc_core rtc_lib
-i2c_i801 i2c_core pcspkr uhci_hcd ohci_hcd ehci_hcd usbcore
-[ 1139.243284] Pid: 6534, comm: bash Tainted: G   M       2.6.32-haicheng-cpuhp #7 QSSC-S4R
-[ 1139.243287] RIP: 0010:[<ffffffff810ace35>]  [<ffffffff810ace35>] alloc_arraycache+0x35/0x69
-[ 1139.243292] RSP: 0018:ffff8802799f9d78  EFLAGS: 00010286
-[ 1139.243295] RAX: ffff8884ffc00000 RBX: ffff8802799f9d98 RCX: 0000000000000000
-[ 1139.243297] RDX: 0000000000190018 RSI: 0000000000000001 RDI: ffff8884ffc00010
-[ 1139.243300] RBP: ffffffff8100c34e R08: 0000000000000002 R09: 0000000000000000
-[ 1139.243303] R10: ffffffff8246dda0 R11: 000000d08246dda0 R12: ffff8802599bfff0
-[ 1139.243305] R13: ffff88027904c040 R14: ffff8802799f8000 R15: 0000000000000001
-[ 1139.243308] FS:  00007fe81bfe86e0(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
-[ 1139.243311] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1139.243313] CR2: ffff8884ffc00000 CR3: 000000026cf2d000 CR4: 00000000000006f0
-[ 1139.243316] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1139.243318] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1139.243321] Call Trace:
-[ 1139.243324]  [<ffffffff810ace29>] ? alloc_arraycache+0x29/0x69
-[ 1139.243328]  [<ffffffff8135004e>] ? cpuup_callback+0x1b0/0x32a
-[ 1139.243333]  [<ffffffff8105385d>] ? notifier_call_chain+0x33/0x5b
-[ 1139.243337]  [<ffffffff810538a4>] ? __raw_notifier_call_chain+0x9/0xb
-[ 1139.243340]  [<ffffffff8134ecfc>] ? cpu_up+0xb3/0x152
-[ 1139.243344]  [<ffffffff813388ce>] ? store_online+0x4d/0x75
-[ 1139.243348]  [<ffffffff811e53f3>] ? sysdev_store+0x1b/0x1d
-[ 1139.243351]  [<ffffffff8110589f>] ? sysfs_write_file+0xe5/0x121
-[ 1139.243355]  [<ffffffff810b539d>] ? vfs_write+0xae/0x14a
-[ 1139.243358]  [<ffffffff810b587f>] ? sys_write+0x47/0x6f
-[ 1139.243362]  [<ffffffff8100b9ab>] ? system_call_fastpath+0x16/0x1b
+Besides, there should be virtually no machines out there which don't
+have this bit set, therefore this calibration can be safely removed. It
+is a shaky hack anyway since it assumes implicitly that the core is in
+P0 when BIOS hands off to the OS, which might not always be the case.
 
-This patch makes sure to always replicate new direct mapping PGD entries
-to the PGDs of all processes, as well as ensures corresponding vmemmap
-mapping gets synced.
-
-V1: initial code by Andi Kleen.
-V2: fix several issues found in testing.
-V3: as suggested by Wu Fengguang, reuse common code of vmalloc_sync_all().
-
-[ hpa: changed pgd_change from int to bool ]
-
-Originally-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
-LKML-Reference: <4C6E4FD8.6080100@linux.intel.com>
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20100825162823.GE26438@aftab>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/init_64.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/amd.c |   17 +++++++++++++
+ arch/x86/kernel/tsc.c     |   58 ---------------------------------------------
+ 2 files changed, 17 insertions(+), 58 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 9a66746..de852ad 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -534,8 +534,9 @@ kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
- 			     unsigned long page_size_mask)
- {
--
-+	bool pgd_changed = false;
- 	unsigned long next, last_map_addr = end;
-+	unsigned long addr;
- 
- 	start = (unsigned long)__va(start);
- 	end = (unsigned long)__va(end);
-@@ -563,7 +564,12 @@ kernel_physical_mapping_init(unsigned long start,
- 		spin_lock(&init_mm.page_table_lock);
- 		pgd_populate(&init_mm, pgd, __va(pud_phys));
- 		spin_unlock(&init_mm.page_table_lock);
-+		pgd_changed = true;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index ba5f62f..fc563fa 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -412,6 +412,23 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
  	}
+ #endif
 +
-+	if (pgd_changed)
-+		sync_global_pgds(addr, end);
++	/* We need to do the following only once */
++	if (c != &boot_cpu_data)
++		return;
 +
- 	__flush_tlb_all();
- 
- 	return last_map_addr;
-@@ -1003,6 +1009,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
- 		}
- 
- 	}
-+	sync_global_pgds((unsigned long)start_page, end);
- 	return 0;
++	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
++
++		if (c->x86 > 0x10 ||
++		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
++			u64 val;
++
++			rdmsrl(MSR_K7_HWCR, val);
++			if (!(val & BIT(24)))
++				printk(KERN_WARNING FW_BUG "TSC doesn't count "
++					"with P0 frequency!\n");
++		}
++	}
  }
  
+ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index ce8e502..13b6a6c 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -854,60 +854,6 @@ static void __init init_tsc_clocksource(void)
+ 	clocksource_register_khz(&clocksource_tsc, tsc_khz);
+ }
+ 
+-#ifdef CONFIG_X86_64
+-/*
+- * calibrate_cpu is used on systems with fixed rate TSCs to determine
+- * processor frequency
+- */
+-#define TICK_COUNT 100000000
+-static unsigned long __init calibrate_cpu(void)
+-{
+-	int tsc_start, tsc_now;
+-	int i, no_ctr_free;
+-	unsigned long evntsel3 = 0, pmc3 = 0, pmc_now = 0;
+-	unsigned long flags;
+-
+-	for (i = 0; i < 4; i++)
+-		if (avail_to_resrv_perfctr_nmi_bit(i))
+-			break;
+-	no_ctr_free = (i == 4);
+-	if (no_ctr_free) {
+-		WARN(1, KERN_WARNING "Warning: AMD perfctrs busy ... "
+-		     "cpu_khz value may be incorrect.\n");
+-		i = 3;
+-		rdmsrl(MSR_K7_EVNTSEL3, evntsel3);
+-		wrmsrl(MSR_K7_EVNTSEL3, 0);
+-		rdmsrl(MSR_K7_PERFCTR3, pmc3);
+-	} else {
+-		reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i);
+-		reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
+-	}
+-	local_irq_save(flags);
+-	/* start measuring cycles, incrementing from 0 */
+-	wrmsrl(MSR_K7_PERFCTR0 + i, 0);
+-	wrmsrl(MSR_K7_EVNTSEL0 + i, 1 << 22 | 3 << 16 | 0x76);
+-	rdtscl(tsc_start);
+-	do {
+-		rdmsrl(MSR_K7_PERFCTR0 + i, pmc_now);
+-		tsc_now = get_cycles();
+-	} while ((tsc_now - tsc_start) < TICK_COUNT);
+-
+-	local_irq_restore(flags);
+-	if (no_ctr_free) {
+-		wrmsrl(MSR_K7_EVNTSEL3, 0);
+-		wrmsrl(MSR_K7_PERFCTR3, pmc3);
+-		wrmsrl(MSR_K7_EVNTSEL3, evntsel3);
+-	} else {
+-		release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
+-		release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
+-	}
+-
+-	return pmc_now * tsc_khz / (tsc_now - tsc_start);
+-}
+-#else
+-static inline unsigned long calibrate_cpu(void) { return cpu_khz; }
+-#endif
+-
+ void __init tsc_init(void)
+ {
+ 	u64 lpj;
+@@ -926,10 +872,6 @@ void __init tsc_init(void)
+ 		return;
+ 	}
+ 
+-	if (cpu_has(&boot_cpu_data, X86_FEATURE_CONSTANT_TSC) &&
+-			(boot_cpu_data.x86_vendor == X86_VENDOR_AMD))
+-		cpu_khz = calibrate_cpu();
+-
+ 	printk("Detected %lu.%03lu MHz processor.\n",
+ 			(unsigned long)cpu_khz / 1000,
+ 			(unsigned long)cpu_khz % 1000);
