@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab0HYJSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:18:09 -0400
-Received: from mailout-us.gmx.com ([74.208.5.67]:47137 "HELO
-	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751710Ab0HYJSH (ORCPT
+	id S1752998Ab0HYJSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:18:49 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:37641 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab0HYJSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:18:07 -0400
-X-Authenticated: #65048216
-X-Provags-ID: V01U2FsdGVkX18ehFs/ZnYeUNfu7gE9qbRX/oFdoQRr4WzezYns0H
-	xhV0O7FlHucOPk
-Subject: Re: [PATCH] drm/i915/tv: After disabling the pipe, use
- wait_for_vblank_off()
-From: Ivan Bulatovic <combuster@gmx.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <20100825081530.GB30504@sucs.org>
-References: <1282647815.2221.15.camel@localhost.localdomain>
-	 <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk>
-	 <1282684130.2199.25.camel@localhost.localdomain>
-	 <89k83a$9drtkt@azsmga001.ch.intel.com>
-	 <1282691196.2120.30.camel@localhost.localdomain>
-	 <20100825081530.GB30504@sucs.org>
+	Wed, 25 Aug 2010 05:18:47 -0400
+Subject: Re: [PATCH] workqueue: fix cwq->nr_active underflow
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C74DE62.6040208@kernel.org>
+References: <4C74D9E4.5070403@kernel.org>
+	 <1282727501.3685.7.camel@jlt3.sipsolutions.net>
+	 <4C74DE62.6040208@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Aug 2010 11:17:59 +0200
-Message-ID: <1282727879.2343.86.camel@localhost.localdomain>
+Date: Wed, 25 Aug 2010 11:20:24 +0200
+Message-ID: <1282728024.3685.8.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 09:15 +0100, Sitsofe Wheeler wrote: 
-> On Wed, Aug 25, 2010 at 01:06:36AM +0200, Ivan Bulatovic wrote:
-> > 
-> > Spurious TV detection is still here and + I have a new problem with
-> > resolution in init3 when KMS fires up, it occupies only 1/3rd of the
-> > screen when booting.
-> 
-> Does the patch in http://lkml.org/lkml/2010/8/24/280 change anything for
-> you? If so I'm guessing we are seeing the same issue...
-> 
-> -- 
-> Sitsofe | http://sucs.org/~sits/
+Hi,
 
-Ok, gonna try it out now. As for Jesse's question about whether there
-are timeouts on the wait_for_vblank function, I can see at least 30
-[drm_intel_wait_for_vblank], vblank wait timed out printks all over my
-dmesg.
+> Yeap, without the fix patch applied, that should confirm that we're
+> seeing the same failure, and with the patch applied, you can add a
+> printk in the else part of !delayed check in cwq_dec_nr_in_flight().
+> If the printk triggers and later rmmod dosen't trigger BUG_ON(), we
+> can be fairly sure the problem is fixed.
+
+Ok, I'll apply this patch then and go back to testing what I was doing
+all the time. Will let you know.
+
+johannes
 
