@@ -1,107 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844Ab0HYSNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:13:09 -0400
-Received: from us-mx4.synaptics.com ([12.178.49.178]:33143 "EHLO
-	us-mx4.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab0HYSNI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:13:08 -0400
-X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Aug 2010 14:13:07 EDT
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 25 Aug 2010 09:23:39 -0700
-From: William Manson <WManson@synaptics.com>
-To: "'Naveen Kumar GADDIPATI'" <naveen.gaddipati@stericsson.com>,
-        Christopher Heiny <Cheiny@synaptics.com>,
-        Allie Xiong <axiong@synaptics.com>,
-        "j.de.gram@gmail.com" <j.de.gram@gmail.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Pradeepkumar Kumar SUJUAR <pradeep.kumar.sujuar@stericsson.com>,
-        Sundar R IYER <sundar.iyer@stericsson.com>
-Date: Wed, 25 Aug 2010 11:05:09 -0700
-Subject: RE: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-Thread-Topic: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-Thread-Index: ActEOAqhc3a2M+sISua645Q6PgSeCgARzIeQ
-Message-ID: <7B4B50AC280A5E45A42CD2D364A3CE2F273F5CFF12@USW-EX2K7-1.synaptics-inc.local>
-In-Reply-To: <81C3A93C17462B4BBD7E272753C1057916DE5281A0@EXDCVYMBSTM005.EQ1STM.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751978Ab0HYSOB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 14:14:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706Ab0HYSN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 14:13:59 -0400
+Date: Wed, 25 Aug 2010 20:10:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org
+Subject: Re: [RFC V2 PATCH 1/3] timer: make try_to_del_timer_sync() safe on
+	both hardirq context and UP
+Message-ID: <20100825181007.GA22671@redhat.com>
+References: <1282743959-5427-1-git-send-email-yong.zhang0@gmail.com> <1282743959-5427-2-git-send-email-yong.zhang0@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282743959-5427-2-git-send-email-yong.zhang0@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen -
-
-Thanks for the feedback. We didn't know about defconfig usually being sent as a separate patch as this is our first driver submission. Yes - I agree we should move the RMI specific files to a dir under drivers/input. Yeah - we have some older legacy C coding standard that was originally used and it called for using Hungarian notation and it looks like Kernel.org doesn't like that.
-
-Cheers!
-
-Bill Manson
-
-
------Original Message-----
-From: Naveen Kumar GADDIPATI [mailto:naveen.gaddipati@stericsson.com]
-Sent: Wednesday, August 25, 2010 2:30 AM
-To: Christopher Heiny; Allie Xiong; William Manson; j.de.gram@gmail.com
-Cc: khali@linux-fr.org; linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; Linus WALLEIJ; Pradeepkumar Kumar SUJUAR; Sundar R IYER
-Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-
-Hi Christopher,
-
-Some generic review comments for this patch
-
-1. Normally, defconfig should be a separate patch. You need not
-post the entire defconfig, but only the changes to the Makefiles and
-the Kconfig files.
-
-2. All RMI specific files can be moved to a separate driver folder
-in input/ like drivers/input/rmi/*.
-
-3. Lots of Hungarian notation in the code. Please refer this snippet.
-
->------------------------------------
->CODE CONTAINS HUNGARIAN NOTATION
+On 08/25, Yong Zhang wrote:
 >
->Some coding guidlines at some companies require that you type the name
->of your variables using the infamous hungarian notation:
->http://en.wikipedia.org/wiki/Hungarian_notation
+> From: Yong Zhang <yong.zhang@windriver.com>
 >
->We have an internal coding guideline that touches on the
->subject:
->http://swadvice.lud.stericsson.com/guideline.aspx?nr=57&ver=latest
+> In commit fd450b7318b75343fd76b3d95416853e34e72c95, it was saying
+> try_to_del_timer_sync() can be used in interrupt context.
 >
->According to the Linux kernel inventor Linus Torvalds in his document
->Documentation/CodingStyle in the Linux kernel:
+> But because base->running_timer is SMP special, this lead to
+> unsymmetry try_to_del_timer_sync() on UP and SMP.
 >
->"Encoding the type of a function into the name (so-called Hungarian
->notation) is brain damaged-the compiler knows the types anyway and can
->check those, and it only confuses the programmer."
->
->Remove all instances of hungariang notation in the code please.
->Includes prefixing pointers with p_*, naming structs with s_*, enums
->with e_*, suffixes like *32b etc etc.
->-----------------------------------
->
-
-We are also using the Synaptics RMI4 touch pad on our U8500 platform.
-We had to make some changes to these posted drivers to make it work on
-our platform. Also, we modified the touch screen driver to be compliant
-to the kernel coding guidelines, but as a stand alone driver though.
-
-I will soon post out an RFC for our patch which we got working on our board.
-Please do have a look and we would like you guys to incorporate these changes
-into your final patch sets as well, so that we can avoid any re-works later on
-when your patch set gets merged into the mainline kernel.
+> We can make running_timer live on everywhere, then try_to_del_timer_sync()
+> is also UP safe and can be used in hardirq context.
 
 
-Cheers!
-Naveen
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+
+
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> ---
+> Hi Oleg,
+> 
+> How do you think about this one?
+> 
+> Yong
+> 
+>  include/linux/timer.h |    4 ++--
+>  kernel/timer.c        |    6 +-----
+>  2 files changed, 3 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/timer.h b/include/linux/timer.h
+> index 38cf093..225c4ce 100644
+> --- a/include/linux/timer.h
+> +++ b/include/linux/timer.h
+> @@ -248,11 +248,11 @@ static inline void timer_stats_timer_clear_start_info(struct timer_list *timer)
+>  
+>  extern void add_timer(struct timer_list *timer);
+>  
+> +extern int try_to_del_timer_sync(struct timer_list *timer);
+> +
+>  #ifdef CONFIG_SMP
+> -  extern int try_to_del_timer_sync(struct timer_list *timer);
+>    extern int del_timer_sync(struct timer_list *timer);
+>  #else
+> -# define try_to_del_timer_sync(t)	del_timer(t)
+>  # define del_timer_sync(t)		del_timer(t)
+>  #endif
+>  
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index 97bf05b..e031eb4 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -347,9 +347,7 @@ EXPORT_SYMBOL_GPL(set_timer_slack);
+>  static inline void set_running_timer(struct tvec_base *base,
+>  					struct timer_list *timer)
+>  {
+> -#ifdef CONFIG_SMP
+>  	base->running_timer = timer;
+> -#endif
+>  }
+>  
+>  static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+> @@ -936,15 +934,12 @@ int del_timer(struct timer_list *timer)
+>  }
+>  EXPORT_SYMBOL(del_timer);
+>  
+> -#ifdef CONFIG_SMP
+>  /**
+>   * try_to_del_timer_sync - Try to deactivate a timer
+>   * @timer: timer do del
+>   *
+>   * This function tries to deactivate a timer. Upon successful (ret >= 0)
+>   * exit the timer is not queued and the handler is not running on any CPU.
+> - *
+> - * It must not be called from interrupt contexts.
+>   */
+>  int try_to_del_timer_sync(struct timer_list *timer)
+>  {
+> @@ -973,6 +968,7 @@ out:
+>  }
+>  EXPORT_SYMBOL(try_to_del_timer_sync);
+>  
+> +#ifdef CONFIG_SMP
+>  /**
+>   * del_timer_sync - deactivate a timer and wait for the handler to finish.
+>   * @timer: the timer to be deactivated
+> -- 
+> 1.7.0.4
+> 
+
