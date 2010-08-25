@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab0HYVu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:50:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43100 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab0HYVuZ (ORCPT
+	id S1752936Ab0HYVvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:51:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58208 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751388Ab0HYVvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:50:25 -0400
-Message-ID: <4C758FE5.8050905@kernel.org>
-Date: Wed, 25 Aug 2010 14:49:25 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Robin Holt <holt@sgi.com>, Jack Steiner <steiner@sgi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Stable Maintainers <stable@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [Patch] numa:x86_64: Cacheline aliasing makes for_each_populated_zone
- extremely expensive -V2.
-References: <20100818183024.GZ3043@sgi.com> <4C6DB62C.9040105@zytor.com> <20100820135822.GA3220@sgi.com> <20100820150319.GB3220@sgi.com> <4C6EAA48.7070902@zytor.com> <20100821130757.GC3220@sgi.com> <4C72EB41.9000002@zytor.com> <20100825110815.GD3220@sgi.com> <4C756768.2060903@zytor.com>
-In-Reply-To: <4C756768.2060903@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Aug 2010 17:51:00 -0400
+Date: Wed, 25 Aug 2010 14:49:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Zhang, Wei-Jovi (NSN - CN/Hangzhou)" <wei-jovi.zhang@nsn.com>,
+        mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]exit.c: support larger exit code
+Message-Id: <20100825144954.233b6d3c.akpm@linux-foundation.org>
+In-Reply-To: <20100806124456.GA9107@redhat.com>
+References: <14414B36FFA0F1418CB707361EAA199A0194F7D2@CNBEEXC006.nsn-intra.net>
+	<20100806124456.GA9107@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2010 11:56 AM, H. Peter Anvin wrote:
-> On 08/25/2010 04:08 AM, Robin Holt wrote:
->>> So yes, this means adding an interface to the e820 allocator, even
->>> though it's scheduled to be replaced.  Because the new implementation
->>> will see the new interface and know they have to implement it, and the
->>> interface will make it clear just what exactly is expected of the
->>> implementation.
->>
->> What is the new allocator called?  Who is developing it?  When do you
->> expect it to be introduced into the kernel?
->>
+On Fri, 6 Aug 2010 14:44:56 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
+
+> On 08/06, Zhang, Wei-Jovi (NSN - CN/Hangzhou) wrote:
+> >
+> > Nowadays userspace application use systemcall exit/exit_group only
+> > support one byte exit code.
+> > In some cases this exit code range is too small for some "big
+> > application"(like telecom software, 255 is not enough).
+> >
+> > So we can give some "big application" a chance to get larger exit code
+> > from child process.
+> > For other application don't want use larger exit code, they can use
+> > marco WEXITSTATUS to get lower one byte exit code.
+> >
+> > #define WEXITSTATUS(status)   __WEXITSTATUS (__WAIT_INT (status))
+> > --- stdlib.h
+> > #define       __WEXITSTATUS(status)   (((status) & 0xff00) >> 8)
+> > --- usrbits/waitstatus.h
+> >
+> >
+> > diff --git a/kernel/exit.c b/kernel/exit.c
+> > index ceffc67..8b13676 100644
+> > --- a/kernel/exit.c
+> > +++ b/kernel/exit.c
+> > @@ -1045,7 +1045,7 @@ EXPORT_SYMBOL(complete_and_exit);
+> >
+> >  SYSCALL_DEFINE1(exit, int, error_code)
+> >  {
+> > -       do_exit((error_code&0xff)<<8);
+> > +       do_exit(error_code << 8);
+> >  }
+> >
+> >  /*
+> > @@ -1086,7 +1086,7 @@ do_group_exit(int exit_code)
+> >   */
+> >  SYSCALL_DEFINE1(exit_group, int, error_code)
+> >  {
+> > -       do_group_exit((error_code & 0xff) << 8);
+> > +       do_group_exit(error_code << 8);
+> >         /* NOTREACHED */
+> >         return 0;
+> >  }
 > 
-> memblock -- the core is already in the kernel and used by several
-> non-x86 architectures, and so we want to switch x86 to use it, as well.
+> Hmm. Looking at this patch, I am wondering what was the reason for the
+> current one-byte limitation.
 > 
-> Ben Herrenschmidt and Yinghai Lu are driving this one.
+> I think the patch is fine. si_status, wo_stat are int too, so I do not
+> see any possibility for truncation before reporting to user-space.
 > 
-> As with anything in Linux it will get integrated when it is ready.  It
-> would be nice if it was ready for .37, but it's not certain.
 
-i put latest version against current tip/master in
+There are back-compatibility issues.   If my crufty old child does
 
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git memblock
+	exit(0xff01);
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-2.6-yinghai.git;a=shortlog;h=refs/heads/memblock
+and my crufty old parent does
 
-Thanks
+	if (exit_code == 1)
 
-Yinghai
+then I think the patch just broke my application.  The company which
+wrote it no longer exists and I don't have source...
+
+Is it worth this risk?
+
+
+Also, the patch was missing a signed-off-by: and was in some complicated
+html-in-mime format.
