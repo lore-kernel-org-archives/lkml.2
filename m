@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab0HYST0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:19:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36585 "EHLO hera.kernel.org"
+	id S1752495Ab0HYSTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 14:19:44 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47025 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab0HYSTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:19:24 -0400
-Date: Wed, 25 Aug 2010 18:18:54 GMT
-From: "tip-bot for Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100825155850.GA6601@linux.vnet.ibm.com>
-References: <20100825155850.GA6601@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] MAINTAINERS: Add RCU's public git tree
-Message-ID: <tip-6cb6cbeaa9d6573c674842b9471c0467967aae99@git.kernel.org>
-Git-Commit-ID: 6cb6cbeaa9d6573c674842b9471c0467967aae99
-X-Mailer: tip-git-log-daemon
+	id S1751819Ab0HYSTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 14:19:42 -0400
+Date: Wed, 25 Aug 2010 11:16:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Samo Pogacnik <samo_pogacnik@t-2.net>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100825181647.GA22018@suse.de>
+References: <20100824225703.GA5913@suse.de>
+ <20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
+ <20100824231241.GA6971@suse.de>
+ <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
+ <20100825004134.GA28884@suse.de>
+ <20100825110813.5f7d7ac8@lxorguk.ukuu.org.uk>
+ <20100825155716.GB16284@suse.de>
+ <20100825181108.1dcd0d80@lxorguk.ukuu.org.uk>
+ <20100825171045.GA19401@suse.de>
+ <20100825191437.1df57c9d@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 18:18:55 +0000 (UTC)
+In-Reply-To: <20100825191437.1df57c9d@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6cb6cbeaa9d6573c674842b9471c0467967aae99
-Gitweb:     http://git.kernel.org/tip/6cb6cbeaa9d6573c674842b9471c0467967aae99
-Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-AuthorDate: Wed, 25 Aug 2010 08:58:50 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 25 Aug 2010 20:14:58 +0200
+On Wed, Aug 25, 2010 at 07:14:37PM +0100, Alan Cox wrote:
+> > > > That's one extra process, not that much, right?
+> > > 
+> > > About 150K or so way too much and its not robust.
+> > 
+> > Fair enough.  So, with this driver, would it make sense for the distros
+> > to switch over to using it instead of the above line in their initrd?
+> 
+> Distros no - I doubt any normal PC distro would turn the facility on.
+> Embedded - yes especially deeply embedded.
 
-MAINTAINERS: Add RCU's public git tree
+So should this be dependent on CONFIG_EMBEDDED then?
 
-RCU now has a public git tree, so add it via the T: line in the
-MAINTAINERS file.
+thanks,
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: joe@perches.com
-LKML-Reference: <20100825155850.GA6601@linux.vnet.ibm.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- MAINTAINERS |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5fa8451..614861a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4799,6 +4799,7 @@ RCUTORTURE MODULE
- M:	Josh Triplett <josh@freedesktop.org>
- M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
- S:	Supported
-+T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
- F:	Documentation/RCU/torture.txt
- F:	kernel/rcutorture.c
- 
-@@ -4823,6 +4824,7 @@ M:	Dipankar Sarma <dipankar@in.ibm.com>
- M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
- W:	http://www.rdrop.com/users/paulmck/rclock/
- S:	Supported
-+T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
- F:	Documentation/RCU/
- F:	include/linux/rcu*
- F:	include/linux/srcu*
+greg k-h
