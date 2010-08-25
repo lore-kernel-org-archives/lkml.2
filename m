@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab0HYQCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 12:02:03 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:35904 "EHLO e2.ny.us.ibm.com"
+	id S1753763Ab0HYP7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:59:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52908 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753765Ab0HYP7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:59:16 -0400
-Date: Wed, 25 Aug 2010 08:58:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: joe@perches.com, mingo@elte.hu
-Subject: [PATCH] MAINTAINERS: add RCU's public git tree
-Message-ID: <20100825155850.GA6601@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752527Ab0HYPyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:54:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
+        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/30] ide: remove unnecessary blk_queue_flushing() test in do_ide_request()
+Date: Wed, 25 Aug 2010 17:47:18 +0200
+Message-Id: <1282751267-3530-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
+References: <1282751267-3530-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RCU now has a public git tree, so add it via the T: line in the
-MAINTAINERS file.
+Unplugging from a request function doesn't really help much (it's
+already in the request_fn) and soon block layer will be updated to mix
+barrier sequence with other commands, so there's no need to treat
+queue flushing any differently.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+ide was the only user of blk_queue_flushing().  Remove it.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
+ drivers/ide/ide-io.c   |   13 -------------
+ include/linux/blkdev.h |    1 -
+ 2 files changed, 0 insertions(+), 14 deletions(-)
 
- MAINTAINERS |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a1df54b..3f21c27 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4800,6 +4800,7 @@ RCUTORTURE MODULE
- M:	Josh Triplett <josh@freedesktop.org>
- M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
- S:	Supported
-+T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
- F:	Documentation/RCU/torture.txt
- F:	kernel/rcutorture.c
+diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+index a381be8..999dac0 100644
+--- a/drivers/ide/ide-io.c
++++ b/drivers/ide/ide-io.c
+@@ -441,19 +441,6 @@ void do_ide_request(struct request_queue *q)
+ 	struct request	*rq = NULL;
+ 	ide_startstop_t	startstop;
  
-@@ -4824,6 +4825,7 @@ M:	Dipankar Sarma <dipankar@in.ibm.com>
- M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
- W:	http://www.rdrop.com/users/paulmck/rclock/
- S:	Supported
-+T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
- F:	Documentation/RCU/
- F:	include/linux/rcu*
- F:	include/linux/srcu*
+-	/*
+-	 * drive is doing pre-flush, ordered write, post-flush sequence. even
+-	 * though that is 3 requests, it must be seen as a single transaction.
+-	 * we must not preempt this drive until that is complete
+-	 */
+-	if (blk_queue_flushing(q))
+-		/*
+-		 * small race where queue could get replugged during
+-		 * the 3-request flush cycle, just yank the plug since
+-		 * we want it to finish asap
+-		 */
+-		blk_remove_plug(q);
+-
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	/* HLD do_request() callback might sleep, make sure it's okay */
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2c54906..015375c 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -521,7 +521,6 @@ enum {
+ #define blk_queue_nonrot(q)	test_bit(QUEUE_FLAG_NONROT, &(q)->queue_flags)
+ #define blk_queue_io_stat(q)	test_bit(QUEUE_FLAG_IO_STAT, &(q)->queue_flags)
+ #define blk_queue_add_random(q)	test_bit(QUEUE_FLAG_ADD_RANDOM, &(q)->queue_flags)
+-#define blk_queue_flushing(q)	((q)->ordseq)
+ #define blk_queue_stackable(q)	\
+ 	test_bit(QUEUE_FLAG_STACKABLE, &(q)->queue_flags)
+ #define blk_queue_discard(q)	test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
+-- 
+1.7.1
+
