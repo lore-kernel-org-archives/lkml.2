@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab0HYWVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 18:21:36 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:35871 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab0HYWVc (ORCPT
+	id S1753255Ab0HYWXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 18:23:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47479 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab0HYWXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 18:21:32 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Chris Weiss <cweiss@gmail.com>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-Date: Wed, 25 Aug 2010 18:20:26 -0400
-User-Agent: KMail/1.9.10
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
-        "scst-devel" <scst-devel@lists.sourceforge.net>
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com> <4C73DA15.2010207@vlnb.net> <AANLkTi=m15OJg+QsM76r1O74OWjdxht3tqza1DYEeLVw@mail.gmail.com>
-In-Reply-To: <AANLkTi=m15OJg+QsM76r1O74OWjdxht3tqza1DYEeLVw@mail.gmail.com>
+	Wed, 25 Aug 2010 18:23:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=UGQvzgdo49DF8jqnGCdpTec79fOjCQRuozVzc6FAFjqMSMin+HCIH+5hdfh4O3IvQP
+         UPInmIka8Ci4dvpPEH2Of+DB3rq4B/1B0rFzVeaggwXrnmEFKkSs6Dj7+j4GSQvJRGl7
+         FjzWs0s0zWfxgVhaVoj/NiUyY2Pjcf/ScBicU=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008251820.27293.konrad@darnok.org>
+In-Reply-To: <20100825144954.233b6d3c.akpm@linux-foundation.org>
+References: <14414B36FFA0F1418CB707361EAA199A0194F7D2@CNBEEXC006.nsn-intra.net>
+	<20100806124456.GA9107@redhat.com>
+	<20100825144954.233b6d3c.akpm@linux-foundation.org>
+Date: Wed, 25 Aug 2010 15:23:07 -0700
+Message-ID: <AANLkTimHd3xLE0avkmoaeYngYQ7Ueob9r-DUEXm4-rbW@mail.gmail.com>
+Subject: Re: [PATCH]exit.c: support larger exit code
+From: Tony Luck <tony.luck@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Zhang, Wei-Jovi (NSN - CN/Hangzhou)" <wei-jovi.zhang@nsn.com>,
+        mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 August 2010 10:51:04 Chris Weiss wrote:
-> On Tue, Aug 24, 2010 at 9:41 AM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
-> > James Bottomley, on 08/22/2010 12:43 AM wrote:
-> >> Interface re-use (or at least ABI compatibility) is the whole point,
-> >> it's what makes the solution a drop in replacement.
-> >
-> > I see now. You want ABI compatibility to keep the "contract" that no
-> > kernel changes can break applications binary compatibility for unlimited
-> > time.
->
-> ok now I'm confused, or maybe I'm not understanding ABI correctly, or
-> maybe you guys are using it in a way that is inconsistent with popular
+On Wed, Aug 25, 2010 at 2:49 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> There are back-compatibility issues.
 
-You are thinking of the KABI. That changes per each release except if you buy 
-a vendor product. Red Hat for example keeps an KABI symbol list where they 
-guarantee that those parameters, structures ,etc will never change. John 
-Masters wrote a nice paper about how they solved this:
-http://dup.et.redhat.com/presentations/DriverUpdateProgramTechnical.pdf
+Also standards conformance issues. Posix says this about exit():
 
-I don't have experience with other vendors.
+"The value of status may be 0, EXIT_SUCCESS, EXIT_FAILURE, [CX]   or
+any other value, though only the least significant 8 bits (that is,
+status & 0377) shall be available to a waiting parent process."
 
-In terms of ABI, think ioctl calls and its a parameters. They are suppose to 
-stay the same for long long durations.
+Full reference here:
+http://www.opengroup.org/onlinepubs/000095399/functions/exit.html
 
-> convention.   As a VMware user, I have experienced fully that the
-> kernel ABI changes in various places with every release.  VMwares
-> drivers have to be constantly updated to match changes in kernel
-> function parameters and even what functions are available.
->
-> I've also experienced it with scsi cards, dsl modems, and other 3rd
-> party drivers.  It's the one big downside to developing for the Linux
-> kernel, the ABI is /always/ changing.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+-Tony
