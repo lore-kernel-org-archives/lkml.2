@@ -1,90 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab0HYXh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 19:37:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49752 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab0HYXhK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 19:37:10 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/6] perf hists browser: Init the has_children fields just once
-Date: Wed, 25 Aug 2010 20:36:52 -0300
-Message-Id: <1282779415-8544-4-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1282779415-8544-1-git-send-email-acme@infradead.org>
-References: <1282779415-8544-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754387Ab0HYXiT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 19:38:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48924 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751631Ab0HYXiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 19:38:16 -0400
+Date: Wed, 25 Aug 2010 20:38:05 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Zachary Amsden <zamsden@redhat.com>, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM timekeeping 25/35] Add clock catchup mode
+Message-ID: <20100825233805.GA2985@mothafucka.localdomain>
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
+ <1282291669-25709-26-git-send-email-zamsden@redhat.com>
+ <20100825172718.GA28380@amt.cnet>
+ <4C758194.5060203@redhat.com>
+ <20100825220134.GA3322@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100825220134.GA3322@amt.cnet>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-Not everytime we show the callchains, removing duplicated initialization
-of this field.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browsers/hists.c |   18 ++++--------------
- 1 files changed, 4 insertions(+), 14 deletions(-)
-
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index e61355e..c17611f 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -298,15 +298,10 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
- 			int color;
- 			bool was_first = first;
- 
--			if (first) {
-+			if (first)
- 				first = false;
--				chain->ms.has_children = chain->list.next != &child->val ||
--							 !RB_EMPTY_ROOT(&child->rb_root);
--			} else {
-+			else
- 				extra_offset = LEVEL_OFFSET_STEP;
--				chain->ms.has_children = chain->list.next == &child->val &&
--							 !RB_EMPTY_ROOT(&child->rb_root);
--			}
- 
- 			folded_sign = callchain_list__folded(chain);
- 			if (*row_offset != 0) {
-@@ -376,12 +371,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *self,
- 	list_for_each_entry(chain, &node->val, list) {
- 		char ipstr[BITS_PER_LONG / 4 + 1], *s;
- 		int color;
--		/*
--		 * FIXME: This should be moved to somewhere else,
--		 * probably when the callchain is created, so as not to
--		 * traverse it all over again
--		 */
--		chain->ms.has_children = !RB_EMPTY_ROOT(&node->rb_root);
-+
- 		folded_sign = callchain_list__folded(chain);
- 
- 		if (*row_offset != 0) {
-@@ -457,7 +447,7 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 	}
- 
- 	if (symbol_conf.use_callchain) {
--		entry->ms.has_children = !RB_EMPTY_ROOT(&entry->sorted_chain);
-+		hist_entry__init_have_children(entry);
- 		folded_sign = hist_entry__folded(entry);
- 	}
- 
--- 
-1.6.2.5
-
+On Wed, Aug 25, 2010 at 07:01:34PM -0300, Marcelo Tosatti wrote:
+> On Wed, Aug 25, 2010 at 10:48:20AM -1000, Zachary Amsden wrote:
+> > On 08/25/2010 07:27 AM, Marcelo Tosatti wrote:
+> > >On Thu, Aug 19, 2010 at 10:07:39PM -1000, Zachary Amsden wrote:
+> > >>Make the clock update handler handle generic clock synchronization,
+> > >>not just KVM clock.  We add a catchup mode which keeps passthrough
+> > >>TSC in line with absolute guest TSC.
+> > >>
+> > >>Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+> > >>---
+> > >>  arch/x86/include/asm/kvm_host.h |    1 +
+> > >>  arch/x86/kvm/x86.c              |   55 ++++++++++++++++++++++++++------------
+> > >>  2 files changed, 38 insertions(+), 18 deletions(-)
+> > >>
+> > >>  	kvm_x86_ops->vcpu_load(vcpu, cpu);
+> > >>-	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+> > >>+	if (unlikely(vcpu->cpu != cpu) || vcpu->arch.tsc_rebase) {
+> > >>  		/* Make sure TSC doesn't go backwards */
+> > >>  		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+> > >>  				native_read_tsc() - vcpu->arch.last_host_tsc;
+> > >>  		if (tsc_delta<  0)
+> > >>  			mark_tsc_unstable("KVM discovered backwards TSC");
+> > >>-		if (check_tsc_unstable())
+> > >>+		if (check_tsc_unstable()) {
+> > >>  			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+> > >>-		kvm_migrate_timers(vcpu);
+> > >>+			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> > >>+		}
+> > >>+		if (vcpu->cpu != cpu)
+> > >>+			kvm_migrate_timers(vcpu);
+> > >>  		vcpu->cpu = cpu;
+> > >>+		vcpu->arch.tsc_rebase = 0;
+> > >>  	}
+> > >>  }
+> > >>
+> > >>@@ -1947,6 +1961,12 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+> > >>  	kvm_x86_ops->vcpu_put(vcpu);
+> > >>  	kvm_put_guest_fpu(vcpu);
+> > >>  	vcpu->arch.last_host_tsc = native_read_tsc();
+> > >>+
+> > >>+	/* For unstable TSC, force compensation and catchup on next CPU */
+> > >>+	if (check_tsc_unstable()) {
+> > >>+		vcpu->arch.tsc_rebase = 1;
+> > >>+		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> > >>+	}
+> > >The mix between catchup,trap versus stable,unstable TSC is confusing and
+> > >difficult to grasp. Can you please introduce all the infrastructure
+> > >first, then control usage of them in centralized places? Examples:
+> > >
+> > >+static void kvm_update_tsc_trapping(struct kvm *kvm)
+> > >+{
+> > >+       int trap, i;
+> > >+       struct kvm_vcpu *vcpu;
+> > >+
+> > >+       trap = check_tsc_unstable()&&  atomic_read(&kvm->online_vcpus)>  1;
+> > >+       kvm_for_each_vcpu(i, vcpu, kvm)
+> > >+               kvm_x86_ops->set_tsc_trap(vcpu, trap&&  !vcpu->arch.time_page);
+> > >+}
+> > >
+> > >+       /* For unstable TSC, force compensation and catchup on next CPU */
+> > >+       if (check_tsc_unstable()) {
+> > >+               vcpu->arch.tsc_rebase = 1;
+> > >+               kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> > >+       }
+> > >
+> > >
+> > >kvm_guest_time_update is becoming very confusing too. I understand this
+> > >is due to the many cases its dealing with, but please make it as simple
+> > >as possible.
+> > 
+> > I tried to comment as best as I could.  I think the whole
+> > "kvm_update_tsc_trapping" thing is probably a poor design choice.
+> > It works, but it's thoroughly unintelligible right now without
+> > spending some days figuring out why.
+> > 
+> > I'll rework the tail series of patches to try to make them more clear.
+> > 
+> > >+       /*
+> > >+        * If we are trapping and no longer need to, use catchup to
+> > >+        * ensure passthrough TSC will not be less than trapped TSC
+> > >+        */
+> > >+       if (vcpu->tsc_mode == TSC_MODE_PASSTHROUGH&&  vcpu->tsc_trapping&&
+> > >+           ((this_tsc_khz<= v->kvm->arch.virtual_tsc_khz || kvmclock))) {
+> > >+               catchup = 1;
+> > >
+> > >What, TSC trapping with kvmclock enabled?
+> > 
+> > Transitioning to use of kvmclock after a cold boot means we may have
+> > been trapping and now we will not be.
+> > 
+> > >For both catchup and trapping the resolution of the host clock is
+> > >important, as Glauber commented for kvmclock. Can you comment on the
+> > >problems that arrive from a low res clock for both modes?
+> > >
+> > >Similarly for catchup mode, the effect of exit frequency. No need for
+> > >any guarantees?
+> > 
+> > The scheduler will do something to get an IRQ at whatever resolution
+> > it uses for it's timeslice.  That guarantees an exit per timeslice,
+> > so we'll never be behind by more than one slice while scheduling.
+> > While not scheduling, we're dormant anyway, waiting on either an IRQ
+> > or shared memory variable change.  Local timers could end up behind
+> > when dormant.
+> > 
+> > We may need a hack to accelerate firing of timers in such a case, or
+> > perhaps bounds on when to use catchup mode and when to not.
+> 
+> What about emulating rdtsc with low res clock? 
+> 
+> "The RDTSC instruction reads the time-stamp counter and is guaranteed to
+> return a monotonically increasing unique value whenever executed, except
+> for a 64-bit counter wraparound."
+> 
+This is bad semantics, IMHO. It is a totally different behaviour than the
+one guest users would expect.
