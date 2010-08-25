@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab0HYIkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 04:40:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54317 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752350Ab0HYIkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 04:40:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,267,1280732400"; 
-   d="scan'208";a="548529741"
-Subject: Re: [RFC -v2] kfifo writer side lock-less support
-From: Huang Ying <ying.huang@intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282640663.7896.17.camel@wall-e.seibold.net>
-References: <1282614146.2708.13.camel@yhuang-dev>
-	 <1282636558.7357.28.camel@wall-e.seibold.net>
-	 <1282639425.2708.40.camel@yhuang-dev>
-	 <1282640663.7896.17.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Aug 2010 16:40:07 +0800
-Message-ID: <1282725607.2708.96.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1752585Ab0HYImk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 04:42:40 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:45382 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab0HYImh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 04:42:37 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Dan Carpenter <error27@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Serge Hallyn <serue@us.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <20100825071229.GP29330@bicker>
+Date: Wed, 25 Aug 2010 01:42:31 -0700
+In-Reply-To: <20100825071229.GP29330@bicker> (Dan Carpenter's message of "Wed,
+	25 Aug 2010 09:12:29 +0200")
+Message-ID: <m1d3t7f5hk.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Dan Carpenter <error27@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [patch] sysfs: checking for NULL instead of ERR_PTR
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-24 at 17:04 +0800, Stefani Seibold wrote:
-> > > The regular use case of a fifo is that there is one write and one
-> > > reader. In this case, the current implementation of the kfifo structure
-> > > is lock less.
-> > > 
-> > > So i you need this, than it would be better to use the ring buffer.
-> > 
-> 
-> But you waste a clean interface designed together with the community.
-> 
-> > I really need multiple-writers and one reader in APEI GHES support, and
-> > I need lock-less in writer side (because the buffer need to be written
-> > in NMI handler). So I can not use the original kfifo implementation.
-> > 
-> 
-> I believe you that you need it, but the question is: Is there more users
-> who need it. And i am sure, there are no more users or very very few.
-> 
-> So for the protocol a big NAK!
+Dan Carpenter <error27@gmail.com> writes:
 
-We really need the lock-less writer side support. So we try to do that
-by extending kfifo. But it is clear that you don't like our design and
-implementation. Can you help us to design a better protocol for it?
+> d_path() returns an ERR_PTR and it doesn't return NULL.
+>
+> CC:stable@kernel.org
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Thanks,
-Huang Ying
+This is definitely a needed bug fix.
+
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+If we ever get ERR_PTR(-ENAMETOOLONG) and this case actually matters 
+something is very wrong with sysfs, but that is another story.
+
+Eric
 
 
+> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+> index 1b27b56..da3fefe 100644
+> --- a/fs/sysfs/file.c
+> +++ b/fs/sysfs/file.c
+> @@ -340,7 +340,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+>  	char *p;
+>  
+>  	p = d_path(&file->f_path, last_sysfs_file, sizeof(last_sysfs_file));
+> -	if (p)
+> +	if (!IS_ERR(p))
+>  		memmove(last_sysfs_file, p, strlen(p) + 1);
+>  
+>  	/* need attr_sd for attr and ops, its parent for kobj */
