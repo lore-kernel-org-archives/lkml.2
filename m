@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab0HYHwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:52:16 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:47989 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab0HYHwO convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:7:1>);
-	Wed, 25 Aug 2010 03:52:14 -0400
-Message-Id: <4C74E7C802000078000120C0@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 25 Aug 2010 08:52:08 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "Tom Kopec" <tek@acm.org>, "Daniel Stodden" <daniel.stodden@citrix.com>,
-        "Stable Kernel" <stable@kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [GIT PULL] Fix lost interrupt race in Xen
-	 event channels
-References: <4C743B2C.8070208@goop.org>
-In-Reply-To: <4C743B2C.8070208@goop.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752530Ab0HYICz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 04:02:55 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:59566 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab0HYICs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 04:02:48 -0400
+Message-ID: <4C74CD95.1000208@ct.jp.nec.com>
+Date: Wed, 25 Aug 2010 17:00:21 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Mike Snitzer <snitzer@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
+        jack@suse.cz, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
+        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
+        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
+        dm-devel@redhat.com
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com> <4C739DE9.5070803@ct.jp.nec.com> <4C73FA8F.5080800@kernel.org>
+In-Reply-To: <4C73FA8F.5080800@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- >>> On 24.08.10 at 23:35, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> We worked out the root cause was that it was incorrectly treating Xen
-> events as level rather than edge triggered interrupts, which works fine
-> unless you're handling one interrupt, the interrupt gets migrated to
-> another cpu and then re-raised.  This ends up losing the interrupt
-> because the edge-triggering of the second interrupt is lost.
+Hi Tejun,
 
-While this description would seem plausible at the first glance, it
-doesn't match up with unmask_evtchn() already taking care of
-exactly this case. Or are you implicitly saying that this code is
-broken in some way (if so, how, and shouldn't it then be that
-code that needs fixing, or removing if you want to stay with the
-edge handling)?
+On 08/25/2010 01:59 AM +0900, Tejun Heo wrote:
+> On 08/24/2010 12:24 PM, Kiyoshi Ueda wrote:
+>> Anyway, only reporting errors for REQ_FLUSH to upper layer without
+>> such a solution would make dm-multipath almost unusable in real world,
+>> although it's better than implicit data loss.
+> 
+> I see.
+> 
+>>> Maybe just turn off barrier support in mpath for now?
+>> 
+>> If it's possible, it could be a workaround for a short term.
+>> But how can you do that?
+>>
+>> I think it's not enough to just drop REQ_FLUSH flag from q->flush_flags.
+>> Underlying devices of a mpath device may have write-back cache and
+>> it may be enabled.
+>> So if a mpath device doesn't set REQ_FLUSH flag in q->flush_flags, it
+>> becomes a device which has write-back cache but doesn't support flush.
+>> Then, upper layer can do nothing to ensure cache flush?
+> 
+> Yeah, I was basically suggesting to forget about cache flush w/ mpath
+> until it can be fixed.  You're saying that if mpath just passes
+> REQ_FLUSH upwards without retrying, it will be almost unuseable,
+> right?
 
-I do however agree that using handle_level_irq() is problematic
-(see http://lists.xensource.com/archives/html/xen-devel/2010-04/msg01178.html),
-but as said there I think using the fasteoi logic is preferable. No
-matter whether using edge or level, the ->end() method will
-never be called (whereas fasteoi calls ->eoi(), which would
-just need to be vectored to the same function as ->end()).
-Without end_pirq() ever called, you can't let Xen know of
-bad PIRQs (so that it can disable them instead of continuing
-to call the [now shortcut] handler in the owning domain).
+Right.
+If the error is safe/needed to retry using other paths, mpath should
+retry even if REQ_FLUSH.  Otherwise, only one path failure may result
+in system down.
+Just passing any REQ_FLUSH error upwards regardless the error type
+will make such situations, and users will feel the behavior as
+unstable/unusable.
 
-> The other change changes IPI and VIRQ event sources to use
-> handle_percpu_irq, because treating them as level is also wrong, and
-> they're actually inherently percpu events, much like LAPIC vectors.
 
-This doesn't seem right for the general VIRQ case: global ones
-should not be disallowed migration between CPUs. Since in your
-model the requestor has to pass IRQF_PERCPU anyway,
-shouldn't you make the selection of the handler dependent
-upon this flag?
+> I'm not sure how to proceed here.  How much work would
+> discerning between transport and IO errors take?  If it can't be done
+> quickly enough the retry logic can be kept around to keep the old
+> behavior but that already was a broken behavior, so...  :-(
 
-Jan
+I'm not sure how long will it take.
+Anyway, as you said, the flush error handling of dm-mpath is already
+broken if data loss really happens on any storage used by dm-mpath.
+Although it's a serious issue and quick fix is required, I think
+you may leave the old behavior in your patch-set, since it's
+a separate issue.
 
+Thanks,
+Kiyoshi Ueda
