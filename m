@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab0HYW6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 18:58:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34891 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752501Ab0HYW6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 18:58:52 -0400
-Date: Wed, 25 Aug 2010 15:58:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-Message-Id: <20100825155814.25c783c7.akpm@linux-foundation.org>
-In-Reply-To: <1282310110.2605.976.camel@laptop>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
-	<1282310110.2605.976.camel@laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753625Ab0HYXAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 19:00:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45848 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab0HYXA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 19:00:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] watchdog: Allow touch_nmi_watchdog() to be called by acpi_os_stall()
+Date: Thu, 26 Aug 2010 00:58:17 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008260058.17876.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 15:15:10 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
-> > Hello everyone,
-> > 
-> > The following patchset implements a Contiguous Memory Allocator.  For
-> > those who have not yet stumbled across CMA an excerpt from
-> > documentation:
-> > 
-> >    The Contiguous Memory Allocator (CMA) is a framework, which allows
-> >    setting up a machine-specific configuration for physically-contiguous
-> >    memory management. Memory for devices is then allocated according
-> >    to that configuration.
-> > 
-> >    The main role of the framework is not to allocate memory, but to
-> >    parse and manage memory configurations, as well as to act as an
-> >    in-between between device drivers and pluggable allocators. It is
-> >    thus not tied to any memory allocation method or strategy.
-> > 
-> > For more information please refer to the second patch from the
-> > patchset which contains the documentation.
-> 
-> So the idea is to grab a large chunk of memory at boot time and then
-> later allow some device to use it?
-> 
-> I'd much rather we'd improve the regular page allocator to be smarter
-> about this. We recently added a lot of smarts to it like memory
-> compaction, which allows large gobs of contiguous memory to be freed for
-> things like huge pages.
-> 
-> If you want guarantees you can free stuff, why not add constraints to
-> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
-> certain region, those pages are easily freed/moved aside to satisfy
-> large contiguous allocations.
+acpi_os_stall() executes touch_nmi_watchdog() that, if
+CONFIG_HARDLOCKUP_DETECTOR is set,
+uses __get_cpu_var() to access per-CPU variables.  This triggers the
+stack dump in debug_smp_processor_id().
 
-That would be good.  Although I expect that the allocation would need
-to be 100% rock-solid reliable, otherwise the end user has a
-non-functioning device.  Could generic core VM provide the required level
-of service?
+One way to avoid that is to use __raw_get_cpu_var() to access the
+per-CPU variables in touch_nmi_watchdog().
 
-Anyway, these patches are going to be hard to merge but not impossible.
-Keep going.  Part of the problem is cultural, really: the consumers of
-this interface are weird dinky little devices which the core MM guys
-tend not to work with a lot, and it adds code which they wouldn't use.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ kernel/watchdog.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I agree that having two "contiguous memory allocators" floating about
-on the list is distressing.  Are we really all 100% diligently certain
-that there is no commonality here with Zach's work?
-
-I agree that Peter's above suggestion would be the best thing to do. 
-Please let's take a look at that without getting into sunk cost
-fallacies with existing code!
-
-It would help (a lot) if we could get more attention and buyin and
-fedback from the potential clients of this code.  rmk's feedback is
-valuable.  Have we heard from the linux-media people?  What other
-subsystems might use it?  ieee1394 perhaps?  Please help identify
-specific subsystems and I can perhaps help to wake people up.
-
-And I agree that this code (or one of its alternatives!) would benefit
-from having a core MM person take a close interest.  Any volunteers?
-
-Please cc me on future emails on this topic?
+Index: linux-2.6/kernel/watchdog.c
+===================================================================
+--- linux-2.6.orig/kernel/watchdog.c
++++ linux-2.6/kernel/watchdog.c
+@@ -142,8 +142,8 @@ void touch_all_softlockup_watchdogs(void
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ void touch_nmi_watchdog(void)
+ {
+-	__get_cpu_var(watchdog_nmi_touch) = true;
+-	touch_softlockup_watchdog();
++	__raw_get_cpu_var(watchdog_nmi_touch) = true;
++	__raw_get_cpu_var(watchdog_touch_ts) = 0;
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+ 
