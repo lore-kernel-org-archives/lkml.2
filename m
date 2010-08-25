@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab0HYVhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:37:23 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:45312 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754663Ab0HYVhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:37:20 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: OpDhNRgVM1kKz9ygK8rR9Kz2e2v58RQ6Pz46qcjyLBEBHPz
- 60f8nH3RDKv.xbQS_LuhAn1B9M3I5IGwkY83Teqr3Du8CRAAU1qIw9DZzm5e
- HefxLS2R519tg_KsJiMYi88XAgHof83jtGPiEtj2CD4h.p5DF7pRLBnHU8h1
- cVGwMGnBPK7VCbcq7ZOlggLu3m_Aqs.hCRlKOTuyl.eANx8e9h7U92koLgzd
- yz8zIuXonUgTbcO6W3M2wZL7s7BA-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 25 Aug 2010 16:37:16 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (slab
- tree related)
-In-Reply-To: <alpine.DEB.2.00.1008251509080.22117@router.home>
-Message-ID: <alpine.DEB.2.00.1008251635560.25892@router.home>
-References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home> <4C74D1D7.4080608@kernel.org>
- <alpine.DEB.2.00.1008251509080.22117@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754612Ab0HYVhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:37:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32981 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754663Ab0HYVh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 17:37:27 -0400
+Date: Wed, 25 Aug 2010 21:37:07 GMT
+From: tip-bot for Haicheng Li <haicheng.li@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com, hpa@zytor.com,
+        mingo@redhat.com, ak@linux.intel.com, tglx@linutronix.de,
+        fengguang.wu@intel.com, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, haicheng.li@linux.intel.com,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com, tglx@linutronix.de,
+        fengguang.wu@intel.com, hpa@linux.intel.com
+In-Reply-To: <4C6E4ECD.1090607@linux.intel.com>
+References: <4C6E4ECD.1090607@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, mm: Separate x86_64 vmalloc_sync_all() into separate functions
+Message-ID: <tip-7b61b1ccb1a84c3391360ac94c908bfbbb35299c@git.kernel.org>
+Git-Commit-ID: 7b61b1ccb1a84c3391360ac94c908bfbbb35299c
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 21:37:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Err... Sorry there was patch under testing in there (remove the boot
-pageset from the page allocator and use early allocpercpu) which resulted
-in the reserve area becoming a bit tight. Sorry.
+Commit-ID:  7b61b1ccb1a84c3391360ac94c908bfbbb35299c
+Gitweb:     http://git.kernel.org/tip/7b61b1ccb1a84c3391360ac94c908bfbbb35299c
+Author:     Haicheng Li <haicheng.li@linux.intel.com>
+AuthorDate: Wed, 19 May 2010 17:42:14 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 25 Aug 2010 13:47:14 -0700
 
+x86, mm: Separate x86_64 vmalloc_sync_all() into separate functions
 
+No behavior change.
+
+Move some of vmalloc_sync_all() code into a new function
+sync_global_pgds() that will be useful for memory hotplug.
+
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+LKML-Reference: <4C6E4ECD.1090607@linux.intel.com>
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
