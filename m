@@ -1,144 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0HYBVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 21:21:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28474 "EHLO mga14.intel.com"
+	id S1755127Ab0HYBWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 21:22:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36126 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab0HYBVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 21:21:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
-   d="scan'208";a="316604671"
-Date: Wed, 25 Aug 2010 09:21:31 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] hugetlb: rename hugepage allocation functions
-Message-ID: <20100825012131.GC7283@localhost>
-References: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1282694127-14609-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282694127-14609-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751710Ab0HYBWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 21:22:42 -0400
+Date: Wed, 25 Aug 2010 11:22:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: linux-next: manual merge of the drivers-x86 tree with Linus' tree
+Message-Id: <20100825112236.6ec0390e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 07:55:22AM +0800, Naoya Horiguchi wrote:
-> The function name alloc_huge_page_no_vma_node() has verbose suffix "_no_vma".
-> This patch makes existing alloc_huge_page() and it's family have "_vma" instead,
-> which makes it easier to read.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  include/linux/hugetlb.h |    4 ++--
->  mm/hugetlb.c            |   20 ++++++++++----------
->  2 files changed, 12 insertions(+), 12 deletions(-)
-> 
-> diff --git v2.6.36-rc2/include/linux/hugetlb.h v2.6.36-rc2/include/linux/hugetlb.h
-> index 142bd4f..0b73c53 100644
-> --- v2.6.36-rc2/include/linux/hugetlb.h
-> +++ v2.6.36-rc2/include/linux/hugetlb.h
-> @@ -228,7 +228,7 @@ struct huge_bootmem_page {
->  	struct hstate *hstate;
->  };
->  
-> -struct page *alloc_huge_page_no_vma_node(struct hstate *h, int nid);
-> +struct page *alloc_huge_page_node(struct hstate *h, int nid);
->  
->  /* arch callback */
->  int __init alloc_bootmem_huge_page(struct hstate *h);
-> @@ -305,7 +305,7 @@ static inline struct hstate *page_hstate(struct page *page)
->  
->  #else
->  struct hstate {};
-> -#define alloc_huge_page_no_vma_node(h, nid) NULL
-> +#define alloc_huge_page_node(h, nid) NULL
->  #define alloc_bootmem_huge_page(h) NULL
->  #define hstate_file(f) NULL
->  #define hstate_vma(v) NULL
-> diff --git v2.6.36-rc2/mm/hugetlb.c v2.6.36-rc2/mm/hugetlb.c
-> index 31118d2..674a25e 100644
-> --- v2.6.36-rc2/mm/hugetlb.c
-> +++ v2.6.36-rc2/mm/hugetlb.c
-> @@ -666,7 +666,7 @@ static struct page *alloc_buddy_huge_page_node(struct hstate *h, int nid)
->   * E.g. soft-offlining uses this function because it only cares physical
->   * address of error page.
->   */
-> -struct page *alloc_huge_page_no_vma_node(struct hstate *h, int nid)
-> +struct page *alloc_huge_page_node(struct hstate *h, int nid)
->  {
->  	struct page *page;
->  
-> @@ -818,7 +818,7 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
->  	return ret;
->  }
->  
-> -static struct page *alloc_buddy_huge_page(struct hstate *h,
-> +static struct page *alloc_buddy_huge_page_vma(struct hstate *h,
->  			struct vm_area_struct *vma, unsigned long address)
->  {
->  	struct page *page;
-> @@ -919,7 +919,7 @@ static int gather_surplus_pages(struct hstate *h, int delta)
->  retry:
->  	spin_unlock(&hugetlb_lock);
->  	for (i = 0; i < needed; i++) {
-> -		page = alloc_buddy_huge_page(h, NULL, 0);
-> +		page = alloc_buddy_huge_page_vma(h, NULL, 0);
+Hi Matthew,
 
-alloc_buddy_huge_page() doesn't make use of @vma at all, so the
-parameters can be removed.
+Today's linux-next merge of the drivers-x86 tree got a conflict in
+drivers/platform/x86/Kconfig between commit
+c76a3e1d6c52c5cc1371f1abc7381c5715ebdf7f ("ACPI_TOSHIBA needs LEDS
+support") from Lunus' tree and commit
+35989e9d7e19deb4b395aee7d120b1536337b4af ("toshiba-acpi - switch to using
+sparse keymap") from the drivers-x86 tree.
 
-It looks cleaner to fold the
-alloc_huge_page_no_vma_node=>alloc_huge_page_node renames into the
-previous patch, from there split out the code refactor chunks into
-a standalone patch, and then include this cleanup patch.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
-Fengguang
----
-hugetlb: remove unused alloc_buddy_huge_page() parameters
-
-alloc_buddy_huge_page() doesn't make use of @vma at all, so the
-parameters can be removed.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index cc5be78..3114b4c 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -770,8 +770,7 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
- 	return ret;
- }
- 
--static struct page *alloc_buddy_huge_page(struct hstate *h,
--			struct vm_area_struct *vma, unsigned long address)
-+static struct page *alloc_buddy_huge_page(struct hstate *h)
- {
- 	struct page *page;
- 	unsigned int nid;
-@@ -871,7 +870,7 @@ static int gather_surplus_pages(struct hstate *h, int delta)
- retry:
- 	spin_unlock(&hugetlb_lock);
- 	for (i = 0; i < needed; i++) {
--		page = alloc_buddy_huge_page(h, NULL, 0);
-+		page = alloc_buddy_huge_page(h);
- 		if (!page) {
- 			/*
- 			 * We were not able to allocate enough pages to
-@@ -1052,7 +1051,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	spin_unlock(&hugetlb_lock);
- 
- 	if (!page) {
--		page = alloc_buddy_huge_page(h, vma, addr);
-+		page = alloc_buddy_huge_page(h);
- 		if (!page) {
- 			hugetlb_put_quota(inode->i_mapping, chg);
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
+diff --cc drivers/platform/x86/Kconfig
+index cff7cc2,8498389..0000000
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@@ -486,12 -490,10 +490,12 @@@ config TOPSTAR_LAPTO
+  config ACPI_TOSHIBA
+  	tristate "Toshiba Laptop Extras"
+  	depends on ACPI
+ +	depends on LEDS_CLASS
+ +	depends on NEW_LEDS
+ +	depends on BACKLIGHT_CLASS_DEVICE
+  	depends on INPUT
+  	depends on RFKILL || RFKILL = n
+- 	select INPUT_POLLDEV
++ 	select INPUT_SPARSEKMAP
+ -	select BACKLIGHT_CLASS_DEVICE
+  	---help---
+  	  This driver adds support for access to certain system settings
+  	  on "legacy free" Toshiba laptops.  These laptops can be recognized by
