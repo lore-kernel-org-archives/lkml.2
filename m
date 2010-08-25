@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab0HYGiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 02:38:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39339 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752201Ab0HYGiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 02:38:10 -0400
-Date: Tue, 24 Aug 2010 23:41:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: Re: [PATCH] avoiding the same resource to be inserted
-Message-Id: <20100824234132.a0f1cec3.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTikSPB+8R4E7rsoVS2GN9ysROAPzKsLHqgMyP_yM@mail.gmail.com>
-References: <1281974138-5553-1-git-send-email-shijie8@gmail.com>
-	<20100824164622.a3b2c1ed.akpm@linux-foundation.org>
-	<AANLkTikSPB+8R4E7rsoVS2GN9ysROAPzKsLHqgMyP_yM@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1752318Ab0HYGo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 02:44:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281Ab0HYGox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 02:44:53 -0400
+Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
+From: Tomas Mraz <tmraz@redhat.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Miloslav Trma? <mitr@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100825062000.GA1424@ucw.cz>
+References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
+	 <20100825062000.GA1424@ucw.cz>
+Content-Type: text/plain; charset="ISO-8859-2"
+Date: Wed, 25 Aug 2010 08:44:39 +0200
+Message-ID: <1282718679.2930.42.camel@vespa.frost.loc>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 13:03:55 +0800 Huang Shijie <shijie8@gmail.com> wrote:
-
-> On Wed, Aug 25, 2010 at 7:46 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
+On Wed, 2010-08-25 at 08:20 +0200, Pavel Machek wrote: 
+> Hi!
 > 
-> I think WARN_ON() is not power enough. If the CONFIG_BUG is not
-> defined, the warning message may not be printed. So I think using a
-> directly printk() here is better.
+> > Motivations for the extensions: governments are asking for more security
+> > features in the operating systems they procure, which make user-space
+> > implementations impractical.  A few examples:
+> > 
+> > * Advanced crypto module for OSPP for Common Criteria requires OS services
+> >   implementing several low-level crypto algorithms (e.g. AES, RSA).  This
+> >   requires the separation of crypto services from the consumer of those
+> >   services. (The threat model is that apps tend to have more vulnerabilities
+> >   than libraries and compromise of the app will lead to the ability to access
+> >   key material.) An user-space library is not separated, options are a) root
+> >   running daemon that does crypto, but this would be slow due to context
+> >   switches, scheduler mismatching and all the IPC overhead and b) use crypto
+> >   that is in the kernel.
+> 
+> Hmm, root daemon seems like a way to go. You already do the switch
+> into the kernel... and "IPC is slow" is not good enough reason to put
+> everything in kernel. Plus, you should be able to get better usage of
+> multicore with daemon.
 
-No, WARN_ON() is good.  It gives us a backtrace and identifies the
-buggy code.  Only maniacs turn off CONFIG_BUG.
+Actually not, and the arguments why multicore would not be really used
+better anyway were stated here as well. If an application needs some
+cryptography function in most of the cases it has to wait for the
+operation to finish before it can proceed  further. To use asynchronous
+crypto interfaces efficiently would require serious redesign and rewrite
+of the existing applications which is nowhere near to be accomplished.
+In case of applications where the benefits of asynchronous crypto would
+be obvious and easily utilized it is quite easier just to split the
+threads for crypto processing and the rest of the application directly
+inside the application process.
+-- 
+Tomas Mraz
+No matter how far down the wrong road you've gone, turn back.
+                                              Turkish proverb
+
