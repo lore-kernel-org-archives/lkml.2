@@ -1,87 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097Ab0HYJvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:51:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57810 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab0HYJvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:51:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=rFL5CwZoNnE9x3H4nhO+iIADxq2g6D7xkVtpEWtyl8TsftsEVaX4uLePc3Tgub+C42
-         vi/XnuZY1aH2XfGy0L5z+ryJQ75szxbgsYY6g6SXnnnd7Jj75Nq4IPY7G7kRbl0ayXYD
-         uxv1a4sfKnqEHTwBN9zBtZjlJB9ijM4yu06Iw=
-From: Kan-Ru Chen <kanru@kanru.info>
-To: Ivan Bulatovic <combuster@gmx.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] drm/i915/tv: After disabling the pipe, use wait_for_vblank_off()
-In-Reply-To: <1282691196.2120.30.camel@localhost.localdomain>
-References: <1282647815.2221.15.camel@localhost.localdomain> <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk> <1282684130.2199.25.camel@localhost.localdomain> <89k83a$9drtkt@azsmga001.ch.intel.com> <1282691196.2120.30.camel@localhost.localdomain>
-User-Agent: Notmuch/0.3.1-61-g3791a58 (http://notmuchmail.org) Emacs/24.0.50.1 (x86_64-pc-linux-gnu)
-Date: Wed, 25 Aug 2010 17:51:00 +0800
-Message-ID: <87k4nfrpff.fsf@anar.kanru.info>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753143Ab0HYJwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:52:50 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:27714 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752853Ab0HYJwr (ORCPT
+	<rfc822;groupwise-jlee@novell.com:3:2>);
+	Wed, 25 Aug 2010 05:52:47 -0400
+Message-Id: <4C75748B020000230001F4F0@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Wed, 25 Aug 2010 03:52:43 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>, <gregkh@suse.de>
+Cc: <trenn@suse.de>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
+ detect
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="=__Part4C6179FB.2__="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 01:06:36 +0200, Ivan Bulatovic <combuster@gmx.com> wrote:
-> On Tue, 2010-08-24 at 22:52 +0100, Chris Wilson wrote: 
-> > On Tue, 24 Aug 2010 23:08:50 +0200, Ivan Bulatovic <combuster@gmx.com> wrote:
-> > > Unfotunately I still get TV connection detected :(
-> > 
-> > Jesse spotted the root cause and Linus has now pushed that fix for
-> > intel_wait_for_vblank() out. This is just a very minor bug in comparison.
-> > Can you please test against linus/master and check that resolves the
-> > spurious TV detection for you?
-> > Thanks.
-> > 
-> > -- 
-> > Chris Wilson, Intel Open Source Technology Centre
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> Spurious TV detection is still here and + I have a new problem with
-> resolution in init3 when KMS fires up, it occupies only 1/3rd of the
-> screen when booting.
+This is a MIME message. If you are reading this text, you may want to 
+consider changing to a mail reader or gateway that understands how to 
+properly handle MIME multipart messages.
 
-Same here with my Acer 3810T, Intel GM45, the kernel was built from git pulled today.
+--=__Part4C6179FB.2__=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-v2.6.36-rc2-203-g502adf5
+Hi Matthew, Greg,=20
 
-TV1 connected (normal left inverted right x axis y axis)
-   848x480        30.0 +
-   640x480        30.0 +
-   1024x768       30.0  
-   800x600        30.0  
+The attached file is new patch to add Intel Poulsbo Stub driver.
+Follow your suggestion, I changed:=20
+ - Add pci id list and direct register it as a pci driver.
+ - Removed printk in init/exit functions.
+ - Change the wording in Kconfig.
+ - Modified the Copyright. Removed "or any later version" and 2=20
+   redundant paragraphs.
 
-and the fb only occupies 1/3rd of the screen, the fbset output
+Please kindly help to review the patch again. Appreciate for any
+suggestions.
 
-mode "848x480"
-    geometry 848 480 1366 768 32
-    timings 0 0 0 0 0 0 0
-    rgba 8/16,8/8,8/0,0/0
-endmode
 
--Kanru
-> 
-> I've tried patching the kernel I used for testing so far with that one
-> liner and I've tried without patches we tried so far (git pull on a
-> clean linux-git) and the symptoms are the same on both of them.
-> 
-> So
-> - PIPE_VBLANK_INTERRUPT_STATUS) == 0,
-> + PIPE_VBLANK_INTERRUPT_STATUS),
-> in intel_display.c doesn't fix the issue, plus it brings a new one in my
-> case.
-> 
-> /edit: had to remove linux-gfx from cc or mail wouldn't send otherwise
+Thank's a lot!
+Joey Lee
 
+
+--=__Part4C6179FB.2__=
+Content-Type: text/plain; name="0001-Add-Intel-Poulsbo-Stub-Driver.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename="0001-Add-Intel-Poulsbo-Stub-Driver.patch"
+
+>From cd5bc5c3d4f7c614a706152d248466bc72b03f99 Mon Sep 17 00:00:00 =
+2001=0AFrom: Lee, Chun-Yi <jlee@novell.com>=0ADate: Wed, 25 Aug 2010 =
+16:28:04 +0800=0ASubject: [PATCH] Add Intel Poulsbo Stub Driver=0A=0ACurren=
+tly, there have no Poulsbo native video driver to support=0Aintel =
+opregion. So, use this stub driver to enable the acpi backlight=0Acontrol =
+sysfs entry files by requrest acpi_video_register.=0A=0ASigned-off-by: =
+Lee, Chun-Yi <jlee@novell.com>=0A---=0A drivers/gpu/Makefile       |    2 =
++-=0A drivers/gpu/stub/Kconfig   |   13 +++++++++=0A drivers/gpu/stub/Makef=
+ile  |    1 +=0A drivers/gpu/stub/poulsbo.c |   64 ++++++++++++++++++++++++=
+++++++++++++++++++++=0A drivers/video/Kconfig      |    2 +=0A 5 files =
+changed, 81 insertions(+), 1 deletions(-)=0A create mode 100644 drivers/gpu=
+/stub/Kconfig=0A create mode 100644 drivers/gpu/stub/Makefile=0A create =
+mode 100644 drivers/gpu/stub/poulsbo.c=0A=0Adiff --git a/drivers/gpu/Makefi=
+le b/drivers/gpu/Makefile=0Aindex 30879df..cc92778 100644=0A--- a/drivers/g=
+pu/Makefile=0A+++ b/drivers/gpu/Makefile=0A@@ -1 +1 @@=0A-obj-y			=
++=3D drm/ vga/=0A+obj-y			+=3D drm/ vga/ stub/=0Adiff --git =
+a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig=0Anew file mode =
+100644=0Aindex 0000000..c564140=0A--- /dev/null=0A+++ b/drivers/gpu/stub/Kc=
+onfig=0A@@ -0,0 +1,13 @@=0A+config STUB_POULSBO=0A+	tristate "Intel =
+Poulsbo Stub Driver"=0A+        default m=0A+        # Poulsbo stub =
+depends on ACPI_VIDEO when ACPI is enabled=0A+        # but for select to =
+work, need to select ACPI_VIDEO's dependencies, ick=0A+        select =
+ACPI_VIDEO if ACPI=0A+	help=0A+	  Choose this option if you have a =
+system that has Intel Poulsbo=0A+	  integrated graphics. If M is =
+selected, the module will be called=0A+	  Poulsbo. This driver is a stub =
+driver for Poulsbo that will call=0A+	  poulsbo.ko to enable the acpi =
+backlight control sysfs entry file=0A+	  because there have no poulsbo =
+native driver can support intel=0A+	  opregion.=0Adiff --git a/drivers/=
+gpu/stub/Makefile b/drivers/gpu/stub/Makefile=0Anew file mode 100644=0Ainde=
+x 0000000..cd940cc=0A--- /dev/null=0A+++ b/drivers/gpu/stub/Makefile=0A@@ =
+-0,0 +1 @@=0A+obj-$(CONFIG_STUB_POULSBO) +=3D poulsbo.o=0Adiff --git =
+a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c=0Anew file mode =
+100644=0Aindex 0000000..e18dc24=0A--- /dev/null=0A+++ b/drivers/gpu/stub/po=
+ulsbo.c=0A@@ -0,0 +1,64 @@=0A+/*=0A+ * Intel Poulsbo Stub driver=0A+ *=0A+ =
+* Copyright (C) 2010 Novell <jlee@novell.com>=0A+ *=0A+ * This program is =
+free software; you can redistribute it and/or modify it=0A+ * under the =
+terms of the GNU General Public License version 2 as published by=0A+ * =
+the Free Software Foundation.=0A+ *=0A+ */=0A+=0A+#include <linux/module.h>=
+=0A+#include <linux/pci.h>=0A+#include <acpi/video.h>=0A+=0A+#define =
+DRIVER_NAME "poulsbo"=0A+=0A+enum {=0A+	CHIP_PSB_8108 =3D 0,=0A+	=
+CHIP_PSB_8109 =3D 1,=0A+};=0A+=0A+static struct pci_device_id pciidlist[] =
+=3D {=0A+	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_810=
+8}, \=0A+	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_810=
+9}, \=0A+	{0, 0, 0}=0A+};=0A+=0A+static int poulsbo_probe(struct =
+pci_dev *pdev, const struct pci_device_id *id)=0A+{=0A+	return acpi_video_r=
+egister();=0A+}=0A+=0A+static void poulsbo_remove(struct pci_dev *pdev)=0A+=
+{=0A+	acpi_video_unregister();=0A+}=0A+=0A+static struct pci_driver =
+poulsbo_driver =3D {=0A+	.name =3D DRIVER_NAME,=0A+	.id_table =
+=3D pciidlist,=0A+	.probe =3D poulsbo_probe,=0A+	.remove =3D =
+poulsbo_remove,=0A+};=0A+=0A+static int __init poulsbo_init(void)=0A+{=0A+	=
+return pci_register_driver(&poulsbo_driver);=0A+}=0A+=0A+static void =
+__exit poulsbo_exit(void)=0A+{=0A+	pci_unregister_driver(&poulsbo_driv=
+er);=0A+}=0A+=0A+module_init(poulsbo_init);=0A+module_exit(poulsbo_exit);=
+=0A+=0A+MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");=0A+MODULE_DESCRIPT=
+ION("Poulsbo Stub Driver");=0A+MODULE_LICENSE("GPL");=0A+=0A+MODULE_ALIAS("=
+pci:v00008086d00008108sv*sd*bc*sc*i*");=0A+MODULE_ALIAS("pci:v00008086d0000=
+8109sv*sd*bc*sc*i*");=0Adiff --git a/drivers/video/Kconfig b/drivers/video/=
+Kconfig=0Aindex 8b31fdf..8807ae5 100644=0A--- a/drivers/video/Kconfig=0A+++=
+ b/drivers/video/Kconfig=0A@@ -17,6 +17,8 @@ source "drivers/gpu/vga/Kconfi=
+g"=0A =0A source "drivers/gpu/drm/Kconfig"=0A =0A+source "drivers/gpu/stub/=
+Kconfig"=0A+=0A config VGASTATE=0A        tristate=0A        default =
+n=0A-- =0A1.6.0.2=0A=0A
+--=__Part4C6179FB.2__=--
