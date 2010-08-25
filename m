@@ -1,232 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab0HYIQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 04:16:44 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53154 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab0HYIQm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 04:16:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 25 Aug 2010 17:11:40 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "menage@google.com" <menage@google.com>,
-        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
-Subject: [PATCH 5/5] memcg: generic file stat accounting interface
-Message-Id: <20100825171140.69c1661a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752498Ab0HYIYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 04:24:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39725 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752225Ab0HYIYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 04:24:20 -0400
+Message-ID: <4C74D1D7.4080608@kernel.org>
+Date: Wed, 25 Aug 2010 10:18:31 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (slab
+ tree related)
+References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home>
+In-Reply-To: <alpine.DEB.2.00.1008241352240.5388@router.home>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 08:23:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hello,
 
-Preparing for adding new status arounf file caches.(dirty, writeback,etc..)
-Using a unified macro and more generic names.
-All counters will have the same rule for updating.
+On 08/24/2010 08:53 PM, Christoph Lameter wrote:
+>> [    0.000000] Kernel panic - not syncing: Cannot create slab kmem_cache
+>> size=232 realsize=256 order=0 offset=0 flags=42000
+> 
+> alloc per cpu result in kmalloc which fails.
+> 
+> Tejon: Is there some way we could get a reserved per cpu area under UP
+> instead of fallback to slab allocations during bootup?
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h  |   24 ++++++++++++++++++++++
- include/linux/page_cgroup.h |   19 ++++++++++++------
- mm/memcontrol.c             |   46 ++++++++++++++++++--------------------------
- 3 files changed, 56 insertions(+), 33 deletions(-)
+Eh... nasty.  Maybe we can create a alloc_percpu_early() function
+which doesn't allow freeing of allocate memory and just redirect to
+bootmem on UP?
 
-Index: mmotm-0811/include/linux/memcontrol.h
-===================================================================
---- mmotm-0811.orig/include/linux/memcontrol.h
-+++ mmotm-0811/include/linux/memcontrol.h
-@@ -25,6 +25,30 @@ struct page_cgroup;
- struct page;
- struct mm_struct;
- 
-+/*
-+ * Per-cpu Statistics for memory cgroup.
-+ */
-+enum mem_cgroup_stat_index {
-+	/*
-+	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
-+	 */
-+	MEM_CGROUP_STAT_CACHE,		/* # of pages charged as cache */
-+	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
-+	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
-+	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
-+	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
-+	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
-+	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
-+	/* When you add new member for file-stat, please update page_cgroup.h */
-+	MEM_CGROUP_FSTAT_BASE,
-+	MEM_CGROUP_FSTAT_FILE_MAPPED = MEM_CGROUP_FSTAT_BASE,
-+	MEM_CGROUP_FSTAT_END,
-+	MEM_CGROUP_STAT_NSTATS = MEM_CGROUP_FSTAT_END,
-+};
-+
-+#define MEMCG_FSTAT_IDX(idx)	((idx) - MEM_CGROUP_FSTAT_BASE)
-+#define NR_FILE_FLAGS_MEMCG ((MEM_CGROUP_FSTAT_END - MEM_CGROUP_FSTAT_BASE))
-+
- extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
- 					struct list_head *dst,
- 					unsigned long *scanned, int order,
-Index: mmotm-0811/mm/memcontrol.c
-===================================================================
---- mmotm-0811.orig/mm/memcontrol.c
-+++ mmotm-0811/mm/memcontrol.c
-@@ -76,24 +76,6 @@ static int really_do_swap_account __init
- #define THRESHOLDS_EVENTS_THRESH (7) /* once in 128 */
- #define SOFTLIMIT_EVENTS_THRESH (10) /* once in 1024 */
- 
--/*
-- * Statistics for memory cgroup.
-- */
--enum mem_cgroup_stat_index {
--	/*
--	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
--	 */
--	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
--	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
--	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
--	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
--	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
--	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
--	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
--	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
--
--	MEM_CGROUP_STAT_NSTATS,
--};
- 
- struct mem_cgroup_stat_cpu {
- 	s64 count[MEM_CGROUP_STAT_NSTATS];
-@@ -1547,7 +1529,8 @@ bool mem_cgroup_handle_oom(struct mem_cg
-  * Currently used to update mapped file statistics, but the routine can be
-  * generalized to update other statistics as well.
-  */
--void mem_cgroup_update_file_mapped(struct page *page, int val)
-+static void
-+mem_cgroup_update_file_stat(struct page *page, unsigned int idx, int val)
- {
- 	struct mem_cgroup *mem;
- 	struct page_cgroup *pc;
-@@ -1571,11 +1554,11 @@ void mem_cgroup_update_file_mapped(struc
- 	if (unlikely(!PageCgroupUsed(pc)))
- 		goto done;
- 	if (val > 0) {
--		this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		SetPageCgroupFileMapped(pc);
-+		this_cpu_inc(mem->stat->count[idx]);
-+		set_bit(fflag_idx(MEMCG_FSTAT_IDX(idx)), &pc->flags);
- 	} else {
--		this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		ClearPageCgroupFileMapped(pc);
-+		this_cpu_dec(mem->stat->count[idx]);
-+		clear_bit(fflag_idx(MEMCG_FSTAT_IDX(idx)), &pc->flags);
- 	}
- done:
- 	if (need_lock)
-@@ -1583,6 +1566,12 @@ done:
- 	rcu_read_unlock();
- }
- 
-+void mem_cgroup_update_file_mapped(struct page *page, int val)
-+{
-+	return mem_cgroup_update_file_stat(page,
-+		MEM_CGROUP_FSTAT_FILE_MAPPED, val);
-+}
-+
- /*
-  * size of first charge trial. "32" comes from vmscan.c's magic value.
-  * TODO: maybe necessary to use big numbers in big irons.
-@@ -2042,17 +2031,20 @@ static void __mem_cgroup_commit_charge(s
- static void __mem_cgroup_move_account(struct page_cgroup *pc,
- 	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
- {
-+	int i;
- 	VM_BUG_ON(from == to);
- 	VM_BUG_ON(PageLRU(pc->page));
- 	VM_BUG_ON(!PageCgroupLocked(pc));
- 	VM_BUG_ON(!PageCgroupUsed(pc));
- 	VM_BUG_ON(id_to_memcg(pc->mem_cgroup, true) != from);
- 
--	if (PageCgroupFileMapped(pc)) {
-+	for (i = MEM_CGROUP_FSTAT_BASE; i < MEM_CGROUP_FSTAT_END; ++i) {
-+		if (!test_bit(fflag_idx(MEMCG_FSTAT_IDX(i)), &pc->flags))
-+			continue;
- 		/* Update mapped_file data for mem_cgroup */
- 		preempt_disable();
--		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-+		__this_cpu_dec(from->stat->count[i]);
-+		__this_cpu_inc(to->stat->count[i]);
- 		preempt_enable();
- 	}
- 	mem_cgroup_charge_statistics(from, pc, false);
-@@ -3483,7 +3475,7 @@ static int mem_cgroup_get_local_stat(str
- 	s->stat[MCS_CACHE] += val * PAGE_SIZE;
- 	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
- 	s->stat[MCS_RSS] += val * PAGE_SIZE;
--	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
-+	val = mem_cgroup_read_stat(mem, MEM_CGROUP_FSTAT_FILE_MAPPED);
- 	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
- 	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGIN_COUNT);
- 	s->stat[MCS_PGPGIN] += val;
-Index: mmotm-0811/include/linux/page_cgroup.h
-===================================================================
---- mmotm-0811.orig/include/linux/page_cgroup.h
-+++ mmotm-0811/include/linux/page_cgroup.h
-@@ -3,6 +3,7 @@
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR
- #include <linux/bit_spinlock.h>
-+#include <linux/memcontrol.h> /* for flags */
- /*
-  * Page Cgroup can be considered as an extended mem_map.
-  * A page_cgroup page is associated with every page descriptor. The
-@@ -43,10 +44,22 @@ enum {
- 	PCG_CACHE, /* charged as cache */
- 	PCG_USED, /* this object is in use. */
- 	PCG_ACCT_LRU, /* page has been accounted for */
--	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
- 	PCG_MIGRATION, /* under page migration */
-+	PCG_FILE_FLAGS_MEMCG, /* see memcontrol.h */
-+	PCG_FILE_FLAGS_MEMCG_END
-+		= PCG_FILE_FLAGS_MEMCG + NR_FILE_FLAGS_MEMCG - 1,
- };
- 
-+/*
-+ * file-stat flags are defined regarding to memcg's stat information.
-+ * Here, just defines a macro for indexing
-+ */
-+static inline int fflag_idx(int idx)
-+{
-+	VM_BUG_ON((idx) >= NR_FILE_FLAGS_MEMCG);
-+	return (idx) + PCG_FILE_FLAGS_MEMCG;
-+}
-+
- #define TESTPCGFLAG(uname, lname)			\
- static inline int PageCgroup##uname(struct page_cgroup *pc)	\
- 	{ return test_bit(PCG_##lname, &pc->flags); }
-@@ -79,11 +92,6 @@ CLEARPCGFLAG(AcctLRU, ACCT_LRU)
- TESTPCGFLAG(AcctLRU, ACCT_LRU)
- TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
- 
--
--SETPCGFLAG(FileMapped, FILE_MAPPED)
--CLEARPCGFLAG(FileMapped, FILE_MAPPED)
--TESTPCGFLAG(FileMapped, FILE_MAPPED)
--
- SETPCGFLAG(Migration, MIGRATION)
- CLEARPCGFLAG(Migration, MIGRATION)
- TESTPCGFLAG(Migration, MIGRATION)
-
+-- 
+tejun
