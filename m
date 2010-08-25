@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab0HYVVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:21:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28545 "EHLO mx1.redhat.com"
+	id S1754526Ab0HYVVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:21:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45204 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab0HYVVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:21:02 -0400
-Date: Wed, 25 Aug 2010 17:20:37 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100825212037.GI4879@redhat.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100825094819.GB3198@erda.amd.com>
- <20100825104130.GA27891@elte.hu>
- <20100825110006.GB27891@elte.hu>
- <20100825201106.GH4879@redhat.com>
- <20100825202458.GE14874@lenovo>
+	id S1754361Ab0HYVVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 17:21:16 -0400
+Message-ID: <4C7588FB.4050001@zytor.com>
+Date: Wed, 25 Aug 2010 14:19:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825202458.GE14874@lenovo>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>
+CC: Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+References: <20100825094925.GA3632@pema> <20100825161214.GA15087@rhlx01.hs-esslingen.de> <20100825211257.GA636@pema>
+In-Reply-To: <20100825211257.GA636@pema>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 12:24:58AM +0400, Cyrill Gorcunov wrote:
-> On Wed, Aug 25, 2010 at 04:11:06PM -0400, Don Zickus wrote:
-> ...
-> > >  Uhhuh. NMI received for unknown reason 00 on CPU 15.
-> > >  Do you have a strange power saving mode enabled?
-> > >  Dazed and confused, but trying to continue
-> > 
-> > So I found a Nehalem box that can reliably reproduce Ingo's problem using
-> > something as simple 'perf top'.  But like above, I am noticing the
-> > samething, an extra NMI(PMI??) that comes out of nowhere.
-> > 
-> > Looking at the data above the delta between nmis is very small compared to
-> > the other nmis.  It almost suggests that this is an extra PMI.
-> > Considering there is already two cpu errata discussing extra PMIs under
-> > certain configurations, I wouldn't be surprised if this was a third.
-> > 
-> > Cheers,
-> > Don
-> > 
+On 08/25/2010 02:12 PM, Sebastien Hinderer wrote:
+> Hi,
 > 
-> Oh. I'm not sure if it would be a good idea at all but maybe we could
-> use kind of Robert's idea about "pmu nmi relaxing time" ie some time
-> slice in which we treat nmi's as being from pmu, but not arbitrary number
-> but equal to the number of PMI turned off. Say we handle NMI and found
-> that 4 events are overflowed, we clear them, arm timer and wait for
-> 3 unknow nmis to happen, if they are not happening during some time
-> period we clear this waitqueue, if they happen or partially happen
-> - we destroy the timer. Ie almost the same as Robert's idea but
-> without tsc? Just a thought.
-
-The only problem is only one counter is overflowing in these cases, so we
-would have to do it all the time, which may not be hard.  But I was
-thinking of something similar.
-
-For now, I am trying to force counter0 off, seeing that most of the perf
-errata on nehalem have been on counter0.  Or maybe I can get 'perf top' to
-use something other than counter0 by running 'perf record' first?
-
-Cheers,
-Don
-
+>> excellent! Now if as the next step before inclusion you also add the usual DMI check
+>> (as done by many drivers such as acerhdf etc.),
+>> someone inexperienced who is dumb enough to enable it for his unrelated machine
+>> will actually survive an otherwise raw I/O port access and poweroff
+>> vector change ;))
 > 
-> 	-- Cyrill
+> The machine does not support DMI, I have mentionned that in the module.
+> 
+
+Perhaps a better questions is: what *do* they have?  I really don't feel
+comfortable adding something like this which pokes at a random port in
+the ISA range, especially with the Interrupt list listing 6 known other
+uses of this particular port.
+
+At that point I'd almost prefer doing something like a BIOS signature
+check if we can't do anything better.
+
+	-hpa
