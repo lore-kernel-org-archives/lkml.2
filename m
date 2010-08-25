@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab0HYE6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 00:58:54 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:59678 "EHLO
+	id S932254Ab0HYE65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 00:58:57 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:2664 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab0HYE6U (ORCPT
+	with ESMTP id S1752943Ab0HYE6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 00:58:20 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6084"; a="52012242"
+	Wed, 25 Aug 2010 00:58:21 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6084"; a="52012244"
 X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
-   d="scan'208";a="72366137"
+   d="scan'208";a="72366138"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Jeff Ohlstein <johlstei@codeaurora.org>,
         David Brown <davidb@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Gregory Bean <gbean@codeaurora.org>,
         Steve Muckle <smuckle@codeaurora.org>
-Subject: [PATCH 07/24] msm: irqs-8x60: interrupt map
-Date: Tue, 24 Aug 2010 21:57:36 -0700
-Message-Id: <1282712273-344-8-git-send-email-johlstei@codeaurora.org>
+Subject: [PATCH 08/24] msm: timer: support 8x60 timers
+Date: Tue, 24 Aug 2010 21:57:37 -0700
+Message-Id: <1282712273-344-9-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1282712273-344-1-git-send-email-johlstei@codeaurora.org>
 References: <1282712273-344-1-git-send-email-johlstei@codeaurora.org>
@@ -29,251 +31,319 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-
-Define the interrupt map in irq-8x60.h
-
-Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/irqs-8x60.h |  225 ++++++++++++++++++++++++++++
- 1 files changed, 225 insertions(+), 0 deletions(-)
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |   10 +-
+ arch/arm/mach-msm/timer.c                       |  226 +++++++++++++++++------
+ 2 files changed, 177 insertions(+), 59 deletions(-)
 
-diff --git a/arch/arm/mach-msm/include/mach/irqs-8x60.h b/arch/arm/mach-msm/include/mach/irqs-8x60.h
-index bef47c9..ab4ad27 100644
---- a/arch/arm/mach-msm/include/mach/irqs-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/irqs-8x60.h
-@@ -35,6 +35,231 @@
-    16-31: PPI (private peripheral interrupts)
-    32+:   SPI (shared peripheral interrupts) */
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+index ee58da5..1f15bbb 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+@@ -35,7 +35,6 @@
+  *
+  */
  
-+#define GIC_PPI_START 16
-+#define GIC_SPI_START 32
+-
+ #define MSM_QGIC_DIST_BASE	IOMEM(0xF0000000)
+ #define MSM_QGIC_DIST_PHYS	0x02080000
+ #define MSM_QGIC_DIST_SIZE	SZ_4K
+@@ -56,7 +55,14 @@
+ #define MSM_TLMM_PHYS		0x00800000
+ #define MSM_TLMM_SIZE		SZ_16K
+ 
+-#define MSM_SHARED_RAM_BASE	IOMEM(0xF0100000)
++#define MSM_TMR_BASE		IOMEM(0xF0100000)
++#define MSM_TMR_PHYS		0x02000000
++#define MSM_TMR_SIZE		(SZ_1M)
 +
-+#define INT_DEBUG_TIMER_EXP			(GIC_PPI_START + 0)
-+#define INT_GP_TIMER_EXP			(GIC_PPI_START + 1)
-+#define INT_GP_TIMER2_EXP			(GIC_PPI_START + 2)
-+#define WDT0_ACCSCSSNBARK_INT			(GIC_PPI_START + 3)
-+#define WDT1_ACCSCSSNBARK_INT			(GIC_PPI_START + 4)
-+#define AVS_SVICINT				(GIC_PPI_START + 5)
-+#define AVS_SVICINTSWDONE			(GIC_PPI_START + 6)
-+#define CPU_DBGCPUXCOMMRXFULL			(GIC_PPI_START + 7)
-+#define CPU_DBGCPUXCOMMTXEMPTY			(GIC_PPI_START + 8)
-+#define CPU_SICCPUXPERFMONIRPTREQ		(GIC_PPI_START + 9)
-+#define SC_AVSCPUXDOWN				(GIC_PPI_START + 10)
-+#define SC_AVSCPUXUP				(GIC_PPI_START + 11)
-+#define SC_SICCPUXACGIRPTREQ			(GIC_PPI_START + 12)
-+/* PPI 13 to 15 are unused */
++#define MSM_GPT_BASE		(MSM_TMR_BASE + 0x4)
++#define MSM_DGT_BASE		(MSM_TMR_BASE + 0x24)
 +
++#define MSM_SHARED_RAM_BASE	IOMEM(0xF0200000)
+ #define MSM_SHARED_RAM_SIZE	SZ_1M
+ 
+ 
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index dec5ca6..e76d869 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -1,6 +1,6 @@
+-/* linux/arch/arm/mach-msm/timer.c
+- *
++/*
+  * Copyright (C) 2007 Google, Inc.
++ * Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
+  *
+  * This software is licensed under the terms of the GNU General Public
+  * License version 2, as published by the Free Software Foundation, and
+@@ -21,6 +21,7 @@
+ #include <linux/clockchips.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/percpu.h>
+ 
+ #include <asm/mach/time.h>
+ #include <mach/msm_iomap.h>
+@@ -28,7 +29,20 @@
+ #ifndef MSM_DGT_BASE
+ #define MSM_DGT_BASE (MSM_GPT_BASE + 0x10)
+ #endif
 +
-+#define SC_SICMPUIRPTREQ			(GIC_SPI_START + 0)
-+#define SC_SICL2IRPTREQ				(GIC_SPI_START + 1)
-+#define SC_SICL2ACGIRPTREQ			(GIC_SPI_START + 2)
-+#define NC					(GIC_SPI_START + 3)
-+#define TLMM_SCSS_DIR_CONN_IRQ_0		(GIC_SPI_START + 4)
-+#define TLMM_SCSS_DIR_CONN_IRQ_1		(GIC_SPI_START + 5)
-+#define TLMM_SCSS_DIR_CONN_IRQ_2		(GIC_SPI_START + 6)
-+#define TLMM_SCSS_DIR_CONN_IRQ_3		(GIC_SPI_START + 7)
-+#define TLMM_SCSS_DIR_CONN_IRQ_4		(GIC_SPI_START + 8)
-+#define TLMM_SCSS_DIR_CONN_IRQ_5		(GIC_SPI_START + 9)
-+#define TLMM_SCSS_DIR_CONN_IRQ_6		(GIC_SPI_START + 10)
-+#define TLMM_SCSS_DIR_CONN_IRQ_7		(GIC_SPI_START + 11)
-+#define TLMM_SCSS_DIR_CONN_IRQ_8		(GIC_SPI_START + 12)
-+#define TLMM_SCSS_DIR_CONN_IRQ_9		(GIC_SPI_START + 13)
-+#define PM8058_SEC_IRQ_N			(GIC_SPI_START + 14)
-+#define PM8901_SEC_IRQ_N			(GIC_SPI_START + 15)
-+#define TLMM_SCSS_SUMMARY_IRQ			(GIC_SPI_START + 16)
-+#define SPDM_RT_1_IRQ				(GIC_SPI_START + 17)
-+#define SPDM_DIAG_IRQ				(GIC_SPI_START + 18)
-+#define RPM_SCSS_CPU0_GP_HIGH_IRQ		(GIC_SPI_START + 19)
-+#define RPM_SCSS_CPU0_GP_MEDIUM_IRQ		(GIC_SPI_START + 20)
-+#define RPM_SCSS_CPU0_GP_LOW_IRQ		(GIC_SPI_START + 21)
-+#define RPM_SCSS_CPU0_WAKE_UP_IRQ		(GIC_SPI_START + 22)
-+#define RPM_SCSS_CPU1_GP_HIGH_IRQ		(GIC_SPI_START + 23)
-+#define RPM_SCSS_CPU1_GP_MEDIUM_IRQ		(GIC_SPI_START + 24)
-+#define RPM_SCSS_CPU1_GP_LOW_IRQ		(GIC_SPI_START + 25)
-+#define RPM_SCSS_CPU1_WAKE_UP_IRQ		(GIC_SPI_START + 26)
-+#define SSBI2_2_SC_CPU0_SECURE_INT		(GIC_SPI_START + 27)
-+#define SSBI2_2_SC_CPU0_NON_SECURE_INT		(GIC_SPI_START + 28)
-+#define SSBI2_1_SC_CPU0_SECURE_INT		(GIC_SPI_START + 29)
-+#define SSBI2_1_SC_CPU0_NON_SECURE_INT		(GIC_SPI_START + 30)
-+#define MSMC_SC_SEC_CE_IRQ			(GIC_SPI_START + 31)
-+#define MSMC_SC_PRI_CE_IRQ			(GIC_SPI_START + 32)
-+#define MARM_FIQ				(GIC_SPI_START + 33)
-+#define MARM_IRQ				(GIC_SPI_START + 34)
-+#define MARM_L2CC_IRQ				(GIC_SPI_START + 35)
-+#define MARM_WDOG_EXPIRED			(GIC_SPI_START + 36)
-+#define MARM_SCSS_GP_IRQ_0			(GIC_SPI_START + 37)
-+#define MARM_SCSS_GP_IRQ_1			(GIC_SPI_START + 38)
-+#define MARM_SCSS_GP_IRQ_2			(GIC_SPI_START + 39)
-+#define MARM_SCSS_GP_IRQ_3			(GIC_SPI_START + 40)
-+#define MARM_SCSS_GP_IRQ_4			(GIC_SPI_START + 41)
-+#define MARM_SCSS_GP_IRQ_5			(GIC_SPI_START + 42)
-+#define MARM_SCSS_GP_IRQ_6			(GIC_SPI_START + 43)
-+#define MARM_SCSS_GP_IRQ_7			(GIC_SPI_START + 44)
-+#define MARM_SCSS_GP_IRQ_8			(GIC_SPI_START + 45)
-+#define MARM_SCSS_GP_IRQ_9			(GIC_SPI_START + 46)
-+#define VPE_IRQ					(GIC_SPI_START + 47)
-+#define VFE_IRQ					(GIC_SPI_START + 48)
-+#define VCODEC_IRQ				(GIC_SPI_START + 49)
-+#define TV_ENC_IRQ				(GIC_SPI_START + 50)
-+#define SMMU_VPE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 51)
-+#define SMMU_VPE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 52)
-+#define SMMU_VFE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 53)
-+#define SMMU_VFE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 54)
-+#define SMMU_VCODEC_B_CB_SC_SECURE_IRQ		(GIC_SPI_START + 55)
-+#define SMMU_VCODEC_B_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 56)
-+#define SMMU_VCODEC_A_CB_SC_SECURE_IRQ		(GIC_SPI_START + 57)
-+#define SMMU_VCODEC_A_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 58)
-+#define SMMU_ROT_CB_SC_SECURE_IRQ		(GIC_SPI_START + 59)
-+#define SMMU_ROT_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 60)
-+#define SMMU_MDP1_CB_SC_SECURE_IRQ		(GIC_SPI_START + 61)
-+#define SMMU_MDP1_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 62)
-+#define SMMU_MDP0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 63)
-+#define SMMU_MDP0_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 64)
-+#define SMMU_JPEGD_CB_SC_SECURE_IRQ		(GIC_SPI_START + 65)
-+#define SMMU_JPEGD_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 66)
-+#define SMMU_IJPEG_CB_SC_SECURE_IRQ		(GIC_SPI_START + 67)
-+#define SMMU_IJPEG_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 68)
-+#define SMMU_GFX3D_CB_SC_SECURE_IRQ		(GIC_SPI_START + 69)
-+#define SMMU_GFX3D_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 70)
-+#define SMMU_GFX2D0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 71)
-+#define SMMU_GFX2D0_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 72)
-+#define ROT_IRQ					(GIC_SPI_START + 73)
-+#define MMSS_FABRIC_IRQ				(GIC_SPI_START + 74)
-+#define MDP_IRQ					(GIC_SPI_START + 75)
-+#define JPEGD_IRQ				(GIC_SPI_START + 76)
-+#define JPEG_IRQ				(GIC_SPI_START + 77)
-+#define MMSS_IMEM_IRQ				(GIC_SPI_START + 78)
-+#define HDMI_IRQ				(GIC_SPI_START + 79)
-+#define GFX3D_IRQ				(GIC_SPI_START + 80)
-+#define GFX2D0_IRQ				(GIC_SPI_START + 81)
-+#define DSI_IRQ					(GIC_SPI_START + 82)
-+#define CSI_1_IRQ				(GIC_SPI_START + 83)
-+#define CSI_0_IRQ				(GIC_SPI_START + 84)
-+#define LPASS_SCSS_AUDIO_IF_OUT0_IRQ		(GIC_SPI_START + 85)
-+#define LPASS_SCSS_MIDI_IRQ			(GIC_SPI_START + 86)
-+#define LPASS_Q6SS_WDOG_EXPIRED			(GIC_SPI_START + 87)
-+#define LPASS_SCSS_GP_LOW_IRQ			(GIC_SPI_START + 88)
-+#define LPASS_SCSS_GP_MEDIUM_IRQ		(GIC_SPI_START + 89)
-+#define LPASS_SCSS_GP_HIGH_IRQ			(GIC_SPI_START + 90)
-+#define TOP_IMEM_IRQ				(GIC_SPI_START + 91)
-+#define FABRIC_SYS_IRQ				(GIC_SPI_START + 92)
-+#define FABRIC_APPS_IRQ				(GIC_SPI_START + 93)
-+#define USB1_HS_BAM_IRQ				(GIC_SPI_START + 94)
-+#define SDC4_BAM_IRQ				(GIC_SPI_START + 95)
-+#define SDC3_BAM_IRQ				(GIC_SPI_START + 96)
-+#define SDC2_BAM_IRQ				(GIC_SPI_START + 97)
-+#define SDC1_BAM_IRQ				(GIC_SPI_START + 98)
-+#define FABRIC_SPS_IRQ				(GIC_SPI_START + 99)
-+#define USB1_HS_IRQ				(GIC_SPI_START + 100)
-+#define SDC4_IRQ_0				(GIC_SPI_START + 101)
-+#define SDC3_IRQ_0				(GIC_SPI_START + 102)
-+#define SDC2_IRQ_0				(GIC_SPI_START + 103)
-+#define SDC1_IRQ_0				(GIC_SPI_START + 104)
-+#define SPS_BAM_DMA_IRQ				(GIC_SPI_START + 105)
-+#define SPS_SEC_VIOL_IRQ			(GIC_SPI_START + 106)
-+#define SPS_MTI_0				(GIC_SPI_START + 107)
-+#define SPS_MTI_1				(GIC_SPI_START + 108)
-+#define SPS_MTI_2				(GIC_SPI_START + 109)
-+#define SPS_MTI_3				(GIC_SPI_START + 110)
-+#define SPS_MTI_4				(GIC_SPI_START + 111)
-+#define SPS_MTI_5				(GIC_SPI_START + 112)
-+#define SPS_MTI_6				(GIC_SPI_START + 113)
-+#define SPS_MTI_7				(GIC_SPI_START + 114)
-+#define SPS_MTI_8				(GIC_SPI_START + 115)
-+#define SPS_MTI_9				(GIC_SPI_START + 116)
-+#define SPS_MTI_10				(GIC_SPI_START + 117)
-+#define SPS_MTI_11				(GIC_SPI_START + 118)
-+#define SPS_MTI_12				(GIC_SPI_START + 119)
-+#define SPS_MTI_13				(GIC_SPI_START + 120)
-+#define SPS_MTI_14				(GIC_SPI_START + 121)
-+#define SPS_MTI_15				(GIC_SPI_START + 122)
-+#define SPS_MTI_16				(GIC_SPI_START + 123)
-+#define SPS_MTI_17				(GIC_SPI_START + 124)
-+#define SPS_MTI_18				(GIC_SPI_START + 125)
-+#define SPS_MTI_19				(GIC_SPI_START + 126)
-+#define SPS_MTI_20				(GIC_SPI_START + 127)
-+#define SPS_MTI_21				(GIC_SPI_START + 128)
-+#define SPS_MTI_22				(GIC_SPI_START + 129)
-+#define SPS_MTI_23				(GIC_SPI_START + 130)
-+#define SPS_MTI_24				(GIC_SPI_START + 131)
-+#define SPS_MTI_25				(GIC_SPI_START + 132)
-+#define SPS_MTI_26				(GIC_SPI_START + 133)
-+#define SPS_MTI_27				(GIC_SPI_START + 134)
-+#define SPS_MTI_28				(GIC_SPI_START + 135)
-+#define SPS_MTI_29				(GIC_SPI_START + 136)
-+#define SPS_MTI_30				(GIC_SPI_START + 137)
-+#define SPS_MTI_31				(GIC_SPI_START + 138)
-+#define UXMC_EBI2_WR_ER_DONE_IRQ		(GIC_SPI_START + 139)
-+#define UXMC_EBI2_OP_DONE_IRQ			(GIC_SPI_START + 140)
-+#define USB2_IRQ				(GIC_SPI_START + 141)
-+#define USB1_IRQ				(GIC_SPI_START + 142)
-+#define TSSC_SSBI_IRQ				(GIC_SPI_START + 143)
-+#define TSSC_SAMPLE_IRQ				(GIC_SPI_START + 144)
-+#define TSSC_PENUP_IRQ				(GIC_SPI_START + 145)
-+#define INT_UART1DM_IRQ				(GIC_SPI_START + 146)
-+#define GSBI1_QUP_IRQ				(GIC_SPI_START + 147)
-+#define INT_UART2DM_IRQ				(GIC_SPI_START + 148)
-+#define GSBI2_QUP_IRQ				(GIC_SPI_START + 149)
-+#define INT_UART3DM_IRQ				(GIC_SPI_START + 150)
-+#define GSBI3_QUP_IRQ				(GIC_SPI_START + 151)
-+#define INT_UART4DM_IRQ				(GIC_SPI_START + 152)
-+#define GSBI4_QUP_IRQ				(GIC_SPI_START + 153)
-+#define INT_UART5DM_IRQ				(GIC_SPI_START + 154)
-+#define GSBI5_QUP_IRQ				(GIC_SPI_START + 155)
-+#define INT_UART6DM_IRQ				(GIC_SPI_START + 156)
-+#define GSBI6_QUP_IRQ				(GIC_SPI_START + 157)
-+#define INT_UART7DM_IRQ				(GIC_SPI_START + 158)
-+#define GSBI7_QUP_IRQ				(GIC_SPI_START + 159)
-+#define INT_UART8DM_IRQ				(GIC_SPI_START + 160)
-+#define GSBI8_QUP_IRQ				(GIC_SPI_START + 161)
-+#define TSIF_TSPP_IRQ				(GIC_SPI_START + 162)
-+#define TSIF_BAM_IRQ				(GIC_SPI_START + 163)
-+#define TSIF2_IRQ				(GIC_SPI_START + 164)
-+#define TSIF1_IRQ				(GIC_SPI_START + 165)
-+#define INT_ADM1_MASTER				(GIC_SPI_START + 166)
-+#define INT_ADM1_AARM				(GIC_SPI_START + 167)
-+#define INT_ADM1_SD2				(GIC_SPI_START + 168)
-+#define INT_ADM1_SD3				(GIC_SPI_START + 169)
-+#define INT_ADM0_MASTER				(GIC_SPI_START + 170)
-+#define INT_ADM0_AARM				(GIC_SPI_START + 171)
-+#define INT_ADM0_SD2				(GIC_SPI_START + 172)
-+#define INT_ADM0_SD3				(GIC_SPI_START + 173)
-+#define CC_SCSS_WDT1CPU1BITEEXPIRED		(GIC_SPI_START + 174)
-+#define CC_SCSS_WDT1CPU0BITEEXPIRED		(GIC_SPI_START + 175)
-+#define CC_SCSS_WDT0CPU1BITEEXPIRED		(GIC_SPI_START + 176)
-+#define CC_SCSS_WDT0CPU0BITEEXPIRED		(GIC_SPI_START + 177)
-+#define TSENS_UPPER_LOWER_INT			(GIC_SPI_START + 178)
-+#define SSBI2_2_SC_CPU1_SECURE_INT		(GIC_SPI_START + 179)
-+#define SSBI2_2_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 180)
-+#define SSBI2_1_SC_CPU1_SECURE_INT		(GIC_SPI_START + 181)
-+#define SSBI2_1_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 182)
-+#define XPU_SUMMARY_IRQ				(GIC_SPI_START + 183)
-+#define BUS_EXCEPTION_SUMMARY_IRQ		(GIC_SPI_START + 184)
-+#define HSDDRX_SMICH0_IRQ			(GIC_SPI_START + 185)
-+#define HSDDRX_EBI1_IRQ				(GIC_SPI_START + 186)
-+#define SDC5_BAM_IRQ				(GIC_SPI_START + 187)
-+#define SDC5_IRQ_0				(GIC_SPI_START + 188)
-+#define INT_UART9DM_IRQ				(GIC_SPI_START + 189)
-+#define GSBI9_QUP_IRQ				(GIC_SPI_START + 190)
-+#define INT_UART10DM_IRQ			(GIC_SPI_START + 191)
-+#define GSBI10_QUP_IRQ				(GIC_SPI_START + 192)
-+#define INT_UART11DM_IRQ			(GIC_SPI_START + 193)
-+#define GSBI11_QUP_IRQ				(GIC_SPI_START + 194)
-+#define INT_UART12DM_IRQ			(GIC_SPI_START + 195)
-+#define GSBI12_QUP_IRQ				(GIC_SPI_START + 196)
-+/*SPI 197 to 216 arent used in 8x60*/
-+#define SMPSS_SPARE_1				(GIC_SPI_START + 217)
-+#define SMPSS_SPARE_2				(GIC_SPI_START + 218)
-+#define SMPSS_SPARE_3				(GIC_SPI_START + 219)
-+#define SMPSS_SPARE_4				(GIC_SPI_START + 220)
-+#define SMPSS_SPARE_5				(GIC_SPI_START + 221)
-+#define SMPSS_SPARE_6				(GIC_SPI_START + 222)
-+#define SMPSS_SPARE_7				(GIC_SPI_START + 223)
++#ifdef CONFIG_MSM7X00A_USE_GP_TIMER
++	#define DG_TIMER_RATING 100
++	#define MSM_GLOBAL_TIMER MSM_CLOCK_GPT
++#else
++	#define DG_TIMER_RATING 300
++	#define MSM_GLOBAL_TIMER MSM_CLOCK_DGT
++#endif
 +
- #define NR_GPIO_IRQS 173
- #define NR_MSM_IRQS 256
- #define NR_BOARD_IRQS 0
++#if defined(CONFIG_ARCH_MSM_ARM11)
+ #define MSM_DGT_SHIFT (5)
++#else
++#define MSM_DGT_SHIFT (0)
++#endif
+ 
+ #define TIMER_MATCH_VAL         0x0000
+ #define TIMER_COUNT_VAL         0x0004
+@@ -40,8 +54,32 @@
+ #define CSR_PROTECTION          0x0020
+ #define CSR_PROTECTION_EN               1
+ 
++#define LOCAL_TIMER 0
++#define GLOBAL_TIMER 1
++
++#ifdef CONFIG_ARCH_MSM8X60
++#define MSM_TMR_BASE_CPU0      0x40000
++#else
++#define MSM_TMR_BASE_CPU0      0
++#endif
++
++#define NR_TIMERS ARRAY_SIZE(msm_clocks)
++
+ #define GPT_HZ 32768
+-#define DGT_HZ 19200000 /* 19.2 MHz or 600 KHz after shift */
++
++#if defined(CONFIG_ARCH_QSD8X50) || defined(CONFIG_ARCH_MSM8X60)
++#define DGT_HZ 4800000	/* Uses TCXO/4 (19.2 MHz / 4) */
++#else
++#define DGT_HZ 19200000	/* Uses TCXO (19.2 MHz) */
++#endif
++
++static irqreturn_t msm_timer_interrupt(int irq, void *dev_id);
++static cycle_t msm_gpt_read(struct clocksource *cs);
++static cycle_t msm_dgt_read(struct clocksource *cs);
++static void msm_timer_set_mode(enum clock_event_mode mode,
++			       struct clock_event_device *evt);
++static int msm_timer_set_next_event(unsigned long cycles,
++				    struct clock_event_device *evt);
+ 
+ struct msm_clock {
+ 	struct clock_event_device   clockevent;
+@@ -52,60 +90,10 @@ struct msm_clock {
+ 	uint32_t                    shift;
+ };
+ 
+-static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
+-{
+-	struct clock_event_device *evt = dev_id;
+-	evt->event_handler(evt);
+-	return IRQ_HANDLED;
+-}
+-
+-static cycle_t msm_gpt_read(struct clocksource *cs)
+-{
+-	return readl(MSM_GPT_BASE + TIMER_COUNT_VAL);
+-}
+-
+-static cycle_t msm_dgt_read(struct clocksource *cs)
+-{
+-	return readl(MSM_DGT_BASE + TIMER_COUNT_VAL) >> MSM_DGT_SHIFT;
+-}
+-
+-static int msm_timer_set_next_event(unsigned long cycles,
+-				    struct clock_event_device *evt)
+-{
+-	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
+-	uint32_t now = readl(clock->regbase + TIMER_COUNT_VAL);
+-	uint32_t alarm = now + (cycles << clock->shift);
+-	int late;
+-
+-	writel(alarm, clock->regbase + TIMER_MATCH_VAL);
+-	now = readl(clock->regbase + TIMER_COUNT_VAL);
+-	late = now - alarm;
+-	if (late >= (-2 << clock->shift) && late < DGT_HZ*5) {
+-		printk(KERN_NOTICE "msm_timer_set_next_event(%lu) clock %s, "
+-		       "alarm already expired, now %x, alarm %x, late %d\n",
+-		       cycles, clock->clockevent.name, now, alarm, late);
+-		return -ETIME;
+-	}
+-	return 0;
+-}
+-
+-static void msm_timer_set_mode(enum clock_event_mode mode,
+-			      struct clock_event_device *evt)
+-{
+-	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
+-	switch (mode) {
+-	case CLOCK_EVT_MODE_RESUME:
+-	case CLOCK_EVT_MODE_PERIODIC:
+-		break;
+-	case CLOCK_EVT_MODE_ONESHOT:
+-		writel(TIMER_ENABLE_EN, clock->regbase + TIMER_ENABLE);
+-		break;
+-	case CLOCK_EVT_MODE_UNUSED:
+-	case CLOCK_EVT_MODE_SHUTDOWN:
+-		writel(0, clock->regbase + TIMER_ENABLE);
+-		break;
+-	}
+-}
++enum {
++	MSM_CLOCK_GPT,
++	MSM_CLOCK_DGT,
++};
+ 
+ static struct msm_clock msm_clocks[] = {
+ 	{
+@@ -165,6 +153,89 @@ static struct msm_clock msm_clocks[] = {
+ 	}
+ };
+ 
++static struct clock_event_device *local_clock_event;
++
++static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = dev_id;
++	if (smp_processor_id() != 0)
++		evt = local_clock_event;
++	if (evt->event_handler == NULL)
++		return IRQ_HANDLED;
++	evt->event_handler(evt);
++	return IRQ_HANDLED;
++}
++
++static cycle_t msm_gpt_read(struct clocksource *cs)
++{
++	struct msm_clock *clock =
++		container_of(cs, struct msm_clock, clocksource);
++	return readl(clock->regbase + TIMER_COUNT_VAL + MSM_TMR_BASE_CPU0);
++}
++
++static cycle_t msm_dgt_read(struct clocksource *cs)
++{
++	struct msm_clock *clock =
++		container_of(cs, struct msm_clock, clocksource);
++	return readl(clock->regbase + TIMER_COUNT_VAL + MSM_TMR_BASE_CPU0)
++		>> MSM_DGT_SHIFT;
++}
++
++static int msm_timer_set_next_event(unsigned long cycles,
++				    struct clock_event_device *evt)
++{
++	struct msm_clock *clock;
++	uint32_t now;
++	uint32_t alarm;
++	int late;
++
++#ifdef CONFIG_SMP
++	clock = &msm_clocks[MSM_GLOBAL_TIMER];
++#else
++	clock = container_of(evt, struct msm_clock, clockevent);
++#endif
++	now = readl(clock->regbase + TIMER_COUNT_VAL);
++	alarm = now + (cycles << clock->shift);
++	writel(alarm, clock->regbase + TIMER_MATCH_VAL);
++	late = now - alarm;
++	if (late >= (-2 << clock->shift) && late < DGT_HZ*5) {
++		printk(KERN_NOTICE "msm_timer_set_next_event(%lu) clock %s, "
++		       "alarm already expired, now %x, alarm %x, late %d\n",
++		       cycles, clock->clockevent.name, now, alarm, late);
++		return -ETIME;
++	}
++	return 0;
++}
++
++static void msm_timer_set_mode(enum clock_event_mode mode,
++			      struct clock_event_device *evt)
++{
++	struct msm_clock *clock;
++	unsigned long irq_flags;
++
++#ifdef CONFIG_SMP
++	clock = &msm_clocks[MSM_GLOBAL_TIMER];
++#else
++	clock = container_of(evt, struct msm_clock, clockevent);
++#endif
++	local_irq_save(irq_flags);
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_RESUME:
++	case CLOCK_EVT_MODE_PERIODIC:
++		break;
++	case CLOCK_EVT_MODE_ONESHOT:
++		writel(TIMER_ENABLE_EN, clock->regbase + TIMER_ENABLE);
++		break;
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		writel(0, clock->regbase + TIMER_ENABLE);
++		break;
++	}
++
++	local_irq_restore(irq_flags);
++}
++
+ static void __init msm_timer_init(void)
+ {
+ 	int i;
+@@ -201,6 +272,47 @@ static void __init msm_timer_init(void)
+ 	}
+ }
+ 
++#ifdef CONFIG_SMP
++void local_timer_setup(struct clock_event_device *evt)
++{
++	unsigned long flags;
++	struct msm_clock *clock = &msm_clocks[MSM_GLOBAL_TIMER];
++
++	if (!local_clock_event) {
++		writel(0, clock->regbase  + TIMER_ENABLE);
++		writel(1, clock->regbase + TIMER_CLEAR);
++		writel(0, clock->regbase + TIMER_COUNT_VAL);
++		writel(~0, clock->regbase + TIMER_MATCH_VAL);
++	}
++	evt->irq = clock->irq.irq;
++	evt->name = "local_timer";
++	evt->features = CLOCK_EVT_FEAT_ONESHOT;
++	evt->rating = clock->clockevent.rating;
++	evt->set_mode = msm_timer_set_mode;
++	evt->set_next_event = msm_timer_set_next_event;
++	evt->shift = clock->clockevent.shift;
++	evt->mult = div_sc(clock->freq, NSEC_PER_SEC, evt->shift);
++	evt->max_delta_ns =
++		clockevent_delta2ns(0xf0000000 >> clock->shift, evt);
++	evt->min_delta_ns = clockevent_delta2ns(4, evt);
++	evt->cpumask = cpumask_of(smp_processor_id());
++
++	local_clock_event = evt;
++
++	local_irq_save(flags);
++	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
++	local_irq_restore(flags);
++
++	clockevents_register_device(evt);
++}
++
++int local_timer_ack(void)
++{
++	return 1;
++}
++
++#endif
++
+ struct sys_timer msm_timer = {
+ 	.init = msm_timer_init
+ };
 -- 
 1.7.2.1
 
