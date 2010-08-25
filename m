@@ -1,194 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab0HYAsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 20:48:10 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44010 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab0HYAsJ (ORCPT
+	id S1756375Ab0HYAsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 20:48:55 -0400
+Received: from smtp-01.mandic.com.br ([200.225.81.132]:45291 "EHLO
+	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576Ab0HYAsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 20:48:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "M. Vefa Bicakci" <bicave@superonline.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C7214DD.30500@superonline.com>
-References: <20100823091948.6029.A69D9226@jp.fujitsu.com> <4C7214DD.30500@superonline.com>
-Message-Id: <20100824094152.F3B0.A69D9226@jp.fujitsu.com>
+	Tue, 24 Aug 2010 20:48:53 -0400
+Message-ID: <4C74686D.8090707@cesarb.net>
+Date: Tue, 24 Aug 2010 21:48:45 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 25 Aug 2010 09:48:05 +0900 (JST)
+To: linux-kernel@vger.kernel.org
+CC: platform-driver-x86@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: intel ips: CPU TDP doesn't match expected value
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello,
-> 
-> On 23/08/10 03:22 AM, KOSAKI Motohiro wrote:
-> > 
-> > sorry, my last mail has some mistake.
-> > 
-> 
-> No problem. I did the tests again according to your new instructions,
-> and I am appending the results.
+I get the following messages on v2.6.36-rc2-203-g502adf5:
 
-Great!
+intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match expected value 
+(found 25, expected 35)
+intel ips 0000:00:1f.6: PCI INT C -> GSI 18 (level, low) -> IRQ 18
+intel ips 0000:00:1f.6: IPS driver initialized, MCP temp limit 65535
+intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
+intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
 
-> > 1. Please let me know your machine & test script
-> >
-> 
-> % ./your-fills-up-the-tmpfs-script   (i.e. run your script)
-> 
-> > % cat /proc/meminfo
-> 
-> MemTotal:        3104484 kB
-> MemFree:         1258780 kB
+(The last two messages repeat very often, one of them every five 
+seconds; if I understand it correctly, that is normal and expected.)
 
-Hm, free memory is enough lots.
+The code implies the "CPU TDP doesn't match expected value" is a sanity 
+check failing. Should that happen, or is there something wrong?
 
 
-> Buffers:           30820 kB
-> Cached:          1693836 kB
-> SwapCached:            0 kB
-> Active:          1670344 kB
-> Inactive:         137960 kB
-> Active(anon):    1633940 kB
-> Inactive(anon):    26224 kB
-> Active(file):      36404 kB
-> Inactive(file):   111736 kB
-> Unevictable:          32 kB
-> Mlocked:              32 kB
-> HighTotal:       2226632 kB
-> HighFree:         437684 kB
+/proc/cpuinfo for the first core:
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 37
+model name	: Intel(R) Core(TM) i3 CPU       M 330  @ 2.13GHz
+stepping	: 2
+cpu MHz		: 933.000
+cache size	: 3072 KB
+physical id	: 0
+siblings	: 4
+core id		: 0
+cpu cores	: 2
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
+pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx 
+rdtscp lm constant_tsc arch_perfmon pebs bts rep_good xtopology 
+nonstop_tsc aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 
+xtpr pdcm sse4_1 sse4_2 popcnt lahf_lm arat tpr_shadow vnmi flexpriority 
+ept vpid
+bogomips	: 4256.29
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
 
-You are using 32 bit system.
+/sys/devices/virtual/dmi/id/:
+bios_date: 06/21/2010
+bios_vendor: Dell Inc.
+bios_version: A05
+board_asset_tag:
+board_name: 07NTDG
+board_vendor: Dell Inc.
+board_version: A05
+chassis_asset_tag:
+chassis_type: 8
+chassis_vendor: Dell Inc.
+chassis_version: A05
+product_name: Inspiron N4010
+product_version: A05
+sys_vendor: Dell Inc.
 
-> LowTotal:         877852 kB
-> LowFree:          821096 kB
-
-low memory is empty!
-
-
-> SwapTotal:       1999540 kB
-> SwapFree:        1999540 kB
-> Dirty:                28 kB
-> Writeback:             0 kB
-> AnonPages:         83676 kB
-> Mapped:            44220 kB
-> Shmem:           1576520 kB
-
-tmpfs files are using about 1.5GB memory.
-(because tmpfs is limited totalmem/2 by default)
-
-
-> Slab:              17136 kB
-> SReclaimable:       9480 kB
-> SUnreclaim:         7656 kB
-> KernelStack:        1832 kB
-> PageTables:         2440 kB
-> NFS_Unstable:          0 kB
-> Bounce:                0 kB
-> WritebackTmp:          0 kB
-> CommitLimit:     3551780 kB
-> Committed_AS:    1892636 kB
-> VmallocTotal:     122880 kB
-> VmallocUsed:       16308 kB
-> VmallocChunk:      92764 kB
-> HugePages_Total:       0
-> HugePages_Free:        0
-> HugePages_Rsvd:        0
-> HugePages_Surp:        0
-> Hugepagesize:       4096 kB
-> DirectMap4k:       24568 kB
-> DirectMap4M:      884736 kB
-
-
-> > % cat /proc/zoneinfo
-> 
-> Node 0, zone      DMA
->  recent_anon_rotated: 0
->  recent_anon_scanned: 0
->  recent_file_rotated: 0
->  recent_file_scanned: 0
->  anon_ratio:          30
-> Node 0, zone   Normal
->  recent_anon_rotated: 0
->  recent_anon_scanned: 0
->  recent_file_rotated: 272
->  recent_file_scanned: 1385
->  anon_ratio:          7
-> Node 0, zone  HighMem
->  recent_anon_rotated: 1259857
->  recent_anon_scanned: 2522124
->  recent_file_rotated: 1269
->  recent_file_scanned: 5591
->  anon_ratio:          16
-
-anon/file reclaim scanning ratio is NOT strange.
-
-
-> 
-> > % df
-> 
-> Filesystem           1K-blocks      Used Available Use% Mounted on
-> /dev/sda15            10317828   7309436   2484276  75% /
-> tmpfs                  1552240         8   1552232   1% /lib/init/rw
-> udev                   1549148       220   1548928   1% /dev
-> tmpfs                  1552240         4   1552236   1% /dev/shm
-> tmpfs                  1552240   1552240         0 100% /tmp
-
-Seems typical one drive system. no strange.
-
-
-> > % cat your-fills-up-the-tmpfs-script
-> 
-> #!/bin/bash
-> 
-> rm -vf /tmp/tmp
-> dd if=/dev/zero of=/tmp/tmp bs=1024k count=1600
-> shred -vn1 /tmp/tmp
-> 
-> exit 0 ### removed when testing hibernation
-> 
-> read -p "Press enter to hibernate..."
-> 
-> echo -n reboot > /sys/power/disk
-> echo -n disk > /sys/power/state
-> 
-> echo "Exit code: $?"
-> 
-> rm -vf /tmp/tmp
-
-Almostly same with my test program ;)
-
-
-> > # echo 1 > /proc/sys/vm/shrink_all_memory
-> 
-> > # tail /var/log/messages
-> 
-> [  439.165652] shrink_all_memory start
-> [  439.165960] shrink_all_memory: req:1 reclaimed:32 free:313765
-> 
-
-My code doesn't makes hang!
-
-
-Hmm... Hmm...
-To be honest, I have no idea why your hang was happen.
-
-1) zone normal is not used. your system don't need additional reclaim
-   at all.
-2) reclaim logic seems to doesn't makes hang.
-
-
-Can you please try following additional test?
-
-# echo 8 > /proc/sysrq-trigger
-# echo disk > /sys/power/state
-
-
-
-
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
