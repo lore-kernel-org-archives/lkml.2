@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab0HYJxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:53:18 -0400
+	id S1753179Ab0HYJxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:53:47 -0400
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:40442 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab0HYJxP (ORCPT
+	with ESMTP id S1752969Ab0HYJxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:53:15 -0400
-Subject: Re: [PATCH] ASoC: pxa-ssp: fix a memory leak in pxa_ssp_remove()
+	Wed, 25 Aug 2010 05:53:45 -0400
+Subject: Re: [PATCH 2/2] regulator: tps6586x-regulator - fix bit_mask
+ parameter for tps6586x_set_bits()
 From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1282726751.5051.4.camel@mola>
-References: <1282726751.5051.4.camel@mola>
+To: Mike Rapoport <mike@compulab.co.il>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Gary King <gking@nvidia.com>, Axel Lin <axel.lin@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C7248C3.9040304@compulab.co.il>
+References: <1282487895.23014.19.camel@phoenix>
+	 <1282488162.23014.24.camel@phoenix>
+	 <20100823100248.GG6061@rakim.wolfsonmicro.main>
+	 <4C7248C3.9040304@compulab.co.il>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Aug 2010 10:53:09 +0100
-Message-ID: <1282729989.2991.153.camel@odin>
+Date: Wed, 25 Aug 2010 10:53:34 +0100
+Message-ID: <1282730014.2991.155.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -24,29 +29,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 16:59 +0800, Axel Lin wrote:
-> The "priv" allocated in pxa_ssp_probe() should be kfreed in pxa_ssp_remove().
+On Mon, 2010-08-23 at 13:09 +0300, Mike Rapoport wrote: 
+> Mark Brown wrote:
+> > On Sun, Aug 22, 2010 at 10:42:42PM +0800, Axel Lin wrote:
+> >> The third parameter of tps6586x_set_bits() is the bit_mask,
+> >> thus we should use (1 << ri->go_bit) instead of ri->go_bit.
+> >>
+> >> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > 
+> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > 
+> > but I'd be much happier if someone who actually has the hardware could
+> > verify that this is OK.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> This patch is against 2.6.36-rc2-git3.
->  sound/soc/pxa/pxa-ssp.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> I don't have the hardware handy at the moment.
+> Gary, can you please verify the fix?
 > 
-> diff --git a/sound/soc/pxa/pxa-ssp.c b/sound/soc/pxa/pxa-ssp.c
-> index a1fd23e..2a9cac7 100644
-> --- a/sound/soc/pxa/pxa-ssp.c
-> +++ b/sound/soc/pxa/pxa-ssp.c
-> @@ -760,6 +760,7 @@ static void pxa_ssp_remove(struct platform_device *pdev,
->  {
->  	struct ssp_priv *priv = dai->private_data;
->  	pxa_ssp_free(priv->ssp);
-> +	kfree(priv);
->  }
->  
->  #define PXA_SSP_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_11025 |\
 
-Acked-by:Liam Girdwood <lrg@slimlogic.co.uk>
+Do we have any news on this testing ? I'd like to have these upstream
+for rc3.
+
+Thanks
+
+Liam
 -- 
 Freelance Developer, SlimLogic Ltd
 ASoC and Voltage Regulator Maintainer.
