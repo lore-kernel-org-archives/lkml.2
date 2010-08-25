@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab0HYPSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:18:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47634 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab0HYPSt (ORCPT
+	id S1751843Ab0HYP2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:28:54 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:34363 "EHLO
+	mx02.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751397Ab0HYP2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:18:49 -0400
-Message-ID: <4C753408.9010608@oracle.com>
-Date: Wed, 25 Aug 2010 08:17:28 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Wed, 25 Aug 2010 11:28:51 -0400
+Date: Wed, 25 Aug 2010 11:28:44 -0400 (EDT)
+From: Miloslav Trmac <mitr@redhat.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
+Message-ID: <1626059641.38051282750124404.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20100825062000.GA1424@ucw.cz>
+Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
 MIME-Version: 1.0
-To: Richard Hartmann <richih.mailinglist@gmail.com>
-CC: linux-kernel@vger.kernel.org, kernelnewbies@nl.linux.org
-Subject: Re: System silently not booting with 2.6.35 nor with 2.6.35.3 --
- It works fine with 2.6.32.x and 2.6.18.x
-References: <AANLkTinzaRBaWX9EJTAt70Qk+bifFicUUGh=vRJaWL+N@mail.gmail.com> <AANLkTikQXxmzC1LxOC7wUWj40nRyLvBgGa0NO3_2s5oX@mail.gmail.com> <20100824104046.a8018469.randy.dunlap@oracle.com> <AANLkTinPLxZxOW70FtJBA3f4eG8kc-ju-G=UoATKV0qk@mail.gmail.com>
-In-Reply-To: <AANLkTinPLxZxOW70FtJBA3f4eG8kc-ju-G=UoATKV0qk@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/10 04:52, Richard Hartmann wrote:
-> On Tue, Aug 24, 2010 at 19:40, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+----- "Pavel Machek" <pavel@ucw.cz> wrote:
+> > * Advanced crypto module for OSPP for Common Criteria requires OS services
+> >   implementing several low-level crypto algorithms (e.g. AES, RSA).  This
+> >   requires the separation of crypto services from the consumer of those
+> >   services. (The threat model is that apps tend to have more vulnerabilities
+> >   than libraries and compromise of the app will lead to the ability to access
+> >   key material.) An user-space library is not separated, options are a) root
+> >   running daemon that does crypto, but this would be slow due to context
+> >   switches, scheduler mismatching and all the IPC overhead and b) use crypto
+> >   that is in the kernel.
 > 
->> I would try enabling CONFIG_DEVTMPFS and CONFIG_DEVTMPFS_MOUNT.
+> Hmm, root daemon seems like a way to go. You already do the switch
+> into the kernel... and "IPC is slow" is not good enough reason to put
+> everything in kernel. Plus, you should be able to get better usage of
+> multicore with daemon.
 > 
-> As neiter the working nor the broken config has this option enabled, I
-> don't know
-> how this will help with finding the combinations of config options that made the
-> kernel fail to boot. Unless I am missing something?
+> Numbers?
+Posted here before - adding a single syscall (to the one existing ioctl()) adds a 20% performance penalty when encrypting 256 bytes using cbc(aes).  Even with a 32KB block the penalty is 2.7%, and lots of crypto is done on quite small data sizes.
 
-Is the "working" one the one that didn't find a root fs?
-This could help with that, but I guess you said that wasn't a concern.
+Inter-process IPC would have even higher overhead.
 
-good luck on it.
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Using more cores is actually easier with the kernel implementation, where each crypto operation runs in the context of the calling task.  This naturally scales to the number of concurrent tasks; as Tomas has said, none of the existing crypto APIs naturally support parallel operations started by a single thread, so any performance advantage gained through this is unrealistic.  A daemon would have to explicitly create a thread for each core (and watch for CPU hotplug?), and the incoming requests would have to be distributed among the threads (with system-wide lock contention on the request queue/pipe/socket/whatever).
+    Mirek
