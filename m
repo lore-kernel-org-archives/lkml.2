@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab0HYP7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:59:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52897 "EHLO hera.kernel.org"
+	id S1754083Ab0HYQAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 12:00:06 -0400
+Received: from verein.lst.de ([213.95.11.210]:52690 "EHLO verein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab0HYPyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:54:08 -0400
-From: Tejun Heo <tj@kernel.org>
-To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+	id S1753600Ab0HYQAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 12:00:00 -0400
+Date: Wed, 25 Aug 2010 17:59:20 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
         linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
         James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
         swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
         dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
-Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 27/30] fat: do not send discards as barriers
-Date: Wed, 25 Aug 2010 17:47:44 +0200
-Message-Id: <1282751267-3530-28-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
-References: <1282751267-3530-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:24 +0000 (UTC)
+        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 29/30] block: remove the BLKDEV_IFL_BARRIER flag
+Message-ID: <20100825155920.GB3229@lst.de>
+References: <1282751267-3530-1-git-send-email-tj@kernel.org> <1282751267-3530-30-git-send-email-tj@kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282751267-3530-30-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Hellwig <hch@infradead.org>
+On Wed, Aug 25, 2010 at 05:47:46PM +0200, Tejun Heo wrote:
+> From: Christoph Hellwig <hch@infradead.org>
+> 
+> Remove support for barriers on discards, which is unused now.  Also
+> remove the DISCARD_NOBARRIER I/O type in favour of just setting the
+> rw flags up locally in blkdev_issue_discard.
+> 
+> tj: Also remove DISCARD_SECURE and use REQ_SECURE directly.
 
-fat already uses synchronous discards, no need to add I/O barriers.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/fat/fatent.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index 3a56a82..f9a0b7a 100644
---- a/fs/fat/fatent.c
-+++ b/fs/fat/fatent.c
-@@ -579,7 +579,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
- 					fat_clus_to_blknr(sbi, first_cl),
- 					nr_clus * sbi->sec_per_clus,
- 					GFP_NOFS,
--					BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
-+					BLKDEV_IFL_WAIT);
- 
- 				first_cl = cluster;
- 			}
--- 
-1.7.1
+REQ_SECURE was just added for mmc.  I assume they plan to submit the
+driver support soon.
 
