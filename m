@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab0HYBWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 21:22:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36126 "EHLO smtps.tip.net.au"
+	id S1755268Ab0HYBaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 21:30:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27561 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab0HYBWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 21:22:42 -0400
-Date: Wed, 25 Aug 2010 11:22:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: manual merge of the drivers-x86 tree with Linus' tree
-Message-Id: <20100825112236.6ec0390e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753172Ab0HYBaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 21:30:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
+   d="scan'208";a="599900112"
+Date: Wed, 25 Aug 2010 09:29:41 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] hugetlb: add allocate function for hugepage
+ migration
+Message-ID: <20100825012941.GD7283@localhost>
+References: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1282694127-14609-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282694127-14609-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew,
+> +static struct page *alloc_buddy_huge_page_node(struct hstate *h, int nid)
+> +{
+> +	struct page *page = __alloc_huge_page_node(h, nid);
+>  	if (page) {
+> -		if (arch_prepare_hugepage(page)) {
+> -			__free_pages(page, huge_page_order(h));
+> +		set_compound_page_dtor(page, free_huge_page);
+> +		spin_lock(&hugetlb_lock);
+> +		h->nr_huge_pages++;
+> +		h->nr_huge_pages_node[nid]++;
+> +		spin_unlock(&hugetlb_lock);
+> +		put_page_testzero(page);
+> +	}
+> +	return page;
+> +}
 
-Today's linux-next merge of the drivers-x86 tree got a conflict in
-drivers/platform/x86/Kconfig between commit
-c76a3e1d6c52c5cc1371f1abc7381c5715ebdf7f ("ACPI_TOSHIBA needs LEDS
-support") from Lunus' tree and commit
-35989e9d7e19deb4b395aee7d120b1536337b4af ("toshiba-acpi - switch to using
-sparse keymap") from the drivers-x86 tree.
+One would expect the alloc_buddy_huge_page_node() to only differ with
+alloc_buddy_huge_page() in the alloc_pages/alloc_pages_exact_node
+calls. However you implement alloc_buddy_huge_page_node() in a quite
+different way. Can the two functions be unified at all?
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/platform/x86/Kconfig
-index cff7cc2,8498389..0000000
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@@ -486,12 -490,10 +490,12 @@@ config TOPSTAR_LAPTO
-  config ACPI_TOSHIBA
-  	tristate "Toshiba Laptop Extras"
-  	depends on ACPI
- +	depends on LEDS_CLASS
- +	depends on NEW_LEDS
- +	depends on BACKLIGHT_CLASS_DEVICE
-  	depends on INPUT
-  	depends on RFKILL || RFKILL = n
-- 	select INPUT_POLLDEV
-+ 	select INPUT_SPARSEKMAP
- -	select BACKLIGHT_CLASS_DEVICE
-  	---help---
-  	  This driver adds support for access to certain system settings
-  	  on "legacy free" Toshiba laptops.  These laptops can be recognized by
+Thanks,
+Fengguang
