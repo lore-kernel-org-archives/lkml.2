@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab0HYPye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:54:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52894 "EHLO hera.kernel.org"
+	id S1752895Ab0HYPya (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:54:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52886 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab0HYPyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:54:08 -0400
+	id S1752496Ab0HYPyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:54:07 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
@@ -16,190 +16,83 @@ To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
 Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 22/30] reiserfs: replace barriers with explicit flush / FUA usage
-Date: Wed, 25 Aug 2010 17:47:39 +0200
-Message-Id: <1282751267-3530-23-git-send-email-tj@kernel.org>
+Subject: [PATCH 18/30] block: pass gfp_mask and flags to sb_issue_discard
+Date: Wed, 25 Aug 2010 17:47:35 +0200
+Message-Id: <1282751267-3530-19-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
 References: <1282751267-3530-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:24 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Christoph Hellwig <hch@infradead.org>
 
-Switch to the WRITE_FLUSH_FUA flag for log writes and remove the EOPNOTSUPP
-detection for barriers.  Note that reiserfs had a fairly different code
-path for barriers before as it wa the only filesystem actually making use
-of them.  The new code always uses the old non-barrier codepath and just
-sets the WRITE_FLUSH_FUA explicitly for the journal commits.
+We'll need to get rid of the BLKDEV_IFL_BARRIER flag, and to facilitate
+that and to make the interface less confusing pass all flags explicitly.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Acked-by: Jan Kara <jack@suse.cz>
-Acked-by: Chris Mason <chris.mason@oracle.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/reiserfs/journal.c |  106 +++++++++---------------------------------------
- 1 files changed, 20 insertions(+), 86 deletions(-)
+ fs/ext4/mballoc.c      |    3 ++-
+ fs/fat/fatent.c        |    4 +++-
+ include/linux/blkdev.h |   11 +++++------
+ 3 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
-index 812e2c0..076c8b1 100644
---- a/fs/reiserfs/journal.c
-+++ b/fs/reiserfs/journal.c
-@@ -138,13 +138,6 @@ static int reiserfs_clean_and_file_buffer(struct buffer_head *bh)
- 	return 0;
- }
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 4b4ad4b..df44b34 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2566,7 +2566,8 @@ static inline void ext4_issue_discard(struct super_block *sb,
+ 	discard_block = block + ext4_group_first_block_no(sb, block_group);
+ 	trace_ext4_discard_blocks(sb,
+ 			(unsigned long long) discard_block, count);
+-	ret = sb_issue_discard(sb, discard_block, count);
++	ret = sb_issue_discard(sb, discard_block, count, GFP_NOFS,
++			       BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
+ 	if (ret == EOPNOTSUPP) {
+ 		ext4_warning(sb, "discard not supported, disabling");
+ 		clear_opt(EXT4_SB(sb)->s_mount_opt, DISCARD);
+diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+index 81184d3..3a56a82 100644
+--- a/fs/fat/fatent.c
++++ b/fs/fat/fatent.c
+@@ -577,7 +577,9 @@ int fat_free_clusters(struct inode *inode, int cluster)
  
--static void disable_barrier(struct super_block *s)
--{
--	REISERFS_SB(s)->s_mount_opt &= ~(1 << REISERFS_BARRIER_FLUSH);
--	printk("reiserfs: disabling flush barriers on %s\n",
--	       reiserfs_bdevname(s));
--}
--
- static struct reiserfs_bitmap_node *allocate_bitmap_node(struct super_block
- 							 *sb)
+ 				sb_issue_discard(sb,
+ 					fat_clus_to_blknr(sbi, first_cl),
+-					nr_clus * sbi->sec_per_clus);
++					nr_clus * sbi->sec_per_clus,
++					GFP_NOFS,
++					BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
+ 
+ 				first_cl = cluster;
+ 			}
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 8ef705f..6b305eb 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -881,13 +881,12 @@ extern int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
+ extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
+-static inline int sb_issue_discard(struct super_block *sb,
+-				   sector_t block, sector_t nr_blocks)
++static inline int sb_issue_discard(struct super_block *sb, sector_t block,
++		sector_t nr_blocks, gfp_t gfp_mask, unsigned long flags)
  {
-@@ -677,30 +670,6 @@ static void submit_ordered_buffer(struct buffer_head *bh)
- 	submit_bh(WRITE, bh);
+-	block <<= (sb->s_blocksize_bits - 9);
+-	nr_blocks <<= (sb->s_blocksize_bits - 9);
+-	return blkdev_issue_discard(sb->s_bdev, block, nr_blocks, GFP_NOFS,
+-				   BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
++	return blkdev_issue_discard(sb->s_bdev, block << (sb->s_blocksize_bits - 9),
++				    nr_blocks << (sb->s_blocksize_bits - 9),
++				    gfp_mask, flags);
  }
  
--static int submit_barrier_buffer(struct buffer_head *bh)
--{
--	get_bh(bh);
--	bh->b_end_io = reiserfs_end_ordered_io;
--	clear_buffer_dirty(bh);
--	if (!buffer_uptodate(bh))
--		BUG();
--	return submit_bh(WRITE_BARRIER, bh);
--}
--
--static void check_barrier_completion(struct super_block *s,
--				     struct buffer_head *bh)
--{
--	if (buffer_eopnotsupp(bh)) {
--		clear_buffer_eopnotsupp(bh);
--		disable_barrier(s);
--		set_buffer_uptodate(bh);
--		set_buffer_dirty(bh);
--		reiserfs_write_unlock(s);
--		sync_dirty_buffer(bh);
--		reiserfs_write_lock(s);
--	}
--}
--
- #define CHUNK_SIZE 32
- struct buffer_chunk {
- 	struct buffer_head *bh[CHUNK_SIZE];
-@@ -1009,7 +978,6 @@ static int flush_commit_list(struct super_block *s,
- 	struct buffer_head *tbh = NULL;
- 	unsigned int trans_id = jl->j_trans_id;
- 	struct reiserfs_journal *journal = SB_JOURNAL(s);
--	int barrier = 0;
- 	int retval = 0;
- 	int write_len;
- 
-@@ -1094,24 +1062,6 @@ static int flush_commit_list(struct super_block *s,
- 	}
- 	atomic_dec(&journal->j_async_throttle);
- 
--	/* We're skipping the commit if there's an error */
--	if (retval || reiserfs_is_journal_aborted(journal))
--		barrier = 0;
--
--	/* wait on everything written so far before writing the commit
--	 * if we are in barrier mode, send the commit down now
--	 */
--	barrier = reiserfs_barrier_flush(s);
--	if (barrier) {
--		int ret;
--		lock_buffer(jl->j_commit_bh);
--		ret = submit_barrier_buffer(jl->j_commit_bh);
--		if (ret == -EOPNOTSUPP) {
--			set_buffer_uptodate(jl->j_commit_bh);
--			disable_barrier(s);
--			barrier = 0;
--		}
--	}
- 	for (i = 0; i < (jl->j_len + 1); i++) {
- 		bn = SB_ONDISK_JOURNAL_1st_BLOCK(s) +
- 		    (jl->j_start + i) % SB_ONDISK_JOURNAL_SIZE(s);
-@@ -1143,27 +1093,22 @@ static int flush_commit_list(struct super_block *s,
- 
- 	BUG_ON(atomic_read(&(jl->j_commit_left)) != 1);
- 
--	if (!barrier) {
--		/* If there was a write error in the journal - we can't commit
--		 * this transaction - it will be invalid and, if successful,
--		 * will just end up propagating the write error out to
--		 * the file system. */
--		if (likely(!retval && !reiserfs_is_journal_aborted (journal))) {
--			if (buffer_dirty(jl->j_commit_bh))
--				BUG();
--			mark_buffer_dirty(jl->j_commit_bh) ;
--			reiserfs_write_unlock(s);
--			sync_dirty_buffer(jl->j_commit_bh) ;
--			reiserfs_write_lock(s);
--		}
--	} else {
-+	/* If there was a write error in the journal - we can't commit
-+	 * this transaction - it will be invalid and, if successful,
-+	 * will just end up propagating the write error out to
-+	 * the file system. */
-+	if (likely(!retval && !reiserfs_is_journal_aborted (journal))) {
-+		if (buffer_dirty(jl->j_commit_bh))
-+			BUG();
-+		mark_buffer_dirty(jl->j_commit_bh) ;
- 		reiserfs_write_unlock(s);
--		wait_on_buffer(jl->j_commit_bh);
-+		if (reiserfs_barrier_flush(s))
-+			__sync_dirty_buffer(jl->j_commit_bh, WRITE_FLUSH_FUA);
-+		else
-+			sync_dirty_buffer(jl->j_commit_bh);
- 		reiserfs_write_lock(s);
- 	}
- 
--	check_barrier_completion(s, jl->j_commit_bh);
--
- 	/* If there was a write error in the journal - we can't commit this
- 	 * transaction - it will be invalid and, if successful, will just end
- 	 * up propagating the write error out to the filesystem. */
-@@ -1319,26 +1264,15 @@ static int _update_journal_header_block(struct super_block *sb,
- 		jh->j_first_unflushed_offset = cpu_to_le32(offset);
- 		jh->j_mount_id = cpu_to_le32(journal->j_mount_id);
- 
--		if (reiserfs_barrier_flush(sb)) {
--			int ret;
--			lock_buffer(journal->j_header_bh);
--			ret = submit_barrier_buffer(journal->j_header_bh);
--			if (ret == -EOPNOTSUPP) {
--				set_buffer_uptodate(journal->j_header_bh);
--				disable_barrier(sb);
--				goto sync;
--			}
--			reiserfs_write_unlock(sb);
--			wait_on_buffer(journal->j_header_bh);
--			reiserfs_write_lock(sb);
--			check_barrier_completion(sb, journal->j_header_bh);
--		} else {
--		      sync:
--			set_buffer_dirty(journal->j_header_bh);
--			reiserfs_write_unlock(sb);
-+		set_buffer_dirty(journal->j_header_bh);
-+		reiserfs_write_unlock(sb);
-+
-+		if (reiserfs_barrier_flush(sb))
-+			__sync_dirty_buffer(journal->j_header_bh, WRITE_FLUSH_FUA);
-+		else
- 			sync_dirty_buffer(journal->j_header_bh);
--			reiserfs_write_lock(sb);
--		}
-+
-+		reiserfs_write_lock(sb);
- 		if (!buffer_uptodate(journal->j_header_bh)) {
- 			reiserfs_warning(sb, "journal-837",
- 					 "IO error during journal replay");
+ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
 -- 
 1.7.1
 
