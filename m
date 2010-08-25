@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906Ab0HYHB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:01:58 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:54157 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab0HYHB5 convert rfc822-to-8bit (ORCPT
+	id S1752084Ab0HYHFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:05:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45348 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab0HYHFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 03:01:57 -0400
+	Wed, 25 Aug 2010 03:05:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TUlS+KdZZGKzPEFd/agLNl3/03Y+w88B/xE13gRSsViI/Gv/j4eLyysVO0Xa+0s0bl
-         f1gNUp4Z2s/ozjXRak3GKQpB7jbWfbZkVf+UvDI0YZHKFy5Rxuh2PsojJi2Wb342YuCQ
-         uV/Z6xLzkAfgElLV/0VvgWl2tQOKiF+t4uKrM=
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=tkoxnog9z9Ufn4othCtJ2K09/xlA7LDIsZnfoShsqE6dwkkn/Ifaxg0ogec7WHwq/Y
+         GPgDV0fUuGNAVaEE+OB5oIFoNoocV/Cw0KYRziyZvgeMuY1Kt4SbjTp2rVP5z6J3vn+i
+         e7hs0uKMw8pEka05jibxCB6g9K5gfzrwZpMvM=
+Date: Wed, 25 Aug 2010 09:05:27 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Roman Zippel <zippel@linux-m68k.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] affs: testing the wrong variable
+Message-ID: <20100825070350.GN29330@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Roman Zippel <zippel@linux-m68k.org>,
+	Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20100824234132.a0f1cec3.akpm@linux-foundation.org>
-References: <1281974138-5553-1-git-send-email-shijie8@gmail.com>
-	<20100824164622.a3b2c1ed.akpm@linux-foundation.org>
-	<AANLkTikSPB+8R4E7rsoVS2GN9ysROAPzKsLHqgMyP_yM@mail.gmail.com>
-	<20100824234132.a0f1cec3.akpm@linux-foundation.org>
-Date: Wed, 25 Aug 2010 15:01:56 +0800
-Message-ID: <AANLkTikaBiptt+nF3A0cCsy7dKTZN+nAKHFT=MkE_TrF@mail.gmail.com>
-Subject: Re: [PATCH] avoiding the same resource to be inserted
-From: Huang Shijie <shijie8@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 2:41 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 25 Aug 2010 13:03:55 +0800 Huang Shijie <shijie8@gmail.com> wrote:
->
->> On Wed, Aug 25, 2010 at 7:46 AM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->>
->> I think WARN_ON() is not power enough. If the CONFIG_BUG is not
->> defined, the warning message may not be printed. So I think using a
->> directly printk() here is better.
->
-> No, WARN_ON() is good.  It gives us a backtrace and identifies the
-> buggy code.  Only maniacs turn off CONFIG_BUG.
->
+The intent was to verify that bh = affs_bread_ino(...) returned a valid
+pointer.  We checked "ext_bh" earlier in the function and it's valid
+here.
 
-got it. Thanks a lot.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index c4a9875..0a90dcd 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -894,9 +894,9 @@ affs_truncate(struct inode *inode)
+ 		if (AFFS_SB(sb)->s_flags & SF_OFS) {
+ 			struct buffer_head *bh = affs_bread_ino(inode, last_blk, 0);
+ 			u32 tmp;
+-			if (IS_ERR(ext_bh)) {
++			if (IS_ERR(bh)) {
+ 				affs_warning(sb, "truncate", "unexpected read error for last block %u (%d)",
+-					     ext, PTR_ERR(ext_bh));
++					     ext, PTR_ERR(bh));
+ 				return;
+ 			}
+ 			tmp = be32_to_cpu(AFFS_DATA_HEAD(bh)->next);
