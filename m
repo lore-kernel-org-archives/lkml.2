@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab0HYGUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 02:20:22 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:37458 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751380Ab0HYGUS (ORCPT
+	id S1752159Ab0HYG0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 02:26:15 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48893 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab0HYG0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 02:20:18 -0400
-Date: Wed, 25 Aug 2010 08:20:00 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Miloslav Trma? <mitr@redhat.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/19] RFC, v2: "New" /dev/crypto user-space interface
-Message-ID: <20100825062000.GA1424@ucw.cz>
-References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
+	Wed, 25 Aug 2010 02:26:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=ULNlmjAQy8HJGy+2zyxkmJ2QCmnwNrMf5KokTzQxzQJ4y5PlGG6fLwx2vRgjFDAWNq
+         JQ8mCXejSfjLnWzPxdQBthsGcdmm8JWb39a6+sSd+mae05HZK6jjkyKVeAKjZDg5ayWQ
+         MfZ4WtPc+rq1NQTKChVSH63TX7Ra5lYY49QyY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282293963-27807-1-git-send-email-mitr@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 25 Aug 2010 14:26:12 +0800
+Message-ID: <AANLkTimUb4GCdacq0C5+k=q9TrTMW956iUY-00ZpXsrX@mail.gmail.com>
+Subject: [RFC PATCH 1/3] timer: make try_to_del_timer_sync() safe on both
+ hardirq context and UP
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Yong Zhang <yong.zhang@windriver.com>
 
-> Motivations for the extensions: governments are asking for more security
-> features in the operating systems they procure, which make user-space
-> implementations impractical.  A few examples:
-> 
-> * Advanced crypto module for OSPP for Common Criteria requires OS services
->   implementing several low-level crypto algorithms (e.g. AES, RSA).  This
->   requires the separation of crypto services from the consumer of those
->   services. (The threat model is that apps tend to have more vulnerabilities
->   than libraries and compromise of the app will lead to the ability to access
->   key material.) An user-space library is not separated, options are a) root
->   running daemon that does crypto, but this would be slow due to context
->   switches, scheduler mismatching and all the IPC overhead and b) use crypto
->   that is in the kernel.
+In commit fd450b7318b75343fd76b3d95416853e34e72c95, it was saying
+try_to_del_timer_sync() can be used in interrupt context.
 
-Hmm, root daemon seems like a way to go. You already do the switch
-into the kernel... and "IPC is slow" is not good enough reason to put
-everything in kernel. Plus, you should be able to get better usage of
-multicore with daemon.
+But because base->running_timer is SMP special, this lead to
+unsymmetry try_to_del_timer_sync() on UP and SMP.
 
-Numbers?
-								Pavel
+We can make running_timer live on everywhere, then try_to_del_timer_sync()
+is also UP safe and can be used in hardirq context.
 
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/timer.h |    4 ++--
+ kernel/timer.c        |    6 +-----
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-> * FIPS-140-3 calls out for cryptographic functions to be non-debuggable (ptrace)
->   meaning that you cannot get to the key material. The solution is the same as
->   above.
-> 
-> * GPOSPP requires auditing for crypto events (so does FIPS-140 level 2 cert).
->   To do this you need any crypto to have CAP_AUDIT_WRITE permissions which
->   means making everything that links to openssl, libgcrypt, or nss setuid
->   root. Making firefox and 400 other applications setuid root is a non-starter.
->   So, the solution is again to use crypto in the kernel where auditing needs no
->   special permissions.
-> 
-> Other advantages to having kernel crypto available to user space:
-> 
-> * User space will be able to take advantage of kernel drivers for hardware
->   crypto accelerators.
-> 
-> * glibc, which in some configurations links to libfreebl3.so for hashes
->   necessary for crypt(), will be able to use the kernel implementation; this
->   means one less library to load and dynamically link for each such process.
-> 
-> The code is derived from the original cryptodev-linux patch set; most of the
-> new implementation was written by Nikos Mavrogiannopoulos
-> <n.mavrogiannopoulos@gmail.com>.  Attributions are included in the respective
-> source files.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index 38cf093..225c4ce 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -248,11 +248,11 @@ static inline void
+timer_stats_timer_clear_start_info(struct timer_list *timer)
 
+ extern void add_timer(struct timer_list *timer);
+
++extern int try_to_del_timer_sync(struct timer_list *timer);
++
+ #ifdef CONFIG_SMP
+-  extern int try_to_del_timer_sync(struct timer_list *timer);
+   extern int del_timer_sync(struct timer_list *timer);
+ #else
+-# define try_to_del_timer_sync(t)	del_timer(t)
+ # define del_timer_sync(t)		del_timer(t)
+ #endif
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 97bf05b..e031eb4 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -347,9 +347,7 @@ EXPORT_SYMBOL_GPL(set_timer_slack);
+ static inline void set_running_timer(struct tvec_base *base,
+ 					struct timer_list *timer)
+ {
+-#ifdef CONFIG_SMP
+ 	base->running_timer = timer;
+-#endif
+ }
+
+ static void internal_add_timer(struct tvec_base *base, struct
+timer_list *timer)
+@@ -936,15 +934,12 @@ int del_timer(struct timer_list *timer)
+ }
+ EXPORT_SYMBOL(del_timer);
+
+-#ifdef CONFIG_SMP
+ /**
+  * try_to_del_timer_sync - Try to deactivate a timer
+  * @timer: timer do del
+  *
+  * This function tries to deactivate a timer. Upon successful (ret >= 0)
+  * exit the timer is not queued and the handler is not running on any CPU.
+- *
+- * It must not be called from interrupt contexts.
+  */
+ int try_to_del_timer_sync(struct timer_list *timer)
+ {
+@@ -973,6 +968,7 @@ out:
+ }
+ EXPORT_SYMBOL(try_to_del_timer_sync);
+
++#ifdef CONFIG_SMP
+ /**
+  * del_timer_sync - deactivate a timer and wait for the handler to finish.
+  * @timer: the timer to be deactivated
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.0.4
