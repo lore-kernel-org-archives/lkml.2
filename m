@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab0HYFat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 01:30:49 -0400
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:42817 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab0HYFar (ORCPT
+	id S1751566Ab0HYFoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 01:44:23 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:54353 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab0HYFoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 01:30:47 -0400
-Date: Wed, 25 Aug 2010 07:32:43 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] s390: Fix prototype for execve
-Message-ID: <20100825053242.GA2153@osiris.boeblingen.de.ibm.com>
-References: <4C73F25D.5010205@suse.com>
+	Wed, 25 Aug 2010 01:44:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:message-id:user-agent:
+	mime-version:content-type:x-system-of-record;
+	b=K23Ehv4JiKU4ds6ZrQdSgUjYYL3+izeY3ZMHabXZDbY50bSPbODmOBSpGvvjsfkhb
+	e9xxjDyf/TLR2V5+Xvjqw==
+Date: Tue, 24 Aug 2010 22:44:12 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: fix CONFIG_VMSPLIT_1G and 2G_OPT trampoline
+Message-ID: <alpine.LSU.2.00.1008242235120.2515@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C73F25D.5010205@suse.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 12:25:01PM -0400, Jeff Mahoney wrote:
->  Commit d7627467b7a8dd6944885290a03a07ceb28c10eb constified the
->  arguments to execve but missed the s390 prototype.
-> 
->  This patch fixes it up.
-> 
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-> ---
-> 
->  arch/s390/kernel/entry.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- a/arch/s390/kernel/entry.h
-> +++ b/arch/s390/kernel/entry.h
-> @@ -42,8 +42,8 @@ long sys_clone(unsigned long newsp, unsi
->  	       int __user *parent_tidptr, int __user *child_tidptr);
->  long sys_vfork(void);
->  void execve_tail(void);
-> -long sys_execve(const char __user *name, char __user * __user *argv,
-> -		char __user * __user *envp);
-> +long sys_execve(const char __user *name, const char __user *const __user *argv,
-> +		const char __user *const __user *envp);
->  long sys_sigsuspend(int history0, int history1, old_sigset_t mask);
->  long sys_sigaction(int sig, const struct old_sigaction __user *act,
->  		   struct old_sigaction __user *oact);
+rc2 kernel crashes when booting second cpu on this CONFIG_VMSPLIT_2G_OPT
+laptop: whereas cloning from kernel to low mappings pgd range does need
+to limit by both KERNEL_PGD_PTRS and KERNEL_PGD_BOUNDARY, cloning kernel
+pgd range itself must not be limited by the smaller KERNEL_PGD_BOUNDARY.
 
-A similar patch just got merged. Thanks!
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+
+ arch/x86/kernel/trampoline.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- 2.6.36-rc2/arch/x86/kernel/trampoline.c.0	2010-08-22 18:56:44.000000000 -0700
++++ linux/arch/x86/kernel/trampoline.c	2010-08-24 22:11:08.000000000 -0700
+@@ -45,8 +45,7 @@ void __init setup_trampoline_page_table(
+ 	/* Copy kernel address range */
+ 	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
+ 			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+-			min_t(unsigned long, KERNEL_PGD_PTRS,
+-			      KERNEL_PGD_BOUNDARY));
++			KERNEL_PGD_PTRS);
+ 
+ 	/* Initialize low mappings */
+ 	clone_pgd_range(trampoline_pg_dir,
