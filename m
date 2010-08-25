@@ -1,150 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab0HYJuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:50:17 -0400
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:59246 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab0HYJuM (ORCPT
+	id S1753097Ab0HYJvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:51:10 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57810 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab0HYJvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:50:12 -0400
-Date: Wed, 25 Aug 2010 11:49:27 +0200
-From: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Len Brown <len.brown@intel.com>, Andres Salomon <dilinger@queued.net>
-Cc: linux-kernel@vger.kernel.org,
-        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-Subject: [PATCH] x86: EuroBraille/Iris power off
-Message-ID: <20100825094925.GA3632@pema>
+	Wed, 25 Aug 2010 05:51:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=rFL5CwZoNnE9x3H4nhO+iIADxq2g6D7xkVtpEWtyl8TsftsEVaX4uLePc3Tgub+C42
+         vi/XnuZY1aH2XfGy0L5z+ryJQ75szxbgsYY6g6SXnnnd7Jj75Nq4IPY7G7kRbl0ayXYD
+         uxv1a4sfKnqEHTwBN9zBtZjlJB9ijM4yu06Iw=
+From: Kan-Ru Chen <kanru@kanru.info>
+To: Ivan Bulatovic <combuster@gmx.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] drm/i915/tv: After disabling the pipe, use wait_for_vblank_off()
+In-Reply-To: <1282691196.2120.30.camel@localhost.localdomain>
+References: <1282647815.2221.15.camel@localhost.localdomain> <1282662712-20493-1-git-send-email-chris@chris-wilson.co.uk> <1282684130.2199.25.camel@localhost.localdomain> <89k83a$9drtkt@azsmga001.ch.intel.com> <1282691196.2120.30.camel@localhost.localdomain>
+User-Agent: Notmuch/0.3.1-61-g3791a58 (http://notmuchmail.org) Emacs/24.0.50.1 (x86_64-pc-linux-gnu)
+Date: Wed, 25 Aug 2010 17:51:00 +0800
+Message-ID: <87k4nfrpff.fsf@anar.kanru.info>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit f5f96cdad153566dbca9dcfdcf36245319968b0a
-Author: Shérab <Sebastien.Hinderer@ens-lyon.org>
-Date:   Wed Aug 25 11:39:42 2010 +0200
+On Wed, 25 Aug 2010 01:06:36 +0200, Ivan Bulatovic <combuster@gmx.com> wrote:
+> On Tue, 2010-08-24 at 22:52 +0100, Chris Wilson wrote: 
+> > On Tue, 24 Aug 2010 23:08:50 +0200, Ivan Bulatovic <combuster@gmx.com> wrote:
+> > > Unfotunately I still get TV connection detected :(
+> > 
+> > Jesse spotted the root cause and Linus has now pushed that fix for
+> > intel_wait_for_vblank() out. This is just a very minor bug in comparison.
+> > Can you please test against linus/master and check that resolves the
+> > spurious TV detection for you?
+> > Thanks.
+> > 
+> > -- 
+> > Chris Wilson, Intel Open Source Technology Centre
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Spurious TV detection is still here and + I have a new problem with
+> resolution in init3 when KMS fires up, it occupies only 1/3rd of the
+> screen when booting.
 
-    Eurobraille/Iris power off.
-    
-    The Iris machines from EuroBraille do not have APM or ACPI support
-    to shut themselves down properly.  A special I/O sequence is
-    needed to do so.  This modle runs this I/O sequence at
-    kernel shutdown.
-    
-    This is only for Iris machines from EuroBraille.
-    Signed-off-by: Shérab <Sebastien.Hinderer@ens-lyon.org>
+Same here with my Acer 3810T, Intel GM45, the kernel was built from git pulled today.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ac7827f..88bf897 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -493,6 +493,19 @@ config X86_ES7000
- 	  Support for Unisys ES7000 systems.  Say 'Y' here if this kernel is
- 	  supposed to run on an IA32-based Unisys ES7000 system.
- 
-+config X86_32_IRIS
-+	tristate "Eurobraille/Iris poweroff module"
-+	depends on X86_32
-+	---help---
-+	  The Iris machines from EuroBraille do not have APM or ACPI support
-+	  to shut themselves down properly.  A special I/O sequence is
-+	  needed to do so, which is what this module does at
-+	  kernel shutdown.
-+
-+	  This is only for Iris machines from EuroBraille.
-+
-+	  If unused, say N.
-+
- config SCHED_OMIT_FRAME_POINTER
- 	def_bool y
- 	prompt "Single-depth WCHAN output"
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 0925676..98dd1c8 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -115,6 +115,7 @@ obj-$(CONFIG_MICROCODE)			+= microcode.o
- obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
- 
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
-+obj-$(CONFIG_X86_32_IRIS)		+= iris.o
- 
- ###
- # 64 bit specific files
-diff --git a/arch/x86/kernel/iris.c b/arch/x86/kernel/iris.c
-new file mode 100644
-index 0000000..7c8a942
---- /dev/null
-+++ b/arch/x86/kernel/iris.c
-@@ -0,0 +1,66 @@
-+/*
-+ * Eurobraille/Iris power off support.
-+ *
-+ * Eurobraille's Iris machine is a PC with no APM or ACPI support.
-+ * It is shutdown by a special I/O sequence which this module provides.
-+ *
-+ *  Copyright (C) Shérab <Sebastien.Hinderer@ens-lyon.org>
-+ *
-+ * This program is free software ; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation ; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY ; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with the program ; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/pm.h>
-+#include <linux/delay.h>
-+#include <asm/io.h>
-+
-+#define IRIS_GIO_BASE 0x340
-+#define IRIS_GIO_OUTPUT (IRIS_GIO_BASE + 1)
-+#define IRIS_GIO_PULSE 0x80 /* First byte to send */
-+#define IRIS_GIO_REST 0x0 /* Second byte to send */
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Sébastien Hinderer <Sebastien.Hinderer@ens-lyon.org>");
-+MODULE_DESCRIPTION("A power_off handler for Iris devices from EuroBraille");
-+MODULE_SUPPORTED_DEVICE("Eurobraille/Iris");
-+
-+static void (*old_pm_power_off)(void);
-+
-+static void iris_power_off(void)
-+{
-+	outb(IRIS_GIO_PULSE, IRIS_GIO_OUTPUT);
-+	msleep(850);
-+	outb(IRIS_GIO_REST, IRIS_GIO_OUTPUT);
-+}
-+
-+static int iris_init(void)
-+{
-+	old_pm_power_off = pm_power_off;
-+	pm_power_off = &iris_power_off;
-+	printk(KERN_INFO "Iris power_off handler installed.\n");
-+	return 0;
-+}
-+
-+static void iris_exit(void)
-+{
-+	pm_power_off = old_pm_power_off;
-+	printk(KERN_INFO "Iris power_off handler uninstalled.\n");
-+}
-+
-+module_init(iris_init);
-+module_exit(iris_exit);
-+
+v2.6.36-rc2-203-g502adf5
+
+TV1 connected (normal left inverted right x axis y axis)
+   848x480        30.0 +
+   640x480        30.0 +
+   1024x768       30.0  
+   800x600        30.0  
+
+and the fb only occupies 1/3rd of the screen, the fbset output
+
+mode "848x480"
+    geometry 848 480 1366 768 32
+    timings 0 0 0 0 0 0 0
+    rgba 8/16,8/8,8/0,0/0
+endmode
+
+-Kanru
+> 
+> I've tried patching the kernel I used for testing so far with that one
+> liner and I've tried without patches we tried so far (git pull on a
+> clean linux-git) and the symptoms are the same on both of them.
+> 
+> So
+> - PIPE_VBLANK_INTERRUPT_STATUS) == 0,
+> + PIPE_VBLANK_INTERRUPT_STATUS),
+> in intel_display.c doesn't fix the issue, plus it brings a new one in my
+> case.
+> 
+> /edit: had to remove linux-gfx from cc or mail wouldn't send otherwise
+
