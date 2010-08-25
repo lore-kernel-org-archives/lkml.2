@@ -1,227 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab0HYBfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 21:35:09 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:43210 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab0HYBfG (ORCPT
+	id S1755826Ab0HYBhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 21:37:13 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:34109 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752037Ab0HYBhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 21:35:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WcTs44xrTgFuxwwT+GKYARpVRg5ASI5eUBd2AdY8IRKhZTANgO33kZUnShvSLjgqeI
-         vwcvzRYzy0CjhNzAF5iw==
-MIME-Version: 1.0
-In-Reply-To: <20100825100310.ba3fd27e.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTi=imK6Px+JrdVupg2V3jtN9pgmEdWv=+aB1XKLY@mail.gmail.com>
-	<20100825092010.cfe91b1a.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTikD3CFRPo7WvWwCnLQ+jzEs6rUk1sivYM3aRbGJ@mail.gmail.com>
-	<20100825093747.24085b28.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTi=KW_gxbmB14j5opSKL+-JFDFKO1YP6a7yvT8U5@mail.gmail.com>
-	<20100825100310.ba3fd27e.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 24 Aug 2010 18:35:00 -0700
-Message-ID: <AANLkTikuJ9x1u+GC_ox448Fp9wdJ2_GJyu6kNwjOJ9Y=@mail.gmail.com>
-Subject: Re: [PATCH 1/5] cgroup: ID notification call back
-From: Paul Menage <menage@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kamezawa.hiroyuki@gmail.com,
-        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Tue, 24 Aug 2010 21:37:11 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=UrowTb/Gm/7i1nmjUlKc0wsG+Ttq0WfrzSD3+S/xT1C/IzW8V1IddlPKi3fVw1PVY/zcRn1m7ZDv4o2Zb/LukRl9ZI8/3+SaqqC2BhP5HTy5WWlNSYAcsnY/Ejm8tjfm;
+Date: Tue, 24 Aug 2010 18:37:06 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: intel ips: CPU TDP doesn't match expected value
+Message-ID: <20100824183706.27645aa1@virtuousgeek.org>
+In-Reply-To: <4C74686D.8090707@cesarb.net>
+References: <4C74686D.8090707@cesarb.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 6:03 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
->
-> Hmm. How this pseudo code looks like ? This passes "new id" via
-> cgroup->subsys[array] at creation. (Using union will be better, maybe).
->
+On Tue, 24 Aug 2010 21:48:45 -0300
+Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
 
-That's rather ugly. I was thinking of something more like this. (Not
-even compiled yet, and the only subsystem updated is cpuset).
+> I get the following messages on v2.6.36-rc2-203-g502adf5:
+> 
+> intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match expected value 
+> (found 25, expected 35)
+> intel ips 0000:00:1f.6: PCI INT C -> GSI 18 (level, low) -> IRQ 18
+> intel ips 0000:00:1f.6: IPS driver initialized, MCP temp limit 65535
+> intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
+> intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
+> 
+> (The last two messages repeat very often, one of them every five 
+> seconds; if I understand it correctly, that is normal and expected.)
+> 
+> The code implies the "CPU TDP doesn't match expected value" is a sanity 
+> check failing. Should that happen, or is there something wrong?
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ed3e92e..063d9f2 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -458,8 +458,7 @@ void cgroup_release_and_wakeup_rmdir(struct
-cgroup_subsys_state *css);
-  */
+Yeah, it's normal, and should probably be downgraded to an
+informational message.  It just means your BIOS doesn't want you to
+push the CPU all the way up to its maximum TDP, probably because the
+platform or chassis wasn't designed for that much heat or power
+consumption.
 
- struct cgroup_subsys {
--	struct cgroup_subsys_state *(*create)(struct cgroup_subsys *ss,
--						  struct cgroup *cgrp);
-+	int (*create)(struct cgroup_subsys *ss, struct cgroup *cgrp);
- 	int (*pre_destroy)(struct cgroup_subsys *ss, struct cgroup *cgrp);
- 	void (*destroy)(struct cgroup_subsys *ss, struct cgroup *cgrp);
- 	int (*can_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
-@@ -513,6 +512,12 @@ struct cgroup_subsys {
-
- 	/* should be defined only by modular subsystems */
- 	struct module *module;
-+
-+	/* Total size of the subsystem's CSS object */
-+	size_t css_size;
-+
-+	/* If non-NULL, the CSS to use for the root cgroup */
-+	struct cgroup_subsys_state *root_css;
- };
-
- #define SUBSYS(_x) extern struct cgroup_subsys _x ## _subsys;
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 192f88c..c589a41 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3307,6 +3307,7 @@ static long cgroup_create(struct cgroup *parent,
-struct dentry *dentry,
- 			     mode_t mode)
- {
- 	struct cgroup *cgrp;
-+	struct cgroup_subsys_state *new_css[CGROUP_SUBSYS_COUNT] = {};
- 	struct cgroupfs_root *root = parent->root;
- 	int err = 0;
- 	struct cgroup_subsys *ss;
-@@ -3325,6 +3326,16 @@ static long cgroup_create(struct cgroup
-*parent, struct dentry *dentry,
-
- 	mutex_lock(&cgroup_mutex);
-
-+	for_each_subsys(root, ss) {
-+		int id = ss->subsys_id;
-+		new_css[id] = kzalloc(ss->css_size, GFP_KERNEL);
-+		if (!new_css) {
-+			/* Failed to allocate memory */
-+			err = -ENOMEM;
-+			goto err_destroy;
-+		}
-+	}
-+
- 	init_cgroup_housekeeping(cgrp);
-
- 	cgrp->parent = parent;
-@@ -3335,19 +3346,19 @@ static long cgroup_create(struct cgroup
-*parent, struct dentry *dentry,
- 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
-
- 	for_each_subsys(root, ss) {
--		struct cgroup_subsys_state *css = ss->create(ss, cgrp);
--
--		if (IS_ERR(css)) {
--			err = PTR_ERR(css);
--			goto err_destroy;
--		}
--		init_cgroup_css(css, ss, cgrp);
-+		int id = ss->subsys_id;
-+		init_cgroup_css(new_css[id], ss, cgrp);
- 		if (ss->use_id) {
- 			err = alloc_css_id(ss, parent, cgrp);
- 			if (err)
- 				goto err_destroy;
- 		}
--		/* At error, ->destroy() callback has to free assigned ID. */
-+		err = ss->create(ss, cgrp);
-+		if (err) {
-+			free_css_id(ss, css->id);
-+			goto err_destroy;
-+		}
-+		new_css[id] = NULL;
- 	}
-
- 	cgroup_lock_hierarchy(root);
-@@ -3380,7 +3391,10 @@ static long cgroup_create(struct cgroup
-*parent, struct dentry *dentry,
-  err_destroy:
-
- 	for_each_subsys(root, ss) {
--		if (cgrp->subsys[ss->subsys_id])
-+		int id = ss->subsys_id;
-+		if (new_css[id])
-+			kfree(new_css[id]);
-+		else if (cgrp->subsys[id])
- 			ss->destroy(ss, cgrp);
- 	}
-
-@@ -3607,11 +3621,16 @@ static void __init cgroup_init_subsys(struct
-cgroup_subsys *ss)
- 	/* Create the top cgroup state for this subsystem */
- 	list_add(&ss->sibling, &rootnode.subsys_list);
- 	ss->root = &rootnode;
--	css = ss->create(ss, dummytop);
-+	if (ss->root_css)
-+		css = ss->root_css;
-+	else
-+		css = kzalloc(ss->css_size, GFP_KERNEL);
- 	/* We don't handle early failures gracefully */
--	BUG_ON(IS_ERR(css));
-+	BUG_ON(!css);
- 	init_cgroup_css(css, ss, dummytop);
-
-+	BUG_ON(ss->create(ss, dummytop));
-+
- 	/* Update the init_css_set to contain a subsys
- 	 * pointer to this state - since the subsystem is
- 	 * newly registered, all tasks and hence the
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index b23c097..7720a79 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1871,24 +1871,12 @@ static void cpuset_post_clone(struct cgroup_subsys *ss,
-  *	cont:	control group that the new cpuset will be part of
-  */
-
--static struct cgroup_subsys_state *cpuset_create(
--	struct cgroup_subsys *ss,
--	struct cgroup *cont)
-+static int cpuset_create(struct cgroup_subsys *ss, struct cgroup *cont)
- {
--	struct cpuset *cs;
--	struct cpuset *parent;
--
--	if (!cont->parent) {
--		return &top_cpuset.css;
--	}
--	parent = cgroup_cs(cont->parent);
--	cs = kmalloc(sizeof(*cs), GFP_KERNEL);
--	if (!cs)
--		return ERR_PTR(-ENOMEM);
--	if (!alloc_cpumask_var(&cs->cpus_allowed, GFP_KERNEL)) {
--		kfree(cs);
--		return ERR_PTR(-ENOMEM);
--	}
-+	struct cpuset *cs = cgroup_cs(cont);
-+	struct cpuset *parent = cgroup_cs(cont->parent);
-+	if (!alloc_cpumask_var(&cs->cpus_allowed, GFP_KERNEL))
-+		return -ENOMEM;
-
- 	cs->flags = 0;
- 	if (is_spread_page(parent))
-@@ -1903,7 +1891,7 @@ static struct cgroup_subsys_state *cpuset_create(
-
- 	cs->parent = parent;
- 	number_of_cpusets++;
--	return &cs->css ;
-+	return 0;
- }
-
- /*
-@@ -1934,6 +1922,8 @@ struct cgroup_subsys cpuset_subsys = {
- 	.post_clone = cpuset_post_clone,
- 	.subsys_id = cpuset_subsys_id,
- 	.early_init = 1,
-+	.css_size = sizeof(struct cpuset),
-+	.root_css = &top_cpuset.css;
- };
-
- /**
+-- 
+Jesse Barnes, Intel Open Source Technology Center
