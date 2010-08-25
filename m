@@ -1,171 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab0HYQ16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 12:27:58 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52037 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab0HYQ1z (ORCPT
+	id S1752849Ab0HYQaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 12:30:21 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:19410
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752204Ab0HYQaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 12:27:55 -0400
-Date: Wed, 25 Aug 2010 18:28:23 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Alok Kataria <akataria@vmware.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v3] x86, tsc: Remove CPU frequency calibration on AMD
-Message-ID: <20100825162823.GE26438@aftab>
-References: <20100817185634.GA10597@liondog.tnic>
- <20100818161639.GF9880@aftab>
- <4C6C08EC.2080404@zytor.com>
- <20100818173401.GG9880@aftab>
- <1282153895.15158.45.camel@ank32.eng.vmware.com>
- <20100818184534.GA12842@aftab>
- <20100824155305.GA18220@aftab>
- <4C7448A3.2030309@zytor.com>
- <20100825070653.GA25672@aftab>
- <20100825130454.GB4891@loge.amd.com>
+	Wed, 25 Aug 2010 12:30:19 -0400
+X-SpamScore: -26
+X-BigFish: VPS-26(zzbb2dKbb2cK1432N98dN9371Pzz1202hzzz2fh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+Message-ID: <4C7544FA.5030304@am.sony.com>
+Date: Wed, 25 Aug 2010 09:29:46 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825130454.GB4891@loge.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Possible kmemleak issue, but I'm confused
+References: <4C744DC5.3040106@am.sony.com> <1282727985.3650.19.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1282727985.3650.19.camel@e102109-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Reverse-DNS: mail7.fw-bc.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-6b37f5a20c0e5c334c010a587058354215433e92 introduced the CPU frequency
-calibration code for AMD CPUs whose TSCs didn't increment with the
-core's P0 frequency. From F10h, revB onward, however, the TSC increment
-rate is denoted by MSRC001_0015[24] and when this bit is set (which
-should be done by the BIOS) the TSC increments with the P0 frequency
-so the calibration is not needed and booting can be a couple of mcecs
-faster on those machines.
+On 08/25/2010 02:19 AM, Catalin Marinas wrote:
+>> What is the status of this patch relative to linux-next or Linus'
+>> tree?
+> 
+> This patch was merged in 2.6.31-rc1 but parts of it were later dropped
+> in 2.6.34-rc1 (commit 23fb064b) when Tejun removed the legacy percpu
+> allocator. The new percpu allocator in mm/percpu.c uses standard
+> allocation methods like alloc_bootmem or kzalloc and kmemleak handles
+> these already, so no need for extra code in kernel/module.c.
 
-Besides, there should be virtually no machines out there which don't
-have this bit set, therefore this calibration can be safely removed. It
-is a shaky hack anyway since it assumes implicitly that the core is in
-P0 when BIOS hands off to the OS, which might not always be the case.
+OK.  This is just the information I needed.  Thanks.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/amd.c |   17 +++++++++++++
- arch/x86/kernel/tsc.c     |   58 ---------------------------------------------
- 2 files changed, 17 insertions(+), 58 deletions(-)
+>> Our solution was just to make these specific calls to kmemleak_alloc
+>> and kmemleak_free (in module.c) compile-time configurable.
+>> I suspect that there is a better way to do this -- possibly by
+>> detecting or noting that this situation exists for certain
+>> platforms, and avoiding it without specific user interaction.
+> 
+> For the 2.6.29 kernel (not mainline), you could have it compile-time
+> configurable. Another option would be to hack create_object() in
+> mm/kmemleak.c to not call kmemleak_stop("Cannot insert ..."), though
+> this method could potentially hide other problems with kmemleak
+> callbacks.
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index ba5f62f..fc563fa 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -412,6 +412,23 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
- 	}
- #endif
-+
-+	/* We need to do the following only once */
-+	if (c != &boot_cpu_data)
-+		return;
-+
-+	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
-+
-+		if (c->x86 > 0x10 ||
-+		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
-+			u64 val;
-+
-+			rdmsrl(MSR_K7_HWCR, val);
-+			if (!(val & BIT(24)))
-+				printk(KERN_WARNING FW_BUG "TSC doesn't count "
-+					"with P0 frequency!\n");
-+		}
-+	}
- }
- 
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index ce8e502..13b6a6c 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -854,60 +854,6 @@ static void __init init_tsc_clocksource(void)
- 	clocksource_register_khz(&clocksource_tsc, tsc_khz);
- }
- 
--#ifdef CONFIG_X86_64
--/*
-- * calibrate_cpu is used on systems with fixed rate TSCs to determine
-- * processor frequency
-- */
--#define TICK_COUNT 100000000
--static unsigned long __init calibrate_cpu(void)
--{
--	int tsc_start, tsc_now;
--	int i, no_ctr_free;
--	unsigned long evntsel3 = 0, pmc3 = 0, pmc_now = 0;
--	unsigned long flags;
--
--	for (i = 0; i < 4; i++)
--		if (avail_to_resrv_perfctr_nmi_bit(i))
--			break;
--	no_ctr_free = (i == 4);
--	if (no_ctr_free) {
--		WARN(1, KERN_WARNING "Warning: AMD perfctrs busy ... "
--		     "cpu_khz value may be incorrect.\n");
--		i = 3;
--		rdmsrl(MSR_K7_EVNTSEL3, evntsel3);
--		wrmsrl(MSR_K7_EVNTSEL3, 0);
--		rdmsrl(MSR_K7_PERFCTR3, pmc3);
--	} else {
--		reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i);
--		reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
--	}
--	local_irq_save(flags);
--	/* start measuring cycles, incrementing from 0 */
--	wrmsrl(MSR_K7_PERFCTR0 + i, 0);
--	wrmsrl(MSR_K7_EVNTSEL0 + i, 1 << 22 | 3 << 16 | 0x76);
--	rdtscl(tsc_start);
--	do {
--		rdmsrl(MSR_K7_PERFCTR0 + i, pmc_now);
--		tsc_now = get_cycles();
--	} while ((tsc_now - tsc_start) < TICK_COUNT);
--
--	local_irq_restore(flags);
--	if (no_ctr_free) {
--		wrmsrl(MSR_K7_EVNTSEL3, 0);
--		wrmsrl(MSR_K7_PERFCTR3, pmc3);
--		wrmsrl(MSR_K7_EVNTSEL3, evntsel3);
--	} else {
--		release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
--		release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
--	}
--
--	return pmc_now * tsc_khz / (tsc_now - tsc_start);
--}
--#else
--static inline unsigned long calibrate_cpu(void) { return cpu_khz; }
--#endif
--
- void __init tsc_init(void)
- {
- 	u64 lpj;
-@@ -926,10 +872,6 @@ void __init tsc_init(void)
- 		return;
- 	}
- 
--	if (cpu_has(&boot_cpu_data, X86_FEATURE_CONSTANT_TSC) &&
--			(boot_cpu_data.x86_vendor == X86_VENDOR_AMD))
--		cpu_khz = calibrate_cpu();
--
- 	printk("Detected %lu.%03lu MHz processor.\n",
- 			(unsigned long)cpu_khz / 1000,
- 			(unsigned long)cpu_khz % 1000);
--- 
-1.7.1
+We'll stick with our compile-time option, then, and it sounds
+like when we upgrade our kernel version we won't need to worry
+about this issue.
 
--- 
-Regards/Gruss,
-Boris.
+Thanks very much!  kmemleak is cool. :-)
+ -- Tim
 
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Linux Forum
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
