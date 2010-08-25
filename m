@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab0HYJIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:08:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47741 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752145Ab0HYJI1 (ORCPT
+	id S1752855Ab0HYJKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:10:08 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:44476 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab0HYJKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:08:27 -0400
-Subject: Re: [PATCH 0/3] Generalise ARM perf-events backend for oprofile
-From: Will Deacon <will.deacon@arm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <1282700516.22370.567.camel@pasglop>
-References: <1282560381-7700-1-git-send-email-matt@console-pimps.org>
-	 <20100823105759.GA18638@infradead.org> <1282700516.22370.567.camel@pasglop>
+	Wed, 25 Aug 2010 05:10:05 -0400
+Subject: Re: [PATCH] workqueue: fix cwq->nr_active underflow
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C74D9E4.5070403@kernel.org>
+References: <4C74D9E4.5070403@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Aug 2010 10:07:22 +0100
-Message-ID: <1282727242.5727.7.camel@e102144-lin.cambridge.arm.com>
+Date: Wed, 25 Aug 2010 11:11:41 +0200
+Message-ID: <1282727501.3685.7.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Aug 2010 09:07:26.0732 (UTC) FILETIME=[F0188CC0:01CB4434]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben,
-
-On Wed, 2010-08-25 at 02:41 +0100, Benjamin Herrenschmidt wrote:
-> On Mon, 2010-08-23 at 06:57 -0400, Christoph Hellwig wrote:
-> > On Mon, Aug 23, 2010 at 11:46:18AM +0100, Matt Fleming wrote:
-> > > The perf-events backend for OProfile that Will Deacon wrote in
-> > > 8c1fc96f6fd1f361428ba805103af0d0eee65179 ("ARM: 6072/1: oprofile: use
-> > > perf-events framework as backend") is of use to more architectures
-> > > than just ARM. Move the code into drivers/oprofile/ so that SH can use
-> > > it instead of the nearly identical copy of its OProfile code.
-> >
-> > Nice, I didn't know such a backend already existed.  Now that you
-> > have made it generic we should aim towards making it the only oprofile
-> > backend and getting rid of all the duplication.
+On Wed, 2010-08-25 at 10:52 +0200, Tejun Heo wrote:
+> cwq->nr_active is used to keep track of how many work items are active
+> for the cpu workqueue, where 'active' is defined as either pending on
+> global worklist or executing.  This is used to implement the
+> max_active limit and workqueue freezing.  If a work item is queued
+> after nr_active has already reached max_active, the work item doesn't
+> increment nr_active and is put on the delayed queue and gets activated
+> later as previous active work items retire.
 > 
-> Even better would be to do the surgery at a higher level and provide the
-> oprofile API without the oprofile buffer management. My experience is
-> that it doesn't scale, and on heavily threaded large SMP setup, there is
-> an enormous amount of time wasted contending on the global oprofile
-> buffer mutex.
+> try_to_grab_pending() which is used in the cancellation path
+> unconditionally decremented nr_active whether the work item being
+> cancelled is currently active or delayed, so cancelling a delayed work
+> item makes nr_active underflow.  This breaks max_active enforcement
+> and triggers BUG_ON() in destroy_workqueue() later on.
 > 
-Ideally, the OProfile userspace tools would talk native perf and we
-could do away with oprofilefs and the oprofile buffer altogether.
-Compatibility with the old [read current] OProfile tools can be
-maintained using these patches until the API is deprecated.
+> This patch fixes this bug by adding a flag WORK_STRUCT_DELAYED, which
+> is set while a work item in on the delayed list and making
+> try_to_grab_pending() decrement nr_active iff the work item is
+> currently active.
+> 
+> The addition of the flag enlarges cwq alignment to 256 bytes which is
+> getting a bit too large.  It's scheduled to be reduced back to 128
+> bytes by merging WORK_STRUCT_PENDING and WORK_STRUCT_CWQ in the next
+> devel cycle.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Johannes Berg <johannes@sipsolutions.net>
+> ---
+> Johannes, although I don't have your confirmation yet, my simple test
+> case confirms the bug and fix, so I'm pushing it out.  Please let me
+> know if you can confirm the fix.
 
-Or is that a bit too optimistic? :)
+Thanks Tejun. Come to think of it, since it's an underflow it should be
+easier for me to change the BUG_ON into a printk + BUG_ON() to print out
+the current value, and then reproduce -- that way I'll know when I hit
+the situation, which isn't trivial, and also whether I hit the
+underflow. Does that sound like a good thing to try to you?
 
-Will
-
+johannes
 
