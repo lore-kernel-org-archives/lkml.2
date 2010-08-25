@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab0HYSZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:25:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1167 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab0HYSZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:25:20 -0400
-Date: Wed, 25 Aug 2010 20:22:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org
-Subject: Re: [RFC V2 PATCH 3/3] timer: warn when del_timer_sync() used in
-	hardirq context
-Message-ID: <20100825182204.GB22671@redhat.com>
-References: <1282743959-5427-1-git-send-email-yong.zhang0@gmail.com> <1282743959-5427-4-git-send-email-yong.zhang0@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282743959-5427-4-git-send-email-yong.zhang0@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752611Ab0HYSZo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 14:25:44 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:37261 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab0HYSZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 14:25:43 -0400
+Subject: Re: [RFC patch (against wireless-next)] include/net/cfg80211.h:
+ wiphy_<level> messages use dev_printk
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Joe Perches <joe@perches.com>, linux-wireless@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100825180129.GK2557@tuxdriver.com>
+References: <1282245848.6724.261.camel@Joe-Laptop>
+	 <1282246784.4507.14.camel@jlt3.sipsolutions.net>
+	 <1282342439.1960.84.camel@Joe-Laptop> <20100825180129.GK2557@tuxdriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Aug 2010 20:25:36 +0200
+Message-ID: <1282760736.3667.9.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25, Yong Zhang wrote:
->
-> From: Yong Zhang <yong.zhang@windriver.com>
->
-> Add explict warning to prevent del_timer_sync() from using
-> in hardirq context.
+On Wed, 2010-08-25 at 14:01 -0400, John W. Linville wrote:
 
-Agreed, del_timer_sync() from softirq should be OK.
+> > "<level>dev_driver_string(&wiphy->dev) dev_name(&wiphy->dev): wiphy_name(wiphy): " fmt, ##args
+> > 
+> > for instance:
+> > 
+> > [   41.261941] ieee80211 phy0: phy0: Selected rate control algorithm 'minstrel_ht'
+> > 
+> > ie: redundant.
+> > wiphy_name(wiphy) is an inline for dev_name(&wiphy->dev)
+> > 
+> > So it's appropriate to use:
+> > 
+> > #define wiphy_<level>(wiphy, fmt, arg...) dev_<level>(&wiphy->dev, fmt, ##arg) 
+> > 
+> > and the output becomes:
+> > 
+> > [   41.261941] ieee80211 phy0: Selected rate control algorithm 'minstrel_ht'
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> 
+> Everyone OK w/ this version?
 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> ---
->  kernel/timer.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 08c9559..1bc4b4a 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -996,7 +996,11 @@ int del_timer_sync(struct timer_list *timer)
->  	lock_map_release(&timer->lockdep_map);
->  	local_bh_enable();
->  #endif
-> -
-> +	/*
-> +	 * don't use it in hardirq context, because it
-> +	 * could lead to deadlock.
-> +	 */
-> +	WARN_ON(in_irq());
->  	for (;;) {
->  		int ret = try_to_del_timer_sync(timer);
->  		if (ret >= 0)
-> -- 
-> 1.7.0.4
-> 
+I don't care much :)
+
+johannes
+
 
