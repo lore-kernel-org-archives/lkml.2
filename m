@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab0HYOPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 10:15:10 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:50721 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab0HYOPH convert rfc822-to-8bit (ORCPT
+	id S1754013Ab0HYOPO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 10:15:14 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44678 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab0HYOPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 10:15:07 -0400
-X-SENDER-IP: [213.163.128.203]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At8CAAfCdEzVo4DLjWdsb2JhbACTOYw5UhUBAQEBCRUHFB+qB4hhiQeCew0Bgi4EjTCENQE
-X-IronPort-AV: E=Sophos;i="4.56,268,1280700000"; 
-   d="scan'208";a="1663548830"
-Message-ID: <9979819.4288481282745703984.JavaMail.root@webmail1.glocalnet.net>
-Date: Wed, 25 Aug 2010 16:15:03 +0200 (CEST)
-From: <help@comhem.se>
-Reply-To: service.maintenance.update2010@gmail.com
-Subject: =?ISO-8859-1?Q?B=E4ste_anv=E4ndare_Com_Hem_webbmail?=
+	Wed, 25 Aug 2010 10:15:10 -0400
+Date: Wed, 25 Aug 2010 19:45:00 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "menage@google.com" <menage@google.com>,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 1/5] cgroup: do ID allocation under css allocator.
+Message-ID: <20100825141500.GA32680@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100825170640.5f365629.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100825170640.5f365629.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-25 17:06:40]:
 
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Now, css'id is allocated after ->create() is called. But to make use of ID
+> in ->create(), it should be available before ->create().
+> 
+> In another thinking, considering the ID is tightly coupled with "css",
+> it should be allocated when "css" is allocated.
+> This patch moves alloc_css_id() to css allocation routine. Now, only 2 subsys,
+> memory and blkio are useing ID. (To support complicated hierarchy walk.)
+                       ^^^^ typo
+> 
+> ID will be used in mem cgroup's ->create(), later.
+> 
+> Note:
+> If someone changes rules of css allocation, ID allocation should be moved too.
+> 
 
+What rules? could you please elaborate?
 
-Bäste användare Com Hem webbmail,
-Det här meddelandet är från Com Hem uppgraderingen grupp ? Web post centrum meddelandetjänster webmail användare. Vi uppdaterar för närvarande vår grundläggande data och e-post centrum. Vi avbryter alla oanvända Com Hem Webmail-konto för att skapa mer utrymme för nya e-post och en snabb och lätt ansökan snabbt och enkelt åt ditt e-post.
+Seems cleaner, may be we need to update cgroups.txt?
 
-Du är skyldig att omedelbart kontrollera och uppdatera din e-post som bekräftar din e-post identitet. Detta kommer att skydda din e-post från avslutats under denna exercise.In för att bekräfta uppdatera din e-post, måste du lämna följande information, bekräfta din e-postadress nedan identitet
-
-Registration förnamn:
-Efternamn:
-Användarnamn E-post:
-E-post Lösenord:
-Login ID
-
-Varning! Com Hem Webb postanvändare som vägrar att kontrollera och uppdatera sin e-post inom sju dagar efter detta tillkännagivande, kommer hans / hennes e-postadress avslutas Permanently.Thank du använder Com Hem Webmail uppgradering grupp ?
-Webbmail! Tillgång Antal: 859480KBM
-
-Management E-post uppgradering grupp ?
-Webbmail Center Com Hem COPYRIGHT © 2010 All Right Reserved
+-- 
+	Three Cheers,
+	Balbir
