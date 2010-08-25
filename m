@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab0HYCFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 22:05:54 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42640 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab0HYCFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 22:05:51 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] tcp: select(writefds) don't hang up when a peer close connection
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Message-Id: <20100825110049.F3C9.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S932288Ab0HYCHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 22:07:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46080 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932087Ab0HYCHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 22:07:07 -0400
+Date: Wed, 25 Aug 2010 12:06:52 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andreas Dilger <andreas.dilger@oracle.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>,
+        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
+        "philippe.deniel@CEA.FR" <philippe.deniel@CEA.FR>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
+Message-ID: <20100825120652.1a183152@notabene>
+In-Reply-To: <m3r5hqjb5f.fsf@linux.vnet.ibm.com>
+References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100820083057.GA10039@infradead.org>
+	<20100820195303.20b17210@notabene>
+	<20100820115135.GQ31363@ZenIV.linux.org.uk>
+	<20100821100900.4b15fe08@notabene>
+	<17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
+	<20100823090604.6c735c80@notabene>
+	<m3r5hqjb5f.fsf@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 25 Aug 2010 11:05:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This issue come from ruby language community. Below test program
-hang up when only run on Linux.
+On Mon, 23 Aug 2010 08:19:48 +0530
+"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-	% uname -mrsv
-	Linux 2.6.26-2-486 #1 Sat Dec 26 08:37:39 UTC 2009 i686
-	% ruby -rsocket -ve '
-	BasicSocket.do_not_reverse_lookup = true
-	serv = TCPServer.open("127.0.0.1", 0)
-	s1 = TCPSocket.open("127.0.0.1", serv.addr[1])
-	s2 = serv.accept
-	s2.close
-	s1.write("a") rescue p $!
-	s1.write("a") rescue p $!
-	Thread.new {
-	  s1.write("a")
-	}.join'
-	ruby 1.9.3dev (2010-07-06 trunk 28554) [i686-linux]
-	#<Errno::EPIPE: Broken pipe>
-	[Hang Here]
+> On Mon, 23 Aug 2010 09:06:04 +1000, Neil Brown <neilb@suse.de> wrote:
+> > [[ Following this approach I would like to avoid any filehandle-specific
+> > syscalls altogether.
+> > Just use a *at syscall with AT_FILE_HANDLE for filehandle lookup, and use
+> > getxattr('system:linux.file_handle') to get the filehandle for a given path.
+> > 
+> > Ofcourse we would need to at *at versions of the *xattr syscalls, but that is
+> > probably a good idea anyway.
+> > ]]
+> 
+> sys_setxattrat would take 7 arguments.
+>
 
-FreeBSD, Solaris, Mac doesn't. because Ruby's write() method call
-select() internally. and tcp_poll has a bug.
+I count 6 - assuming we share the 'flags' argument.  There are only 2 xattr
+flags currently so there should be room to share.
 
-SUS defined 'ready for writing' of select() as following.
+  dirfd  path name value size flags == 6
 
-|  A descriptor shall be considered ready for writing when a call to an output
-|  function with O_NONBLOCK clear would not block, whether or not the function
-|  would transfer data successfully.
-
-That said, EPIPE situation is clearly one of 'ready for writing'.
-
-We don't have read-side issue because tcp_poll() already has read side
-shutdown care.
-
-|        if (sk->sk_shutdown & RCV_SHUTDOWN)
-|                mask |= POLLIN | POLLRDNORM | POLLRDHUP;
-
-So, Let's insert same logic in write side.
-
-- reference url
-  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31065
-  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31068
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- net/ipv4/tcp.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 176e11a..2497e48 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -451,7 +451,8 @@ unsigned int tcp_poll(struct file *file, struct socket *sock, poll_table *wait)
- 				if (sk_stream_wspace(sk) >= sk_stream_min_wspace(sk))
- 					mask |= POLLOUT | POLLWRNORM;
- 			}
--		}
-+		} else
-+			mask |= POLLOUT | POLLWRNORM;
- 
- 		if (tp->urg_data & TCP_URG_VALID)
- 			mask |= POLLPRI;
--- 
-1.6.5.2
-
-
-
+NeilBrown
