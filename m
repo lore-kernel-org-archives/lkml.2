@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab0HYLbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 07:31:20 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59756 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752969Ab0HYLbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 07:31:17 -0400
-Message-ID: <4C74FF25.3060200@fusionio.com>
-Date: Wed, 25 Aug 2010 13:31:49 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Ric Wheeler <rwheeler@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1753156Ab0HYLfr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 07:35:47 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34903 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab0HYLfo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 07:35:44 -0400
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: David Rientjes <rientjes@google.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "chris.mason@oracle.com" <chris.mason@oracle.com>,
-        "swhiteho@redhat.com" <swhiteho@redhat.com>,
-        "konishi.ryusuke@lab.ntt.co.jp" <konishi.ryusuke@lab.ntt.co.jp>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "vst@vlnb.net" <vst@vlnb.net>, "jack@suse.cz" <jack@suse.cz>,
-        "hare@suse.de" <hare@suse.de>
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
-  sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100820132214.GA6184@lst.de> <4C6E9CAF.5010202@redhat.com> <4C7269E9.9070304@kernel.org> <20100823124815.GA20095@lst.de> <4C727E96.5020801@redhat.com> <4C727F2B.6060501@fusionio.com> <20100823140823.GA23490@lst.de>
-In-Reply-To: <20100823140823.GA23490@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100825112433.GB4453@thunk.org>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+	 <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com>
+	 <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+	 <20100825112433.GB4453@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 25 Aug 2010 13:35:32 +0200
+Message-ID: <1282736132.2605.3563.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-23 16:08, Christoph Hellwig wrote:
-> On Mon, Aug 23, 2010 at 04:01:15PM +0200, Jens Axboe wrote:
->> The problem purely exists on arrays that report write back cache enabled
->> AND don't implement SYNC_CACHE as a noop. Do any of them exist, or are
->> they purely urban legend?
-> 
-> I haven't seen it.  I don't care particularly about this case, but once
-> it a while people want to disable flushing for testing or because they
-> really don't care.
-> 
-> What about adding a sysfs attribue to every request_queue that allows
-> disabling the cache flushing feature?  Compared to the barrier option
-> this controls the feature at the right level and makes it available
-> to everyone instead of beeing duplicated.  After a while we can then
-> simply ignore the barrier/nobarrier options.
+On Wed, 2010-08-25 at 07:24 -0400, Ted Ts'o wrote:
+> Part of the problem is that we have a few places in the kernel where
+> failure is really not an option --- or rather, if we're going to fail
+> while we're in the middle of doing a commit, our choices really are
+> (a) retry the loop in the jbd layer (which Andrew really doesn't
+> like), (b) keep our own private cache of free memory so we don't fail
+> and/or loop, (c) fail the file system and mark it read-only, or (d)
+> panic. 
 
-Agree, that would be fine.
-
--- 
-Jens Axboe
-
+d) do the allocation before you're committed to going fwd and can still
+fail and back out.
