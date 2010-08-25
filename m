@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab0HYHGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:06:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48715 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab0HYHGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 03:06:44 -0400
-Message-ID: <4C74C0FA.3010304@zytor.com>
-Date: Wed, 25 Aug 2010 00:06:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1751948Ab0HYHMB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:12:01 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48514 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab0HYHL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 03:11:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=Mxuy55BilTKLsAwpzNFCyYgE+f3BlpUtQB/+lA8h51ns+mHtBVKHH7DAT7KV4TrVvk
+         Vdsr+G2CUXUeCUvnIoHEB1XcBUWksLye66Nanff/QhGTjQqkj40rHtQXYVbZaAA0wj5H
+         xBswApxIPHpkFEwRvoDPOE0lYFX+qOzoOBBqY=
+Date: Wed, 25 Aug 2010 09:11:35 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Sage Weil <sage@newdream.net>
+Cc: Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] ceph: ceph_get_inode() returns an ERR_PTR
+Message-ID: <20100825071135.GO29330@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Sage Weil <sage@newdream.net>,
+	Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-To: Borislav Petkov <borislav.petkov@amd.com>
-CC: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: fix CONFIG_VMSPLIT_1G and 2G_OPT trampoline
-References: <alpine.LSU.2.00.1008242235120.2515@sister.anvils> <20100825063041.GA25259@aftab>
-In-Reply-To: <20100825063041.GA25259@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2010 11:30 PM, Borislav Petkov wrote:
-> From: Hugh Dickins <hughd@google.com>
-> Date: Wed, Aug 25, 2010 at 01:44:12AM -0400
-> 
->> rc2 kernel crashes when booting second cpu on this CONFIG_VMSPLIT_2G_OPT
->> laptop: whereas cloning from kernel to low mappings pgd range does need
->> to limit by both KERNEL_PGD_PTRS and KERNEL_PGD_BOUNDARY, cloning kernel
->> pgd range itself must not be limited by the smaller KERNEL_PGD_BOUNDARY.
-> 
-> Yep, makes sense.
-> 
-> In looking around for other swapper_pg_dir manipulations, there's this
-> piece in <arch/x86/kernel/reboot.c:machine_real_restart()>:
-> 
->        /* Remap the kernel at virtual address zero, as well as offset zero
->           from the kernel segment.  This assumes the kernel segment starts at
->           virtual address PAGE_OFFSET. */
->        memcpy(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
->                sizeof(swapper_pg_dir [0]) * KERNEL_PGD_PTRS);
-> 
-> and we're cloning to low mappings here but still take KERNEL_PGD_PTRS.
-> 
-> In the CONFIG_VMSPLIT_2G_OPT case, KERNEL_PGD_BOUNDARY and
-> KERNEL_PGD_PTRS are 480 and 544, respectively, and IINM, and we end up
-> overwriting the virtual mappings beginning at PAGE_OFFSET.
-> 
-> I guess this doesn't matter on reboot or am I missing something else?
-> 
+ceph_get_inode() returns an ERR_PTR and it doesn't return a NULL.
 
-It doesn't matter on reboot, but the right thing would be to switch to
-the trampoline page table here.  Same with suspend.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
+index 5d893d3..1e623ec 100644
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -1229,11 +1229,11 @@ retry_lookup:
+ 			in = dn->d_inode;
+ 		} else {
+ 			in = ceph_get_inode(parent->d_sb, vino);
+-			if (in == NULL) {
++			if (IS_ERR(in)) {
+ 				dout("new_inode badness\n");
+ 				d_delete(dn);
+ 				dput(dn);
+-				err = -ENOMEM;
++				err = PTR_ERR(in);
+ 				goto out;
+ 			}
+ 			dn = splice_dentry(dn, in, NULL);
