@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab0HYJzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 05:55:44 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46191 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752696Ab0HYJzm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 05:55:42 -0400
-Date: Wed, 25 Aug 2010 11:08:13 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Samo Pogacnik <samo_pogacnik@t-2.net>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-Message-ID: <20100825110813.5f7d7ac8@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100825004134.GA28884@suse.de>
-References: <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
-	<1282683470.8020.66.camel@itpsd6lap>
-	<20100824211016.GA7176@suse.de>
-	<1282687797.8020.108.camel@itpsd6lap>
-	<20100824222035.GA10625@suse.de>
-	<1282690232.8020.116.camel@itpsd6lap>
-	<20100824225703.GA5913@suse.de>
-	<20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
-	<20100824231241.GA6971@suse.de>
-	<20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
-	<20100825004134.GA28884@suse.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753200Ab0HYJ7m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 05:59:42 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:38917 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752069Ab0HYJ7j convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 05:59:39 -0400
+From: Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>
+To: "cheiny@synaptics.com" <cheiny@synaptics.com>,
+        "axiong@synaptics.com" <axiong@synaptics.com>,
+        "wmanson@synaptics.com" <wmanson@synaptics.com>,
+        "j.de.gram@gmail.com" <j.de.gram@gmail.com>
+Cc: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Pradeepkumar Kumar SUJUAR <pradeep.kumar.sujuar@stericsson.com>,
+        Sundar R IYER <sundar.iyer@stericsson.com>
+Date: Wed, 25 Aug 2010 11:29:39 +0200
+Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
+Thread-Topic: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen
+ Driver
+Thread-Index: ActEOAqhc3a2M+sISua645Q6PgSeCg==
+Message-ID: <81C3A93C17462B4BBD7E272753C1057916DE5281A0@EXDCVYMBSTM005.EQ1STM.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Do you want to be able to flip between a real debug interface and a
-> > logging device on the same software set without risking changing behaviour
-> 
-> I don't understand this point.
+Hi Christopher,
 
-A tty has a very specific set of behaviours simply by being a tty. Some
-applications rely upon them so being able to flip between the two
-interfaces is useful.
+Some generic review comments for this patch
 
-> > Do you want to load a 70K daemon and an initrd or burn about 1.5K on a
-> > kernel interface ?
-> 
-> I'd rather burn 0K on the one we have today :)
+1. Normally, defconfig should be a separate patch. You need not
+post the entire defconfig, but only the changes to the Makefiles and
+the Kconfig files.
 
-So say "N" when configuring
+2. All RMI specific files can be moved to a separate driver folder
+in input/ like drivers/input/rmi/*.
 
-> Seriously, look at how Fedora 14 handles this, why can't you do the same
-> for embedded systems all from userspace, no additional code needed
-> anywhere.
+3. Lots of Hungarian notation in the code. Please refer this snippet.
+ 
+>------------------------------------
+>CODE CONTAINS HUNGARIAN NOTATION
+>
+>Some coding guidlines at some companies require that you type the name 
+>of your variables using the infamous hungarian notation:
+>http://en.wikipedia.org/wiki/Hungarian_notation
+>
+>We have an internal coding guideline that touches on the
+>subject:
+>http://swadvice.lud.stericsson.com/guideline.aspx?nr=57&ver=latest
+>
+>According to the Linux kernel inventor Linus Torvalds in his document 
+>Documentation/CodingStyle in the Linux kernel:
+>
+>"Encoding the type of a function into the name (so-called Hungarian
+>notation) is brain damaged-the compiler knows the types anyway and can 
+>check those, and it only confuses the programmer."
+>
+>Remove all instances of hungariang notation in the code please.
+>Includes prefixing pointers with p_*, naming structs with s_*, enums 
+>with e_*, suffixes like *32b etc etc.
+>-----------------------------------
+>
 
-Its a whole set of extra processes and daemons and stuff, and
-minimally uses something like 70K even if its very compact (8K stack, 40K+
-page tables, 16K of buffers, code, data) - oh and I forgot the fifo
-buffering and pty cost - so its near 100K. 1.5K v 100K - for something
-1.5K of kernel code that anyone else can turn off and would be off by
-default ?
+We are also using the Synaptics RMI4 touch pad on our U8500 platform. 
+We had to make some changes to these posted drivers to make it work on 
+our platform. Also, we modified the touch screen driver to be compliant 
+to the kernel coding guidelines, but as a stand alone driver though.
 
-On a lot of embedded systems you don't have all the stuff Fedora carts
-around. No modules, initrds, magic front end processes, graphical startup
-daemons etc, all of which work to produce that feature IFF you have pty
-support in your kernel, and for the current code also glibc.
-
-You also want errors to get out (or stored) even if there are crashes -
-which the Fedora one is not very good at. To be fair in the Fedora world
-its not a big deal to say 'Oh dear, boot with ....'. Embedded isn't the
-same, and you want to capture the odd rare error reliably.
-
-Alan
+I will soon post out an RFC for our patch which we got working on our board. 
+Please do have a look and we would like you guys to incorporate these changes 
+into your final patch sets as well, so that we can avoid any re-works later on 
+when your patch set gets merged into the mainline kernel.
 
 
+Cheers!
+Naveen
