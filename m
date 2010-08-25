@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab0HYWun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 18:50:43 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:35693 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab0HYWuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 18:50:39 -0400
-Date: Thu, 26 Aug 2010 00:50:36 +0200
-From: Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>,
-        Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-Message-ID: <20100825225036.GV4762@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>,
-	Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
-References: <20100825094925.GA3632@pema> <20100825161214.GA15087@rhlx01.hs-esslingen.de> <20100825211257.GA636@pema> <4C7588FB.4050001@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C7588FB.4050001@zytor.com>
-User-Agent: Mutt/1.5.12-2006-07-14
+	id S1753397Ab0HYW6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 18:58:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34891 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752501Ab0HYW6w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 18:58:52 -0400
+Date: Wed, 25 Aug 2010 15:58:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+Message-Id: <20100825155814.25c783c7.akpm@linux-foundation.org>
+In-Reply-To: <1282310110.2605.976.camel@laptop>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	<1282310110.2605.976.camel@laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin, le Wed 25 Aug 2010 14:19:55 -0700, a écrit :
-> At that point I'd almost prefer doing something like a BIOS signature
-> check if we can't do anything better.
+On Fri, 20 Aug 2010 15:15:10 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Well, there will be several versions of the BIOS signature, which the
-constructor is not likely to provide.
+> On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
+> > Hello everyone,
+> > 
+> > The following patchset implements a Contiguous Memory Allocator.  For
+> > those who have not yet stumbled across CMA an excerpt from
+> > documentation:
+> > 
+> >    The Contiguous Memory Allocator (CMA) is a framework, which allows
+> >    setting up a machine-specific configuration for physically-contiguous
+> >    memory management. Memory for devices is then allocated according
+> >    to that configuration.
+> > 
+> >    The main role of the framework is not to allocate memory, but to
+> >    parse and manage memory configurations, as well as to act as an
+> >    in-between between device drivers and pluggable allocators. It is
+> >    thus not tied to any memory allocation method or strategy.
+> > 
+> > For more information please refer to the second patch from the
+> > patchset which contains the documentation.
+> 
+> So the idea is to grab a large chunk of memory at boot time and then
+> later allow some device to use it?
+> 
+> I'd much rather we'd improve the regular page allocator to be smarter
+> about this. We recently added a lot of smarts to it like memory
+> compaction, which allows large gobs of contiguous memory to be freed for
+> things like huge pages.
+> 
+> If you want guarantees you can free stuff, why not add constraints to
+> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
+> certain region, those pages are easily freed/moved aside to satisfy
+> large contiguous allocations.
 
-Just to make sure there's no misunderstanding: it was never planned that
-this driver be loaded unless some manual intervention, like explicitly
-loadling the module or setting some parameter, so that if bad effects
-happen on the machine, the user can only get angry at himself for having
-loaded by hand a random module without reading the documentation that
-explicitly says (twice) it's only for a particular kind of hardware.
+That would be good.  Although I expect that the allocation would need
+to be 100% rock-solid reliable, otherwise the end user has a
+non-functioning device.  Could generic core VM provide the required level
+of service?
 
-I however now realize that I don't find a way to force a driver to be
-compiled only as a module.  If there isn't, I guess we can just add
-a module parameter to enable/disable the driver, so that it won't be
-active by default even compiled-in?
+Anyway, these patches are going to be hard to merge but not impossible.
+Keep going.  Part of the problem is cultural, really: the consumers of
+this interface are weird dinky little devices which the core MM guys
+tend not to work with a lot, and it adds code which they wouldn't use.
 
-Samuel
+I agree that having two "contiguous memory allocators" floating about
+on the list is distressing.  Are we really all 100% diligently certain
+that there is no commonality here with Zach's work?
+
+I agree that Peter's above suggestion would be the best thing to do. 
+Please let's take a look at that without getting into sunk cost
+fallacies with existing code!
+
+It would help (a lot) if we could get more attention and buyin and
+fedback from the potential clients of this code.  rmk's feedback is
+valuable.  Have we heard from the linux-media people?  What other
+subsystems might use it?  ieee1394 perhaps?  Please help identify
+specific subsystems and I can perhaps help to wake people up.
+
+And I agree that this code (or one of its alternatives!) would benefit
+from having a core MM person take a close interest.  Any volunteers?
+
+Please cc me on future emails on this topic?
