@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab0HYNUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 09:20:50 -0400
-Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:51062 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752468Ab0HYNUs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 09:20:48 -0400
-X-AuditID: 12074423-b7b19ae0000059ef-70-4c75189c4ed1
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and kzalloc
-Mime-Version: 1.0 (Apple Message framework v1081)
+	id S1753620Ab0HYNV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 09:21:57 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50185 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752685Ab0HYNVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 09:21:55 -0400
+Date: Wed, 25 Aug 2010 14:22:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH] ASoC: pxa-ssp: fix a memory leak in pxa_ssp_remove()
+Message-ID: <20100825132212.GB1102@opensource.wolfsonmicro.com>
+References: <1282726751.5051.4.camel@mola>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <1282740778.2605.3652.camel@laptop>
-Date: Wed, 25 Aug 2010 09:20:37 -0400
-Cc: David Rientjes <rientjes@google.com>, Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E25A6DCB-3188-4CF9-9DC4-631192B2F0E2@mit.edu>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org> <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org>  <1282740516.2605.3644.camel@laptop> <1282740778.2605.3652.camel@laptop>
-To: Peter Zijlstra <peterz@infradead.org>
-X-Mailer: Apple Mail (2.1081)
-X-Brightmail-Tracker: AAAAAA==
+Content-Disposition: inline
+In-Reply-To: <1282726751.5051.4.camel@mola>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Aug 25, 2010, at 8:52 AM, Peter Zijlstra wrote:
-> Also, there's a good reason for disliking (a), its a deadlock scenario,
-> suppose we need to write out data to get free pages, but the writing out
-> is blocked on requiring free pages.
+On Wed, Aug 25, 2010 at 04:59:11PM +0800, Axel Lin wrote:
+> The "priv" allocated in pxa_ssp_probe() should be kfreed in pxa_ssp_remove().
 > 
-> There's really nothing the page allocator can do to help you there, its
-> a situation you have to avoid getting into.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Well, if all of these users start having their own private pools of emergency memory, I'm not sure that's such a great idea either.
+This doesn't apply against current ASoC.  I fixed this up by hand since
+the error was so trivial but in future could you please make sure you
+generate your code against the latest version of ASoC?  This will be in
+-next at any given time, or for the individual tree you want the latest
+for-2.6.nn branch of:
 
-And in some cases, there *is* extra memory.  For example, if the reason why the page allocator failed is because there isn't enough memory in the current process's cgroup, maybe it's important enough that the kernel code might decide to say, "violate the cgroup constraints --- it's more important that we not bring down the entire system" than to honor whatever yahoo decided that a particular cgroup has been set down to something ridiculous like 512mb, when there's plenty of free physical memory --- but not in that cgroup.
-
--- Ted
-
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound-2.6.git
