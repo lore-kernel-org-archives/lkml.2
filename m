@@ -1,181 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab0HYP7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:59:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52909 "EHLO hera.kernel.org"
+	id S1754096Ab0HYQCD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 12:02:03 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:35904 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab0HYPyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:54:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
-Subject: [PATCHSET 2.6.36-rc2] block, fs: replace HARDBARRIER with FLUSH/FUA
-Date: Wed, 25 Aug 2010 17:47:17 +0200
-Message-Id: <1282751267-3530-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:19 +0000 (UTC)
+	id S1753765Ab0HYP7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:59:16 -0400
+Date: Wed, 25 Aug 2010 08:58:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: joe@perches.com, mingo@elte.hu
+Subject: [PATCH] MAINTAINERS: add RCU's public git tree
+Message-ID: <20100825155850.GA6601@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+RCU now has a public git tree, so add it via the T: line in the
+MAINTAINERS file.
 
-This patchset is combination of the following three patchset.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
 
- [1] block: replace barrier with sequenced flush
- [2] block: convert to REQ_FLUSH/FUA
- [3] replace barriers with explicit flush / FUA usage
+ MAINTAINERS |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Changes from the previous postings are,
-
-* Rebased on top of 2.6.36-rc2 (502adf5778f4151dcba3f64dd6ed322151f3712c)
-
-* Acked/Reviewed-by's added.
-
-* ide-remove-unnecessary-blk_queue_flushing-test-in-do_ide_request
-  patch added which removes blk_queue_flushing().
-
-* BH flags, which are no longer necessary on 2.6.36-rc2, are dropped
-  from fs-block-propagate-REQ_FLUSH-FUA-interface-to-upper-layers and
-  the patch is collapsed into
-  block-implement-REQ_FLUSH-FUA-based-interface-for-FLUSH-FUA-requests.
-
-* block-filter-flush-bio-s-in-__generic_make_request added.  This
-  makes sure make_request based drivers which don't implement cache
-  flushes don't see REQ_FLUSH/FUA requests.
-
-* block-simplify-queue_next_fseq added.
-
-* REQ_FUA support dropped from virtio/lguest conversion as suggested
-  by Christoph.
-
-* md conversion updated as suggested by Neil Brown.
-
-* dm conversion is excluded for now.
-
-* block-remove-the-BLKDEV_IFL_BARRIER-flag patch now also removes
-  DISCARD_SECURE.
-
-* block-remove-the-write-barrier-flag patch excluded for now (pending
-  on dm conversion).
-
-I've audited all make_request drivers and after this patchset only
-blktrace, dm, drbd and xen need more work.  I'll work on blktrace and
-dm but leave xen and drbd for the respective maintainers.
-
-Build tested w/ allmodconfig and lightly tested w/ ext4 and xfs.
-
-This patchst contains the following thirty patches.
-
-  0001-ide-remove-unnecessary-blk_queue_flushing-test-in-do.patch
-  0002-block-loop-queue-ordered-mode-should-be-DRAIN_FLUSH.patch
-  0003-block-kill-QUEUE_ORDERED_BY_TAG.patch
-  0004-block-deprecate-barrier-and-replace-blk_queue_ordere.patch
-  0005-block-remove-spurious-uses-of-REQ_HARDBARRIER.patch
-  0006-block-misc-cleanups-in-barrier-code.patch
-  0007-block-drop-barrier-ordering-by-queue-draining.patch
-  0008-block-rename-blk-barrier.c-to-blk-flush.c.patch
-  0009-block-rename-barrier-ordered-to-flush.patch
-  0010-block-implement-REQ_FLUSH-FUA-based-interface-for-FL.patch
-  0011-block-filter-flush-bio-s-in-__generic_make_request.patch
-  0012-block-use-REQ_FLUSH-in-blkdev_issue_flush.patch
-  0013-block-simplify-queue_next_fseq.patch
-  0014-block-loop-implement-REQ_FLUSH-FUA-support.patch
-  0015-virtio_blk-drop-REQ_HARDBARRIER-support.patch
-  0016-lguest-replace-VIRTIO_F_BARRIER-support-with-VIRTIO_.patch
-  0017-md-implment-REQ_FLUSH-FUA-support.patch
-  0018-block-pass-gfp_mask-and-flags-to-sb_issue_discard.patch
-  0019-xfs-replace-barriers-with-explicit-flush-FUA-usage.patch
-  0020-btrfs-replace-barriers-with-explicit-flush-FUA-usage.patch
-  0021-gfs2-replace-barriers-with-explicit-flush-FUA-usage.patch
-  0022-reiserfs-replace-barriers-with-explicit-flush-FUA-us.patch
-  0023-nilfs2-replace-barriers-with-explicit-flush-FUA-usag.patch
-  0024-jbd-replace-barriers-with-explicit-flush-FUA-usage.patch
-  0025-jbd2-replace-barriers-with-explicit-flush-FUA-usage.patch
-  0026-ext4-do-not-send-discards-as-barriers.patch
-  0027-fat-do-not-send-discards-as-barriers.patch
-  0028-swap-do-not-send-discards-as-barriers.patch
-  0029-block-remove-the-BLKDEV_IFL_BARRIER-flag.patch
-  0030-block-remove-the-BH_Eopnotsupp-flag.patch
-
-and available in the following git tree.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua
-
-and contain the following changes.
-
- Documentation/lguest/lguest.c       |   29 --
- block/Makefile                      |    2 
- block/blk-barrier.c                 |  350 ------------------------------------
- block/blk-core.c                    |   68 +++---
- block/blk-flush.c                   |  242 ++++++++++++++++++++++++
- block/blk-lib.c                     |   18 -
- block/blk-settings.c                |   20 ++
- block/blk.h                         |    8 
- block/elevator.c                    |   79 --------
- drivers/block/brd.c                 |    1 
- drivers/block/loop.c                |   20 +-
- drivers/block/osdblk.c              |    5 
- drivers/block/pktcdvd.c             |    1 
- drivers/block/ps3disk.c             |    2 
- drivers/block/virtio_blk.c          |   37 ---
- drivers/block/xen-blkfront.c        |   47 +---
- drivers/ide/ide-disk.c              |   13 -
- drivers/ide/ide-io.c                |   13 -
- drivers/md/dm.c                     |    2 
- drivers/md/linear.c                 |    4 
- drivers/md/md.c                     |  117 ++----------
- drivers/md/md.h                     |   23 --
- drivers/md/multipath.c              |    4 
- drivers/md/raid0.c                  |    4 
- drivers/md/raid1.c                  |  175 ++++++------------
- drivers/md/raid1.h                  |    2 
- drivers/md/raid10.c                 |    7 
- drivers/md/raid5.c                  |   43 ++--
- drivers/md/raid5.h                  |    1 
- drivers/mmc/card/queue.c            |    1 
- drivers/s390/block/dasd.c           |    1 
- drivers/scsi/aic7xxx_old.c          |   21 --
- drivers/scsi/libsas/sas_scsi_host.c |   13 -
- drivers/scsi/sd.c                   |   18 -
- fs/btrfs/disk-io.c                  |   19 -
- fs/btrfs/extent-tree.c              |    2 
- fs/btrfs/volumes.c                  |    4 
- fs/btrfs/volumes.h                  |    1 
- fs/buffer.c                         |    7 
- fs/ext4/mballoc.c                   |    3 
- fs/fat/fatent.c                     |    4 
- fs/fat/misc.c                       |    5 
- fs/gfs2/log.c                       |   19 -
- fs/gfs2/rgrp.c                      |    5 
- fs/jbd/commit.c                     |   30 ---
- fs/jbd2/commit.c                    |   43 ----
- fs/nilfs2/super.c                   |   10 -
- fs/nilfs2/the_nilfs.c               |    7 
- fs/reiserfs/journal.c               |  106 ++--------
- fs/xfs/linux-2.6/xfs_buf.c          |   16 -
- fs/xfs/linux-2.6/xfs_buf.h          |   11 -
- fs/xfs/linux-2.6/xfs_trace.h        |    1 
- fs/xfs/xfs_log.c                    |   13 -
- include/linux/blk_types.h           |    4 
- include/linux/blkdev.h              |   85 +-------
- include/linux/buffer_head.h         |    2 
- include/linux/fs.h                  |   27 +-
- include/scsi/scsi_tcq.h             |    6 
- mm/swapfile.c                       |    9 
- 59 files changed, 585 insertions(+), 1245 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1022363
-[2] http://thread.gmane.org/gmane.linux.raid/29100
-[3] http://thread.gmane.org/gmane.linux.file-systems/44957
+diff --git a/MAINTAINERS b/MAINTAINERS
+index a1df54b..3f21c27 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4800,6 +4800,7 @@ RCUTORTURE MODULE
+ M:	Josh Triplett <josh@freedesktop.org>
+ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+ S:	Supported
++T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+ F:	Documentation/RCU/torture.txt
+ F:	kernel/rcutorture.c
+ 
+@@ -4824,6 +4825,7 @@ M:	Dipankar Sarma <dipankar@in.ibm.com>
+ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+ W:	http://www.rdrop.com/users/paulmck/rclock/
+ S:	Supported
++T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+ F:	Documentation/RCU/
+ F:	include/linux/rcu*
+ F:	include/linux/srcu*
