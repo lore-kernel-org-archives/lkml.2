@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab0HYVhB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:37:01 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56062 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab0HYVg7 (ORCPT
+	id S1754675Ab0HYVhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:37:23 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:45312 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754663Ab0HYVhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:36:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nb2P9HxfcyPSQfHKLy3QCpP5k3UiAGol0XoDD7c/oGeOx4+4R41xNOnYOLaMihGovb
-         tWkJNS8mHuSLsAK5BSd9ePVE7HmTo2KFbUGZnWVvIjzGC8igcNuDD1tAfq5Xoikpc/VL
-         /4LIZnWoPKOrRVAu3pzpq/t21h1dTyQXOmy78=
-Date: Thu, 26 Aug 2010 01:36:54 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100825213654.GF14874@lenovo>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100825094819.GB3198@erda.amd.com> <20100825104130.GA27891@elte.hu> <20100825110006.GB27891@elte.hu> <20100825201106.GH4879@redhat.com> <20100825202458.GE14874@lenovo> <20100825212037.GI4879@redhat.com>
+	Wed, 25 Aug 2010 17:37:20 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: OpDhNRgVM1kKz9ygK8rR9Kz2e2v58RQ6Pz46qcjyLBEBHPz
+ 60f8nH3RDKv.xbQS_LuhAn1B9M3I5IGwkY83Teqr3Du8CRAAU1qIw9DZzm5e
+ HefxLS2R519tg_KsJiMYi88XAgHof83jtGPiEtj2CD4h.p5DF7pRLBnHU8h1
+ cVGwMGnBPK7VCbcq7ZOlggLu3m_Aqs.hCRlKOTuyl.eANx8e9h7U92koLgzd
+ yz8zIuXonUgTbcO6W3M2wZL7s7BA-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 25 Aug 2010 16:37:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (slab
+ tree related)
+In-Reply-To: <alpine.DEB.2.00.1008251509080.22117@router.home>
+Message-ID: <alpine.DEB.2.00.1008251635560.25892@router.home>
+References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home> <4C74D1D7.4080608@kernel.org>
+ <alpine.DEB.2.00.1008251509080.22117@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825212037.GI4879@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 05:20:37PM -0400, Don Zickus wrote:
-... 
-> The only problem is only one counter is overflowing in these cases, so we
-> would have to do it all the time, which may not be hard.  But I was
-> thinking of something similar.
-> 
-> For now, I am trying to force counter0 off, seeing that most of the perf
-> errata on nehalem have been on counter0.  Or maybe I can get 'perf top' to
-> use something other than counter0 by running 'perf record' first?
-> 
-> Cheers,
-> Don
-> 
-> > 
-> > 	-- Cyrill
-> 
+Err... Sorry there was patch under testing in there (remove the boot
+pageset from the page allocator and use early allocpercpu) which resulted
+in the reserve area becoming a bit tight. Sorry.
 
-Well, I never looked deep inside perf tool code itself. Perhaps the easiest
-(if you want to disable counter0) is just disable it in kernel and see how
-it goes, no?
 
-	-- Cyrill
