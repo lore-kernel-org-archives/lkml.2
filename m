@@ -1,199 +1,548 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab0HYPub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:50:31 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:55377 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab0HYPu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:50:27 -0400
-Message-ID: <4C753BC0.6010803@msgid.tls.msk.ru>
-Date: Wed, 25 Aug 2010 19:50:24 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
-MIME-Version: 1.0
-To: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>
-Subject: [stable 2.6.32] instant crash (jump to NULL) with virtio-net, tap,
- bridge and veth
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752188Ab0HYPwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:52:53 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:49672 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab0HYPwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:52:49 -0400
+From: Alexander Shishkin <virtuoso@slind.org>
+To: lkml@vger.kernel.org
+Cc: Alexander Shishkin <virtuoso@slind.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] [RFCv3] notify userspace about time changes
+Date: Wed, 25 Aug 2010 18:50:07 +0300
+Message-Id: <1282751407-26559-1-git-send-email-virtuoso@slind.org>
+X-Mailer: git-send-email 1.7.2.rc1.1.gb2842
+X-OriginalArrivalTime: 25 Aug 2010 15:51:02.0131 (UTC) FILETIME=[51993430:01CB446D]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Changes since v2:
+ - replaced sysfs interface with a syscall
+ - added sysctl/procfs handle to set a limit to the number of users
+ - fixed issues pointed out by Greg.
+Changes since v1:
+ - updated against 2.6.36-rc1,
+ - added notification/filtering options,
+ - added Documentation/ABI/sysfs-kernel-time-notify interface description.
 
-I'm seeing instant host kernel crash triggered by _any_
-network activity to/from a kvm guest that's using virtio-net.
+Certain userspace applications (like "clock" desktop applets or cron) might
+want to be notified when some other application changes the system time. It
+might also be important for an application to be able to distinguish between
+its own and somebody else's time changes.
 
-My setup is maybe a bit unusual, but here we go.
+This patch implements a notification interface via eventfd mechanism. Proccess
+wishing to be notified about time changes should create an eventfd and pass it
+to time_change_notify() syscall along with notification options.
+After that, any calls to settimeofday()/stime()/adjtimex() made by other
+processes will be signalled to this eventfd. Credits for suggesting the eventfd
+mechanism for this purpose go to Kirill Shutemov.
 
-I've a host machine that has one bridge configured,
-and is running a few kvm virtual machines and a few
-linux containers (LXC).  All the guests/containers
-are "connected" to that single bridge - guests using
-tap devices, lxc containers using veth devices. Host
-eth0 is connected to the same bridge as well.
+So far, this implementation can only filter out notifications caused by
+time change calls made by the process that called the time_change_notify()
+syscall, but not its children which (might) have inherited the eventfd. It
+is so far not clear to me whether this is bad and more confusing than
+excluding such children as well.
 
-The problem happens with virtio-net drivers used in
-guest (this is windowsXP virtual machine with latest
-netkvm driver from alt.fedoraproject.org), when I
-connect to that guest from an LXC container.  I.e,
-when packet goes lxc => veth => bridge => tun =>
-kvm => virtio in guest (or back).
+Syscall is currently only added to asm-generic/unistd.h and arm. I'm not
+entirely sure what's the protocol for doing that, it seems that people only
+add their new syscalls to x86 and then architecture submaintainers do the
+'wiring up' for their architectures.
 
-When I connect to the same guest from _host_, it all
-works as expected.  When I change (virtual) NIC in
-guest to e1000 or older (from 2009) virtio-net driver,
-it works.  When I connect from lxc container to a
-linux guest with latest virtio-net drivers, it all
-works as expected too.  So only one combination so
-far that triggers the issue.
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+CC: Kirill A. Shutemov <kirill@shutemov.name>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <johnstul@us.ibm.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Jon Hunter <jon-hunter@ti.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Avi Kivity <avi@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: John Kacur <jkacur@redhat.com>
+CC: Alexander Shishkin <virtuoso@slind.org>
+CC: Chris Friesen <chris.friesen@genband.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>
+CC: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org
+---
+ Documentation/time-change-notify-example.c |   64 ++++++++++
+ arch/arm/include/asm/unistd.h              |    1 +
+ arch/arm/kernel/calls.S                    |    1 +
+ include/asm-generic/unistd.h               |    4 +-
+ include/linux/syscalls.h                   |    1 +
+ include/linux/time.h                       |   20 +++
+ init/Kconfig                               |    7 +
+ kernel/Makefile                            |    1 +
+ kernel/sys_ni.c                            |    3 +
+ kernel/sysctl.c                            |   11 ++
+ kernel/time.c                              |   11 ++-
+ kernel/time_notify.c                       |  183 ++++++++++++++++++++++++++++
+ 12 files changed, 304 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/time-change-notify-example.c
+ create mode 100644 kernel/time_notify.c
 
-This is all with 2.6.32 kernel.  Initially it was
-2.6.32.15, but 2.6.32.20 behaves the same way too.
-All 64bit.
+diff --git a/Documentation/time-change-notify-example.c b/Documentation/time-change-notify-example.c
+new file mode 100644
+index 0000000..e8e4f4d
+--- /dev/null
++++ b/Documentation/time-change-notify-example.c
+@@ -0,0 +1,64 @@
++/*
++ * Simple program to catch system time changes
++ *
++ * written by Alexander Shishkin <virtuoso@slind.org>
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <sys/eventfd.h>
++#include <sys/syscall.h>
++#include <errno.h>
++#include <unistd.h>
++#include <poll.h>
++
++#ifndef SYS_time_change_notify
++# include "asm/unistd.h"
++# ifdef __NR_time_change_notify
++#  define SYS_time_change_notify __NR_time_change_notify
++# else
++#  error Cannot figure out time_change_notify syscall number.
++# endif
++#endif
++
++static int time_change_notify(int fd, unsigned int flags)
++{
++	return syscall(SYS_time_change_notify, fd, flags);
++}
++
++int main(int argc, char **argv)
++{
++	struct pollfd fds = { .events = POLLIN };
++
++	fds.fd = eventfd(0, 0);
++	if (fds.fd < 0) {
++		perror("eventfd");
++		return EXIT_FAILURE;
++	}
++
++	/* subscribe to all events from all sources */
++	if (time_change_notify(fds.fd, 0xf)) {
++		perror("time_change_notify");
++		return EXIT_FAILURE;
++	}
++
++	while (poll(&fds, 1, -1) > 0) {
++		eventfd_t data;
++		ssize_t r;
++
++		r = read(fds.fd, &data, sizeof data);
++		if (r == -1) {
++			if (errno == EINTR)
++				continue;
++
++			break;
++		}
++
++		printf("system time has changed %llu times\n", data);
++	}
++
++	puts("Done polling system time changes.\n");
++
++	return EXIT_SUCCESS;
++}
++
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index d02cfb6..ce38a6f 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -393,6 +393,7 @@
+ #define __NR_perf_event_open		(__NR_SYSCALL_BASE+364)
+ #define __NR_recvmmsg			(__NR_SYSCALL_BASE+365)
+ #define __NR_accept4			(__NR_SYSCALL_BASE+366)
++#define __NR_time_change_notify		(__NR_SYSCALL_BASE+367)
+ 
+ /*
+  * The following SWIs are ARM private.
+diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
+index afeb71f..f1e64ba 100644
+--- a/arch/arm/kernel/calls.S
++++ b/arch/arm/kernel/calls.S
+@@ -376,6 +376,7 @@
+ 		CALL(sys_perf_event_open)
+ /* 365 */	CALL(sys_recvmmsg)
+ 		CALL(sys_accept4)
++		CALL(sys_time_change_notify)
+ #ifndef syscalls_counted
+ .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+ #define syscalls_counted
+diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+index b969770..c8372db 100644
+--- a/include/asm-generic/unistd.h
++++ b/include/asm-generic/unistd.h
+@@ -646,9 +646,11 @@ __SYSCALL(__NR_prlimit64, sys_prlimit64)
+ __SYSCALL(__NR_fanotify_init, sys_fanotify_init)
+ #define __NR_fanotify_mark 263
+ __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
++#define __NR_time_change_notify 264
++__SYSCALL(__NR_time_change_notify, sys_time_change_notify)
+ 
+ #undef __NR_syscalls
+-#define __NR_syscalls 264
++#define __NR_syscalls 265
+ 
+ /*
+  * All syscalls below here should go away really,
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index e6319d1..789f92e 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -819,6 +819,7 @@ asmlinkage long sys_fanotify_init(unsigned int flags, unsigned int event_f_flags
+ asmlinkage long sys_fanotify_mark(int fanotify_fd, unsigned int flags,
+ 				  u64 mask, int fd,
+ 				  const char  __user *pathname);
++asmlinkage long sys_time_change_notify(int fd, unsigned int flags);
+ 
+ int kernel_execve(const char *filename, const char *const argv[], const char *const envp[]);
+ 
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 9f15ac7..d66045e 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -252,6 +252,26 @@ static __always_inline void timespec_add_ns(struct timespec *a, u64 ns)
+ 	a->tv_sec += __iter_div_u64_rem(a->tv_nsec + ns, NSEC_PER_SEC, &ns);
+ 	a->tv_nsec = ns;
+ }
++
++/* time change events */
++#define TIME_EVENT_SET 0
++#define TIME_EVENT_ADJ 1
++
++#define TIME_CHANGE_NOTIFY_OTHERS	BIT(0)
++#define TIME_CHANGE_NOTIFY_OWN		BIT(1)
++#define TIME_CHANGE_NOTIFY_SET		BIT(2)
++#define TIME_CHANGE_NOTIFY_ADJUST	BIT(3)
++
++#define TIME_CHANGE_NOTIFY_MAX_USERS	1024
++
++#ifdef CONFIG_TIME_NOTIFY
++extern unsigned int time_change_notify_max_users;
++
++void time_notify_all(int type);
++#else
++static inline void time_notify_all(int type) {}
++#endif
++
+ #endif /* __KERNEL__ */
+ 
+ #define NFDBITS			__NFDBITS
+diff --git a/init/Kconfig b/init/Kconfig
+index 2de5b1c..504a51a 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -980,6 +980,13 @@ config PERF_USE_VMALLOC
+ 	help
+ 	  See tools/perf/design.txt for details
+ 
++config TIME_NOTIFY
++	bool "System time changes notification for userspace"
++	depends on EVENTFD
++	help
++	  Enable time change notification events to userspace via
++	  eventfd.
++
+ menu "Kernel Performance Events And Counters"
+ 
+ config PERF_EVENTS
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0b72d1a..ac53c67 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -104,6 +104,7 @@ obj-$(CONFIG_PERF_EVENTS) += perf_event.o
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
++obj-$(CONFIG_TIME_NOTIFY) += time_notify.o
+ 
+ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index bad369e..bb27e93 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -185,3 +185,6 @@ cond_syscall(sys_perf_event_open);
+ /* fanotify! */
+ cond_syscall(sys_fanotify_init);
+ cond_syscall(sys_fanotify_mark);
++
++/* time change notification */
++cond_syscall(sys_time_change_notify);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index ca38e8e..c53e4e0 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1441,6 +1441,17 @@ static struct ctl_table fs_table[] = {
+ 		.proc_handler	= proc_doulongvec_minmax,
+ 	},
+ #endif /* CONFIG_AIO */
++#ifdef CONFIG_TIME_NOTIFY
++	{
++		.procname	= "time-change-notify-max-users",
++		.data		= &time_change_notify_max_users,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &ten_thousand,
++	},
++#endif
+ #ifdef CONFIG_INOTIFY_USER
+ 	{
+ 		.procname	= "inotify",
+diff --git a/kernel/time.c b/kernel/time.c
+index ba9b338..b4155b8 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -92,7 +92,9 @@ SYSCALL_DEFINE1(stime, time_t __user *, tptr)
+ 	if (err)
+ 		return err;
+ 
+-	do_settimeofday(&tv);
++	err = do_settimeofday(&tv);
++	if (!err)
++		time_notify_all(TIME_EVENT_SET);
+ 	return 0;
+ }
+ 
+@@ -177,7 +179,10 @@ int do_sys_settimeofday(struct timespec *tv, struct timezone *tz)
+ 		/* SMP safe, again the code in arch/foo/time.c should
+ 		 * globally block out interrupts when it runs.
+ 		 */
+-		return do_settimeofday(tv);
++		error = do_settimeofday(tv);
++		if (!error)
++			time_notify_all(TIME_EVENT_SET);
++		return error;
+ 	}
+ 	return 0;
+ }
+@@ -215,6 +220,8 @@ SYSCALL_DEFINE1(adjtimex, struct timex __user *, txc_p)
+ 	if(copy_from_user(&txc, txc_p, sizeof(struct timex)))
+ 		return -EFAULT;
+ 	ret = do_adjtimex(&txc);
++	if (!ret)
++		time_notify_all(TIME_EVENT_ADJ);
+ 	return copy_to_user(txc_p, &txc, sizeof(struct timex)) ? -EFAULT : ret;
+ }
+ 
+diff --git a/kernel/time_notify.c b/kernel/time_notify.c
+new file mode 100644
+index 0000000..1e57eb4
+--- /dev/null
++++ b/kernel/time_notify.c
+@@ -0,0 +1,183 @@
++/*
++ * linux/kernel/time_notify.c
++ *
++ * Copyright (C) 2010 Nokia Corporation
++ * Alexander Shishkin
++ *
++ * This file implements an interface to communicate time changes to userspace.
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/syscalls.h>
++#include <linux/slab.h>
++#include <linux/eventfd.h>
++#include <linux/wait.h>
++#include <linux/workqueue.h>
++#include <linux/sched.h>
++#include <linux/poll.h>
++#include <linux/err.h>
++
++/* sysctl tunable to limit the number of users */
++unsigned int time_change_notify_max_users = TIME_CHANGE_NOTIFY_MAX_USERS;
++
++/*
++ * A process can "subscribe" to receive a notification via eventfd that
++ * some other process has called stime/settimeofday/adjtimex.
++ */
++struct time_event {
++	struct eventfd_ctx	*eventfd;
++	struct task_struct	*watcher;
++	unsigned int		want_others:1;
++	unsigned int		want_own:1;
++	unsigned int		want_set:1;
++	unsigned int		want_adj:1;
++	struct work_struct	remove;
++	wait_queue_t		wq;
++	wait_queue_head_t	*wqh;
++	poll_table		pt;
++	struct list_head	list;
++};
++
++static LIST_HEAD(event_list);
++static int nevents;
++static DEFINE_SPINLOCK(event_lock);
++
++/*
++ * Do the necessary cleanup when the eventfd is being closed
++ */
++static void time_event_remove(struct work_struct *work)
++{
++	struct time_event *evt = container_of(work, struct time_event, remove);
++
++	BUG_ON(nevents <= 0);
++
++	kfree(evt);
++	nevents--;
++}
++
++static int time_event_wakeup(wait_queue_t *wq, unsigned int mode, int sync,
++			     void *key)
++{
++	struct time_event *evt = container_of(wq, struct time_event, wq);
++	unsigned long flags = (unsigned long)key;
++
++	if (flags & POLLHUP) {
++		__remove_wait_queue(evt->wqh, &evt->wq);
++		spin_lock(&event_lock);
++		list_del(&evt->list);
++		spin_unlock(&event_lock);
++
++		schedule_work(&evt->remove);
++	}
++
++	return 0;
++}
++
++static void time_event_ptable_queue_proc(struct file *file,
++					 wait_queue_head_t *wqh, poll_table *pt)
++{
++	struct time_event *evt = container_of(pt, struct time_event, pt);
++
++	evt->wqh = wqh;
++	add_wait_queue(wqh, &evt->wq);
++}
++
++/*
++ * time_change_notify() registers a given eventfd to receive time change
++ * notifications
++ */
++SYSCALL_DEFINE2(time_change_notify, int, fd, unsigned int, flags)
++{
++	int ret;
++	struct file *file;
++	struct time_event *evt;
++
++	evt = kmalloc(sizeof(*evt), GFP_KERNEL);
++	if (!evt)
++		return -ENOMEM;
++
++	evt->want_others = !!(flags & TIME_CHANGE_NOTIFY_OTHERS);
++	evt->want_own = !!(flags & TIME_CHANGE_NOTIFY_OWN);
++	evt->want_set = !!(flags & TIME_CHANGE_NOTIFY_SET);
++	evt->want_adj = !!(flags & TIME_CHANGE_NOTIFY_ADJUST);
++
++	file = eventfd_fget(fd);
++	if (IS_ERR(file)) {
++		ret = -EINVAL;
++		goto out_free;
++	}
++
++	evt->eventfd = eventfd_ctx_fileget(file);
++	if (IS_ERR(evt->eventfd)) {
++		ret = PTR_ERR(evt->eventfd);
++		goto out_fput;
++	}
++
++	INIT_LIST_HEAD(&evt->list);
++	INIT_WORK(&evt->remove, time_event_remove);
++
++	init_waitqueue_func_entry(&evt->wq, time_event_wakeup);
++	init_poll_funcptr(&evt->pt, time_event_ptable_queue_proc);
++
++	evt->watcher = current;
++
++	spin_lock(&event_lock);
++	if (nevents == time_change_notify_max_users) {
++		spin_unlock(&event_lock);
++		ret = -EBUSY;
++		goto out_fput;
++	}
++
++	nevents++;
++	list_add(&evt->list, &event_list);
++	spin_unlock(&event_lock);
++
++	if (file->f_op->poll(file, &evt->pt) & POLLHUP) {
++		ret = 0;
++		goto out_fput;
++	}
++
++	fput(file);
++
++	return 0;
++
++out_fput:
++	fput(file);
++
++out_free:
++	kfree(evt);
++
++	return ret;
++}
++
++void time_notify_all(int type)
++{
++	struct list_head *tmp;
++
++	spin_lock(&event_lock);
++	list_for_each(tmp, &event_list) {
++		struct time_event *e = container_of(tmp, struct time_event,
++						    list);
++
++		if (type == TIME_EVENT_SET && !e->want_set)
++			continue;
++		else if (type == TIME_EVENT_ADJ && !e->want_adj)
++			continue;
++
++		if (e->watcher == current && !e->want_own)
++			continue;
++		else if (e->watcher != current && !e->want_others)
++			continue;
++
++		eventfd_signal(e->eventfd, 1);
++	}
++	spin_unlock(&event_lock);
++}
++
++static int time_notify_init(void)
++{
++	return 0;
++}
++
++core_initcall(time_notify_init);
+-- 
+1.7.1
 
-Also it does NOT happen with 2.6.35.3, the current
-latest released kernel.
-
-Here's one of captured OOPSes (i did it several
-times, but they were incomplete):
-
-console [netcon0] enabled
-netconsole: network logging started
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<(null)>] (null)
-PGD 177bf2067 PUD 177ae5067 PMD 0
-Oops: 0010 [#1] SMP
-last sysfs file: /sys/devices/virtual/block/md8/md/mismatch_cnt
-CPU 0
-Modules linked in: netconsole configfs squashfs kvm_amd kvm veth autofs4 bridge quota_v2 quota_tree ext4 jbd2 crc16 raid0 raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq async_tx loop sr_mod cdrom tun powernow_k8 processor thermal_sys 8021q garp stp llc asus_atk0110 hwmon atl1 mii ext3 jbd mbcache raid1 md_mod pata_atiixp ehci_hcd ohci_hcd usbcore nls_base ahci libata sd_mod scsi_mod
-Pid: 2345, comm: kvm Not tainted 2.6.32-amd64 #2.6.32.20 System Product Name
-RIP: 0010:[<0000000000000000>]  [<(null)>] (null)
-RSP: 0018:ffff880028203e70  EFLAGS: 00010293
-RAX: ffff880179480ec0 RBX: ffff8801a07770c0 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff8801a07770c0 RDI: ffff8801a07770c0
-RBP: ffff880124b89030 R08: ffffffff8125fab0 R09: ffff880028203e40
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff880028210888
-R13: ffff880028210880 R14: 000000010000e60f R15: 0000000000000040
-FS:  00007fe2da5e5700(0000) GS:ffff880028200000(0000) knlGS:00000000f74a59d0
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 0000000177a8a000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kvm64 (pid: 2345, threadinfo ffff880177be2000, task ffff880177a7c0c0)
-Stack:
- ffffffff8125fbd5 0000000000000040 ffffffff8126013c 0000000080000000
-<0> ffff8800282108b8 0000000000000002 ffff880028210888 ffff880028210880
-<0> ffffffff81236276 ffff880028203f48 ffff8800282108b8 0000000000000000
-Call Trace:
- <IRQ>
- [<ffffffff8125fbd5>] ? ip_rcv_finish+0x125/0x430
- [<ffffffff8126013c>] ? ip_rcv+0x25c/0x350
- [<ffffffff81236276>] ? process_backlog+0x76/0xd0
- [<ffffffff81236a18>] ? net_rx_action+0xf8/0x1f0
- [<ffffffff81059120>] ? __do_softirq+0xb0/0x1d0
- [<ffffffff8100c56c>] ? call_softirq+0x1c/0x30
- <EOI>
- [<ffffffff8100e595>] ? do_softirq+0x65/0xa0
- [<ffffffff81236b2e>] ? netif_rx_ni+0x1e/0x30
- [<ffffffffa014e97a>] ? tun_chr_aio_write+0x35a/0x510 [tun]
- [<ffffffffa014e620>] ? tun_chr_aio_write+0x0/0x510 [tun]
- [<ffffffff810ffea4>] ? do_sync_readv_writev+0xd4/0x110
- [<ffffffff8106e890>] ? autoremove_wake_function+0x0/0x30
- [<ffffffff81071709>] ? enqueue_hrtimer+0x79/0xc0
- [<ffffffff810ffd08>] ? rw_copy_check_uvector+0x88/0x110
- [<ffffffff811005bc>] ? do_readv_writev+0xdc/0x220
- [<ffffffff8106dafc>] ? sys_timer_settime+0x13c/0x2e0
- [<ffffffff8110084e>] ? sys_writev+0x4e/0x90
- [<ffffffff8100b482>] ? system_call_fastpath+0x16/0x1b
-Code:  Bad RIP value.
-RIP  [<(null)>] (null)
- RSP <ffff880028203e70>
-CR2: 0000000000000000
----[ end trace 1dcd3c52bde0fa25 ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-Pid: 2345, comm: kvm Tainted: G      D    2.6.32-amd64 #2.6.32.20
-Call Trace:
- <IRQ>  [<ffffffff812c22de>] ? panic+0x7a/0x134
- [<ffffffff812c23d8>] ? printk+0x40/0x48
- [<ffffffff8100faa3>] ? oops_end+0xa3/0xb0
- [<ffffffff8103138a>] ? no_context+0xfa/0x260
- [<ffffffff812c52a5>] ? page_fault+0x25/0x30
- [<ffffffff8125fab0>] ? ip_rcv_finish+0x0/0x430
- [<ffffffff8125fbd5>] ? ip_rcv_finish+0x125/0x430
- [<ffffffff8126013c>] ? ip_rcv+0x25c/0x350
- [<ffffffff81236276>] ? process_backlog+0x76/0xd0
- [<ffffffff81236a18>] ? net_rx_action+0xf8/0x1f0
- [<ffffffff81059120>] ? __do_softirq+0xb0/0x1d0
- [<ffffffff8100c56c>] ? call_softirq+0x1c/0x30
- <EOI>  [<ffffffff8100e595>] ? do_softirq+0x65/0xa0
- [<ffffffff81236b2e>] ? netif_rx_ni+0x1e/0x30
- [<ffffffffa014e97a>] ? tun_chr_aio_write+0x35a/0x510 [tun]
- [<ffffffffa014e620>] ? tun_chr_aio_write+0x0/0x510 [tun]
- [<ffffffff810ffea4>] ? do_sync_readv_writev+0xd4/0x110
- [<ffffffff8106e890>] ? autoremove_wake_function+0x0/0x30
- [<ffffffff81071709>] ? enqueue_hrtimer+0x79/0xc0
- [<ffffffff810ffd08>] ? rw_copy_check_uvector+0x88/0x110
- [<ffffffff811005bc>] ? do_readv_writev+0xdc/0x220
- [<ffffffff8106dafc>] ? sys_timer_settime+0x13c/0x2e0
- [<ffffffff8110084e>] ? sys_writev+0x4e/0x90
- [<ffffffff8100b482>] ? system_call_fastpath+0x16/0x1b
-Rebooting in 60 seconds..
-
-
-Another:
-
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<(null)>] (null)
-PGD 10c804067 PUD 212d0e067 PMD 0
-Oops: 0010 [#1] SMP
-last sysfs file: /sys/devices/virtual/vc/vcsa2/dev
-CPU 0
-Modules linked in: netconsole configfs squashfs kvm_amd kvm veth autofs4 bridge quota_v2 quota_tree ext4 jbd2 crc16 raid0 raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq async_tx loop sr_mod cdrom tun powernow_k8 processor thermal_sys 8021q garp stp llc asus_atk0110 hwmon atl1 mii ext3 jbd mbcache raid1 md_mod pata_atiixp ehci_hcd ohci_hcd usbcore nls_base [<ffffffff8100bff3>] ? apic_timer_interrupt+0x13/0x20
- [<ffffffff8100fced>] ? oops_end+0x9d/0xb0
- [<ffffffff810320b7>] ? no_context+0xf7/0x260
- [<ffffffff81032375>] ? __bad_area_nosemaphore+0x155/0x230
- [<ffffffffa0273ea0>] ? br_nf_pre_routing_finish+0x0/0x350 [bridge]
- [<ffffffffa0274759>] ? br_nf_pre_routing+0x569/0x880 [bridge]
- [<ffffffff812cc945>] ? page_fault+0x25/0x30
- [<ffffffff812650a0>] ? ip_rcv+0x0/0x350
- [<ffffffff81264c60>] ? ip_rcv_finish+0x0/0x440
- [<ffffffff81264e19>] ? ip_rcv_finish+0x1b9/0x440
- [<ffffffff81265354>] ? ip_rcv+0x2b4/0x350
- [<ffffffff8123ba85>] ? process_backlog+0x75/0xc0
- [<ffffffff8123c246>] ? net_rx_action+0x106/0x220
- [<ffffffff8105abcb>] ? __do_softirq+0xfb/0x1d0
- [<ffffffff8100c62c>] ? call_softirq+0x1c/0x30
- <EOI>  [<ffffffff8100e765>] ? do_softirq+0x65/0xa0
- [<ffffffff8123c379>] ? netif_rx_ni+0x19/0x20
- [<ffffffffa0151b0b>] ? tun_chr_aio_write+0x3fb/0x550 [tun]
- [<ffffffffa0151710>] ? tun_chr_aio_write+0x0/0x550 [tun]
- [<ffffffff811031fb>] ? do_sync_readv_writev+0xcb/0x110
- [<ffffffff81065941>] ? __dequeue_signal+0xe1/0x210
- [<ffffffff810706b0>] ? autoremove_wake_function+0x0/0x30
- [<ffffffff81012bc2>] ? read_tsc+0x12/0x40
- [<ffffffff81024608>] ? lapic_next_event+0x18/0x20
- [<ffffffff8107d156>] ? tick_dev_program_event+0x36/0xb0
- [<ffffffff81103036>] ? rw_copy_check_uvector+0x86/0x130
- [<ffffffff81103912>] ? do_readv_writev+0xe2/0x230
- [<ffffffff8106f883>] ? sys_timer_settime+0x153/0x350
- [<ffffffff81103bb3>] ? sys_writev+0x53/0xa0
- [<ffffffff8100b542>] ? system_call_fastpath+0x16/0x1b
-Rebooting in 60 seconds..
-
-I looked at the changes in tun, virtio-net, bridge code and
-veth between 2.6.32 and 2.6.35, but I see nothing relevant
-in there (but I'm not an expert in that area anyway). The
-changes mentions a few crashes, but all were related to
-device registration/deregistration or module unload, not
-to normal send/receive path.
-
-It will be really nice to fix this for long-stable 2.6.32
-series... ;)
-
-Thanks!
-
-/mjt
