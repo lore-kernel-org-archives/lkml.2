@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab0HYSBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:01:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20532 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753568Ab0HYSBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:01:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,269,1280732400"; 
-   d="scan'208";a="548676599"
-From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-To: Marc Haber <mh+linux-kernel@zugschlus.de>,
-        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Date: Wed, 25 Aug 2010 12:01:40 -0600
-Subject: RE: No link on e1000e with 2.6.35.3 and ThinkPad T60
-Thread-Topic: No link on e1000e with 2.6.35.3 and ThinkPad T60
-Thread-Index: ActDcS1tGx6By2O0Rv2tuMyGDsdv6gBDMxVQ
-Message-ID: <EA929A9653AAE14F841771FB1DE5A136600821444B@rrsmsx501.amr.corp.intel.com>
-References: <20100724092644.GA13353@torres.zugschlus.de>
- <20100824094524.GA17608@torres.zugschlus.de>
-In-Reply-To: <20100824094524.GA17608@torres.zugschlus.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1751549Ab0HYSGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 14:06:08 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:57550 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab0HYSGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 14:06:07 -0400
+Date: Wed, 25 Aug 2010 20:06:01 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: tabbott@ksplice.com, vda.linux@googlemail.com, mmarek@suse.cz,
+        hpa@linux.intel.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        brueckner@linux.vnet.ibm.com, schwidefsky@de.ibm.com
+Subject: Re: [PATCH] Fix initramfs size calculation
+Message-ID: <20100825180601.GA2116@merkur.ravnborg.org>
+References: <1282751832.3676.17.camel@holzheu-laptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282751832.3676.17.camel@holzheu-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7PI21e5002787
 
-Marc Haber wrote:
-> Hi,
+On Wed, Aug 25, 2010 at 05:57:12PM +0200, Michael Holzheu wrote:
+> The size of a built-in initramfs is calculated in init/initramfs.c by 
+> "__initramfs_end - __initramfs_start".  Those symbols are defined in the
+> linker script include/asm-generic/vmlinux.lds.h:
 > 
-> On Sat, Jul 24, 2010 at 11:26:44AM +0200, Marc Haber wrote:
->> Additionally, sometimes, probably after suspend/resume, the wired
->> ethernet does not come up properly again, ip addr claims "NO CARRIER"
->> even if the LEDs on the interface and on the switch claim that there
->> was a link. No packets are received by the interface when it's at
->> this stage.
+> #define INIT_RAM_FS                                                     \
+>         . = ALIGN(PAGE_SIZE);                                           \
+>         VMLINUX_SYMBOL(__initramfs_start) = .;                          \
+>         *(.init.ramfs)                                                  \
+>         VMLINUX_SYMBOL(__initramfs_end) = .;
 > 
-> As of 2.6.35.3, this issue has become worse. It now even happens
-> directly after freshly booting the system that I cannot get a link on
-> the wired ethernet.
+> If the initramfs file has an odd number of bytes, the "__initramfs_end"
+> symbol points to an odd address, for example, the symbols in the System.map
+> might look like:
 > 
-> What information do you need to find out what's going on there?
+>     0000000000572000 T __initramfs_start
+>     00000000005bcd05 T __initramfs_end	  <-- odd address
+> 
+> At least on s390 this is a problem:
 
-Can you please post the output of dmidecode?
+Another way to fix this could be to align . to an even
+address like this:
+> #define INIT_RAM_FS                                                     \
+>         . = ALIGN(PAGE_SIZE);                                           \
+>         VMLINUX_SYMBOL(__initramfs_start) = .;                          \
+>         *(.init.ramfs)                                                  \
+          . = ALIGN(32);                                                  \
+>         VMLINUX_SYMBOL(__initramfs_end) = .;
+> 
 
-We have a tool that you can use to dump the registers from the port in the failed state:
-http://sourceforge.net/projects/e1000/files/Ethregs%20-%20Register%20Dump%20Tool/ethregs-1.12.3/
+32 was selected as this is what we will introduce as the default
+alignment in linker scripts anyway.
 
-I have not been able to reproduce any of the issues you reported on T60 here in the lab, so we need to start looking into more details.
+This I guess is a problem we have had some time and a minimal fix is
+easier to have backported by the stable team.
 
-Also, could you please file a bug at e1000.sf.net with all the information you provided so far?
+> The patch also restructures the "usr/initramfs_data.xxx.S" files to use a
+> common macro that includes the (compressed) initramfs file and calculates
+> the __initramfs_size.
+I like this anyway. Could you do this as a separate patch?
 
-Thanks,
-Emil
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Sam
