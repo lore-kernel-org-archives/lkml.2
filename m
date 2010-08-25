@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab0HYRdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 13:33:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45163 "EHLO ogre.sisk.pl"
+	id S1753387Ab0HYRok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 13:44:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56000 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab0HYRdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 13:33:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Date: Wed, 25 Aug 2010 19:31:29 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20100820115449.5FF1.A69D9226@jp.fujitsu.com> <4C715027.9060602@superonline.com> <20100825175034.F3EA.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100825175034.F3EA.A69D9226@jp.fujitsu.com>
+	id S1752138Ab0HYRoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 13:44:38 -0400
+Date: Wed, 25 Aug 2010 19:44:11 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20100825174411.GA7185@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008251931.29835.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 25, 2010, KOSAKI Motohiro wrote:
-> > > % cat /proc/meminfo
-> > 
-> > MemTotal:        3104484 kB
-> > MemFree:         2817616 kB
-> > Buffers:           31156 kB
-> > Cached:           142124 kB
-> > SwapCached:            0 kB
-> > Active:           116464 kB
-> > Inactive:         137424 kB
-> > Active(anon):      80852 kB
-> > Inactive(anon):    24820 kB
-> > Active(file):      35612 kB
-> > Inactive(file):   112604 kB
-> > Unevictable:          32 kB
-> > Mlocked:              32 kB
-> > HighTotal:       2226632 kB
-> > HighFree:        1994008 kB
-> > LowTotal:         877852 kB
-> > LowFree:          823608 kB
-> > SwapTotal:       1999540 kB
-> > SwapFree:        1999540 kB
-> 
-> !! Your swap partition is smaller than physical memory. As far as I know,
-> swap partition need physcal-mem x 2 size. Can you please try to change 
-> swap configuration?
-> 
-> Rafael, please correct me if I'm talking wrong.
+Linus,
 
-No, we only save 50% of RAM (at most) during hibernation.
+Please pull the latest perf-fixes-for-linus git tree from:
 
-Thanks,
-Rafael
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Anton Blanchard (1):
+      tracing/trace_stack: Fix stack trace on ppc64
+
+Lin Ming (1):
+      perf, x86, Pentium4: Clear the P4_CCCR_FORCE_OVF flag
+
+
+ arch/x86/kernel/cpu/perf_event_p4.c |    2 ++
+ kernel/trace/trace_stack.c          |    2 +-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index febb12c..7e578e9 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -497,6 +497,8 @@ static int p4_hw_config(struct perf_event *event)
+ 		event->hw.config |= event->attr.config &
+ 			(p4_config_pack_escr(P4_ESCR_MASK_HT) |
+ 			 p4_config_pack_cccr(P4_CCCR_MASK_HT | P4_CCCR_RESERVED));
++
++		event->hw.config &= ~P4_CCCR_FORCE_OVF;
+ 	}
+ 
+ 	rc = x86_setup_perfctr(event);
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index 056468e..a6b7e0e 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -249,7 +249,7 @@ static int trace_lookup_stack(struct seq_file *m, long i)
+ {
+ 	unsigned long addr = stack_dump_trace[i];
+ 
+-	return seq_printf(m, "%pF\n", (void *)addr);
++	return seq_printf(m, "%pS\n", (void *)addr);
+ }
+ 
+ static void print_disabled(struct seq_file *m)
