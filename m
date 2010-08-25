@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab0HYK1y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 06:27:54 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:20529 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab0HYK1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 06:27:52 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=T8Z11wJ3yO0nYzhuAOploUltPZtI3Uj94ySz6bt4on4VQMzhI84tzim9tdIDDzanX
-	v4HW697nxARbuR+gDN/bQ==
-Date: Wed, 25 Aug 2010 03:27:45 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/2][BUGFIX] Revert "oom: deprecate oom_adj tunable"
-In-Reply-To: <20100825184219.F3F2.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1008250326150.16411@chino.kir.corp.google.com>
-References: <20100825184001.F3EF.A69D9226@jp.fujitsu.com> <20100825184219.F3F2.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753051Ab0HYKl5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 06:41:57 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60317 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752654Ab0HYKlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 06:41:55 -0400
+Date: Wed, 25 Aug 2010 12:41:30 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100825104130.GA27891@elte.hu>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100825094819.GB3198@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100825094819.GB3198@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0469]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, KOSAKI Motohiro wrote:
 
-> oom_adj is not only used for kernel knob, but also used for
-> application interface.
-> Then, adding new knob is no good reason to deprecate it.
-> 
-> Also, after former patch, oom_score_adj can't be used for setting
-> OOM_DISABLE. We need "echo -17 > /proc/<pid>/oom_adj" thing.
-> 
-> This reverts commit 51b1bd2ace1595b72956224deda349efa880b693.
+* Robert Richter <robert.richter@amd.com> wrote:
 
-Since I nacked the parent patch of this, I implicitly nack this one as 
-well since oom_score_adj shouldn't be going anywhere.  The way to disable 
-oom killing for a task via the new interface, /proc/pid/oom_score_adj, is 
-by OOM_SCORE_ADJ_MIN as specified in the documentation.
+> On 20.08.10 11:25:10, Ingo Molnar wrote:
+> 
+> > > Ingo Molnar <mingo@elte.hu> wrote:
+> > > 
+> > > >
+> > > >it's not working so well, i'm getting:
+> > > >
+> > > > Uhhuh. NMI received for unknown reason 00 on CPU 9.
+> > > > Do you have a strange power saving mode enabled?
+> > > > Dazed and confused, but trying to continue
+> > > >
+> > > >on a nehalem box, after a perf top and perf stat run.
+> > 
+> > FYI, it does not trigger on an AMD box.
+> 
+> Ingo,
+> 
+> do you mean it does not trigger false positives on AMD? [...]
+
+Correct, on AMD boxes i do not get this message during the first 'perf 
+top' run:
+
+> > > > Uhhuh. NMI received for unknown reason 00 on CPU 9.
+> > > > Do you have a strange power saving mode enabled?
+> > > > Dazed and confused, but trying to continue
+
+Before the two patches i did not get these messages at all, on any of 
+the systems.
+
+> You might use the debug patch below for diagnostics.
+
+Thanks, will try that and report back.
+
+	Ingo
