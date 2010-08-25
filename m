@@ -1,83 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0HYVf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:35:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44269 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab0HYVfw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:35:52 -0400
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Dave Chinner <david@fromorbit.com>, David Rientjes <rientjes@google.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100825205342.GG4453@thunk.org>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
-	 <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com>
-	 <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
-	 <20100825112433.GB4453@thunk.org> <1282736132.2605.3563.camel@laptop>
-	 <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop>
-	 <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop>
-	 <20100825205342.GG4453@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 25 Aug 2010 23:35:25 +0200
-Message-ID: <1282772125.1975.153.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754637Ab0HYVgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:36:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35219 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754430Ab0HYVgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 17:36:48 -0400
+Message-ID: <4C758CC4.8000908@zytor.com>
+Date: Wed, 25 Aug 2010 14:36:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Haicheng Li <haicheng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [BUGFIX][PATCH 1/2] x86, mem: separate x86_64 vmalloc_sync_all()
+ into separate functions
+References: <4C6E4ECD.1090607@linux.intel.com> <87r5hni19y.fsf@basil.nowhere.org> <4C756BA0.2090700@zytor.com>
+In-Reply-To: <4C756BA0.2090700@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 16:53 -0400, Ted Ts'o wrote:
-> On Wed, Aug 25, 2010 at 03:35:42PM +0200, Peter Zijlstra wrote:
-> > 
-> > While I appreciate that it might be somewhat (a lot) harder for a
-> > filesystem to provide that guarantee, I'd be deeply worried about your
-> > claim that its impossible.
-> > 
-> > It would render a system without swap very prone to deadlocks. Even with
-> > the very tight dirty page accounting we currently have you can fill all
-> > your memory with anonymous pages, at which point there's nothing free
-> > and you require writeout of dirty pages to succeed.
+On 08/25/2010 12:14 PM, H. Peter Anvin wrote:
 > 
-> For file systems that do delayed allocation, the situation is very
-> similar to swapping over NFS.  Sometimes in order to make some free
-> memory, you need to spend some free memory... 
+> The patches are mangled so they don't apply even with patch -l --
+> Haicheng, could you send me another copy, as an attachment if necessary?
+> 
 
-Which means you need to be able to compute a bounded amount of that
-memory.
+Never mind, I fixed them up by hand.
 
->  which implies that for
-> these file systems, being more aggressive about triggering writeout,
-> and being more aggressive about throttling processes which are
-> creating too many dirty pages, especially dirty delayed allocaiton
-> pages (regardless of whether this is via write(2) or accessing mmapped
-> memory), is a really good idea.
-
-That seems unrelated, the VM has a strict dirty limit and controls
-writeback when needed. That part works.
-
-> A pool of free pages which is reserved for routines that are doing
-> page cleaning would probably also be a good idea.  Maybe that's just
-> retrying with GFP_ATOMIC if a normal allocation fails, or maybe we
-> need our own special pool, or maybe we need to dynamically resize the
-> GFP_ATOMIC pool based on how many subsystems might need to use it....
-
-We have a smallish reserve, accessible with PF_MEMALLOC, but its use is
-not regulated nor bounded, it just mostly works good enough.
-
-
+	-hpa
