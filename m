@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab0HYU2p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 16:28:45 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:17979 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab0HYU2n (ORCPT
+	id S1753930Ab0HYUcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 16:32:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16985 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab0HYUcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 16:28:43 -0400
-Message-ID: <4C757CF4.6010304@caviumnetworks.com>
-Date: Wed, 25 Aug 2010 13:28:36 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	Wed, 25 Aug 2010 16:32:06 -0400
+Message-ID: <4C757D5E.1040307@oracle.com>
+Date: Wed, 25 Aug 2010 13:30:22 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: jiang.adam@gmail.com
-CC: ralf@linux-mips.org, dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
-        peterz@infradead.org, fweisbec@gmail.com, tj@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mips: irq: add statckoverflow detection
-References: <1282372293-30211-1-git-send-email-jiang.adam@gmail.com>
-In-Reply-To: <1282372293-30211-1-git-send-email-jiang.adam@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Christoph Lameter <cl@linux.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm@kvack.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: linux-next: Tree for August 25 (mm/slub)
+References: <20100825132057.c8416bef.sfr@canb.auug.org.au> <20100825094559.bc652afe.randy.dunlap@oracle.com> <alpine.DEB.2.00.1008251405590.22117@router.home>
+In-Reply-To: <alpine.DEB.2.00.1008251405590.22117@router.home>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Aug 2010 20:28:41.0754 (UTC) FILETIME=[1B81EFA0:01CB4494]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like this patch only checks when processing an interrupt, which 
-doesn't seem like it would give much coverage.
+On 08/25/10 12:07, Christoph Lameter wrote:
+> On Wed, 25 Aug 2010, Randy Dunlap wrote:
+> 
+>> mm/slub.c:1732: error: implicit declaration of function 'slab_pre_alloc_hook'
+>> mm/slub.c:1751: error: implicit declaration of function 'slab_post_alloc_hook'
+>> mm/slub.c:1881: error: implicit declaration of function 'slab_free_hook'
+>> mm/slub.c:1886: error: implicit declaration of function 'slab_free_hook_irq'
+> 
+> Empty functions are missing if the runtime debuggability option is
+> compiled
+> out.
+> 
+> 
+> Subject: slub: Add dummy functions for the !SLUB_DEBUG case
+> 
+> Provide the fall back functions to empty hooks if SLUB_DEBUG is not set.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Am I missing something?
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-David Daney
+Thanks.
 
-
-On 08/20/2010 11:31 PM, jiang.adam@gmail.com wrote:
-> From: Adam Jiang<jiang.adam@gmail.com>
->
-> Add stackoverflow detection to mips arch
->
-> Signed-off-by: Adam Jiang<jiang.adam@gmail.com>
 > ---
->   arch/mips/Kconfig.debug |    7 +++++++
->   arch/mips/kernel/irq.c  |   19 +++++++++++++++++++
->   2 files changed, 26 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
-> index 43dc279..f1a00a2 100644
-> --- a/arch/mips/Kconfig.debug
-> +++ b/arch/mips/Kconfig.debug
-> @@ -67,6 +67,13 @@ config CMDLINE_OVERRIDE
->
->   	  Normally, you will choose 'N' here.
->
-> +config DEBUG_STACKOVERFLOW
-> +	bool "Check for stack overflows"
-> +	depends on DEBUG_KERNEL
-> +	help
-> +	  This option will cause messages to be printed if free stack space
-> +	  drops below a certain limit.
+>  mm/slub.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2010-08-25 14:02:43.000000000 -0500
+> +++ linux-2.6/mm/slub.c	2010-08-25 14:04:23.000000000 -0500
+> @@ -1098,6 +1098,18 @@ static inline void inc_slabs_node(struct
+>  							int objects) {}
+>  static inline void dec_slabs_node(struct kmem_cache *s, int node,
+>  							int objects) {}
 > +
->   config DEBUG_STACK_USAGE
->   	bool "Enable stack utilization instrumentation"
->   	depends on DEBUG_KERNEL
-> diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
-> index c6345f5..6334037 100644
-> --- a/arch/mips/kernel/irq.c
-> +++ b/arch/mips/kernel/irq.c
-> @@ -151,6 +151,22 @@ void __init init_IRQ(void)
->   #endif
->   }
->
-> +static inline void check_stack_overflow(void)
-> +{
-> +#ifdef CONFIG_DEBUG_STACKOVERFLOW
-> +	long sp;
+> +static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
+> +							{ return 0; }
 > +
-> +	asm volatile("move %0, $sp" : "=r" (sp));
-> +	sp = sp&  (THREAD_SIZE-1);
+> +static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags,
+> +		void *object) {}
 > +
-> +	/* check for stack overflow: is there less then 2KB free? */
-> +	if (unlikely(sp<  (sizeof(struct thread_info) + 2048))) {
-> +		printk("do_IRQ: stack overflow: %ld\n",
-> +		       sp - sizeof(struct thread_info));
-> +		dump_stack();
-> +	}
-> +#endif
-> +}
->   /*
->    * do_IRQ handles all normal device IRQ's (the special
->    * SMP cross-CPU interrupts have their own specific
-> @@ -159,6 +175,9 @@ void __init init_IRQ(void)
->   void __irq_entry do_IRQ(unsigned int irq)
->   {
->   	irq_enter();
+> +static inline void slab_free_hook(struct kmem_cache *s, void *x) {}
 > +
-> +	check_stack_overflow();
+> +static inline void slab_free_hook_irq(struct kmem_cache *s,
+> +		void *object) {}
 > +
->   	__DO_IRQ_SMTC_HOOK(irq);
->   	generic_handle_irq(irq);
->   	irq_exit();
+>  #endif
+> 
+>  /*
 
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
