@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188Ab0HYEBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 00:01:43 -0400
-Received: from mail.logicpd.com ([66.162.60.3]:28101 "EHLO smtp.logicpd.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750699Ab0HYEBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 00:01:42 -0400
-From: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
-To: linux@arm.linux.org.uk
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
-Subject: [PATCH 2/4]  Low-level init of hsmmc controller for LogicPD's OMAP3530LV SOM and OMAP 35x Torpedo dev boards  
-Date: Wed, 25 Aug 2010 00:00:25 -0400
-Message-Id: <1282708825-26501-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
-X-Mailer: git-send-email 1.6.0.4
-X-OriginalArrivalTime: 25 Aug 2010 04:01:40.0995 (UTC) FILETIME=[392F3D30:01CB440A]
+	id S1751999Ab0HYEWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 00:22:38 -0400
+Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:49208 "EHLO
+	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751676Ab0HYEWg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 00:22:36 -0400
+From: Rasesh Mody <rmody@brocade.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jing Huang <huangj@brocade.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 24 Aug 2010 21:22:19 -0700
+Subject: RE: linux-next: build failure after merge of the final tree (net
+ tree related)
+Thread-Topic: linux-next: build failure after merge of the final tree (net
+ tree related)
+Thread-Index: ActD+pC5LFGQUjI1SzC0hCZCo+N9WgAELMuA
+Message-ID: <E5313AF6F2BFD14293E5FD0F94750F86A4AE225EE8@HQ1-EXCH01.corp.brocade.com>
+References: <20100825120927.c469ce20.sfr@canb.auug.org.au>
+In-Reply-To: <20100825120927.c469ce20.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
+ definitions=2010-08-25_02:2010-08-25,2010-08-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=6.0.2-1004200000 definitions=main-1008240235
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    	ARM: OMAP3LOGIC: Adding SDMMC support
-             Add low-level initialization for hsmmc controller for
-             LogicPD's OMAP 3530 LV SOM and OMAP 35x Torpedo board.
+All,
 
-	Tested against: 81e09f50c93edff607259cbe374a3006c9c5fa74
-	Signed-off-by: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
----
- arch/arm/mach-omap2/board-omap3logic.c |   40 +++++++++++++++++++++++++++++++-
- 1 files changed, 39 insertions(+), 1 deletions(-)
+We are working on a fix and we will submit a patch soon.
 
-diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
-index 30af7da..bd83a83 100644
---- a/arch/arm/mach-omap2/board-omap3logic.c
-+++ b/arch/arm/mach-omap2/board-omap3logic.c
-@@ -33,6 +33,7 @@
- #include <asm/mach/map.h>
- 
- #include "mux.h"
-+#include "hsmmc.h"
- 
- #include <plat/mux.h>
- #include <plat/board.h>
-@@ -110,6 +111,7 @@ static struct twl4030_platform_data omap3logic_twldata = {
- 
- 	/* platform_data for children goes here */
- 	.gpio		= &omap3logic_gpio_data,
-+	.vmmc1		= &omap3logic_vmmc1,
- };
- 
- static struct i2c_board_info __initdata omap3logic_i2c_boardinfo[] = {
-@@ -128,6 +130,42 @@ static int __init omap3logic_i2c_init(void)
- 	return 0;
- }
- 
-+static struct omap2_hsmmc_info __initdata board_mmc_info[] = {
-+	{
-+		.name		= "external",
-+		.mmc		= 1,
-+		.wires		= 4,
-+		.gpio_cd	= -EINVAL,
-+		.gpio_wp	= -EINVAL,
-+	},
-+	{}      /* Terminator */
-+};
-+
-+static void __init board_mmc_init(void)
-+{
-+	/* OMAP3530 LV SOM board */
-+	if (machine_is_omap3530_lv_som()) {
-+		board_mmc_info[0].gpio_cd = OMAP3530_LV_SOM_MMC_GPIO_CD;
-+		board_mmc_info[0].gpio_wp = OMAP3530_LV_SOM_MMC_GPIO_WP;
-+		omap_mux_init_signal("gpio_110", OMAP_PIN_OUTPUT);
-+		omap_mux_init_signal("gpio_126", OMAP_PIN_OUTPUT);
-+
-+
-+	/* OMAP3 Torpedo board */
-+	} else if (machine_is_omap3_torpedo()) {
-+		board_mmc_info[0].gpio_cd = OMAP3_TORPEDO_MMC_GPIO_CD;
-+		omap_mux_init_signal("gpio_127", OMAP_PIN_OUTPUT);
-+	/* unsupported board */
-+	} else {
-+		printk(KERN_ERR "%s(): unknown machine type\n", __func__);
-+	return;
-+	}
-+
-+	omap2_hsmmc_init(board_mmc_info);
-+	/* link regulators to MMC adapters */
-+	omap3logic_vmmc1_supply.dev = board_mmc_info[0].dev;
-+}
-+
- static void __init omap3logic_init_irq(void)
- {
- 	init_sdram(mt46h32m32lf6_sdrc_params);
-@@ -141,7 +179,7 @@ static void __init omap3logic_init(void)
- {
- 	omap3logic_i2c_init();
- 	omap_serial_init();
--
-+	board_mmc_init();
- 	/* Ensure SDRC pins are mux'd for self-refresh */
- 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
- 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
--- 
-1.7.2.1
+Regards,
+Rasesh
 
+-----Original Message-----
+From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
+Sent: Tuesday, August 24, 2010 7:09 PM
+To: David Miller; netdev@vger.kernel.org
+Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Rasesh Mody; Jing Huang; James Bottomley
+Subject: linux-next: build failure after merge of the final tree (net tree related)
+
+Hi all,
+
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+drivers/net/built-in.o: In function `bfa_ioc_is_operational':
+(.opd+0x1c6c8): multiple definition of `bfa_ioc_is_operational'
+drivers/scsi/built-in.o:(.opd+0x1b1b0): first defined here
+
+and many more ...
+
+Caused by commit 8b230ed8ec96c933047dd0625cf95f739e4939a6 ("bna: Brocade 10Gb Ethernet device driver") interacting with commit a whole series of patches to do with the Brocade BFA FC SCSI driver that are in Linus' tree stretching back to v2.6.32-rc2.
+
+I have reverted that net tree commit (and commit
+f04b4dd2b1f533cef0507e0410ffc6732d21a272 ("bna: Delete get_flags and set_flags ethtool methods") that depends on it).
+
+--
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
