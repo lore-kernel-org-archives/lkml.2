@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab0HYUB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 16:01:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35759 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752469Ab0HYUBz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 16:01:55 -0400
+	id S1753534Ab0HYUDR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 16:03:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49490 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752469Ab0HYUDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 16:03:15 -0400
+Date: Wed, 25 Aug 2010 22:02:24 +0200
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, jack@suse.cz, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, jeremy@goop.org,
+        snitzer@redhat.com, k-ueda@ct.jp.nec.com,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 26/30] ext4: do not send discards as barriers
+Message-ID: <20100825200223.GE2738@quack.suse.cz>
+References: <1282751267-3530-1-git-send-email-tj@kernel.org>
+ <1282751267-3530-27-git-send-email-tj@kernel.org>
+ <20100825155842.GA3229@lst.de>
+ <20100825160032.GC3229@lst.de>
+ <4C753D75.2010305@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100825132815.108d8217@bike.lwn.net>
-References: <20100825132815.108d8217@bike.lwn.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 Aug 2010 13:00:59 -0700
-Message-ID: <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
-Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
-To: Jonathan Corbet <corbet@lwn.net>, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C753D75.2010305@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 12:28 PM, Jonathan Corbet <corbet@lwn.net> wrote:
-> lglock: make lg_lock_global() actually lock globally
+On Wed 25-08-10 17:57:41, Tejun Heo wrote:
+> On 08/25/2010 06:00 PM, Christoph Hellwig wrote:
+> > On Wed, Aug 25, 2010 at 05:58:42PM +0200, Christoph Hellwig wrote:
+> >> On Wed, Aug 25, 2010 at 05:47:43PM +0200, Tejun Heo wrote:
+> >>> From: Christoph Hellwig <hch@infradead.org>
+> >>>
+> >>> ext4 already uses synchronous discards, no need to add I/O barriers.
+> >>
+> >> This needs the patch that Jan sent in reply to my initial version merged
+> >> into it.
+> > 
+> > Actually the jbd2 patch needs it merged, but the point still stands.
+> 
+> Yeah, wasn't sure about that one.  Has anyone tested it?  I'll be
+> happy to merge it but I have no idea whether it's correct or not and
+> Jan didn't seem to have tested it so...  Jan, shall I merge the patch?
+  I'm quite confident the patch is correct so you can merge it I think but
+tomorrow I'll give it some crash testing together with the rest of your
+patch set in KVM to be sure.
 
-Grrr. Same disease as Nick and others. Why do you repeat the subject
-line in the body? Don't do that. We don't want the summary line twice
-in the commit message, and we don't want it twice in the email.
-
-We simply don't want it twice. Full stop.
-
-> lg_lock_global() currently only acquires spinlocks for online CPUs, but
-> it's meant to lock all possible CPUs.  At Nick's suggestion, change
-> for_each_online_cpu() to for_each_possible_cpu() to get the expected
-> behavior.
-
-Can you say what this actually matters for? Don't we do stop-machine
-for CPU hotplug anyway? And if we don't, shouldn't we? Exactly because
-otherwise "for_each_online_cpu()" is always racy (and that has nothing
-to do with the lglock).
-
-                  Linus
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
