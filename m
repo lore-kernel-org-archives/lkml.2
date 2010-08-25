@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab0HYWQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 18:16:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43366 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab0HYWQ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 18:16:29 -0400
+	id S1754704Ab0HYWQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 18:16:36 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39323 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752323Ab0HYWQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 18:16:32 -0400
 From: Ivan Gomez Castellanos <ivan.gomez@ti.com>
 To: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, gregkh@suse.de
 Cc: Hiroshi.DOYU@nokia.com, ameya.palande@nokia.com,
         felipe.contreras@nokia.com, omar.ramirez@ti.com, ohad@wizery.com,
         rene.sapiens@ti.com, nm@ti.com, ernesto@ti.com, x0095078@ti.com,
         Ivan Gomez Castellanos <ivan.gomez@ti.com>
-Subject: [PATCH 03/11] staging: tidspbridge: Remove cfg_get_auto_start()
-Date: Wed, 25 Aug 2010 17:08:56 -0500
-Message-Id: <1282774144-11628-4-git-send-email-ivan.gomez@ti.com>
+Subject: [PATCH 04/11] staging: tidspbridge: Remove cfg_init() and cfg_exit()
+Date: Wed, 25 Aug 2010 17:08:57 -0500
+Message-Id: <1282774144-11628-5-git-send-email-ivan.gomez@ti.com>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <1282774144-11628-1-git-send-email-ivan.gomez@ti.com>
 References: <1282774144-11628-1-git-send-email-ivan.gomez@ti.com>
@@ -23,116 +22,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the services directory is going to be removed, this patch is needed.
-
-The function cfg_get_auto_start() only assigns a value to the flag
-tmp, and it is only called by the function api_init_complete2(). So
-the function cfg_get_auto_start() is not required.
+The functions cfg_init() and cfg_exit() do nothing, so they are removed.
 
 Signed-off-by: Ivan Gomez Castellanos <ivan.gomez@ti.com>
 ---
- .../staging/tidspbridge/include/dspbridge/cfg.h    |   19 --------------
- drivers/staging/tidspbridge/pmgr/dspapi.c          |   10 ++++---
- drivers/staging/tidspbridge/services/cfg.c         |   26 --------------------
- 3 files changed, 6 insertions(+), 49 deletions(-)
+ .../staging/tidspbridge/include/dspbridge/cfg.h    |   26 --------------------
+ drivers/staging/tidspbridge/services/cfg.c         |   20 ---------------
+ drivers/staging/tidspbridge/services/services.c    |   12 ---------
+ 3 files changed, 0 insertions(+), 58 deletions(-)
 
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfg.h b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
-index 05a8999..a84fa2b 100644
+index a84fa2b..eea9000 100644
 --- a/drivers/staging/tidspbridge/include/dspbridge/cfg.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
-@@ -35,25 +35,6 @@
- extern void cfg_exit(void);
+@@ -22,19 +22,6 @@
+ #include <dspbridge/cfgdefs.h>
  
  /*
-- *  ======== cfg_get_auto_start ========
+- *  ======== cfg_exit ========
 - *  Purpose:
-- *      Retreive the autostart mask, if any, for this board.
+- *      Discontinue usage of the CFG module.
 - *  Parameters:
-- *      dev_node_obj:  Handle to the dev_node who's driver we are querying.
-- *      auto_start:   Ptr to location for 32 bit autostart mask.
 - *  Returns:
-- *      0:                Success.
-- *      -EFAULT:  dev_node_obj is invalid.
-- *      -ENODATA: Unable to retreive resource.
 - *  Requires:
-- *      CFG initialized.
+- *      cfg_init(void) was previously called.
 - *  Ensures:
-- *      0:        *auto_start contains autostart mask for this devnode.
+- *      Resources acquired in cfg_init(void) are freed.
 - */
--extern int cfg_get_auto_start(struct cfg_devnode *dev_node_obj,
--				     u32 *auto_start);
+-extern void cfg_exit(void);
 -
 -/*
   *  ======== cfg_get_cd_version ========
   *  Purpose:
   *      Retrieves the version of the PM Class Driver.
-diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
-index 7b42f72..d9bb3ea 100644
---- a/drivers/staging/tidspbridge/pmgr/dspapi.c
-+++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
-@@ -381,8 +381,8 @@ int api_init_complete2(void)
- 	int status = 0;
- 	struct cfg_devnode *dev_node;
- 	struct dev_object *hdev_obj;
-+	struct drv_data *drv_datap;
- 	u8 dev_type;
--	u32 tmp;
- 
- 	DBC_REQUIRE(api_c_refs > 0);
- 
-@@ -397,10 +397,12 @@ int api_init_complete2(void)
- 		if (dev_get_dev_type(hdev_obj, &dev_type))
- 			continue;
- 
--		if ((dev_type == DSP_UNIT) || (dev_type == IVA_UNIT))
--			if (cfg_get_auto_start(dev_node, &tmp) == 0
--									&& tmp)
-+		if ((dev_type == DSP_UNIT) || (dev_type == IVA_UNIT)) {
-+			drv_datap = dev_get_drvdata(bridge);
-+
-+			if (drv_datap && drv_datap->base_img)
- 				proc_auto_start(dev_node, hdev_obj);
-+		}
- 	}
- 
- 	return status;
-diff --git a/drivers/staging/tidspbridge/services/cfg.c b/drivers/staging/tidspbridge/services/cfg.c
-index a7af74f..e9cdbf6 100644
---- a/drivers/staging/tidspbridge/services/cfg.c
-+++ b/drivers/staging/tidspbridge/services/cfg.c
-@@ -46,32 +46,6 @@ void cfg_exit(void)
- }
+@@ -152,19 +139,6 @@ extern int cfg_get_zl_file(struct cfg_devnode *dev_node_obj,
+ 				  u32 buf_size, char *str_zl_file_name);
  
  /*
-- *  ======== cfg_get_auto_start ========
+- *  ======== cfg_init ========
 - *  Purpose:
-- *      Retreive the autostart mask, if any, for this board.
+- *      Initialize the CFG module's private state.
+- *  Parameters:
+- *  Returns:
+- *      TRUE if initialized; FALSE if error occured.
+- *  Requires:
+- *  Ensures:
+- *      A requirement for each of the other public CFG functions.
 - */
--int cfg_get_auto_start(struct cfg_devnode *dev_node_obj,
--			      u32 *auto_start)
+-extern bool cfg_init(void);
+-
+-/*
+  *  ======== cfg_set_dev_object ========
+  *  Purpose:
+  *      Store the Device Object handle for a given devnode.
+diff --git a/drivers/staging/tidspbridge/services/cfg.c b/drivers/staging/tidspbridge/services/cfg.c
+index e9cdbf6..b9c3882 100644
+--- a/drivers/staging/tidspbridge/services/cfg.c
++++ b/drivers/staging/tidspbridge/services/cfg.c
+@@ -36,16 +36,6 @@ struct drv_ext {
+ };
+ 
+ /*
+- *  ======== cfg_exit ========
+- *  Purpose:
+- *      Discontinue usage of the CFG module.
+- */
+-void cfg_exit(void)
 -{
--	int status = 0;
--	u32 dw_buf_size;
--	struct drv_data *drv_datap = dev_get_drvdata(bridge);
--
--	dw_buf_size = sizeof(*auto_start);
--	if (!dev_node_obj)
--		status = -EFAULT;
--	if (!auto_start || !drv_datap)
--		status = -EFAULT;
--	if (!status)
--		*auto_start = (drv_datap->base_img) ? 1 : 0;
--
--	DBC_ENSURE((status == 0 &&
--		    (*auto_start == 0 || *auto_start == 1))
--		   || status != 0);
--	return status;
+-	/* Do nothing */
 -}
 -
 -/*
   *  ======== cfg_get_dev_object ========
   *  Purpose:
   *      Retrieve the Device Object handle for a given devnode.
+@@ -157,16 +147,6 @@ int cfg_get_object(u32 *value, u8 dw_type)
+ }
+ 
+ /*
+- *  ======== cfg_init ========
+- *  Purpose:
+- *      Initialize the CFG module's private state.
+- */
+-bool cfg_init(void)
+-{
+-	return true;
+-}
+-
+-/*
+  *  ======== cfg_set_dev_object ========
+  *  Purpose:
+  *      Store the Device Object handle and dev_node pointer for a given devnode.
+diff --git a/drivers/staging/tidspbridge/services/services.c b/drivers/staging/tidspbridge/services/services.c
+index 6a7dd6f..47bac21 100644
+--- a/drivers/staging/tidspbridge/services/services.c
++++ b/drivers/staging/tidspbridge/services/services.c
+@@ -43,7 +43,6 @@
+  */
+ void services_exit(void)
+ {
+-	cfg_exit();
+ }
+ 
+ /*
+@@ -54,17 +53,6 @@ void services_exit(void)
+ bool services_init(void)
+ {
+ 	bool ret = true;
+-	bool fcfg;
+-
+-	/* Perform required initialization of SERVICES modules. */
+-	fcfg = cfg_init();
+-
+-	ret = fcfg;
+-
+-	if (!ret) {
+-		if (fcfg)
+-			cfg_exit();
+-	}
+ 
+ 	return ret;
+ }
 -- 
 1.7.0.3
 
