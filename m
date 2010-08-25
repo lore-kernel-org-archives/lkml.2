@@ -1,68 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab0HYUns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 16:43:48 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:42357 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab0HYUnl (ORCPT
+	id S1754075Ab0HYUo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 16:44:56 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62597 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab0HYUoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 16:43:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=SYudKBrDFT9W+nvGMP8i1jVM9dVIIkkMNZYzcVQqKC5WjZDxmVsWvGuLo+lq7l35r
-	y47eXIqseO3ouVPtJFmXg==
-Date: Wed, 25 Aug 2010 13:43:34 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Theodore Tso <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-In-Reply-To: <1282743090.2605.3696.camel@laptop>
-Message-ID: <alpine.DEB.2.00.1008251340420.16484@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
- <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org>  <1282740516.2605.3644.camel@laptop> <1282740778.2605.3652.camel@laptop> <E25A6DCB-3188-4CF9-9DC4-631192B2F0E2@mit.edu> <1282743090.2605.3696.camel@laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 25 Aug 2010 16:44:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=d+UHLOHYRECU3oEdd/zwNOU53qRXxNCf3nDZpcD56Za02OouLViKkRRg6hpIx979aY
+         KiMOeRR5DAcCLzVTOBRnhMpXnogyB2h9/dFCaVjghVjfmOE+IQoBo0jTK4idGLgskSzR
+         8Wy25dNRLGGbob01eEfziFtJb/Tm7Hm9hqJR0=
+Subject: Re: [2.6.35-rc1] page alloc failure order:1, mode:0x4020
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nikhil Sethi
+	 =?UTF-8?Q?=28=E0=A4=A8=E0=A4=BF=E0=A4=96=E0=A4=BF=E0=A4=B2_?=
+	 =?UTF-8?Q?=E0=A4=B8=E0=A5=87=E0=A4=A0=E0=A5=80=29?= 
+	<nikhil@sethi.ws>
+Cc: Michael Guntsche <mike@it-loops.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTimf5iZV2ytoymCXJ=B2Vgowr6qb6u2nBg+RtBUg@mail.gmail.com>
+References: <20100604092025.GA96690@trillian.comsick.at>
+	 <1275656014.2482.169.camel@edumazet-laptop>
+	 <20100604161644.GA98048@trillian.local>
+	 <20100606095640.GA4436@trillian.comsick.at>
+	 <1275820945.5238.987.camel@edumazet-laptop>
+	 <AANLkTimf5iZV2ytoymCXJ=B2Vgowr6qb6u2nBg+RtBUg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Aug 2010 22:44:49 +0200
+Message-ID: <1282769089.2681.159.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, Peter Zijlstra wrote:
-
-> I'm not sure, but I think the cgroup thing doesn't account kernel
-> allocations, in which case the above problem doesn't exist.
+Le mercredi 25 août 2010 à 13:25 -0700, Nikhil Sethi (निखिल सेठी) a
+écrit :
+> Hello.
 > 
-
-Right, the only cgroup that does is cpusets because it binds the memory 
-allocations to a set of nodes.
-
-> For the cpuset case we punch through the cpuset constraints for kernel
-> allocations (unless __GFP_HARDWALL).
+> I am running 2.5.35.3 with the above patch, and I still get these
+> failures. Though they are much less often than without the patch. A
+> snippet from dmesg below.
 > 
+> Please let me know what other details I should provide. Thanks
+> 
+> skbuff alloc of size 3872 failed
+> java: page allocation failure. order:1, mode:0x4020
+> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
+> Call Trace:
+>  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
+>  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
+>  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
+>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+>  [<c0334097>] ? __alloc_skb+0x57/0x100
+>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+>  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
+>  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
+>  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
+>  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
+>  [<c02195bf>] ? tasklet_action+0x5f/0x65
+>  [<c0219873>] ? __do_softirq+0x60/0xc6
+>  [<c0219907>] ? do_softirq+0x2e/0x30
+>  [<c02199f9>] ? irq_exit+0x53/0x55
+>  [<c020392c>] ? do_IRQ+0x3a/0x72
+>  [<c0202be9>] ? common_interrupt+0x29/0x30
+> Mem-Info:
+> DMA per-cpu:
+> CPU    0: hi:    0, btch:   1 usd:   0
+> Normal per-cpu:
+> CPU    0: hi:   90, btch:  15 usd:  32
+> active_anon:6158 inactive_anon:15748 isolated_anon:0
+>  active_file:11477 inactive_file:22926 isolated_file:0
+>  unevictable:468 dirty:5788 writeback:0 unstable:0
+>  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
+>  mapped:1410 shmem:5 pagetables:227 bounce:0
+> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
+> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
+> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
+> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
+> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
+> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
+> pages_scanned:0 all_unreclaimable? no
+> lowmem_reserve[]: 0 238 238
+> Normal free:2960kB min:1908kB low:2384kB high:2860kB
+> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
+> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
+> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
+> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
+> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
+> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+> all_unreclaimable? no
+> lowmem_reserve[]: 0 0 0
+> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
+> 0*1024kB 0*2048kB 0*4096kB = 1000kB
+> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+> 0*1024kB 0*2048kB 0*4096kB = 2960kB
+> 37964 total pagecache pages
+> 3160 pages in swap cache
+> Swap cache stats: add 164954, delete 161794, find 97931/115609
+> Free swap  = 937284kB
+> Total swap = 963896kB
+> 65535 pages RAM
+> 1237 pages reserved
+> 29042 pages shared
+> 38802 pages non-shared
+> SLUB: Unable to allocate memory on node -1 (gfp=0x20)
+>   cache: kmalloc-8192, object size: 8192, buffer size: 8192, default
+> order: 3, min order: 1
+>   node 0: slabs: 0, objs: 0, free: 0
+> skbuff alloc of size 3872 failed
+> java: page allocation failure. order:1, mode:0x4020
+> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
+> Call Trace:
+>  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
+>  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
+>  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
+>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+>  [<c0334097>] ? __alloc_skb+0x57/0x100
+>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+>  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
+>  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
+>  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
+>  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
+>  [<c02195bf>] ? tasklet_action+0x5f/0x65
+>  [<c0219873>] ? __do_softirq+0x60/0xc6
+>  [<c0219907>] ? do_softirq+0x2e/0x30
+>  [<c02199f9>] ? irq_exit+0x53/0x55
+>  [<c020392c>] ? do_IRQ+0x3a/0x72
+>  [<c0202be9>] ? common_interrupt+0x29/0x30
+> Mem-Info:
+> DMA per-cpu:
+> CPU    0: hi:    0, btch:   1 usd:   0
+> Normal per-cpu:
+> CPU    0: hi:   90, btch:  15 usd:  32
+> active_anon:6158 inactive_anon:15748 isolated_anon:0
+>  active_file:11477 inactive_file:22926 isolated_file:0
+>  unevictable:468 dirty:5788 writeback:0 unstable:0
+>  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
+>  mapped:1410 shmem:5 pagetables:227 bounce:0
+> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
+> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
+> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
+> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
+> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
+> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
+> pages_scanned:0 all_unreclaimable? no
+> lowmem_reserve[]: 0 238 238
+> Normal free:2960kB min:1908kB low:2384kB high:2860kB
+> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
+> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
+> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
+> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
+> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
+> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+> all_unreclaimable? no
+> lowmem_reserve[]: 0 0 0
+> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
+> 0*1024kB 0*2048kB 0*4096kB = 1000kB
+> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+> 0*1024kB 0*2048kB 0*4096kB = 2960kB
+> 37964 total pagecache pages
+> 3160 pages in swap cache
+> 
+> On Sun, Jun 6, 2010 at 3:42 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >
+> > Le dimanche 06 juin 2010 à 11:56 +0200, Michael Guntsche a écrit :
+> > > On 2010.06.04 18:16:44 , Michael Guntsche wrote:
+> > > > I applied the patch recompiled and run it on the routerboard, trying
+> > > > to trigger the bug again.
+> > >
+> > > Hi Eric,
+> > >
+> > > Up to now I was not able to reproduce the bug, do you think this patch
+> > > can be pushed to mainline or is there a "better"/other  fix for it?
+> > >
+> > > Kind regards,
+> > > Michael
+> > >
+> > >
+> >
+> > Thanks Michael for testing.
+> >
+> > I'll submit ASAP an official patch, sent to all people involved in this
+> > driver to get their Ack (or Nack).
+> >
+> > IEEE80211_MAX_MPDU_LEN being 3840 + somebits is suspect, since it doesnt
+> > match 802.11 specs.
+> >
+> > It should be more close of 2304 + MAC header (32bytes) + FCS (4 bytes) ?
+> >
+> >
+> >
+> > --
 
-__GFP_HARDWALL doesn't mean that the allocation won't be constrained, this 
-is a common misconception.  __GFP_HARDWALL only prevents us from looking 
-at our cpuset.mem_exclusive flag and checking our nearest common ancestor 
-cpuset if we can block.
 
-The cpusets case is actually the easiest to fix: use GFP_ATOMIC.  
-GFP_ATOMIC allocations aren't bound by any cpuset and, in the general 
-case, can allocate below the min watermark because of 
-ALLOC_HARD | ALLOC_HARDER in the page allocator which creates the notion 
-of "memory reserves" available to these tasks.  Then, success really 
-depends on the setting of the watermarks instead.
+reading my former patch, I believe I mistakenly used a max_t() instead
+of a min_() macro :
+
+diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
+index ca6065b..0a0dc3a 100644
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
+        u32 size;
+ 
+ 
+-       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
+-                                    ah->caps.rx_status_len,
+-                                    min(common->cachelsz, (u16)64));
+-
++       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
++                      min(common->cachelsz, (u16)64));
++       common->rx_bufsize = max_t(u32, size,
++                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
+        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
+                                    ah->caps.rx_status_len);
+ 
+
+
+Please use instead this one :
+
+diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
+index ca6065b..0a0dc3a 100644
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
+        u32 size;
+ 
+ 
+-       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
+-                                    ah->caps.rx_status_len,
+-                                    min(common->cachelsz, (u16)64));
+-
++       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
++                      min(common->cachelsz, (u16)64));
++       common->rx_bufsize = min_t(u32, size,
++                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
+        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
+                                    ah->caps.rx_status_len);
+ 
+
+
+
