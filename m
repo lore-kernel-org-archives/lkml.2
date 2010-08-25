@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab0HYS5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:57:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45305 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138Ab0HYS5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:57:09 -0400
-Message-ID: <4C756768.2060903@zytor.com>
-Date: Wed, 25 Aug 2010 11:56:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1752526Ab0HYTA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 15:00:27 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:46228 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab0HYTAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 15:00:24 -0400
+Date: Wed, 25 Aug 2010 12:01:07 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Dan Carpenter <error27@gmail.com>
+cc: Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] ceph: ceph_get_inode() returns an ERR_PTR
+In-Reply-To: <20100825071135.GO29330@bicker>
+Message-ID: <Pine.LNX.4.64.1008251201020.19762@cobra.newdream.net>
+References: <20100825071135.GO29330@bicker>
 MIME-Version: 1.0
-To: Robin Holt <holt@sgi.com>
-CC: Jack Steiner <steiner@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Stable Maintainers <stable@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [Patch] numa:x86_64: Cacheline aliasing makes for_each_populated_zone
- extremely expensive -V2.
-References: <20100818183024.GZ3043@sgi.com> <4C6DB62C.9040105@zytor.com> <20100820135822.GA3220@sgi.com> <20100820150319.GB3220@sgi.com> <4C6EAA48.7070902@zytor.com> <20100821130757.GC3220@sgi.com> <4C72EB41.9000002@zytor.com> <20100825110815.GD3220@sgi.com>
-In-Reply-To: <20100825110815.GD3220@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2010 04:08 AM, Robin Holt wrote:
->> So yes, this means adding an interface to the e820 allocator, even
->> though it's scheduled to be replaced.  Because the new implementation
->> will see the new interface and know they have to implement it, and the
->> interface will make it clear just what exactly is expected of the
->> implementation.
+Thanks, queueing this up!
+
+sage
+
+
+On Wed, 25 Aug 2010, Dan Carpenter wrote:
+
+> ceph_get_inode() returns an ERR_PTR and it doesn't return a NULL.
 > 
-> What is the new allocator called?  Who is developing it?  When do you
-> expect it to be introduced into the kernel?
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 > 
-
-memblock -- the core is already in the kernel and used by several
-non-x86 architectures, and so we want to switch x86 to use it, as well.
-
-Ben Herrenschmidt and Yinghai Lu are driving this one.
-
-As with anything in Linux it will get integrated when it is ready.  It
-would be nice if it was ready for .37, but it's not certain.
-
-	-hpa
+> diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
+> index 5d893d3..1e623ec 100644
+> --- a/fs/ceph/inode.c
+> +++ b/fs/ceph/inode.c
+> @@ -1229,11 +1229,11 @@ retry_lookup:
+>  			in = dn->d_inode;
+>  		} else {
+>  			in = ceph_get_inode(parent->d_sb, vino);
+> -			if (in == NULL) {
+> +			if (IS_ERR(in)) {
+>  				dout("new_inode badness\n");
+>  				d_delete(dn);
+>  				dput(dn);
+> -				err = -ENOMEM;
+> +				err = PTR_ERR(in);
+>  				goto out;
+>  			}
+>  			dn = splice_dentry(dn, in, NULL);
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
