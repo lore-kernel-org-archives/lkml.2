@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab0HYPyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:54:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52845 "EHLO hera.kernel.org"
+	id S1754229Ab0HYQE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 12:04:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52846 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752392Ab0HYPyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752397Ab0HYPyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Aug 2010 11:54:02 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
 Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 25/30] jbd2: replace barriers with explicit flush / FUA usage
-Date: Wed, 25 Aug 2010 17:47:42 +0200
-Message-Id: <1282751267-3530-26-git-send-email-tj@kernel.org>
+Subject: [PATCH 20/30] btrfs: replace barriers with explicit flush / FUA usage
+Date: Wed, 25 Aug 2010 17:47:37 +0200
+Message-Id: <1282751267-3530-21-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
 References: <1282751267-3530-1-git-send-email-tj@kernel.org>
@@ -29,80 +29,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Christoph Hellwig <hch@infradead.org>
 
-Switch to the WRITE_FLUSH_FUA flag for journal commits and remove the
-EOPNOTSUPP detection for barriers.
+Switch to the WRITE_FLUSH_FUA flag for log writes, remove the EOPNOTSUPP
+detection for barriers and stop setting the barrier flag for discards.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/jbd2/commit.c |   43 ++++---------------------------------------
- 1 files changed, 4 insertions(+), 39 deletions(-)
+ fs/btrfs/disk-io.c     |   19 ++++---------------
+ fs/btrfs/extent-tree.c |    2 +-
+ fs/btrfs/volumes.c     |    4 ----
+ fs/btrfs/volumes.h     |    1 -
+ 4 files changed, 5 insertions(+), 21 deletions(-)
 
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 7c068c1..db99ecb 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -134,25 +134,11 @@ static int journal_submit_commit_record(journal_t *journal,
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 64f1008..5e789f4 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -2063,7 +2063,7 @@ static void btrfs_end_buffer_write_sync(struct buffer_head *bh, int uptodate)
+ 	if (uptodate) {
+ 		set_buffer_uptodate(bh);
+ 	} else {
+-		if (!buffer_eopnotsupp(bh) && printk_ratelimit()) {
++		if (printk_ratelimit()) {
+ 			printk(KERN_WARNING "lost page write due to "
+ 					"I/O error on %s\n",
+ 				       bdevname(bh->b_bdev, b));
+@@ -2200,21 +2200,10 @@ static int write_dev_supers(struct btrfs_device *device,
+ 			bh->b_end_io = btrfs_end_buffer_write_sync;
+ 		}
  
- 	if (journal->j_flags & JBD2_BARRIER &&
- 	    !JBD2_HAS_INCOMPAT_FEATURE(journal,
--				       JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)) {
--		ret = submit_bh(WRITE_SYNC_PLUG | WRITE_BARRIER, bh);
--		if (ret == -EOPNOTSUPP) {
--			printk(KERN_WARNING
--			       "JBD2: Disabling barriers on %s, "
--			       "not supported by device\n", journal->j_devname);
--			write_lock(&journal->j_state_lock);
--			journal->j_flags &= ~JBD2_BARRIER;
--			write_unlock(&journal->j_state_lock);
--
--			/* And try again, without the barrier */
--			lock_buffer(bh);
--			set_buffer_uptodate(bh);
--			clear_buffer_dirty(bh);
--			ret = submit_bh(WRITE_SYNC_PLUG, bh);
+-		if (i == last_barrier && do_barriers && device->barriers) {
+-			ret = submit_bh(WRITE_BARRIER, bh);
+-			if (ret == -EOPNOTSUPP) {
+-				printk("btrfs: disabling barriers on dev %s\n",
+-				       device->name);
+-				set_buffer_uptodate(bh);
+-				device->barriers = 0;
+-				/* one reference for submit_bh */
+-				get_bh(bh);
+-				lock_buffer(bh);
+-				ret = submit_bh(WRITE_SYNC, bh);
+-			}
+-		} else {
++		if (i == last_barrier && do_barriers)
++			ret = submit_bh(WRITE_FLUSH_FUA, bh);
++		else
+ 			ret = submit_bh(WRITE_SYNC, bh);
 -		}
--	} else {
-+				       JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT))
-+		ret = submit_bh(WRITE_SYNC_PLUG | WRITE_FLUSH_FUA, bh);
-+	else
- 		ret = submit_bh(WRITE_SYNC_PLUG, bh);
--	}
-+
- 	*cbh = bh;
- 	return ret;
- }
-@@ -166,29 +152,8 @@ static int journal_wait_on_commit_record(journal_t *journal,
+ 
+ 		if (ret)
+ 			errors++;
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index 32d0940..43dc9ea 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -1696,7 +1696,7 @@ static void btrfs_issue_discard(struct block_device *bdev,
+ 				u64 start, u64 len)
  {
- 	int ret = 0;
+ 	blkdev_issue_discard(bdev, start >> 9, len >> 9, GFP_KERNEL,
+-			BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
++			BLKDEV_IFL_WAIT);
+ }
  
--retry:
- 	clear_buffer_dirty(bh);
- 	wait_on_buffer(bh);
--	if (buffer_eopnotsupp(bh) && (journal->j_flags & JBD2_BARRIER)) {
--		printk(KERN_WARNING
--		       "JBD2: %s: disabling barries on %s - not supported "
--		       "by device\n", __func__, journal->j_devname);
--		write_lock(&journal->j_state_lock);
--		journal->j_flags &= ~JBD2_BARRIER;
--		write_unlock(&journal->j_state_lock);
--
--		lock_buffer(bh);
--		clear_buffer_dirty(bh);
--		set_buffer_uptodate(bh);
--		bh->b_end_io = journal_end_buffer_io_sync;
--
--		ret = submit_bh(WRITE_SYNC_PLUG, bh);
--		if (ret) {
--			unlock_buffer(bh);
--			return ret;
--		}
--		goto retry;
--	}
+ static int btrfs_discard_extent(struct btrfs_root *root, u64 bytenr,
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index dd318ff..e25e46a 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -398,7 +398,6 @@ static noinline int device_list_add(const char *path,
+ 		device->work.func = pending_bios_fn;
+ 		memcpy(device->uuid, disk_super->dev_item.uuid,
+ 		       BTRFS_UUID_SIZE);
+-		device->barriers = 1;
+ 		spin_lock_init(&device->io_lock);
+ 		device->name = kstrdup(path, GFP_NOFS);
+ 		if (!device->name) {
+@@ -462,7 +461,6 @@ static struct btrfs_fs_devices *clone_fs_devices(struct btrfs_fs_devices *orig)
+ 		device->devid = orig_dev->devid;
+ 		device->work.func = pending_bios_fn;
+ 		memcpy(device->uuid, orig_dev->uuid, sizeof(device->uuid));
+-		device->barriers = 1;
+ 		spin_lock_init(&device->io_lock);
+ 		INIT_LIST_HEAD(&device->dev_list);
+ 		INIT_LIST_HEAD(&device->dev_alloc_list);
+@@ -1489,7 +1487,6 @@ int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
+ 	trans = btrfs_start_transaction(root, 0);
+ 	lock_chunks(root);
  
- 	if (unlikely(!buffer_uptodate(bh)))
- 		ret = -EIO;
+-	device->barriers = 1;
+ 	device->writeable = 1;
+ 	device->work.func = pending_bios_fn;
+ 	generate_random_uuid(device->uuid);
+@@ -3084,7 +3081,6 @@ static struct btrfs_device *add_missing_dev(struct btrfs_root *root,
+ 		return NULL;
+ 	list_add(&device->dev_list,
+ 		 &fs_devices->devices);
+-	device->barriers = 1;
+ 	device->dev_root = root->fs_info->dev_root;
+ 	device->devid = devid;
+ 	device->work.func = pending_bios_fn;
+diff --git a/fs/btrfs/volumes.h b/fs/btrfs/volumes.h
+index 31b0fab..2b638b6 100644
+--- a/fs/btrfs/volumes.h
++++ b/fs/btrfs/volumes.h
+@@ -42,7 +42,6 @@ struct btrfs_device {
+ 	int running_pending;
+ 	u64 generation;
+ 
+-	int barriers;
+ 	int writeable;
+ 	int in_fs_metadata;
+ 
 -- 
 1.7.1
 
