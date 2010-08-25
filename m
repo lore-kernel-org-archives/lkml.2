@@ -1,270 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab0HYCyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 22:54:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4466 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660Ab0HYCys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 22:54:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,266,1280732400"; 
-   d="scan'208";a="831418198"
-Date: Wed, 25 Aug 2010 10:54:32 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] HWPOISON, hugetlb: fix unpoison for hugepage
-Message-ID: <20100825025432.GA15129@localhost>
-References: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1282694127-14609-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S932619Ab0HYC7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 22:59:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57024 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab0HYC66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 22:58:58 -0400
+Message-ID: <4C7486F4.3080702@ontolinux.com>
+Date: Wed, 25 Aug 2010 04:59:01 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282694127-14609-8-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Valerie Aurora <vaurora@redhat.com>
+CC: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 14/39] union-mount: Union mounts documentation
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-15-git-send-email-vaurora@redhat.com> <20100810085641.2b9a714c@notabene> <20100817204430.GE5556@shell> <6820.1282094632@jrobl> <20100818185542.GA10850@shell> <16318.1282181699@jrobl> <20100824000505.GA20909@shell> <6881.1282616917@jrobl> <20100824204839.GB28718@shell>
+In-Reply-To: <20100824204839.GB28718@shell>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:2CtK2NxYX7GpIm9kvUoPg4qUxwiMiWTDAHnQ3vydk86
+ eJFjCVnfdXWY0WvBLq/iPJVJNYswuMAK90MRx0VpdjHtML49YW
+ 3Uyk2AmKadu1NM6AmRBjdr/CgO1k7nHJXN7x/q23oM2l5ESucL
+ 6ruaRlHq2CzYotOm8YYuJK5wrmwutv1HyYJngTq4JOJH4DkBVR
+ 3YdH+5c0bPesKU526UVrw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 07:55:26AM +0800, Naoya Horiguchi wrote:
-> Currently unpoisoning hugepages doesn't work because it's not enough
-> to just clear PG_HWPoison bits and we need to link the hugepage
-> to be unpoisoned back to the free hugepage list.
-> To do this, we get and put hwpoisoned hugepage whose refcount is 0.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-> ---
->  mm/memory-failure.c |   16 +++++++++++++---
->  1 files changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git v2.6.36-rc2/mm/memory-failure.c v2.6.36-rc2/mm/memory-failure.c
-> index 60178d2..ab36690 100644
-> --- v2.6.36-rc2/mm/memory-failure.c
-> +++ v2.6.36-rc2/mm/memory-failure.c
-> @@ -1154,9 +1154,19 @@ int unpoison_memory(unsigned long pfn)
->  	nr_pages = 1 << compound_order(page);
->  
->  	if (!get_page_unless_zero(page)) {
-> -		if (TestClearPageHWPoison(p))
-> +		/* The page to be unpoisoned was free one when hwpoisoned */
-> +		if (TestClearPageHWPoison(page))
->  			atomic_long_sub(nr_pages, &mce_bad_pages);
->  		pr_debug("MCE: Software-unpoisoned free page %#lx\n", pfn);
-> +		if (PageHuge(page)) {
-> +			/*
-> +			 * To unpoison free hugepage, we get and put it
-> +			 * to move it back to the free list.
-> +			 */
-> +			get_page(page);
-> +			clear_page_hwpoison_huge_page(page);
-> +			put_page(page);
-> +		}
->  		return 0;
->  	}
+  Aloha Everybody;
 
-It's racy in free huge page detection.
+On the 24.08.2010 22:48, Valerie Aurora wrote:
+> On Tue, Aug 24, 2010 at 11:28:37AM +0900, J. R. Okajima wrote:
+>> Thank you for explanation, very much.
 
-alloc_huge_page() does not increase page refcount inside hugetlb_lock,
-the alloc_huge_page()=>alloc_buddy_huge_page() path even drops the
-lock temporarily! Then we never know reliably if a huge page is really
-free.
+Me too
 
-Here is a scratched fix. It is totally untested. Just want to notice
-you that with this patch, the huge page unpoisoning should go easier.
+> You are welcome!
+>
+>> When a rename happens on a layer directly, aufs receives a
+>> inotify/fsnotify event. Following the event type, aufs makes the cached
+>> dentry/inode obsoleted and they will be lookup-ed again in the
+>> succeeding access. Finally aufs will know the upper parent_dir1 is not
+>> covering the lower parent_dir2 anymore.
+>> This notification is the main purpose of the strict option which is
+>> called "udba=notify" (User's Direct Branch Access).
+> No, that's not a sufficient description and leaves open questions
+> about all sorts of deadlocks and race conditions.  For example,
+> inotify events occur while holding locks only on one layer.  You
+> obviously need to lock the top layer to update the inheritance and
+> parent-child relationships.  Now you are locking the lower layer first
+> and the top layer second, which is the reverse of the usual order.
+> Also, it should not be an option.
+>
+> If Al Viro says it's wrong, you need a very detailed explanation of
+> why it is right.  See Documentation/filesystem/directory-locking for
+> an example of the argument you have to make to show that moving things
+> around on the lower layer is safe.  In general, your first task is to
+> show a global lock ordering to prove lack of deadlocks (which I don't
+> think you should spend time on because most VFS experts think it is
+> impossible to do with two read-write layers).
 
-Thanks,
-Fengguang
+This all reminds me of the 5/dining philosophers problem and its 
+solutions, especially the waiter and the resource hierarchy solutions 
+(see [1]).
+And I do think that such problems can always be solved in a real world 
+context, but often the solutions are very time and/or space consuming.
 
----
- include/linux/hugetlb.h |    4 +-
- mm/hugetlb.c            |   51 +++++++++++++++++---------------------
- mm/memory-failure.c     |   24 ++++++-----------
- 3 files changed, 34 insertions(+), 45 deletions(-)
+> I'm not going to explain any more how aufs is wrong; it's the
+> maintainer's job to convince Al Viro and other maintainers that aufs
+> is right.  But I hope this gave you a start and showed why union
+> mounts is a preferred approach for many people.
+>
+> Thanks,
+>
+> -VAL
 
---- linux-next.orig/mm/hugetlb.c	2010-08-25 10:16:15.000000000 +0800
-+++ linux-next/mm/hugetlb.c	2010-08-25 10:47:17.000000000 +0800
-@@ -502,6 +502,7 @@ static struct page *dequeue_huge_page_vm
- 			page = list_entry(h->hugepage_freelists[nid].next,
- 					  struct page, lru);
- 			list_del(&page->lru);
-+			set_page_refcounted(page);
- 			h->free_huge_pages--;
- 			h->free_huge_pages_node[nid]--;
- 
-@@ -822,12 +823,6 @@ static struct page *alloc_buddy_huge_pag
- 
- 	spin_lock(&hugetlb_lock);
- 	if (page) {
--		/*
--		 * This page is now managed by the hugetlb allocator and has
--		 * no users -- drop the buddy allocator's reference.
--		 */
--		put_page_testzero(page);
--		VM_BUG_ON(page_count(page));
- 		nid = page_to_nid(page);
- 		set_compound_page_dtor(page, free_huge_page);
- 		/*
-@@ -877,8 +872,6 @@ retry:
- 			 * satisfy the entire reservation so we free what
- 			 * we've allocated so far.
- 			 */
--			spin_lock(&hugetlb_lock);
--			needed = 0;
- 			goto free;
- 		}
- 
-@@ -904,33 +897,28 @@ retry:
- 	 * process from stealing the pages as they are added to the pool but
- 	 * before they are reserved.
- 	 */
--	needed += allocated;
- 	h->resv_huge_pages += delta;
- 	ret = 0;
--free:
-+
- 	/* Free the needed pages to the hugetlb pool */
- 	list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
--		if ((--needed) < 0)
--			break;
- 		list_del(&page->lru);
-+		/*
-+		 * This page is now managed by the hugetlb allocator and has
-+		 * no users -- drop the buddy allocator's reference.
-+		 */
-+		put_page_testzero(page);
-+		VM_BUG_ON(page_count(page));
- 		enqueue_huge_page(h, page);
- 	}
--
-+	spin_unlock(&hugetlb_lock);
-+free:
- 	/* Free unnecessary surplus pages to the buddy allocator */
- 	if (!list_empty(&surplus_list)) {
--		spin_unlock(&hugetlb_lock);
- 		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
- 			list_del(&page->lru);
--			/*
--			 * The page has a reference count of zero already, so
--			 * call free_huge_page directly instead of using
--			 * put_page.  This must be done with hugetlb_lock
--			 * unlocked which is safe because free_huge_page takes
--			 * hugetlb_lock before deciding how to free the page.
--			 */
--			free_huge_page(page);
-+			put_page(page);
- 		}
--		spin_lock(&hugetlb_lock);
- 	}
- 
- 	return ret;
-@@ -1058,7 +1046,6 @@ static struct page *alloc_huge_page(stru
- 		}
- 	}
- 
--	set_page_refcounted(page);
- 	set_page_private(page, (unsigned long) mapping);
- 
- 	vma_commit_reservation(h, vma, addr);
-@@ -2875,18 +2862,26 @@ void hugetlb_unreserve_pages(struct inod
- 	hugetlb_acct_memory(h, -(chg - freed));
- }
- 
-+#ifdef CONFIG_MEMORY_FAILURE
- /*
-  * This function is called from memory failure code.
-  * Assume the caller holds page lock of the head page.
-  */
--void __isolate_hwpoisoned_huge_page(struct page *hpage)
-+int dequeue_hwpoisoned_huge_page(struct page *hpage)
- {
- 	struct hstate *h = page_hstate(hpage);
- 	int nid = page_to_nid(hpage);
-+	int ret = -EBUSY;
- 
- 	spin_lock(&hugetlb_lock);
--	list_del(&hpage->lru);
--	h->free_huge_pages--;
--	h->free_huge_pages_node[nid]--;
-+	if (!page_count(hpage)) {
-+		list_del(&hpage->lru);
-+		set_page_refcounted(hpage);
-+		h->free_huge_pages--;
-+		h->free_huge_pages_node[nid]--;
-+		ret = 0;
-+	}
- 	spin_unlock(&hugetlb_lock);
-+	return ret;
- }
-+#endif
---- linux-next.orig/include/linux/hugetlb.h	2010-08-25 10:43:18.000000000 +0800
-+++ linux-next/include/linux/hugetlb.h	2010-08-25 10:48:43.000000000 +0800
-@@ -43,7 +43,7 @@ int hugetlb_reserve_pages(struct inode *
- 						struct vm_area_struct *vma,
- 						int acctflags);
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
--void __isolate_hwpoisoned_huge_page(struct page *page);
-+int dequeue_hwpoisoned_huge_page(struct page *page);
- 
- extern unsigned long hugepages_treat_as_movable;
- extern const unsigned long hugetlb_zero, hugetlb_infinity;
-@@ -101,7 +101,7 @@ static inline void hugetlb_report_meminf
- #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
- #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
- #define huge_pte_offset(mm, address)	0
--#define __isolate_hwpoisoned_huge_page(page)	0
-+#define dequeue_hwpoisoned_huge_page(page)	0
- 
- #define hugetlb_change_protection(vma, address, end, newprot)
- 
---- linux-next.orig/mm/memory-failure.c	2010-08-25 10:25:03.000000000 +0800
-+++ linux-next/mm/memory-failure.c	2010-08-25 10:42:51.000000000 +0800
-@@ -698,21 +698,6 @@ static int me_swapcache_clean(struct pag
-  */
- static int me_huge_page(struct page *p, unsigned long pfn)
- {
--	struct page *hpage = compound_head(p);
--	/*
--	 * We can safely recover from error on free or reserved (i.e.
--	 * not in-use) hugepage by dequeuing it from freelist.
--	 * To check whether a hugepage is in-use or not, we can't use
--	 * page->lru because it can be used in other hugepage operations,
--	 * such as __unmap_hugepage_range() and gather_surplus_pages().
--	 * So instead we use page_mapping() and PageAnon().
--	 * We assume that this function is called with page lock held,
--	 * so there is no race between isolation and mapping/unmapping.
--	 */
--	if (!(page_mapping(hpage) || PageAnon(hpage))) {
--		__isolate_hwpoisoned_huge_page(hpage);
--		return RECOVERED;
--	}
- 	return DELAYED;
- }
- 
-@@ -993,6 +978,11 @@ int __memory_failure(unsigned long pfn, 
- 		if (is_free_buddy_page(p)) {
- 			action_result(pfn, "free buddy", DELAYED);
- 			return 0;
-+		} else if (PageHuge(hpage)) {
-+			res = dequeue_hwpoisoned_huge_page(hpage);
-+			action_result(pfn, "free huge",
-+				      res ? DELAYED : RECOVERED);
-+			return res;
- 		} else {
- 			action_result(pfn, "high order kernel", IGNORED);
- 			return -EBUSY;
-@@ -1221,6 +1211,10 @@ static int get_any_page(struct page *p, 
- 			/* Set hwpoison bit while page is still isolated */
- 			SetPageHWPoison(p);
- 			ret = 0;
-+		} else if (PageHuge(p)) {
-+			ret = dequeue_hwpoisoned_huge_page(compound_head(p));
-+			if (!ret)
-+				SetPageHWPoison(p);
- 		} else {
- 			pr_debug("get_any_page: %#lx: unknown zero refcount page type %lx\n",
- 				pfn, p->flags);
+[1] http://en.wikipedia.org/wiki/Dining_philosophers_problem
+
+Have fun
+Christian
