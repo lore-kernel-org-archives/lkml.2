@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab0HYVWI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:22:08 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46363 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962Ab0HYVWE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:22:04 -0400
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: David Rientjes <rientjes@google.com>, Dave Chinner <david@fromorbit.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1008251604120.24931@router.home>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
-	 <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com>
-	 <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
-	 <20100825112433.GB4453@thunk.org> <1282736132.2605.3563.camel@laptop>
-	 <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop>
-	 <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop>
-	 <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1008251604120.24931@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 25 Aug 2010 23:21:31 +0200
-Message-ID: <1282771291.1975.125.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754539Ab0HYVXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:23:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754466Ab0HYVX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 17:23:27 -0400
+Date: Wed, 25 Aug 2010 18:05:02 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] KVM: x86 emulator: trap and propagate #DE from DIV
+ and IDIV
+Message-ID: <20100825210501.GD32737@amt.cnet>
+References: <1282648229-19575-1-git-send-email-avi@redhat.com>
+ <1282648229-19575-4-git-send-email-avi@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282648229-19575-4-git-send-email-avi@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 16:11 -0500, Christoph Lameter wrote:
-> We already have __GFP_NOFAIL behavior for slab allocations since
-> a __GFP_NOFAIL flag is passed through to the page allocator if no objects
-> are available.
+On Tue, Aug 24, 2010 at 02:10:29PM +0300, Avi Kivity wrote:
+> Signed-off-by: Avi Kivity <avi@redhat.com>
+> ---
+>  arch/x86/kvm/emulate.c |   17 ++++++++++++++---
+>  1 files changed, 14 insertions(+), 3 deletions(-)
 > 
-> The page allocator will do the same as when called directly with
-> __GFP_NOFAIL and so we have consistent behavior regardless of the
-> allocator used.
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index f82e43a..a7e26d0 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -505,6 +505,12 @@ static void emulate_ts(struct x86_emulate_ctxt *ctxt, int err)
+>  	emulate_exception(ctxt, TS_VECTOR, err, true);
+>  }
+>  
+> +static int emulate_de(struct x86_emulate_ctxt *ctxt)
+> +{
+> +	emulate_exception(ctxt, DE_VECTOR, 0, false);
+> +	return X86EMUL_PROPAGATE_FAULT;
+> +}
+> +
+>  static int do_fetch_insn_byte(struct x86_emulate_ctxt *ctxt,
+>  			      struct x86_emulate_ops *ops,
+>  			      unsigned long eip, u8 *dest)
+> @@ -1459,6 +1465,7 @@ static inline int emulate_grp3(struct x86_emulate_ctxt *ctxt,
+>  	struct decode_cache *c = &ctxt->decode;
+>  	unsigned long *rax = &c->regs[VCPU_REGS_RAX];
+>  	unsigned long *rdx = &c->regs[VCPU_REGS_RDX];
+> +	u8 de = 0;
+>  
+>  	switch (c->modrm_reg) {
+>  	case 0 ... 1:	/* test */
+> @@ -1477,14 +1484,18 @@ static inline int emulate_grp3(struct x86_emulate_ctxt *ctxt,
+>  		emulate_1op_rax_rdx("imul", c->src, *rax, *rdx, ctxt->eflags);
+>  		break;
+>  	case 6: /* div */
+> -		emulate_1op_rax_rdx("div", c->src, *rax, *rdx, ctxt->eflags);
+> +		emulate_1op_rax_rdx_ex("div", c->src, *rax, *rdx,
+> +				       ctxt->eflags, de);
+>  		break;
+>  	case 7: /* idiv */
+> -		emulate_1op_rax_rdx("idiv", c->src, *rax, *rdx, ctxt->eflags);
+> +		emulate_1op_rax_rdx_ex("idiv", c->src, *rax, *rdx,
+> +				       ctxt->eflags, de);
+>  		break;
+>  	default:
+>  		return X86EMUL_UNHANDLEABLE;
+>  	}
+> +	if (de)
+> +		return emulate_de(ctxt);
+>  	return X86EMUL_CONTINUE;
+>  }
+>  
+> @@ -3363,7 +3374,7 @@ special_insn:
+>  		break;
+>  	case 0xf6 ... 0xf7:	/* Grp3 */
+>  		if (emulate_grp3(ctxt, ops) != X86EMUL_CONTINUE)
+> -			goto cannot_emulate;
+> +			goto done;
+>  		break;
 
-Thank's for quoting the context to which you're replying, that really
-helps parsing things..
+Must assign rc to emulate_grp3() retval.
 
