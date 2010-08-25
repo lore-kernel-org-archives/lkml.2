@@ -1,116 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab0HYNJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 09:09:04 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:50150 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752158Ab0HYNJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 09:09:02 -0400
-X-Authenticated: #1587495
-X-Provags-ID: V01U2FsdGVkX18hqgkxu/chZpO4So5ZOxma42TnenRfI9IXFj3hW5
-	/f+gfmjqUSwDOv
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Antti Palosaari <crope@iki.fi>
-Subject: [PATCH] af9015: add USB ID for Terratec Cinergy T Stick RC MKII
-Date: Wed, 25 Aug 2010 15:08:48 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-3.slh.2-sidux-686; KDE/4.4.5; i686; ; )
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008251508.51379.s.L-H@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1753093Ab0HYNUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 09:20:50 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:51062 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752468Ab0HYNUs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 09:20:48 -0400
+X-AuditID: 12074423-b7b19ae0000059ef-70-4c75189c4ed1
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and kzalloc
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <1282740778.2605.3652.camel@laptop>
+Date: Wed, 25 Aug 2010 09:20:37 -0400
+Cc: David Rientjes <rientjes@google.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E25A6DCB-3188-4CF9-9DC4-631192B2F0E2@mit.edu>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org> <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org>  <1282740516.2605.3644.camel@laptop> <1282740778.2605.3652.camel@laptop>
+To: Peter Zijlstra <peterz@infradead.org>
+X-Mailer: Apple Mail (2.1081)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding the USB ID for my TerraTec Electronic GmbH Cinergy T RC MKII
-[0ccd:0097] and hooking it up into af9015, on top of your new NXP TDA18218
-patches, makes it work for me.
 
-Just the shipped IR remote control doesn't seem to create keycode events
-yet (tested with different remote=%d parameters), are there any hints to 
-add support for that?
+On Aug 25, 2010, at 8:52 AM, Peter Zijlstra wrote:
+> Also, there's a good reason for disliking (a), its a deadlock scenario,
+> suppose we need to write out data to get free pages, but the writing out
+> is blocked on requiring free pages.
+> 
+> There's really nothing the page allocator can do to help you there, its
+> a situation you have to avoid getting into.
 
-[    2.250022] usb 1-10: new high speed USB device using ehci_hcd and address 5
-[    2.369287] usb 1-10: New USB device found, idVendor=0ccd, idProduct=0097
-[    2.369290] usb 1-10: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[    2.369293] usb 1-10: Product: USB2.0 DVB-T TV Stick
-[    2.369294] usb 1-10: Manufacturer: NEWMI
-[    2.369296] usb 1-10: SerialNumber: 010101010600001
-[    2.534023] usbcore: registered new interface driver hiddev
-[    2.537235] input: NEWMI USB2.0 DVB-T TV Stick as /devices/pci0000:00/0000:00:02.1/usb1/1-10/1-10:1.1/input/input0
-[    2.537323] generic-usb 0003:0CCD:0097.0001: input,hidraw0: USB HID v1.01 Keyboard [NEWMI USB2.0 DVB-T TV Stick] on usb-0000:00:02.1-10/input1
-[    2.537349] usbcore: registered new interface driver usbhid
-[    2.537351] usbhid: USB HID core driver
-[    3.263177] generic-usb 0003:04D9:1603.0002: input,hidraw1: USB HID v1.10 Keyboard [  USB Keyboard] on usb-0000:00:02.0-8.1/input0
-[    3.286946] generic-usb 0003:04D9:1603.0003: input,hidraw2: USB HID v1.10 Device [  USB Keyboard] on usb-0000:00:02.0-8.1/input1
-[    3.467136] generic-usb 0003:046D:C050.0004: input,hidraw3: USB HID v1.10 Mouse [Logitech USB-PS/2 Optical Mouse] on usb-0000:00:02.0-8.2/input0
-[    3.660890] generic-usb 0003:10D5:000D.0005: input,hidraw4: USB HID v1.10 Keyboard [No brand SP02-A1] on usb-0000:00:02.0-8.3/input0
-[    5.567632] dvb-usb: found a 'TerraTec Cinergy T Stick RC' in cold state, will try to load a firmware
-[    5.693497] dvb-usb: downloading firmware from file 'dvb-usb-af9015.fw'
-[    5.773109] dvb-usb: found a 'TerraTec Cinergy T Stick RC' in warm state.
-[    5.773168] dvb-usb: will pass the complete MPEG2 transport stream to the software demuxer.
-[    5.774290] DVB: registering new adapter (TerraTec Cinergy T Stick RC)
-[    6.007696] af9013: firmware version:5.1.0
-[    6.010843] DVB: registering adapter 0 frontend 0 (Afatech AF9013 DVB-T)...
-[    6.032697] tda18218: NXP TDA18218HN successfully identified.
-[    6.034442] dvb-usb: TerraTec Cinergy T Stick RC successfully initialized and connected.
-[    6.040612] usbcore: registered new interface driver dvb_usb_af9015
+Well, if all of these users start having their own private pools of emergency memory, I'm not sure that's such a great idea either.
 
-Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
----
+And in some cases, there *is* extra memory.  For example, if the reason why the page allocator failed is because there isn't enough memory in the current process's cgroup, maybe it's important enough that the kernel code might decide to say, "violate the cgroup constraints --- it's more important that we not bring down the entire system" than to honor whatever yahoo decided that a particular cgroup has been set down to something ridiculous like 512mb, when there's plenty of free physical memory --- but not in that cgroup.
 
-This depends on the git pull request "NXP TDA18218 silicon tuner driver"
-from Antti Palosaari <crope@iki.fi> and does not apply to -stable:
- * NXP TDA18218 silicon tuner driver
- * af9013: add support for tda18218 silicon tuner
- * af9015: add support for tda18218 silicon tuner
+-- Ted
 
- drivers/media/dvb/dvb-usb/af9015.c      |    8 +++++++-
- drivers/media/dvb/dvb-usb/dvb-usb-ids.h |    1 +
- 2 files changed, 8 insertions(+), 1 deletion(-)
-
---- a/drivers/media/dvb/dvb-usb/af9015.c
-+++ b/drivers/media/dvb/dvb-usb/af9015.c
-@@ -1307,6 +1307,7 @@ static struct usb_device_id af9015_usb_t
- 	{USB_DEVICE(USB_VID_LEADTEK,   USB_PID_WINFAST_DTV2000DS)},
- /* 30 */{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_KWORLD_UB383_T)},
- 	{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_KWORLD_395U_4)},
-+	{USB_DEVICE(USB_VID_TERRATEC,  USB_PID_TERRATEC_CINERGY_T_STICK_RC)},
- 	{0},
- };
- MODULE_DEVICE_TABLE(usb, af9015_usb_table);
-@@ -1580,7 +1581,7 @@ static struct dvb_usb_device_properties
- 
- 		.i2c_algo = &af9015_i2c_algo,
- 
--		.num_device_descs = 8, /* max 9 */
-+		.num_device_descs = 9, /* max 9 */
- 		.devices = {
- 			{
- 				.name = "AverMedia AVerTV Volar GPS 805 (A805)",
-@@ -1625,6 +1626,11 @@ static struct dvb_usb_device_properties
- 				.cold_ids = {&af9015_usb_table[30], NULL},
- 				.warm_ids = {NULL},
- 			},
-+			{
-+				.name = "TerraTec Cinergy T Stick RC",
-+				.cold_ids = {&af9015_usb_table[32], NULL},
-+				.warm_ids = {NULL},
-+			},
- 		}
- 	},
- };
---- a/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
-+++ b/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
-@@ -133,6 +133,7 @@
- #define USB_PID_KWORLD_VSTREAM_WARM			0x17df
- #define USB_PID_TERRATEC_CINERGY_T_USB_XE		0x0055
- #define USB_PID_TERRATEC_CINERGY_T_USB_XE_REV2		0x0069
-+#define USB_PID_TERRATEC_CINERGY_T_STICK_RC		0x0097
- #define USB_PID_TWINHAN_VP7041_COLD			0x3201
- #define USB_PID_TWINHAN_VP7041_WARM			0x3202
- #define USB_PID_TWINHAN_VP7020_COLD			0x3203
