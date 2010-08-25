@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab0HYPSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:18:14 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:4818 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab0HYPSN (ORCPT
+	id S1752092Ab0HYPSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:18:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47634 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab0HYPSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:18:13 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Huang Shijie <shijie8@gmail.com>
-Subject: Re: [PATCH] avoiding the same resource to be inserted
-Date: Wed, 25 Aug 2010 09:17:52 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <1281974138-5553-1-git-send-email-shijie8@gmail.com> <20100824164622.a3b2c1ed.akpm@linux-foundation.org> <AANLkTin+0xZBFJSc48yqzrxQQL0ukA8Q0fksy1bM4mUj@mail.gmail.com>
-In-Reply-To: <AANLkTin+0xZBFJSc48yqzrxQQL0ukA8Q0fksy1bM4mUj@mail.gmail.com>
+	Wed, 25 Aug 2010 11:18:49 -0400
+Message-ID: <4C753408.9010608@oracle.com>
+Date: Wed, 25 Aug 2010 08:17:28 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Richard Hartmann <richih.mailinglist@gmail.com>
+CC: linux-kernel@vger.kernel.org, kernelnewbies@nl.linux.org
+Subject: Re: System silently not booting with 2.6.35 nor with 2.6.35.3 --
+ It works fine with 2.6.32.x and 2.6.18.x
+References: <AANLkTinzaRBaWX9EJTAt70Qk+bifFicUUGh=vRJaWL+N@mail.gmail.com> <AANLkTikQXxmzC1LxOC7wUWj40nRyLvBgGa0NO3_2s5oX@mail.gmail.com> <20100824104046.a8018469.randy.dunlap@oracle.com> <AANLkTinPLxZxOW70FtJBA3f4eG8kc-ju-G=UoATKV0qk@mail.gmail.com>
+In-Reply-To: <AANLkTinPLxZxOW70FtJBA3f4eG8kc-ju-G=UoATKV0qk@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008250917.54845.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 24, 2010 10:31:52 pm Huang Shijie wrote:
-> On Wed, Aug 25, 2010 at 7:46 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Mon, 16 Aug 2010 23:55:38 +0800
-> > Huang Shijie <shijie8@gmail.com> wrote:
-> >
-> >>   If the same resource is inserted to the resource tree
-> >> (maybe not on purpose), a dead loop will be created. In this situation,
-> >> The kernel does not report any warning or error       :(
-> >>
-> >>   The command below will show a endless print.
-> >>   #cat /proc/iomem
-> >
-> > OK, we shouldn't do that.
-> >
-> >>   So, adding the check for the same resource is needed for the stability
-> >> and reliability of the kernel.
-> >>
-> >> Signed-off-by: Huang Shijie <shijie8@gmail.com>
-> >> ---
-> >>  kernel/resource.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/kernel/resource.c b/kernel/resource.c
-> >> index 7b36976..60daab4 100644
-> >> --- a/kernel/resource.c
-> >> +++ b/kernel/resource.c
-> >> @@ -451,7 +451,7 @@ static struct resource * __insert_resource(struct resource *parent, struct resou
-> >>               if (!first)
-> >>                       return first;
-> >>
-> >> -             if (first == parent)
-> >> +             if (first == parent || first == new)
-> >>                       return first;
-> >
-> > However, inserting the same thing twice _is_ a bug, and we shouldn't
-> > silently accept it like this.  We should tell the programmer!
+On 08/25/10 04:52, Richard Hartmann wrote:
+> On Tue, Aug 24, 2010 at 19:40, Randy Dunlap <randy.dunlap@oracle.com> wrote:
 > 
-> Indeed, this is a bug caused by the driver programmer.I had spent
-> nearly two day to find it in my colleague's code.
+>> I would try enabling CONFIG_DEVTMPFS and CONFIG_DEVTMPFS_MOUNT.
+> 
+> As neiter the working nor the broken config has this option enabled, I
+> don't know
+> how this will help with finding the combinations of config options that made the
+> kernel fail to boot. Unless I am missing something?
 
-insert_resource() is a hack to deal with the fact that we don't
-discover resources in the logical order, so sometimes we have to
-go back and add a resource after we've already added "children"
-of the new resource.
+Is the "working" one the one that didn't find a root fs?
+This could help with that, but I guess you said that wasn't a concern.
 
-In my opinion, the ugliness of using insert_resource() should be
-confined to core architecture code, and drivers shouldn't use it
-at all.
-
-That said, I think it's a good idea to add the WARN_ON().
-
-In fact, I wonder if we should also "WARN_ON(first == parent)".
-
-Bjorn
+good luck on it.
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
