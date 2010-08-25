@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab0HYBaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 21:30:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27561 "EHLO mga11.intel.com"
+	id S1755360Ab0HYBeB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 21:34:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:43610 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172Ab0HYBaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 21:30:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
-   d="scan'208";a="599900112"
-Date: Wed, 25 Aug 2010 09:29:41 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/8] hugetlb: add allocate function for hugepage
- migration
-Message-ID: <20100825012941.GD7283@localhost>
-References: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1282694127-14609-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1752037Ab0HYBd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 21:33:58 -0400
+Date: Wed, 25 Aug 2010 11:32:38 +1000
+From: Anton Blanchard <anton@samba.org>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tracing/trace_stack: Fix stack trace on ppc64
+Message-ID: <20100825013238.GE28360@kryten>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282694127-14609-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static struct page *alloc_buddy_huge_page_node(struct hstate *h, int nid)
-> +{
-> +	struct page *page = __alloc_huge_page_node(h, nid);
->  	if (page) {
-> -		if (arch_prepare_hugepage(page)) {
-> -			__free_pages(page, huge_page_order(h));
-> +		set_compound_page_dtor(page, free_huge_page);
-> +		spin_lock(&hugetlb_lock);
-> +		h->nr_huge_pages++;
-> +		h->nr_huge_pages_node[nid]++;
-> +		spin_unlock(&hugetlb_lock);
-> +		put_page_testzero(page);
-> +	}
-> +	return page;
-> +}
 
-One would expect the alloc_buddy_huge_page_node() to only differ with
-alloc_buddy_huge_page() in the alloc_pages/alloc_pages_exact_node
-calls. However you implement alloc_buddy_huge_page_node() in a quite
-different way. Can the two functions be unified at all?
+save_stack_trace() stores the instruction pointer, not the function
+descriptor. On ppc64 the trace stack code currently dereferences the
+instruction pointer and shows 8 bytes of instructions in our backtraces:
 
-Thanks,
-Fengguang
+# cat /sys/kernel/debug/tracing/stack_trace
+        Depth    Size   Location    (26 entries)
+        -----    ----   --------
+  0)     5424     112   0x6000000048000004
+  1)     5312     160   0x60000000ebad01b0
+  2)     5152     160   0x2c23000041c20030
+  3)     4992     240   0x600000007c781b79
+  4)     4752     160   0xe84100284800000c
+  5)     4592     192   0x600000002fa30000
+  6)     4400     256   0x7f1800347b7407e0
+  7)     4144     208   0xe89f0108f87f0070
+  8)     3936     272   0xe84100282fa30000
+
+Since we aren't dealing with function descriptors, use %pS instead of %pF
+to fix it:
+
+# cat /sys/kernel/debug/tracing/stack_trace
+        Depth    Size   Location    (26 entries)
+        -----    ----   --------
+  0)     5424     112   ftrace_call+0x4/0x8
+  1)     5312     160   .current_io_context+0x28/0x74
+  2)     5152     160   .get_io_context+0x48/0xa0
+  3)     4992     240   .cfq_set_request+0x94/0x4c4
+  4)     4752     160   .elv_set_request+0x60/0x84
+  5)     4592     192   .get_request+0x2d4/0x468
+  6)     4400     256   .get_request_wait+0x7c/0x258
+  7)     4144     208   .__make_request+0x49c/0x610
+  8)     3936     272   .generic_make_request+0x390/0x434
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+Index: powerpc.git/kernel/trace/trace_stack.c
+===================================================================
+--- powerpc.git.orig/kernel/trace/trace_stack.c	2010-08-25 11:03:52.337982567 +1000
++++ powerpc.git/kernel/trace/trace_stack.c	2010-08-25 11:03:55.018371055 +1000
+@@ -249,7 +249,7 @@ static int trace_lookup_stack(struct seq
+ {
+ 	unsigned long addr = stack_dump_trace[i];
+ 
+-	return seq_printf(m, "%pF\n", (void *)addr);
++	return seq_printf(m, "%pS\n", (void *)addr);
+ }
+ 
+ static void print_disabled(struct seq_file *m)
