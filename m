@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab0HYMsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 08:48:39 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:32644
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751862Ab0HYMsg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 08:48:36 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz1dbaL1432N98dNzz1202hzz8275bhz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7PKSC-02-A5E-02
-X-M-MSG: 
-Date: Wed, 25 Aug 2010 15:04:54 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Alok Kataria <akataria@vmware.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>,
-        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2] x86, tsc: Limit CPU frequency calibration on AMD
-Message-ID: <20100825130454.GB4891@loge.amd.com>
-References: <1282063532.4388.8.camel@ank32.eng.vmware.com>
- <20100817185634.GA10597@liondog.tnic>
- <20100818161639.GF9880@aftab>
- <4C6C08EC.2080404@zytor.com>
- <20100818173401.GG9880@aftab>
- <1282153895.15158.45.camel@ank32.eng.vmware.com>
- <20100818184534.GA12842@aftab>
- <20100824155305.GA18220@aftab>
- <4C7448A3.2030309@zytor.com>
- <20100825070653.GA25672@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20100825070653.GA25672@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753410Ab0HYMs6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 08:48:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46175 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab0HYMs4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 08:48:56 -0400
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: David Rientjes <rientjes@google.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100825115709.GD4453@thunk.org>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+	 <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com>
+	 <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+	 <20100825112433.GB4453@thunk.org> <1282736132.2605.3563.camel@laptop>
+	 <20100825115709.GD4453@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Date: Wed, 25 Aug 2010 14:48:36 +0200
+Message-ID: <1282740516.2605.3644.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 03:06:53AM -0400, Borislav Petkov wrote:
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> Date: Tue, Aug 24, 2010 at 06:33:07PM -0400
-> 
-> > Build failure:
+On Wed, 2010-08-25 at 07:57 -0400, Ted Ts'o wrote:
+> On Wed, Aug 25, 2010 at 01:35:32PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2010-08-25 at 07:24 -0400, Ted Ts'o wrote:
+> > > Part of the problem is that we have a few places in the kernel where
+> > > failure is really not an option --- or rather, if we're going to fail
+> > > while we're in the middle of doing a commit, our choices really are
+> > > (a) retry the loop in the jbd layer (which Andrew really doesn't
+> > > like), (b) keep our own private cache of free memory so we don't fail
+> > > and/or loop, (c) fail the file system and mark it read-only, or (d)
+> > > panic. 
 > > 
-> > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c: In
-> > function ‘amd_calibrate_cpu’:
-> > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:397: error:
-> > implicit declaration of function ‘avail_to_resrv_perfctr_nmi_bit’
-> > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:409: error:
-> > implicit declaration of function ‘reserve_perfctr_nmi’
-> > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:410: error:
-> > implicit declaration of function ‘reserve_evntsel_nmi’
-> > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:429: error:
-> > implicit declaration of function ‘release_perfctr_nmi’
-> > /home/hpa/kernel/linux-2.6-tip.cpu/arch/x86/kernel/cpu/amd.c:430: error:
-> > implicit declaration of function ‘release_evntsel_nmi’
-> > 
-> > Reproducible by doing "make ARCH=i386 allnoconfig".
+> > d) do the allocation before you're committed to going fwd and can still
+> > fail and back out.
 > 
-> Sh*t, I can't catch a break with that Kconfig dependency stuff, can I?
-> 
-> This happens because perfctr-watchdog.c gets pulled in by
-> CONFIG_X86_LOCAL_APIC which is, _of course_, not selected in an
-> allnoconfig build. Fixing this would mean exporting all that perfcounter
-> reservation functionality for the allnoconfig case, which is of course
-> doable but I'm starting to question the need for recalibrating the TSC
-> at all:
-> 
-> I mean, in the 99% of the cases MSRC001_0015[24] should be set by the
-> BIOS and if not then the BIOS which does that is pretty b0rked anyway.
-> So I'm thinking of removing the recalibration code and simply warning
-> the user instead, for the 1% case.
-> 
-> Andreas, what do you think?
+> Sure in some cases that can be done, but the commit has to happen at
+> some point, or we run out of journal space, at which point we're back
+> to (c) or (d).
 
-I opt for removing the recalibration code plus keeping a FIRMWARE_WARN
-for borked BIOSes (just in case that there are any old systems with
-the wrong setting).
+Well (b) sounds a lot saner than either of those. Simply revert to a
+state that is sub-optimal but has bounded memory use and reserve that
+memory up-front. That way you can always get out of a tight memory spot.
 
+Its what the block layer has always done to avoid the memory deadlock
+situation, it has a private stash of BIOs that is big enough to always
+service some IO, and as long as IO is happening stuff keeps moving fwd
+and we don't deadlock.
 
-Andreas
+Filesystems might have a slightly harder time creating such a bounded
+state because there might be more involved like journals and the like,
+but still it should be possible to create something like that (my swap
+over nfs patches created such a state for the network rx side of
+things).
 
--- 
-Operating | Advanced Micro Devices GmbH
-  System  | Einsteinring 24, 85609 Dornach b. München, Germany
- Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
-  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
-  (OSRC)  | Registergericht München, HRB Nr. 43632
+Also, we cannot let our fear of crappy userspace get in the way of doing
+sensible things. Your example of write(2) returning -ENOMEM is not
+correct though, the syscall (and the page_mkwrite callback for mmap()s)
+happens before we actually dirty the data and need to write things out,
+so we can always simply wait for memory to become available to dirty.
 
 
