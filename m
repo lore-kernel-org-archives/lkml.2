@@ -1,59 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab0HYR5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 13:57:38 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37084 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753280Ab0HYR5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 13:57:36 -0400
-Date: Wed, 25 Aug 2010 19:14:37 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Samo Pogacnik <samo_pogacnik@t-2.net>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-Message-ID: <20100825191437.1df57c9d@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100825171045.GA19401@suse.de>
-References: <20100824222035.GA10625@suse.de>
-	<1282690232.8020.116.camel@itpsd6lap>
-	<20100824225703.GA5913@suse.de>
-	<20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
-	<20100824231241.GA6971@suse.de>
-	<20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
-	<20100825004134.GA28884@suse.de>
-	<20100825110813.5f7d7ac8@lxorguk.ukuu.org.uk>
-	<20100825155716.GB16284@suse.de>
-	<20100825181108.1dcd0d80@lxorguk.ukuu.org.uk>
-	<20100825171045.GA19401@suse.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753728Ab0HYR7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 13:59:37 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:53954 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753568Ab0HYR7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 13:59:34 -0400
+Message-ID: <4C755A05.4080604@kernel.dk>
+Date: Wed, 25 Aug 2010 19:59:33 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+CC: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
+Subject: Re: [PATCH] cciss: fix reporting of max queue depth since init
+References: <20100825154334.4941.67993.stgit@beardog.cce.hp.com>
+In-Reply-To: <20100825154334.4941.67993.stgit@beardog.cce.hp.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > That's one extra process, not that much, right?
-> > 
-> > About 150K or so way too much and its not robust.
+On 08/25/2010 05:43 PM, Stephen M. Cameron wrote:
+> The ioctl path and the scsi tape path were not accounting
+> for their additions to the queue depth.
 > 
-> Fair enough.  So, with this driver, would it make sense for the distros
-> to switch over to using it instead of the above line in their initrd?
+> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Distros no - I doubt any normal PC distro would turn the facility on.
-Embedded - yes especially deeply embedded.
+Applied, thanks.
 
-> Ok, I didn't realize it really was that big.
+-- 
+Jens Axboe
 
-libc page tables
-app page tables
-stacks (kernel and user)
-arguments/exec page
-buffers
-
-Yes - it soon adds up.
-
-Alan
