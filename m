@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab0HYEWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 00:22:38 -0400
-Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:49208 "EHLO
-	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751676Ab0HYEWg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 00:22:36 -0400
-From: Rasesh Mody <rmody@brocade.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jing Huang <huangj@brocade.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 24 Aug 2010 21:22:19 -0700
-Subject: RE: linux-next: build failure after merge of the final tree (net
- tree related)
-Thread-Topic: linux-next: build failure after merge of the final tree (net
- tree related)
-Thread-Index: ActD+pC5LFGQUjI1SzC0hCZCo+N9WgAELMuA
-Message-ID: <E5313AF6F2BFD14293E5FD0F94750F86A4AE225EE8@HQ1-EXCH01.corp.brocade.com>
-References: <20100825120927.c469ce20.sfr@canb.auug.org.au>
-In-Reply-To: <20100825120927.c469ce20.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751812Ab0HYEbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 00:31:55 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45269 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab0HYEbx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 00:31:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tVZyrsdSGJuCUaGSDheFKU/2VXYeHv16vqPiyetxfqUHjHQt2K3fiWVjTcaaq/E0pR
+         S1Xceyoq5i9oqmyDInK+sQWf6GO0tzcb2LjUSPNLrpJHmWemEyzvP2KrhowiRdSbsNsg
+         z8zGNR8TXqrL6m4CFYsGjJK/yYkiYQmiYtwfI=
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-08-25_02:2010-08-25,2010-08-24,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=6.0.2-1004200000 definitions=main-1008240235
+In-Reply-To: <20100824164622.a3b2c1ed.akpm@linux-foundation.org>
+References: <1281974138-5553-1-git-send-email-shijie8@gmail.com>
+	<20100824164622.a3b2c1ed.akpm@linux-foundation.org>
+Date: Wed, 25 Aug 2010 12:31:52 +0800
+Message-ID: <AANLkTin+0xZBFJSc48yqzrxQQL0ukA8Q0fksy1bM4mUj@mail.gmail.com>
+Subject: Re: [PATCH] avoiding the same resource to be inserted
+From: Huang Shijie <shijie8@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All,
+On Wed, Aug 25, 2010 at 7:46 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 16 Aug 2010 23:55:38 +0800
+> Huang Shijie <shijie8@gmail.com> wrote:
+>
+>>   If the same resource is inserted to the resource tree
+>> (maybe not on purpose), a dead loop will be created. In this situation,
+>> The kernel does not report any warning or error       :(
+>>
+>>   The command below will show a endless print.
+>>   #cat /proc/iomem
+>
+> OK, we shouldn't do that.
+>
+>>   So, adding the check for the same resource is needed for the stability
+>> and reliability of the kernel.
+>>
+>> Signed-off-by: Huang Shijie <shijie8@gmail.com>
+>> ---
+>>  kernel/resource.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/resource.c b/kernel/resource.c
+>> index 7b36976..60daab4 100644
+>> --- a/kernel/resource.c
+>> +++ b/kernel/resource.c
+>> @@ -451,7 +451,7 @@ static struct resource * __insert_resource(struct resource *parent, struct resou
+>>               if (!first)
+>>                       return first;
+>>
+>> -             if (first == parent)
+>> +             if (first == parent || first == new)
+>>                       return first;
+>
+> However, inserting the same thing twice _is_ a bug, and we shouldn't
+> silently accept it like this.  We should tell the programmer!
 
-We are working on a fix and we will submit a patch soon.
+Indeed, this is a bug caused by the driver programmer.I had spent
+nearly two day to find it in my colleague's code.
 
-Regards,
-Rasesh
 
------Original Message-----
-From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
-Sent: Tuesday, August 24, 2010 7:09 PM
-To: David Miller; netdev@vger.kernel.org
-Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Rasesh Mody; Jing Huang; James Bottomley
-Subject: linux-next: build failure after merge of the final tree (net tree related)
+>
+> But we can recover from the situation so let's not kill the box.  How
+> does this look?
+>
+> --- a/kernel/resource.c~kernel-resourcec-handle-reinsertion-of-an-already-inserted-resource
+> +++ a/kernel/resource.c
+> @@ -453,6 +453,8 @@ static struct resource * __insert_resour
+>
+>                if (first == parent)
+>                        return first;
+> +               if (WARN_ON(first == new))      /* duplicated insertion */
+> +                       return first;
+>
 
-Hi all,
+Yes. This one is better.
+Many drivers do not check the returned value of insert_resouce().
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
 
-drivers/net/built-in.o: In function `bfa_ioc_is_operational':
-(.opd+0x1c6c8): multiple definition of `bfa_ioc_is_operational'
-drivers/scsi/built-in.o:(.opd+0x1b1b0): first defined here
-
-and many more ...
-
-Caused by commit 8b230ed8ec96c933047dd0625cf95f739e4939a6 ("bna: Brocade 10Gb Ethernet device driver") interacting with commit a whole series of patches to do with the Brocade BFA FC SCSI driver that are in Linus' tree stretching back to v2.6.32-rc2.
-
-I have reverted that net tree commit (and commit
-f04b4dd2b1f533cef0507e0410ffc6732d21a272 ("bna: Delete get_flags and set_flags ethtool methods") that depends on it).
-
---
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>                if ((first->start > new->start) || (first->end < new->end))
+>                        break;
+> _
+>
+>
