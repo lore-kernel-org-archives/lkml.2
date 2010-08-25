@@ -1,92 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab0HYTtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 15:49:16 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:35589 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751536Ab0HYTtO (ORCPT
+	id S1753324Ab0HYTuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 15:50:06 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:64655 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab0HYTuD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 15:49:14 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: linux-fsdevel@vger.kernel.org
-Subject: [PATCH] [RFC] isofs: work-around for Rock Ridge+Joliet CDs with empty ISO root directory
-Date: Wed, 25 Aug 2010 21:48:48 +0200
-User-Agent: KMail/1.9.10
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
+	Wed, 25 Aug 2010 15:50:03 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
+        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2] driver core: platform_bus: allow runtime override of dev_pm_ops
+Organization: Deep Root Systems, LLC
+References: <1282583922-984-1-git-send-email-khilman@deeprootsystems.com>
+	<AANLkTikMmuQbrGB-S1FWcmRJQ0Lmr9MYJkXHtEw7VXnE@mail.gmail.com>
+Date: Wed, 25 Aug 2010 12:50:00 -0700
+In-Reply-To: <AANLkTikMmuQbrGB-S1FWcmRJQ0Lmr9MYJkXHtEw7VXnE@mail.gmail.com>
+	(Grant Likely's message of "Wed, 25 Aug 2010 01:30:09 -0600")
+Message-ID: <871v9mfp5j.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008252148.55812.linux@rainbow-software.org>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a CD has both Rock Ridge and Joliet extensions and the ISO root directory
-is empty, no files are visible. Disable Rock Ridge extensions in this case and
-use Joliet root directory instead.
+Grant Likely <grant.likely@secretlab.ca> writes:
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> On Mon, Aug 23, 2010 at 11:18 AM, Kevin Hilman
+> <khilman@deeprootsystems.com> wrote:
+>> Currently, the platform_bus allows customization of several of the
+>> busses dev_pm_ops methods by using weak symbols so that platform code
+>> can override them.  The weak-symbol approach is not scalable when
+>> wanting to support multiple platforms in a single kernel binary.
+>>
+>> Instead, provide __init methods for platform code to customize the
+>> dev_pm_ops methods at runtime.
+>>
+>> NOTE: after these dynamic methods are merged, the weak symbols should
+>>      be removed from drivers/base/platform.c.  AFAIK, this will only
+>>      affect SH and sh-mobile which should be converted to use this
+>>      runtime approach instead of the weak symbols.  After SH &
+>>      sh-mobile are converted, the weak symobols could be removed.
+>>
+>> Tested on OMAP3.
+>>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Magnus Damm <magnus.damm@gmail.com>
+>> Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+>
+> Looks good to me.  A handful of nitpicks below, I don't know if Greg
+> will want you to respin for these or not.  Feel free to add my
+> acked-by line though:
+>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
---- linux-2.6.35-rc2/fs/isofs/inode.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc3/fs/isofs/inode.c	2010-08-24 22:43:26.000000000 +0200
-@@ -549,6 +549,34 @@ static unsigned int isofs_get_last_sessi
- }
+Thanks, here's a re-spin with your signoff and fixing the issues you
+raised.
+
+Applies to v2.6.36-rc1.
+
+Kevin
+
+>From 728f0ae551e805a10c9a45bcfb29f81ad45842da Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@ti.com>
+Date: Fri, 20 Aug 2010 10:46:53 -0700
+Subject: [PATCH] driver core: platform_bus: allow runtime override of dev_pm_ops
+
+Currently, the platform_bus allows customization of several of the
+busses dev_pm_ops methods by using weak symbols so that platform code
+can override them.  The weak-symbol approach is not scalable when
+wanting to support multiple platforms in a single kernel binary.
+
+Instead, provide __init methods for platform code to customize the
+dev_pm_ops methods at runtime.
+
+NOTE: after these dynamic methods are merged, the weak symbols should
+      be removed from drivers/base/platform.c.  AFAIK, this will only
+      affect SH and sh-mobile which should be converted to use this
+      runtime approach instead of the weak symbols.  After SH &
+      sh-mobile are converted, the weak symobols could be removed.
+
+Tested on OMAP3.
+
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+---
+ drivers/base/platform.c         |   35 +++++++++++++++++++++++++++++++++++
+ include/linux/platform_device.h |    3 +++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index c6c933f..468bbfd 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -976,6 +976,41 @@ struct bus_type platform_bus_type = {
+ };
+ EXPORT_SYMBOL_GPL(platform_bus_type);
  
- /*
-+ * Check if root directory is empty (has less than 3 files).
++/**
++ * platform_bus_get_pm_ops() - return pointer to busses dev_pm_ops
 + *
-+ * Used to detect broken CDs where ISO root directory is empty but Joliet root
-+ * directory is OK. If such CD has Rock Ridge extensions, they will be disabled
-+ * (and Joliet used instead) or else no files would be visible.
++ * This function can be used by platform code to get the current
++ * set of dev_pm_ops functions used by the platform_bus_type.
 + */
-+static bool rootdir_empty(struct super_block *sb, unsigned long block)
++const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
 +{
-+	int offset, files, de_len;
-+	struct iso_directory_record *de;
-+	struct buffer_head *bh;
-+
-+	bh = sb_bread(sb, block);
-+	if (!bh)
-+		return true;
-+	while (files < 3) {
-+		de = (struct iso_directory_record *) (bh->b_data + offset);
-+		de_len = *(unsigned char *) de;
-+		if (de_len == 0)
-+			break;
-+		files++;
-+		offset += de_len;
-+	}
-+	brelse(bh);
-+	return files < 3;
++	return platform_bus_type.pm;
 +}
 +
-+/*
-  * Initialize the superblock and read the root inode.
-  *
-  * Note: a check_disk_change() has been done immediately prior
-@@ -842,6 +870,18 @@ root_found:
- 		goto out_no_root;
- 
- 	/*
-+	 * Fix for broken CDs with Rock Ridge and empty ISO root directory but
-+	 * correct Joliet root directory.
-+	 */
-+	if (sbi->s_rock == 1 && joliet_level &&
-+				rootdir_empty(s, sbi->s_firstdatazone)) {
-+		printk(KERN_NOTICE
-+			"ISOFS: primary root directory is empty. "
-+			"Disabling Rock Ridge and switching to Joliet.");
-+		sbi->s_rock = 0;
-+	}
++/**
++ * platform_bus_set_pm_ops() - update dev_pm_ops for the platform_bus_type
++ *
++ * @pm: pointer to new dev_pm_ops struct to be used for platform_bus_type
++ *
++ * Platform code can override the dev_pm_ops methods of
++ * platform_bus_type by using this function.  It is expected that
++ * platform code will first do a platform_bus_get_pm_ops(), then
++ * kmemdup it, then customize selected methods and pass a pointer to
++ * the new struct dev_pm_ops to this function.
++ *
++ * Since platform-specific code is customizing methods for *all*
++ * devices (not just platform-specific devices) it is expected that
++ * any custom overrides of these functions will keep existing behavior
++ * and simply extend it.  For example, any customization of the
++ * runtime PM methods should continue to call the pm_generic_*
++ * functions as the default ones do in addition to the
++ * platform-specific behavior.
++ */
++void __init platform_bus_set_pm_ops(const struct dev_pm_ops *pm)
++{
++	platform_bus_type.pm = pm;
++}
 +
-+	/*
- 	 * If this disk has both Rock Ridge and Joliet on it, then we
- 	 * want to use Rock Ridge by default.  This can be overridden
- 	 * by using the norock mount option.  There is still one other
-
-
-
+ int __init platform_bus_init(void)
+ {
+ 	int error;
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index d7ecad0..2e700ec 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -138,6 +138,9 @@ extern struct platform_device *platform_create_bundle(struct platform_driver *dr
+ 					struct resource *res, unsigned int n_res,
+ 					const void *data, size_t size);
+ 
++extern const struct dev_pm_ops * platform_bus_get_pm_ops(void);
++extern void platform_bus_set_pm_ops(const struct dev_pm_ops *pm);
++
+ /* early platform driver interface */
+ struct early_platform_driver {
+ 	const char *class_str;
 -- 
-Ondrej Zary
+1.7.2.1
+
