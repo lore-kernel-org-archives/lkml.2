@@ -1,126 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab0HYXcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 19:32:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6852 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab0HYXcd (ORCPT
+	id S1752947Ab0HYXhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 19:37:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46444 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab0HYXhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 19:32:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=BIkm6b5cLp4if+xda/AvOxklhliySVAyJqfEnDlZigBYmX2ZDO6KNfjpTNnEG+o4Q
-	bqfhoVeiBBrFdciOFQtow==
-Date: Wed, 25 Aug 2010 16:32:27 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm@kvack.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: linux-next: Tree for August 25 (mm/slub)
-In-Reply-To: <alpine.DEB.2.00.1008251447410.22117@router.home>
-Message-ID: <alpine.DEB.2.00.1008251622500.31521@chino.kir.corp.google.com>
-References: <20100825132057.c8416bef.sfr@canb.auug.org.au> <20100825094559.bc652afe.randy.dunlap@oracle.com> <alpine.DEB.2.00.1008251409260.22117@router.home> <20100825122134.2ac33360.randy.dunlap@oracle.com>
- <alpine.DEB.2.00.1008251447410.22117@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 25 Aug 2010 19:37:05 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/6] perf hists: Fix hist_entry__init_have_children
+Date: Wed, 25 Aug 2010 20:36:50 -0300
+Message-Id: <1282779415-8544-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1282779415-8544-1-git-send-email-acme@infradead.org>
+References: <1282779415-8544-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, Christoph Lameter wrote:
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-> > Certainly.  config file is attached.
-> 
-> Ah. Memory hotplug....
-> 
-> 
-> 
-> Subject: Slub: Fix up missing kmalloc_cache -> kmem_cache_node case for memoryhotplug
-> 
-> Memory hotplug allocates and frees per node structures. Use the correct name.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+It wasn't setting the ms.has_children for the hist_entry itself, just
+for the callchain
 
-Acked-by: David Rientjes <rientjes@google.com>
-
-But we also need to fixup SLUB_RESILIENCY_TEST.
-
-
-slub: fix SLUB_RESILIENCY_TEST for dynamic kmalloc caches
-
-Now that the kmalloc_caches array is dynamically allocated at boot, 
-SLUB_RESILIENCY_TEST needs to be fixed to pass the correct type.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- mm/slub.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ tools/perf/util/ui/browsers/hists.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3486,6 +3486,8 @@ static void resiliency_test(void)
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index b13b978..39ba230 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -168,6 +168,7 @@ static void callchain__init_have_children(struct rb_root *self)
+ static void hist_entry__init_have_children(struct hist_entry *self)
  {
- 	u8 *p;
- 
-+	BUILD_BUG_ON(KMALLOC_MIN_SIZE > 16 || SLUB_PAGE_SHIFT < 10);
-+
- 	printk(KERN_ERR "SLUB resiliency testing\n");
- 	printk(KERN_ERR "-----------------------\n");
- 	printk(KERN_ERR "A. Corruption after allocation\n");
-@@ -3495,7 +3497,7 @@ static void resiliency_test(void)
- 	printk(KERN_ERR "\n1. kmalloc-16: Clobber Redzone/next pointer"
- 			" 0x12->0x%p\n\n", p + 16);
- 
--	validate_slab_cache(kmalloc_caches + 4);
-+	validate_slab_cache(kmalloc_caches[4]);
- 
- 	/* Hmmm... The next two are dangerous */
- 	p = kzalloc(32, GFP_KERNEL);
-@@ -3505,7 +3507,7 @@ static void resiliency_test(void)
- 	printk(KERN_ERR
- 		"If allocated object is overwritten then not detectable\n\n");
- 
--	validate_slab_cache(kmalloc_caches + 5);
-+	validate_slab_cache(kmalloc_caches[5]);
- 	p = kzalloc(64, GFP_KERNEL);
- 	p += 64 + (get_cycles() & 0xff) * sizeof(void *);
- 	*p = 0x56;
-@@ -3513,27 +3515,27 @@ static void resiliency_test(void)
- 									p);
- 	printk(KERN_ERR
- 		"If allocated object is overwritten then not detectable\n\n");
--	validate_slab_cache(kmalloc_caches + 6);
-+	validate_slab_cache(kmalloc_caches[6]);
- 
- 	printk(KERN_ERR "\nB. Corruption after free\n");
- 	p = kzalloc(128, GFP_KERNEL);
- 	kfree(p);
- 	*p = 0x78;
- 	printk(KERN_ERR "1. kmalloc-128: Clobber first word 0x78->0x%p\n\n", p);
--	validate_slab_cache(kmalloc_caches + 7);
-+	validate_slab_cache(kmalloc_caches[7]);
- 
- 	p = kzalloc(256, GFP_KERNEL);
- 	kfree(p);
- 	p[50] = 0x9a;
- 	printk(KERN_ERR "\n2. kmalloc-256: Clobber 50th byte 0x9a->0x%p\n\n",
- 			p);
--	validate_slab_cache(kmalloc_caches + 8);
-+	validate_slab_cache(kmalloc_caches[8]);
- 
- 	p = kzalloc(512, GFP_KERNEL);
- 	kfree(p);
- 	p[512] = 0xab;
- 	printk(KERN_ERR "\n3. kmalloc-512: Clobber redzone 0xab->0x%p\n\n", p);
--	validate_slab_cache(kmalloc_caches + 9);
-+	validate_slab_cache(kmalloc_caches[9]);
- }
- #else
- static void resiliency_test(void) {};
+ 	if (!self->init_have_children) {
++		self->ms.has_children = !RB_EMPTY_ROOT(&self->sorted_chain);
+ 		callchain__init_have_children(&self->sorted_chain);
+ 		self->init_have_children = true;
+ 	}
+-- 
+1.6.2.5
+
