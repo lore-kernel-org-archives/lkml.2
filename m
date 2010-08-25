@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab0HYNsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 09:48:23 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38087 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab0HYNsE (ORCPT
+	id S1754087Ab0HYNst (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 09:48:49 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52593 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab0HYNsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 09:48:04 -0400
+	Wed, 25 Aug 2010 09:48:45 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -18,201 +18,68 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Naren A Devaiah <naren.devaiah@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "Frank Ch. Eigler" <fche@redhat.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed, 25 Aug 2010 19:13:15 +0530
-Message-Id: <20100825134315.5447.96501.sendpatchset@localhost6.localdomain6>
+Date: Wed, 25 Aug 2010 19:13:57 +0530
+Message-Id: <20100825134357.5447.71201.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
 References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
-Subject: [PATCHv11 2.6.36-rc2-tip 10/15] 10: tracing: config option to enable both kprobe-tracer and uprobe-tracer.
+Subject: [PATCHv11 2.6.36-rc2-tip 13/15] 13: perf: Loop thro each of the maps in a map_group.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Selecting CONFIG_PROBE_EVENTS enables both kprobe-based and
-uprobes-based dynamic events. However kprobe-tracer or uprobe-tracer
-can still be individually selected or disabled.
+Introduces map_groups_for_each_map that iterates over a map_group.
+This is useful while listing functions through perf-probe.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Suggested-by: Arnaldo Carvalho de Melo <acme@infradead.org>
 ---
- kernel/trace/Kconfig |   51 +++++++++++++++++++++++++++++---------------------
- 1 files changed, 30 insertions(+), 21 deletions(-)
+ tools/perf/util/map.h |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 55ba474..205c12b 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -76,7 +76,7 @@ config RING_BUFFER_ALLOW_SWAP
- # All tracer options should select GENERIC_TRACER. For those options that are
- # enabled by all tracers (context switch and event tracer) they select TRACING.
- # This allows those options to appear when no other tracer is selected. But the
--# options do not appear when something else selects it. We need the two options
-+# options do not appear when something else selects it. We need the two option
- # GENERIC_TRACER and TRACING to avoid circular dependencies to accomplish the
- # hiding of the automatic options.
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 7857579..45b5f50 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -54,6 +54,33 @@ struct map_groups {
+ 	struct machine	 *machine;
+ };
  
-@@ -162,7 +162,7 @@ config IRQSOFF_TRACER
- 	  This option measures the time spent in irqs-off critical
- 	  sections, with microsecond accuracy.
- 
--	  The default measurement method is a maximum search, which is
-+	  The default measurement method is a maximum search, which i
- 	  disabled by default and can be runtime (re-)started
- 	  via:
- 
-@@ -184,7 +184,7 @@ config PREEMPT_TRACER
- 	  This option measures the time spent in preemption-off critical
- 	  sections, with microsecond accuracy.
- 
--	  The default measurement method is a maximum search, which is
-+	  The default measurement method is a maximum search, which i
- 	  disabled by default and can be runtime (re-)started
- 	  via:
- 
-@@ -228,7 +228,7 @@ choice
- 	prompt "Branch Profiling"
- 	default BRANCH_PROFILE_NONE
- 	help
--	 The branch profiling is a software profiler. It will add hooks
-+	 The branch profiling is a software profiler. It will add hook
- 	 into the C conditionals to test which path a branch takes.
- 
- 	 The likely/unlikely profiler only looks at the conditions that
-@@ -252,12 +252,12 @@ config PROFILE_ANNOTATED_BRANCHES
- 	bool "Trace likely/unlikely profiler"
- 	select TRACE_BRANCH_PROFILING
- 	help
--	  This tracer profiles all the the likely and unlikely macros
-+	  This tracer profiles all the the likely and unlikely macro
- 	  in the kernel. It will display the results in:
- 
- 	  /sys/kernel/debug/tracing/profile_annotated_branch
- 
--	  Note: this will add a significant overhead; only turn this
-+	  Note: this will add a significant overhead; only turn thi
- 	  on if you need to profile the system's use of these macros.
- 
- config PROFILE_ALL_BRANCHES
-@@ -333,7 +333,7 @@ config BLK_DEV_IO_TRACE
- 	select GENERIC_TRACER
- 	select STACKTRACE
- 	help
--	  Say Y here if you want to be able to trace the block layer actions
-+	  Say Y here if you want to be able to trace the block layer action
- 	  on a given queue. Tracing allows you to see any traffic happening
- 	  on a block device queue. For more information (and the userspace
- 	  support tools needed), fetch the blktrace tools from:
-@@ -351,9 +351,8 @@ config BLK_DEV_IO_TRACE
- config KPROBE_EVENT
- 	depends on KPROBES
- 	depends on HAVE_REGS_AND_STACK_ACCESS_API
-+	depends on PROBE_EVENTS
- 	bool "Enable kprobes-based dynamic events"
--	select TRACING
--	select PROBE_EVENTS
- 	default y
- 	help
- 	  This allows the user to add tracing events (similar to tracepoints)
-@@ -370,10 +369,9 @@ config UPROBE_EVENT
- 	bool "Enable uprobes-based dynamic events"
- 	depends on ARCH_SUPPORTS_UPROBES
- 	depends on MMU
-+	depends on PROBE_EVENTS
- 	select UPROBES
--	select PROBE_EVENTS
--	select TRACING
--	default n
-+	default y
- 	help
- 	  This allows the user to add tracing events on top of userspace dynamic
- 	  events (similar to tracepoints) on the fly via the traceevents interface.
-@@ -383,7 +381,18 @@ config UPROBE_EVENT
- 	  tools on user space applications.
- 
- config PROBE_EVENTS
--	def_bool n
-+	bool "Enable kprobes and uprobe based dynamic events"
-+	select TRACING
-+	default n
-+	help
-+	  This allows a user to add dynamic tracing events in
-+	  kernel using kprobe-tracer and in userspace using
-+	  uprobe-tracer. However users can still selectively
-+	  disable one of these events.
++/* For map_groups iteration */
++static inline struct map *map__first(struct map_groups *self,
++						enum map_type type)
++{
++	struct rb_node *rn = rb_first(&self->maps[type]);
++	return rn ? rb_entry(rn, struct map, rb_node) : NULL;
++}
 +
-+	  For more information on kprobe-tracer and uprobe-tracer
-+	  please refer help under KPROBE_EVENT and UPROBE_EVENT
-+	  respectively.
- 
- config DYNAMIC_FTRACE
- 	bool "enable/disable ftrace tracepoints dynamically"
-@@ -393,14 +402,14 @@ config DYNAMIC_FTRACE
- 	help
-           This option will modify all the calls to ftrace dynamically
- 	  (will patch them out of the binary image and replace them
--	  with a No-Op instruction) as they are called. A table is
-+	  with a No-Op instruction) as they are called. A table i
- 	  created to dynamically enable them again.
- 
- 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
- 	  otherwise has native performance as long as no tracing is active.
- 
- 	  The changes to the code are done by a kernel thread that
--	  wakes up once a second and checks to see if any ftrace calls
-+	  wakes up once a second and checks to see if any ftrace call
- 	  were made. If so, it runs stop_machine (stops all CPUS)
- 	  and modifies the code to jump over the call to ftrace.
- 
-@@ -432,7 +441,7 @@ config FTRACE_STARTUP_TEST
- 	select FTRACE_SELFTEST
- 	help
- 	  This option performs a series of startup tests on ftrace. On bootup
--	  a series of tests are made to verify that the tracer is
-+	  a series of tests are made to verify that the tracer i
- 	  functioning properly. It will do tests on all the configured
- 	  tracers of ftrace.
- 
-@@ -441,12 +450,12 @@ config EVENT_TRACE_TEST_SYSCALLS
- 	depends on FTRACE_STARTUP_TEST
- 	help
- 	 This option will also enable testing every syscall event.
--	 It only enables the event and disables it and runs various loads
-+	 It only enables the event and disables it and runs various load
- 	 with the event enabled. This adds a bit more time for kernel boot
- 	 up since it runs this on every system call defined.
- 
- 	 TBD - enable a way to actually call the syscalls as we test their
--	       events
-+	       event
- 
- config MMIOTRACE
- 	bool "Memory mapped IO tracing"
-@@ -465,7 +474,7 @@ config MMIOTRACE_TEST
- 	tristate "Test module for mmiotrace"
- 	depends on MMIOTRACE && m
- 	help
--	  This is a dumb module for testing mmiotrace. It is very dangerous
-+	  This is a dumb module for testing mmiotrace. It is very dangerou
- 	  as it will write garbage to IO memory starting at a given address.
- 	  However, it should be safe to use on e.g. unused portion of VRAM.
- 
-@@ -477,9 +486,9 @@ config RING_BUFFER_BENCHMARK
- 	help
- 	  This option creates a test to stress the ring buffer and benchmark it.
- 	  It creates its own ring buffer such that it will not interfere with
--	  any other users of the ring buffer (such as ftrace). It then creates
-+	  any other users of the ring buffer (such as ftrace). It then create
- 	  a producer and consumer that will run for 10 seconds and sleep for
--	  10 seconds. Each interval it will print out the number of events
-+	  10 seconds. Each interval it will print out the number of event
- 	  it recorded and give a rough estimate of how long each iteration took.
- 
- 	  It does not disable interrupts or raise its priority, so it may be
++static inline struct map *map__next(struct map *map)
++{
++	struct rb_node *rn;
++	if (!map)
++		return NULL;
++	rn = rb_next(&map->rb_node);
++	return rn ? rb_entry(rn, struct map, rb_node) : NULL;
++}
++
++/**
++ * map_groups__for_each_map      - iterate over a map_group
++ * @pos:	the &struct map to use as a loop cursor.
++ * @type:	the map type.
++ * @self:	the &struct map_groups for loop.
++ */
++#define map_groups__for_each_map(pos, type, self)	\
++	for (pos = map__first(self, type); pos;		\
++				pos = map__next(pos))
++
+ /* Native host kernel uses -1 as pid index in machine */
+ #define	HOST_KERNEL_ID			(-1)
+ #define	DEFAULT_GUEST_KERNEL_ID		(0)
