@@ -1,79 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab0HYLYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 07:24:10 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:52823 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab0HYLYI convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:7:1>);
-	Wed, 25 Aug 2010 07:24:08 -0400
-Message-Id: <4C751975020000780001214C@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 25 Aug 2010 12:24:04 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Daniel Stodden" <daniel.stodden@citrix.com>
-Cc: "Tom Kopec" <tek@acm.org>, "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Stable Kernel" <stable@kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [GIT PULL] Fix lost interrupt race in Xen
-	 event channels
-References: <4C743B2C.8070208@goop.org>
- <4C74E7C802000078000120C0@vpn.id2.novell.com>
- <1282730660.3092.106.camel@ramone.somacoma.net>
-In-Reply-To: <1282730660.3092.106.camel@ramone.somacoma.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752356Ab0HYLZP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 07:25:15 -0400
+Received: from thunk.org ([69.25.196.29]:33527 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751240Ab0HYLZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 07:25:12 -0400
+Date: Wed, 25 Aug 2010 07:24:33 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: David Rientjes <rientjes@google.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+Message-ID: <20100825112433.GB4453@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	David Rientjes <rientjes@google.com>,
+	Jens Axboe <jaxboe@fusionio.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	"linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+	"cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+ <1282656558.2605.2742.camel@laptop>
+ <4C73CA24.3060707@fusionio.com>
+ <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 25.08.10 at 12:04, Daniel Stodden <daniel.stodden@citrix.com> wrote:
-> On Wed, 2010-08-25 at 03:52 -0400, Jan Beulich wrote:
->> >>> On 24.08.10 at 23:35, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
->> > We worked out the root cause was that it was incorrectly treating Xen
->> > events as level rather than edge triggered interrupts, which works fine
->> > unless you're handling one interrupt, the interrupt gets migrated to
->> > another cpu and then re-raised.  This ends up losing the interrupt
->> > because the edge-triggering of the second interrupt is lost.
->> 
->> While this description would seem plausible at the first glance, it
->> doesn't match up with unmask_evtchn() already taking care of
->> exactly this case. Or are you implicitly saying that this code is
->> broken in some way (if so, how, and shouldn't it then be that
->> code that needs fixing, or removing if you want to stay with the
->> edge handling)?
+On Tue, Aug 24, 2010 at 01:11:26PM -0700, David Rientjes wrote:
+> On Tue, 24 Aug 2010, Jens Axboe wrote:
 > 
-> Not broken, but a different problem. The unmask 'resend' only catches
-> the edge lost if the event was raised while it was still masked. But
-> level irq doesn't have to save PENDING state. In the Xen event migration
-> case the edge isn't lost, but the upcall will drop the invocation when
-> the handler is found inprogress on the previous cpu.
-
-Hmm, indeed. But that problem must have existed in all post-2.6.18
-kernels then... And that shouldn't be a problem with fasteoi, as that
-one calls ->eoi() even when INPROGRESS was set (other than level,
-which calls unmask only when it wasn't set).
-
->> I do however agree that using handle_level_irq() is problematic
->> (see 
-> http://lists.xensource.com/archives/html/xen-devel/2010-04/msg01178.html),
->> but as said there I think using the fasteoi logic is preferable. No
->> matter whether using edge or level, the ->end() method will
->> never be called (whereas fasteoi calls ->eoi(), which would
->> just need to be vectored to the same function as ->end()).
->> Without end_pirq() ever called, you can't let Xen know of
->> bad PIRQs (so that it can disable them instead of continuing
->> to call the [now shortcut] handler in the owning domain).
+> > Should be possible to warn at build time for anyone using __GFP_NOFAIL
+> > without wrapping it in a function.
+> > 
 > 
-> Not an opinion, just confused: Isn't all that dealt with in
-> chip->disable?
+> We could make this __deprecated functions as Peter suggested if you think 
+> build time warnings for existing users would be helpful.
 
-With disable_pirq() being empty (at least in the branches I
-looked at)?
+Let me take a few steps backwards and look at the problem from a
+somewhat higher level.
 
-Jan
+Part of the problem is that we have a few places in the kernel where
+failure is really not an option --- or rather, if we're going to fail
+while we're in the middle of doing a commit, our choices really are
+(a) retry the loop in the jbd layer (which Andrew really doesn't
+like), (b) keep our own private cache of free memory so we don't fail
+and/or loop, (c) fail the file system and mark it read-only, or (d)
+panic.
 
+There are other places where we can fail safely (for example, in jbd's
+start_this_handle, although that just pushes the layer up the stack,
+and ultimately, to userspace where most userspace programs don't
+really expect ENOMEM to get returned by a random disk write --- how
+much do _you_ trust a random GNOME or KDE developer to do correct
+error checking and do something sane at the application?)
+
+So we can mark the retry loop helper function as deprecated, and that
+will make some of these cases go away, but ultimately if we're going
+to fail the memory allocation, something bad is going to happen, and
+the only question is whether we want to have something bad happen by
+looping in the memory allocator, or to force the file system to
+panic/oops the system, or have random application die and/or lose user
+data because they don't expect write() to return ENOMEM.
+
+So at some level it would be nice if we had a few different levels of
+"we *really* need this memory".  Level 0 might be, "if we can't get
+it, no biggie, we'll figure out some other way around it.  I doubt
+there is much at level 0, but in theory, we could have some good
+citizens that fall in that camp and who simply will bypass some
+optimization if they can't get the memory.  Level 1 might be, if you
+can't get the memory, we will propagate a failure up to userspace, but
+it's probably a relatively "safe" place to fail (i.e., when the user
+is opening a file).  Level 2 might be, "if you can't get the memory,
+we will propgate a failure up to userspace, but it's at a space where
+most applications are lazy f*ckers, and this may lead to serious
+application errors" (example: close(2), and this is a file system that
+only pushes the file to the server at close time, e.g. AFS).  Level 3
+might be, "if you can't get the memory, I'm going to fail the file
+system, or some other global subsystem, that will probably result in
+the system crashing or needing to be rebooted".
+
+We can ignore this problem and pretend it doesn't exist at the memory
+allocator level, but that means the callers are going to be doing
+their own thing to try to avoid having really bad things happening at
+really-low-memory occasions.  And this may mean looping, whether we
+mark the function as deprecated or not.
+
+This is becoming even more of an issue now given that with
+containerization, we have jokers who are forcing tasks to run in very
+small memory containers, which means that failures can happen far more
+frequently --- and in some cases, just because the process running the
+task happens to be in an extremely constrained memory cgroup, doesn't
+mean that failing the entire system is really such a great idea.  Or
+maybe that means memory cgroups are kinda busted.  :-)
+
+      	   	 		    	  	   - Ted
