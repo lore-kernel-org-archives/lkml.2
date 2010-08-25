@@ -1,76 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab0HYKl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 06:41:57 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60317 "EHLO mx2.mail.elte.hu"
+	id S1753126Ab0HYKp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 06:45:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48222 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654Ab0HYKlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 06:41:55 -0400
-Date: Wed, 25 Aug 2010 12:41:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100825104130.GA27891@elte.hu>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100825094819.GB3198@erda.amd.com>
+	id S1752654Ab0HYKp4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 06:45:56 -0400
+From: "Basak, Partha" <p-basak2@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Varadarajan, Charulatha" <charu@ti.com>,
+        "Nayak, Rajendra" <rnayak@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Date: Wed, 25 Aug 2010 16:15:49 +0530
+Subject: RE: [PATCH] OMAP: HWMOD: Handle opt clocks using clk_add_alias
+Thread-Topic: [PATCH] OMAP: HWMOD: Handle opt clocks using clk_add_alias
+Thread-Index: ActC/9GXexvwNwfyRWeb1V9IWFvKSwBPFPfg
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB59301E83DC40B@dbde02.ent.ti.com>
+References: <1282578269-8835-1-git-send-email-p-basak2@ti.com>
+ <4C72D6AC.3060509@ti.com>
+In-Reply-To: <4C72D6AC.3060509@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825094819.GB3198@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0469]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Robert Richter <robert.richter@amd.com> wrote:
 
-> On 20.08.10 11:25:10, Ingo Molnar wrote:
+> -----Original Message-----
+> From: Cousson, Benoit
+> Sent: Tuesday, August 24, 2010 1:45 AM
+> To: Basak, Partha
+> Cc: linux-kernel@vger.kernel.org; Varadarajan, Charulatha; Nayak,
+> Rajendra; Paul Walmsley; Kevin Hilman
+> Subject: Re: [PATCH] OMAP: HWMOD: Handle opt clocks using clk_add_alias
 > 
-> > > Ingo Molnar <mingo@elte.hu> wrote:
-> > > 
-> > > >
-> > > >it's not working so well, i'm getting:
-> > > >
-> > > > Uhhuh. NMI received for unknown reason 00 on CPU 9.
-> > > > Do you have a strange power saving mode enabled?
-> > > > Dazed and confused, but trying to continue
-> > > >
-> > > >on a nehalem box, after a perf top and perf stat run.
-> > 
-> > FYI, it does not trigger on an AMD box.
+> Hi Partha,
 > 
-> Ingo,
+> On 8/23/2010 5:44 PM, Basak, Partha wrote:
+> > From: Basak, Partha<p-basak2@ti.com>
+> >
+> > For every optional clock present per hwmod per omap-device, this
+> function
+> > adds an entry in the clocks list of the form<dev-id=dev_name, con-
+> id=role>,
+> > if an entry is already present in the list of the form<dev-id=NULL, con-
+> id=role>.
+> >
+> > The function is called from within the framework inside
+> omap_device_build_ss(),
+> > after omap_device_register.
+> >
+> > This allows drivers to get a pointer to its optional clocks based on its
+> role
+> > by calling clk_get(<dev*>,<role>).
+> >
+> > Link to discussions related to this patch:
+> > http://www.spinics.net/lists/linux-omap/msg34809.html
+> >
+> > Signed-off-by: Charulatha V<charu@ti.com>
+> > Signed-off-by: Basak, Partha<p-basak2@ti.com>
+> > Signed-off-by: Benoit Cousson<b-cousson@ti.com>
+> > Signed-off-by: Rajendra Nayak<rnayak@ti.com>
+> >
+> > Cc: Paul Walmsley<paul@pwsan.com>
+> > Cc: Kevin Hilman<khilman@deeprootsystems.com>
+> > ---
+> >   arch/arm/plat-omap/omap_device.c |   31
+> ++++++++++++++++++++++++++++++-
+> >   1 files changed, 30 insertions(+), 1 deletions(-)
+> >
+> > Index: linux-omap-pm/arch/arm/plat-omap/omap_device.c
+> > ===================================================================
+> > --- linux-omap-pm.orig/arch/arm/plat-omap/omap_device.c	2010-08-18
+> 02:48:30.789079550 +0530
+> > +++ linux-omap-pm/arch/arm/plat-omap/omap_device.c	2010-08-24
+> 07:19:43.637080138 +0530
+> > @@ -82,6 +82,7 @@
+> >   #include<linux/slab.h>
+> >   #include<linux/err.h>
+> >   #include<linux/io.h>
+> > +#include<linux/clk.h>
+> >
+> >   #include<plat/omap_device.h>
+> >   #include<plat/omap_hwmod.h>
+> > @@ -243,7 +244,6 @@ static inline struct omap_device *_find_
+> >   	return container_of(pdev, struct omap_device, pdev);
+> >   }
+> >
+> > -
 > 
-> do you mean it does not trigger false positives on AMD? [...]
+> That fix is not related to the patch subject.
+> 
+> >   /* Public functions for use by core code */
+> >
+> >   /**
+> > @@ -271,6 +271,47 @@ int omap_device_count_resources(struct o
+> >   }
+> 
+> This is not a public function, so you should move it before the /*
+> Public functions for use by core code */
+> 
+OK
+> >   /**
+> > + * omap_device_add_opt_clk_alias - Add alias for optional clocks in the
+> > + * clocks list.
+> > + *
+> > + * @od: struct omap_device *od
+> > + *
+> > + * For every optional clock present per hwmod per omap-device, this
+> function
+> > + * adds an entry in the clocks list of the form<dev-id=dev_name, con-
+> id=role>
+> > + * if an entry is already present in it with the form<dev-id=NULL,con-
+> id=role>
+> > + *
+> > + * The function is called from inside omap_device_build_ss(),
+> > + * after omap_device_register.
+> > + *
+> > + * This allows drivers to get a pointer to its optional clocks based on
+> its role
+> > + * by calling clk_get(<dev*>,<role>).
+> > + */
+> > +
+> > +static void omap_device_add_opt_clk_alias(struct omap_device *od)
+> > +{
+> > +	int i, j;
+> > +	struct omap_hwmod_opt_clk *oc;
+> > +	struct omap_hwmod *oh;
+> > +
+> > +	for (i = 0, oh = *od->hwmods; i<  od->hwmods_cnt; i++, oh++)
+> 
+> You can avoid that iteration and the extra level of indentation by
+> re-using the iteration done before the call to that function.
+> 
+> > +		/* Add Clock alias for all optional clocks*/
+> > +		for (j = oh->opt_clks_cnt, oc = oh->opt_clks;
+> > +			j>  0; j--, oc++) {
+> > +			if ((oc->_clk)&&
+> > +			(IS_ERR(clk_get(&od->pdev.dev, oc->role)))) {
+> > +				int ret;
+> 
+Not clear on your comment, wanted to take care of the scenario where a device is having multiple hwmods
 
-Correct, on AMD boxes i do not get this message during the first 'perf 
-top' run:
+> You can avoid the indentation by returning in case of error.
+> You can avoid as well 2 pairs of parens.
+> 
+> > +
+> > +				ret = clk_add_alias(oc->role,
+> > +					dev_name(&od->pdev.dev),
+> > +					(char *)oc->clk, NULL);
+> 
+> The indentation is not align with the inner parameters... which is not
+> easy in your case due to the too many indentation level you have in this
+> function.
+> 
+> > +				if (ret)
+> > +					dev_err(&od->pdev.dev, "omap_device:\
+> 
+> This is not correct way of splitting long string, use "omap_device:"
+> instead.
+>
+Agreed
+ 
+> Even if dev_err is usable because you have the dev pointer, it is in
+> fact an error from the omap_device code code, so using pr_err is
+> probably more appropriate (TBC).
+> 
+> > +					clk_add_alias for %s failed\n",
+> > +					oc->role);
+> > +			}
+> > +		}
+> > +}
+> > +/**
+> >    * omap_device_fill_resources - fill in array of struct resource
+> >    * @od: struct omap_device *
+> >    * @res: pointer to an array of struct resource to be filled in
+> > @@ -424,6 +465,12 @@ struct omap_device *omap_device_build_ss
+> >   	for (i = 0; i<  oh_cnt; i++)
+> >   		hwmods[i]->od = od;
+> 
+> You can call a per hwmod API here in order to avoid the iteration inside
+> the function.
 
-> > > > Uhhuh. NMI received for unknown reason 00 on CPU 9.
-> > > > Do you have a strange power saving mode enabled?
-> > > > Dazed and confused, but trying to continue
+I see your point, but most of the functions in this layer are having omap_device * as the parameter, so I maintained consistency
+ 
+> 
+> >
+> > +	/*
+> > +	 * Add Clock alias for all optional
+> > +	 * clocks present in the hwmod
+> > +	 */
+> 
+> That comment is not bringing any new information, the function is
+> already documented in the kernel doc comment.
+> 
+Agreed, will remove
 
-Before the two patches i did not get these messages at all, on any of 
-the systems.
+> > +	omap_device_add_opt_clk_alias(od);
+> > +
+> >   	if (ret)
+> >   		goto odbs_exit4;
+> >
+> 
+> Regards,
+> Benoit
 
-> You might use the debug patch below for diagnostics.
-
-Thanks, will try that and report back.
-
-	Ingo
