@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab0HYLnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 07:43:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60718 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab0HYLmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 07:42:51 -0400
-Date: Wed, 25 Aug 2010 21:42:32 +1000
-From: Neil Brown <neilb@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        Tejun Heo <tj@kernle.org>
-Subject: Re: [PATCH UPDATED 4/5] md: implment REQ_FLUSH/FUA support
-Message-ID: <20100825214232.4a502c47@notabene>
-In-Reply-To: <4C74FCF2.2090809@kernel.org>
-References: <1281977523-19335-1-git-send-email-tj@kernel.org>
-	<1281977523-19335-5-git-send-email-tj@kernel.org>
-	<20100824154102.7b68818b@notabene>
-	<4C74FCF2.2090809@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753428Ab0HYLxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 07:53:10 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47613 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab0HYLxI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 07:53:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=MFNw5AfABXVFWUMM5gyqL+iwgpI7nk2NZTG93QOrG+AtK+I0XfoJnmSVCdbVc3dvZv
+         V42bjkq5kGNIBuqFnKdMJ+Dugi81xCunWGaoadLGFoUirS2GSDaeMKOaxtFgevS7HVyo
+         idw61fK7gxr9NkgCgiAf0Nkk8hEjv8PSvAiuQ=
+MIME-Version: 1.0
+In-Reply-To: <20100824104046.a8018469.randy.dunlap@oracle.com>
+References: <AANLkTinzaRBaWX9EJTAt70Qk+bifFicUUGh=vRJaWL+N@mail.gmail.com>
+ <AANLkTikQXxmzC1LxOC7wUWj40nRyLvBgGa0NO3_2s5oX@mail.gmail.com> <20100824104046.a8018469.randy.dunlap@oracle.com>
+From: Richard Hartmann <richih.mailinglist@gmail.com>
+Date: Wed, 25 Aug 2010 13:52:47 +0200
+Message-ID: <AANLkTinPLxZxOW70FtJBA3f4eG8kc-ju-G=UoATKV0qk@mail.gmail.com>
+Subject: Re: System silently not booting with 2.6.35 nor with 2.6.35.3 -- It
+ works fine with 2.6.32.x and 2.6.18.x
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, kernelnewbies@nl.linux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 13:22:26 +0200
-Tejun Heo <tj@kernel.org> wrote:
+On Tue, Aug 24, 2010 at 19:40, Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-> This patch converts md to support REQ_FLUSH/FUA instead of now
-> deprecated REQ_HARDBARRIER.  In the core part (md.c), the following
-> changes are notable.
-> 
-> * Unlike REQ_HARDBARRIER, REQ_FLUSH/FUA don't interfere with
->   processing of other requests and thus there is no reason to mark the
->   queue congested while FLUSH/FUA is in progress.
-> 
-> * REQ_FLUSH/FUA failures are final and its users don't need retry
->   logic.  Retry logic is removed.
-> 
-> * Preflush needs to be issued to all member devices but FUA writes can
->   be handled the same way as other writes - their processing can be
->   deferred to request_queue of member devices.  md_barrier_request()
->   is renamed to md_flush_request() and simplified accordingly.
-> 
-> For linear, raid0 and multipath, the core changes are enough.  raid1,
-> 5 and 10 need the following conversions.
-> 
-> * raid1: Handling of FLUSH/FUA bio's can simply be deferred to
->   request_queues of member devices.  Barrier related logic removed.
-> 
-> * raid5: Queue draining logic dropped.  FUA bit is propagated through
->   biodrain and stripe resconstruction such that all the updated parts
->   of the stripe are written out with FUA writes if any of the dirtying
->   writes was FUA.  preread_active_stripes handling in make_request()
->   is updated as suggested by Neil Brown.
-> 
-> * raid10: FUA bit needs to be propagated to write clones.
-> 
-> linear, raid0, 1, 5 and 10 tested.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Neil Brown <neilb@suse.de>
-> ---
-> Rebased on top of -rc2 and updated as suggested.  Can you please
-> review and ack it?
+> I would try enabling CONFIG_DEVTMPFS and CONFIG_DEVTMPFS_MOUNT.
 
-Reviewed-by: NeilBrown <neilb@suse.de>
+As neiter the working nor the broken config has this option enabled, I
+don't know
+how this will help with finding the combinations of config options that made the
+kernel fail to boot. Unless I am missing something?
 
-Thanks!
 
-NeilBrown
+Thanks,
+Richard
