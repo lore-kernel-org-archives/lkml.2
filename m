@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab0HYSOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:14:43 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:56302 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab0HYSOl (ORCPT
+	id S1752177Ab0HYSTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 14:19:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51589 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab0HYSTI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:14:41 -0400
-Date: Wed, 25 Aug 2010 14:01:29 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Joe Perches <joe@perches.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC patch (against wireless-next)] include/net/cfg80211.h:
- wiphy_<level> messages use dev_printk
-Message-ID: <20100825180129.GK2557@tuxdriver.com>
-References: <1282245848.6724.261.camel@Joe-Laptop>
- <1282246784.4507.14.camel@jlt3.sipsolutions.net>
- <1282342439.1960.84.camel@Joe-Laptop>
+	Wed, 25 Aug 2010 14:19:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=dN3/e9L0EU0OHb985c2vLWP+V710OIQdzMcqwKv9JXnOGb0Ywxxod2pbT/clXfoKf3
+         IiX8/JViAqE/3K/UBB+YwAIPUB0+7nkO0UQw5UUio0Hk03ulfOwMqVXdfXoImM35AeN4
+         asLBuhq5fflHUr5cBIdw1ibEYnHpiU0p1YnnM=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Bruno =?utf-8?q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+Subject: Re: [2.6.36 regression] Under linux console gpm cursor now going to opposite direction of mouse
+Date: Wed, 25 Aug 2010 20:19:01 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1; KDE/4.4.5; i686; ; )
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100820223316.4f6ac734@neptune.home>
+In-Reply-To: <20100820223316.4f6ac734@neptune.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282342439.1960.84.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008252019.02455.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 03:13:59PM -0700, Joe Perches wrote:
-> On Thu, 2010-08-19 at 21:39 +0200, Johannes Berg wrote:
-> > On Thu, 2010-08-19 at 12:24 -0700, Joe Perches wrote:
-> > > Adding device to the wiphy logging messages could be useful.
-> > >  #define wiphy_printk(level, wiphy, format, args...)		\
-> > > -	printk(level "%s: " format, wiphy_name(wiphy), ##args)
-> > > +	dev_printk(level, &wiphy->dev, "%s: " format, wiphy_name(wiphy), ##args)
-> > what will that actually print?
+On piątek, 20 sierpnia 2010 o 22:33:16 Bruno Prémont wrote:
+> Somewhere between 2.6.35 and Linus's tree as of this writing gpm
+> started moving its cursor to the opposite direction of mouse movement.
 > 
-> As is, that'd print:
+> e.g. moving mouse up causes cursor to move down, moving mouse left
+>      causes cursor to go right
 > 
-> "<level>dev_driver_string(&wiphy->dev) dev_name(&wiphy->dev): wiphy_name(wiphy): " fmt, ##args
+> Under 2.6.35 the cursor moved into the same direction as the mouse.
 > 
-> for instance:
+> Note, mouse is synaptics touchpad (Acer TravelMate660):
+>   Synaptics Touchpad, model: 1, fw: 5.8, id: 0x9d48b1, caps:
+> 0x904713/0x4006/0x0
 > 
-> [   41.261941] ieee80211 phy0: phy0: Selected rate control algorithm 'minstrel_ht'
 > 
-> ie: redundant.
-> wiphy_name(wiphy) is an inline for dev_name(&wiphy->dev)
+> When I get around to it I will try to get more precise information as
+> to when this regression got introduced, eventually bisecting.
 > 
-> So it's appropriate to use:
-> 
-> #define wiphy_<level>(wiphy, fmt, arg...) dev_<level>(&wiphy->dev, fmt, ##arg) 
-> 
-> and the output becomes:
-> 
-> [   41.261941] ieee80211 phy0: Selected rate control algorithm 'minstrel_ht'
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Bruno
 
-Everyone OK w/ this version?
-
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=17031
+for your bug report, please add your address to the CC list in there, thanks!
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Maciej Rutecki
+http://www.maciek.unixy.pl
