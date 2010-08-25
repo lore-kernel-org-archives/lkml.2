@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab0HYSTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 14:19:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51589 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab0HYSTI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 14:19:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=dN3/e9L0EU0OHb985c2vLWP+V710OIQdzMcqwKv9JXnOGb0Ywxxod2pbT/clXfoKf3
-         IiX8/JViAqE/3K/UBB+YwAIPUB0+7nkO0UQw5UUio0Hk03ulfOwMqVXdfXoImM35AeN4
-         asLBuhq5fflHUr5cBIdw1ibEYnHpiU0p1YnnM=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Bruno =?utf-8?q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Subject: Re: [2.6.36 regression] Under linux console gpm cursor now going to opposite direction of mouse
-Date: Wed, 25 Aug 2010 20:19:01 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc1; KDE/4.4.5; i686; ; )
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100820223316.4f6ac734@neptune.home>
-In-Reply-To: <20100820223316.4f6ac734@neptune.home>
+	id S1752290Ab0HYST0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 14:19:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36585 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752206Ab0HYSTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 14:19:24 -0400
+Date: Wed, 25 Aug 2010 18:18:54 GMT
+From: "tip-bot for Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100825155850.GA6601@linux.vnet.ibm.com>
+References: <20100825155850.GA6601@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] MAINTAINERS: Add RCU's public git tree
+Message-ID: <tip-6cb6cbeaa9d6573c674842b9471c0467967aae99@git.kernel.org>
+Git-Commit-ID: 6cb6cbeaa9d6573c674842b9471c0467967aae99
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201008252019.02455.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 18:18:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 20 sierpnia 2010 o 22:33:16 Bruno Prémont wrote:
-> Somewhere between 2.6.35 and Linus's tree as of this writing gpm
-> started moving its cursor to the opposite direction of mouse movement.
-> 
-> e.g. moving mouse up causes cursor to move down, moving mouse left
->      causes cursor to go right
-> 
-> Under 2.6.35 the cursor moved into the same direction as the mouse.
-> 
-> Note, mouse is synaptics touchpad (Acer TravelMate660):
->   Synaptics Touchpad, model: 1, fw: 5.8, id: 0x9d48b1, caps:
-> 0x904713/0x4006/0x0
-> 
-> 
-> When I get around to it I will try to get more precise information as
-> to when this regression got introduced, eventually bisecting.
-> 
-> Bruno
+Commit-ID:  6cb6cbeaa9d6573c674842b9471c0467967aae99
+Gitweb:     http://git.kernel.org/tip/6cb6cbeaa9d6573c674842b9471c0467967aae99
+Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+AuthorDate: Wed, 25 Aug 2010 08:58:50 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 25 Aug 2010 20:14:58 +0200
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=17031
-for your bug report, please add your address to the CC list in there, thanks!
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+MAINTAINERS: Add RCU's public git tree
+
+RCU now has a public git tree, so add it via the T: line in the
+MAINTAINERS file.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: joe@perches.com
+LKML-Reference: <20100825155850.GA6601@linux.vnet.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ MAINTAINERS |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5fa8451..614861a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4799,6 +4799,7 @@ RCUTORTURE MODULE
+ M:	Josh Triplett <josh@freedesktop.org>
+ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+ S:	Supported
++T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+ F:	Documentation/RCU/torture.txt
+ F:	kernel/rcutorture.c
+ 
+@@ -4823,6 +4824,7 @@ M:	Dipankar Sarma <dipankar@in.ibm.com>
+ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+ W:	http://www.rdrop.com/users/paulmck/rclock/
+ S:	Supported
++T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+ F:	Documentation/RCU/
+ F:	include/linux/rcu*
+ F:	include/linux/srcu*
