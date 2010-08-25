@@ -1,133 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab0HYHac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:30:32 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43440 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab0HYHaa convert rfc822-to-8bit (ORCPT
+	id S1751628Ab0HYHfL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:35:11 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35161
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751093Ab0HYHfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 03:30:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1282583922-984-1-git-send-email-khilman@deeprootsystems.com>
-References: <1282583922-984-1-git-send-email-khilman@deeprootsystems.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 25 Aug 2010 01:30:09 -0600
-X-Google-Sender-Auth: k6a6i4gzU1t5PX6myjkx-MW2UOI
-Message-ID: <AANLkTikMmuQbrGB-S1FWcmRJQ0Lmr9MYJkXHtEw7VXnE@mail.gmail.com>
-Subject: Re: [PATCH v2] driver core: platform_bus: allow runtime override of dev_pm_ops
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
-        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Aug 2010 03:35:09 -0400
+Date: Wed, 25 Aug 2010 00:35:26 -0700 (PDT)
+Message-Id: <20100825.003526.35028751.davem@davemloft.net>
+To: rmody@brocade.com
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, huangj@brocade.com,
+        James.Bottomley@HansenPartnership.com
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <E5313AF6F2BFD14293E5FD0F94750F86A4AE225EE8@HQ1-EXCH01.corp.brocade.com>
+References: <20100825120927.c469ce20.sfr@canb.auug.org.au>
+	<E5313AF6F2BFD14293E5FD0F94750F86A4AE225EE8@HQ1-EXCH01.corp.brocade.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 11:18 AM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
-> Currently, the platform_bus allows customization of several of the
-> busses dev_pm_ops methods by using weak symbols so that platform code
-> can override them.  The weak-symbol approach is not scalable when
-> wanting to support multiple platforms in a single kernel binary.
->
-> Instead, provide __init methods for platform code to customize the
-> dev_pm_ops methods at runtime.
->
-> NOTE: after these dynamic methods are merged, the weak symbols should
->      be removed from drivers/base/platform.c.  AFAIK, this will only
->      affect SH and sh-mobile which should be converted to use this
->      runtime approach instead of the weak symbols.  After SH &
->      sh-mobile are converted, the weak symobols could be removed.
->
-> Tested on OMAP3.
->
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+From: Rasesh Mody <rmody@brocade.com>
+Date: Tue, 24 Aug 2010 21:22:19 -0700
 
-Looks good to me.  A handful of nitpicks below, I don't know if Greg
-will want you to respin for these or not.  Feel free to add my
-acked-by line though:
+> All,
+> 
+> We are working on a fix and we will submit a patch soon.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-> ---
->  drivers/base/platform.c         |   35 +++++++++++++++++++++++++++++++++++
->  include/linux/platform_device.h |    3 +++
->  2 files changed, 38 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index c6c933f..e40a773 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -976,6 +976,41 @@ struct bus_type platform_bus_type = {
->  };
->  EXPORT_SYMBOL_GPL(platform_bus_type);
->
-> +/**
-> + * platform_bus_get_pm_ops: return pointer to busses dev_pm_ops
-
-Nit: first line of kerneldoc format should look like this:
-
-/**
- * platform_bus_get_pm_ops() - return pointer to busses dev_pm_ops
-
-> + *
-> + * This function can be used by platform code to get the current
-> + * set of dev_pm_ops functions used by the platform_bus_type.
-> + */
-> +const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
-> +{
-> +       return platform_bus_type.pm;
-> +}
-> +
-> +/**
-> + * platform_bus_set_pm_ops: update dev_pm_ops for the platform_bus_type
-> + *
-> + * @pm: pointer to new dev_pm_ops struct to be used for platform_bus_type
-> + *
-> + * Platform code can override the dev_pm_ops methods of
-> + * platform_bus_type by using this function.  It is expected that
-> + * platform code will first do a platform_bus_get_pm_ops(), then
-> + * kmemdup it, then customize selected methods and pass a pointer to
-> + * the new struct dev_pm_ops to this function.
-> + *
-> + * Since platform-specific code is customizing methods for *all*
-> + * devices (not just platform-specific devices) it is expected that
-> + * any custom overrides of these functions will keep existing behavior
-> + * and simply extend it.  For example, any customization of the
-> + * runtime PM methods should continue to call the pm_generic_*
-> + * functions as the default ones do in addition to the
-> + * platform-specific behavior.
-> + */
-> +void __init platform_bus_set_pm_ops(struct dev_pm_ops *pm)
-
-nit: const struct dev_pm_ops would be appropriate
-
-> +{
-> +       platform_bus_type.pm = pm;
-> +}
-> +
->  int __init platform_bus_init(void)
->  {
->        int error;
-> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-> index d7ecad0..cd55d39 100644
-> --- a/include/linux/platform_device.h
-> +++ b/include/linux/platform_device.h
-> @@ -138,6 +138,9 @@ extern struct platform_device *platform_create_bundle(struct platform_driver *dr
->                                        struct resource *res, unsigned int n_res,
->                                        const void *data, size_t size);
->
-> +extern const struct dev_pm_ops * __init platform_bus_get_pm_ops(void);
-> +extern void __init platform_bus_set_pm_ops(struct dev_pm_ops *pm);
-
-The __init annotations should only appear in the .c file, not the header.
-
-Cheers,
-g.
+Thanks, but please do not top-post.
