@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab0HYCHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 22:07:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46080 "EHLO mx1.suse.de"
+	id S932319Ab0HYCJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 22:09:36 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57786 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab0HYCHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 22:07:07 -0400
-Date: Wed, 25 Aug 2010 12:06:52 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andreas Dilger <andreas.dilger@oracle.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
-        "philippe.deniel@CEA.FR" <philippe.deniel@CEA.FR>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -V18 04/13] vfs: Allow handle based open on symlinks
-Message-ID: <20100825120652.1a183152@notabene>
-In-Reply-To: <m3r5hqjb5f.fsf@linux.vnet.ibm.com>
-References: <1282269097-26166-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1282269097-26166-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<20100820083057.GA10039@infradead.org>
-	<20100820195303.20b17210@notabene>
-	<20100820115135.GQ31363@ZenIV.linux.org.uk>
-	<20100821100900.4b15fe08@notabene>
-	<17761610-AFA9-4BB5-AF62-CD54D67F5C79@oracle.com>
-	<20100823090604.6c735c80@notabene>
-	<m3r5hqjb5f.fsf@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932185Ab0HYCJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Aug 2010 22:09:34 -0400
+Date: Wed, 25 Aug 2010 12:09:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasesh Mody <rmody@brocade.com>, Jing Huang <huangj@brocade.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: linux-next: build failure after merge of the final tree (net tree
+ related)
+Message-Id: <20100825120927.c469ce20.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__25_Aug_2010_12_09_27_+1000_VXcqc1U4AcfVQ=u9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 08:19:48 +0530
-"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+--Signature=_Wed__25_Aug_2010_12_09_27_+1000_VXcqc1U4AcfVQ=u9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, 23 Aug 2010 09:06:04 +1000, Neil Brown <neilb@suse.de> wrote:
-> > [[ Following this approach I would like to avoid any filehandle-specific
-> > syscalls altogether.
-> > Just use a *at syscall with AT_FILE_HANDLE for filehandle lookup, and use
-> > getxattr('system:linux.file_handle') to get the filehandle for a given path.
-> > 
-> > Ofcourse we would need to at *at versions of the *xattr syscalls, but that is
-> > probably a good idea anyway.
-> > ]]
-> 
-> sys_setxattrat would take 7 arguments.
->
+Hi all,
 
-I count 6 - assuming we share the 'flags' argument.  There are only 2 xattr
-flags currently so there should be room to share.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-  dirfd  path name value size flags == 6
+drivers/net/built-in.o: In function `bfa_ioc_is_operational':
+(.opd+0x1c6c8): multiple definition of `bfa_ioc_is_operational'
+drivers/scsi/built-in.o:(.opd+0x1b1b0): first defined here
 
-NeilBrown
+and many more ...
+
+Caused by commit 8b230ed8ec96c933047dd0625cf95f739e4939a6 ("bna: Brocade
+10Gb Ethernet device driver") interacting with commit a whole series of
+patches to do with the Brocade BFA FC SCSI driver that are in Linus' tree
+stretching back to v2.6.32-rc2.
+
+I have reverted that net tree commit (and commit
+f04b4dd2b1f533cef0507e0410ffc6732d21a272 ("bna: Delete get_flags and
+set_flags ethtool methods") that depends on it).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__25_Aug_2010_12_09_27_+1000_VXcqc1U4AcfVQ=u9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMdHtXAAoJEDMEi1NhKgbsUBsH/3MT7m0mblXd0ysufeh76U73
+AKhiRr7kR1qLcgNBcGoc1LiENvFGIASj0tIgnmBW2Pujw5uxGzbHLdhFJUkemuC0
++XVTfkzkGDFjNz998Em5Cjb/6Le4O0QLUfcR6PxTTrG+sZ5PyiYBXL/ZWFrqsIT2
+coQ9if7ZXoYd68P4xhZ/TciO9E24Yx01H4i+NvC9DbnHId4sk06UFK39WjHacyKc
+sm9d3Im7+2rGddjpCVW9vvInHvoIAs/ScFyFgkN/Ai3t6ffJZ0e1AuUVXcuUVNAN
+qetaJ8MU/7aJA7You0PQWxJhr6vWGUE1i3MLsdspvDMFgbw4ACHreDNeHcMud1E=
+=DXlQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__25_Aug_2010_12_09_27_+1000_VXcqc1U4AcfVQ=u9--
