@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab0HYXVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 19:21:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40540 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab0HYXVn (ORCPT
+	id S1752180Ab0HYX0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 19:26:54 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3315 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab0HYX0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 19:21:43 -0400
-Date: Wed, 25 Aug 2010 20:21:16 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv11 2.6.36-rc2-tip 11/15] 11: perf: list symbols in a dso
- in ascending order.
-Message-ID: <20100825232116.GA9087@ghostprotocols.net>
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
- <20100825134329.5447.92261.sendpatchset@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825134329.5447.92261.sendpatchset@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 25 Aug 2010 19:26:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6085"; a="52115974"
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20100825155814.25c783c7.akpm@linux-foundation.org>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	 <1282310110.2605.976.camel@laptop>
+	 <20100825155814.25c783c7.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Aug 2010 16:26:34 -0700
+Message-ID: <1282778794.13797.15.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 25, 2010 at 07:13:29PM +0530, Srikar Dronamraju escreveu:
-> Given a dso, list the symbols in ascending order. Needed for listing
-> available symbols from perf-probe.
+On Wed, 2010-08-25 at 15:58 -0700, Andrew Morton wrote:
+> That would be good.  Although I expect that the allocation would need
+> to be 100% rock-solid reliable, otherwise the end user has a
+> non-functioning device.  Could generic core VM provide the required
+> level
+> of service?
+> 
+> Anyway, these patches are going to be hard to merge but not
+> impossible.
+> Keep going.  Part of the problem is cultural, really: the consumers of
+> this interface are weird dinky little devices which the core MM guys
+> tend not to work with a lot, and it adds code which they wouldn't use.
+> 
+> I agree that having two "contiguous memory allocators" floating about
+> on the list is distressing.  Are we really all 100% diligently certain
+> that there is no commonality here with Zach's work?
 
-Applied after renaming it to 'dso__fprintf_symbols_by_name', as at first
-I was scratching my head to figure out if we could reuse it in
-dso__fprintf() to then notice that it is in ascending _name_ order, not
-the default that is ordered by addr :-)
+There is some commonality with Zach's work, but Zach should be following
+all of this development .. So presumably he has no issues with Michal's
+changes. I think Zach's solution has a similar direction to this.
 
-Please fixup the users, i.e. perf probe in your patchset.
+If Michal is active (he seems more so than Zach), and follows community
+comments (including Zach's , but I haven't seen any) then we can defer
+to that solution ..
 
-- Arnaldo
+Daniel
+
+-- 
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
