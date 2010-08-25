@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab0HYE7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 00:59:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:2664 "EHLO
+	id S1755043Ab0HYE70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 00:59:26 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:17531 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab0HYE6R (ORCPT
+	with ESMTP id S1753186Ab0HYE60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 00:58:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6084"; a="52012228"
+	Wed, 25 Aug 2010 00:58:26 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6084"; a="52012269"
 X-IronPort-AV: E=Sophos;i="4.56,265,1280732400"; 
-   d="scan'208";a="72366131"
+   d="scan'208";a="72366149"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -23,9 +23,9 @@ Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Jeff Ohlstein <johlstei@codeaurora.org>,
         Stepan Moskovchenko <stepanm@codeaurora.org>,
         Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Subject: [PATCH 01/24] msm: create config option for proc-comm
-Date: Tue, 24 Aug 2010 21:57:30 -0700
-Message-Id: <1282712273-344-2-git-send-email-johlstei@codeaurora.org>
+Subject: [PATCH 19/24] msm: add msm8x60_surf machine
+Date: Tue, 24 Aug 2010 21:57:48 -0700
+Message-Id: <1282712273-344-20-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1282712273-344-1-git-send-email-johlstei@codeaurora.org>
 References: <1282712273-344-1-git-send-email-johlstei@codeaurora.org>
@@ -35,80 +35,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steve Muckle <smuckle@codeaurora.org>
 
-Some builds may not support the proc-comm interface with
-the baseband processor.
-
 Signed-off-by: Steve Muckle <smuckle@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig  |    7 +++++++
- arch/arm/mach-msm/Makefile |    6 ++----
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ arch/arm/mach-msm/Kconfig         |    7 +++++++
+ arch/arm/mach-msm/Makefile        |    1 +
+ arch/arm/mach-msm/board-msm8x60.c |    7 +++++++
+ 3 files changed, 15 insertions(+), 0 deletions(-)
 
 diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 4e79580..08ed76c 100644
+index dfa67d8..3017e12 100644
 --- a/arch/arm/mach-msm/Kconfig
 +++ b/arch/arm/mach-msm/Kconfig
-@@ -10,6 +10,7 @@ config ARCH_MSM7X00A
- 	select MSM_SMD
- 	select MSM_SMD_PKG3
- 	select CPU_V6
-+	select MSM_PROC_COMM
+@@ -98,6 +98,13 @@ config MACH_MSM8X60_RUMI3
+ 	help
+ 	  Support for the Qualcomm MSM8x60 RUMI3 emulator.
  
- config ARCH_MSM7X30
- 	bool "MSM7x30"
-@@ -18,6 +19,7 @@ config ARCH_MSM7X30
- 	select MSM_VIC
- 	select CPU_V7
- 	select MSM_REMOTE_SPINLOCK_DEKKERS
-+	select MSM_PROC_COMM
- 
- config ARCH_QSD8X50
- 	bool "QSD8X50"
-@@ -26,6 +28,8 @@ config ARCH_QSD8X50
- 	select MSM_VIC
- 	select CPU_V7
- 	select MSM_REMOTE_SPINLOCK_LDREX
-+	select MSM_PROC_COMM
++config MACH_MSM8X60_SURF
++	depends on ARCH_MSM8X60
++	default n
++	bool "MSM8x60 SURF"
++	help
++	  Support for the Qualcomm MSM8x60 SURF eval board.
 +
- endchoice
+ endmenu
  
- config MSM_SOC_REV_A
-@@ -103,6 +107,9 @@ endchoice
- config MSM_SMD_PKG3
- 	bool
- 
-+config MSM_PROC_COMM
-+	bool
-+
- config MSM_SMD
- 	bool
- 
+ config MSM_DEBUG_UART
 diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index faeb1f9..78fb536 100644
+index 17c03fa..1d62025 100644
 --- a/arch/arm/mach-msm/Makefile
 +++ b/arch/arm/mach-msm/Makefile
-@@ -1,8 +1,5 @@
--obj-y += proc_comm.o
- obj-y += io.o idle.o timer.o dma.o
--obj-y += vreg.o
- obj-y += acpuclock-arm11.o
--obj-y += clock.o clock-pcom.o
- 
- ifdef CONFIG_MSM_VIC
- obj-y += irq-vic.o
-@@ -10,10 +7,11 @@ else
- obj-y += irq.o
- endif
- 
-+obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
-+obj-$(CONFIG_MSM_PROC_COMM) += clock.o gpio.o
- obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
- obj-$(CONFIG_MSM_SMD) += last_radio_log.o
--
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
- obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
- obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+@@ -28,3 +28,4 @@ obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-7x00.o
+ obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o
+ obj-$(CONFIG_HOTPLUG_CPU)        += hotplug.o
+ obj-$(CONFIG_MACH_MSM8X60_RUMI3) += board-msm8x60.o
++obj-$(CONFIG_MACH_MSM8X60_SURF) += board-msm8x60.o
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index e2e5a5c..fd953c2 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -78,3 +78,10 @@ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
+ 	.init_machine = msm8x60_init,
+ 	.timer = &msm_timer,
+ MACHINE_END
++
++MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
++	.map_io = msm8x60_map_io,
++	.init_irq = msm8x60_init_irq,
++	.init_machine = msm8x60_init,
++	.timer = &msm_timer,
++MACHINE_END
 -- 
 1.7.2.1
 
