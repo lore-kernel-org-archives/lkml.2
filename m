@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab0HYPyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 11:54:39 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52895 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752512Ab0HYPyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 11:54:08 -0400
-From: Tejun Heo <tj@kernel.org>
-To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
-Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 26/30] ext4: do not send discards as barriers
-Date: Wed, 25 Aug 2010 17:47:43 +0200
-Message-Id: <1282751267-3530-27-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
-References: <1282751267-3530-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 Aug 2010 15:53:24 +0000 (UTC)
+	id S1753100Ab0HYPyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 11:54:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44142 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab0HYPyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 11:54:50 -0400
+Date: Wed, 25 Aug 2010 08:52:51 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Unable to compile 2.6.36-rc2 on x86_64
+Message-Id: <20100825085251.5c47eebe.randy.dunlap@oracle.com>
+In-Reply-To: <20100825151554.GA6763@deepthought>
+References: <20100825151554.GA6763@deepthought>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Hellwig <hch@infradead.org>
+On Wed, 25 Aug 2010 16:15:54 +0100 Ken Moffat wrote:
 
-ext4 already uses synchronous discards, no need to add I/O barriers.
+> Hi,
+> 
+>  on x86_64 using a config that worked in 2.6.35.3 plus accepting the
+> default settings for new options, it fails with
+> 
+>   LD      .tmp_vmlinux1
+> drivers/built-in.o: In function `toshiba_acpi_exit':
+> toshiba_acpi.c:(.text+0x1c5e07): undefined reference to
+> `led_classdev_unregister'
+> drivers/built-in.o: In function `toshiba_acpi_init':
+> toshiba_acpi.c:(.init.text+0xa2d8): undefined reference to
+> `led_classdev_register'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+>  I don't actually need toshiba_acpi, but it seems to be built by
+> default if acpi is turned on ?
+> 
+> Gzipped config attached.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+
+Needs recently-merged commit c76a3e1d6c52c5cc1371f1abc7381c5715ebdf7f.
+
 ---
- fs/ext4/mballoc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index df44b34..a22bfef 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2567,7 +2567,7 @@ static inline void ext4_issue_discard(struct super_block *sb,
- 	trace_ext4_discard_blocks(sb,
- 			(unsigned long long) discard_block, count);
- 	ret = sb_issue_discard(sb, discard_block, count, GFP_NOFS,
--			       BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
-+			       BLKDEV_IFL_WAIT);
- 	if (ret == EOPNOTSUPP) {
- 		ext4_warning(sb, "discard not supported, disabling");
- 		clear_opt(EXT4_SB(sb)->s_mount_opt, DISCARD);
--- 
-1.7.1
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
