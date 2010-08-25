@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab0HYHke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 03:40:34 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55741 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab0HYHkc convert rfc822-to-8bit (ORCPT
+	id S1752008Ab0HYHpW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 03:45:22 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:38458 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab0HYHpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 03:40:32 -0400
+	Wed, 25 Aug 2010 03:45:21 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Haicheng Li <haicheng.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "ak\@linux.intel.com" <ak@linux.intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm\@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [BUGFIX][PATCH 1/2] x86, mem: separate x86_64 vmalloc_sync_all() into separate functions
+References: <4C6E4ECD.1090607@linux.intel.com>
+Date: Wed, 25 Aug 2010 09:45:13 +0200
+In-Reply-To: <4C6E4ECD.1090607@linux.intel.com> (Haicheng Li's message of
+	"Fri, 20 Aug 2010 17:45:49 +0800")
+Message-ID: <87r5hni19y.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20100824231241.GA6971@suse.de>
-References: <20100622232108.26752ff8@lxorguk.ukuu.org.uk> <1277462596.2143.101.camel@itpsd6lap>
- <20100625120329.1303aa61@lxorguk.ukuu.org.uk> <1282683470.8020.66.camel@itpsd6lap>
- <20100824211016.GA7176@suse.de> <1282687797.8020.108.camel@itpsd6lap>
- <20100824222035.GA10625@suse.de> <1282690232.8020.116.camel@itpsd6lap>
- <20100824225703.GA5913@suse.de> <20100825002221.68fc09a4@lxorguk.ukuu.org.uk> <20100824231241.GA6971@suse.de>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 25 Aug 2010 09:40:16 +0200
-Message-ID: <AANLkTi=SkVv4tYUuAr9n03iYFdTJQr7wQnFaodrkHpom@mail.gmail.com>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Samo Pogacnik <samo_pogacnik@t-2.net>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 01:12, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Aug 25, 2010 at 12:22:21AM +0100, Alan Cox wrote:
->> > No, it does cover that.  You should be able to do that with a simple
->> > console redirection to /dev/kmsg  What happened when you tried to do
->> > that?
->>
->> stty: standard input: Inappropriate ioctl for device
+Haicheng Li <haicheng.li@linux.intel.com> writes:
+
+> hello,
 >
-> Kay, how does systemd handle the kmsg console redirection?
+> Resend these two patches for bug fixing:
+>
+> The bug is that when memory hotplug-adding happens for a large enough area that a new PGD entry is
+> needed for the direct mapping, the PGDs of other processes would not get updated. This leads to some
+> CPUs oopsing when they have to access the unmapped areas, e.g. onlining CPUs on the new added node.
 
-Systemd does not steal the console, this is done by plymouth, in the
-same way blogd can do that. It uses a pty and rewrites the messages.
+The patches look good to me. Can we please move forward with this?
 
-Systemd does pass syslog to the kernel buffer during early boot. Init
-provides /dev/log. With systemd, the started services usually don't
-get the console connected, but use syslog anyway or the stdout/err
-gets redirected to syslog.
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 
-With systemd the console is not too useful because we start everything
-in parallel. If all the services would put out stuff there like sysv
-did, it would look like a real mess.
+-Andi
 
-Kay
+-- 
+ak@linux.intel.com -- Speaking for myself only.
