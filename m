@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab0HYVVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 17:21:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45204 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754361Ab0HYVVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 17:21:16 -0400
-Message-ID: <4C7588FB.4050001@zytor.com>
-Date: Wed, 25 Aug 2010 14:19:55 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>
-CC: Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1754515Ab0HYVWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 17:22:08 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46363 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab0HYVWE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 17:22:04 -0400
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>, Dave Chinner <david@fromorbit.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-References: <20100825094925.GA3632@pema> <20100825161214.GA15087@rhlx01.hs-esslingen.de> <20100825211257.GA636@pema>
-In-Reply-To: <20100825211257.GA636@pema>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1008251604120.24931@router.home>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+	 <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com>
+	 <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+	 <20100825112433.GB4453@thunk.org> <1282736132.2605.3563.camel@laptop>
+	 <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop>
+	 <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop>
+	 <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1008251604120.24931@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 25 Aug 2010 23:21:31 +0200
+Message-ID: <1282771291.1975.125.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2010 02:12 PM, Sebastien Hinderer wrote:
-> Hi,
+On Wed, 2010-08-25 at 16:11 -0500, Christoph Lameter wrote:
+> We already have __GFP_NOFAIL behavior for slab allocations since
+> a __GFP_NOFAIL flag is passed through to the page allocator if no objects
+> are available.
 > 
->> excellent! Now if as the next step before inclusion you also add the usual DMI check
->> (as done by many drivers such as acerhdf etc.),
->> someone inexperienced who is dumb enough to enable it for his unrelated machine
->> will actually survive an otherwise raw I/O port access and poweroff
->> vector change ;))
-> 
-> The machine does not support DMI, I have mentionned that in the module.
-> 
+> The page allocator will do the same as when called directly with
+> __GFP_NOFAIL and so we have consistent behavior regardless of the
+> allocator used.
 
-Perhaps a better questions is: what *do* they have?  I really don't feel
-comfortable adding something like this which pokes at a random port in
-the ISA range, especially with the Interrupt list listing 6 known other
-uses of this particular port.
+Thank's for quoting the context to which you're replying, that really
+helps parsing things..
 
-At that point I'd almost prefer doing something like a BIOS signature
-check if we can't do anything better.
-
-	-hpa
