@@ -1,102 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab0HYBev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Aug 2010 21:34:51 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:50249 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab0HYBer (ORCPT
+	id S1755689Ab0HYBfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Aug 2010 21:35:09 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:43210 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab0HYBfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Aug 2010 21:34:47 -0400
-Date: Wed, 25 Aug 2010 10:34:43 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Julia Lawall <julia@diku.dk>
-Cc: Wensong Zhang <wensong@linux-vs.org>, Julian Anastasov <ja@ssi.bg>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 5/5] net/netfilter/ipvs: Eliminate memory leak
-Message-ID: <20100825013443.GC7237@verge.net.au>
-References: <Pine.LNX.4.64.1008241639300.15172@ask.diku.dk>
+	Tue, 24 Aug 2010 21:35:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WcTs44xrTgFuxwwT+GKYARpVRg5ASI5eUBd2AdY8IRKhZTANgO33kZUnShvSLjgqeI
+         vwcvzRYzy0CjhNzAF5iw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1008241639300.15172@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100825100310.ba3fd27e.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100820185552.426ff12e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100820185816.1dbcd53a.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=imK6Px+JrdVupg2V3jtN9pgmEdWv=+aB1XKLY@mail.gmail.com>
+	<20100825092010.cfe91b1a.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikD3CFRPo7WvWwCnLQ+jzEs6rUk1sivYM3aRbGJ@mail.gmail.com>
+	<20100825093747.24085b28.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=KW_gxbmB14j5opSKL+-JFDFKO1YP6a7yvT8U5@mail.gmail.com>
+	<20100825100310.ba3fd27e.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 24 Aug 2010 18:35:00 -0700
+Message-ID: <AANLkTikuJ9x1u+GC_ox448Fp9wdJ2_GJyu6kNwjOJ9Y=@mail.gmail.com>
+Subject: Re: [PATCH 1/5] cgroup: ID notification call back
+From: Paul Menage <menage@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyuki@gmail.com,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 04:39:49PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> __ip_vs_service_get and __ip_vs_svc_fwm_get increment a reference count, so
-> that reference count should be decremented before leaving the function in an
-> error case.
-> 
-> A simplified version of the semantic match that finds this problem is:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> local idexpression x;
-> expression E;
-> identifier f1;
-> iterator I;
-> @@
-> 
-> x = __ip_vs_service_get(...);
-> <... when != x
->      when != true (x == NULL || ...)
->      when != if (...) { <+...x...+> }
->      when != I (...) { <+...x...+> }
-> (
->  x == NULL
-> |
->  x == E
-> |
->  x->f1
-> )
-> ...>
-> * return ...;
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+On Tue, Aug 24, 2010 at 6:03 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> Hmm. How this pseudo code looks like ? This passes "new id" via
+> cgroup->subsys[array] at creation. (Using union will be better, maybe).
+>
 
-Thanks Julia, that looks good to me.
+That's rather ugly. I was thinking of something more like this. (Not
+even compiled yet, and the only subsystem updated is cpuset).
 
-Signed-off-by: Simon Horman <horms@verge.net.au>
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index ed3e92e..063d9f2 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -458,8 +458,7 @@ void cgroup_release_and_wakeup_rmdir(struct
+cgroup_subsys_state *css);
+  */
 
-Patrick, I guess that this should go through nf-next-2.6.
+ struct cgroup_subsys {
+-	struct cgroup_subsys_state *(*create)(struct cgroup_subsys *ss,
+-						  struct cgroup *cgrp);
++	int (*create)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+ 	int (*pre_destroy)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+ 	void (*destroy)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+ 	int (*can_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+@@ -513,6 +512,12 @@ struct cgroup_subsys {
 
-> 
-> ---
->  net/netfilter/ipvs/ip_vs_ctl.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-> index 0f0c079..f98169b 100644
-> --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> @@ -2155,7 +2155,7 @@ do_ip_vs_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
->  	if (cmd != IP_VS_SO_SET_ADD
->  	    && (svc == NULL || svc->protocol != usvc.protocol)) {
->  		ret = -ESRCH;
-> -		goto out_unlock;
-> +		goto out_drop_service;
->  	}
->  
->  	switch (cmd) {
-> @@ -2189,6 +2189,7 @@ do_ip_vs_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
->  		ret = -EINVAL;
->  	}
->  
-> +out_drop_service:
->  	if (svc)
->  		ip_vs_service_put(svc);
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ 	/* should be defined only by modular subsystems */
+ 	struct module *module;
++
++	/* Total size of the subsystem's CSS object */
++	size_t css_size;
++
++	/* If non-NULL, the CSS to use for the root cgroup */
++	struct cgroup_subsys_state *root_css;
+ };
+
+ #define SUBSYS(_x) extern struct cgroup_subsys _x ## _subsys;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 192f88c..c589a41 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3307,6 +3307,7 @@ static long cgroup_create(struct cgroup *parent,
+struct dentry *dentry,
+ 			     mode_t mode)
+ {
+ 	struct cgroup *cgrp;
++	struct cgroup_subsys_state *new_css[CGROUP_SUBSYS_COUNT] = {};
+ 	struct cgroupfs_root *root = parent->root;
+ 	int err = 0;
+ 	struct cgroup_subsys *ss;
+@@ -3325,6 +3326,16 @@ static long cgroup_create(struct cgroup
+*parent, struct dentry *dentry,
+
+ 	mutex_lock(&cgroup_mutex);
+
++	for_each_subsys(root, ss) {
++		int id = ss->subsys_id;
++		new_css[id] = kzalloc(ss->css_size, GFP_KERNEL);
++		if (!new_css) {
++			/* Failed to allocate memory */
++			err = -ENOMEM;
++			goto err_destroy;
++		}
++	}
++
+ 	init_cgroup_housekeeping(cgrp);
+
+ 	cgrp->parent = parent;
+@@ -3335,19 +3346,19 @@ static long cgroup_create(struct cgroup
+*parent, struct dentry *dentry,
+ 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+
+ 	for_each_subsys(root, ss) {
+-		struct cgroup_subsys_state *css = ss->create(ss, cgrp);
+-
+-		if (IS_ERR(css)) {
+-			err = PTR_ERR(css);
+-			goto err_destroy;
+-		}
+-		init_cgroup_css(css, ss, cgrp);
++		int id = ss->subsys_id;
++		init_cgroup_css(new_css[id], ss, cgrp);
+ 		if (ss->use_id) {
+ 			err = alloc_css_id(ss, parent, cgrp);
+ 			if (err)
+ 				goto err_destroy;
+ 		}
+-		/* At error, ->destroy() callback has to free assigned ID. */
++		err = ss->create(ss, cgrp);
++		if (err) {
++			free_css_id(ss, css->id);
++			goto err_destroy;
++		}
++		new_css[id] = NULL;
+ 	}
+
+ 	cgroup_lock_hierarchy(root);
+@@ -3380,7 +3391,10 @@ static long cgroup_create(struct cgroup
+*parent, struct dentry *dentry,
+  err_destroy:
+
+ 	for_each_subsys(root, ss) {
+-		if (cgrp->subsys[ss->subsys_id])
++		int id = ss->subsys_id;
++		if (new_css[id])
++			kfree(new_css[id]);
++		else if (cgrp->subsys[id])
+ 			ss->destroy(ss, cgrp);
+ 	}
+
+@@ -3607,11 +3621,16 @@ static void __init cgroup_init_subsys(struct
+cgroup_subsys *ss)
+ 	/* Create the top cgroup state for this subsystem */
+ 	list_add(&ss->sibling, &rootnode.subsys_list);
+ 	ss->root = &rootnode;
+-	css = ss->create(ss, dummytop);
++	if (ss->root_css)
++		css = ss->root_css;
++	else
++		css = kzalloc(ss->css_size, GFP_KERNEL);
+ 	/* We don't handle early failures gracefully */
+-	BUG_ON(IS_ERR(css));
++	BUG_ON(!css);
+ 	init_cgroup_css(css, ss, dummytop);
+
++	BUG_ON(ss->create(ss, dummytop));
++
+ 	/* Update the init_css_set to contain a subsys
+ 	 * pointer to this state - since the subsystem is
+ 	 * newly registered, all tasks and hence the
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index b23c097..7720a79 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1871,24 +1871,12 @@ static void cpuset_post_clone(struct cgroup_subsys *ss,
+  *	cont:	control group that the new cpuset will be part of
+  */
+
+-static struct cgroup_subsys_state *cpuset_create(
+-	struct cgroup_subsys *ss,
+-	struct cgroup *cont)
++static int cpuset_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ {
+-	struct cpuset *cs;
+-	struct cpuset *parent;
+-
+-	if (!cont->parent) {
+-		return &top_cpuset.css;
+-	}
+-	parent = cgroup_cs(cont->parent);
+-	cs = kmalloc(sizeof(*cs), GFP_KERNEL);
+-	if (!cs)
+-		return ERR_PTR(-ENOMEM);
+-	if (!alloc_cpumask_var(&cs->cpus_allowed, GFP_KERNEL)) {
+-		kfree(cs);
+-		return ERR_PTR(-ENOMEM);
+-	}
++	struct cpuset *cs = cgroup_cs(cont);
++	struct cpuset *parent = cgroup_cs(cont->parent);
++	if (!alloc_cpumask_var(&cs->cpus_allowed, GFP_KERNEL))
++		return -ENOMEM;
+
+ 	cs->flags = 0;
+ 	if (is_spread_page(parent))
+@@ -1903,7 +1891,7 @@ static struct cgroup_subsys_state *cpuset_create(
+
+ 	cs->parent = parent;
+ 	number_of_cpusets++;
+-	return &cs->css ;
++	return 0;
+ }
+
+ /*
+@@ -1934,6 +1922,8 @@ struct cgroup_subsys cpuset_subsys = {
+ 	.post_clone = cpuset_post_clone,
+ 	.subsys_id = cpuset_subsys_id,
+ 	.early_init = 1,
++	.css_size = sizeof(struct cpuset),
++	.root_css = &top_cpuset.css;
+ };
+
+ /**
