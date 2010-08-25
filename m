@@ -1,79 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab0HYKXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 06:23:04 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:14336
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753283Ab0HYKWo (ORCPT
+	id S1753247Ab0HYKXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 06:23:41 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44003 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab0HYKXi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 06:22:44 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(z3cfcs329eqzbb2cK1432N98dN179dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7PE1P-02-5OR-02
-X-M-MSG: 
-Date: Wed, 25 Aug 2010 12:20:13 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100825102013.GE3198@erda.amd.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
- <20100824171504.GI26154@erda.amd.com>
- <20100824172806.GF5723@lenovo>
- <20100824184658.GB4879@redhat.com>
- <20100824185458.GG5723@lenovo>
- <20100824195240.GA5281@lenovo>
- <20100824202718.GC4879@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100824202718.GC4879@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Wed, 25 Aug 2010 06:23:38 -0400
+Subject: Re: Fwd: help needed with EXPORT_SYMBOL
+From: Peter Zijlstra <peterz@infradead.org>
+To: aijazbaig1@gmail.com
+Cc: brgerst@gmail.com, jengelh@medozas.de, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1282728478.17044.22.camel@aijazbaig1-desktop>
+References: <1282373834.4080.79.camel@aijazbaig1-desktop>
+	 <1282540448.4080.86.camel@aijazbaig1-desktop>
+	 <AANLkTimtNOyJCbLxAW8Ebsftb58EWoNFW7Xkevqb6oGo@mail.gmail.com>
+	 <1282569477.2605.1798.camel@laptop>
+	 <AANLkTinq5APN4CXWAGj9sTFiTf4Cn1_mDaJSrAOh=t+N@mail.gmail.com>
+	 <1282572346.2605.1856.camel@laptop>
+	 <AANLkTimQDV74kcM_84QySMKmdf-XxFOhqp48cQdQNN4s@mail.gmail.com>
+	 <AANLkTinRyoHcSmmHv9tZ36X4wxVVCKGLDwGiZUTPPn+z@mail.gmail.com>
+	 <1282625054.4080.152.camel@aijazbaig1-desktop>
+	 <AANLkTi=cj+qCFxeT5hq0-x-XqSUCbcqQRAwmQ9h+cOxy@mail.gmail.com>
+	 <AANLkTim9nvJR0K6xJc2kHGCeoMzFLzSxR8Avx59jsEbf@mail.gmail.com>
+	 <1282728478.17044.22.camel@aijazbaig1-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 25 Aug 2010 12:23:35 +0200
+Message-ID: <1282731815.2605.3473.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.08.10 16:27:18, Don Zickus wrote:
-> On Tue, Aug 24, 2010 at 11:52:40PM +0400, Cyrill Gorcunov wrote:
-> > > I use 2.6.34 atm. Letme try 2.6.36 (which might require some time to recompile).
-> > > 
-> > > 	-- Cyrill
-> > 
-> > Don, for me it fails with somehow unrelated page handling fault - in
-> > reiserfs_evict_inode O_o Fails in __get_cpu_var I suspect might means
-> > a problem either in per-cpu allocator itself or we screw pointer somehow.
-> > Weird.
+On Wed, 2010-08-25 at 14:57 +0530, Aijaz Baig wrote:
+
+> I am trying to understand if its possible to add functions dynamically
+> to the kernel source based on the presence of certain modules in the
+> running kernel image.
 > 
-> I just found out (with the help of the crash utility and Dave A.) that
-> Robert's percpu struct nmi clashes with the exception entry point .nmi.
-> I only see this problem in 2.6.36, so I am not sure what changed with
-> regards to compiler flags to confuse variables with text segments.
+> I did try what brian suggested with the function pointer and yeah it
+> does work. But I could not understand what peter was trying to say about
+> modular users since I suppose he mentioned one module (B in this case)
+> using a function pointer defined in (or by) module A. In my case, since
+> it is the kernel that is gonna use the function, I need to make sure
+> that the module doesn't get unloaded while we are using the function.
 
-I was testing the patches also with CONFIG_LOCKUP_DETECTOR=y without
-crashes.
+Right, so there's two problems there:
 
-> 
-> But renaming the percpu struct nmi to nmidon fixed the problem for me (I
-> am open to other suggestions :-) ).
+ - the exposed function pointer
+ - unload serialization
 
-Also I was looking at the differences between .35 and tip/perf/urgent
-and could not find a namespace collision.
+The problem with the exposed function pointer is that two competing
+modules can set the function pointer:
 
-Hmm...
+extern void (*ptr)(void);
 
--Robert
+static void (*old_ptr)(void);
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+void func(void)
+{
+  /* do something */
+}
 
+module_init()
+{
+  old_ptr = ptr;
+  ptr = func;
+}
+
+module_exit()
+{
+  ptr = old_ptr;
+  synchronize_stuff();
+}
+
+Now suppose two modules A and B both have that template, then load
+module A, at that time ptr == A::func, A::old_ptr = NULL, right?
+
+Then load B, then ptr == B:func, B::old_ptr = A::func.
+
+then unload A, then ptr == NULL; /* hey where's B gone? */
+
+Suppose module_exit() had read:
+
+module_exit()
+{
+  if (ptr == func)
+    ptr = old_ptr;
+}
+
+Then after A got unloaded, you'd have: ptr = B::func, B::old_ptr ==
+A:func, and the world goes *bang* when you unload B.
+
+If you'd have exposed the thing like:
+
+static void (*callback)(void);
+
+int set_foo_callback(void (*func)(void))
+{
+  if (callback && func)
+    return -EBUSY;
+
+  callback = func;
+  synchronize_world();
+  return 0;
+}
+EXPORT_SYMBOL_GPL(set_foo_callback);
+
+Then there'd be no confusion, as loading B while A was already loaded
+would fail since set_foo_callback() would fail with -EBUSY.
+
+
+Now the synchronization issue, above represented by synchronize_world();
+that will have to do something that ensures all current users of the ptr
+have gone, taking a reference on the module will likely result in an
+pinned module, since what will drop the ref again?
+
+Module unload does a fairly heavy stop-machine thing, which might be
+sufficient for some, but a sensible solution really depends on the
+problem domain, RCU could be used in various ways.
