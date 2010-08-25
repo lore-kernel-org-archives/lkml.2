@@ -1,148 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab0HYUsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 16:48:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52157 "EHLO mx1.redhat.com"
+	id S1754114Ab0HYUyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 16:54:12 -0400
+Received: from thunk.org ([69.25.196.29]:54347 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615Ab0HYUsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 16:48:30 -0400
-Message-ID: <4C758194.5060203@redhat.com>
-Date: Wed, 25 Aug 2010 10:48:20 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752308Ab0HYUyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 16:54:09 -0400
+Date: Wed, 25 Aug 2010 16:53:42 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, David Rientjes <rientjes@google.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+Message-ID: <20100825205342.GG4453@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Dave Chinner <david@fromorbit.com>,
+	David Rientjes <rientjes@google.com>,
+	Jens Axboe <jaxboe@fusionio.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	"linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+	"cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+ <1282656558.2605.2742.camel@laptop>
+ <4C73CA24.3060707@fusionio.com>
+ <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
+ <20100825112433.GB4453@thunk.org>
+ <1282736132.2605.3563.camel@laptop>
+ <20100825115709.GD4453@thunk.org>
+ <1282740516.2605.3644.camel@laptop>
+ <20100825132417.GQ31488@dastard>
+ <1282743342.2605.3707.camel@laptop>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 25/35] Add clock catchup mode
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-26-git-send-email-zamsden@redhat.com> <20100825172718.GA28380@amt.cnet>
-In-Reply-To: <20100825172718.GA28380@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282743342.2605.3707.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2010 07:27 AM, Marcelo Tosatti wrote:
-> On Thu, Aug 19, 2010 at 10:07:39PM -1000, Zachary Amsden wrote:
->    
->> Make the clock update handler handle generic clock synchronization,
->> not just KVM clock.  We add a catchup mode which keeps passthrough
->> TSC in line with absolute guest TSC.
->>
->> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->> ---
->>   arch/x86/include/asm/kvm_host.h |    1 +
->>   arch/x86/kvm/x86.c              |   55 ++++++++++++++++++++++++++------------
->>   2 files changed, 38 insertions(+), 18 deletions(-)
->>
->>      
->    
->>   	kvm_x86_ops->vcpu_load(vcpu, cpu);
->> -	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
->> +	if (unlikely(vcpu->cpu != cpu) || vcpu->arch.tsc_rebase) {
->>   		/* Make sure TSC doesn't go backwards */
->>   		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->>   				native_read_tsc() - vcpu->arch.last_host_tsc;
->>   		if (tsc_delta<  0)
->>   			mark_tsc_unstable("KVM discovered backwards TSC");
->> -		if (check_tsc_unstable())
->> +		if (check_tsc_unstable()) {
->>   			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
->> -		kvm_migrate_timers(vcpu);
->> +			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->> +		}
->> +		if (vcpu->cpu != cpu)
->> +			kvm_migrate_timers(vcpu);
->>   		vcpu->cpu = cpu;
->> +		vcpu->arch.tsc_rebase = 0;
->>   	}
->>   }
->>
->> @@ -1947,6 +1961,12 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
->>   	kvm_x86_ops->vcpu_put(vcpu);
->>   	kvm_put_guest_fpu(vcpu);
->>   	vcpu->arch.last_host_tsc = native_read_tsc();
->> +
->> +	/* For unstable TSC, force compensation and catchup on next CPU */
->> +	if (check_tsc_unstable()) {
->> +		vcpu->arch.tsc_rebase = 1;
->> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->> +	}
->>      
-> The mix between catchup,trap versus stable,unstable TSC is confusing and
-> difficult to grasp. Can you please introduce all the infrastructure
-> first, then control usage of them in centralized places? Examples:
->
-> +static void kvm_update_tsc_trapping(struct kvm *kvm)
-> +{
-> +       int trap, i;
-> +       struct kvm_vcpu *vcpu;
-> +
-> +       trap = check_tsc_unstable()&&  atomic_read(&kvm->online_vcpus)>  1;
-> +       kvm_for_each_vcpu(i, vcpu, kvm)
-> +               kvm_x86_ops->set_tsc_trap(vcpu, trap&&  !vcpu->arch.time_page);
-> +}
->
-> +       /* For unstable TSC, force compensation and catchup on next CPU */
-> +       if (check_tsc_unstable()) {
-> +               vcpu->arch.tsc_rebase = 1;
-> +               kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> +       }
->
->
-> kvm_guest_time_update is becoming very confusing too. I understand this
-> is due to the many cases its dealing with, but please make it as simple
-> as possible.
->    
+On Wed, Aug 25, 2010 at 03:35:42PM +0200, Peter Zijlstra wrote:
+> 
+> While I appreciate that it might be somewhat (a lot) harder for a
+> filesystem to provide that guarantee, I'd be deeply worried about your
+> claim that its impossible.
+> 
+> It would render a system without swap very prone to deadlocks. Even with
+> the very tight dirty page accounting we currently have you can fill all
+> your memory with anonymous pages, at which point there's nothing free
+> and you require writeout of dirty pages to succeed.
 
-I tried to comment as best as I could.  I think the whole 
-"kvm_update_tsc_trapping" thing is probably a poor design choice.  It 
-works, but it's thoroughly unintelligible right now without spending 
-some days figuring out why.
+For file systems that do delayed allocation, the situation is very
+similar to swapping over NFS.  Sometimes in order to make some free
+memory, you need to spend some free memory...  which implies that for
+these file systems, being more aggressive about triggering writeout,
+and being more aggressive about throttling processes which are
+creating too many dirty pages, especially dirty delayed allocaiton
+pages (regardless of whether this is via write(2) or accessing mmapped
+memory), is a really good idea.
 
-I'll rework the tail series of patches to try to make them more clear.
+A pool of free pages which is reserved for routines that are doing
+page cleaning would probably also be a good idea.  Maybe that's just
+retrying with GFP_ATOMIC if a normal allocation fails, or maybe we
+need our own special pool, or maybe we need to dynamically resize the
+GFP_ATOMIC pool based on how many subsystems might need to use it....
 
-> +       /*
-> +        * If we are trapping and no longer need to, use catchup to
-> +        * ensure passthrough TSC will not be less than trapped TSC
-> +        */
-> +       if (vcpu->tsc_mode == TSC_MODE_PASSTHROUGH&&  vcpu->tsc_trapping&&
-> +           ((this_tsc_khz<= v->kvm->arch.virtual_tsc_khz || kvmclock))) {
-> +               catchup = 1;
->
-> What, TSC trapping with kvmclock enabled?
->    
+Just brainstorming here; what do people think?
 
-Transitioning to use of kvmclock after a cold boot means we may have 
-been trapping and now we will not be.
-
-> For both catchup and trapping the resolution of the host clock is
-> important, as Glauber commented for kvmclock. Can you comment on the
-> problems that arrive from a low res clock for both modes?
->
-> Similarly for catchup mode, the effect of exit frequency. No need for
-> any guarantees?
->    
-
-The scheduler will do something to get an IRQ at whatever resolution it 
-uses for it's timeslice.  That guarantees an exit per timeslice, so 
-we'll never be behind by more than one slice while scheduling.  While 
-not scheduling, we're dormant anyway, waiting on either an IRQ or shared 
-memory variable change.  Local timers could end up behind when dormant.
-
-We may need a hack to accelerate firing of timers in such a case, or 
-perhaps bounds on when to use catchup mode and when to not.
-
-Partly, the lack of implementation is by deliberate choice; the logic 
-involved with setting such bounds and wisdom of doing so is a choice 
-most likely to be done by a policy agent in userspace, in our case, 
-qemu.  In the end, that is what has full control over the setting or not 
-of guest TSC rate and choice of TSC mode.
-
-What's lacking is the ability to force the use of a certain mode.  I 
-think it's clear now, that needs to be a per-VM choice, not a global one.
-
-Zach
+							- Ted
