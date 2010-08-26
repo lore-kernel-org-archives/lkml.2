@@ -1,45 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab0HZXs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 19:48:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59257 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab0HZXs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 19:48:28 -0400
-Message-ID: <4C76FD29.9040903@zytor.com>
-Date: Thu, 26 Aug 2010 16:47:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1754754Ab0HZXtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 19:49:15 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:53242 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752612Ab0HZXtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 19:49:13 -0400
+Date: Thu, 26 Aug 2010 19:49:11 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
+Message-ID: <20100826234910.GB4194@Krystal>
+References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 01/10] x86/iommu: Add IOMMU_INIT macros, .iommu_table
- section, and iommu_table_entry structure.
-References: <1282845485-8991-1-git-send-email-konrad.wilk@oracle.com> <1282845485-8991-2-git-send-email-konrad.wilk@oracle.com> <20100826181913.GA5947@merkur.ravnborg.org>
-In-Reply-To: <20100826181913.GA5947@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282849045.1975.1587.camel@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 19:37:36 up 216 days,  2:14,  3 users,  load average: 0.07, 0.07,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 11:19 AM, Sam Ravnborg wrote:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Thu, 2010-08-26 at 14:09 -0400, Mathieu Desnoyers wrote:
+> > Feedback is welcome,
+> > 
+> So we have the following components to this patch:
 > 
-> So we have yet another magic section in vmlinux.lds.S
-> A nice comemnt that expalins what this is used for and why
-> it is discardable etc. would be nice.
+>   - dynamic min_vruntime -- push the min_vruntime ahead at the
+>        rate of the runqueue wide virtual clock. This approximates
+>        the virtual clock, esp. when turning off sleeper fairness.
+>        And is cheaper than actually computing the virtual clock.
 > 
-> Lots of magic sections in same file miss this,
-> but thats not an example to follwow.
+>        It allows for better insertion and re-weighting behaviour,
+>        but it does increase overhead somewhat.
 > 
+>   - special wakeups using the next-buddy to get scheduled 'soon',
+>        used by all wakeups from the input system and timers.
+> 
+>   - special fork semantics related to those special wakeups.
+> 
+> 
+> So while I would love to simply compute the virtual clock, it would add
+> a s64 mult to every enqueue/dequeue and a s64 div to each
+> enqueue/re-weight, which might be somewhat prohibitive, the dyn
+> min_vruntime approximation seems to work well enough and costs a u32 div
+> per enqueue.
 
-I added this series to tip:x86/iommu, but please do provide an
-incremental patch with a comment.
+Yep, it's cheap enough and seems to work very well as far as my testing have
+shown.
+
+> Adding a preference to all user generated wakeups (input) and
+> propagating that state along the wakeup chain seems to make sense,
+
+Yes, this is what lets us kill FAIR_SLEEPERS (and thus let the dynamic
+min_vruntime behave as expected), while keeping good Xorg interactivity.
+
+> adding the same to all timers is something that needs to be discussed, I
+> can well imagine not all timers are equally important -- do we want to
+> extend the timer interface?
+
+I just thought it made sense that when a timer fires and wakes up a thread,
+there are pretty good chances that we might to wakeup this thread quickly. But
+it brings the question in a more general sense: would we want this kind of
+behavior also available for network packets, disk I/O, etc ? IOW, would it make
+sense to have next-buddy selection on all these input-triggered wakeups ? Since
+we're only using the next buddy selection, it will only perform this selection
+if the selected buddy is within a specific vruntime range from the minimum, so
+AFAIK, I don't think we would end up starving the system in any possible way.
+
+So far I cannot see a situation where selecting the next buddy would _not_ make
+sense in any kind of input-driven wakeups (interactive, timer, disk, network,
+etc). But maybe it's just a lack of imagination on my part.
+
+
+> If we do decide we want both, we should at the very least merge the
+> try_to_wake_up() conditional blob (they're really identical). Preferably
+> we should reduce ttwu(), not add more to it... 
+
+Sure. Or maybe find out we want to target even more input paths... so far
+interactive input seemed absolutely needed, timers seemed logical and
+self-rate-limited. For the others, I don't know. It might actually make sense
+too.
+
+> 
+> Fudging fork seems dubious at best, it seems generated by the use of
+> timer_create(.evp->sigev_notify = SIGEV_THREAD), which is a really
+> broken thing to do, it has very ill defined semantics and is utterly
+> unable to properly cope with error cases. Furthermore its trivial to
+> actually correctly implement the desired behaviour, so I'm really
+> skeptical on this front; friends don't let friends use SIGEV_THREAD.
+
+Agreed for the timer-tied case. I think the direction Thomas proposes for fixing
+glibc makes much more sense. However, I am wondering about the interactive case
+too: e.g., if you click on "open terminal", it needs to fork a process and you
+would normally expect this to come up more quickly than the background kernel
+compile you're doing. So there might be some interest for this fork vruntime
+boost for interactivity-driven wakeups. Thoughts ?
 
 Thanks,
 
-	-hpa
+Mathieu
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
