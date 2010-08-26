@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab0HZABg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 20:01:36 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:60982 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab0HZABf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 20:01:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=wsNkQhAZVI/NyyF6cdNpGcXvgYbMSxAfW1Oc7E7pujiTthRTPWaNO1p/Nc5qg4/da
-	BFZSlpLws4BTQL4dlxThg==
-Date: Wed, 25 Aug 2010 17:01:27 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (slab
- tree related)
-In-Reply-To: <alpine.DEB.2.00.1008250905490.13026@router.home>
-Message-ID: <alpine.DEB.2.00.1008251656390.22018@chino.kir.corp.google.com>
-References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <20100825101320.bed89b2a.sfr@canb.auug.org.au> <4C74A01E.1060809@cs.helsinki.fi> <alpine.DEB.2.00.1008250905490.13026@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752989Ab0HZAHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 20:07:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43013 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab0HZAHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 20:07:11 -0400
+Message-ID: <4C75AFFC.5090601@zytor.com>
+Date: Wed, 25 Aug 2010 17:06:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
+        Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>,
+        Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+References: <20100825094925.GA3632@pema> <20100825161214.GA15087@rhlx01.hs-esslingen.de> <20100825211257.GA636@pema> <4C7588FB.4050001@zytor.com> <20100825225036.GV4762@const.famille.thibault.fr>
+In-Reply-To: <20100825225036.GV4762@const.famille.thibault.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, Christoph Lameter wrote:
+On 08/25/2010 03:50 PM, Samuel Thibault wrote:
+> H. Peter Anvin, le Wed 25 Aug 2010 14:19:55 -0700, a écrit :
+>> At that point I'd almost prefer doing something like a BIOS signature
+>> check if we can't do anything better.
+> 
+> Well, there will be several versions of the BIOS signature, which the
+> constructor is not likely to provide.
+> 
 
-> Since the percpu allocator does not provide early allocation in UP
-> mode (only in SMP configurations) use __get_free_page() to improvise
-> a compound page allocation that can be later freed via kfree().
-> 
-> Compound pages will be released when the cpu caches are resized.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  mm/slub.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2010-08-24 20:07:12.766010774 -0500
-> +++ linux-2.6/mm/slub.c	2010-08-24 20:15:46.304130417 -0500
-> @@ -2064,8 +2064,24 @@
-> 
->  static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
->  {
-> +#ifdef CONFIG_SMP
-> +	/*
-> +	 * Will use reserve that does not require slab operation during
-> +	 * early boot.
-> +	 */
->  	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
->  			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
-> +#else
-> +	/*
-> +	 * Special hack for UP mode. allocpercpu() falls back to kmalloc
-> +	 * operations. So we cannot use that before the slab allocator is up
-> +	 * Simply get the smallest possible compound page. The page will be
-> +	 * released via kfree() when the cpu caches are resized later.
-> +	 */
-> +	if (slab_state < UP)
-> +		s->cpu_slab = (__percpu void *)__get_free_page(GFP_NOWAIT, 1);
+Then we'll gather them up, or something.
 
-__get_free_pages() takes an order argument.
+> Just to make sure there's no misunderstanding: it was never planned that
+> this driver be loaded unless some manual intervention, like explicitly
+> loadling the module or setting some parameter, so that if bad effects
+> happen on the machine, the user can only get angry at himself for having
+> loaded by hand a random module without reading the documentation that
+> explicitly says (twice) it's only for a particular kind of hardware.
+> 
+> I however now realize that I don't find a way to force a driver to be
+> compiled only as a module.  If there isn't, I guess we can just add
+> a module parameter to enable/disable the driver, so that it won't be
+> active by default even compiled-in?
 
-> +	else
-> +#endif
-> 
->  	s->cpu_slab = alloc_percpu(struct kmem_cache_cpu);
-> 
+There is, but that is hardly a reasonable solution.
+
+What other forms of enumerable hardware is on this machine?  PCI?
+
+	-hpa
