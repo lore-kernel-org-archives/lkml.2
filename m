@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab0HZRsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 13:48:18 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:41730 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab0HZRsR (ORCPT
+	id S1752085Ab0HZRtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 13:49:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36082 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab0HZRtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 13:48:17 -0400
-Date: Thu, 26 Aug 2010 13:47:55 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Jack Steiner <steiner@sgi.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-In-reply-to: <20100817155939.GA4354@sgi.com>
-Message-id: <alpine.LFD.2.00.1008261338230.2062@localhost.localdomain>
-References: <20100722152220.GA18290@sgi.com> <20100817155939.GA4354@sgi.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 26 Aug 2010 13:49:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=Tq7YHitUus/LGHL0QCnzyZoIWU0A2+qv8guwzhIw52kXbxEEaDnhEUsG1yllqMQx0B
+         akWEel+MVLpeXZgA/659Xx5NxSn+vWSHAW2Ufh60sQt4QGix18TrKU1tku0IgMDeGVeC
+         8dybmBjxJiJObTN/xztVHbtzTAzv4TgfOwqp4=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org
+Subject: [REGRESSION] [2.6.36-rc2] hp-wmi: probe of hp-wmi failed with error -22
+Date: Thu, 26 Aug 2010 19:49:12 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2; KDE/4.4.5; i686; ; )
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008261949.12608.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010, Jack Steiner wrote:
+Last known good kernel: 2.6.35
+Failing kernel: 2.6.36-rc1, 2.6.36-rc2
 
-> On EFI-enabled systems (like UV), the ACPI tables are already mapped as
-> WB memory. This is done in the EFI function efi_enter_virtual_mode().
-> 
-> The E820_ACPI & E820_NVS regions will be mapped as WB memory if the BIOS
-> sets the WB attribute in the EFI memmap entry for the chunk of memory.
-> 
-> The ACPI code in acpi_os_map_memory() is not currently aware of the EFI mapping
-> & currently maps the memory as UC. This seems like a bug.
-> 
-> In order to prevent attribute aliasing, I think the ACPI mapping needs to
-> be consistent with the EFI mapping.  Otherwise, we will have the OS
-> referencing the memory as UC at the same time BIOS is referencing it as WB.
+Dmesg says:
+root@gumis:/home/maciek# dmesg | grep -i hp-wmi
+[    5.489731] hp-wmi: probe of hp-wmi failed with error -22
 
-When would the firmware touch those tables after booting the OS?
+lsmod says, that wp-wmi module was loaded:
+root@gumis:/home/maciek# lsmod | grep -i hp
+hp_wmi                  4637  0 
+rfkill                 11448  5 bluetooth,cfg80211,hp_wmi
 
-We once found a Toshiba laptop where the BIOS
-scribbles on the DSDT at run-time.
-We presumed from this that Windows
-must snapshot the tables at boot and run from a copy.
+rfkill list shows:
+root@gumis:/home/maciek/kernel.org/2.6.36-rc2# rfkill list
+0: phy0: Wireless LAN
+        Soft blocked: no
+        Hard blocked: no
+1: hci0: Bluetooth
+        Soft blocked: no
+        Hard blocked: no
+        
+Dmesg:
+http://unixy.pl/maciek/download/kernel/2.6.36-rc2/hp_wmi/dmesg-2.6-36-rc2.txt
+config:
+http://unixy.pl/maciek/download/kernel/2.6.36-rc2/hp_wmi/config-2.6.36-rc2
 
-We decided not to copy the tables, but to use them in-place.
-So we added a check for run-time corruption of the tables
-and we've seen it fire only on that one Toshiba box
-(which now boots with "acpi=copy_dsdt").
-
-thanks,
-Len Brown, Intel Open Source Technology Center
-
-
-
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
