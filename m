@@ -1,83 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab0HZMQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 08:16:57 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41900 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab0HZMQy (ORCPT
+	id S1753451Ab0HZMbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 08:31:32 -0400
+Received: from mail.windriver.com ([147.11.1.11]:39856 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab0HZMba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 08:16:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DOJCE2DrSTrHZZ4nFbm+hTeHUSd/5ujkPmKqPcrXhfp2BghXyIwthlt5sk7YAPIbg7
-         VBWMvKmsMjKbKAmeZmYfNKCEAgmPV/d74ynz+YfUTDqCs560ItPScaW9qpu0pSG/ng5t
-         borXlDJmYlyEy8aLBEDoSZaTkg1yCa7PBf10k=
-Date: Thu, 26 Aug 2010 14:16:16 +0200
-From: "Carlos R. Mafra" <crmafra2@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.35.3] BUG: unable to handle kernel NULL pointer
- dereference at (null)
-Message-ID: <20100826121616.GA8036@Pilar.aei.mpg.de>
-References: <20100826095357.GA7202@Pilar.aei.mpg.de>
- <20100826115336.GW14190@think>
+	Thu, 26 Aug 2010 08:31:30 -0400
+Message-ID: <4C765FD3.9060904@windriver.com>
+Date: Thu, 26 Aug 2010 20:36:35 +0800
+From: DDD <dongdong.deng@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100826115336.GW14190@think>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@elte.hu, fweisbec@gmail.com, acme@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: fix possible divide-by-zero in perf_swevent_overflow()
+References: <1282824438-13970-1-git-send-email-dongdong.deng@windriver.com> <1282824727.1975.747.camel@laptop>
+In-Reply-To: <1282824727.1975.747.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Aug 2010 12:31:06.0202 (UTC) FILETIME=[8DE173A0:01CB451A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Do 26.Aug'10 at  7:53:36 -0400, Chris Mason wrote:
-> On Thu, Aug 26, 2010 at 11:53:57AM +0200, Carlos R. Mafra wrote:
-> > Hi,
-> > 
-> > I've just got this BUG: message in dmesg which I think is btrfs related.
-> > 
-> > I have a btrfs filesystem in a memory card which I use to contain the 
-> > cache and config of chromium (to avoid writing to much in the SSD):
-> > 
-> > /dev/mmcblk0p1 on /home/mafra/mmc type btrfs (rw,noexec,nosuid,nodev,noatime,noacl,compress)
-> > 
-> > and the last message before the bug is about the memory card.
+Peter Zijlstra wrote:
+> On Thu, 2010-08-26 at 20:07 +0800, Dongdong Deng wrote:
+>> The event->hw.last_period is possible to zero, thus it will
+>> cause divide_by_zero later in perf_swevent_set_period().
 > 
-> Hmmm it is definitely btrfs related.  Do you continue to get it after
-> rebooting?
+> How can it be zero?
 
-No, after rebooting chromium refused to open (like it did during the BUG) 
-but no BUG: message appeared.
+When I am running the kgdbts to test the hw_breakpoint_layer with kgdb,
+I get a call trace as following and this problem is hardly to reproduce.
 
-Then I deleted all chromium cache+config from the memory card and chromium
-worked again, but after suspending to RAM I noticed this:
+Maybe the root cause was from kgdb/hw_breakpoint_layer,
+but add a checking is good to us and harmless. :-)
 
-[ 6035.423238] PM: Syncing filesystems ... done.
-[ 6036.524889] Freezing user space processes ... 
-[ 6056.533079] Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze):
-[ 6056.533119] chrome        D 00000000ffffffff     0  7028   7015 0x00800004
-[ 6056.533124]  ffff8800630a1c08 0000000000000086 0000000000000000 0000000000012d40
-[ 6056.533129]  ffff8800630a1fd8 ffff8800630a1fd8 ffff88006303e0c0 0000000000012d40
-[ 6056.533133]  0000000000012d40 0000000000004000 0000000000004000 ffff8800630a1fd8
-[ 6056.533137] Call Trace:
-[ 6056.533145]  [<ffffffff81064029>] ? ktime_get_ts+0xa9/0xe0
-[ 6056.533150]  [<ffffffff810a3610>] ? sync_page_killable+0x0/0x40
-[ 6056.533155]  [<ffffffff81506bde>] io_schedule+0x6e/0xb0
-[ 6056.533158]  [<ffffffff810a35f8>] sync_page+0x38/0x50
-[ 6056.533161]  [<ffffffff810a3619>] sync_page_killable+0x9/0x40
-[ 6056.533164]  [<ffffffff81507332>] __wait_on_bit_lock+0x52/0xb0
-[ 6056.533168]  [<ffffffff810a3532>] __lock_page_killable+0x62/0x70
-[ 6056.533172]  [<ffffffff8105bb40>] ? wake_bit_function+0x0/0x40
-[ 6056.533175]  [<ffffffff810a3459>] ? find_get_page+0x19/0x90
-[ 6056.533178]  [<ffffffff810a5144>] generic_file_aio_read+0x494/0x6d0
-[ 6056.533183]  [<ffffffff810d4b22>] do_sync_read+0xd2/0x110
-[ 6056.533186]  [<ffffffff81025406>] ? do_page_fault+0x186/0x390
-[ 6056.533190]  [<ffffffff810d5273>] vfs_read+0xb3/0x160
-[ 6056.533193]  [<ffffffff810d536c>] sys_read+0x4c/0x80
-[ 6056.533197]  [<ffffffff81002d2b>] system_call_fastpath+0x16/0x1b
-[ 6056.533207] 
-[ 6056.533208] Restarting tasks ... done.
+Thanks,
+Dongdong
 
-but everything is working well AFAICT.
+
+
+------------[ cut here ]------------
+WARNING: at /buildarea/ddeng/build/linux/drivers/misc/kgdbts.c:703 
+run_simple_test+0x1fc/0x2a0()
+Hardware name: Moon Creek platform
+Modules linked in:
+Pid: 668, comm: sh Tainted: G        W  2.6.36-rc1-00133-g47ade1d #43
+Call Trace:
+  [<c103b1fd>] warn_slowpath_common+0x6d/0xa0
+  [<c124e15c>] ? run_simple_test+0x1fc/0x2a0
+  [<c124e15c>] ? run_simple_test+0x1fc/0x2a0
+  [<c103b245>] warn_slowpath_null+0x15/0x20
+  [<c124e15c>] run_simple_test+0x1fc/0x2a0
+  [<c124daf4>] kgdbts_put_char+0x14/0x20
+  [<c107bab8>] gdb_serial_stub+0x678/0xbd0
+  [<c101aced>] ? default_send_IPI_allbutself+0x7d/0x90
+  [<c107a487>] kgdb_cpu_enter+0x197/0x470
+  [<c107a8e7>] kgdb_handle_exception+0x47/0x140
+  [<c13be9f0>] ? _raw_read_unlock+0x10/0x30
+  [<c101eb48>] __kgdb_notify+0x38/0x170
+  [<c130f1e0>] ? sock_queue_rcv_skb+0xe0/0x130
+  [<c101ec8e>] kgdb_notify+0xe/0x20
+  [<c105b815>] notifier_call_chain+0x35/0x70
+  [<c1003910>] ? do_divide_error+0x0/0xa0
+  [<c105bce8>] __atomic_notifier_call_chain+0x28/0x50
+  [<c105bd2a>] atomic_notifier_call_chain+0x1a/0x20
+  [<c105bd7d>] notify_die+0x2d/0x30
+  [<c1003964>] do_divide_error+0x54/0xa0
+  [<c11cf3d5>] ? div64_u64+0x55/0x80
+  [<c1361c22>] ? udp_rcv+0x12/0x20
+  [<c133e6e7>] ? ip_local_deliver_finish+0x127/0x240
+  [<c1361c22>] ? udp_rcv+0x12/0x20
+  [<c133e887>] ? ip_local_deliver+0x87/0x90
+  [<c109bb8e>] ? perf_output_begin+0x1fe/0x230
+  [<c133e0c3>] ? ip_rcv_finish+0xc3/0x320
+  [<c13bf822>] error_code+0x66/0x6c
+  [<c1003910>] ? do_divide_error+0x0/0xa0
+  [<c11cf3d5>] ? div64_u64+0x55/0x80
+  [<c1097cac>] perf_swevent_set_period+0x7c/0x100
+  [<c109c797>] perf_swevent_overflow+0x87/0x90
+  [<c109c85f>] perf_swevent_add+0xbf/0xd0
+  [<c109c8ce>] perf_bp_event+0x5e/0x80
+  [<c1289be7>] ? e1000_clean+0xf7/0x260
+  [<c1008941>] hw_breakpoint_exceptions_notify+0x111/0x170
+  [<c105b815>] notifier_call_chain+0x35/0x70
+  [<c105bce8>] __atomic_notifier_call_chain+0x28/0x50
+  [<c105bd2a>] atomic_notifier_call_chain+0x1a/0x20
+  [<c105bd7d>] notify_die+0x2d/0x30
+  [<c1004088>] do_debug+0x68/0x270
+  [<c101a4d4>] ? smp_apic_timer_interrupt+0x74/0x140
+  [<c13bf871>] debug_stack_correct+0x29/0x30
+  [<c101007b>] ? hw_perf_event_init+0x1bb/0x820
+  [<c124de60>] ? kgdbts_break_test+0x0/0x30
+  [<c124e870>] ? configure_kgdbts+0x1d0/0x4c0
+  [<c10544f0>] ? param_attr_store+0x0/0x20
+  [<c124ebad>] param_set_kgdbts_var+0x4d/0xb0
+  [<c124eb60>] ? param_set_kgdbts_var+0x0/0xb0
+  [<c1054507>] param_attr_store+0x17/0x20
+  [<c105458c>] module_attr_store+0x2c/0x40
+  [<c111fe54>] sysfs_write_file+0x94/0xf0
+  [<c10d42c6>] vfs_write+0x96/0x130
+  [<c111fdc0>] ? sysfs_write_file+0x0/0xf0
+  [<c10d44a6>] sys_write+0x46/0xd0
+  [<c13bf209>] system_call_done+0x0/0x4
+---[ end trace e0a820ecc2c65c24 ]---
+
+
+> 
+>> This patch checks event->hw.last_period before invoke
+>> perf_swevent_set_period() and replaces "event->hw" with "hwc".
+>>
+>> Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> ---
+>>  kernel/perf_event.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+>> index 403d180..ccba741 100644
+>> --- a/kernel/perf_event.c
+>> +++ b/kernel/perf_event.c
+>> @@ -4050,8 +4050,8 @@ static void perf_swevent_overflow(struct perf_event *event, u64 overflow,
+>>  	struct hw_perf_event *hwc = &event->hw;
+>>  	int throttle = 0;
+>>  
+>> -	data->period = event->hw.last_period;
+>> -	if (!overflow)
+>> +	data->period = hwc->last_period;
+>> +	if (!overflow && hwc->last_period)
+>>  		overflow = perf_swevent_set_period(event);
+>>  
+>>  	if (hwc->interrupts == MAX_INTERRUPTS)
+> 
+> 
+> 
+
