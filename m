@@ -1,33 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab0IBFj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 01:39:58 -0400
-Received: from 211-21-52-19.HINET-IP.hinet.net ([211.21.52.19]:1075 "HELO
-	elder.org.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750739Ab0IBFj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 01:39:57 -0400
-Date: Tue, 31 Aug 2010 01:16:01 +0800
-From: "Dr. Lucky Robert" <genesis@elder.org.tw>
-To: undisclosed-recipients:;
-Subject: Good news for you
-Message-ID: <20100830171601.GA9955@elder.org.tw>
-Reply-To: mk4robert3@naseej.com
-Mime-Version: 1.0
-Content-Type: text/plain; charset=big5
-Content-Disposition: inline
-User-Agent: Mutt/1.4i
-X-Priority: 3 (Normal)
-X-MSMail-Priority: Normal
+	id S1757671Ab0ICVtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 17:49:11 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60235 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757562Ab0ICVtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 17:49:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=KSByjj4XnxiCM/UFlw+4O1WATAfC5Npfuhn64EqKLk7W4f+PP7Polq7hYHnTqYkLBn
+         0CsSVqC4sy2tMWq8iJ23iKscEebG5Wy+43dAXAnLLNApCAOTGO9L/0ijERshX+y2U76T
+         bl5sXc593d2bbzcoUpgt2HIKVVGwYAN/4oW9w=
+From: "Mark F. Brown" <mark.brown314@gmail.com>
+To: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        "Mark F. Brown" <mark.brown314@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Cc: "Mark F. Brown" <mark.brown314@gmail.com>
+Subject: [PATCH v2 2/6] ARM: pxa168: added keypad support
+Date: Thu, 26 Aug 2010 11:27:33 -0400
+Message-Id: <1282836457-5651-3-git-send-email-mark.brown314@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1282836457-5651-1-git-send-email-mark.brown314@gmail.com>
+References: <1282836457-5651-1-git-send-email-mark.brown314@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Dear,
+Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+---
+ arch/arm/mach-mmp/include/mach/mfp-pxa168.h |    7 +++++++
+ arch/arm/mach-mmp/include/mach/pxa168.h     |    7 +++++++
+ arch/arm/mach-mmp/pxa168.c                  |    3 +++
+ drivers/input/keyboard/Kconfig              |    2 +-
+ 4 files changed, 18 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-mmp/include/mach/mfp-pxa168.h b/arch/arm/mach-mmp/include/mach/mfp-pxa168.h
+index ded43c4..4621067 100644
+--- a/arch/arm/mach-mmp/include/mach/mfp-pxa168.h
++++ b/arch/arm/mach-mmp/include/mach/mfp-pxa168.h
+@@ -289,4 +289,11 @@
+ #define GPIO86_PWM1_OUT		MFP_CFG(GPIO86, AF2)
+ #define GPIO86_PWM2_OUT		MFP_CFG(GPIO86, AF3)
  
-It is my pleasure to let you know about my success in getting those fund transferred under the cooperation of a new partner.
++/* Keypad */
++#define GPIO109_KP_MKIN1        MFP_CFG(GPIO109, AF7)
++#define GPIO110_KP_MKIN0        MFP_CFG(GPIO110, AF7)
++#define GPIO111_KP_MKOUT7       MFP_CFG(GPIO111, AF7)
++#define GPIO112_KP_MKOUT6       MFP_CFG(GPIO112, AF7)
++#define GPIO121_KP_MKIN4        MFP_CFG(GPIO121, AF7)
++
+ #endif /* __ASM_MACH_MFP_PXA168_H */
+diff --git a/arch/arm/mach-mmp/include/mach/pxa168.h b/arch/arm/mach-mmp/include/mach/pxa168.h
+index 220738f..f34e663 100644
+--- a/arch/arm/mach-mmp/include/mach/pxa168.h
++++ b/arch/arm/mach-mmp/include/mach/pxa168.h
+@@ -11,6 +11,7 @@ extern void __init pxa168_init_irq(void);
+ #include <plat/i2c.h>
+ #include <plat/pxa3xx_nand.h>
+ #include <video/pxa168fb.h>
++#include <plat/pxa27x_keypad.h>
  
-I didn't forget your past efforts to assist me in transferring those funds which later failed. Now contact my lawyer in Ghana, he is Barr. Kwesi Nana by name, his email (kwesiasso@globomail.com) ask him to send you the total $2,500,000.00, which I raised for your compensation so feel free to get in touch with him.
+ extern struct pxa_device_desc pxa168_device_uart1;
+ extern struct pxa_device_desc pxa168_device_uart2;
+@@ -27,6 +28,7 @@ extern struct pxa_device_desc pxa168_device_ssp4;
+ extern struct pxa_device_desc pxa168_device_ssp5;
+ extern struct pxa_device_desc pxa168_device_nand;
+ extern struct pxa_device_desc pxa168_device_fb;
++extern struct pxa_device_desc pxa168_device_keypad;
  
-Yours Faithfully
+ static inline int pxa168_add_uart(int id)
+ {
+@@ -105,4 +107,9 @@ static inline int pxa168_add_fb(struct pxa168fb_mach_info *mi)
+ 	return pxa_register_device(&pxa168_device_fb, mi, sizeof(*mi));
+ }
  
-Lucky Robert
++static inline int pxa168_add_keypad(struct pxa27x_keypad_platform_data *data)
++{
++	return pxa_register_device(&pxa168_device_keypad, data, sizeof(*data));
++}
++
+ #endif /* __ASM_MACH_PXA168_H */
+diff --git a/arch/arm/mach-mmp/pxa168.c b/arch/arm/mach-mmp/pxa168.c
+index eaebf66..2fa16fb 100644
+--- a/arch/arm/mach-mmp/pxa168.c
++++ b/arch/arm/mach-mmp/pxa168.c
+@@ -77,6 +77,7 @@ static APBC_CLK(ssp2, PXA168_SSP2, 4, 0);
+ static APBC_CLK(ssp3, PXA168_SSP3, 4, 0);
+ static APBC_CLK(ssp4, PXA168_SSP4, 4, 0);
+ static APBC_CLK(ssp5, PXA168_SSP5, 4, 0);
++static APBC_CLK(keypad, PXA168_KPC, 0, 32000);
+ 
+ static APMU_CLK(nand, NAND, 0x01db, 208000000);
+ static APMU_CLK(lcd, LCD, 0x7f, 312000000);
+@@ -98,6 +99,7 @@ static struct clk_lookup pxa168_clkregs[] = {
+ 	INIT_CLKREG(&clk_ssp5, "pxa168-ssp.4", NULL),
+ 	INIT_CLKREG(&clk_nand, "pxa3xx-nand", NULL),
+ 	INIT_CLKREG(&clk_lcd, "pxa168-fb", NULL),
++	INIT_CLKREG(&clk_keypad, "pxa27x-keypad", NULL),
+ };
+ 
+ static int __init pxa168_init(void)
+@@ -150,3 +152,4 @@ PXA168_DEVICE(ssp3, "pxa168-ssp", 2, SSP3, 0xd401f000, 0x40, 56, 57);
+ PXA168_DEVICE(ssp4, "pxa168-ssp", 3, SSP4, 0xd4020000, 0x40, 58, 59);
+ PXA168_DEVICE(ssp5, "pxa168-ssp", 4, SSP5, 0xd4021000, 0x40, 60, 61);
+ PXA168_DEVICE(fb, "pxa168-fb", -1, LCD, 0xd420b000, 0x1c8);
++PXA168_DEVICE(keypad, "pxa27x-keypad", -1, KEYPAD, 0xd4012000, 0x4c);
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index 9cc488d..aa037fe 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -338,7 +338,7 @@ config KEYBOARD_OPENCORES
+ 
+ config KEYBOARD_PXA27x
+ 	tristate "PXA27x/PXA3xx keypad support"
+-	depends on PXA27x || PXA3xx
++	depends on PXA27x || PXA3xx || ARCH_MMP
+ 	help
+ 	  Enable support for PXA27x/PXA3xx keypad controller.
+ 
+-- 
+1.7.0.4
+
