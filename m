@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab0HZPpi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 11:45:38 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:46331 "EHLO mail.vyatta.com"
+	id S1754219Ab0HZPps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:45:48 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42173 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752309Ab0HZPpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 11:45:36 -0400
-Date: Thu, 26 Aug 2010 08:45:33 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
-        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Message-ID: <20100826084533.1dfbd9bf@nehalam>
-In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
-References: <4C763A67.5040107@dsn.okisemi.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754164Ab0HZPpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:45:44 -0400
+Date: Thu, 26 Aug 2010 08:45:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: joe@perches.com, mingo@elte.hu, jkosina@suse.cz,
+        ksummit-2010-discuss@lists.linux-foundation.org
+Subject: [PATCH] MAINTAINERS: add U: for URL of todo list, add RCU todo list
+Message-ID: <20100826154537.GA4874@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since T: and L: are already taken, add U: for URL of todo list.
+Also add the RCU todo list to both the RCU and RCUTORTURE projects.
 
-> +/**
-> + * pch_gbe_mac_init_rx_addrs - Initialize receive address's
-> + * @hw:	Pointer to the HW structure
-> + * @mar_count: Receive address registers
-> + */
-> +void pch_gbe_mac_init_rx_addrs(struct pch_gbe_hw *hw, u16 mar_count)
-> +{
-> +	u32 i;
-> +	PCH_GBE_DEBUG("pch_gbe_mac_init_rx_addrs\n");
-> +
-> +	/* Setup the receive address */
-> +	pch_gbe_mac_mar_set(hw, hw->mac.addr, 0);
-> +
-> +	/* Zero out the other receive addresses */
-> +	for (i = 1; i < mar_count; i++) {
-> +		iowrite32(0, &hw->reg->mac_adr[i].high);
-> +		iowrite32(0, &hw->reg->mac_adr[i].low);
-> +	}
-> +	iowrite32(0xFFFE, &hw->reg->ADDR_MASK);
-> +	/* wait busy */
-> +	while ((ioread32(&hw->reg->ADDR_MASK) & PCH_GBE_BUSY))
-> +		;
-> +}
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Use cpu_relax here to allow other hyper-thread to run.
-	/* wait busy */
-	while ((ioread32(&hw->reg->ADDR_MASK) & PCH_GBE_BUSY))
-		cpu_relax();
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3f21c27..1c57186 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -103,6 +103,7 @@ Descriptions of section entries:
+ 	      matches patches or files that contain one or more of the words
+ 	      printk, pr_info or pr_err
+ 	   One regex pattern per line.  Multiple K: lines acceptable.
++	U: URL of todo list.
+ 
+ Note: For the hard of thinking, this list is meant to remain in alphabetical
+ order. If you could add yourselves to it in alphabetical order that would be
+@@ -4801,6 +4802,7 @@ M:	Josh Triplett <josh@freedesktop.org>
+ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+ S:	Supported
+ T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
++U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+ F:	Documentation/RCU/torture.txt
+ F:	kernel/rcutorture.c
+ 
+@@ -4826,6 +4828,7 @@ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+ W:	http://www.rdrop.com/users/paulmck/rclock/
+ S:	Supported
+ T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
++U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+ F:	Documentation/RCU/
+ F:	include/linux/rcu*
+ F:	include/linux/srcu*
