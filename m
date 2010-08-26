@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab0HZSZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:25:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43006 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab0HZSZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:25:10 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Kevin Hilman <davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sandeep Paulraj <s-paulraj@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] arm: mach-davinci: check irq2ctlr() result
-Organization: Deep Root Systems, LLC
-References: <1279379947-15152-1-git-send-email-segooon@gmail.com>
-Date: Thu, 26 Aug 2010 11:25:06 -0700
-In-Reply-To: <1279379947-15152-1-git-send-email-segooon@gmail.com> (Kulikov
-	Vasiliy's message of "Sat, 17 Jul 2010 19:19:07 +0400")
-Message-ID: <87wrrd2pvh.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1753560Ab0HZS0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:26:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48574 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab0HZS0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 14:26:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
+Date: Thu, 26 Aug 2010 20:24:35 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Tejun Heo <htejun@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <201008241811.22991.stephan.diestelhorst@amd.com> <201008261815.34574.stephan.diestelhorst@amd.com>
+In-Reply-To: <201008261815.34574.stephan.diestelhorst@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008262024.35551.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kulikov Vasiliy <segooon@gmail.com> writes:
+On Thursday, August 26, 2010, Stephan Diestelhorst wrote:
+> On Tuesday 24 August 2010 18:11:22 Stephan Diestelhorst wrote:
+> > On Tuesday 24 August 2010 18:07:23 Stephan Diestelhorst wrote:
+> > > On Monday 23 August 2010 14:03:40 Tejun Heo wrote:
+> > > > On 08/19/2010 06:23 PM, Stephan Diestelhorst wrote:
+> > > > > It says "max_performance", I have not touched anyhting. So it has been
+> > > > > like that all the time. Would this explain why your patch did not show
+> > > > > the debug printout?
+> > > > 
+> > > > Hmm... okay.  Yeah, if you haven't been using IPM at all, there won't
+> > > > be any debug messages but at the same time the posted patch should
+> > > > have had the same effect as Rafael's patch as IPM path isn't traveled
+> > > > at all.  Can you please check the followings?
+> > > > 
+> [...]
+> > > > * Rafael's patch actually fixes the problem.  If you haven't been
+> > > >   using IPM at all, Rafael's patch and mine should behave exactly the
+> > > >   same (ie. no IPM operation at all during suspend/resume).  It could
+> > > >   be that you're seeing a different issue.
+> > > 
+> > > That next on my list...
+> 
+> Just did the following: Rebased Rafaels patch to 2.6.35 and tried it
+> again (with added prints to make sure I am running the right one) and
+> did >10 suspend to ram / resume cycles under I/O write load. All of
+> them worked fine (for comparison: your patch resulted in RO HDD at
+> first attempt).
+> 
+> (I had some extra prints around the suspend functions changed in
+>  Rafael's patch, tried with and without, no change--works flawlessly.)
+> 
+> What do you make of this?
 
-> If irq2ctlr() fails return IRQ_NONE.
-> Also as it can fail make 'ctlr' signed.
+I think my patch actually does more than the Tejun's one.  I need to have a
+deeper look at them both.
 
-[...]
+I'm still testing the Tejun's patch on my system where I was able to reproduce
+the problem, but so far it's been working.
 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-
-Sorry for the lag on this one.
-
-Queueing for 2.6.37 in linux-davinci.git
-
-Kevin
+Thanks,
+Rafael
