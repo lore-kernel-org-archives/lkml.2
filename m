@@ -1,50 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab0HZAcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 20:32:11 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:35955 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab0HZAcJ (ORCPT
+	id S1753895Ab0HZAo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 20:44:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40836 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201Ab0HZAoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 20:32:09 -0400
-Date: Thu, 26 Aug 2010 09:32:05 +0900
-From: Simon Horman <horms@verge.net.au>
-To: David Miller <davem@davemloft.net>
-Cc: julia@diku.dk, wensong@linux-vs.org, ja@ssi.bg, kaber@trash.net,
-        netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 5/5] net/netfilter/ipvs: Eliminate memory leak
-Message-ID: <20100826003204.GA9771@verge.net.au>
-References: <Pine.LNX.4.64.1008241639300.15172@ask.diku.dk>
- <20100825013443.GC7237@verge.net.au>
- <20100825.163812.242150096.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825.163812.242150096.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 25 Aug 2010 20:44:25 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 26 Aug 2010 09:39:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/2][BUGFIX] oom: remove totalpage normalization from
+ oom_badness()
+Message-Id: <20100826093923.d4ac29b6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1008250300500.13300@chino.kir.corp.google.com>
+References: <20100825184001.F3EF.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1008250300500.13300@chino.kir.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 04:38:12PM -0700, David Miller wrote:
-> From: Simon Horman <horms@verge.net.au>
-> Date: Wed, 25 Aug 2010 10:34:43 +0900
+On Wed, 25 Aug 2010 03:25:25 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 > 
-> > On Tue, Aug 24, 2010 at 04:39:49PM +0200, Julia Lawall wrote:
-> >> Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > Thanks Julia, that looks good to me.
-> > 
-> > Signed-off-by: Simon Horman <horms@verge.net.au>
-> > 
-> > Patrick, I guess that this should go through nf-next-2.6.
+> > 3) No reason to implement ABI breakage.
+> >    old tuning parameter mean)
+> > 	oom-score = oom-base-score x 2^oom_adj
 > 
-> Since Patrick appears to be offline, I'll apply this directly so
-> he has less to do when he comes back online :)
+> Everybody knows this is useless beyond polarizing a task for kill or 
+> making it immune.
+> 
+> >    new tuning parameter mean)
+> > 	oom-score = oom-base-score + oom_score_adj / (totalram + totalswap)
+> 
+> This, on the other hand, has an actual unit (proportion of available 
+> memory) that can be used to prioritize tasks amongst those competing for 
+> the same set of shared resources and remains constant even when a task 
+> changes cpuset, its memcg limit changes, etc.
+> 
+> And your equation is wrong, it's
+> 
+> 	((rss + swap) / (available ram + swap)) + oom_score_adj
+> 
+> which is completely different from what you think it is.
+> 
 
-I have a handful of other changes queued up,
-do you want to take them too?
+I'm now trying to write a userspace tool to calculate this, for me.
+Then, could you update documentation ? 
+==
+3.2 /proc/<pid>/oom_score - Display current oom-killer score
+-------------------------------------------------------------
+
+This file can be used to check the current score used by the oom-killer is for
+any given <pid>. Use it together with /proc/<pid>/oom_adj to tune which
+process should be killed in an out-of-memory situation.
+==
+
+add a some documentation like:
+==
+(For system monitoring tool developpers, not for usual users.)
+oom_score calculation is implemnentation dependent and can be modified without
+any caution. But current logic is
+
+oom_score = ((proc's rss + proc's swap) / (available ram + swap)) + oom_score_adj
+
+proc's rss and swap can be obtained by /proc/<pid>/statm and available ram + swap
+is dependent on the situation.
+If the system is totaly under oom,
+	available ram  == /proc/meminfo's MemTotal
+	available swap == in most case == /proc/meminfo's SwapTotal
+When you use memory cgroup,
+	When swap is limited,  avaliable ram + swap == memory cgroup's memsw limit.
+	When swap is unlimited, avaliable ram + swap = memory cgroup's memory limit + 
+							SwapTotal
+
+Then, please be careful that oom_score's order among tasks depends on the
+situation. Assume 2 proceses A, B which has oom_score_adj of 300 and 0
+ And A uses 200M, B uses 1G of memory under 4G system
+
+ Under the 4G system.
+ 	A's socre = (200M *1000)/4G + 300 = 350
+ 	B's score = (1G * 1000)/4G = 250.
+
+	 In the memory cgroup, it has 2G of resource.
+	A's score = (200M * 1000)/2G + 300 = 400
+	B's socre = (1G * 1000)/2G = 500
+
+You shoudn't depend on /proc/<pid>/oom_score if you have to handle OOM under
+cgroups and cpuset. But the logic is simple.
+==
+
+If you don't want, I'll add text and a sample tool to cgroup/memory.txt.
+
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
 
