@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab0HZVRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 17:17:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59911 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab0HZVRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 17:17:07 -0400
-Message-ID: <4C76D9A0.2010907@zytor.com>
-Date: Thu, 26 Aug 2010 14:16:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1754235Ab0HZVUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 17:20:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45767 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab0HZVUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 17:20:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hGnDNAldMjx2iUnzFwP+1MxAYcGaZ4nmnr89LYxbULtsMYYcvNRgI1rxEiCOB/PJJ5
+         ujYjyPBN39uzZc9fzoi/TQeAY2ZgquTl14TgfX4TAu7U6RW6c5yEfKP3ipBm3C7I6PJj
+         5JnX1vroy9o3y+yMYedyy3ZsFav3Kv/OF0t9I=
+Date: Fri, 27 Aug 2010 01:20:25 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: David Brownell <david-b@pacbell.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] gpio: Add driver for Anton GPIO controllers
+Message-ID: <20100826212025.GA3366@oksana.dev.rtsoft.ru>
+References: <20100826172602.GA20410@oksana.dev.rtsoft.ru>
+ <488952.94429.qm@web180312.mail.gq1.yahoo.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
-CC: Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-References: <20100825094925.GA3632@pema> <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain> <20100826210815.GA18131@pema>
-In-Reply-To: <20100826210815.GA18131@pema>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <488952.94429.qm@web180312.mail.gq1.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 02:08 PM, Shérab wrote:
+On Thu, Aug 26, 2010 at 10:57:33AM -0700, David Brownell wrote:
+[...]
+> Not that I want to be naming this, but how
+> about a tweak to Alan's suggestion, keeping
+> the name technical?
 > 
->> Does Linux run in ACPI mode?
-> 
-> I don't think so.
-> 
+>    "gpio_basic_mmio.c" ... or similar?
 
-No, doesn't look like it.
+I would agree yesterday, but now I tend to like
+anton_gpio.c. :-D
 
->> Please send along the dmesg from a Linux kernel built with:
->>
->> CONFIG_ACPI=y
->> CONFIG_ACPI_DEBUG=y
-> 
-> It's attached.
-> 
+You seemed to be fine with meaningless amba-9999
+or dw_abc names, but now, when I propose such a
+marvellous name, you seem to lean to a synonym of
+an old one, the one that I used in v1? Wouldn't
+it be a step backwards? :-)
 
-What about APM?
+Just kiding, of course. basic_mmio.c works for me.
 
-	-hpa
+I also think it makes sense to drop gpio_ prefix,
+as the driver is already in gpio/ directory.
+
+Thanks!
+
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
