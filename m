@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab0HZJfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 05:35:13 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52520 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab0HZJfH (ORCPT
+	id S1752206Ab0HZJgd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 05:36:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57724 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab0HZJga convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 05:35:07 -0400
-Message-ID: <4C7634E7.4010701@mvista.com>
-Date: Thu, 26 Aug 2010 13:33:27 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Thu, 26 Aug 2010 05:36:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ah3AABgthxJ7/RfdDsZ2WQfA4eU4bEBMHynvWFog/J/LHjVFBlEw7v6hu9k8bU5VDF
+         PsVuHaicgKAUEeptxh+QjVW7cK6SfsdZd77EmtAroITczzoeMUGMxRng0e+BAQGxN6K2
+         SmvLKt7A4Ee2eOq/LOEgM6rdWJbTmT3X/iyV8=
 MIME-Version: 1.0
-To: Tejun Heo <teheo@suse.de>
-CC: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH 24.5/30] jbd2: Modify ASYNC_COMMIT code to not rely on
- queue draining on barrier
-References: <1282751267-3530-1-git-send-email-tj@kernel.org> <4C762476.2020802@suse.de>
-In-Reply-To: <4C762476.2020802@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	<1282310110.2605.976.camel@laptop>
+	<20100825155814.25c783c7.akpm@linux-foundation.org>
+	<20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<op.vh0wektv7p4s8u@localhost>
+	<20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
+	<20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 26 Aug 2010 18:36:24 +0900
+Message-ID: <AANLkTimB+s0tO=wrODAU4qCaZnCBoLZ2A9pGjR_jheOj@mail.gmail.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: =?ISO-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Aug 26, 2010 at 1:30 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Thu, 26 Aug 2010 13:06:28 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> On Thu, Aug 26, 2010 at 12:44 PM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > On Thu, 26 Aug 2010 11:50:17 +0900
+>> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> >
+>> >> 128MB...too big ? But it's depend on config.
+>> >>
+>> >> IBM's ppc guys used 16MB section, and recently, a new interface to shrink
+>> >> the number of /sys files are added, maybe usable.
+>> >>
+>> >> Something good with this approach will be you can create "cma" memory
+>> >> before installing driver.
+>> >>
+>> >> But yes, complicated and need some works.
+>> >>
+>> > Ah, I need to clarify what I want to say.
+>> >
+>> > With compaction, it's helpful, but you can't get contiguous memory larger
+>> > than MAX_ORDER, I think. To get memory larger than MAX_ORDER on demand,
+>> > memory hot-plug code has almost all necessary things.
+>>
+>> True. Doesn't patch's idea of Christoph helps this ?
+>> http://lwn.net/Articles/200699/
+>>
+>
+> yes, I think so. But, IIRC,  it's own purpose of Chirstoph's work is
+> for removing zones. please be careful what's really necessary.
 
-Tejun Heo wrote:
+Ahh. Sorry for missing point.
+You're right. The patch can't help our problem.
 
-> From 49f4cef00a1bd3c79fb2fe1f982c5157f0792867 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
+How about changing following this?
+The thing is MAX_ORDER is static. But we want to avoid too big
+MAX_ORDER of whole zones to support devices which requires big
+allocation chunk.
+So let's add MAX_ORDER into each zone and then, each zone can have
+different max order.
+For example, while DMA[32], NORMAL, HIGHMEM can have normal size 11,
+MOVABLE zone could have a 15.
 
-> Currently JBD2 relies blkdev_issue_flush() draining the queue when ASYNC_COMMIT
-> feature is set. This property is going away so make JBD2 wait for buffers it
-> needs on its own before submitting the cache flush.
+This approach has a big side effect?
 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
-> This patch is necessary before enabling flush/fua support in jbd2.
-> The flush-fua git tree has been udpated to included this between patch
-> 24 and 25.
-
-> Thanks.
-
->  fs/jbd2/commit.c |   29 ++++++++++++++++-------------
->  1 files changed, 16 insertions(+), 13 deletions(-)
-
-> diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-> index 7c068c1..8797fd1 100644
-> --- a/fs/jbd2/commit.c
-> +++ b/fs/jbd2/commit.c
-[...]
-> @@ -845,6 +842,12 @@ wait_for_iobuf:
->  	}
->  	if (!err && !is_journal_aborted(journal))
->  		err = journal_wait_on_commit_record(journal, cbh);
-> +	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
-> +				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) &&
-> +	    journal->j_flags & JBD2_BARRIER) {
-> +			blkdev_issue_flush(journal->j_dev, GFP_KERNEL, NULL,
-
-    Overindented line.
-
-> +				BLKDEV_IFL_WAIT);
-> +	}
-> 
->  	if (err)
->  		jbd2_journal_abort(journal, err);
-
-WBR, Sergei
+-- 
+Kind regards,
+Minchan Kim
