@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613Ab0HZEOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 00:14:11 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61557 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab0HZEOI (ORCPT
+	id S1753190Ab0HZEWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 00:22:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47086 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab0HZEWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 00:14:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=F9CaaNcVrxdB7r/fr+WnTFO7+i7O+aSDERBrF3I3KGDqkDOVreYKRJfA/GWG4PFtjT
-         coAgNvDzf/4wrO5YE61T7Rig+1xlkWVTb1qv/mSCZL/28qccBJC1fYuV1y7aU+M7Ffj5
-         NiDBboAardMWBLsxAErHvuWeFWyy+ucsVaD4o=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
-	<1282310110.2605.976.camel@laptop>
-	<20100825155814.25c783c7.akpm@linux-foundation.org>
-	<20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<op.vh0wektv7p4s8u@localhost>
-	<20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
-Date: Thu, 26 Aug 2010 13:14:07 +0900
-Message-ID: <AANLkTimatyb6cONqH319-xYmXTBb_jQuTLCmU_M6jYPa@mail.gmail.com>
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: =?ISO-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+	Thu, 26 Aug 2010 00:22:05 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH] writeback: remove the internal 5% low bound on dirty_ratio
+Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+        Con Kolivas <kernel@kolivas.org>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "david@fromorbit.com" <david@fromorbit.com>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+In-Reply-To: <20100826113649.687b453a@notabene>
+References: <20100826012945.GA7859@localhost> <20100826113649.687b453a@notabene>
+Message-Id: <20100826132046.F670.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 26 Aug 2010 13:22:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 1:06 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Thu, Aug 26, 2010 at 12:44 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> On Thu, 26 Aug 2010 11:50:17 +0900
->> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->>
->>> 128MB...too big ? But it's depend on config.
->>>
->>> IBM's ppc guys used 16MB section, and recently, a new interface to shrink
->>> the number of /sys files are added, maybe usable.
->>>
->>> Something good with this approach will be you can create "cma" memory
->>> before installing driver.
->>>
->>> But yes, complicated and need some works.
->>>
->> Ah, I need to clarify what I want to say.
->>
->> With compaction, it's helpful, but you can't get contiguous memory larger
->> than MAX_ORDER, I think. To get memory larger than MAX_ORDER on demand,
->> memory hot-plug code has almost all necessary things.
->
-> True. Doesn't patch's idea of Christoph helps this ?
-> http://lwn.net/Articles/200699/
+> > writeback: remove the internal 5% low bound on dirty_ratio
+> > 
+> > The dirty_ratio was silently limited in global_dirty_limits() to >= 5%.
+> > This is not a user expected behavior. And it's inconsistent with
+> > calc_period_shift(), which uses the plain vm_dirty_ratio value.
+> > 
+> > Let's rip the internal bound.
+> > 
+> > At the same time, fix balance_dirty_pages() to work with the
+> > dirty_thresh=0 case. This allows applications to proceed when
+> > dirty+writeback pages are all cleaned.
+> 
+> And ">" fits with the name "exceeded" better than ">=" does.  I think it is
+> an aesthetic improvement as well as a functional one.
+> 
+> Reviewed-by: NeilBrown <neilb@suse.de>
 
-Of course, It itself can't meet our requirement but idea of range
-allocation seem to be good.
-I think it can be start point.
-
->
-> --
-> Kind regards,
-> Minchan Kim
->
+I agree :)
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
 
 
--- 
-Kind regards,
-Minchan Kim
+
