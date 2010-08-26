@@ -1,168 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab0HZBXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 21:23:08 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:52278 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab0HZBXG convert rfc822-to-8bit (ORCPT
+	id S1754015Ab0HZBXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 21:23:16 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:38873 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960Ab0HZBXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 21:23:06 -0400
-Date: Thu, 26 Aug 2010 03:22:37 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH/RFCv4 2/6] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <20100825203237.GA5318@phenom.dumpdata.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>, Pawel Osciak <p.osciak@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>, linux-media@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-id: <op.vh0t3z2m7p4s8u@localhost>
-Organization: Samsung Electronics
+	Wed, 25 Aug 2010 21:23:13 -0400
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.61 (Linux)
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Date: Thu, 26 Aug 2010 10:22:08 +0900
+From: Pawel Osciak <p.osciak@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+In-reply-to: <20100825155814.25c783c7.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Message-id: <4C75C1C0.8050805@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
+ Gecko/20100805 Icedove/3.0.6
 References: <cover.1282286941.git.m.nazarewicz@samsung.com>
- <0b02e05fc21e70a3af39e65e628d117cd89d70a1.1282286941.git.m.nazarewicz@samsung.com>
- <343f4b0edf9b5eef598831700cb459cd428d3f2e.1282286941.git.m.nazarewicz@samsung.com>
- <20100825203237.GA5318@phenom.dumpdata.com>
+ <1282310110.2605.976.camel@laptop>
+ <20100825155814.25c783c7.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 22:32:37 +0200, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+Hi Andrew,
 
-> On Fri, Aug 20, 2010 at 11:50:42AM +0200, Michal Nazarewicz wrote:
->> The Contiguous Memory Allocator framework is a set of APIs for
->> allocating physically contiguous chunks of memory.
+Thank you for your comments and interest in this!
+
+On 08/26/2010 07:58 AM, Andrew Morton wrote:
+> On Fri, 20 Aug 2010 15:15:10 +0200
+> Peter Zijlstra<peterz@infradead.org>  wrote:
+>
+>    
+>> On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
+>>      
+>>> Hello everyone,
+>>>
+>>> The following patchset implements a Contiguous Memory Allocator.  For
+>>> those who have not yet stumbled across CMA an excerpt from
+>>> documentation:
+>>>
+>>>     The Contiguous Memory Allocator (CMA) is a framework, which allows
+>>>     setting up a machine-specific configuration for physically-contiguous
+>>>     memory management. Memory for devices is then allocated according
+>>>     to that configuration.
+>>>
+>>>     The main role of the framework is not to allocate memory, but to
+>>>     parse and manage memory configurations, as well as to act as an
+>>>     in-between between device drivers and pluggable allocators. It is
+>>>     thus not tied to any memory allocation method or strategy.
+>>>
+>>> For more information please refer to the second patch from the
+>>> patchset which contains the documentation.
+>>>        
+>> So the idea is to grab a large chunk of memory at boot time and then
+>> later allow some device to use it?
 >>
->> Various chips require contiguous blocks of memory to operate.  Those
->> chips include devices such as cameras, hardware video decoders and
->> encoders, etc.
+>> I'd much rather we'd improve the regular page allocator to be smarter
+>> about this. We recently added a lot of smarts to it like memory
+>> compaction, which allows large gobs of contiguous memory to be freed for
+>> things like huge pages.
+>>
+>> If you want guarantees you can free stuff, why not add constraints to
+>> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
+>> certain region, those pages are easily freed/moved aside to satisfy
+>> large contiguous allocations.
+>>      
+> That would be good.  Although I expect that the allocation would need
+> to be 100% rock-solid reliable, otherwise the end user has a
+> non-functioning device.  Could generic core VM provide the required level
+> of service?
 >
-> I am not that familiar with how StrongARM works, and I took a bit look
-> at the arch/arm/mach-s* and then some of the
-> drivers/video/media/video/cx88 to get an idea how the hardware video
-> decoders would work this.
+> Anyway, these patches are going to be hard to merge but not impossible.
+> Keep going.  Part of the problem is cultural, really: the consumers of
+> this interface are weird dinky little devices which the core MM guys
+> tend not to work with a lot, and it adds code which they wouldn't use.
+>    
+
+This is encouraging, thanks. Merging a contiguous allocator seems like a 
+lost cause, with a relative disinterest of non-embedded people, and on 
+the other hand because of the difficulty to satisfy those actually 
+interested. With virtually everybody having their own, custom solutions, 
+agreeing on one is nearly impossible.
+
+> I agree that having two "contiguous memory allocators" floating about
+> on the list is distressing.  Are we really all 100% diligently certain
+> that there is no commonality here with Zach's work?
+>    
+
+I think Zach's work is more focused on IOMMU and on unifying virtual 
+memory handling. As far as I understand, any physical allocator can be 
+plugged into it, including CMA. CMA solves a different set of problems.
+
+> I agree that Peter's above suggestion would be the best thing to do.
+> Please let's take a look at that without getting into sunk cost
+> fallacies with existing code!
 >
-> What I got from this patch review is that you are writting an IOMMU
+> It would help (a lot) if we could get more attention and buyin and
+> fedback from the potential clients of this code.  rmk's feedback is
+> valuable.  Have we heard from the linux-media people?  What other
+> subsystems might use it?  ieee1394 perhaps?  Please help identify
+> specific subsystems and I can perhaps help to wake people up.
+>    
 
-No.  CMA's designed for systems without IOMMU.  If system has IOMMU then
-there is no need for contiguous memory blocks since all discontiguousnesses
-can be hidden by the IOMMU.
+As a media developer myself, I talked with people and many have 
+expressed their interest. Among them were developers from ST-Ericsson, 
+Intel and TI, to name a few. Their SoCs, like ours at Samsung, require 
+contiguous memory allocation schemes as well.
 
-> that is on steroids. It essentially knows that this device and that
-> device can both share the same region, and it has fancy plugin system
-> to deal with fragmentation and offers an simple API for other to
-> write their own "allocators".
 
-Dunno if the plugin system is "fancy" but essentially the above is true. ;)
+I am working on a driver framework for media for memory management (on 
+the logical, not physical level). One of the goals is to allow plugging 
+in custom allocators and memory handling functions (cache management, 
+etc.). CMA is intended to be used as one of the pluggable allocators for 
+it. Right now, many media drivers have to provide their own, more or 
+less complicated, memory handling, which is of course undesirable. Some 
+of those make it to the kernel, many are maintained outside the mainline.
 
-> Even better, during init, the sub-platform can use
-> cma_early_regions_reserve(<func>) to register their own function
-> for reserving large regions of memory. Which from my experience (with
-> Xen) means that there is a mechanism in place to have it setup
-> contingous regions using sub-platform code.
+The problem is that, as far as I am aware, there have already been quite 
+a few proposals for such allocators and none made it to the mainline. So 
+companies develop their own solutions and maintain them outside the 
+mainline.
 
-Essentially that's the idea.  Platform init code adds early regions and later
-on reserves memory for all of the early regions.  For the former some
-additional helper functions are provided which can be used.
+I think that the interest is definitely there, but people have their 
+deadlines and assume that it is close to impossible to have a contiguous 
+allocator merged.
 
-> This is how I think it works, but I am not sure if I got it right. From
-> looking at 'cma_alloc' and 'cma_alloc_from_region' - both return
-> an dma_addr_t, which is what is usually feed in the DMA API. And looking
-> at the cx88 driver I see it using that API..
->
-> I do understand that under ARM platform you might not have a need for
-> DMA at all, and you use the 'dma_addr_t' just as handles, but for
-> other platforms this would be used.
-
-In the first version I've used unsigned long as return type but then it
-was suggested that maybe dma_addr_t would be better.  This is easily
-changed at this stage so I'd be more then happy to hear any comments.
-
-> So here is the bit where I am confused. Why not have this
-> as Software IOMMU that would utilize the IOMMU API? There would be some
-> technical questions to be answered (such as, what to do when you have
-> another IOMMU and can you stack them on top of each other).
-
-If I understood you correctly this is something I'm thinking about.  I'm
-actually thinking of ways to integrate CMA with Zach's IOMMU proposal posted
-some time ago.  The idea would be to define a subset of functionalities
-of the IOMMU API that would work on systems with and without hardware IOMMU.
-If platform had no IOMMU CMA would be used.
-
-I'm currently trying to fully understand Zach's proposal to see how such an
-approach could be pursued.
-
-> A light review below:
-
-Thanks!  Greatly appreciated.
-
->> + * cma_alloc_from - allocates contiguous chunk of memory from named regions.
->> + * @regions:	Comma separated list of region names.  Terminated by NUL
->
-> I think you mean 'NULL'
-
-No, a NUL byte, ie. '\0'.
-
->> + *		byte or a semicolon.
->
-> Uh, really? Why? Why not just simplify your life and make it \0?
-
-This is a consequence of how map is stored.  It's stored as a single string
-with entries separated by semicolons.
-
->> + * The cma_allocator::alloc() operation need to set only the @start
->                       ^^- C++, eh?
-
-Well, I'm unaware of a C way to reference "methods" so I just borrowed C++ style.
-
->> +int __init cma_early_region_reserve(struct cma_region *reg)
->> +{
-[...]
->> +#ifndef CONFIG_NO_BOOTMEM
-[...]
->> +#endif
->> +
->> +#ifdef CONFIG_HAVE_MEMBLOCK
-[...]
->> +#endif
-
-> Those two #ifdefs are pretty ugly. What if you defined in a header
-> something along this:
->
-> #ifdef CONFIG_HAVE_MEMBLOCK
-> int __init default_early_region_reserve(struct cma_region *reg) {
->    .. do it using memblock
-> }
-> #endif
-> #ifdef CONFIG_NO_BOOTMEM
-> int __init default_early_region_reserve(struct cma_region *reg) {
->    .. do it using bootmem
-> }
-> #endif
-
-I wanted the function to try all possible allocators.  As a matter of fact,
-both APIs (memblock and bootmem) can be supported at the same time.
-
-> and you would cut the API by one function, the
-> cma_early_regions_reserve(struct cma_region *reg)
-
-Actually, I would prefer to leave it.  It may be useful for platform
-initialisation code.  Especially if platform has some special regions
-which are allocated in a different but for the rest wants to use the
-default CMA's reserve call.
+Your help and support would be very much appreciated. Working in 
+embedded Linux for some time now, I feel that the need is definitely 
+there and is quite substantial.
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Best regards,
+Pawel Osciak
+Linux Platform Group
+Samsung Poland R&D Center
 
