@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab0HZNXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 09:23:39 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33106 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752015Ab0HZNV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753655Ab0HZNXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 09:23:42 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42273 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751933Ab0HZNV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Aug 2010 09:21:26 -0400
-Message-Id: <20100826132125.473842811@sgi.com>
+Message-Id: <20100826132125.323219835@sgi.com>
 User-Agent: quilt/0.47-1
-Date: Thu, 26 Aug 2010 08:19:53 -0500
+Date: Thu, 26 Aug 2010 08:19:52 -0500
 From: steiner@sgi.com
 To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [Patch 16/25] GRU - add refcnt to vdata structure
+Subject: [Patch 15/25] GRU - reorder interrupt processing
 References: <20100826131937.108920216@sgi.com>
-Content-Disposition: inline; filename=uv_gru_refcnt_vdata
+Content-Disposition: inline; filename=uv_gru_preload_tlb_inval
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jack Steiner <steiner@sgi.com>
 
-The GRU vdata structure must have a reference count. 
+Reorder the servicing of CBR completion interrupts & TLB miss interrupts.
+There is a small performance gain to service TLB misses first. Completion
+interrupts are rare.
+
 
 Signed-off-by: Jack Steiner <steiner@sgi.com>
 
 ---
- drivers/misc/sgi-gru/grufile.c   |   21 +++++++++++++++++++--
- drivers/misc/sgi-gru/grumain.c   |    1 +
- drivers/misc/sgi-gru/gruprocfs.c |    1 +
- drivers/misc/sgi-gru/grutables.h |    2 ++
- 4 files changed, 23 insertions(+), 2 deletions(-)
+ drivers/misc/sgi-gru/grufault.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-Index: linux/drivers/misc/sgi-gru/grufile.c
+Index: linux/drivers/misc/sgi-gru/grufault.c
 ===================================================================
---- linux.orig/drivers/misc/sgi-gru/grufile.c	2010-07-19 10:25:41.002455321 -0500
-+++ linux/drivers/misc/sgi-gru/grufile.c	2010-07-19 10:25:49.182243660 -0500
-@@ -65,6 +65,19 @@ static struct miscdevice gru_miscdev;
-  * Called when unmapping a device mapping. Frees all gru resources
-  * and tables belonging to the vma.
-  */
-+static void gru_vma_open(struct vm_area_struct *vma)
-+{
-+	struct gru_vma_data *vdata;
-+
-+	if (!vma->vm_private_data)
-+		return;
-+	STAT(vdata_open);
-+	vdata = vma->vm_private_data;
-+	atomic_inc(&vdata->vd_refcnt);
-+	gru_dbg(grudev, "vma %p, file %p, vdata %p\n", vma, vma->vm_file,
-+				vdata);
-+}
-+
- static void gru_vma_close(struct vm_area_struct *vma)
- {
- 	struct gru_vma_data *vdata;
-@@ -75,9 +88,12 @@ static void gru_vma_close(struct vm_area
- 		return;
+--- linux.orig/drivers/misc/sgi-gru/grufault.c	2010-07-19 10:25:40.978392010 -0500
++++ linux/drivers/misc/sgi-gru/grufault.c	2010-07-19 10:25:45.626240841 -0500
+@@ -7,7 +7,7 @@
+  * These misses are reported either via interrupts or user polling of
+  * the user CB.
+  *
+- *  Copyright (c) 2008 Silicon Graphics, Inc.  All Rights Reserved.
++ *  Copyright (c) 2008-2010 Silicon Graphics, Inc.  All Rights Reserved.
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
+@@ -559,19 +559,10 @@ static irqreturn_t gru_intr(int chiplet,
+ 		imap.fault_bits[0], imap.fault_bits[1],
+ 		dmap.fault_bits[0], dmap.fault_bits[1]);
  
- 	vdata = vma->vm_private_data;
-+	gru_dbg(grudev, "vma %p, file %p, vdata %p, refcnt %d\n", vma, vma->vm_file,
-+				vdata, atomic_read(&vdata->vd_refcnt));
-+	if (atomic_dec_return(&vdata->vd_refcnt) != 0)
-+		return;
+-	for_each_cbr_in_tfm(cbrnum, dmap.fault_bits) {
+-		STAT(intr_cbr);
+-		cmp = gru->gs_async_wq[cbrnum];
+-		if (cmp)
+-			complete(cmp);
+-		gru_dbg(grudev, "gid %d, cbr_done %d, done %d\n",
+-			gru->gs_gid, cbrnum, cmp ? cmp->done : -1);
+-	}
+-
+ 	for_each_cbr_in_tfm(cbrnum, imap.fault_bits) {
+-		STAT(intr_tfh);
+ 		tfh = get_tfh_by_index(gru, cbrnum);
+ 		prefetchw(tfh);	/* Helps on hdw, required for emulator */
++		STAT(intr_tfh);
+ 
+ 		/*
+ 		 * When hardware sets a bit in the faultmap, it implicitly
+@@ -596,6 +587,8 @@ static irqreturn_t gru_intr(int chiplet,
+ 			gts->ustats.interrupts++;
+ 		gts->ustats.fmm_tlbmiss++;
+ 		multi = 1;
++		if (!gts->ts_mm)
++			continue;
+ 		if (!gts->ts_force_cch_reload &&
+ 					down_read_trylock(&gts->ts_mm->mmap_sem)) {
+ 			gru_try_dropin(gru, gts, tfh, NULL);
+@@ -605,6 +598,15 @@ static irqreturn_t gru_intr(int chiplet,
+ 			STAT(intr_mm_lock_failed);
+ 		}
+ 	}
++	for_each_cbr_in_tfm(cbrnum, dmap.fault_bits) {
++		STAT(intr_cbr);
++		cmp = gru->gs_async_wq[cbrnum];
++		if (cmp)
++			complete(cmp);
++		gru_dbg(grudev, "gid %d, cbr_done %d, done %d\n",
++			gru->gs_gid, cbrnum, cmp ? cmp->done : -1);
++	}
 +
- 	vma->vm_private_data = NULL;
--	gru_dbg(grudev, "vma %p, file %p, vdata %p\n", vma, vma->vm_file,
--				vdata);
- 	list_for_each_safe(entry, next, &vdata->vd_head) {
- 		gts =
- 		    list_entry(entry, struct gru_thread_state, ts_next);
-@@ -597,6 +613,7 @@ static struct miscdevice gru_miscdev = {
- };
+ 	return IRQ_HANDLED;
+ }
  
- const struct vm_operations_struct gru_vm_ops = {
-+	.open		= gru_vma_open,
- 	.close		= gru_vma_close,
- 	.fault		= gru_fault,
- };
-Index: linux/drivers/misc/sgi-gru/grumain.c
-===================================================================
---- linux.orig/drivers/misc/sgi-gru/grumain.c	2010-07-19 10:25:41.058388796 -0500
-+++ linux/drivers/misc/sgi-gru/grumain.c	2010-07-19 10:25:49.186243696 -0500
-@@ -374,6 +374,7 @@ struct gru_vma_data *gru_alloc_vma_data(
- 	if (IS_ERR(gms))
- 		goto err;
- 	vdata->vd_gms = gms;
-+	atomic_set(&vdata->vd_refcnt, 1);
- 
- 	STAT(vdata_alloc);
- 	INIT_LIST_HEAD(&vdata->vd_head);
-Index: linux/drivers/misc/sgi-gru/gruprocfs.c
-===================================================================
---- linux.orig/drivers/misc/sgi-gru/gruprocfs.c	2010-07-19 10:25:41.078288158 -0500
-
-+++ linux/drivers/misc/sgi-gru/gruprocfs.c	2010-07-19 10:25:49.214243610 -0500
-@@ -42,6 +42,7 @@ static void printstat_val(struct seq_fil
- static int statistics_show(struct seq_file *s, void *p)
- {
- 	printstat(s, vdata_alloc);
-+	printstat(s, vdata_open);
- 	printstat(s, vdata_free);
- 	printstat(s, gts_alloc);
- 	printstat(s, gts_free);
-Index: linux/drivers/misc/sgi-gru/grutables.h
-===================================================================
---- linux.orig/drivers/misc/sgi-gru/grutables.h	2010-07-19 10:25:41.130287807 -0500
-+++ linux/drivers/misc/sgi-gru/grutables.h	2010-07-19 10:25:49.242242927 -0500
-@@ -174,6 +174,7 @@ extern unsigned int gru_max_gids;
-  */
- struct gru_stats_s {
- 	atomic_long_t vdata_alloc;
-+	atomic_long_t vdata_open;
- 	atomic_long_t vdata_free;
- 	atomic_long_t gts_alloc;
- 	atomic_long_t gts_free;
-@@ -351,6 +352,7 @@ struct gru_mm_struct {
-  */
- struct gru_vma_data {
- 	spinlock_t		vd_lock;	/* Serialize access to vma */
-+	atomic_t		vd_refcnt;
- 	struct list_head	vd_head;	/* head of linked list of gts */
- 	struct gru_mm_struct	*vd_gms;	/* asid & ioproc struct */
- 	long			vd_user_options;/* misc user option flags */
 
