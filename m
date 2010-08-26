@@ -1,172 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab0HZTUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 15:20:53 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51065
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752752Ab0HZTUt (ORCPT
+	id S1753316Ab0HZTXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 15:23:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41567 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab0HZTXp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 15:20:49 -0400
-Date: Thu, 26 Aug 2010 12:21:04 -0700 (PDT)
-Message-Id: <20100826.122104.115920380.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: kosaki.motohiro@jp.fujitsu.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org
-Subject: Re: [PATCH] tcp: select(writefds) don't hang up when a peer close
- connection
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1282824448.2263.3.camel@achroite.uk.solarflarecom.com>
-References: <1282785886.22839.199.camel@localhost>
-	<20100826125357.F667.A69D9226@jp.fujitsu.com>
-	<1282824448.2263.3.camel@achroite.uk.solarflarecom.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Aug 2010 15:23:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=AEDJryS9A3b9ez35T9YwB2NKY8X+tR3hSkPb+YCNXhajd3ANFaL6ySfnePyRlYM8Zu
+         +10BlU21jMTatCi2ECnTNKomXL+cFJZTRzq2sVVmaVYI2es3nAE67prO5gqqEtlVDb8e
+         QkDcYoZf0krco63T/3pB6KiiulV7SONIitc6U=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Jonathan Corbet <corbet@lwn.net>
+Subject: Re: i915: 2.6.36-rc2 hoses my Intel display
+Date: Thu, 26 Aug 2010 21:23:40 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2; KDE/4.4.5; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+References: <20100823110145.08eb72fd@bike.lwn.net>
+In-Reply-To: <20100823110145.08eb72fd@bike.lwn.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008262123.41226.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Thu, 26 Aug 2010 13:07:28 +0100
+On poniedziałek, 23 sierpnia 2010 o 19:01:45 Jonathan Corbet wrote:
+> So I decided to fire up -rc2 today to see what would happen...the
+> results are best described by the attached images.  Something is
+> clearly scrambled between my hardware and the i915 driver.  Display with X
+> is hosed, but things go weird before X gets a chance to run (it is worth
+> noting that the initial output from the kernel is legible).
+> 
+> FWIW, my hardware is:
+> 
+> 00:02.1 Display controller: Intel Corporation 82Q35 Express Integrated
+> Graphics Controller (rev 02) Subsystem: Dell OptiPlex 755
+> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR- FastB2B- DisINTx- Status: Cap+ 66MHz- UDF- FastB2B+
+> ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+> Latency: 0
+> 	Region 0: Memory at fea80000 (32-bit, non-prefetchable) [size=512K]
+> 	Capabilities: [d0] Power Management version 2
+> 		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+> PME(D0-,D1-,D2-,D3hot-,D3cold-) Status: D0 NoSoftRst- PME-Enable- DSel=0
+> DScale=0 PME-
+> 
+> What else can I provide to help track this one down?
 
-> By the way, I was able to reproduce this bug in RHEL 3 (kernel based on
-> 2.4.21) so it seems to have been around for a while.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=17151
+for your bug report, please add your address to the CC list in there, thanks!
 
-It's existed since September 1998:
-
-commit 6275af56642b5b9ed9ef15bf5d9718661c5fe79d
-Author: freitag <freitag>
-Date:   Sat Sep 26 06:20:25 1998 +0000
-
-    Some small fixes.
-    
-    - Remove second check for sk->err in poll as discussed with Linus.
-    - Don't signal writability when the local end has been shut down.
-    - Comment fixes.
-
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 5a09639..16d4308 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -5,7 +5,7 @@
-  *
-  *		Implementation of the Transmission Control Protocol(TCP).
-  *
-- * Version:	$Id: tcp.c,v 1.123 1998-09-23 19:52:39 davem Exp $
-+ * Version:	$Id: tcp.c,v 1.124 1998-09-26 06:20:25 freitag Exp $
-  *
-  * Authors:	Ross Biro, <bir7@leland.Stanford.Edu>
-  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
-@@ -591,18 +591,19 @@ unsigned int tcp_poll(struct file * file, struct socket *sock, poll_table *wait)
- 		mask |= POLLHUP;
- 
- 	/* Connected? */
--	if ((1 << sk->state) & ~(TCPF_SYN_SENT|TCPF_SYN_RECV)) {
-+	if ((1 << sk->state) & ~(TCPF_SYN_SENT|TCPF_SYN_RECV)) { 
- 		if ((tp->rcv_nxt != tp->copied_seq) &&
- 		    (tp->urg_seq != tp->copied_seq ||
- 		     tp->rcv_nxt != tp->copied_seq+1 ||
- 		     sk->urginline || !tp->urg_data))
- 			mask |= POLLIN | POLLRDNORM;
- 
--		/* Always wake the user up when an error occurred */
--		if (sock_wspace(sk) >= tcp_min_write_space(sk, tp) || sk->err) {
--			mask |= POLLOUT | POLLWRNORM;
--		} else {
--			sk->socket->flags |= SO_NOSPACE; /* send SIGIO later */
-+		if (!(sk->shutdown & SEND_SHUTDOWN)) { 
-+			if (sock_wspace(sk) >= tcp_min_write_space(sk, tp)) { 
-+				mask |= POLLOUT | POLLWRNORM;
-+			} else {  /* send SIGIO later */
-+				sk->socket->flags |= SO_NOSPACE;  
-+			}
- 		}
- 
- 		if (tp->urg_data & URG_VALID)
-@@ -733,6 +734,9 @@ static void wait_for_tcp_memory(struct sock * sk)
- 	lock_sock(sk);
- }
- 
-+/* When all user supplied data has been queued set the PSH bit */ 
-+#define PSH_NEEDED (seglen == 0 && iovlen == 0) 
-+
- /*
-  *	This routine copies from a user buffer into a socket,
-  *	and starts the transmit system.
-@@ -768,6 +772,9 @@ int tcp_do_sendmsg(struct sock *sk, int iovlen, struct iovec *iov, int flags)
- 		while(seglen > 0) {
- 			int copy, tmp, queue_it;
- 
-+			if (err) 
-+				goto do_fault2;
-+
- 			/* Stop on errors. */
- 			if (sk->err)
- 				goto do_sock_err;
-@@ -810,12 +817,24 @@ int tcp_do_sendmsg(struct sock *sk, int iovlen, struct iovec *iov, int flags)
- 							from, skb_put(skb, copy),
- 							copy, skb->csum, &err);
- 					}
-+					/*
-+					 * FIXME: the *_user functions should
-+					 *	  return how much data was
-+					 *	  copied before the fault
-+					 *	  occured and then a partial
-+					 *	  packet with this data should
-+					 *	  be sent.  Unfortunately 
-+					 *	  csum_and_copy_from_user doesn't
-+					 *	  return this information. 
-+					 *	  ATM it might send partly zeroed
-+					 *	  data in this case.
-+					 */ 
- 					tp->write_seq += copy;
- 					TCP_SKB_CB(skb)->end_seq += copy;
- 					from += copy;
- 					copied += copy;
- 					seglen -= copy;
--					if(!seglen && !iovlen)
-+					if (PSH_NEEDED)
- 						TCP_SKB_CB(skb)->flags |= TCPCB_FLAG_PSH;
- 					continue;
- 				}
-@@ -831,7 +850,7 @@ int tcp_do_sendmsg(struct sock *sk, int iovlen, struct iovec *iov, int flags)
- 			 * actually do is use the whole MSS.  Since
- 			 * the results in the right edge of the packet
- 			 * being outside the window, it will be queued
--			 * for later rather than sent.
-+			 * for later rather than sent.  
- 			 */
- 			copy = tp->snd_wnd - (tp->snd_nxt - tp->snd_una);
- 			if(copy >= (tp->max_window >> 1))
-@@ -884,7 +903,7 @@ int tcp_do_sendmsg(struct sock *sk, int iovlen, struct iovec *iov, int flags)
- 
- 			/* Prepare control bits for TCP header creation engine. */
- 			TCP_SKB_CB(skb)->flags = (TCPCB_FLAG_ACK |
--						  ((!seglen && !iovlen) ?
-+						  (PSH_NEEDED ?
- 						   TCPCB_FLAG_PSH : 0));
- 			TCP_SKB_CB(skb)->sacked = 0;
- 			if (flags & MSG_OOB) {
-@@ -933,9 +952,12 @@ do_interrupted:
- 	return err;
- do_fault:
- 	kfree_skb(skb);
-+do_fault2: 
- 	return -EFAULT;
- }
- 
-+#undef PSH_NEEDED
-+
- /*
-  *	Send an ack if one is backlogged at this point. Ought to merge
-  *	this with tcp_send_ack().
-@@ -1050,8 +1072,6 @@ static void cleanup_rbuf(struct sock *sk, int copied)
- 		tcp_eat_skb(sk, skb);
- 	}
- 
--	SOCK_DEBUG(sk, "sk->rspace = %lu\n", sock_rspace(sk));
--
-   	/* We send an ACK if we can now advertise a non-zero window
- 	 * which has been raised "significantly".
-   	 */
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
