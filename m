@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab0HZSfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:35:44 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:58046 "EHLO
+	id S1754003Ab0HZSfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:35:52 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:58053 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab0HZSfk (ORCPT
+	with ESMTP id S1753932Ab0HZSft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:35:40 -0400
-Message-Id: <20100826183503.586646860@szeredi.hu>
+	Thu, 26 Aug 2010 14:35:49 -0400
+Message-Id: <20100826183505.404713194@szeredi.hu>
 References: <20100826183340.027591901@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Thu, 26 Aug 2010 20:33:43 +0200
+Date: Thu, 26 Aug 2010 20:33:44 +0200
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: vaurora@redhat.com, neilb@suse.de, viro@zeniv.linux.org.uk,
         jblunck@suse.de, hch@infradead.org
-Subject: [PATCH 3/5] vfs: add flag to allow rename to same inode
-Content-Disposition: inline; filename=vfs-fs_rename_self_allow.patch
+Subject: [PATCH 4/5] vfs: export do_splice_direct() to modules
+Content-Disposition: inline; filename=vfs-export-do_splice_direct.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Hybrid union filesystem uses dummy inodes for non-directories.  Allow
-rename to work in this case despite the inode being the same.
+Export do_splice_direct() to modules.  Needed by hybrid union
+filesystem.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c         |    4 +++-
- include/linux/fs.h |    1 +
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ fs/splice.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-2.6/include/linux/fs.h
+Index: linux-2.6/fs/splice.c
 ===================================================================
---- linux-2.6.orig/include/linux/fs.h	2010-08-25 14:19:34.000000000 +0200
-+++ linux-2.6/include/linux/fs.h	2010-08-25 14:19:53.000000000 +0200
-@@ -179,6 +179,7 @@ struct inodes_stat_t {
- #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move()
- 					 * during rename() internally.
- 					 */
-+#define FS_RENAME_SELF_ALLOW	65536	/* Allow rename to same inode */
+--- linux-2.6.orig/fs/splice.c	2010-08-13 16:07:00.000000000 +0200
++++ linux-2.6/fs/splice.c	2010-08-25 18:59:08.000000000 +0200
+@@ -1307,6 +1307,7 @@ long do_splice_direct(struct file *in, l
  
- /*
-  * These are the fs-independent mount-flags: up to 32 flags are supported
-Index: linux-2.6/fs/namei.c
-===================================================================
---- linux-2.6.orig/fs/namei.c	2010-08-25 10:19:53.000000000 +0200
-+++ linux-2.6/fs/namei.c	2010-08-25 14:22:56.000000000 +0200
-@@ -2620,8 +2620,10 @@ int vfs_rename(struct inode *old_dir, st
- 	int is_dir = S_ISDIR(old_dentry->d_inode->i_mode);
- 	const unsigned char *old_name;
+ 	return ret;
+ }
++EXPORT_SYMBOL(do_splice_direct);
  
--	if (old_dentry->d_inode == new_dentry->d_inode)
-+	if (old_dentry->d_inode == new_dentry->d_inode &&
-+	    !(old_dir->i_sb->s_type->fs_flags & FS_RENAME_SELF_ALLOW)) {
-  		return 0;
-+	}
-  
- 	error = may_delete(old_dir, old_dentry, is_dir);
- 	if (error)
+ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+ 			       struct pipe_inode_info *opipe,
 
 -- 
