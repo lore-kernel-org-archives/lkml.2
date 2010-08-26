@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab0HZPi2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 11:38:28 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:65268 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab0HZPi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 11:38:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=g9FXpengYoVeqUO91rFypJG/wYKIF6c0aw0ubTB+W8IKWLwGTsy/DUoZpFOFh/Gjz0
-         7ZMXWuhU/Ep/oG/UsOn7FWYSUedB37ugAyW3EAqE6vLpJUo5OYYbWt+95RACe3SNq4Qm
-         hmYnHzySKrkhapxv987tm254K2Cu9IoSh65/Q=
-MIME-Version: 1.0
-Date: Thu, 26 Aug 2010 11:38:24 -0400
-Message-ID: <AANLkTinpiGAaAJyHOxHja7jAM-3iwDPMcJhHPF9pRV7A@mail.gmail.com>
-Subject: [PATCH] i915: build error
-From: Mark Stanovich <mrktimber@gmail.com>
-To: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754110Ab0HZPk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:40:26 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:37558 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751933Ab0HZPkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:40:25 -0400
+Date: Thu, 26 Aug 2010 08:40:22 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Message-ID: <20100826084022.457ac967@nehalam>
+In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
+References: <4C763A67.5040107@dsn.okisemi.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure if I put the select VGA_ARB in the correct order for the Kconfig file.
+On Thu, 26 Aug 2010 18:56:55 +0900
+Masayuki Ohtake <masa-korg@dsn.okisemi.com> wrote:
 
-When building 2.6.36-rc2, the following error occurs:
+> +static int pch_gbe_get_settings(struct net_device *netdev,
+> +				 struct ethtool_cmd *ecmd)
+> +{
+> +	struct pch_gbe_adapter *adapter = netdev_priv(netdev);
+> +	int ret;
+> +
+> +	PCH_GBE_DEBUG("ethtool: %s\n", __func__);
+> +
+> +	ret = mii_ethtool_gset(&adapter->mii, ecmd);
+> +	ecmd->supported &= (u32) (~SUPPORTED_TP);
+> +	ecmd->supported &= (u32) (~SUPPORTED_1000baseT_Half);
+> +	ecmd->advertising &= (u32) (~ADVERTISED_TP);
+> +	ecmd->advertising &= (u32) (~ADVERTISED_1000baseT_Half);
+> +
+> +	if (netif_carrier_ok(adapter->netdev)) {
+> +		;
+> +	} else {
+> +		ecmd->speed = 0xFFFF;
+> +		ecmd->duplex = 0xFF;
+> +	}
+> +	return ret;
+> +}
 
-ERROR: "vga_get" [drivers/gpu/drm/i915/i915.ko] undefined!
-ERROR: "vga_put" [drivers/gpu/drm/i915/i915.ko] undefined!
-make[1]: *** [__modpost] Error 1
+No need for cast to u32 on the masking:
+        ecmd->supported &= ~(SUPPORTED_TP | SUPPORTED_1000baseT_Half);
+	ecmd->advertising &= ~(ADVERTISED_TP | ADVERTISED_1000baseT_Half);
 
-This is due to commit 9cce37f4855a30cc7c364edf18522282782f7ddc
-which adds a use of function vga_put and vga_get in
-drivers/gpu/drm/i915/intel_display.c.  vga_put and vga_get are is
-defined in file drivers/gpu/vga/vgaarb.c.  To ensure that this
-file is built, select VGA_ARB when DRM_I915 is selected.  If
-DRM_I915 is selected without VGA_ARB, a build error will occur.
 
-Signed-off-by: Mark Stanovich <mrktimber@gmail.com>
----
- drivers/gpu/drm/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index 4cab0c6..8f0a08b 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -98,6 +98,7 @@ config DRM_I915
-   tristate "i915 driver"
-   depends on AGP_INTEL
-   select SHMEM
-+  select VGA_ARB
-   select DRM_KMS_HELPER
-   select FB_CFB_FILLRECT
-   select FB_CFB_COPYAREA
+Awkward use of if, and don't set other bits in duplex
+       if (!netif_carrier_ok(adapter->netdev))
+                ecmd->speed = -1;
+            
+
+-- 
