@@ -1,140 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab0HZOle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:41:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8783 "EHLO mx1.redhat.com"
+	id S1753904Ab0HZOof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 10:44:35 -0400
+Received: from mail.perches.com ([173.55.12.10]:1347 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753904Ab0HZOlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:41:32 -0400
-Date: Thu, 26 Aug 2010 10:40:18 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Andy Grover <andy.grover@oracle.com>
-Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
- and touch_softlockup_watchdog
-Message-ID: <20100826144018.GL4879@redhat.com>
-References: <20100817083945.GA12022@swordfish.minsk.epam.com>
- <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
- <20100817092407.GB12022@swordfish.minsk.epam.com>
- <AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
- <20100817103948.GA5352@swordfish.minsk.epam.com>
- <20100817131320.GX4879@redhat.com>
- <20100818024802.GA24748@nowhere>
- <20100818130156.43a183d9.akpm@linux-foundation.org>
- <20100820025749.GB4879@redhat.com>
- <1282817671.4338.0.camel@maxim-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282817671.4338.0.camel@maxim-laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751341Ab0HZOod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 10:44:33 -0400
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+From: Joe Perches <joe@perches.com>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
+References: <4C763A67.5040107@dsn.okisemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 07:44:30 -0700
+Message-ID: <1282833870.1875.52.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 01:14:31PM +0300, Maxim Levitsky wrote:
-> On Thu, 2010-08-19 at 22:57 -0400, Don Zickus wrote: 
-> > On Wed, Aug 18, 2010 at 01:01:56PM -0700, Andrew Morton wrote:
-> > > The surprise new requirement that touch_nmi_watchdog() be called from
-> > > non-preemptible code does seem to make sense IMO.  It's hard to see why
-> > > anyone would be touching the watchdog unless he's spinning in irqs-off
-> > > code.  Except, of course, when we have a utility function which can be
-> > > called from wither irqs-on or irqs-off: acpi_os_stall().
-> > > 
-> > > That being said, it's not good to introduce new API requirements by
-> > > accident!  An audit of all callers should first be performed, at least.
-> > > 
-> > > 
-> > > The surprise new requirement that touch_softlockup_watchdog() be called
-> > > from non-preemptible code doesn't make sense IMO.  If I have a piece of
-> > > code in the kernel which I expect to sit in TASK_UNINTERRUPTIBLE state
-> > > for three minutes waiting for my egg to boil, I should be able to do
-> > > that and I should be able to touch the softlockup detector without
-> > > needing to go non-preemptible.
-> > 
-> > Ok, so here is my patch that syncs the touch_*_watchdog back in line with
-> > the old semantics.  Hopefully this will undo any harm I caused.
-> 
-> Was this patch forgotten?
+On Thu, 2010-08-26 at 18:56 +0900, Masayuki Ohtake wrote:
+> Gigabit Ethernet driver of Topcliff PCH
+> +++ b/drivers/net/pch_gbe/pch_gbe.h
 
-Hm, apparently it was separated out by the mail server.  Here it is again
-with some of the headers removed I guess.
+Just a few style comments
 
-Cheers,
-Don
+> +#undef FALSE
+> +#define FALSE	0
+> +#undef TRUE
+> +#define TRUE	1
 
+Perhaps better to use the kernel true/false.
 
-From: Don Zickus <dzickus@redhat.com>
-Date: Thu, 19 Aug 2010 22:48:26 -0400
-Subject: [PATCH] [lockup detector] sync touch_*_watchdog back to old semantics
+> +#ifdef DEBUG
+> +#define PCH_GBE_DEBUG(fmt, args...)\
+> +	printk(KERN_DEBUG KBUILD_MODNAME ": " fmt, ##args)
+> +#else
+> +#define PCH_GBE_DEBUG(fmt, args...)	do { } while (0)
+> +#endif
 
-During my rewrite, the semantics of touch_nmi_watchdog and
-touch_softlockup_watchdog changed enough to break some drivers
-(mostly over preemptable regions).
+Better to use
 
-This change brings those touch_*_watchdog functions back in line
-to how they used to work.
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- kernel/watchdog.c |   17 ++++++++++++-----
- 1 files changed, 12 insertions(+), 5 deletions(-)
+and
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 613bc1f..99e35a2 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -122,7 +122,7 @@ static void __touch_watchdog(void)
- 
- void touch_softlockup_watchdog(void)
- {
--	__get_cpu_var(watchdog_touch_ts) = 0;
-+	__raw_get_cpu_var(watchdog_touch_ts) = 0;
- }
- EXPORT_SYMBOL(touch_softlockup_watchdog);
- 
-@@ -142,7 +142,14 @@ void touch_all_softlockup_watchdogs(void)
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- void touch_nmi_watchdog(void)
- {
--	__get_cpu_var(watchdog_nmi_touch) = true;
-+	if (watchdog_enabled) {
-+		unsigned cpu;
-+
-+		for_each_present_cpu(cpu) {
-+			if (per_cpu(watchdog_nmi_touch, cpu) != true)
-+				per_cpu(watchdog_nmi_touch, cpu) = true;
-+		}
-+	}
- 	touch_softlockup_watchdog();
- }
- EXPORT_SYMBOL(touch_nmi_watchdog);
-@@ -430,6 +437,9 @@ static int watchdog_enable(int cpu)
- 		wake_up_process(p);
- 	}
- 
-+	/* if any cpu succeeds, watchdog is considered enabled for the system */
-+	watchdog_enabled = 1;
-+
- 	return 0;
- }
- 
-@@ -452,9 +462,6 @@ static void watchdog_disable(int cpu)
- 		per_cpu(softlockup_watchdog, cpu) = NULL;
- 		kthread_stop(p);
- 	}
--
--	/* if any cpu succeeds, watchdog is considered enabled for the system */
--	watchdog_enabled = 1;
- }
- 
- static void watchdog_enable_all_cpus(void)
--- 
-1.7.2.1
+	pr_debug(fmt, ...);
+
+[]
+
+> +struct pch_gbe_functions {
+> +	void (*get_bus_info) (struct pch_gbe_hw *);
+> +	s32(*init_hw) (struct pch_gbe_hw *);
+> +	s32(*read_phy_reg) (struct pch_gbe_hw *, u32, u16 *);
+
+Trivial: Inconsistent spacing (a few times)
+Perhaps:
+	s32 (*read_phy_reg) etc...
+
+> +	s32(*write_phy_reg) (struct pch_gbe_hw *, u32, u16);
+> +	void (*reset_phy) (struct pch_gbe_hw *);
+[]
+> +	s32(*read_mac_addr) (struct pch_gbe_hw *);
+
+> +++ b/drivers/net/pch_gbe/pch_gbe_api.c
+> @@ -0,0 +1,247 @@
+[]
+
+Convert all the
+	printk(KERN_<level> KBUILD_MODNAME ": " etc
+to
+	pr_<level>(etc
+
+> +#include "pch_gbe.h"
+> +#include "pch_gbe_phy.h"
+[]
+> +static s32 pch_gbe_plat_init_hw(struct pch_gbe_hw *hw)
+> +{
+> +	s32 ret_val;
+> +
+> +	ret_val = pch_gbe_phy_get_id(hw);
+> +	if (ret_val) {
+> +		printk(KERN_ERR KBUILD_MODNAME ": "
+> +			"pch_gbe_phy_get_id error\n");
+
+		pr_err("pch_gbe_phy_get_id error\n");
+
+> +inline s32 pch_gbe_hal_setup_init_funcs(struct pch_gbe_hw *hw)
+> +{
+> +	if (hw->reg) {
+> +		pch_gbe_plat_init_function_pointers(hw);
+> +		return 0;
+> +	}
+> +	printk(KERN_ERR KBUILD_MODNAME ": " "ERROR: Registers not mapped\n");
+
+	pr_err("ERROR: Registers not mapped\n");
+	etc...
+
+> +	return -ENOSYS;
+> +}
+
+These are more commonly written as:
+
+	if (!fn_ptr) {
+		[ report_error_condition ]
+		return -ERRNO;
+	}
+
+	rtn = fn_ptr(foo);
+	if (rtn is err) {
+		[ report_error_condition ]
+		return -ERRNO2;
+	}
+
+	return 0;
+
+For more complicated styles where some unwinding
+is necessary
+
+	if (!fn_ptr) {
+		[ report_error_condition ]
+		err = -ERRNO;
+		goto out;
+	}
+
+	windup
+
+	rtn = fn_ptr(foo);
+	if (rtn is err) {
+		[ report_error_condition ]
+		err = ERRNO2
+		goto out2;
+	}
+
+	return 0;
+
+outn:
+	..
+out2:
+	unwind;
+out:
+	return err;
+
+> +
+> +/**
+> + * pch_gbe_hal_get_bus_info - Obtain bus information for adapter
+> + * @hw:	Pointer to the HW structure
+> + */
+> +inline void pch_gbe_hal_get_bus_info(struct pch_gbe_hw *hw)
+> +{
+> +	if (hw->func.get_bus_info)
+> +		hw->func.get_bus_info(hw);
+> +	else
+> +		printk(KERN_ERR KBUILD_MODNAME ": " "Error: configuration\n");
+
+		pr_err("ERROR: configuration\n");
+		etc...
+
+> +++ b/drivers/net/pch_gbe/pch_gbe_ethtool.c
+
+[]
+
+Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+before any include
+
+> +#include <linux/pci.h>
+> +#include <linux/ethtool.h>
+[]
+> +static int pch_gbe_get_settings(struct net_device *netdev,
+> +				 struct ethtool_cmd *ecmd)
+> +{
+> +	struct pch_gbe_adapter *adapter = netdev_priv(netdev);
+> +	int ret;
+> +
+> +	PCH_GBE_DEBUG("ethtool: %s\n", __func__);
+
+If you really want to track entering functions,
+it might be better to use something like:
+
+#define FUNC_ENTER() pr_devel("ethtool: %s enter\n", __func__)
+#define FUNC_EXIT() pr_devel("ethtool: %s exit\n",  __func__)
+
+Unlike pr_debug, pr_devel does not remain active in
+code when DEBUG is not #defined.  Look up dynamic_debug.
+
+> +	PCH_GBE_DEBUG("hw->mac.addr : 0x%02x %02x %02x %02x %02x %02x\n",
+> +		hw->mac.addr[0], hw->mac.addr[1], hw->mac.addr[2],
+> +		hw->mac.addr[3], hw->mac.addr[4], hw->mac.addr[5]);
+
+There's a vsprintf pointer extension "%pM" used for mac addresses
+
+	pr_debug("hw->mac.addr: %pM\n, hw->mac.addr);
+
+etc.
+
