@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab0HZKMq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 06:12:46 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59410 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752035Ab0HZKMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 06:12:43 -0400
-Date: Thu, 26 Aug 2010 11:12:28 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-Message-ID: <20100826101227.GE20944@csn.ul.ie>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com> <1282310110.2605.976.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1282310110.2605.976.camel@laptop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753022Ab0HZKOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 06:14:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64532 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab0HZKOj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 06:14:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HaWquwJ/gaCAhdskwH5oKmKYY/g0AQREI2hO2wH3nCjy/k6D84sCfCY7qyMWFej/cJ
+         0E5D8IkLsDa5Z+Q7BgC7hjAlZDE2+aijHlW/Bsntili2/iiGN7Fqz9vIqOtJsogmPEMZ
+         yt1MoLtG29c33vMDH3zttWa7SKQGehxIR8rYA=
+Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
+ and touch_softlockup_watchdog
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Len Brown <len.brown@intel.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Andy Grover <andy.grover@oracle.com>
+In-Reply-To: <20100820025749.GB4879@redhat.com>
+References: <20100817025954.GA12366@nowhere>
+	 <AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
+	 <20100817083945.GA12022@swordfish.minsk.epam.com>
+	 <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
+	 <20100817092407.GB12022@swordfish.minsk.epam.com>
+	 <AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
+	 <20100817103948.GA5352@swordfish.minsk.epam.com>
+	 <20100817131320.GX4879@redhat.com> <20100818024802.GA24748@nowhere>
+	 <20100818130156.43a183d9.akpm@linux-foundation.org>
+	 <20100820025749.GB4879@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 13:14:31 +0300
+Message-ID: <1282817671.4338.0.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 03:15:10PM +0200, Peter Zijlstra wrote:
-> On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
-> > Hello everyone,
+On Thu, 2010-08-19 at 22:57 -0400, Don Zickus wrote: 
+> On Wed, Aug 18, 2010 at 01:01:56PM -0700, Andrew Morton wrote:
+> > The surprise new requirement that touch_nmi_watchdog() be called from
+> > non-preemptible code does seem to make sense IMO.  It's hard to see why
+> > anyone would be touching the watchdog unless he's spinning in irqs-off
+> > code.  Except, of course, when we have a utility function which can be
+> > called from wither irqs-on or irqs-off: acpi_os_stall().
 > > 
-> > The following patchset implements a Contiguous Memory Allocator.  For
-> > those who have not yet stumbled across CMA an excerpt from
-> > documentation:
+> > That being said, it's not good to introduce new API requirements by
+> > accident!  An audit of all callers should first be performed, at least.
 > > 
-> >    The Contiguous Memory Allocator (CMA) is a framework, which allows
-> >    setting up a machine-specific configuration for physically-contiguous
-> >    memory management. Memory for devices is then allocated according
-> >    to that configuration.
 > > 
-> >    The main role of the framework is not to allocate memory, but to
-> >    parse and manage memory configurations, as well as to act as an
-> >    in-between between device drivers and pluggable allocators. It is
-> >    thus not tied to any memory allocation method or strategy.
-> > 
-> > For more information please refer to the second patch from the
-> > patchset which contains the documentation.
+> > The surprise new requirement that touch_softlockup_watchdog() be called
+> > from non-preemptible code doesn't make sense IMO.  If I have a piece of
+> > code in the kernel which I expect to sit in TASK_UNINTERRUPTIBLE state
+> > for three minutes waiting for my egg to boil, I should be able to do
+> > that and I should be able to touch the softlockup detector without
+> > needing to go non-preemptible.
 > 
+> Ok, so here is my patch that syncs the touch_*_watchdog back in line with
+> the old semantics.  Hopefully this will undo any harm I caused.
 
-I'm only taking a quick look at this - slow as ever so pardon me if I
-missed anything.
+Was this patch forgotten?
 
-> So the idea is to grab a large chunk of memory at boot time and then
-> later allow some device to use it?
->
-> I'd much rather we'd improve the regular page allocator to be smarter
-> about this. We recently added a lot of smarts to it like memory
-> compaction, which allows large gobs of contiguous memory to be freed for
-> things like huge pages.
-> 
+Best regards,
+Maxim Levitsky
 
-Quick glance tells me that buffer sizes of 20MB are being thrown about
-which the core page allocator doesn't handle very well (and couldn't
-without major modification). Fragmentation avoidance only works well on
-sizes < MAX_ORDER_NR_PAGES which likely will be 2MB or 4MB.
-
-That said, there are things the core VM can do to help. One is related
-to ZONE_MOVABLE and the second is on the use of MIGRATE_ISOLATE.
-
-ZONE_MOVABLE is setup when the command line has kernelcore= or movablecore=
-specified. In ZONE_MOVABLE only pages that can be migrated are allocated
-(or huge pages if specifically configured to be allowed).  The zone is setup
-during initialisation by slicing pieces from the end of existing zones and
-for various reasons, it would be best to maintain that behaviour unless CMA
-had a specific requirement for memory in the middle of an existing zone.
-
-So lets say the maximum amount of contiguous memory required by all
-devices is 64M and ZONE_MOVABLE is 64M. During normal operation, normal
-order-0 pages can be allocated from this zone meaning the memory is not
-pinned and unusable by anybody else. This avoids wasting memory. When a
-device needs a new buffer, compaction would need some additional smarts
-to compact or reclaim the size of memory needed by the driver but
-because all the pages in the zone are movable, it should be possible.
-Ideally it would have swap to reclaim because if not, compaction needs
-to know how to move pages outside a zone (something it currently
-avoids).
-
-Essentially, cma_alloc() would be a normal alloc_pages that uses
-ZONE_MOVABLE for buffers < MAX_ORDER_NR_PAGES but would need additional
-compaction smarts for the larger buffers. I think it would reuse as much
-of the existing VM as possible but without reviewing the code, I don't
-know for sure how useful the suggestion is.
-
-> If you want guarantees you can free stuff, why not add constraints to
-> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
-> certain region, those pages are easily freed/moved aside to satisfy
-> large contiguous allocations.
-> 
-
-Relatively handy to do something like this. It can also be somewhat
-contrained by doing something similar to MIGRATE_ISOLATE to have
-contiguous regions of memory in a zone unusable by non-movable
-allocationos. It would be a lot trickier when interacting with reclaim
-though so using ZONE_MOVABLE would have less gotchas.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
