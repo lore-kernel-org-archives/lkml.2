@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0HZJGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 05:06:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:54837 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753396Ab0HZJGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 05:06:14 -0400
-X-Authenticated: #20450766
-X-Provags-ID: V01U2FsdGVkX1+y1vRMfj6ytkvP6jxWUJ9bsiIWus0EYu4x41WOK3
-	lLAOhInxTjtkWh
-Date: Thu, 26 Aug 2010 11:06:20 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-cc: mitov@issp.bas.bg, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        =?ISO-8859-15?Q?Philippe_R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory()
- API
-In-Reply-To: <20100826152333K.fujita.tomonori@lab.ntt.co.jp>
-Message-ID: <Pine.LNX.4.64.1008261100150.14167@axis700.grange>
-References: <201008201450.12585.mitov@issp.bas.bg> <20100826144000C.fujita.tomonori@lab.ntt.co.jp>
- <201008260904.19973.mitov@issp.bas.bg> <20100826152333K.fujita.tomonori@lab.ntt.co.jp>
+	id S1753616Ab0HZJLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 05:11:15 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50560 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab0HZJLM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 05:11:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=tBpk4f04Bsme3qBrkUU0WXkb4+H3xoRMGyHkds0zz2kJm+draWXEt5/tbaV7Kn+Uml
+         wnJlBiXwM7+kxlFMC4uwuJakGlxb0EupKXVQr0FM6MFkQiR/BpdJTo1h/Kb+UeyrgAeI
+         7uqI0HvgBMmXtr3QL0uOz3L7qWHnQ3IxXqg+o=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20100825235229.GC5389@nowhere>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+	<20100820152510.GA4167@elte.hu>
+	<20100823085339.GA26713@elte.hu>
+	<20100824171504.GI26154@erda.amd.com>
+	<20100824172806.GF5723@lenovo>
+	<20100824184658.GB4879@redhat.com>
+	<20100824185458.GG5723@lenovo>
+	<20100824195240.GA5281@lenovo>
+	<20100824202718.GC4879@redhat.com>
+	<20100824204038.GC5281@lenovo>
+	<20100825235229.GC5389@nowhere>
+Date: Thu, 26 Aug 2010 13:11:11 +0400
+Message-ID: <AANLkTimANTQGTvttriG=-w=wHAKdY2JFv-DwTHifJ8N6@mail.gmail.com>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running perfctrs
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, Robert Richter <robert.richter@amd.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010, FUJITA Tomonori wrote:
+On Thu, Aug 26, 2010 at 3:52 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+...
+>>
+>> It seems to be different, it's pity that I had only 80x25 vga
+>> mode and was unable to snap the whole log. But actually I didn't
+>> even check precisely all .config options I had set since I was
+>> more interested in early stage where per-cpu access should already
+>> happen rather then real init'ed environmen. But I think I'll be
+>> moving completely to .36 this week so we will see how it goes.
+>
+>
+> There was a missing "return" in the end of reiserfs_evict_inode.
+>
+> It has been fixed there:
+>
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f4ae2faa40199b97b12f508234640bc565d166f8
+>
+>
 
-> On Thu, 26 Aug 2010 09:04:14 +0300
-> Marin Mitov <mitov@issp.bas.bg> wrote:
-> 
-> > On Thursday, August 26, 2010 08:40:47 am FUJITA Tomonori wrote:
-> > > On Fri, 20 Aug 2010 14:50:12 +0300
-> > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > 
-> > > > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> > > > > On Fri, 20 Aug 2010 11:13:45 +0300
-> > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > > > 
-> > > > > > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > > > > > 
-> > > > > > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > > > > > Helps for videobuf-dma-contig framework.
-> > > > > > > 
-> > > > > > > What you guys exactly want to do? If you just want to pre-allocate
-> > > > > > > coherent memory for latter usage,
-> > > > > > 
-> > > > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > > > > > We use coherent memory because it turns out to be contiguous.
-> > > > > 
-> > > > > Hmm, you don't care about coherency? You just need contiguous memory?
-> > > > 
-> > > > Yes. We just need contiguous memory. Coherency is important as far as when dma
-> > > > transfer finishes user land is able to see the new data. Could be done by something like
-> > > > dma_{,un}map_single()
-> > > 
-> > > Then, we should avoid using coherent memory as I exaplained before. In
-> > > addition, dma_alloc_coherent can't provide large enough contigous
-> > > memory for some drivers so this patch doesn't help much.
-> > 
-> > Please, look at drivers/media/video/videobuf-dma-contig.c. Using coherent memory
-> > is inavoidable for now, there is no alternative for it for now. The two new functions,
-> > which I propose are just helpers for those of us who already use coherent memory
-> > (via videobuf-dma-contig API). May be adding these two functions to 
-> > drivers/media/video/videobuf-dma-contig.c will be better solution?
-> 
-> If you add something to the videobuf-dma-contig API, that's fine by me
-> because drivers/media/video/videobuf-dma-contig.c uses the own
-> structure and plays with dma_alloc_coherent. As long as a driver
-> doesn't touch device->dma_mem directly, it's fine, I think (that is,
-> dt3155v4l driver is broken). There are already some workarounds for
-> contigous memory in several drivers anyway.
-
-No, this will not work - this API has to be used from board code and 
-videobuf can be built modular.
-
-> We will have the proper API for contiguous memory. I don't think that
-> adding such workaround to the DMA API is a good idea.
-
-We have currently a number of boards broken in the mainline. They must be 
-fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
-as I suggested earlier, we need either this or my patch series
-
-http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
-
-for 2.6.36.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Thanks for info, Frederic!
