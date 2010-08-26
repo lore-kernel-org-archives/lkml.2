@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab0HZI2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 04:28:41 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53035 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab0HZI2h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 04:28:37 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4C7625D1.4060201@np.css.fujitsu.com>
-Date: Thu, 26 Aug 2010 17:29:05 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1753428Ab0HZI27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 04:28:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38197 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab0HZI2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 04:28:55 -0400
+Message-ID: <4C762476.2020802@suse.de>
+Date: Thu, 26 Aug 2010 10:23:18 +0200
+From: Tejun Heo <teheo@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: mingo Redhat <mingo@redhat.com>, "Brown, Len" <len.brown@intel.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "H. Peter Anvin" <hpa@linux.jf.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: [Patch-next] therm_throt.c: fix missing { and }.
-References: <4C75D3C4.6040802@np.css.fujitsu.com> <20100826060822.GA15021@fenghua-desk.sc.intel.com>
-In-Reply-To: <20100826060822.GA15021@fenghua-desk.sc.intel.com>
+To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
+        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
+Subject: [PATCH 24.5/30] jbd2: Modify ASYNC_COMMIT code to not rely on queue
+ draining on barrier
+References: <1282751267-3530-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1282751267-3530-1-git-send-email-tj@kernel.org>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the feature PTS is not supported by CPU, the sysfile
-package_power_limit_count for package should not be generated.
+>From 49f4cef00a1bd3c79fb2fe1f982c5157f0792867 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
 
-This patch is used for fixing missing { and }. But I have not confirmed
-this patch because I don't have such machine.
+Currently JBD2 relies blkdev_issue_flush() draining the queue when ASYNC_COMMIT
+feature is set. This property is going away so make JBD2 wait for buffers it
+needs on its own before submitting the cache flush.
 
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+This patch is necessary before enabling flush/fua support in jbd2.
+The flush-fua git tree has been udpated to included this between patch
+24 and 25.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index d9368ee..169d880 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -216,7 +216,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_core_power_limit_count.attr,
- 					      thermal_attr_group.name);
--	if (cpu_has(c, X86_FEATURE_PTS))
-+	if (cpu_has(c, X86_FEATURE_PTS)) {
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_package_throttle_count.attr,
- 					      thermal_attr_group.name);
-@@ -224,6 +224,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
- 			err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					&attr_package_power_limit_count.attr,
- 					thermal_attr_group.name);
+Thanks.
+
+ fs/jbd2/commit.c |   29 ++++++++++++++++-------------
+ 1 files changed, 16 insertions(+), 13 deletions(-)
+
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index 7c068c1..8797fd1 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -701,6 +701,16 @@ start_journal_io:
+ 		}
+ 	}
+
++	err = journal_finish_inode_data_buffers(journal, commit_transaction);
++	if (err) {
++		printk(KERN_WARNING
++			"JBD2: Detected IO errors while flushing file data "
++		       "on %s\n", journal->j_devname);
++		if (journal->j_flags & JBD2_ABORT_ON_SYNCDATA_ERR)
++			jbd2_journal_abort(journal, err);
++		err = 0;
 +	}
- 
- 	return err;
- }
++
+ 	/*
+ 	 * If the journal is not located on the file system device,
+ 	 * then we must flush the file system device before we issue
+@@ -719,19 +729,6 @@ start_journal_io:
+ 						 &cbh, crc32_sum);
+ 		if (err)
+ 			__jbd2_journal_abort_hard(journal);
+-		if (journal->j_flags & JBD2_BARRIER)
+-			blkdev_issue_flush(journal->j_dev, GFP_KERNEL, NULL,
+-				BLKDEV_IFL_WAIT);
+-	}
+-
+-	err = journal_finish_inode_data_buffers(journal, commit_transaction);
+-	if (err) {
+-		printk(KERN_WARNING
+-			"JBD2: Detected IO errors while flushing file data "
+-		       "on %s\n", journal->j_devname);
+-		if (journal->j_flags & JBD2_ABORT_ON_SYNCDATA_ERR)
+-			jbd2_journal_abort(journal, err);
+-		err = 0;
+ 	}
+
+ 	/* Lo and behold: we have just managed to send a transaction to
+@@ -845,6 +842,12 @@ wait_for_iobuf:
+ 	}
+ 	if (!err && !is_journal_aborted(journal))
+ 		err = journal_wait_on_commit_record(journal, cbh);
++	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
++				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) &&
++	    journal->j_flags & JBD2_BARRIER) {
++			blkdev_issue_flush(journal->j_dev, GFP_KERNEL, NULL,
++				BLKDEV_IFL_WAIT);
++	}
+
+ 	if (err)
+ 		jbd2_journal_abort(journal, err);
 -- 
-1.7.1.1
+1.7.1
 
