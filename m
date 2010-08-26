@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0HZQKb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 12:10:31 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41172 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754264Ab0HZQK2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:10:28 -0400
-X-Sasl-enc: tBOgLF3llKuL19/mZwcDnO9axZFvByceGf3o9m2vHDkZ 1282839027
-Date: Thu, 26 Aug 2010 13:10:23 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-i2c@vger.kernel.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: Add tempX_emergency to sysfs ABI
-Message-ID: <20100826161022.GA1383@khazad-dum.debian.net>
-References: <1282838085-7210-1-git-send-email-guenter.roeck@ericsson.com>
+	id S1754409Ab0HZQPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:15:03 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49206 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754026Ab0HZQO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 12:14:59 -0400
+Date: Thu, 26 Aug 2010 09:14:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, jkosina@suse.cz,
+        ksummit-2010-discuss@lists.linux-foundation.org
+Subject: Re: [PATCH] MAINTAINERS: add U: for URL of todo list, add RCU todo
+ list
+Message-ID: <20100826161451.GB2367@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100826154537.GA4874@linux.vnet.ibm.com>
+ <1282837904.1875.64.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282838085-7210-1-git-send-email-guenter.roeck@ericsson.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <1282837904.1875.64.camel@Joe-Laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010, Guenter Roeck wrote:
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> ---
-> tempX_emergency will be used by max6696. It can also be used for other chips
-> supporting three upper temperature limits.
+On Thu, Aug 26, 2010 at 08:51:44AM -0700, Joe Perches wrote:
+> On Thu, 2010-08-26 at 08:45 -0700, Paul E. McKenney wrote:
+> > Since T: and L: are already taken, add U: for URL of todo list.
+> > Also add the RCU todo list to both the RCU and RCUTORTURE projects.
 > 
->  Documentation/hwmon/sysfs-interface |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+> Hi Paul
 > 
-> diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
-> index ff45d1f..1ceb2b9 100644
-> --- a/Documentation/hwmon/sysfs-interface
-> +++ b/Documentation/hwmon/sysfs-interface
-> @@ -310,6 +310,12 @@ temp[1-*]_crit_hyst
->  		from the critical value.
->  		RW
->  
-> +temp[1-*]_emergency
-> +		Temperature emergency value, typically greater than
-> +		corresponding temp_crit values.
-> +		Unit: millidegree Celsius
-> +		RW
-> +
+> I think W: already works perfectly well for this use.
+> 
+> >From MAINTAINERS:
+>         W: Web-page with status/info
+> 
+> > @@ -4801,6 +4802,7 @@ M:	Josh Triplett <josh@freedesktop.org>
+> >  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >  S:	Supported
+> >  T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > +U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> 
+> W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> 
+> >  F:	Documentation/RCU/torture.txt
+> >  F:	kernel/rcutorture.c
+> >  
+> > @@ -4826,6 +4828,7 @@ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >  W:	http://www.rdrop.com/users/paulmck/rclock/
+> >  S:	Supported
+> >  T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > +U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> 
+> W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
 
-If we have two-level alarms: critical, then emergency, it is best to have
-that written down than to imply it by "typically greater than corresponding
-temp_crit"...
+OK, how about the following, then?
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+commit 47d3177f3435e2600c98370dc07ed20a3a585c32
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Thu Aug 26 08:59:13 2010 -0700
+
+    MAINTAINERS: add RCU todo list
+    
+    Add the RCU todo list to RCUTORTURE and RCU.  Also add a note to
+    W: stating that it may be used for todo list information.
+    
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3f21c27..e02882b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -70,7 +70,7 @@ Descriptions of section entries:
+ 	P: Person (obsolete)
+ 	M: Mail patches to: FullName <address@domain>
+ 	L: Mailing list that is relevant to this area
+-	W: Web-page with status/info
++	W: Web-page with status/info/todo
+ 	Q: Patchwork web based patch tracking system site
+ 	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit.
+ 	S: Status, one of the following:
+@@ -4799,6 +4799,8 @@ F:	drivers/net/wireless/ray*
+ RCUTORTURE MODULE
+ M:	Josh Triplett <josh@freedesktop.org>
+ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
++W:	http://www.rdrop.com/users/paulmck/RCU/
++W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+ S:	Supported
+ T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+ F:	Documentation/RCU/torture.txt
+@@ -4823,7 +4825,8 @@ F:	net/rds/
+ READ-COPY UPDATE (RCU)
+ M:	Dipankar Sarma <dipankar@in.ibm.com>
+ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+-W:	http://www.rdrop.com/users/paulmck/rclock/
++W:	http://www.rdrop.com/users/paulmck/RCU/
++W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+ S:	Supported
+ T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+ F:	Documentation/RCU/
