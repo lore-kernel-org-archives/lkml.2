@@ -1,121 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab0HZKTM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 06:19:12 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37675 "EHLO gir.skynet.ie"
+	id S1753571Ab0HZKVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 06:21:51 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:51871 "EHLO mail.issp.bas.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752474Ab0HZKTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 06:19:10 -0400
-Date: Thu, 26 Aug 2010 11:18:55 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Micha?? Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>, Pawel Osciak <p.osciak@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	id S1753317Ab0HZKVt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 06:21:49 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+Date: Thu, 26 Aug 2010 13:18:22 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.36-rc2; KDE/4.4.3; x86_64; ; )
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-Message-ID: <20100826101855.GF20944@csn.ul.ie>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com> <1282310110.2605.976.camel@laptop> <20100825155814.25c783c7.akpm@linux-foundation.org> <op.vh0xp8ix7p4s8u@localhost>
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+References: <201008201450.12585.mitov@issp.bas.bg> <Pine.LNX.4.64.1008261100150.14167@axis700.grange> <20100826091725.GC5355@pengutronix.de>
+In-Reply-To: <20100826091725.GC5355@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <op.vh0xp8ix7p4s8u@localhost>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008261318.31784.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 04:40:46AM +0200, Micha?? Nazarewicz wrote:
-> Hello Andrew,
->
-> I think Pawel has replied to most of your comments, so I'll just add my own
-> 0.02 KRW. ;)
->
->> Peter Zijlstra <peterz@infradead.org> wrote:
->>> So the idea is to grab a large chunk of memory at boot time and then
->>> later allow some device to use it?
->>>
->>> I'd much rather we'd improve the regular page allocator to be smarter
->>> about this. We recently added a lot of smarts to it like memory
->>> compaction, which allows large gobs of contiguous memory to be freed for
->>> things like huge pages.
->>>
->>> If you want guarantees you can free stuff, why not add constraints to
->>> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
->>> certain region, those pages are easily freed/moved aside to satisfy
->>> large contiguous allocations.
->
-> On Thu, 26 Aug 2010 00:58:14 +0200, Andrew Morton <akpm@linux-foundation.org> wrote:
->> That would be good.  Although I expect that the allocation would need
->> to be 100% rock-solid reliable, otherwise the end user has a
->> non-functioning device.  Could generic core VM provide the required level
->> of service?
->
-> I think that the biggest problem is fragmentation here.  For instance,
-> I think that a situation where there is enough free space but it's
-> fragmented so no single contiguous chunk can be allocated is a serious
-> problem.  However, I would argue that if there's simply no space left,
-> a multimedia device could fail and even though it's not desirable, it
-> would not be such a big issue in my eyes.
->
+On Thursday, August 26, 2010 12:17:25 pm Uwe Kleine-König wrote:
+> Hello,
+> 
+> On Thu, Aug 26, 2010 at 11:06:20AM +0200, Guennadi Liakhovetski wrote:
+> > On Thu, 26 Aug 2010, FUJITA Tomonori wrote:
+> > 
+> > > On Thu, 26 Aug 2010 09:04:14 +0300
+> > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > 
+> > > > On Thursday, August 26, 2010 08:40:47 am FUJITA Tomonori wrote:
+> > > > > On Fri, 20 Aug 2010 14:50:12 +0300
+> > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > > > 
+> > > > > > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
+> > > > > > > On Fri, 20 Aug 2010 11:13:45 +0300
+> > > > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > > > > > 
+> > > > > > > > > > This tric is already used in drivers/staging/dt3155v4l.c
+> > > > > > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
+> > > > > > > > > > 
+> > > > > > > > > > Here proposed for general use by popular demand from video4linux folks.
+> > > > > > > > > > Helps for videobuf-dma-contig framework.
+> > > > > > > > > 
+> > > > > > > > > What you guys exactly want to do? If you just want to pre-allocate
+> > > > > > > > > coherent memory for latter usage,
+> > > > > > > > 
+> > > > > > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
+> > > > > > > > We use coherent memory because it turns out to be contiguous.
+> > > > > > > 
+> > > > > > > Hmm, you don't care about coherency? You just need contiguous memory?
+> > > > > > 
+> > > > > > Yes. We just need contiguous memory. Coherency is important as far as when dma
+> > > > > > transfer finishes user land is able to see the new data. Could be done by something like
+> > > > > > dma_{,un}map_single()
+> > > > > 
+> > > > > Then, we should avoid using coherent memory as I exaplained before. In
+> > > > > addition, dma_alloc_coherent can't provide large enough contigous
+> > > > > memory for some drivers so this patch doesn't help much.
+> > > > 
+> > > > Please, look at drivers/media/video/videobuf-dma-contig.c. Using coherent memory
+> > > > is inavoidable for now, there is no alternative for it for now. The two new functions,
+> > > > which I propose are just helpers for those of us who already use coherent memory
+> > > > (via videobuf-dma-contig API). May be adding these two functions to 
+> > > > drivers/media/video/videobuf-dma-contig.c will be better solution?
+> > > 
+> > > If you add something to the videobuf-dma-contig API, that's fine by me
+> > > because drivers/media/video/videobuf-dma-contig.c uses the own
+> > > structure and plays with dma_alloc_coherent. As long as a driver
+> > > doesn't touch device->dma_mem directly, it's fine, I think (that is,
+> > > dt3155v4l driver is broken). There are already some workarounds for
+> > > contigous memory in several drivers anyway.
+> > 
+> > No, this will not work - this API has to be used from board code and 
+> > videobuf can be built modular.
+> > 
+> > > We will have the proper API for contiguous memory. I don't think that
+> > > adding such workaround to the DMA API is a good idea.
+> > 
+> > We have currently a number of boards broken in the mainline. They must be 
+> > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
+> > as I suggested earlier, we need either this or my patch series
+> > 
+> > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
+> this seems to be more mature to me.  The original patch in this thread
+> uses a symbol DT3155_COH_FLAGS which seems misplaced in generic code and
+> doesn't put the new functions in a header.
 
-For handling fragmentation, there is the option of ZONE_MOVABLE so it's
-usable by normal allocations but the CMA can take action to get it
-cleared out if necessary. Another option that is trickier but less
-disruptive would be to select a range of memory in a normal zone for CMA
-and mark it MIGRATE_MOVABLE so that movable pages are allocated from it.
-The trickier part is you need to make that bit stick so that non-movable
-pages are never allocated from that range. That would be trickish to
-implement but possible and it would avoid the fragmentation
-problem without pinning memory.
+You are right. DT3155_COH_FLAGS should be defined, and a declaration should be 
+put in the headers.
 
-> So, if only movable or discardable pages are allocated in CMA managed
-> regions all should work well.  When a device needs memory discardable
-> pages would get freed and movable moved unless there is no space left
-> on the device in which case allocation would fail.
->
-> Critical devices (just a hypothetical entities) could have separate
-> regions on which only discardable pages can be allocated so that memory
-> can always be allocated for them.
->
->> I agree that having two "contiguous memory allocators" floating about
->> on the list is distressing.  Are we really all 100% diligently certain
->> that there is no commonality here with Zach's work?
->
-> As Pawel said, I think Zach's trying to solve a different problem.  No
-> matter, as I've said in response to Konrad's message, I have thought
-> about unifying Zach's IOMMU and CMA in such a way that devices could
-> work on both systems with and without IOMMU if only they would limit
-> the usage of the API to some subset which always works.
->
->> Please cc me on future emails on this topic?
->
-> Not a problem.
->
-> -- 
-> Best regards,                                        _     _
-> | Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-> | Computer Science,  Micha?? "mina86" Nazarewicz       (o o)
-> +----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+But it is just RFC :-)
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Marin Mitov
+
+> 
+> Best regards
+> Uwe
+> 
+> 
