@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab0HZIlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 04:41:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59605 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab0HZIlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 04:41:31 -0400
-Message-ID: <4C762734.1030402@kernel.org>
-Date: Thu, 26 Aug 2010 10:35:00 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (slab
- tree related)
-References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home> <4C74D1D7.4080608@kernel.org> <4C74DB05.7000101@cs.helsinki.fi> <alpine.DEB.2.00.1008250846590.13026@router.home>
-In-Reply-To: <alpine.DEB.2.00.1008250846590.13026@router.home>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753362Ab0HZIqr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 04:46:47 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:56072 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab0HZIqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 04:46:45 -0400
+Subject: Re: [PATCH] Fix initramfs size calculation
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: sam@ravnborg.org, tabbott@ksplice.com, vda.linux@googlemail.com,
+        mmarek@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        brueckner@linux.vnet.ibm.com, schwidefsky@de.ibm.com
+In-Reply-To: <4C7578A6.2080303@linux.intel.com>
+References: <1282751832.3676.17.camel@holzheu-laptop>
+	 <4C7578A6.2080303@linux.intel.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Thu, 26 Aug 2010 10:46:36 +0200
+Message-ID: <1282812396.1879.7.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 Aug 2010 08:40:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello Peter,
 
-On 08/25/2010 03:50 PM, Christoph Lameter wrote:
-> Can we just get rid of the special UP case and just run the percpu
-> subsystem even for UP?
+On Wed, 2010-08-25 at 13:10 -0700, H. Peter Anvin wrote:
+> On 08/25/2010 08:57 AM, Michael Holzheu wrote:
+> > Certain s390 instructions, especially instructions for loading addresses
+> > (larl) or branch addresses must be on even addresses. 
+> 
+> I have to admit to finding this fairly disturbing, as this is likely to
+> come up again and again.  Is there any way to tell gcc (e.g. with an
+> alignment attribute) that a particular symbol is not safe to be loaded
+> with larl?
 
-Yeah, maybe.  Then we also can guarantee that percpu allocator always
-honors alignment (which wq code currently requires and papers over
-with similarly ugly workaround).  It would add a mostly redundant
-allocator code tho.  I'll look into how easily it can be done.
+I think, it is not possible the change that in the compiler. The fact
+that the compiler on s390 assumes that symbols are 2 byte aligned was a
+design decission and is part of the ABI.
 
-Thanks.
+Michael 
 
--- 
-tejun
