@@ -1,42 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab0HZDMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 23:12:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:25736 "EHLO
+	id S1752187Ab0HZDQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 23:16:14 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:60179 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab0HZDMR (ORCPT
+	with ESMTP id S1751392Ab0HZDQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 23:12:17 -0400
+	Wed, 25 Aug 2010 23:16:12 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
 	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=dzST9JDd8nedPG98MUjZ+BSGOnQFKuqzAHSROuUEJlvGXQkjRJjlyEanINgdMbGEj
-	Exlx+X2pNlDgnE1HMA09Q==
-Date: Wed, 25 Aug 2010 20:12:04 -0700 (PDT)
+	b=KLWoLb2you4gFqIhUncuRGDXZvg+73HK3r9VzKFnbW+MIlE7m/uR7RtRLgerE75N+
+	rfbuWQggRCai7cCUx3Saw==
+Date: Wed, 25 Aug 2010 20:16:05 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Christoph Lameter <cl@linux.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-In-Reply-To: <alpine.DEB.2.00.1008252028030.32421@router.home>
-Message-ID: <alpine.DEB.2.00.1008252010260.10986@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
- <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop> <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop> <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1008251604120.24931@router.home> <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com> <alpine.DEB.2.00.1008251630270.25660@router.home> <alpine.DEB.2.00.1008251604540.31521@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1008252028030.32421@router.home>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree (slab
+ tree related)
+In-Reply-To: <alpine.DEB.2.00.1008252031560.32421@router.home>
+Message-ID: <alpine.DEB.2.00.1008252014560.10986@chino.kir.corp.google.com>
+References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <20100825101320.bed89b2a.sfr@canb.auug.org.au> <4C74A01E.1060809@cs.helsinki.fi> <alpine.DEB.2.00.1008250905490.13026@router.home> <alpine.DEB.2.00.1008251656390.22018@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1008252031560.32421@router.home>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -47,16 +35,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 25 Aug 2010, Christoph Lameter wrote:
 
-> > Right, I thought you said the slab layer passes __GFP_NOFAIL when there's
-> > no objects available.
+> > > +	 * Special hack for UP mode. allocpercpu() falls back to kmalloc
+> > > +	 * operations. So we cannot use that before the slab allocator is up
+> > > +	 * Simply get the smallest possible compound page. The page will be
+> > > +	 * released via kfree() when the cpu caches are resized later.
+> > > +	 */
+> > > +	if (slab_state < UP)
+> > > +		s->cpu_slab = (__percpu void *)__get_free_page(GFP_NOWAIT, 1);
+> >
+> > __get_free_pages() takes an order argument.
 > 
-> Yes, the slab layer calls the page allocator when there are no objects
-> available and passes the __GFP_NOFAIL that the user may have set in the
-> call to the page allocator.
+> Right. Patch not refreshed after the last tinzy winzy change. Seems that I
+> got a bit rusty.
 > 
-> Why then add new functions that do the same?
+> Subject: Slub: UP bandaid
 > 
+> Since the percpu allocator does not provide early allocation in UP
+> mode (only in SMP configurations) use __get_free_page() to improvise
+> a compound page allocation that can be later freed via kfree().
+> 
+> Compound pages will be released when the cpu caches are resized.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Because we can remove the flag, remove branches from the page allocator 
-slowpath, and none of these allocations actually are dependent on 
-__GFP_NOFAIL since they are all under PAGE_ALLOC_COSTLY_ORDER.
+Acked-by: David Rientjes <rientjes@google.com>
+
+I'm really hoping that we can remove this hack soon when the percpu 
+allocator can handle these allocations on UP without any specialized slab 
+behavior.
