@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab0HZUvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 16:51:37 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33779 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752207Ab0HZUvf (ORCPT
+	id S1753162Ab0HZVAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 17:00:34 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:2878 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab0HZVAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 16:51:35 -0400
-Date: Thu, 26 Aug 2010 22:07:47 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Brownell <david-b@pacbell.net>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: Add generic driver for simple memory mapped
- controllers
-Message-ID: <20100826220747.6da28e97@lxorguk.ukuu.org.uk>
-In-Reply-To: <216397.86259.qm@web180306.mail.gq1.yahoo.com>
-References: <20100826174822.75094415@lxorguk.ukuu.org.uk>
-	<216397.86259.qm@web180306.mail.gq1.yahoo.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 26 Aug 2010 17:00:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52238172"
+Message-ID: <4C76D5EE.7000805@codeaurora.org>
+Date: Thu, 26 Aug 2010 17:00:30 -0400
+From: Neil Leeder <nleeder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Horace Fu <horace.fu@quantatw.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Trilok Soni <tsoni@codeaurora.org>
+Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
+References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <20100813024912.GA2661@core.coreip.homeip.net> <4C65BF99.9030601@codeaurora.org> <201008131754.49488.dmitry.torokhov@gmail.com> <4C6AC393.8000109@codeaurora.org> <BC741E3E-377E-45BF-80E1-A60F4E0FDFC9@gmail.com> <4C6C52DE.4040700@codeaurora.org> <20100819053311.GE5832@core.coreip.homeip.net> <4C6DADDE.7030107@codeaurora.org> <4C756049.2090408@codeaurora.org> <20100826144937.GA8553@core.coreip.homeip.net>
+In-Reply-To: <20100826144937.GA8553@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O> If there are "zillions" that suggests the HW
-> engineers have version/naming issues just like
-> certain software engineers.  Only goes to show
-> how close Verilog and VHDL are to software! :)
+On 8/26/2010 10:49 AM, Dmitry Torokhov wrote:
+>
+> I concur that since EC firmware does not seem to support full PS/2
+> protocol we should got with the original driver creating an input device
+> rather than serio.
+>
+> Please send me the latest version of your driver and I will apply it to
+> my .37 queue.
 
-Verilog ? Its far far more primitive than that. You'll find exactly that
-arrangement in prehistoric 8bit micro support chips - eg the 6522. In
-fact the only reason I can see for not using it on primitive 8bit micro
-devices is that they *already* had more features.
+Thanks - I'll incorporate review comments and post an updated patch.
 
-> are not reusing a named module; they are at best
-> just copying/pasting some Verilog/VHDL and adding
-> ASIC/SoC/.../FPGA-specific hacks.  (Which calls into
-> question just how much assurance there can be that
-> one driver will work reliably for all instances...
-
-No they are implementing trivial common sense logic. It's a bit like
-complaining we have multiple drivers that use addition.
-
-I think you need a reality check. Its a VLSI undergraduate project level
-device, or was back when they taught undergraduates a sampling of chip
-design by drawing the transistors. This is "my first logic design" stuff.
-
-Alan
+--
+Neil
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
