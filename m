@@ -1,103 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab0HZBQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 21:16:44 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34923 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab0HZBQm (ORCPT
+	id S1753479Ab0HZBRR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 21:17:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42272 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab0HZBRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 21:16:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 26 Aug 2010 10:11:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/2][BUGFIX] oom: remove totalpage normalization from
- oom_badness()
-Message-Id: <20100826101139.eb05fe2d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.DEB.2.00.1008251746200.28401@chino.kir.corp.google.com>
-References: <20100825184001.F3EF.A69D9226@jp.fujitsu.com>
-	<alpine.DEB.2.00.1008250300500.13300@chino.kir.corp.google.com>
-	<20100826093923.d4ac29b6.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.DEB.2.00.1008251746200.28401@chino.kir.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Aug 2010 21:17:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=VsuAc7F8snyC0D1lOvgX8ZG1GAqdHBLvFmM2JmrQrswvyBpUx4sAGHWy7FQmhWphjf
+         1KSfvHAyJ39U00YROM8dK2keBPMKu4TfSA4Ihy7wzeesXYNFzfLjVo5uZoAPdriOnxCB
+         1JBZB8scvE4xGT1JFBYhyChdmstRGW1/UcopI=
+MIME-Version: 1.0
+Date: Wed, 25 Aug 2010 18:17:12 -0700
+Message-ID: <AANLkTimT4T-6dO=Uo05DexYf3exq=0SkZemHuB5aRP3Q@mail.gmail.com>
+Subject: divide by zero bug in find_busiest_group
+From: Chetan Ahuja <chetan.ahuja@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 17:52:06 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
+This has been filed as a bug in the kernel bugzilla
+(https://bugzilla.kernel.org/show_bug.cgi?id=16991)
+but the visibility on bugzilla seems low ( and the bugizlla server
+seems to get overly "stressed" during
+certain parts of the day)  so here's my "summary" of the discussion so
+far. If for nothing else, so it gets
+indexed by search engines etc.
 
-> On Thu, 26 Aug 2010, KAMEZAWA Hiroyuki wrote:
-> 
-> > I'm now trying to write a userspace tool to calculate this, for me.
-> > Then, could you update documentation ? 
-> > ==
-> > 3.2 /proc/<pid>/oom_score - Display current oom-killer score
-> > -------------------------------------------------------------
-> > 
-> > This file can be used to check the current score used by the oom-killer is for
-> > any given <pid>. Use it together with /proc/<pid>/oom_adj to tune which
-> > process should be killed in an out-of-memory situation.
-> > ==
-> > 
-> 
-> You'll want to look at section 3.1 of Documentation/filesystems/proc.txt, 
-> which describes /proc/pid/oom_score_adj, not 3.2.
-> 
-> > add a some documentation like:
-> > ==
-> > (For system monitoring tool developpers, not for usual users.)
-> > oom_score calculation is implemnentation dependent and can be modified without
-> > any caution. But current logic is
-> > 
-> > oom_score = ((proc's rss + proc's swap) / (available ram + swap)) + oom_score_adj
-> > 
-> 
-> I'd hesitate to state the formula outside of the implementation and 
-> instead focus on the semantics of oom_score_adj (as a proportion of 
-> available memory compared to other tasks), which I tried doing in section 
-> 3.1.  Then, the userspace tool only need be concerned about the units of 
-> oom_score_adj rather than whether rss, swap, or later extentions such as 
-> shm are added.
-> 
-Hmm. I'll add a text like following to cgroup/memory.txt. O.K. ?
+We've seen a divide-by-zero crash  in the function  update_sg_lb_stats
+(inlined into find_busiest_group) at the following location :
 
-==
-Notes on oom_score and oom_score_adj.
+ /usr/src/linux/kernel/sched.c:3769
+*balance = 0;
+return;
+}
 
-oom_score is calculated as
-	oom_score = (taks's proportion of memory) + oom_score_adj.
+/* Adjust by relative CPU power of the group */
+sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) /
+group->cpu_power;
+aff5: 48 c1 e0 0a shl $0xa,%rax
+aff9: 48 f7 f6 div %rsi
 
-Then, when you use oom_score_adj to control the order of priority of oom,
-you should know about the amount of memory you can use.
-So, an approximate oom_score under memcg can be
+Apparently group->cpu_power can be zero under some conditions.
 
- memcg_oom_score = (oom_score - oom_score_adj) * system_memory/memcg's limit
-		+ oom_score_adj.
+    I noticed  (what I thought was) a race condition between cpu_power
+being initted to zero
+(in build_xxx_groups functions in sched.c) and their use as
+denominator in find_busiest/idlest_group
+functions. PeterZ replied that there's a safe codepath from
+build_*_groups functions to the crash
+location  which guaranteed  a non-zero value.  I did express concern
+that in absence of explicit
+synchronization/mem-barriers we're at the mercy of compiler and
+hardware doing us favors (by
+ not re-ordering  instructions in an adverse way) for that guarantee.
+But I don't think we got hit
+ by the initial zeroes because all the crashes I saw happened after
+many months of uptime.
 
-And yes, this can be affected by hierarchy control of memcg and calculation
-will be more complicated. See, oom_disable feature also.
-==
+  There's also another place group->cpu_power values gets updated
+without any synchronization, in
+the update_cpu_power function. Though the only way  this could result
+in a bad value for cpu_power
+is by  core A reading an in-transit value for a non-atomically-updated
+64 bit value from core B :-). Unlikely ?
+Very !!. Should we make that update explicity atomic ?  Would be prudent.
 
-Thanks,
--Kame
+We do need more ideas on how the zero could have gotten there. The two
+paths I mentioned above don't
+provide that warm, fuzzy feeling yet.
 
+Thanks
+Chetan
 
+P.S.
 
+a)   kernel version (2.6.32 release from kernel.org. Though a similar
+divide-by-zero has been
+   reported as recently as 2.6.35 in a Ubuntu distribution kernel
+here: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/615135
+b) Hardware :  8 core nehalem (Intel E5520).. /proc/cpuinfo shows 16
+"hyperthreaded" cores.
 
+some relevant CONFIG settings:
+CONFIG_NUMA=y
+CONFIG_K8_NUMA=y
+CONFIG_X86_64_ACPI_NUMA=y
+# CONFIG_NUMA_EMU is not set
+CONFIG_ACPI_NUMA=y
+.
+.
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_GROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+# CONFIG_RT_GROUP_SCHED is not set
+# CONFIG_USER_SCHED is not set
+CONFIG_CGROUP_SCHED=y
 
-
-
-
-
-
-
-
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+CONFIG_SCHED_SMT=y
+CONFIG_SCHED_MC=y
+CONFIG_SCHED_HRTICK=y
+CONFIG_SCHED_DEBUG=y
+# CONFIG_SCHEDSTATS is not set
+# CONFIG_SCHED_TRACER is not set
