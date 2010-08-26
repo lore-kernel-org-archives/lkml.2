@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab0HZLUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 07:20:51 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49895 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab0HZLUV (ORCPT
+	id S1751978Ab0HZLUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 07:20:11 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48438 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab0HZLUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 07:20:21 -0400
+	Thu, 26 Aug 2010 07:20:09 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: v9fs-developer@lists.sourceforge.net
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V2 2/6] fs/9p: Add xattr callbacks for POSIX ACL
-Date: Thu, 26 Aug 2010 16:49:54 +0530
-Message-Id: <1282821598-16472-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 3/6] fs/9p: Implement setting posix acl
+Date: Thu, 26 Aug 2010 16:49:55 +0530
+Message-Id: <1282821598-16472-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282821598-16472-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1282821598-16472-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -21,113 +21,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implement fetching POSIX ACL from the server
+This patch also update mode bits, as a normal file system.
+I am not sure wether we should do that, considering that
+a setxattr on the server will again update the ACL/mode value
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/9p/acl.c   |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/9p/xattr.c |    4 +++
- fs/9p/xattr.h |    2 +
- 3 files changed, 69 insertions(+), 0 deletions(-)
+ fs/9p/acl.c       |   75 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/9p/v9fs_vfs.h  |    1 +
+ fs/9p/vfs_inode.c |    2 +-
+ 3 files changed, 76 insertions(+), 2 deletions(-)
 
 diff --git a/fs/9p/acl.c b/fs/9p/acl.c
-index 5de599b..e122e63 100644
+index e122e63..fc06467 100644
 --- a/fs/9p/acl.c
 +++ b/fs/9p/acl.c
-@@ -93,3 +93,66 @@ int v9fs_check_acl(struct inode *inode, int mask)
- 	}
- 	return -EAGAIN;
- }
+@@ -17,8 +17,11 @@
+ #include <net/9p/9p.h>
+ #include <net/9p/client.h>
+ #include <linux/slab.h>
++#include <linux/sched.h>
+ #include <linux/posix_acl_xattr.h>
+ #include "xattr.h"
++#include "v9fs_vfs.h"
 +
-+static size_t v9fs_xattr_list_acl_access(struct dentry *dentry, char *list,
-+					 size_t list_len, const char *name,
-+					 size_t name_len, int type)
-+{
-+	const size_t size = sizeof(POSIX_ACL_XATTR_ACCESS);
-+	if (list && size <= list_len)
-+		memcpy(list, POSIX_ACL_XATTR_ACCESS, size);
-+	return size;
-+}
-+
-+static size_t v9fs_xattr_list_acl_default(struct dentry *dentry, char *list,
-+					  size_t list_len, const char *name,
-+					  size_t name_len, int type)
-+{
-+	const size_t size = sizeof(POSIX_ACL_XATTR_DEFAULT);
-+	if (list && size <= list_len)
-+		memcpy(list, POSIX_ACL_XATTR_DEFAULT, size);
-+	return size;
-+}
-+
-+static int v9fs_xattr_get_acl(struct dentry *dentry, const char *name,
-+			      void *buffer, size_t size, int type)
-+{
+ 
+ static struct posix_acl *__v9fs_get_acl(struct p9_fid *fid, char *name)
+ {
+@@ -138,7 +141,77 @@ static int v9fs_xattr_set_acl(struct dentry *dentry, const char *name,
+ 			      const void *value, size_t size,
+ 			      int flags, int type)
+ {
+-	return 0;
++	int retval;
 +	struct posix_acl *acl;
-+	int error;
++	struct inode *inode = dentry->d_inode;
 +
 +	if (strcmp(name, "") != 0)
 +		return -EINVAL;
++	if (S_ISLNK(inode->i_mode))
++		return -EOPNOTSUPP;
++	if (!is_owner_or_cap(inode))
++		return -EPERM;
++	if (value) {
++		/* update the cached acl value */
++		acl = posix_acl_from_xattr(value, size);
++		if (IS_ERR(acl))
++			return PTR_ERR(acl);
++		else if (acl) {
++			retval = posix_acl_valid(acl);
++			if (retval)
++				goto err_out;
++		}
++	} else
++		acl = NULL;
 +
-+	acl = v9fs_get_cached_acl(dentry->d_inode, type);
-+	if (IS_ERR(acl))
-+		return PTR_ERR(acl);
-+	if (acl == NULL)
-+		return -ENODATA;
-+	error = posix_acl_to_xattr(acl, buffer, size);
++	switch (type) {
++	case ACL_TYPE_ACCESS:
++		name = POSIX_ACL_XATTR_ACCESS;
++		if (acl) {
++			mode_t mode = inode->i_mode;
++			retval = posix_acl_equiv_mode(acl, &mode);
++			if (retval < 0)
++				goto err_out;
++			else {
++				struct iattr iattr;
++				if (retval == 0) {
++					/*
++					 * ACL can be represented
++					 * by the mode bits. So don't
++					 * update ACL.
++					 */
++					acl = NULL;
++					value = NULL;
++					size = 0;
++				}
++				/* Updte the mode bits */
++				iattr.ia_mode = ((mode & S_IALLUGO) |
++						 (inode->i_mode & ~S_IALLUGO));
++				iattr.ia_valid = ATTR_MODE;
++				/* FIXME should we update ctime ?
++				 * What is the following setxattr update the
++				 * mode ?
++				 */
++				v9fs_vfs_setattr_dotl(dentry, &iattr);
++			}
++		}
++		break;
++	case ACL_TYPE_DEFAULT:
++		name = POSIX_ACL_XATTR_DEFAULT;
++		if (!S_ISDIR(inode->i_mode)) {
++			retval = -EINVAL;
++			goto err_out;
++		}
++		break;
++	default:
++		BUG();
++	}
++	retval = v9fs_xattr_set(dentry, name, value, size, flags);
++	if (!retval)
++		set_cached_acl(inode, type, acl);
++err_out:
 +	posix_acl_release(acl);
-+
-+	return error;
-+}
-+
-+static int v9fs_xattr_set_acl(struct dentry *dentry, const char *name,
-+			      const void *value, size_t size,
-+			      int flags, int type)
-+{
-+	return 0;
-+}
-+
-+const struct xattr_handler v9fs_xattr_acl_access_handler = {
-+	.prefix	= POSIX_ACL_XATTR_ACCESS,
-+	.flags	= ACL_TYPE_ACCESS,
-+	.list	= v9fs_xattr_list_acl_access,
-+	.get	= v9fs_xattr_get_acl,
-+	.set	= v9fs_xattr_set_acl,
-+};
-+
-+const struct xattr_handler v9fs_xattr_acl_default_handler = {
-+	.prefix	= POSIX_ACL_XATTR_DEFAULT,
-+	.flags	= ACL_TYPE_DEFAULT,
-+	.list	= v9fs_xattr_list_acl_default,
-+	.get	= v9fs_xattr_get_acl,
-+	.set	= v9fs_xattr_set_acl,
-+};
-diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
-index a3696c9..a9ff0ca 100644
---- a/fs/9p/xattr.c
-+++ b/fs/9p/xattr.c
-@@ -164,5 +164,9 @@ ssize_t v9fs_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size)
++	return retval;
+ }
  
- const struct xattr_handler *v9fs_xattr_handlers[] = {
- 	&v9fs_xattr_user_handler,
-+#ifdef CONFIG_9P_FS_POSIX_ACL
-+	&v9fs_xattr_acl_access_handler,
-+	&v9fs_xattr_acl_default_handler,
-+#endif
- 	NULL
- };
-diff --git a/fs/9p/xattr.h b/fs/9p/xattr.h
-index ec908c6..eaa837c 100644
---- a/fs/9p/xattr.h
-+++ b/fs/9p/xattr.h
-@@ -20,6 +20,8 @@
+ const struct xattr_handler v9fs_xattr_acl_access_handler = {
+diff --git a/fs/9p/v9fs_vfs.h b/fs/9p/v9fs_vfs.h
+index f47c6bb..6e87de5 100644
+--- a/fs/9p/v9fs_vfs.h
++++ b/fs/9p/v9fs_vfs.h
+@@ -64,3 +64,4 @@ int v9fs_uflags2omode(int uflags, int extended);
  
- extern const struct xattr_handler *v9fs_xattr_handlers[];
- extern struct xattr_handler v9fs_xattr_user_handler;
-+extern const struct xattr_handler v9fs_xattr_acl_access_handler;
-+extern const struct xattr_handler v9fs_xattr_acl_default_handler;
+ ssize_t v9fs_file_readn(struct file *, char *, char __user *, u32, u64);
+ void v9fs_blank_wstat(struct p9_wstat *wstat);
++int v9fs_vfs_setattr_dotl(struct dentry *, struct iattr *);
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 7f0aac1..8f5bf6b 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1248,7 +1248,7 @@ static int v9fs_vfs_setattr(struct dentry *dentry, struct iattr *iattr)
+  *
+  */
  
- extern ssize_t v9fs_fid_xattr_get(struct p9_fid *, const char *,
- 				  void *, size_t);
+-static int v9fs_vfs_setattr_dotl(struct dentry *dentry, struct iattr *iattr)
++int v9fs_vfs_setattr_dotl(struct dentry *dentry, struct iattr *iattr)
+ {
+ 	int retval;
+ 	struct v9fs_session_info *v9ses;
 -- 
 1.7.0.4
 
