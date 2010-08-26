@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab0HZXLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 19:11:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49152 "EHLO ogre.sisk.pl"
+	id S1754673Ab0HZXNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 19:13:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47475 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752791Ab0HZXLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 19:11:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
-Date: Fri, 27 Aug 2010 01:09:36 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C7376BE.5040006@gmail.com> <201008242239.43249.rjw@sisk.pl>
-In-Reply-To: <201008242239.43249.rjw@sisk.pl>
+	id S1752791Ab0HZXN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 19:13:28 -0400
+Date: Thu, 26 Aug 2010 23:13:11 GMT
+From: tip-bot for Shaohua Li <shaohua.li@intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        shaohua.li@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, shaohua.li@intel.com, hpa@linux.intel.com
+In-Reply-To: <1280217988.32400.75.camel@sli10-desk.sh.intel.com>
+References: <1280217988.32400.75.camel@sli10-desk.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, mm: Make spurious_fault check explicitly check the PRESENT bit
+Message-ID: <tip-660a293ea9be709b893d371fbc0328fcca33c33a@git.kernel.org>
+Git-Commit-ID: 660a293ea9be709b893d371fbc0328fcca33c33a
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008270109.36687.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 Aug 2010 23:13:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 24, 2010, Rafael J. Wysocki wrote:
-> On Tuesday, August 24, 2010, Tejun Heo wrote:
-> > On 08/23/2010 08:58 PM, Rafael J. Wysocki wrote:
-> > > On Monday, August 23, 2010, Tejun Heo wrote:
-> > >> Hello, sorry about the delay.
-> > >>
-> > >> On 08/19/2010 06:23 PM, Stephan Diestelhorst wrote:
-> > >>> It says "max_performance", I have not touched anyhting. So it has been
-> > >>> like that all the time. Would this explain why your patch did not show
-> > >>> the debug printout?
-> > >>
-> > >> Hmm... okay.  Yeah, if you haven't been using IPM at all, there won't
-> > >> be any debug messages but at the same time the posted patch should
-> > >> have had the same effect as Rafael's patch as IPM path isn't traveled
-> > >> at all.  Can you please check the followings?
-> > >>
-> > >> * You're actually running the correct patched kernel and modules.  It
-> > >>   probably is a good idea to add a printk message.  ie. Apply the
-> > >>   patch and add a printk() in ata_host_request_pm() in libata-core.c
-> > >>   and make sure the debug messages appears.
-> > >>
-> > >> * Rafael's patch actually fixes the problem.  If you haven't been
-> > >>   using IPM at all, Rafael's patch and mine should behave exactly the
-> > >>   same (ie. no IPM operation at all during suspend/resume).  It could
-> > >>   be that you're seeing a different issue.
-> > >>
-> > >> Rafael, can you please test my patch and see how your case behaves?
-> > > 
-> > > This one: http://lkml.org/lkml/2010/8/5/328 ?
-> > 
-> > Yeap, that one.  I can prep a test git branch if necessary.
-> 
-> No need to, but it's going to take a few days to verify on my box.
+Commit-ID:  660a293ea9be709b893d371fbc0328fcca33c33a
+Gitweb:     http://git.kernel.org/tip/660a293ea9be709b893d371fbc0328fcca33c33a
+Author:     Shaohua Li <shaohua.li@intel.com>
+AuthorDate: Tue, 27 Jul 2010 16:06:28 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 26 Aug 2010 16:00:21 -0700
 
-Well, no luck.  I was able to reproduce the issue on my box with this patch
-applied on top of 2.6.32-rc2.
+x86, mm: Make spurious_fault check explicitly check the PRESENT bit
 
-Which probably means that the link power management is not really involved
-here and seems to turn up this statement:
+pte_present() returns true even present bit isn't set but _PAGE_PROTNONE
+(global bit) bit is set. While with CONFIG_DEBUG_PAGEALLOC, free pages have
+global bit set but present bit clear. This patch makes we could catch
+free pages access with CONFIG_DEBUG_PAGEALLOC enabled.
 
-rc = ata_host_request_pm(host, mesg, 0, ATA_EHI_QUIET, 1);
+[ hpa: added a comment in the code as a warning to janitors ]
 
-in ata_host_suspend() as the culprit.
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+LKML-Reference: <1280217988.32400.75.camel@sli10-desk.sh.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/fault.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-Does it make sense?
-
-Thanks,
-Rafael
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 51f7ee7..caec229 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -872,8 +872,14 @@ spurious_fault(unsigned long error_code, unsigned long address)
+ 	if (pmd_large(*pmd))
+ 		return spurious_fault_check(error_code, (pte_t *) pmd);
+ 
++	/*
++	 * Note: don't use pte_present() here, since it returns true
++	 * if the _PAGE_PROTNONE bit is set.  However, this aliases the
++	 * _PAGE_GLOBAL bit, which for kernel pages give false positives
++	 * when CONFIG_DEBUG_PAGEALLOC is used.
++	 */
+ 	pte = pte_offset_kernel(pmd, address);
+-	if (!pte_present(*pte))
++	if (!(pte_flags(*pte) & _PAGE_PRESENT))
+ 		return 0;
+ 
+ 	ret = spurious_fault_check(error_code, pte);
