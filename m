@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab0HZQcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 12:32:05 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51343 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754466Ab0HZQcD (ORCPT
+	id S1754504Ab0HZQeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:34:14 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40755 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754183Ab0HZQeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:32:03 -0400
-Date: Thu, 26 Aug 2010 17:48:22 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Brownell <david-b@pacbell.net>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
+	Thu, 26 Aug 2010 12:34:12 -0400
+Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
+ todo list, add RCU todo list
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Joe Perches <joe@perches.com>,
+        ksummit-2010-discuss@lists.linux-foundation.org, mingo@elte.hu,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: Add generic driver for simple memory mapped
- controllers
-Message-ID: <20100826174822.75094415@lxorguk.ukuu.org.uk>
-In-Reply-To: <290252.99759.qm@web180316.mail.gq1.yahoo.com>
-References: <20100826051705.GA25521@oksana.dev.rtsoft.ru>
-	<290252.99759.qm@web180316.mail.gq1.yahoo.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+In-Reply-To: <20100826092923.4bdbea69.rdunlap@xenotime.net>
+References: <20100826154537.GA4874@linux.vnet.ibm.com>
+	 <1282837904.1875.64.camel@Joe-Laptop>
+	 <20100826161451.GB2367@linux.vnet.ibm.com>
+	 <1282839933.8133.11.camel@mulgrave.site>
+	 <20100826092923.4bdbea69.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 11:34:10 -0500
+Message-ID: <1282840450.8133.24.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Just rename it to match the IP block used.
+On Thu, 2010-08-26 at 09:29 -0700, Randy Dunlap wrote:
+> On Thu, 26 Aug 2010 11:25:33 -0500 James Bottomley wrote:
+> 
+> > On Thu, 2010-08-26 at 09:14 -0700, Paul E. McKenney wrote:
+> > > On Thu, Aug 26, 2010 at 08:51:44AM -0700, Joe Perches wrote:
+> > > > On Thu, 2010-08-26 at 08:45 -0700, Paul E. McKenney wrote:
+> > > > > Since T: and L: are already taken, add U: for URL of todo list.
+> > > > > Also add the RCU todo list to both the RCU and RCUTORTURE projects.
+> > > > 
+> > > > Hi Paul
+> > > > 
+> > > > I think W: already works perfectly well for this use.
+> > > > 
+> > > > >From MAINTAINERS:
+> > > >         W: Web-page with status/info
+> > > > 
+> > > > > @@ -4801,6 +4802,7 @@ M:	Josh Triplett <josh@freedesktop.org>
+> > > > >  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > >  S:	Supported
+> > > > >  T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > > > > +U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > > 
+> > > > W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > > 
+> > > > >  F:	Documentation/RCU/torture.txt
+> > > > >  F:	kernel/rcutorture.c
+> > > > >  
+> > > > > @@ -4826,6 +4828,7 @@ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > >  W:	http://www.rdrop.com/users/paulmck/rclock/
+> > > > >  S:	Supported
+> > > > >  T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > > > > +U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > > 
+> > > > W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > 
+> > > OK, how about the following, then?
+> > 
+> > Got to say I really think overloading W which means web page/status
+> > information isn't a very good idea:
+> > 
+> > jejb@mulgrave:~/git/linux-2.6> grep -w 'W:' MAINTAINERS |wc -l
+> > 371
+> > 
+> > We already have ~400 of them ... how's anyone looking for a todo list
+> > going to find the right one in amongst all the others (assuming a newbie
+> > with no subject predisposition simply trying to find any todo list).
+> 
+> 
+> Did you have an alternate suggestion?
 
-There are zillions of IP blocks that have that interface, how exactly do
-you propose to rename it.
+New tag was fine ... kernelnewbies wiki is also fine.  My point is that
+if we're going to put them somewhere, lets make it obvious, not a find
+the list type of exercise.
 
-> That removes all confusion.  Engineers will
->  be able to know more easily whether this
-> driver is even relevant to them.
+> Do you prefer a Grand Unified Todo List?
 
-Not unless its got a name about 1000 characters long listing all the
-devices it might drive - and changes name weekly.
- 
-> An example might be "amba-9999 (a made-up
-> number, likely not matching a GPIO controller).
+I already gave my opinion on that ...
 
-What's wrong with a sensible generic name like gpio-mmio-table ?
+James
 
-Alan
+
+> I don't mind the kernelnewbies list/location, but we need to give it
+> some TLC.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> _______________________________________________
+> Ksummit-2010-discuss mailing list
+> Ksummit-2010-discuss@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/ksummit-2010-discuss
+
+
