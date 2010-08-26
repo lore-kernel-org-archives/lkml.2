@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab0HZNVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 09:21:49 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:38431 "EHLO relay.sgi.com"
+	id S1752802Ab0HZNVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 09:21:52 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:38430 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752144Ab0HZNV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752140Ab0HZNV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Aug 2010 09:21:28 -0400
-Message-Id: <20100826132126.900149667@sgi.com>
+Message-Id: <20100826132126.733001476@sgi.com>
 User-Agent: quilt/0.47-1
-Date: Thu, 26 Aug 2010 08:20:02 -0500
+Date: Thu, 26 Aug 2010 08:20:01 -0500
 From: steiner@sgi.com
 To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [Patch 25/25] GRU - update cbrstate definitions
+Subject: [Patch 24/25] GRU - rename gru pagesize defines
 References: <20100826131937.108920216@sgi.com>
-Content-Disposition: inline; filename=uv_gru_update_cbrstate
+Content-Disposition: inline; filename=uv_gru_min_pagesize
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jack Steiner <steiner@sgi.com>
 
-Update the CBRSTATE definitions to match what was actually
-implemented in hardware.
+Change the name of GRU_GSEG_PAGESIZE to GRU_MIN_GSEG_PAGESIZE
+to more accurately reflect it's use. This is in preparation for
+allocating contexts using hugepages.
 
 Signed-off-by: Jack Steiner <steiner@sgi.com>
 
 ---
- drivers/misc/sgi-gru/gruhandles.h |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/misc/sgi-gru/gru.h              |   10 ++--------
+ drivers/misc/sgi-gru/gru_instructions.h |    2 +-
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
-Index: linux/drivers/misc/sgi-gru/gruhandles.h
+Index: linux/drivers/misc/sgi-gru/gru.h
 ===================================================================
---- linux.orig/drivers/misc/sgi-gru/gruhandles.h	2010-07-19 10:25:57.000000000 -0500
-+++ linux/drivers/misc/sgi-gru/gruhandles.h	2010-07-19 13:03:39.982295167 -0500
-@@ -478,15 +478,19 @@ enum gru_cbr_state {
- 	CBRSTATE_INACTIVE,
- 	CBRSTATE_IDLE,
- 	CBRSTATE_PE_CHECK,
-+	CBRSTATE_DSR_PRE,
- 	CBRSTATE_QUEUED,
-+	CBRSTATE_ISSUED,
- 	CBRSTATE_WAIT_RESPONSE,
--	CBRSTATE_INTERRUPTED,
--	CBRSTATE_INTERRUPTED_MISS_FMM,
-+	CBRSTATE_DSR_POST,
- 	CBRSTATE_BUSY_INTERRUPT_MISS_FMM,
-+	CBRSTATE_INTERRUPTED_MISS_FMM,
-+	CBRSTATE_BUSY_INTERRUPT_MISS_UPM,
- 	CBRSTATE_INTERRUPTED_MISS_UPM,
--	CBRSTATE_BUSY_INTERRUPTED_MISS_UPM,
--	CBRSTATE_REQUEST_ISSUE,
- 	CBRSTATE_BUSY_INTERRUPT,
-+	CBRSTATE_INTERRUPTED,
-+	CBRSTATE_BCPY_CHECK,
-+	CBRSTATE_WAIT_DONE,
- };
+--- linux.orig/drivers/misc/sgi-gru/gru.h	2010-06-09 08:11:48.856038221 -0500
++++ linux/drivers/misc/sgi-gru/gru.h	2010-06-09 08:11:51.328084904 -0500
+@@ -28,15 +28,9 @@
+ #define GRU_DS_BASE			0x20000
  
- /* CBE cbrexecstatus bits  - defined in gru_instructions.h*/
+ /*
+- * Size used to map GRU GSeg
++ * Minimum page size used to map a GRU context
+  */
+-#if defined(CONFIG_IA64)
+-#define GRU_GSEG_PAGESIZE	(256 * 1024UL)
+-#elif defined(CONFIG_X86_64)
+-#define GRU_GSEG_PAGESIZE	(256 * 1024UL)		/* ZZZ 2MB ??? */
+-#else
+-#error "Unsupported architecture"
+-#endif
++#define GRU_MIN_GSEG_PAGESIZE	(256 * 1024UL)
+ 
+ /*
+  * Statictics kept for each context.
+Index: linux/drivers/misc/sgi-gru/gru_instructions.h
+===================================================================
+--- linux.orig/drivers/misc/sgi-gru/gru_instructions.h	2010-06-09 08:11:50.264036100 -0500
++++ linux/drivers/misc/sgi-gru/gru_instructions.h	2010-06-09 08:11:51.332083779 -0500
+@@ -687,6 +687,6 @@ static inline void *gru_get_data_pointer
+  */
+ static inline int gru_get_tri(void *vaddr)
+ {
+-	return ((unsigned long)vaddr & (GRU_GSEG_PAGESIZE - 1)) - GRU_DS_BASE;
++	return ((unsigned long)vaddr & (GRU_MIN_GSEG_PAGESIZE - 1)) - GRU_DS_BASE;
+ }
+ #endif		/* __GRU_INSTRUCTIONS_H__ */
 
