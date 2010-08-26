@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab0HZQpY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 12:45:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754444Ab0HZQpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:45:20 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] Alpha: Fix a missing comma in sys_osf_statfs()
-To: hch@lst.de, torvalds@osdl.org, akpm@linux-foundation.com
-Cc: viro@zeniv.linux.org.uk, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 26 Aug 2010 17:44:35 +0100
-Message-ID: <20100826164435.28668.25355.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754477Ab0HZQvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:51:20 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:43333 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab0HZQvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 12:51:18 -0400
+Subject: Re: [RFC] Docbook: allow warning on unused documentation
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100826093710.111b103e.rdunlap@xenotime.net>
+References: <1282136967.13315.1.camel@jlt3.sipsolutions.net>
+	 <20100826093710.111b103e.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 18:51:16 +0200
+Message-ID: <1282841476.3812.69.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a comma that got accidentally deleted from sys_osf_statfs() leading to the
-following warning:
+On Thu, 2010-08-26 at 09:37 -0700, Randy Dunlap wrote:
+> On Wed, 18 Aug 2010 15:09:27 +0200 Johannes Berg wrote:
+> 
+> > When you don't use !E or !I but only !F, then
+> > it's very easy to miss including some functions,
+> > structs etc. in documentation. To help finding
+> > which ones were missed, allow printing out the
+> > unused ones as warnings.
+> 
+> How do I test this?  Do I need to add !A to some source file?
 
-	arch/alpha/kernel/osf_sys.c: In function 'SYSC_osf_statfs':
-	arch/alpha/kernel/osf_sys.c:255: error: syntax error before 'buffer'
+Yeah, like to Documentation/DocBook/mac80211.tmpl you could add
+!Ainclude/net/mac80211.h
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+> > +#define _GNU_SOURCE
+> 
+> Can you explain why that is needed?  (curious)
 
- arch/alpha/kernel/osf_sys.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yeah, I used asprintf somewhere.
 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index fb58150..5d1e6d6 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -252,7 +252,7 @@ SYSCALL_DEFINE3(osf_statfs, const char __user *, pathname,
- 
- 	retval = user_path(pathname, &path);
- 	if (!retval) {
--		retval = do_osf_statfs(&path buffer, bufsiz);
-+		retval = do_osf_statfs(&path, buffer, bufsiz);
- 		path_put(&path);
- 	}
- 	return retval;
+> > +static void find_all_symbols(char *filename)
+> > +{
+> > +	char *vec[4]; /* kerneldoc -docbook -function "section" file NULL */
+> 
+> incorrect comment??
+
+Oops, yes:
+
+> > +	vec[0] = KERNELDOC;
+> > +	vec[1] = LIST;
+> > +	vec[2] = filename;
+> > +	vec[3] = NULL;
+
+johannes
 
