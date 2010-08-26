@@ -1,237 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab0HZTJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 15:09:47 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:35226 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753728Ab0HZTJY (ORCPT
+	id S1753110Ab0HZTTw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 15:19:52 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:11980 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab0HZTTu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 15:09:24 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-kernel@vger.kernel.org
-Cc: Robert Richter <robert.richter@amd.com>, Will Deacon <will.deacon@arm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org
-Subject: [PATCH V2 4/4] sh: Use the perf-events backend for oprofile
-Date: Thu, 26 Aug 2010 20:09:19 +0100
-Message-Id: <c741813aa911f0048cfab1a1a30534e8d7bb6765.1282848651.git.matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1282848651.git.matt@console-pimps.org>
-References: <cover.1282848651.git.matt@console-pimps.org>
-In-Reply-To: <cover.1282848651.git.matt@console-pimps.org>
-References: <cover.1282848651.git.matt@console-pimps.org>
+	Thu, 26 Aug 2010 15:19:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QRbBwOAGe3Wpg3q8CQXoFwbtIFaPQLTppB1L3i3u5N9uAAPZHJ5zFIsdfHqXI+OvLq
+         5zUBFh4a60IWXmbsL5xQ==
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimT4T-6dO=Uo05DexYf3exq=0SkZemHuB5aRP3Q@mail.gmail.com>
+References: <AANLkTimT4T-6dO=Uo05DexYf3exq=0SkZemHuB5aRP3Q@mail.gmail.com>
+Date: Thu, 26 Aug 2010 12:19:46 -0700
+Message-ID: <AANLkTim75Z-X--LDJX8MLYF8G=vPW_GniVFQrkL7QoAy@mail.gmail.com>
+Subject: Re: divide by zero bug in find_busiest_group
+From: Venkatesh Pallipadi <venki@google.com>
+To: Chetan Ahuja <chetan.ahuja@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the perf-events based wrapper for oprofile available in
-drivers/oprofile. This allows us to centralise the code to control
-performance counters.
+On Wed, Aug 25, 2010 at 6:17 PM, Chetan Ahuja <chetan.ahuja@gmail.com> wrote:
+> This has been filed as a bug in the kernel bugzilla
+> (https://bugzilla.kernel.org/show_bug.cgi?id=16991)
+> but the visibility on bugzilla seems low ( and the bugizlla server
+> seems to get overly "stressed" during
+> certain parts of the day)  so here's my "summary" of the discussion so
+> far. If for nothing else, so it gets
+> indexed by search engines etc.
+>
+> We've seen a divide-by-zero crash  in the function  update_sg_lb_stats
+> (inlined into find_busiest_group) at the following location :
+>
+>  /usr/src/linux/kernel/sched.c:3769
+> *balance = 0;
+> return;
+> }
+>
+> /* Adjust by relative CPU power of the group */
+> sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) /
+> group->cpu_power;
+> aff5: 48 c1 e0 0a shl $0xa,%rax
+> aff9: 48 f7 f6 div %rsi
+>
+> Apparently group->cpu_power can be zero under some conditions.
+>
+>    I noticed  (what I thought was) a race condition between cpu_power
+> being initted to zero
+> (in build_xxx_groups functions in sched.c) and their use as
+> denominator in find_busiest/idlest_group
+> functions. PeterZ replied that there's a safe codepath from
+> build_*_groups functions to the crash
+> location  which guaranteed  a non-zero value.  I did express concern
+> that in absence of explicit
+> synchronization/mem-barriers we're at the mercy of compiler and
+> hardware doing us favors (by
+>  not re-ordering  instructions in an adverse way) for that guarantee.
+> But I don't think we got hit
+>  by the initial zeroes because all the crashes I saw happened after
+> many months of uptime.
+>
+>  There's also another place group->cpu_power values gets updated
+> without any synchronization, in
+> the update_cpu_power function. Though the only way  this could result
+> in a bad value for cpu_power
+> is by  core A reading an in-transit value for a non-atomically-updated
+> 64 bit value from core B :-). Unlikely ?
+> Very !!. Should we make that update explicity atomic ?  Would be prudent.
+>
 
-Signed-off-by: Matt Fleming <matt@console-pimps.org>
----
+There is another potential bug that may cause zero power.
 
-Paul,
+I actually saw similar problem a while back, while I was playing
+around with rt_avg stuff. But, I have only seen the problem with my
+modified kernel (playing with softirq accouting part) and not with
+vanilla kernel. May be your workload includes some RT tasks that
+triggers this in vanilla kernel as well.
 
-I dropped the CONFIG_PERF_EVENTS dependency from the Makefile in this
-version because to do anything useful we need perf events anyway.
+This is what I saw happening in my case:
+scale_rt_power()
+- In some corner case total ends up being less than rq->rt_avg.
+- As a result, available is negative
+- scale_rt_power returns negative value
+update_cpu_power()
+- returns negative power
 
- arch/sh/oprofile/Makefile  |    2 +-
- arch/sh/oprofile/common.c  |   96 ++++++++-----------------------------------
- arch/sh/oprofile/op_impl.h |   33 ---------------
- 3 files changed, 19 insertions(+), 112 deletions(-)
- delete mode 100644 arch/sh/oprofile/op_impl.h
+When we later sum up power across groups, we can end up with a group
+having negative power making the sum power a zero for a parent group,
+causing div_by_zero.
 
-diff --git a/arch/sh/oprofile/Makefile b/arch/sh/oprofile/Makefile
-index 4886c5c..e1015ae 100644
---- a/arch/sh/oprofile/Makefile
-+++ b/arch/sh/oprofile/Makefile
-@@ -4,6 +4,6 @@ DRIVER_OBJS = $(addprefix ../../../drivers/oprofile/, \
- 		oprof.o cpu_buffer.o buffer_sync.o \
- 		event_buffer.o oprofile_files.o \
- 		oprofilefs.o oprofile_stats.o \
--		timer_int.o )
-+		timer_int.o oprofile_perf.o )
- 
- oprofile-y	:= $(DRIVER_OBJS) common.o backtrace.o
-diff --git a/arch/sh/oprofile/common.c b/arch/sh/oprofile/common.c
-index ac60493..f8d4a84 100644
---- a/arch/sh/oprofile/common.c
-+++ b/arch/sh/oprofile/common.c
-@@ -17,71 +17,23 @@
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/smp.h>
-+#include <linux/perf_event.h>
- #include <asm/processor.h>
--#include "op_impl.h"
--
--static struct op_sh_model *model;
--
--static struct op_counter_config ctr[20];
- 
- extern void sh_backtrace(struct pt_regs * const regs, unsigned int depth);
- 
--static int op_sh_setup(void)
--{
--	/* Pre-compute the values to stuff in the hardware registers.  */
--	model->reg_setup(ctr);
--
--	/* Configure the registers on all cpus.  */
--	on_each_cpu(model->cpu_setup, NULL, 1);
--
--        return 0;
--}
--
--static int op_sh_create_files(struct super_block *sb, struct dentry *root)
--{
--	int i, ret = 0;
--
--	for (i = 0; i < model->num_counters; i++) {
--		struct dentry *dir;
--		char buf[4];
--
--		snprintf(buf, sizeof(buf), "%d", i);
--		dir = oprofilefs_mkdir(sb, root, buf);
--
--		ret |= oprofilefs_create_ulong(sb, dir, "enabled", &ctr[i].enabled);
--		ret |= oprofilefs_create_ulong(sb, dir, "event", &ctr[i].event);
--		ret |= oprofilefs_create_ulong(sb, dir, "kernel", &ctr[i].kernel);
--		ret |= oprofilefs_create_ulong(sb, dir, "user", &ctr[i].user);
--
--		if (model->create_files)
--			ret |= model->create_files(sb, dir);
--		else
--			ret |= oprofilefs_create_ulong(sb, dir, "count", &ctr[i].count);
--
--		/* Dummy entries */
--		ret |= oprofilefs_create_ulong(sb, dir, "unit_mask", &ctr[i].unit_mask);
--	}
--
--	return ret;
--}
--
--static int op_sh_start(void)
-+static char *op_name_from_perf_name(const char *name)
- {
--	/* Enable performance monitoring for all counters.  */
--	on_each_cpu(model->cpu_start, NULL, 1);
-+	if (!strcmp(name, "SH-4A"))
-+		return "sh/sh4a";
-+	if (!strcmp(name, "SH7750"))
-+		return "sh/sh7750";
- 
--	return 0;
--}
--
--static void op_sh_stop(void)
--{
--	/* Disable performance monitoring for all counters.  */
--	on_each_cpu(model->cpu_stop, NULL, 1);
-+	return NULL;
- }
- 
- int __init oprofile_arch_init(struct oprofile_operations *ops)
- {
--	struct op_sh_model *lmodel = NULL;
- 	int ret;
- 
- 	/*
-@@ -91,40 +43,28 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 	 */
- 	ops->backtrace = sh_backtrace;
- 
--	/*
--	 * XXX
--	 *
--	 * All of the SH7750/SH-4A counters have been converted to perf,
--	 * this infrastructure hook is left for other users until they've
--	 * had a chance to convert over, at which point all of this
--	 * will be deleted.
--	 */
--
--	if (!lmodel)
--		return -ENODEV;
- 	if (!(current_cpu_data.flags & CPU_HAS_PERF_COUNTER))
- 		return -ENODEV;
- 
--	ret = lmodel->init();
--	if (unlikely(ret != 0))
--		return ret;
-+	ops->setup		= oprofile_perf_setup;
-+	ops->create_files	= oprofile_perf_create_files;
-+	ops->start		= oprofile_perf_start;
-+	ops->stop		= oprofile_perf_stop;
-+	ops->cpu_type		= op_name_from_perf_name(sh_pmu_name());
- 
--	model = lmodel;
-+	oprofile_perf_set_num_counters(sh_pmu_num_events());
- 
--	ops->setup		= op_sh_setup;
--	ops->create_files	= op_sh_create_files;
--	ops->start		= op_sh_start;
--	ops->stop		= op_sh_stop;
--	ops->cpu_type		= lmodel->cpu_type;
-+	ret = oprofile_perf_init();
-+	if (ret != 0)
-+		return ret;
- 
- 	printk(KERN_INFO "oprofile: using %s performance monitoring.\n",
--	       lmodel->cpu_type);
-+	       ops->cpu_type);
- 
- 	return 0;
- }
- 
- void oprofile_arch_exit(void)
- {
--	if (model && model->exit)
--		model->exit();
-+	oprofile_perf_exit();
- }
-diff --git a/arch/sh/oprofile/op_impl.h b/arch/sh/oprofile/op_impl.h
-deleted file mode 100644
-index 1244479..0000000
---- a/arch/sh/oprofile/op_impl.h
-+++ /dev/null
-@@ -1,33 +0,0 @@
--#ifndef __OP_IMPL_H
--#define __OP_IMPL_H
--
--/* Per-counter configuration as set via oprofilefs.  */
--struct op_counter_config {
--	unsigned long enabled;
--	unsigned long event;
--
--	unsigned long count;
--
--	/* Dummy values for userspace tool compliance */
--	unsigned long kernel;
--	unsigned long user;
--	unsigned long unit_mask;
--};
--
--/* Per-architecture configury and hooks.  */
--struct op_sh_model {
--	void (*reg_setup)(struct op_counter_config *);
--	int (*create_files)(struct super_block *sb, struct dentry *dir);
--	void (*cpu_setup)(void *dummy);
--	int (*init)(void);
--	void (*exit)(void);
--	void (*cpu_start)(void *args);
--	void (*cpu_stop)(void *args);
--	char *cpu_type;
--	unsigned char num_counters;
--};
--
--/* arch/sh/oprofile/common.c */
--extern void sh_backtrace(struct pt_regs * const regs, unsigned int depth);
--
--#endif /* __OP_IMPL_H */
--- 
-1.7.1
+I now have this change in my tree along with my softirq+rt_avg changes
+and haven't seen the failure since.
 
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index ae2a225..8c31e38 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2858,6 +2858,9 @@ unsigned long scale_rt_power(int cpu)
+ 	u64 total, available;
+
+ 	total = sched_avg_period() + (rq->clock - rq->age_stamp);
++	if (unlikely(total < rq->rt_avg))
++		return 0;
++
+ 	available = total - rq->rt_avg;
+
+ 	if (unlikely((s64)total < SCHED_LOAD_SCALE))
+
+
+
+The theory I had on why total can be less than rq->rt_avg.
+- (Time T0) update_curr calls sched_rt_avg_update and delta accumulation starts
+- (Time T1) lb scale_rt_power calls sched_avg_update() and we say
+there was aging at this point (while rt_avg doesn't have delta added
+yet)
+- (Time T2) timer int -> update_curr calls sched_rt_avg_update() with
+no aging of timestamp, but delta added to rt_avg.
+- Time passes
+- (Time T3) lb calls scale_latc_power again, and at this point
+  total = period + (T3 - T1)
+  rt_avg = halved at T1 (which can be ~period) + T3 - T0
+which can be slightly greater than total, spoiling the math from there on.
+
+I tried reproducing the problem with vanilla kernel and couldn't
+reproduce it. May be your workload is triggering this some how?
+Also, Suresh did recent fixes to rt_avg and this may not be a problem
+after that. I Haven't looked at this case closely after that recent
+change.
+
+Thanks,
+Venki
