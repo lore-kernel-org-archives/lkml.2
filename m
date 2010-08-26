@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab0HZTBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 15:01:41 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42962 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab0HZTBj (ORCPT
+	id S1753967Ab0HZTJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 15:09:26 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:47512 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753536Ab0HZTJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 15:01:39 -0400
-Message-ID: <4C76B9E1.4080500@mvista.com>
-Date: Thu, 26 Aug 2010 23:00:49 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: Adam Jiang <jiang.adam@gmail.com>
-CC: ralf@linux-mips.org, dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
-        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
-        tj@kernel.org, linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mips: irq: add stackoverflow detection
-References: <linux-mips@linux-mips.org> <1282828755-11953-1-git-send-email-jiang.adam@gmail.com>
-In-Reply-To: <1282828755-11953-1-git-send-email-jiang.adam@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Aug 2010 15:09:21 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-kernel@vger.kernel.org
+Cc: Robert Richter <robert.richter@amd.com>, Will Deacon <will.deacon@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org
+Subject: [PATCH 1/4] oprofile: Handle initialisation failure more gracefully
+Date: Thu, 26 Aug 2010 20:09:16 +0100
+Message-Id: <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <cover.1282848651.git.matt@console-pimps.org>
+References: <cover.1282848651.git.matt@console-pimps.org>
+In-Reply-To: <cover.1282848651.git.matt@console-pimps.org>
+References: <cover.1282848651.git.matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Will Deacon <will.deacon@arm.com>
 
-Adam Jiang wrote:
+The current implementation is not entirely safe in the case that
+oprofile_arch_init() fails. We need to make sure that we always call
+exit_driverfs() if we've called init_driverfs(). Also, avoid a potential
+double free when freeing 'counter_config', e.g. don't free
+'counter_config' in both oprofile_arch_init() and oprofile_arch_exit().
 
-> Add stackoverflow detection to mips arch
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/oprofile/common.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-[...]
+diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+index 0691176..482779c 100644
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@ -275,10 +275,12 @@ out:
+ 	return ret;
+ }
+ 
+-static void  exit_driverfs(void)
++static void exit_driverfs(void)
+ {
+-	platform_device_unregister(oprofile_pdev);
+-	platform_driver_unregister(&oprofile_driver);
++	if (!IS_ERR_OR_NULL(oprofile_pdev)) {
++		platform_device_unregister(oprofile_pdev);
++		platform_driver_unregister(&oprofile_driver);
++	}
+ }
+ #else
+ static int __init init_driverfs(void) { return 0; }
+@@ -363,10 +365,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 	}
+ 
+ 	ret = init_driverfs();
+-	if (ret) {
+-		kfree(counter_config);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	for_each_possible_cpu(cpu) {
+ 		perf_events[cpu] = kcalloc(perf_num_counters,
+@@ -401,8 +401,9 @@ void oprofile_arch_exit(void)
+ 	int cpu, id;
+ 	struct perf_event *event;
+ 
++	exit_driverfs();
++
+ 	if (*perf_events) {
+-		exit_driverfs();
+ 		for_each_possible_cpu(cpu) {
+ 			for (id = 0; id < perf_num_counters; ++id) {
+ 				event = perf_events[cpu][id];
+-- 
+1.7.1
 
-> diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
-> index c6345f5..8fdf79e 100644
-> --- a/arch/mips/kernel/irq.c
-> +++ b/arch/mips/kernel/irq.c
-> @@ -151,6 +151,25 @@ void __init init_IRQ(void)
->  #endif
->  }
->  
-> +#ifdef DEBUG_STACKOVERFLOW
-> +static inline void check_stack_overflow(void)
-> +{
-> +	long sp;
-> +
-> +	asm volatile("move %0, $sp" : "=r" (sp));
-> +	sp = sp & (THREAD_SIZE-1);
-> +
-> +	/* check for stack overflow: is there less than 2KB free? */
-> +	if (unlikely(sp < (sizeof(struct thread_info) + 2048))) {
-> +		printk("do_IRQ: stack overflow: %ld\n",
-> +		       sp - sizeof(struct thread_info));
-> +		dump_stack();
-> +	}
-> +}
-> +#else
-> +static inline void check_stack_overflow(void) {}
-> +#endif
-> +
->  /*
->   * do_IRQ handles all normal device IRQ's (the special
->   * SMP cross-CPU interrupts have their own specific
-
-    You've dropped call check_stack_overflow() call in do_IRQ() -- was that 
-intentional?
-
-WBR, Sergei
