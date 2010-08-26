@@ -1,62 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab0HZLF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 07:05:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37024 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab0HZLFy convert rfc822-to-8bit (ORCPT
+	id S1753144Ab0HZLUv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 07:20:51 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49895 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab0HZLUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 07:05:54 -0400
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-From: Peter Zijlstra <peterz@infradead.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <AANLkTikS9Bc1NmCCO5w=pT+LBLaeSyk2PBnAry+oDxM8@mail.gmail.com>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
-	 <1282310110.2605.976.camel@laptop>
-	 <20100825155814.25c783c7.akpm@linux-foundation.org>
-	 <20100825173125.0855a6b0@bike.lwn.net>
-	 <AANLkTinPaq+0MbdW81uoc5_OZ=1Gy_mVYEBnwv8zgOBd@mail.gmail.com>
-	 <1282810811.1975.246.camel@laptop>
-	 <AANLkTin7EBZw0-WY=NGOmYzZT5Cfy7oWVFBaT2cjK+vZ@mail.gmail.com>
-	 <1282817160.1975.476.camel@laptop>
-	 <AANLkTikS9Bc1NmCCO5w=pT+LBLaeSyk2PBnAry+oDxM8@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 26 Aug 2010 13:05:32 +0200
-Message-ID: <1282820732.1975.606.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 26 Aug 2010 07:20:21 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 2/6] fs/9p: Add xattr callbacks for POSIX ACL
+Date: Thu, 26 Aug 2010 16:49:54 +0530
+Message-Id: <1282821598-16472-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1282821598-16472-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1282821598-16472-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even more offtopic ;-)
+This patch implement fetching POSIX ACL from the server
 
-On Thu, 2010-08-26 at 19:21 +0900, Minchan Kim wrote:
-> I agree highmem isn't a gorgeous. But my desktop isn't real machine?
-> Important thing is that we already have a highmem and many guys
-> include you(kmap stacking patch :))try to improve highmem problems. :)
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/acl.c   |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/9p/xattr.c |    4 +++
+ fs/9p/xattr.h |    2 +
+ 3 files changed, 69 insertions(+), 0 deletions(-)
 
-I have exactly 0 machines in daily use that use highmem, I had to test
-that kmap stuff in a 32bit qemu.
+diff --git a/fs/9p/acl.c b/fs/9p/acl.c
+index 5de599b..e122e63 100644
+--- a/fs/9p/acl.c
++++ b/fs/9p/acl.c
+@@ -93,3 +93,66 @@ int v9fs_check_acl(struct inode *inode, int mask)
+ 	}
+ 	return -EAGAIN;
+ }
++
++static size_t v9fs_xattr_list_acl_access(struct dentry *dentry, char *list,
++					 size_t list_len, const char *name,
++					 size_t name_len, int type)
++{
++	const size_t size = sizeof(POSIX_ACL_XATTR_ACCESS);
++	if (list && size <= list_len)
++		memcpy(list, POSIX_ACL_XATTR_ACCESS, size);
++	return size;
++}
++
++static size_t v9fs_xattr_list_acl_default(struct dentry *dentry, char *list,
++					  size_t list_len, const char *name,
++					  size_t name_len, int type)
++{
++	const size_t size = sizeof(POSIX_ACL_XATTR_DEFAULT);
++	if (list && size <= list_len)
++		memcpy(list, POSIX_ACL_XATTR_DEFAULT, size);
++	return size;
++}
++
++static int v9fs_xattr_get_acl(struct dentry *dentry, const char *name,
++			      void *buffer, size_t size, int type)
++{
++	struct posix_acl *acl;
++	int error;
++
++	if (strcmp(name, "") != 0)
++		return -EINVAL;
++
++	acl = v9fs_get_cached_acl(dentry->d_inode, type);
++	if (IS_ERR(acl))
++		return PTR_ERR(acl);
++	if (acl == NULL)
++		return -ENODATA;
++	error = posix_acl_to_xattr(acl, buffer, size);
++	posix_acl_release(acl);
++
++	return error;
++}
++
++static int v9fs_xattr_set_acl(struct dentry *dentry, const char *name,
++			      const void *value, size_t size,
++			      int flags, int type)
++{
++	return 0;
++}
++
++const struct xattr_handler v9fs_xattr_acl_access_handler = {
++	.prefix	= POSIX_ACL_XATTR_ACCESS,
++	.flags	= ACL_TYPE_ACCESS,
++	.list	= v9fs_xattr_list_acl_access,
++	.get	= v9fs_xattr_get_acl,
++	.set	= v9fs_xattr_set_acl,
++};
++
++const struct xattr_handler v9fs_xattr_acl_default_handler = {
++	.prefix	= POSIX_ACL_XATTR_DEFAULT,
++	.flags	= ACL_TYPE_DEFAULT,
++	.list	= v9fs_xattr_list_acl_default,
++	.get	= v9fs_xattr_get_acl,
++	.set	= v9fs_xattr_set_acl,
++};
+diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
+index a3696c9..a9ff0ca 100644
+--- a/fs/9p/xattr.c
++++ b/fs/9p/xattr.c
+@@ -164,5 +164,9 @@ ssize_t v9fs_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size)
+ 
+ const struct xattr_handler *v9fs_xattr_handlers[] = {
+ 	&v9fs_xattr_user_handler,
++#ifdef CONFIG_9P_FS_POSIX_ACL
++	&v9fs_xattr_acl_access_handler,
++	&v9fs_xattr_acl_default_handler,
++#endif
+ 	NULL
+ };
+diff --git a/fs/9p/xattr.h b/fs/9p/xattr.h
+index ec908c6..eaa837c 100644
+--- a/fs/9p/xattr.h
++++ b/fs/9p/xattr.h
+@@ -20,6 +20,8 @@
+ 
+ extern const struct xattr_handler *v9fs_xattr_handlers[];
+ extern struct xattr_handler v9fs_xattr_user_handler;
++extern const struct xattr_handler v9fs_xattr_acl_access_handler;
++extern const struct xattr_handler v9fs_xattr_acl_default_handler;
+ 
+ extern ssize_t v9fs_fid_xattr_get(struct p9_fid *, const char *,
+ 				  void *, size_t);
+-- 
+1.7.0.4
 
-Sadly some hardware folks still think its a sane thing to do, like ARM
-announcing 40bit PAE, I mean really?!
-
-At least AMD announced a 64bit tiny-chip and hopefully Intel Atom will
-soon be all 64bit too (please?!).
