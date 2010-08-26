@@ -1,38 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab0HZSvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:51:33 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:47691 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596Ab0HZSv3 (ORCPT
+	id S1754355Ab0HZSvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:51:54 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:4744 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816Ab0HZStg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:51:29 -0400
-Date: Thu, 26 Aug 2010 19:51:28 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-cc: Marc Haber <mh+linux-kernel@zugschlus.de>,
-        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: RE: No link on e1000e with 2.6.35.3 and ThinkPad T60
-In-Reply-To: <EA929A9653AAE14F841771FB1DE5A13660082E8C5B@rrsmsx501.amr.corp.intel.com>
-Message-ID: <alpine.LFD.2.00.1008261947310.8990@eddie.linux-mips.org>
-References: <20100724092644.GA13353@torres.zugschlus.de> <20100824094524.GA17608@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A136600821444B@rrsmsx501.amr.corp.intel.com> <20100826112732.GA15559@torres.zugschlus.de>
- <EA929A9653AAE14F841771FB1DE5A13660082E8C5B@rrsmsx501.amr.corp.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 26 Aug 2010 14:49:36 -0400
+Subject: [PATCH 03/13] cciss: factor out cciss_setintinfo
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
+Date: Thu, 26 Aug 2010 13:55:44 -0500
+Message-ID: <20100826185544.9067.28636.stgit@beardog.cce.hp.com>
+In-Reply-To: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
+References: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010, Tantilov, Emil S wrote:
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-> As far as the crashes go - it would help a lot if you can get a trace.
-> You can use a serial console if you have a docking station for the T60.
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/block/cciss.c |   66 ++++++++++++++++++++++++-------------------------
+ 1 files changed, 32 insertions(+), 34 deletions(-)
 
- If that helps -- there's a serial port option available for the T60's 
-UltraBay too that works as ttyS0.
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 14380c4..5ff5a1d 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1262,6 +1262,37 @@ static int cciss_getintinfo(ctlr_info_t *h, void __user *argp)
+ 	return 0;
+ }
+ 
++static int cciss_setintinfo(ctlr_info_t *h, void __user *argp)
++{
++	cciss_coalint_struct intinfo;
++	unsigned long flags;
++	int i;
++
++	if (!argp)
++		return -EINVAL;
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++	if (copy_from_user(&intinfo, argp, sizeof(intinfo)))
++		return -EFAULT;
++	if ((intinfo.delay == 0) && (intinfo.count == 0))
++		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
++	/* Update the field, and then ring the doorbell */
++	writel(intinfo.delay, &(h->cfgtable->HostWrite.CoalIntDelay));
++	writel(intinfo.count, &(h->cfgtable->HostWrite.CoalIntCount));
++	writel(CFGTBL_ChangeReq, h->vaddr + SA5_DOORBELL);
++
++	for (i = 0; i < MAX_IOCTL_CONFIG_WAIT; i++) {
++		if (!(readl(h->vaddr + SA5_DOORBELL) & CFGTBL_ChangeReq))
++			break;
++		udelay(1000); /* delay and try again */
++	}
++	spin_unlock_irqrestore(&h->lock, flags);
++	if (i >= MAX_IOCTL_CONFIG_WAIT)
++		return -EAGAIN;
++	return 0;
++}
++
+ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 		       unsigned int cmd, unsigned long arg)
+ {
+@@ -1278,40 +1309,7 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 	case CCISS_GETINTINFO:
+ 		return cciss_getintinfo(h, argp);
+ 	case CCISS_SETINTINFO:
+-		{
+-			cciss_coalint_struct intinfo;
+-			unsigned long flags;
+-			int i;
+-
+-			if (!arg)
+-				return -EINVAL;
+-			if (!capable(CAP_SYS_ADMIN))
+-				return -EPERM;
+-			if (copy_from_user
+-			    (&intinfo, argp, sizeof(cciss_coalint_struct)))
+-				return -EFAULT;
+-			if ((intinfo.delay == 0) && (intinfo.count == 0))
+-				return -EINVAL;
+-			spin_lock_irqsave(&h->lock, flags);
+-			/* Update the field, and then ring the doorbell */
+-			writel(intinfo.delay,
+-			       &(h->cfgtable->HostWrite.CoalIntDelay));
+-			writel(intinfo.count,
+-			       &(h->cfgtable->HostWrite.CoalIntCount));
+-			writel(CFGTBL_ChangeReq, h->vaddr + SA5_DOORBELL);
+-
+-			for (i = 0; i < MAX_IOCTL_CONFIG_WAIT; i++) {
+-				if (!(readl(h->vaddr + SA5_DOORBELL)
+-				      & CFGTBL_ChangeReq))
+-					break;
+-				/* delay and try again */
+-				udelay(1000);
+-			}
+-			spin_unlock_irqrestore(&h->lock, flags);
+-			if (i >= MAX_IOCTL_CONFIG_WAIT)
+-				return -EAGAIN;
+-			return 0;
+-		}
++		return cciss_setintinfo(h, argp);
+ 	case CCISS_GETNODENAME:
+ 		{
+ 			NodeName_type NodeName;
 
-  Maciej
