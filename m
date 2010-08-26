@@ -1,320 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab0HZX24 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 19:28:56 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57874 "EHLO hera.kernel.org"
+	id S1754748Ab0HZX3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 19:29:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57930 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752217Ab0HZX2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 19:28:54 -0400
-Date: Thu, 26 Aug 2010 23:28:12 GMT
+	id S1753785Ab0HZX3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 19:29:01 -0400
+Date: Thu, 26 Aug 2010 23:28:35 GMT
 From: tip-bot for Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, konrad.wilk@oracle.com, joerg.roedel@amd.com,
-        fujita.tomonori@lab.ntt.co.jp, djwong@us.ibm.com, muli@il.ibm.com,
-        jdmason@kudzu.us, jbarnes@virtuousgeek.org, chrisw@sous-sol.org,
-        tglx@linutronix.de, hpa@linux.intel.com, David.Woodhouse@intel.com
+        konrad.wilk@oracle.com, fujita.tomonori@lab.ntt.co.jp,
+        tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, yinghai@kernel.org, joerg.roedel@amd.com,
-        djwong@us.ibm.com, fujita.tomonori@lab.ntt.co.jp, muli@il.ibm.com,
-        jdmason@kudzu.us, chrisw@sous-sol.org, jbarnes@virtuousgeek.org,
-        tglx@linutronix.de, hpa@linux.intel.com, David.Woodhouse@intel.com
-In-Reply-To: <1282845485-8991-3-git-send-email-konrad.wilk@oracle.com>
-References: <1282845485-8991-3-git-send-email-konrad.wilk@oracle.com>
+        konrad.wilk@oracle.com, fujita.tomonori@lab.ntt.co.jp,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1282845485-8991-4-git-send-email-konrad.wilk@oracle.com>
+References: <1282845485-8991-4-git-send-email-konrad.wilk@oracle.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/iommu] x86, iommu: Make all IOMMU's detection routines return a value.
-Message-ID: <tip-480125ba49ba62be93beea37770f266846e077ab@git.kernel.org>
-Git-Commit-ID: 480125ba49ba62be93beea37770f266846e077ab
+Subject: [tip:x86/iommu] x86, iommu: Add proper dependency sort routine (and sanity check).
+Message-ID: <tip-5bef80a4b826b9cee1c6aec7ecc371ec395260cc@git.kernel.org>
+Git-Commit-ID: 5bef80a4b826b9cee1c6aec7ecc371ec395260cc
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 Aug 2010 23:28:14 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 Aug 2010 23:28:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  480125ba49ba62be93beea37770f266846e077ab
-Gitweb:     http://git.kernel.org/tip/480125ba49ba62be93beea37770f266846e077ab
+Commit-ID:  5bef80a4b826b9cee1c6aec7ecc371ec395260cc
+Gitweb:     http://git.kernel.org/tip/5bef80a4b826b9cee1c6aec7ecc371ec395260cc
 Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-AuthorDate: Thu, 26 Aug 2010 13:57:57 -0400
+AuthorDate: Thu, 26 Aug 2010 13:57:58 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 26 Aug 2010 15:13:13 -0700
+CommitDate: Thu, 26 Aug 2010 15:13:19 -0700
 
-x86, iommu: Make all IOMMU's detection routines return a value.
+x86, iommu: Add proper dependency sort routine (and sanity check).
 
-We return 1 if the IOMMU has been detected. Zero or an error number
-if we failed to find it. This is in preperation of using the IOMMU_INIT
-so that we can detect whether an IOMMU is present. I have not
-tested this for regression on Calgary, nor on AMD Vi chipsets as
-I don't have that hardware.
+We are using a very simple sort routine which sorts the .iommu_table
+array in the order of dependencies. Specifically each structure
+of iommu_table_entry has a field 'depend' which contains the function
+pointer to the IOMMU that MUST be run before us. We sort the array
+of structures so that the struct iommu_table_entry with no
+'depend' field are first, and then the subsequent ones are the
+ones for which the 'depend' function has been already invoked
+(in other words, precede us).
 
-CC: Muli Ben-Yehuda <muli@il.ibm.com>
-CC: "Jon D. Mason" <jdmason@kudzu.us>
-CC: "Darrick J. Wong" <djwong@us.ibm.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: David Woodhouse <David.Woodhouse@intel.com>
-CC: Chris Wright <chrisw@sous-sol.org>
-CC: Yinghai Lu <yinghai@kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>
+Using the kernel's version 'sort', which is a mergeheap is
+feasible, but would require making the comparison operator
+scan recursivly the array to satisfy the "heapify" process: setting the
+levels properly. The end result would much more complex than it should
+be an it is just much simpler to utilize this simple sort routine.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+LKML-Reference: <1282845485-8991-4-git-send-email-konrad.wilk@oracle.com>
 CC: H. Peter Anvin <hpa@zytor.com>
 CC: Fujita Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-LKML-Reference: <1282845485-8991-3-git-send-email-konrad.wilk@oracle.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/amd_iommu.h |    4 ++--
- arch/x86/include/asm/calgary.h   |    4 ++--
- arch/x86/include/asm/gart.h      |    5 +++--
- arch/x86/kernel/amd_iommu_init.c |    8 +++++---
- arch/x86/kernel/aperture_64.c    |   11 +++++++----
- arch/x86/kernel/pci-calgary_64.c |   15 ++++++++-------
- drivers/pci/dmar.c               |    4 +++-
- include/linux/dmar.h             |    6 +++---
- 8 files changed, 33 insertions(+), 24 deletions(-)
+ arch/x86/include/asm/iommu_table.h |    6 ++
+ arch/x86/kernel/Makefile           |    1 +
+ arch/x86/kernel/pci-iommu_table.c  |   89 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 96 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/amd_iommu.h b/arch/x86/include/asm/amd_iommu.h
-index 5af2982..2798142 100644
---- a/arch/x86/include/asm/amd_iommu.h
-+++ b/arch/x86/include/asm/amd_iommu.h
-@@ -24,11 +24,11 @@
+diff --git a/arch/x86/include/asm/iommu_table.h b/arch/x86/include/asm/iommu_table.h
+index 435176f..2124e3e 100644
+--- a/arch/x86/include/asm/iommu_table.h
++++ b/arch/x86/include/asm/iommu_table.h
+@@ -92,4 +92,10 @@ struct iommu_table_entry {
+ #define IOMMU_INIT(_detect, _depend, _init, _late_init)			\
+ 	__IOMMU_INIT(_detect, _depend, _init, _late_init, 0)
  
- #ifdef CONFIG_AMD_IOMMU
- 
--extern void amd_iommu_detect(void);
-+extern int amd_iommu_detect(void);
- 
- #else
- 
--static inline void amd_iommu_detect(void) { }
-+static inline int amd_iommu_detect(void) { return -ENODEV; }
- 
- #endif
- 
-diff --git a/arch/x86/include/asm/calgary.h b/arch/x86/include/asm/calgary.h
-index 0918654..0d467b3 100644
---- a/arch/x86/include/asm/calgary.h
-+++ b/arch/x86/include/asm/calgary.h
-@@ -62,9 +62,9 @@ struct cal_chipset_ops {
- extern int use_calgary;
- 
- #ifdef CONFIG_CALGARY_IOMMU
--extern void detect_calgary(void);
-+extern int detect_calgary(void);
- #else
--static inline void detect_calgary(void) { return; }
-+static inline int detect_calgary(void) { return -ENODEV; }
- #endif
- 
- #endif /* _ASM_X86_CALGARY_H */
-diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
-index 4ac5b0f..d7d1d4c 100644
---- a/arch/x86/include/asm/gart.h
-+++ b/arch/x86/include/asm/gart.h
-@@ -37,7 +37,7 @@ extern int gart_iommu_aperture_disabled;
- extern void early_gart_iommu_check(void);
- extern int gart_iommu_init(void);
- extern void __init gart_parse_options(char *);
--extern void gart_iommu_hole_init(void);
-+extern int gart_iommu_hole_init(void);
- 
- #else
- #define gart_iommu_aperture            0
-@@ -50,8 +50,9 @@ static inline void early_gart_iommu_check(void)
- static inline void gart_parse_options(char *options)
- {
- }
--static inline void gart_iommu_hole_init(void)
-+static inline int gart_iommu_hole_init(void)
- {
-+	return -ENODEV;
- }
- #endif
- 
-diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
-index 3cc63e2..0b9e2dc 100644
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -1382,13 +1382,13 @@ static int __init early_amd_iommu_detect(struct acpi_table_header *table)
- 	return 0;
- }
- 
--void __init amd_iommu_detect(void)
-+int __init amd_iommu_detect(void)
- {
- 	if (no_iommu || (iommu_detected && !gart_iommu_aperture))
--		return;
-+		return -ENODEV;
- 
- 	if (amd_iommu_disabled)
--		return;
-+		return -ENODEV;
- 
- 	if (acpi_table_parse("IVRS", early_amd_iommu_detect) == 0) {
- 		iommu_detected = 1;
-@@ -1397,7 +1397,9 @@ void __init amd_iommu_detect(void)
- 
- 		/* Make sure ACS will be enabled */
- 		pci_request_acs();
-+		return 1;
- 	}
-+	return -ENODEV;
- }
- 
- /****************************************************************************
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index a2e0caf..afa0dab 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -371,7 +371,7 @@ void __init early_gart_iommu_check(void)
- 
- static int __initdata printed_gart_size_msg;
- 
--void __init gart_iommu_hole_init(void)
-+int __init gart_iommu_hole_init(void)
- {
- 	u32 agp_aper_base = 0, agp_aper_order = 0;
- 	u32 aper_size, aper_alloc = 0, aper_order = 0, last_aper_order = 0;
-@@ -381,7 +381,7 @@ void __init gart_iommu_hole_init(void)
- 
- 	if (gart_iommu_aperture_disabled || !fix_aperture ||
- 	    !early_pci_allowed())
--		return;
-+		return -ENODEV;
- 
- 	printk(KERN_INFO  "Checking aperture...\n");
- 
-@@ -463,8 +463,9 @@ out:
- 			unsigned long n = (32 * 1024 * 1024) << last_aper_order;
- 
- 			insert_aperture_resource((u32)last_aper_base, n);
-+			return 1;
- 		}
--		return;
-+		return 0;
- 	}
- 
- 	if (!fallback_aper_force) {
-@@ -500,7 +501,7 @@ out:
- 			panic("Not enough memory for aperture");
- 		}
- 	} else {
--		return;
-+		return 0;
- 	}
- 
- 	/* Fix up the north bridges */
-@@ -524,4 +525,6 @@ out:
- 	}
- 
- 	set_up_gart_resume(aper_order, aper_alloc);
++void sort_iommu_table(struct iommu_table_entry *start,
++		      struct iommu_table_entry *finish);
 +
-+	return 1;
- }
-diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-index 078d4ec..28c6b38 100644
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -1364,7 +1364,7 @@ static int __init calgary_iommu_init(void)
- 	return 0;
- }
- 
--void __init detect_calgary(void)
-+int __init detect_calgary(void)
- {
- 	int bus;
- 	void *tbl;
-@@ -1378,13 +1378,13 @@ void __init detect_calgary(void)
- 	 * another HW IOMMU already, bail out.
- 	 */
- 	if (no_iommu || iommu_detected)
--		return;
-+		return -ENODEV;
- 
- 	if (!use_calgary)
--		return;
-+		return -ENODEV;
- 
- 	if (!early_pci_allowed())
--		return;
-+		return -ENODEV;
- 
- 	printk(KERN_DEBUG "Calgary: detecting Calgary via BIOS EBDA area\n");
- 
-@@ -1410,13 +1410,13 @@ void __init detect_calgary(void)
- 	if (!rio_table_hdr) {
- 		printk(KERN_DEBUG "Calgary: Unable to locate Rio Grande table "
- 		       "in EBDA - bailing!\n");
--		return;
-+		return -ENODEV;
- 	}
- 
- 	ret = build_detail_arrays();
- 	if (ret) {
- 		printk(KERN_DEBUG "Calgary: build_detail_arrays ret %d\n", ret);
--		return;
-+		return -ENOMEM;
- 	}
- 
- 	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
-@@ -1464,7 +1464,7 @@ void __init detect_calgary(void)
- 
- 		x86_init.iommu.iommu_init = calgary_iommu_init;
- 	}
--	return;
-+	return calgary_found;
- 
- cleanup:
- 	for (--bus; bus >= 0; --bus) {
-@@ -1473,6 +1473,7 @@ cleanup:
- 		if (info->tce_space)
- 			free_tce_table(info->tce_space);
- 	}
-+	return -ENOMEM;
- }
- 
- static int __init calgary_parse_options(char *p)
-diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
-index 0a19708..5fa64ea 100644
---- a/drivers/pci/dmar.c
-+++ b/drivers/pci/dmar.c
-@@ -687,7 +687,7 @@ failed:
- 	return 0;
- }
- 
--void __init detect_intel_iommu(void)
-+int __init detect_intel_iommu(void)
- {
- 	int ret;
- 
-@@ -723,6 +723,8 @@ void __init detect_intel_iommu(void)
- 	}
- 	early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl_size);
- 	dmar_tbl = NULL;
++void check_iommu_entries(struct iommu_table_entry *start,
++			 struct iommu_table_entry *finish);
 +
-+	return (ret ? 1 : -ENODEV);
- }
+ #endif /* _ASM_X86_IOMMU_TABLE_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 0925676..6817546 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -42,6 +42,7 @@ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o i8237.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+ obj-y			+= tsc.o io_delay.o rtc.o
++obj-y			+= pci-iommu_table.o
  
- 
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index d7cecc9..a206020 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -57,15 +57,15 @@ extern int dmar_table_init(void);
- extern int dmar_dev_scope_init(void);
- 
- /* Intel IOMMU detection */
--extern void detect_intel_iommu(void);
-+extern int detect_intel_iommu(void);
- extern int enable_drhd_fault_handling(void);
- 
- extern int parse_ioapics_under_ir(void);
- extern int alloc_iommu(struct dmar_drhd_unit *);
- #else
--static inline void detect_intel_iommu(void)
-+static inline int detect_intel_iommu(void)
- {
--	return;
-+	return -ENODEV;
- }
- 
- static inline int dmar_table_init(void)
+ obj-$(CONFIG_X86_TRAMPOLINE)	+= trampoline.o
+ obj-y				+= process.o
+diff --git a/arch/x86/kernel/pci-iommu_table.c b/arch/x86/kernel/pci-iommu_table.c
+new file mode 100644
+index 0000000..55d745e
+--- /dev/null
++++ b/arch/x86/kernel/pci-iommu_table.c
+@@ -0,0 +1,89 @@
++#include <linux/dma-mapping.h>
++#include <asm/iommu_table.h>
++#include <linux/string.h>
++#include <linux/kallsyms.h>
++
++
++#define DEBUG 1
++
++static struct iommu_table_entry * __init
++find_dependents_of(struct iommu_table_entry *start,
++		   struct iommu_table_entry *finish,
++		   struct iommu_table_entry *q)
++{
++	struct iommu_table_entry *p;
++
++	if (!q)
++		return NULL;
++
++	for (p = start; p < finish; p++)
++		if (p->detect == q->depend)
++			return p;
++
++	return NULL;
++}
++
++
++void __init sort_iommu_table(struct iommu_table_entry *start,
++			     struct iommu_table_entry *finish) {
++
++	struct iommu_table_entry *p, *q, tmp;
++
++	for (p = start; p < finish; p++) {
++again:
++		q = find_dependents_of(start, finish, p);
++		/* We are bit sneaky here. We use the memory address to figure
++		 * out if the node we depend on is past our point, if so, swap.
++		 */
++		if (q > p) {
++			tmp = *p;
++			memmove(p, q, sizeof(*p));
++			*q = tmp;
++			goto again;
++		}
++	}
++
++}
++
++#ifdef DEBUG
++void __init check_iommu_entries(struct iommu_table_entry *start,
++				struct iommu_table_entry *finish)
++{
++	struct iommu_table_entry *p, *q, *x;
++	char sym_p[KSYM_SYMBOL_LEN];
++	char sym_q[KSYM_SYMBOL_LEN];
++
++	/* Simple cyclic dependency checker. */
++	for (p = start; p < finish; p++) {
++		q = find_dependents_of(start, finish, p);
++		x = find_dependents_of(start, finish, q);
++		if (p == x) {
++			sprint_symbol(sym_p, (unsigned long)p->detect);
++			sprint_symbol(sym_q, (unsigned long)q->detect);
++
++			printk(KERN_ERR "CYCLIC DEPENDENCY FOUND! %s depends" \
++					" on %s and vice-versa. BREAKING IT.\n",
++					sym_p, sym_q);
++			/* Heavy handed way..*/
++			x->depend = 0;
++		}
++	}
++
++	for (p = start; p < finish; p++) {
++		q = find_dependents_of(p, finish, p);
++		if (q && q > p) {
++			sprint_symbol(sym_p, (unsigned long)p->detect);
++			sprint_symbol(sym_q, (unsigned long)q->detect);
++
++			printk(KERN_ERR "EXECUTION ORDER INVALID! %s "\
++					"should be called before %s!\n",
++					sym_p, sym_q);
++		}
++	}
++}
++#else
++inline void check_iommu_entries(struct iommu_table_entry *start,
++				       struct iommu_table_entry *finish)
++{
++}
++#endif
