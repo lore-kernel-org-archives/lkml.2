@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab0HZRBJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 13:01:09 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61774 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab0HZRBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 13:01:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Tc427ovBN3WHts2LyW0bdZPqZeP40LLx0ozIEcbS98efRTM7IysKnDzaN1YMC/Kczp
-         O5FKTGDxi7GZ1em/ufKz/Af8emYPIa/rqM5CJe8KkL7hcCj77Fq3wgt7S50wZa6zzut5
-         LzVNZUcW5ehN0eHqh8w2QMUf/VrUl4dsIq9hw=
-Date: Thu, 26 Aug 2010 10:00:58 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        Joe Perches <joe@perches.com>, mingo@elte.hu
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
- todo list, add RCU todo list
-Message-ID: <20100826170058.GA6761@core.coreip.homeip.net>
-References: <20100826154537.GA4874@linux.vnet.ibm.com>
- <1282837904.1875.64.camel@Joe-Laptop>
- <20100826161451.GB2367@linux.vnet.ibm.com>
- <1282839933.8133.11.camel@mulgrave.site>
- <20100826092923.4bdbea69.rdunlap@xenotime.net>
- <20100826093838.74ab9958@infradead.org>
- <alpine.LNX.2.00.1008261841370.1019@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1008261841370.1019@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752045Ab0HZRCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 13:02:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:1410 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab0HZRCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 13:02:08 -0400
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+From: Joe Perches <joe@perches.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+In-Reply-To: <20100826092929.72b61549@nehalam>
+References: <4C763A67.5040107@dsn.okisemi.com>
+	 <20100826090504.30ce58e5@nehalam> <1282839372.1875.78.camel@Joe-Laptop>
+	 <20100826092929.72b61549@nehalam>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 10:02:05 -0700
+Message-ID: <1282842125.1875.124.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 06:42:55PM +0200, Jiri Kosina wrote:
-> On Thu, 26 Aug 2010, Arjan van de Ven wrote:
-> 
-> > I have to say that I'm not yet convinced that keeping a todo list in a 
-> > place that's not with the actual source code does not give me warm fuzzy 
-> > feelings. Every time we've kept information about the source code 
-> > separate from our source code it's been a failure; it gets out of sync 
-> > fast and it just adds to the maintenance.
-> > 
-> > A git commit that both fixes an issue and removed the line from the todo 
-> > file (or moves it to a "done" section, whatever) is the ultimate goal 
-> > obviously... having a U: seems to go in exactly the opposite direction.
-> > 
+On Thu, 2010-08-26 at 09:29 -0700, Stephen Hemminger wrote:
+> On Thu, 26 Aug 2010 09:16:12 -0700
+> Joe Perches <joe@perches.com> wrote:
+> > My message logging order preference:
+> > if there's a netif_msg_<type> and a struct net_device
+> > 	netif_<level>		(struct private *, netif_msg_<type>,
+> > 				 struct net_device *, fmt, args...)
+> > if there's a struct net_device
+> > 	netdev_<level>		(struct net_device *, fmt, args...)
+> > if there's a struct device
+> > 	dev_<level>		(struct device *, fmt, args...)
+> > otherwise
+> > 	pr_<level>		(fmt, args...)
+> At this point in process, netdevice isn't registered so it
+> doesn't have a ethX name. so dev_info would be best.
 
-TODO might disappear without implementation, if you decide that the idea
-wasn't a good one after all.
+Yes, likely true.
 
-> > otoh having a kernel-doc type (eg structured, parsable) way of
-> > gathering todo items throughout the tree.... that I can see as useful.
-> 
-> I still feel that if maintainer is willing to keep TODO list on web for 
-> whatever reason (hyperlinks, nice tables, images, whatever), then he 
-> should be free to do so.
->
+Ideally netdev_<level> is used after register_netdev.
+The default "eth%d" is printed after alloc_netdev
+but before register_netdev.
 
-Yep, I do not want to be restricted to updating TODO during merge window
-only as the changes to the list are not likely to count as bugfixes ;)
+Before commmit 256df2f3879efdb2e9808bdb1b54b16fbb11fa38
+when netdev_<level>s were converted to functions, they
+would also dereference a NULL pointer if used before
+register_netdev.
 
--- 
-Dmitry
+
