@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab0HZBtB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 21:49:01 -0400
-Received: from thunk.org ([69.25.196.29]:35646 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab0HZBs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 21:48:59 -0400
-Date: Wed, 25 Aug 2010 21:48:47 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: David Rientjes <rientjes@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-Message-ID: <20100826014847.GQ4453@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	David Rientjes <rientjes@google.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Jens Axboe <jaxboe@fusionio.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
-	Chris Mason <chris.mason@oracle.com>,
-	Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	"linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-	"cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	"reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1282740778.2605.3652.camel@laptop>
- <E25A6DCB-3188-4CF9-9DC4-631192B2F0E2@mit.edu>
- <1282743090.2605.3696.camel@laptop>
- <alpine.DEB.2.00.1008251340420.16484@chino.kir.corp.google.com>
- <1282769729.1975.96.camel@laptop>
- <alpine.DEB.2.00.1008251406260.20253@chino.kir.corp.google.com>
- <1282771677.1975.138.camel@laptop>
- <alpine.DEB.2.00.1008251606450.31521@chino.kir.corp.google.com>
- <20100826001901.GL4453@thunk.org>
- <alpine.DEB.2.00.1008251724360.25783@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008251724360.25783@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1752522Ab0HZBto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 21:49:44 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:53058 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab0HZBtl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 21:49:41 -0400
+Date: Thu, 26 Aug 2010 03:49:00 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+In-reply-to: <20100825173125.0855a6b0@bike.lwn.net>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Message-id: <op.vh0vbys97p4s8u@localhost>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.61 (Linux)
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+ <1282310110.2605.976.camel@laptop>
+ <20100825155814.25c783c7.akpm@linux-foundation.org>
+ <20100825173125.0855a6b0@bike.lwn.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 05:30:42PM -0700, David Rientjes wrote:
-> 
-> We certainly hope that nobody will reimplement the same function without 
-> the __deprecated warning, especially for order < PAGE_ALLOC_COSTLY_ORDER 
-> where there's no looping at a higher level.  So perhaps the best 
-> alternative is to implement the same _nofail() functions but do a 
-> WARN_ON(get_order(size) > PAGE_ALLOC_COSTLY_ORDER) instead?
+On Thu, 26 Aug 2010 01:31:25 +0200, Jonathan Corbet <corbet@lwn.net> wrote:
+> The original OLPC has a camera controller which requires three contiguous,
+> image-sized buffers in memory.  That system is a little memory constrained
+> (OK, it's desperately short of memory), so, in the past, the chances of
+> being able to allocate those buffers anytime some kid decides to start
+> taking pictures was poor.  Thus, cafe_ccic.c has an option to snag the
+> memory at initialization time and never let go even if you threaten its
+> family.  Hell hath no fury like a little kid whose new toy^W educational
+> tool stops taking pictures.
+>
+> That, of course, is not a hugely efficient use of memory on a
+> memory-constrained system.  If the VM could reliably satisfy those
+> allocation requestss, life would be wonderful.  Seems difficult.  But it
+> would be a nicer solution than CMA, which, to a great extent, is really
+> just a standardized mechanism for grabbing memory and never letting go.
 
-Yeah, that sounds better.
+At this moment it seems nothing more then that but they way I see it
+is that with a common, standardised, centrally-managed mechanism for
+grabbing memory we can start thinking about the ways to reuse the memory.
 
-> I think it's really sad that the caller can't know what the upper bounds 
-> of its memory requirement are ahead of time or at least be able to 
-> implement a memory freeing function when kmalloc() returns NULL.
+If each driver were to grab it's own memory in a way know to itself only
+the memory is truly lost but with CMA not only regions can be reused among
+devices but also the framework can manage the unallocated memory and try to
+utilize it in other ways (movable pages? cache? buffers? some kind of
+compressed memory swap?).
 
-Oh, we can determine an upper bound.  You might just not like it.
-Actually ext3/ext4 shouldn't be as bad as XFS, which Dave estimated to
-be around 400k for a transaction.  My guess is that the worst case for
-ext3/ext4 is probably around 256k or so; like XFS, most of the time,
-it would be a lot less.  (At least, if data != journalled; if we are
-doing data journalling and every single data block begins with
-0xc03b3998U, we'll need to allocate a 4k page for every single data
-block written.)  We could dynamically calculate an upper bound if we
-had to.  Of course, if ext3/ext4 is attached to a network block
-device, then it could get a lot worse than 256k, of course.
+What I'm trying to say is that I totally agree with your and other's comments
+about CMA essentially grabbing memory and never releasing it but I believe
+this can be combat with time when overall idea of haw the CMA API should look
+like is agreed upon.
 
-	      	      	      	    	- Ted
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
 
