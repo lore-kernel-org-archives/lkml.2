@@ -1,75 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab0HZQDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 12:03:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:1373 "EHLO mail.perches.com"
+	id S1754349Ab0HZQFK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:05:10 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:41520 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754045Ab0HZQDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:03:18 -0400
-Subject: [PATCH] MAINTAINERS: add W: todo lists
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1008261748520.1019@pobox.suse.cz>
-References: <20100826154537.GA4874@linux.vnet.ibm.com>
-	 <alpine.LNX.2.00.1008261748520.1019@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Aug 2010 09:03:15 -0700
-Message-ID: <1282838596.1875.68.camel@Joe-Laptop>
+	id S1754026Ab0HZQFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 12:05:08 -0400
+Date: Thu, 26 Aug 2010 09:05:04 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Message-ID: <20100826090504.30ce58e5@nehalam>
+In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
+References: <4C763A67.5040107@dsn.okisemi.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also renamed NETWORKING patch queue from "W:" to "Q:"
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
++static int pch_gbe_probe(struct pci_dev *pdev,
++			  const struct pci_device_id *pci_id)
++{
++	struct net_device *netdev;
++	struct pch_gbe_adapter *adapter;
++	unsigned long mmio_start;
++	unsigned long mmio_len;
++	int i, ret;
++
++	PCH_GBE_DEBUG("pch_gbe_probe\n");
++	ret = pci_enable_device(pdev);
++	if (ret)
++		return ret;
++
++	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))
++		&& !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
++		;
++	} else {
++		ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++		if (ret) {
++			ret = dma_set_coherent_mask(&pdev->dev,
++						    DMA_BIT_MASK(32));
++			if (ret) {
++				printk(KERN_ERR KBUILD_MODNAME ": ERR: "
++				    "No usable DMA configuration, aborting\n");
++				goto err_disable_device;
++			}
++		}
++	}
++	ret = pci_request_regions(pdev, KBUILD_MODNAME);
++	if (ret) {
++		printk(KERN_ERR KBUILD_MODNAME ": "
++		    "ERR: Can't reserve PCI I/O and memory resources\n");
++		goto err_disable_device;
++	}
++	pci_set_master(pdev);
++
++	netdev = alloc_etherdev((int)sizeof(struct pch_gbe_adapter));
++	if (!netdev) {
++		ret = -ENOMEM;
++		printk(KERN_ERR KBUILD_MODNAME ": "
++		    "ERR: Can't allocates and sets up an Ethernet device\n");
++		goto err_release_pci;
++	}
++	SET_NETDEV_DEV(netdev, &pdev->dev);
++
++	pci_set_drvdata(pdev, netdev);
++	adapter = netdev_priv(netdev);
++	adapter->netdev = netdev;
++	adapter->pdev = pdev;
++	adapter->hw.back = adapter;
++	mmio_start = pci_resource_start(pdev, PCH_GBE_PCI_BAR);
++	mmio_len = pci_resource_len(pdev, PCH_GBE_PCI_BAR);
++	adapter->hw.reg = ioremap_nocache(mmio_start, mmio_len);
++	if (!adapter->hw.reg) {
++		ret = -EIO;
++		printk(KERN_ERR KBUILD_MODNAME ": " "Can't ioremap\n");
++		goto err_free_netdev;
++	}
++
++	netdev->netdev_ops = &pch_gbe_netdev_ops;
++	netdev->watchdog_timeo = PCH_GBE_WATCHDOG_PERIOD;
++	netif_napi_add(netdev, &adapter->napi,
++		       pch_gbe_napi_poll, PCH_GBE_RX_WEIGHT);
++	strncpy(netdev->name, pci_name(pdev), (int)sizeof(netdev->name) - 1);
++	netdev->mem_start = mmio_start;
++	netdev->mem_end = mmio_start + mmio_len;
++	netdev->features = NETIF_F_HW_CSUM;
++	pch_gbe_set_ethtool_ops(netdev);
++
++	pch_gbe_mac_reset_hw(&adapter->hw);
++
++	/* setup the private structure */
++	ret = pch_gbe_sw_init(adapter);
++	if (ret)
++		goto err_iounmap;
++
++	/* Initialize PHY */
++	ret = pch_gbe_init_phy(adapter);
++	if (ret) {
++		printk(KERN_ERR KBUILD_MODNAME ": " "PHY initialize error\n");
++		goto err_free_adapter;
++	}
++	pch_gbe_hal_get_bus_info(&adapter->hw);
++
++	/* Read the MAC address. and store to the private data */
++	ret = pch_gbe_hal_read_mac_addr(&adapter->hw);
++	if (ret) {
++		printk(KERN_ERR KBUILD_MODNAME ": " "MAC address Read Error\n");
++		goto err_free_adapter;
++	}
++
++	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
++	if (!is_valid_ether_addr(netdev->dev_addr)) {
++		printk(KERN_ERR KBUILD_MODNAME ": " "Invalid MAC Address\n");
++		ret = -EIO;
++		goto err_free_adapter;
++	}
++
++	init_timer(&adapter->watchdog_timer);
++	adapter->watchdog_timer.function = &pch_gbe_watchdog;
++	adapter->watchdog_timer.data = (unsigned long)adapter;
++
++	INIT_WORK(&adapter->reset_task, pch_gbe_reset_task);
++
++	pch_gbe_check_options(adapter);
++
++	if (adapter->tx_csum)
++		netdev->features |= NETIF_F_HW_CSUM;
++	else
++		netdev->features &= ~NETIF_F_HW_CSUM;
++
++	/* initialize the wol settings based on the eeprom settings */
++	adapter->wake_up_evt = PCH_GBE_WL_INIT_SETTING;
++	for (i = 0; i < 6; i++)
++		printk(KERN_INFO "%2.2x%c",
++			netdev->dev_addr[i], i == 5 ? '\n' : ':');
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a1df54b..3d29d8c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2346,6 +2346,7 @@ FIREWIRE SUBSYSTEM
- M:	Stefan Richter <stefanr@s5r6.in-berlin.de>
- L:	linux1394-devel@lists.sourceforge.net
- W:	http://ieee1394.wiki.kernel.org/
-+W:	https://ieee1394.wiki.kernel.org/index.php/To_Do
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git
- S:	Maintained
- F:	drivers/firewire/
-@@ -4039,7 +4040,8 @@ NETWORKING [GENERAL]
- M:	"David S. Miller" <davem@davemloft.net>
- L:	netdev@vger.kernel.org
- W:	http://www.linuxfoundation.org/en/Net
--W:	http://patchwork.ozlabs.org/project/netdev/list/
-+W:	http://vger.kernel.org/~davem/net_todo.html
-+Q:	http://patchwork.ozlabs.org/project/netdev/list/
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6.git
- S:	Maintained
-@@ -4071,6 +4073,7 @@ S:	Maintained
- NETWORKING [WIRELESS]
- M:	"John W. Linville" <linville@tuxdriver.com>
- L:	linux-wireless@vger.kernel.org
-+W:	http://wireless.kernel.org/en/developers/todo-list
- Q:	http://patchwork.kernel.org/project/linux-wireless/list/
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git
- S:	Maintained
-@@ -5114,6 +5117,7 @@ M:	James Morris <jmorris@namei.org>
- M:	Eric Paris <eparis@parisplace.org>
- L:	selinux@tycho.nsa.gov (subscribers-only, general discussion)
- W:	http://selinuxproject.org
-+W:	http://selinuxproject.org/page/Kernel_Development
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6.git
- S:	Supported
- F:	include/linux/selinux*
+This is wrong since it produces KERN_INFO tag without newline, and probably
+you just want:
+         printk(KERN_INFO "%pM", netdev->dev_addr);
+
+or better yet, convert to dev_printk
+
++
++	/* reset the hardware with the new settings */
++	pch_gbe_reset(adapter);
++
++	strcpy(netdev->name, "eth%d");
+
+This is unnecessary since you used alloc_etherdev()
 
 
++	ret = register_netdev(netdev);
++	if (ret)
++		goto err_free_adapter;
++	/* tell the stack to leave us alone until pch_gbe_open() is called */
++	netif_carrier_off(netdev);
++	netif_stop_queue(netdev);
++
++	PCH_GBE_DEBUG("OKIsemi(R) PCH Network Connection\n");
++
++	device_set_wakeup_enable(&pdev->dev, 1);
++	return 0;
++
++err_free_adapter:
++	pch_gbe_hal_phy_hw_reset(&adapter->hw);
++	dev_put(adapter->polling_netdev);
++	kfree(adapter->tx_ring);
++	kfree(adapter->rx_ring);
++	kfree(adapter->polling_netdev);
++err_iounmap:
++	iounmap(adapter->hw.reg);
++err_free_netdev:
++	free_netdev(netdev);
++err_release_pci:
++	pci_release_regions(pdev);
++err_disable_device:
++	pci_disable_device(pdev);
++	return ret;
++}
