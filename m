@@ -1,112 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab0HZOym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:54:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12593 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab0HZOyk (ORCPT
+	id S1753957Ab0HZO7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 10:59:24 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55965 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab0HZO7V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:54:40 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=OL5WBojAp+zEke82sku3ABYU/e3cKeYkNnAYdfclPeKty/uChlLK+7AfoDXxtrjVh
-	7+d214W9fNHvnn3vZRT8g==
-Message-ID: <4c76802d.aae9d80a.115d.70fe@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Thu, 26 Aug 2010 16:40:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        eranian@google.com
-Subject: [PATCH] perf_events: fixing time tracking for event with pid != -1 and cpu != -1
-X-System-Of-Record: true
+	Thu, 26 Aug 2010 10:59:21 -0400
+Subject: Re: RFC: MTU for serving NFS on Infiniband
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <alpine.WNT.2.00.1008251408520.632@cluij.ucs.ualberta.ca>
+Date: Thu, 26 Aug 2010 10:58:03 -0400
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D690F970-03D3-4EF1-9DD6-987B2FBF2D95@oracle.com>
+References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca> <20100823080543.319143e3@nehalam> <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca> <1282672647.2302.15.camel@achroite.uk.solarflarecom.com> <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca> <1282688441.22839.34.camel@localhost> <20100824153920.63360072@s6510> <alpine.WNT.2.00.1008251408520.632@cluij.ucs.ualberta.ca>
+To: Marc Aurele La France <tsi@ualberta.ca>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per-thread events with a cpu filter, i.e., cpu != -1, were not reporting
-correct timings when the thread never ran on the monitored cpu. The time
-enabled was reported as a negative value.
 
-This patch fixes the problem by updating tstamp_stopped, tstamp_running
-in event_sched_out() for events with filters and which are marked as
-INACTIVE.
+On Aug 26, 2010, at 7:40 AM, Marc Aurele La France wrote:
 
-The function group_sched_out() is modified to systematically call into
-event_sched_out() to avoid duplicating the timing adjustment code twice.
+> On Tue, 24 Aug 2010, Stephen Hemminger wrote:
+>> On Tue, 24 Aug 2010 23:20:41 +0100
+>> Ben Hutchings <bhutchings@solarflare.com> wrote:
+>>> On Tue, 2010-08-24 at 13:49 -0600, Marc Aurele La France wrote:
+>>>> On Tue, 24 Aug 2010, Ben Hutchings wrote:
+>>>>> On Tue, 2010-08-24 at 09:14 -0600, Marc Aurele La France wrote:
+>>>>>> On Mon, 23 Aug 2010, Stephen Hemminger wrote:
+>>>>>>> On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
+>>>>>>> Marc Aurele La France <tsi@ualberta.ca> wrote:
+>>>>>>>> In regrouping for my next tack at this, I noticed that all stack traces go
+>>>>>>>> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
+>>>>>>>> A _very_ rough draft that would have ip_append_data() temporarily drop down
+>>>>>>>> to a smaller fake MTU follows ...
+> 
+>>>>>>> Why doesn't NFS generate page size fragments?  Does Infiniband or your
+>>>>>>> device not support this?  Any thing that requires higher order allocation
+>>>>>>> is going to unstable under load.  Let's fix the cause not the apply bandaid
+>>>>>>> solution to the symptom.
+> 
+>>>>>> From what I can tell, IP fragmentation is done centrally.
+> 
+>>>>> Stephen and I are not talking about IP fragmentation, but about the
+>>>>> ability to append 'fragments' to an skb rather than putting the entire
+>>>>> packet payload in a linear buffer.  See
+>>>>> <http://vger.kernel.org/~davem/skb_data.html>.
+> 
+>>>> Any payload has to either fit in the MTU, or has to be broken up into
+>>>> MTU-sized (or less) fragments, come hell or high water.  That this is done
+>>>> centrally is a good thing.
+> 
+>>> Not necessarily.  Offloading it to hardware, where possible, is usually
+>>> a performance win.
+> 
+> ip_append_data() deals with that already.
+> 
+>>>> It is the "(or less)" part that I am working towards here.
+> 
+>>> The inability to allocate large linear buffers is not a good reason to
+>>> generate packets smaller than the MTU.
+> 
+> Generating smaller-than-MTU fragments is better than giving up and returning an error in my book.
+> 
+>> IF NFS server is smart enough to generate:
+>>  Header (skb) + one or more pages in fragment list
+>> then IP fragmentation could do fragmentation by allocating
+>> new headers skb (small) and assigning the same pages to
+>> multiple skb's using page ref count.
+> 
+>> It obviously isn't working that way.
+> 
+> Point of clarification:  we're talking about the client here, not the server.  But, yes, it doesn't work that way.
+> 
+>> The whole problem is moot because NFS over UDP has known data corruption
+>> issues in the face of packet loss.  The sequence number of the IP fragment
+>> can easily wrap around causing old data to be grouped with new data and
+>> the UDP checksum is so weak that the resulting UDP packet will be consumed by the NFS
+>> client ans passed to the user application as corrupted disk block.
+> 
+>> DON'T USE NFS OVER UDP!
+> 
+> Steady now.  There's no need to YELL nor be arrogant.  You and I both know there's a place for NFS over UDP.  That's not changing any time soon.  While I'm aware of the issue you brought up, it is separate from the one at hand in this discussion.
+> 
+> I do want to thank you, however, for reminding me of TCP.  It's something 20/20 hindsight says I should have checked out before starting this thread. Logistically, it'll be a few days before I can do so though.  If that allows me to increase the MTU all the way up to 65520, then this UDP thing will likely remain unresolved.
 
-With the patch, I now get:
+On advanced cluster-area networks with large MTUs, the ACK packets in TCP will probably kill your performance.  That's one of the main reasons we keep NFS over UDP on life support!  :-)
 
-$ task_cpu -i -e unhalted_core_cycles,unhalted_core_cycles noploop 2
-noploop for 2 seconds
-CPU0 0		   unhalted_core_cycles (ena=1,991,136,594, run=0)
-CPU0 0		   unhalted_core_cycles (ena=1,991,136,594, run=0)
+-- 
+chuck[dot]lever[at]oracle[dot]com
 
-CPU1 0		   unhalted_core_cycles (ena=1,991,136,594, run=0)
-CPU1 0		   unhalted_core_cycles (ena=1,991,136,594, run=0)
 
-CPU2 0		   unhalted_core_cycles (ena=1,991,136,594, run=0)
-CPU2 0		   unhalted_core_cycles (ena=1,991,136,594, run=0)
 
-CPU3 4,747,990,931 unhalted_core_cycles (ena=1,991,136,594, run=1,991,136,594)
-CPU3 4,747,990,931 unhalted_core_cycles (ena=1,991,136,594, run=1,991,136,594)
 
-Signed-off-by: Stephane Eranian <eranian@gmail.com>
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 0d38f27..d196412 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -402,11 +402,31 @@ static void perf_group_detach(struct perf_event *event)
- 	}
- }
- 
-+static inline int
-+event_filter_match(struct perf_event *event)
-+{
-+	return event->cpu == -1 || event->cpu == smp_processor_id();
-+}
-+
- static void
- event_sched_out(struct perf_event *event,
- 		  struct perf_cpu_context *cpuctx,
- 		  struct perf_event_context *ctx)
- {
-+	u64 delta;
-+	/*
-+	 * an event which could not be activated because of
-+	 * filter mismatch still needs to have its timings
-+	 * maintained, otherwise bogus information is return
-+	 * via read() for time_enabled, time_running
-+	 */
-+	if (event->state == PERF_EVENT_STATE_INACTIVE
-+	    && !event_filter_match(event)) {
-+		delta = ctx->time - event->tstamp_stopped;
-+		event->tstamp_running += delta;
-+		event->tstamp_stopped = ctx->time;
-+	}
-+
- 	if (event->state != PERF_EVENT_STATE_ACTIVE)
- 		return;
- 
-@@ -432,9 +452,7 @@ group_sched_out(struct perf_event *group_event,
- 		struct perf_event_context *ctx)
- {
- 	struct perf_event *event;
--
--	if (group_event->state != PERF_EVENT_STATE_ACTIVE)
--		return;
-+	int state = group_event->state;
- 
- 	event_sched_out(group_event, cpuctx, ctx);
- 
-@@ -444,7 +462,7 @@ group_sched_out(struct perf_event *group_event,
- 	list_for_each_entry(event, &group_event->sibling_list, group_entry)
- 		event_sched_out(event, cpuctx, ctx);
- 
--	if (group_event->attr.exclusive)
-+	if (state == PERF_EVENT_STATE_ACTIVE && group_event->attr.exclusive)
- 		cpuctx->exclusive = 0;
- }
- 
