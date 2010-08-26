@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab0HZBFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 21:05:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40419 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab0HZBFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 21:05:50 -0400
-Date: Thu, 26 Aug 2010 11:05:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: rmody@brocade.com, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, huangj@brocade.com,
-        James.Bottomley@HansenPartnership.com
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-Message-Id: <20100826110542.0269df75.sfr@canb.auug.org.au>
-In-Reply-To: <20100825.135957.112609658.davem@davemloft.net>
-References: <20100825120927.c469ce20.sfr@canb.auug.org.au>
-	<E5313AF6F2BFD14293E5FD0F94750F86A4AE225EE8@HQ1-EXCH01.corp.brocade.com>
-	<20100825.003526.35028751.davem@davemloft.net>
-	<20100825.135957.112609658.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753264Ab0HZBIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 21:08:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41505 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab0HZBIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 21:08:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 26 Aug 2010 10:03:55 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/2][BUGFIX] oom: remove totalpage normalization from
+ oom_badness()
+Message-Id: <20100826100355.05fcfd87.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1008251746200.28401@chino.kir.corp.google.com>
+References: <20100825184001.F3EF.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1008250300500.13300@chino.kir.corp.google.com>
+	<20100826093923.d4ac29b6.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.DEB.2.00.1008251746200.28401@chino.kir.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__26_Aug_2010_11_05_42_+1000_eOiU=i+muyeUFIBP"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__26_Aug_2010_11_05_42_+1000_eOiU=i+muyeUFIBP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 25 Aug 2010 17:52:06 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-Hi Dave,
+> On Thu, 26 Aug 2010, KAMEZAWA Hiroyuki wrote:
+> 
+> > I'm now trying to write a userspace tool to calculate this, for me.
+> > Then, could you update documentation ? 
+> > ==
+> > 3.2 /proc/<pid>/oom_score - Display current oom-killer score
+> > -------------------------------------------------------------
+> > 
+> > This file can be used to check the current score used by the oom-killer is for
+> > any given <pid>. Use it together with /proc/<pid>/oom_adj to tune which
+> > process should be killed in an out-of-memory situation.
+> > ==
+> > 
+> 
+> You'll want to look at section 3.1 of Documentation/filesystems/proc.txt, 
+> which describes /proc/pid/oom_score_adj, not 3.2.
+> 
+> > add a some documentation like:
+> > ==
+> > (For system monitoring tool developpers, not for usual users.)
+> > oom_score calculation is implemnentation dependent and can be modified without
+> > any caution. But current logic is
+> > 
+> > oom_score = ((proc's rss + proc's swap) / (available ram + swap)) + oom_score_adj
+> > 
+> 
+> I'd hesitate to state the formula outside of the implementation and 
+> instead focus on the semantics of oom_score_adj (as a proportion of 
+> available memory compared to other tasks), which I tried doing in section 
+> 3.1.  Then, the userspace tool only need be concerned about the units of 
+> oom_score_adj rather than whether rss, swap, or later extentions such as 
+> shm are added.
+> 
+> Thanks for working on this, Kame!
+> 
+BTW, why you don't subtract the amount of Hugepages ?
 
-On Wed, 25 Aug 2010 13:59:57 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> Stephen Rothwell is going to build his -next tree for today any minute
-> now and will have to revert your driver from his tree again since a
-> fix is not yet in place.
+The old code did
+	"totalrampages - hugepage" as available memory.
 
-I have done that ...
+IIUC, the number of hugepages is not accounted into mm->rss, so, isn't it
+better to subtract # of hugepage ?
+Hmm...makes no difference ?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks,
+-Kame
 
---Signature=_Thu__26_Aug_2010_11_05_42_+1000_eOiU=i+muyeUFIBP
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMdb3mAAoJEDMEi1NhKgbsoE8H/01Faz/SEC9cY+IpqolcrAgh
-uTKPuiJhfCzAM42xOH+DcQtyfCOOXevy8h7jZLrHQXN/gcVdY045T7UQBx9IQjWQ
-vE8ons788rfgW1q/7Ixbo1drlZ1P+xFKVqL30wBwSkXRcutJCo+sjUhZjSWp9WqG
-o8Fw+3v+0a4GR1dDlmjaHgCQEa8AGro6pFDwcQYpV/UoenI5MgrD72Kiq++0GwhM
-43snUzKBkiKleu4gKzIfTvFFNuHPaUbsqitmlQ5P86v5D5Me1tGPYztJ2CdWYF+G
-1nqlp5oFG2ORCf4xohhs2tOHeCiJX5fZm/PVYPhVuiIJhyWqW188pU2umOYt+ko=
-=oFU5
------END PGP SIGNATURE-----
 
---Signature=_Thu__26_Aug_2010_11_05_42_+1000_eOiU=i+muyeUFIBP--
+
+
