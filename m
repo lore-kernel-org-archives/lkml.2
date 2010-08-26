@@ -1,62 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab0HZLjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 07:39:06 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:29822 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751495Ab0HZLjE (ORCPT
+	id S1752515Ab0HZLlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 07:41:06 -0400
+Received: from smtp.srv.ualberta.ca ([129.128.5.19]:64743 "EHLO
+	mail10.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752145Ab0HZLlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 07:39:04 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGPsdUx5Ld90/2dsb2JhbACgQnK6CIU3BA
-Date: Thu, 26 Aug 2010 21:38:58 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, Nick Piggin <npiggin@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
-Message-ID: <20100826113858.GA6856@amd>
-References: <20100825132815.108d8217@bike.lwn.net>
- <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
- <4C762BF9.5010305@kernel.org>
- <20100826094613.GA6411@amd>
- <4C7638B7.9060306@kernel.org>
- <1282817329.1975.486.camel@laptop>
+	Thu, 26 Aug 2010 07:41:04 -0400
+Date: Thu, 26 Aug 2010 05:40:42 -0600 (Mountain Daylight Time)
+From: Marc Aurele La France <tsi@ualberta.ca>
+To: Stephen Hemminger <shemminger@vyatta.com>
+cc: Ben Hutchings <bhutchings@solarflare.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: RFC: MTU for serving NFS on Infiniband
+In-Reply-To: <20100824153920.63360072@s6510>
+Message-ID: <alpine.WNT.2.00.1008251408520.632@cluij.ucs.ualberta.ca>
+References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca> <20100823080543.319143e3@nehalam> <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca> <1282672647.2302.15.camel@achroite.uk.solarflarecom.com> <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
+ <1282688441.22839.34.camel@localhost> <20100824153920.63360072@s6510>
+User-Agent: Alpine 1.10 (WNT 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282817329.1975.486.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 12:08:49PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-08-26 at 11:49 +0200, Tejun Heo wrote:
-> > If there's a pressing need, doing stop_machine for
-> > onlining too is definitely an option. 
-> 
-> I would argue against that.. we should try and rid ourselves of
-> stopmachine, not add more dependencies on it. If you want to sync
-> against preempt_disable thingies synchronize_sched() is your friend.
+On Tue, 24 Aug 2010, Stephen Hemminger wrote:
+> On Tue, 24 Aug 2010 23:20:41 +0100
+> Ben Hutchings <bhutchings@solarflare.com> wrote:
+>> On Tue, 2010-08-24 at 13:49 -0600, Marc Aurele La France wrote:
+>>> On Tue, 24 Aug 2010, Ben Hutchings wrote:
+>>>> On Tue, 2010-08-24 at 09:14 -0600, Marc Aurele La France wrote:
+>>>>> On Mon, 23 Aug 2010, Stephen Hemminger wrote:
+>>>>>> On Mon, 23 Aug 2010 08:44:37 -0600 (MDT)
+>>>>>> Marc Aurele La France <tsi@ualberta.ca> wrote:
+>>>>>>> In regrouping for my next tack at this, I noticed that all stack traces go
+>>>>>>> through ip_append_data().  This would be ipv6_append_data() in the IPv6 case.
+>>>>>>> A _very_ rough draft that would have ip_append_data() temporarily drop down
+>>>>>>> to a smaller fake MTU follows ...
 
-I don't think it's that easy to do it in hotplug handlers.
+>>>>>> Why doesn't NFS generate page size fragments?  Does Infiniband or your
+>>>>>> device not support this?  Any thing that requires higher order allocation
+>>>>>> is going to unstable under load.  Let's fix the cause not the apply bandaid
+>>>>>> solution to the symptom.
 
-Say take a brlock (not the best example because the write side
-is a slowpath itself, but I could imagine better cases), then
-you actually want to be able to prevent cpu online map from
-changing for the entire period of a lock/unlock.
+>>>>> From what I can tell, IP fragmentation is done centrally.
 
-The lock/unlock is preempt disabled. synchronize_sched in the
-plug handler will not really do anything, because there could
-be subsequent write locks coming in from other CPUs at any
-time during the handler, before or after synchronize_sched runs.
+>>>> Stephen and I are not talking about IP fragmentation, but about the
+>>>> ability to append 'fragments' to an skb rather than putting the entire
+>>>> packet payload in a linear buffer.  See
+>>>> <http://vger.kernel.org/~davem/skb_data.html>.
 
-I think for CPU plug, stop_machine is reasonable (especially
-considering it is required in unload, which means any frequent
-amount of cpu plug activity already will require stop_machine to
-run anyway).
+>>> Any payload has to either fit in the MTU, or has to be broken up into
+>>> MTU-sized (or less) fragments, come hell or high water.  That this is done
+>>> centrally is a good thing.
 
+>> Not necessarily.  Offloading it to hardware, where possible, is usually
+>> a performance win.
+
+ip_append_data() deals with that already.
+
+>>> It is the "(or less)" part that I am working towards here.
+
+>> The inability to allocate large linear buffers is not a good reason to
+>> generate packets smaller than the MTU.
+
+Generating smaller-than-MTU fragments is better than giving up and 
+returning an error in my book.
+
+> IF NFS server is smart enough to generate:
+>   Header (skb) + one or more pages in fragment list
+> then IP fragmentation could do fragmentation by allocating
+> new headers skb (small) and assigning the same pages to
+> multiple skb's using page ref count.
+
+> It obviously isn't working that way.
+
+Point of clarification:  we're talking about the client here, not the 
+server.  But, yes, it doesn't work that way.
+
+> The whole problem is moot because NFS over UDP has known data corruption
+> issues in the face of packet loss.  The sequence number of the IP fragment
+> can easily wrap around causing old data to be grouped with new data and
+> the UDP checksum is so weak that the resulting UDP packet will be consumed by the NFS
+> client ans passed to the user application as corrupted disk block.
+
+> DON'T USE NFS OVER UDP!
+
+Steady now.  There's no need to YELL nor be arrogant.  You and I both know 
+there's a place for NFS over UDP.  That's not changing any time soon.  While 
+I'm aware of the issue you brought up, it is separate from the one at hand in 
+this discussion.
+
+I do want to thank you, however, for reminding me of TCP.  It's something 
+20/20 hindsight says I should have checked out before starting this thread. 
+Logistically, it'll be a few days before I can do so though.  If that allows 
+me to increase the MTU all the way up to 65520, then this UDP thing will 
+likely remain unresolved.
+
+Thanks.
+
+Marc.
+
++----------------------------------+----------------------------------+
+|  Marc Aurele La France           |  work:   1-780-492-9310          |
+|  Academic Information and        |  fax:    1-780-492-1729          |
+|    Communications Technologies   |  email:  tsi@ualberta.ca         |
+|  352 General Services Building   +----------------------------------+
+|  University of Alberta           |                                  |
+|  Edmonton, Alberta               |    Standard disclaimers apply    |
+|  T6G 2H1                         |                                  |
+|  CANADA                          |                                  |
++----------------------------------+----------------------------------+
