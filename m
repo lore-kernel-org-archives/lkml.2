@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0HZCHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 22:07:13 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50296 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab0HZCHK (ORCPT
+	id S1752861Ab0HZCIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 22:08:55 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:39303 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834Ab0HZCIv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 22:07:10 -0400
+	Wed, 25 Aug 2010 22:08:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=HeYayWhHam2elIHhhsCj2J3R3w8MLI4fcP6rxZAEj+fPTzT99kZx7HCXbCndkss3V7
-         hdWKM6p50VvM8HYUyThm1dom6fUJ0R4RUNn3VJQBlkfE3Ol72EmdWMUKxUahJt8xHDtI
-         zY4geacpdeSVF/RzkgWTp2UNxVvqH59fPgZjw=
+         :cc:content-type:content-transfer-encoding;
+        b=sye6mJQTMMABuwWFgJ/WTuXNsqeuhGEx9hoZxQ0n3c5EyOZFTR0pJQ11Yk01K6CcCk
+         xedab+yHRjocOIJ4AElQ==
 MIME-Version: 1.0
-In-Reply-To: <20100826110229.931ab5bf.sfr@canb.auug.org.au>
-References: <20100826110229.931ab5bf.sfr@canb.auug.org.au>
-Date: Wed, 25 Aug 2010 21:07:08 -0500
-Message-ID: <AANLkTikvKchHEFR_F-Fdo6Z8n2XKbi4tRh0eYnjzVQJ9@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the cifs tree
-From: Steve French <smfrench@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+In-Reply-To: <20100825143520.9954d3f9.akpm@linux-foundation.org>
+References: <20100805225914.GA26772@redhat.com>
+	<4C5C3985.5060706@us.ibm.com>
+	<1281112704.10055.0.camel@x201>
+	<20100825143520.9954d3f9.akpm@linux-foundation.org>
+Date: Wed, 25 Aug 2010 19:08:46 -0700
+Message-ID: <AANLkTimyUhwRA03=Ee3a3PPQrKuzVYRzhc52K=mV02PR@mail.gmail.com>
+Subject: Re: [PATCH] cgroups: fix API thinko
+From: Paul Menage <menage@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Sridhar Samudrala <sri@us.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ben Blum <bblum@google.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 8:02 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
+On Wed, Aug 25, 2010 at 2:35 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
 >
-> After merging the cifs tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this warning:
+> So am I correct to assume that this change is now needed in 2.6.36, and
+> unneeded in 2.6.35?
 >
-> fs/cifs/sess.c: In function 'CIFS_SessSetup':
-> fs/cifs/sess.c:623: warning: unused variable 'ntlmsspblob'
+> Can it affect the userspace<->kernel API in amy manner?  If so, it
+> should be backported into earlier kernels to reduce the number of
+> incompatible kernels out there.
+
+AFAICS it shouldn't affect any existing APIs, either in-kernel or to
+userspace - it just makes the existing function
+cgroup_attach_task_current_cg() a specialization of a more generic new
+function.
+
 >
-> Introduced by commit 9fbc590860e75785bdaf8b83e48fabfe4d4f7d58 ("[CIFS]
-> Fix ntlmv2 auth with ntlmssp").
+> Paul, did you have any comments?
 
-Shirish's patch doesn't use that local variable when experimental is
-off - I will talk to him about simply moving the local variable to
-eliminate the unused variable warning.
+Other than the language being a bit confusing, it seems fine. I'd
+probably word the patch description as:
 
+Add cgroup_attach_task_all()
 
--- 
-Thanks,
+The existing cgroup_attach_task_current_cg() API is called by a thread
+to attach another thread to all of its cgroups; this is unsuitable for
+cases where a privileged task wants to attach itself to the cgroups
+of a less privileged one, since the call must be made from the context
+of the target task.
 
-Steve
+This patch adds a more generic cgroup_attach_task_all() API that
+allows both the source task and to-be-moved task to be specified.
+cgroup_attach_task_current_cg() becomes a specialization of the more
+generic new function.
+
+Acked-by: Paul Menage <menage@google.com>
