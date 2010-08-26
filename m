@@ -1,36 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab0HZXaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 19:30:23 -0400
-Received: from mail.perches.com ([173.55.12.10]:1440 "EHLO mail.perches.com"
+	id S1754762Ab0HZXak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 19:30:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58074 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab0HZXaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 19:30:19 -0400
-Date: Thu, 26 Aug 2010 16:30:14 -0700 (PDT)
-From: Joe Perches <joe@perches.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        <ksummit-2010-discuss@lists.linux-foundation.org>, <mingo@elte.hu>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
- todo list, add RCU todo list
-In-Reply-To: <20100826230021.GA4098@xanatos>
-Message-ID: <Pine.LNX.4.30.1008261627470.13689-100000@mail.perches.com>
+	id S1752614Ab0HZXaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 19:30:35 -0400
+Date: Thu, 26 Aug 2010 23:30:01 GMT
+From: tip-bot for Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        konrad.wilk@oracle.com, fujita.tomonori@lab.ntt.co.jp,
+        djwong@us.ibm.com, muli@il.ibm.com, jdmason@kudzu.us,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, djwong@us.ibm.com,
+        fujita.tomonori@lab.ntt.co.jp, muli@il.ibm.com, jdmason@kudzu.us,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1282845485-8991-8-git-send-email-konrad.wilk@oracle.com>
+References: <1282845485-8991-8-git-send-email-konrad.wilk@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/iommu] x86, calgary: Make Calgary IOMMU use IOMMU_INIT_* macros.
+Message-ID: <tip-d2aa232f3d0b5a3e22f91b736fe68eddcf0d5ea3@git.kernel.org>
+Git-Commit-ID: d2aa232f3d0b5a3e22f91b736fe68eddcf0d5ea3
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 Aug 2010 23:30:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010, Sarah Sharp wrote:
-> That may not be the case if you use a public todo list on
-> rememberthemilk.com.  It doesn't make sense to end multiple todo list
-> names with "todo" for on site that's specifically designed to help with
-> todo lists.
+Commit-ID:  d2aa232f3d0b5a3e22f91b736fe68eddcf0d5ea3
+Gitweb:     http://git.kernel.org/tip/d2aa232f3d0b5a3e22f91b736fe68eddcf0d5ea3
+Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+AuthorDate: Thu, 26 Aug 2010 13:58:02 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 26 Aug 2010 15:14:15 -0700
 
-These are all general references to external "W:"eb links.
+x86, calgary: Make Calgary IOMMU use IOMMU_INIT_* macros.
 
-The right place for TODO lists is inside the kernel source tree
-as a TODO file in the source tree node that has something to do.
+We utilize the IOMMU_INIT macros to create this dependency:
 
+     [pci_xen_swiotlb_detect]
+         |
+     [pci_swiotlb_detect_override]
+         |
+     [pci_swiotlb_detect_4gb]
+         |
+      [detect_calgary]
+
+Meaning that 'detect_calgary' is going to be called after
+'pci_swiotlb_detect'.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+LKML-Reference: <1282845485-8991-8-git-send-email-konrad.wilk@oracle.com>
+CC: Muli Ben-Yehuda <muli@il.ibm.com>
+CC: "Jon D. Mason" <jdmason@kudzu.us>
+CC: "Darrick J. Wong" <djwong@us.ibm.com>
+CC: Fujita Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/pci-calgary_64.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index 28c6b38..f56a117 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -47,6 +47,7 @@
+ #include <asm/rio.h>
+ #include <asm/bios_ebda.h>
+ #include <asm/x86_init.h>
++#include <asm/iommu_table.h>
+ 
+ #ifdef CONFIG_CALGARY_IOMMU_ENABLED_BY_DEFAULT
+ int use_calgary __read_mostly = 1;
+@@ -1595,3 +1596,5 @@ static int __init calgary_fixup_tce_spaces(void)
+  * and before device_initcall.
+  */
+ rootfs_initcall(calgary_fixup_tce_spaces);
++
++IOMMU_INIT_POST(detect_calgary);
