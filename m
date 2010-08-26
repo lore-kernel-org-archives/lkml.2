@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab0HZSO1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:14:27 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:40482 "EHLO smtp.polymtl.ca"
+	id S1753071Ab0HZSOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:14:42 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:60842 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752089Ab0HZSOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:14:22 -0400
-Message-Id: <20100826181339.637321874@efficios.com>
+	id S1752985Ab0HZSOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 14:14:39 -0400
+Message-Id: <20100826181341.122795854@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 26 Aug 2010 14:09:09 -0400
+Date: Thu, 26 Aug 2010 14:09:15 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,63 +18,83 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Tony Lindgren <tony@atomide.com>, Mike Galbraith <efault@gmx.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC PATCH 01/11] sched: fix string comparison in features
+Subject: [RFC PATCH 07/11] sched rename struct task in_iowait field to sched_in_iowait
 References: <20100826180908.648103531@efficios.com>
-Content-Disposition: inline; filename=sched-features-fix-string-compare.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Thu, 26 Aug 2010 18:13:39 +0000
+Content-Disposition: inline; filename=sched-rename-task-in-iowait.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Thu, 26 Aug 2010 18:13:41 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Incorrect handling of the following case:
-
-INTERACTIVE
-INTERACTIVE_SOMETHING_ELSE
-
-The comparison only checks up to each element's length.
+Rename task struct in_iowait to sched_in_iowait, since it's only
+scheduler-specific. Extracted from a patch originally from Peter Zijlstra.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ include/linux/sched.h |    7 +++----
+ kernel/sched.c        |    8 ++++----
+ kernel/sched_fair.c   |    2 +-
+ 3 files changed, 8 insertions(+), 9 deletions(-)
 
+Index: linux-2.6-lttng.git/include/linux/sched.h
+===================================================================
+--- linux-2.6-lttng.git.orig/include/linux/sched.h
++++ linux-2.6-lttng.git/include/linux/sched.h
+@@ -1233,11 +1233,10 @@ struct task_struct {
+ 	unsigned did_exec:1;
+ 	unsigned in_execve:1;	/* Tell the LSMs that the process is doing an
+ 				 * execve */
+-	unsigned in_iowait:1;
+ 
+-
+-	/* Revert to default priority/policy when forking */
+-	unsigned sched_reset_on_fork:1;
++	unsigned sched_in_iowait:1;		/* Called io_schedule() */
++	unsigned sched_reset_on_fork:1;		/* Revert to default
++						 * priority/policy on fork */
+ 
+ 	pid_t pid;
+ 	pid_t tgid;
 Index: linux-2.6-lttng.git/kernel/sched.c
 ===================================================================
 --- linux-2.6-lttng.git.orig/kernel/sched.c
 +++ linux-2.6-lttng.git/kernel/sched.c
-@@ -722,7 +722,7 @@ sched_feat_write(struct file *filp, cons
- {
- 	char buf[64];
- 	char *cmp = buf;
--	int neg = 0;
-+	int neg = 0, cmplen;
- 	int i;
+@@ -4957,9 +4957,9 @@ void __sched io_schedule(void)
  
- 	if (cnt > 63)
-@@ -732,15 +732,24 @@ sched_feat_write(struct file *filp, cons
- 		return -EFAULT;
+ 	delayacct_blkio_start();
+ 	atomic_inc(&rq->nr_iowait);
+-	current->in_iowait = 1;
++	current->sched_in_iowait = 1;
+ 	schedule();
+-	current->in_iowait = 0;
++	current->sched_in_iowait = 0;
+ 	atomic_dec(&rq->nr_iowait);
+ 	delayacct_blkio_end();
+ }
+@@ -4972,9 +4972,9 @@ long __sched io_schedule_timeout(long ti
  
- 	buf[cnt] = 0;
-+	for (i = 0; i < cnt; i++) {
-+		if (buf[i] == '\n' || buf[i] == ' ') {
-+			buf[i] = 0;
-+			break;
-+		}
-+	}
+ 	delayacct_blkio_start();
+ 	atomic_inc(&rq->nr_iowait);
+-	current->in_iowait = 1;
++	current->sched_in_iowait = 1;
+ 	ret = schedule_timeout(timeout);
+-	current->in_iowait = 0;
++	current->sched_in_iowait = 0;
+ 	atomic_dec(&rq->nr_iowait);
+ 	delayacct_blkio_end();
+ 	return ret;
+Index: linux-2.6-lttng.git/kernel/sched_fair.c
+===================================================================
+--- linux-2.6-lttng.git.orig/kernel/sched_fair.c
++++ linux-2.6-lttng.git/kernel/sched_fair.c
+@@ -693,7 +693,7 @@ static void enqueue_sleeper(struct cfs_r
+ 		se->statistics.sum_sleep_runtime += delta;
  
- 	if (strncmp(buf, "NO_", 3) == 0) {
- 		neg = 1;
- 		cmp += 3;
- 	}
- 
-+	cmplen = strlen(cmp);
- 	for (i = 0; sched_feat_names[i]; i++) {
- 		int len = strlen(sched_feat_names[i]);
- 
-+		if (cmplen != len)
-+			continue;
- 		if (strncmp(cmp, sched_feat_names[i], len) == 0) {
- 			if (neg)
- 				sysctl_sched_features &= ~(1UL << i);
+ 		if (tsk) {
+-			if (tsk->in_iowait) {
++			if (tsk->sched_in_iowait) {
+ 				se->statistics.iowait_sum += delta;
+ 				se->statistics.iowait_count++;
+ 				trace_sched_stat_iowait(tsk, delta);
 
