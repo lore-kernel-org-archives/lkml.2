@@ -1,211 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab0HZOLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:11:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10925 "EHLO mx1.redhat.com"
+	id S1753732Ab0HZOOj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 10:14:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19929 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab0HZOLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:11:35 -0400
+	id S1752517Ab0HZOOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 10:14:37 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 3/7] Blackfin: Split the BF532 BFIN_*_FIO_FLAG() functions to
-	their own header
+In-Reply-To: <20100826141110.11132.91931.stgit@warthog.procyon.org.uk>
+References: <20100826141110.11132.91931.stgit@warthog.procyon.org.uk>
 To: linux-arch@vger.kernel.org, vapier@gentoo.org
 Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
         uclinux-dist-devel@blackfin.uclinux.org
-Date: Thu, 26 Aug 2010 15:11:21 +0100
-Message-ID: <20100826141120.11132.51969.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100826141110.11132.91931.stgit@warthog.procyon.org.uk>
-References: <20100826141110.11132.91931.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH 0/7] Name the irq flag handling functions sanely
+Date: Thu, 26 Aug 2010 15:14:09 +0100
+Message-ID: <12348.1282832049@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the BF532 machine type BFIN_*_FIO_FLAG() functions to their own header
-file to avoid circular #include problems as these functions require IRQ flag
-handling, which requires asm/blackfin.h, which otherwise requires the header
-file that defines these functions.
 
-For good measure, also get rid of the inclusion of asm/blackfin.h from
-mach/cdefBF532.h (which is circular) and defBF532.h (which is included by
-asm/blackfin.h before including this header).
+[Note that this patch only alters X86, FRV, MN10300, ARM and Blackfin at the
+ moment.  The other arches will need altering too as part of this patch].
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+The final patch of the series makes the naming of the general irq flag
+functions sane.
 
- arch/blackfin/mach-bf533/boards/blackstamp.c      |    1 
- arch/blackfin/mach-bf533/boards/ip0x.c            |    1 
- arch/blackfin/mach-bf533/boards/stamp.c           |    1 
- arch/blackfin/mach-bf533/include/mach/cdefBF532.h |   47 ------------------
- arch/blackfin/mach-bf533/include/mach/fio_flag.h  |   55 +++++++++++++++++++++
- 5 files changed, 58 insertions(+), 47 deletions(-)
- create mode 100644 arch/blackfin/mach-bf533/include/mach/fio_flag.h
+Currently, under one configuration, linux/irqflags.h maps:
 
-diff --git a/arch/blackfin/mach-bf533/boards/blackstamp.c b/arch/blackfin/mach-bf533/boards/blackstamp.c
-index 842b4fa..84a06f6 100644
---- a/arch/blackfin/mach-bf533/boards/blackstamp.c
-+++ b/arch/blackfin/mach-bf533/boards/blackstamp.c
-@@ -25,6 +25,7 @@
- #include <asm/bfin5xx_spi.h>
- #include <asm/portmux.h>
- #include <asm/dpmc.h>
-+#include <mach/fio_flag.h>
- 
- /*
-  * Name the Board for the /proc/cpuinfo
-diff --git a/arch/blackfin/mach-bf533/boards/ip0x.c b/arch/blackfin/mach-bf533/boards/ip0x.c
-index 7349970..b8474ca 100644
---- a/arch/blackfin/mach-bf533/boards/ip0x.c
-+++ b/arch/blackfin/mach-bf533/boards/ip0x.c
-@@ -22,6 +22,7 @@
- #include <asm/dma.h>
- #include <asm/bfin5xx_spi.h>
- #include <asm/portmux.h>
-+#include <mach/fio_flag.h>
- 
- /*
-  * Name the Board for the /proc/cpuinfo
-diff --git a/arch/blackfin/mach-bf533/boards/stamp.c b/arch/blackfin/mach-bf533/boards/stamp.c
-index c457eaa..29c219e 100644
---- a/arch/blackfin/mach-bf533/boards/stamp.c
-+++ b/arch/blackfin/mach-bf533/boards/stamp.c
-@@ -24,6 +24,7 @@
- #include <asm/reboot.h>
- #include <asm/portmux.h>
- #include <asm/dpmc.h>
-+#include <mach/fio_flag.h>
- 
- /*
-  * Name the Board for the /proc/cpuinfo
-diff --git a/arch/blackfin/mach-bf533/include/mach/cdefBF532.h b/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
-index 8edad6d..401e524 100644
---- a/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
-+++ b/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
-@@ -7,11 +7,6 @@
- #ifndef _CDEF_BF532_H
- #define _CDEF_BF532_H
- 
--#include <asm/blackfin.h>
--
--/*include all Core registers and bit definitions*/
--#include "defBF532.h"
--
- /*include core specific register pointer definitions*/
- #include <asm/cdef_LPBlackfin.h>
- 
-@@ -655,46 +650,4 @@
- /* These need to be last due to the cdef/linux inter-dependencies */
- #include <asm/irq.h>
- 
--#if ANOMALY_05000311
--#define BFIN_WRITE_FIO_FLAG(name) \
--static inline void bfin_write_FIO_FLAG_##name(unsigned short val) \
--{ \
--	unsigned long flags; \
--	local_irq_save_hw(flags); \
--	bfin_write16(FIO_FLAG_##name, val); \
--	bfin_read_CHIPID(); \
--	local_irq_restore_hw(flags); \
--}
--BFIN_WRITE_FIO_FLAG(D)
--BFIN_WRITE_FIO_FLAG(C)
--BFIN_WRITE_FIO_FLAG(S)
--BFIN_WRITE_FIO_FLAG(T)
--
--#define BFIN_READ_FIO_FLAG(name) \
--static inline u16 bfin_read_FIO_FLAG_##name(void) \
--{ \
--	unsigned long flags; \
--	u16 ret; \
--	local_irq_save_hw(flags); \
--	ret = bfin_read16(FIO_FLAG_##name); \
--	bfin_read_CHIPID(); \
--	local_irq_restore_hw(flags); \
--	return ret; \
--}
--BFIN_READ_FIO_FLAG(D)
--BFIN_READ_FIO_FLAG(C)
--BFIN_READ_FIO_FLAG(S)
--BFIN_READ_FIO_FLAG(T)
--
--#else
--#define bfin_write_FIO_FLAG_D(val)           bfin_write16(FIO_FLAG_D, val)
--#define bfin_write_FIO_FLAG_C(val)           bfin_write16(FIO_FLAG_C, val)
--#define bfin_write_FIO_FLAG_S(val)           bfin_write16(FIO_FLAG_S, val)
--#define bfin_write_FIO_FLAG_T(val)           bfin_write16(FIO_FLAG_T, val)
--#define bfin_read_FIO_FLAG_T()               bfin_read16(FIO_FLAG_T)
--#define bfin_read_FIO_FLAG_C()               bfin_read16(FIO_FLAG_C)
--#define bfin_read_FIO_FLAG_S()               bfin_read16(FIO_FLAG_S)
--#define bfin_read_FIO_FLAG_D()               bfin_read16(FIO_FLAG_D)
--#endif
--
- #endif				/* _CDEF_BF532_H */
-diff --git a/arch/blackfin/mach-bf533/include/mach/fio_flag.h b/arch/blackfin/mach-bf533/include/mach/fio_flag.h
-new file mode 100644
-index 0000000..b81905a
---- /dev/null
-+++ b/arch/blackfin/mach-bf533/include/mach/fio_flag.h
-@@ -0,0 +1,55 @@
-+/*
-+ * Copyright 2005-2008 Analog Devices Inc.
-+ *
-+ * Licensed under the GPL-2 or later
-+ */
-+
-+#ifndef _MACH_FIO_FLAG_H
-+#define _MACH_FIO_FLAG_H
-+
-+#include <asm/blackfin.h>
-+#include <asm/irqflags.h>
-+
-+#if ANOMALY_05000311
-+#define BFIN_WRITE_FIO_FLAG(name) \
-+static inline void bfin_write_FIO_FLAG_##name(unsigned short val) \
-+{ \
-+	unsigned long flags; \
-+	local_irq_save_hw(flags); \
-+	bfin_write16(FIO_FLAG_##name, val); \
-+	bfin_read_CHIPID(); \
-+	local_irq_restore_hw(flags); \
-+}
-+BFIN_WRITE_FIO_FLAG(D)
-+BFIN_WRITE_FIO_FLAG(C)
-+BFIN_WRITE_FIO_FLAG(S)
-+BFIN_WRITE_FIO_FLAG(T)
-+
-+#define BFIN_READ_FIO_FLAG(name) \
-+static inline u16 bfin_read_FIO_FLAG_##name(void) \
-+{ \
-+	unsigned long flags; \
-+	u16 ret; \
-+	local_irq_save_hw(flags); \
-+	ret = bfin_read16(FIO_FLAG_##name); \
-+	bfin_read_CHIPID(); \
-+	local_irq_restore_hw(flags); \
-+	return ret; \
-+}
-+BFIN_READ_FIO_FLAG(D)
-+BFIN_READ_FIO_FLAG(C)
-+BFIN_READ_FIO_FLAG(S)
-+BFIN_READ_FIO_FLAG(T)
-+
-+#else
-+#define bfin_write_FIO_FLAG_D(val)           bfin_write16(FIO_FLAG_D, val)
-+#define bfin_write_FIO_FLAG_C(val)           bfin_write16(FIO_FLAG_C, val)
-+#define bfin_write_FIO_FLAG_S(val)           bfin_write16(FIO_FLAG_S, val)
-+#define bfin_write_FIO_FLAG_T(val)           bfin_write16(FIO_FLAG_T, val)
-+#define bfin_read_FIO_FLAG_T()               bfin_read16(FIO_FLAG_T)
-+#define bfin_read_FIO_FLAG_C()               bfin_read16(FIO_FLAG_C)
-+#define bfin_read_FIO_FLAG_S()               bfin_read16(FIO_FLAG_S)
-+#define bfin_read_FIO_FLAG_D()               bfin_read16(FIO_FLAG_D)
-+#endif
-+
-+#endif /* _MACH_FIO_FLAG_H */
+	local_irq_enable() -> raw_local_irq_enable()
+	local_irq_disable() -> raw_local_irq_disable()
+	local_irq_save() -> raw_local_irq_save()
+	...
 
+and under the other configuration, it maps:
+
+	raw_local_irq_enable() -> local_irq_enable()
+	raw_local_irq_disable() -> local_irq_disable()
+	raw_local_irq_save() -> local_irq_save()
+	...
+
+This is quite confusing.  There should be one set of names expected of the
+arch, and this should be wrapped to give another set of names that are expected
+by users of this facility.
+
+The final patch change the asm/irqflags.h headers to provide:
+
+	flags = arch_local_save_flags()
+	flags = arch_local_irq_save()
+	arch_local_irq_restore(flags)
+	arch_local_irq_disable()
+	arch_local_irq_enable()
+	arch_irqs_disabled_flags(flags)
+	arch_irqs_disabled()
+	arch_safe_halt()
+
+Then linux/irqflags.h wraps these to provide:
+
+	raw_local_save_flags(flags)
+	raw_local_irq_save(flags)
+	raw_local_irq_restore(flags)
+	raw_local_irq_disable()
+	raw_local_irq_enable()
+	raw_irqs_disabled_flags(flags)
+	raw_irqs_disabled()
+	raw_safe_halt()
+
+with type checking on the flags 'arguments', and then wraps those to provide:
+
+	local_save_flags(flags)
+	local_irq_save(flags)
+	local_irq_restore(flags)
+	local_irq_disable()
+	local_irq_enable()
+	irqs_disabled_flags(flags)
+	irqs_disabled()
+	safe_halt()
+
+with tracing included if enabled.
+
+The arch functions can now all be inline functions rather than some of them
+having to be macros.
+
+===========
+ARCH FIXUPS
+===========
+
+To make this work, some of the arches need fixing up to some extent or other:
+
+ (1) Blackfin.
+
+     A number of circular dependencies and other problems needed sorting out in
+     the Blackfin arch.  The first few patches deal with this.  With this, most
+     of the Blackfin defconfigs compile, and none of the breakage is obviously
+     to do with the irqflags patches.
+
+     This also requires a name collision between the DES crypto module and the
+     Blackfin arch code to be fixed.
+
+David
