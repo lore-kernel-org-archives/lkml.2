@@ -1,121 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab0HZXtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 19:49:15 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:53242 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752612Ab0HZXtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 19:49:13 -0400
-Date: Thu, 26 Aug 2010 19:49:11 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-Message-ID: <20100826234910.GB4194@Krystal>
-References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop>
+	id S1754557Ab0HZXvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 19:51:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25803 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752015Ab0HZXv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 19:51:27 -0400
+Date: Fri, 27 Aug 2010 01:50:52 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+Message-ID: <20100826235052.GZ6803@random.random>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282849045.1975.1587.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 19:37:36 up 216 days,  2:14,  3 users,  load average: 0.07, 0.07,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Thu, 2010-08-26 at 14:09 -0400, Mathieu Desnoyers wrote:
-> > Feedback is welcome,
-> > 
-> So we have the following components to this patch:
+Hi Hugh,
+
+On Wed, Aug 25, 2010 at 11:12:54PM -0700, Hugh Dickins wrote:
+> After several hours, kbuild tests hang with anon_vma_prepare() spinning on
+> a newly allocated anon_vma's lock - on a box with CONFIG_TREE_PREEMPT_RCU=y
+> (which makes this very much more likely, but it could happen without).
 > 
->   - dynamic min_vruntime -- push the min_vruntime ahead at the
->        rate of the runqueue wide virtual clock. This approximates
->        the virtual clock, esp. when turning off sleeper fairness.
->        And is cheaper than actually computing the virtual clock.
-> 
->        It allows for better insertion and re-weighting behaviour,
->        but it does increase overhead somewhat.
-> 
->   - special wakeups using the next-buddy to get scheduled 'soon',
->        used by all wakeups from the input system and timers.
-> 
->   - special fork semantics related to those special wakeups.
-> 
-> 
-> So while I would love to simply compute the virtual clock, it would add
-> a s64 mult to every enqueue/dequeue and a s64 div to each
-> enqueue/re-weight, which might be somewhat prohibitive, the dyn
-> min_vruntime approximation seems to work well enough and costs a u32 div
-> per enqueue.
+> The ever-subtle page_lock_anon_vma() now needs a further twist: since
+> anon_vma_prepare() and anon_vma_fork() are liable to change the ->root
+> of a reused anon_vma structure at any moment, page_lock_anon_vma()
+> needs to check page_mapped() again before succeeding, otherwise
+> page_unlock_anon_vma() might address a different root->lock.
 
-Yep, it's cheap enough and seems to work very well as far as my testing have
-shown.
+I don't get it, the anon_vma can be freed and reused only after we run
+rcu_read_unlock(). And the anon_vma->root can't change unless the
+anon_vma is freed and reused. Last but not the least by the time
+page->mapping points to "anon_vma" the "anon_vma->root" is already
+initialized and stable.
 
-> Adding a preference to all user generated wakeups (input) and
-> propagating that state along the wakeup chain seems to make sense,
+The page_mapped test is only relevant against the rcu_read_lock, not
+the spin_lock, so how it can make a difference to run it twice inside
+the same rcu_read_lock protected critical section? The first one still
+is valid also after the anon_vma_lock() returns, it's not like that
+anon_vma_lock drops the rcu_read_lock internally.
 
-Yes, this is what lets us kill FAIR_SLEEPERS (and thus let the dynamic
-min_vruntime behave as expected), while keeping good Xorg interactivity.
-
-> adding the same to all timers is something that needs to be discussed, I
-> can well imagine not all timers are equally important -- do we want to
-> extend the timer interface?
-
-I just thought it made sense that when a timer fires and wakes up a thread,
-there are pretty good chances that we might to wakeup this thread quickly. But
-it brings the question in a more general sense: would we want this kind of
-behavior also available for network packets, disk I/O, etc ? IOW, would it make
-sense to have next-buddy selection on all these input-triggered wakeups ? Since
-we're only using the next buddy selection, it will only perform this selection
-if the selected buddy is within a specific vruntime range from the minimum, so
-AFAIK, I don't think we would end up starving the system in any possible way.
-
-So far I cannot see a situation where selecting the next buddy would _not_ make
-sense in any kind of input-driven wakeups (interactive, timer, disk, network,
-etc). But maybe it's just a lack of imagination on my part.
-
-
-> If we do decide we want both, we should at the very least merge the
-> try_to_wake_up() conditional blob (they're really identical). Preferably
-> we should reduce ttwu(), not add more to it... 
-
-Sure. Or maybe find out we want to target even more input paths... so far
-interactive input seemed absolutely needed, timers seemed logical and
-self-rate-limited. For the others, I don't know. It might actually make sense
-too.
-
-> 
-> Fudging fork seems dubious at best, it seems generated by the use of
-> timer_create(.evp->sigev_notify = SIGEV_THREAD), which is a really
-> broken thing to do, it has very ill defined semantics and is utterly
-> unable to properly cope with error cases. Furthermore its trivial to
-> actually correctly implement the desired behaviour, so I'm really
-> skeptical on this front; friends don't let friends use SIGEV_THREAD.
-
-Agreed for the timer-tied case. I think the direction Thomas proposes for fixing
-glibc makes much more sense. However, I am wondering about the interactive case
-too: e.g., if you click on "open terminal", it needs to fork a process and you
-would normally expect this to come up more quickly than the background kernel
-compile you're doing. So there might be some interest for this fork vruntime
-boost for interactivity-driven wakeups. Thoughts ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Furthermore no need of ACCESS_ONCE on the anon_vma->root because it
+can't change from under us as the anon_vma can't be freed from under
+us until rcu_read_unlock returns (after we verified the first time
+that page_mapped is true under the rcu_read_lock, which we already do
+before trying to take the anon_vma_lock).
