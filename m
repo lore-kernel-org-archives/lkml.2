@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab0HZULL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 16:11:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55193 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab0HZULI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 16:11:08 -0400
-Message-ID: <4C76CA57.3050405@vlnb.net>
-Date: Fri, 27 Aug 2010 00:11:03 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1754040Ab0HZUXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 16:23:42 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:57543 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377Ab0HZUXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 16:23:39 -0400
+Date: Thu, 26 Aug 2010 21:23:24 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] writeback: Do not congestion sleep when there are
+	no congested BDIs
+Message-ID: <20100826202324.GK20944@csn.ul.ie>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie> <1282835656-5638-4-git-send-email-mel@csn.ul.ie> <20100826173843.GD6873@barrios-desktop> <20100826174245.GJ20944@csn.ul.ie> <20100826181735.GB6805@cmpxchg.org>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: James Bottomley <James.Bottomley@suse.de>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>	 <4C73DA15.2010207@vlnb.net> <1282661876.2993.20.camel@mulgrave.site>	 <4C7421FB.2060007@vlnb.net> <1282685014.32007.51.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1282685014.32007.51.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:Btdfa1R9i2i22kUOXSbo//6fXUxVUcR2E0b3kMK3Ta4
- E3AndAl98YgsHy7ZP/rzKKiq+jARP6IHtxr/3lQTatjIBP9Q1F
- CYRBCyY9/TxPh5646482p/AYe8wTma8UVZ5ag5wTWgccDiwpCl
- MPRZW/8EGusuuE4g/76nFt+q48gdEM/1Kt+wkyD1MYCs/8Qrd8
- WRHTdQcUO7GZASEKcaawA==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100826181735.GB6805@cmpxchg.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas A. Bellinger, on 08/25/2010 01:23 AM wrote:
-> As mentioned explictly earlier in this thread, my WIP code for the
-> kernel level subsystem backstore using STGT kernel<->  user CDB
-> passthrough logic in drivers/target/target_core_stgt.c is a item on
-> my TODO list, but I will repeat, is NOT being tagged as a mainline
-> .37 item.
+On Thu, Aug 26, 2010 at 08:17:35PM +0200, Johannes Weiner wrote:
+> On Thu, Aug 26, 2010 at 06:42:45PM +0100, Mel Gorman wrote:
+> > On Fri, Aug 27, 2010 at 02:38:43AM +0900, Minchan Kim wrote:
+> > > On Thu, Aug 26, 2010 at 04:14:16PM +0100, Mel Gorman wrote:
+> > > > If congestion_wait() is called with no BDIs congested, the caller will
+> > > > sleep for the full timeout and this is an unnecessary sleep. This patch
+> > > > checks if there are BDIs congested. If so, it goes to sleep as normal.
+> > > > If not, it calls cond_resched() to ensure the caller is not hogging the
+> > > > CPU longer than its quota but otherwise will not sleep.
+> > > > 
+> > > > This is aimed at reducing some of the major desktop stalls reported during
+> > > > IO. For example, while kswapd is operating, it calls congestion_wait()
+> > > > but it could just have been reclaiming clean page cache pages with no
+> > > > congestion. Without this patch, it would sleep for a full timeout but after
+> > > > this patch, it'll just call schedule() if it has been on the CPU too long.
+> > > > Similar logic applies to direct reclaimers that are not making enough
+> > > > progress.
+> > > > 
+> > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > > ---
+> > > >  mm/backing-dev.c |   20 ++++++++++++++------
+> > > >  1 files changed, 14 insertions(+), 6 deletions(-)
+> > > > 
+> > > > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> > > > index a49167f..6abe860 100644
+> > > > --- a/mm/backing-dev.c
+> > > > +++ b/mm/backing-dev.c
+> > > 
+> > > Function's decripton should be changed since we don't wait next write any more. 
+> > > 
+> > 
+> > My bad. I need to check that "next write" thing. It doesn't appear to be
+> > happening but maybe that side of things just broke somewhere in the
+> > distant past. I lack context of how this is meant to work so maybe
+> > someone will educate me.
+> 
+> On every retired io request the congestion state on the bdi is checked
+> and the congestion waitqueue woken up.
+> 
+> So without congestion, we still only wait until the next write
+> retires, but without any IO, we sleep the full timeout.
+> 
+> Check __freed_requests() in block/blk-core.c.
+> 
 
-Hmm, I can't understand, if target_core_stgt.c is "NOT being tagged as a 
-mainline .37 item", then the STGT ABI compatibility for being a drop in 
-replacement for STGT isn't a requirement? Or am I missing something?
+Seems reasonable. Still, if there is no write IO going on and no
+congestion there seems to be no point going to sleep for the full
+timeout. It still feels wrong.
 
-> Tomo-san, mnc, and other storage folks have been briefed on the
-> remaining issues that would be involved to get a prototype
-> functioning with drivers/target/target_core_stgt.c, and rough idea of
-> what it would take in existing mainline drivers/scsi/scsi_tgt_*.c
-> code.  With the current WIP code this will allow the userspace CDB ->
-> LUN passthrough to function transparently with all TCM SPC-4
-> compliant logic as a standalone struct se_subsystem_api
-> tcm_core_stgt.ko backstore.
-
-This is exactly what we are discussing.
-
-Thanks,
-Vlad
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
