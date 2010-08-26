@@ -1,34 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab0HZXWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 19:22:22 -0400
-Received: from web51003.mail.re2.yahoo.com ([206.190.38.134]:46703 "HELO
-	web51003.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754429Ab0HZXWU (ORCPT
+	id S1754693Ab0HZXXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 19:23:05 -0400
+Received: from x35.xmailserver.org ([64.71.152.41]:37914 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754429Ab0HZXXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 19:22:20 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=TRLYfe0INkBwvYqtlq1HMNFoNPwIv+Owsx3Jtvp6DqgdyipONexLTksD6XuThJmB2ge4hBZB50AJlP4hUeCt6TMya3VeOqp8/nJ5vwxXJfs1DRZZg9ci0OboWzcFTSuWdYZPi2XPfrJXWOsZC4HxhaOM4MTjjjfBRjSOCBxUKXg=;
-Message-ID: <36441.25099.qm@web51003.mail.re2.yahoo.com>
-X-YMail-OSG: h5Z7z0sVM1lB5QRcmeR2PVsgcxbVZwM51s7n.8Qj1BAOKcr
- gAVTLLdF1siSPgVUfPUgrkAHUY_.UQX2ijA5kRHf_VOf3nZWSbVeSdXJXbnf
- 3Hi472SHEWv_rgBKUH7nvZvF0.5eGh_C30AVLCTCoEInqllPgaknmlfYSqce
- abFLyG3vorm2WlJ_.deOfWB4nkXtlnItbgR50J_TzQSE.mZS0R1KouisZt3p
- RT1udybOT1SmfXITVe2YoZAVwHW.T3jIb.qdLRY7VCO3L1EJA9WnIvfhQxlT
- .4uHRdKisdeQ5qJS7LGLn6peknhkhPEs73R2a4sjV6nf2oW4GnGp6FPc-
-X-Mailer: YahooMailWebService/0.8.105.279950
-Date: Thu, 26 Aug 2010 16:22:19 -0700 (PDT)
-From: Eugene K <evgfpeters@yahoo.com>
-To: linux-kernel@vger.kernel.org, majordomo@vger.kernel.org, grach-5@yandex.ru
+	Thu, 26 Aug 2010 19:23:03 -0400
+X-AuthUser: davidel@xmailserver.org
+Date: Thu, 26 Aug 2010 16:23:00 -0700 (PDT)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@makko.or.mcafeemobile.com
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Shawn Bohrer <shawn.bohrer@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] hrtimer: make epoll_wait() use the hrtimer range
+ feature
+In-Reply-To: <alpine.LFD.2.00.1008270059240.2768@localhost.localdomain>
+Message-ID: <alpine.DEB.2.00.1008261612230.25446@makko.or.mcafeemobile.com>
+References: <alpine.DEB.2.00.1008261543470.25446@makko.or.mcafeemobile.com> <alpine.LFD.2.00.1008270059240.2768@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://ashtonduelm0383.angelfire.com/
+On Fri, 27 Aug 2010, Thomas Gleixner wrote:
+
+> On Thu, 26 Aug 2010, Davide Libenzi wrote:
+> > On Sun, 8 Aug 2010, Shawn Bohrer wrote:
+> > 
+> > > This make epoll use hrtimers for the timeout value which prevents
+> > > epoll_wait() from timing out up to a millisecond early.
+> > > 
+> > > This mirrors the behavior of select() and poll().
+> > 
+> > I saw this now, since I got notifications from Andrew's patch machine.
+> > Is this really needed?
+> 
+> Yes, as it is the last user space interface which is jiffies based.
+
+What? You killed jiffies?! :)
+Alright then, the patch itself, besides the different bahavior on timeout 
+greater/equal to EP_MAX_MSTIMEO (which is not documented, hence does not 
+exist), looks OK to me.
 
 
-      
+
+- Davide
+
+
