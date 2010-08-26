@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab0HZTU1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 15:20:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43640 "EHLO mx1.redhat.com"
+	id S1753714Ab0HZTUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 15:20:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752217Ab0HZTU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 15:20:26 -0400
+	id S1753328Ab0HZTU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 15:20:27 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/3] h8300: IRQ flags should be stored in an unsigned long
+Subject: [PATCH 2/3] h8300: Fix die()
 To: ysato@users.sourceforge.jp
 Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Thu, 26 Aug 2010 20:20:09 +0100
-Message-ID: <20100826192009.23518.36288.stgit@warthog.procyon.org.uk>
+Date: Thu, 26 Aug 2010 20:20:14 +0100
+Message-ID: <20100826192014.23518.71477.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100826192009.23518.36288.stgit@warthog.procyon.org.uk>
+References: <20100826192009.23518.36288.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,71 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix h8300's asm/atomic.h to store the IRQ flags in an unsigned long to deal
-with warnings of the following type:
+Fix h8300's die() to take care of a number of problems:
 
-/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/atomic.h: In function 'atomic_add_return':
-/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/atomic.h:22: warning: comparison of distinct pointer types lacks a cast
-/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/atomic.h:24: warning: comparison of distinct pointer types lacks a cast
+  CC      arch/h8300/kernel/traps.o
+In file included from /warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/bitops.h:10,
+                 from include/linux/bitops.h:22,
+                 from include/linux/kernel.h:17,
+                 from include/linux/sched.h:54,
+                 from arch/h8300/kernel/traps.c:18:
+/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/system.h:136: warning: 'struct pt_regs' declared inside parameter list
+/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/system.h:136: warning: its scope is only this definition or declaration, which is probably not what you want
+arch/h8300/kernel/traps.c:100: error: conflicting types for 'die'
+/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/system.h:136: error: previous declaration of 'die' was here
+make[2]: *** [arch/h8300/kernel/traps.o] Error 1
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/h8300/include/asm/atomic.h |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ arch/h8300/include/asm/system.h |    4 +++-
+ arch/h8300/kernel/traps.c       |    2 +-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/h8300/include/asm/atomic.h b/arch/h8300/include/asm/atomic.h
-index e936804..984221a 100644
---- a/arch/h8300/include/asm/atomic.h
-+++ b/arch/h8300/include/asm/atomic.h
-@@ -18,7 +18,8 @@
+diff --git a/arch/h8300/include/asm/system.h b/arch/h8300/include/asm/system.h
+index d98d976..16bf156 100644
+--- a/arch/h8300/include/asm/system.h
++++ b/arch/h8300/include/asm/system.h
+@@ -3,6 +3,8 @@
  
- static __inline__ int atomic_add_return(int i, atomic_t *v)
- {
--	int ret,flags;
-+	unsigned long flags;
-+	int ret;
- 	local_irq_save(flags);
- 	ret = v->counter += i;
- 	local_irq_restore(flags);
-@@ -30,7 +31,8 @@ static __inline__ int atomic_add_return(int i, atomic_t *v)
+ #include <linux/linkage.h>
  
- static __inline__ int atomic_sub_return(int i, atomic_t *v)
- {
--	int ret,flags;
-+	unsigned long flags;
-+	int ret;
- 	local_irq_save(flags);
- 	ret = v->counter -= i;
- 	local_irq_restore(flags);
-@@ -42,7 +44,8 @@ static __inline__ int atomic_sub_return(int i, atomic_t *v)
++struct pt_regs;
++
+ /*
+  * switch_to(n) should switch tasks to task ptr, first checking that
+  * ptr isn't the current task, in which case it does nothing.  This
+@@ -155,6 +157,6 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
  
- static __inline__ int atomic_inc_return(atomic_t *v)
- {
--	int ret,flags;
-+	unsigned long flags;
-+	int ret;
- 	local_irq_save(flags);
- 	v->counter++;
- 	ret = v->counter;
-@@ -64,7 +67,8 @@ static __inline__ int atomic_inc_return(atomic_t *v)
+ #define arch_align_stack(x) (x)
  
- static __inline__ int atomic_dec_return(atomic_t *v)
- {
--	int ret,flags;
-+	unsigned long flags;
-+	int ret;
- 	local_irq_save(flags);
- 	--v->counter;
- 	ret = v->counter;
-@@ -76,7 +80,8 @@ static __inline__ int atomic_dec_return(atomic_t *v)
+-void die(char *str, struct pt_regs *fp, unsigned long err);
++extern void die(const char *str, struct pt_regs *fp, unsigned long err);
  
- static __inline__ int atomic_dec_and_test(atomic_t *v)
+ #endif /* _H8300_SYSTEM_H */
+diff --git a/arch/h8300/kernel/traps.c b/arch/h8300/kernel/traps.c
+index 3c0b66b..dfa05bd 100644
+--- a/arch/h8300/kernel/traps.c
++++ b/arch/h8300/kernel/traps.c
+@@ -96,7 +96,7 @@ static void dump(struct pt_regs *fp)
+ 	printk("\n\n");
+ }
+ 
+-void die(char *str, struct pt_regs *fp, unsigned long err)
++void die(const char *str, struct pt_regs *fp, unsigned long err)
  {
--	int ret,flags;
-+	unsigned long flags;
-+	int ret;
- 	local_irq_save(flags);
- 	--v->counter;
- 	ret = v->counter;
+ 	static int diecount;
+ 
 
