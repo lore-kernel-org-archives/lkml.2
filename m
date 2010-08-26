@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab0HZCjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 22:39:10 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38620 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab0HZCjI (ORCPT
+	id S1752953Ab0HZCll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 22:41:41 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:42024 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab0HZClh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 22:39:08 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4C75D3C4.6040802@np.css.fujitsu.com>
-Date: Thu, 26 Aug 2010 11:39:00 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: mingo Redhat <mingo@redhat.com>, "Brown, Len" <len.brown@intel.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        lm-sensors@lm-sensors.org, LKLM <linux-kernel@vger.kernel.org>
-Subject: [Patch-next] Package Level Power limit: fix the generation of package_power_limit_count
- sysfile.
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Aug 2010 22:41:37 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Thu, 26 Aug 2010 04:40:46 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+In-reply-to: <20100825155814.25c783c7.akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <op.vh0xp8ix7p4s8u@localhost>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.61 (Linux)
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+ <1282310110.2605.976.camel@laptop>
+ <20100825155814.25c783c7.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- I read the source code of therm_throt.c. Most of checking codes for PLN
-and PTS are like following:
-if (PLN)
-....
-if (PTS) {
-...
-if (PLN)
-...
-}
+Hello Andrew,
 
-But there is not checking code for the generation of package_power_limit_count
-sysfile. And the code is like following:
-if (PLN)
-...
-if (PTS)
-...
-if (PLN)
-...
+I think Pawel has replied to most of your comments, so I'll just add my own
+0.02 KRW. ;)
 
-I don't think the sysfile package_power_limit_count should be generated,
-when the feature PTS of CPU is not supported. The reasons are listed
-as following:
-1.The sysfile package_power_limit_count is used for counting the happened
-time of PLN event of a package. If PTS is not supported by CPU,
-IA32_PACKAGE_THERM_STATUS and IA32_PACKAGE_THERM_INTERRUPT MSRs are not
-implemented on the package on which the CPU exists.The PLN interrupt
-bit for package in IA32_PACKAGE_THERM_INTERRUPT could not be enabled, too.
-Because the PLN event for package will never happen, the sysfile
-package_power_limit_count loses the true meaning of its existence.
-2.Even if package_power_limit_count sysfile could be generated,
-if PTS is not supported by CPU, there is not any other source code
-for updating the value of package_power_limit_count. So the sysfile
-package_power_limit_count is not useful.
+> Peter Zijlstra <peterz@infradead.org> wrote:
+>> So the idea is to grab a large chunk of memory at boot time and then
+>> later allow some device to use it?
+>>
+>> I'd much rather we'd improve the regular page allocator to be smarter
+>> about this. We recently added a lot of smarts to it like memory
+>> compaction, which allows large gobs of contiguous memory to be freed for
+>> things like huge pages.
+>>
+>> If you want guarantees you can free stuff, why not add constraints to
+>> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
+>> certain region, those pages are easily freed/moved aside to satisfy
+>> large contiguous allocations.
 
-This patch is used for fixing it. But I have not confirmed this patch
-because I don't have such machine.
+On Thu, 26 Aug 2010 00:58:14 +0200, Andrew Morton <akpm@linux-foundation.org> wrote:
+> That would be good.  Although I expect that the allocation would need
+> to be 100% rock-solid reliable, otherwise the end user has a
+> non-functioning device.  Could generic core VM provide the required level
+> of service?
 
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
----
-arch/x86/kernel/cpu/mcheck/therm_throt.c | 3 ++-
-1 files changed, 2 insertions(+), 1 deletions(-)
+I think that the biggest problem is fragmentation here.  For instance,
+I think that a situation where there is enough free space but it's
+fragmented so no single contiguous chunk can be allocated is a serious
+problem.  However, I would argue that if there's simply no space left,
+a multimedia device could fail and even though it's not desirable, it
+would not be such a big issue in my eyes.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index d9368ee..169d880 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -216,7 +216,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
-err = sysfs_add_file_to_group(&sys_dev->kobj,
-&attr_core_power_limit_count.attr,
-thermal_attr_group.name);
-- if (cpu_has(c, X86_FEATURE_PTS))
-+ if (cpu_has(c, X86_FEATURE_PTS)) {
-err = sysfs_add_file_to_group(&sys_dev->kobj,
-&attr_package_throttle_count.attr,
-thermal_attr_group.name);
-@@ -224,6 +224,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
-err = sysfs_add_file_to_group(&sys_dev->kobj,
-&attr_package_power_limit_count.attr,
-thermal_attr_group.name);
-+ }
+So, if only movable or discardable pages are allocated in CMA managed
+regions all should work well.  When a device needs memory discardable
+pages would get freed and movable moved unless there is no space left
+on the device in which case allocation would fail.
 
-return err;
-}
+Critical devices (just a hypothetical entities) could have separate
+regions on which only discardable pages can be allocated so that memory
+can always be allocated for them.
+
+> I agree that having two "contiguous memory allocators" floating about
+> on the list is distressing.  Are we really all 100% diligently certain
+> that there is no commonality here with Zach's work?
+
+As Pawel said, I think Zach's trying to solve a different problem.  No
+matter, as I've said in response to Konrad's message, I have thought
+about unifying Zach's IOMMU and CMA in such a way that devices could
+work on both systems with and without IOMMU if only they would limit
+the usage of the API to some subset which always works.
+
+> Please cc me on future emails on this topic?
+
+Not a problem.
+
 -- 
-1.7.1.1
-
-
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
 
