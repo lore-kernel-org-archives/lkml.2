@@ -1,54 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab0HZPye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 11:54:34 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:34186 "EHLO imr3.ericy.com"
+	id S1754238Ab0HZP6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:58:05 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:39270 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab0HZPyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 11:54:32 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>, linux-doc@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH] hwmon: Add tempX_emergency to sysfs ABI
-Date: Thu, 26 Aug 2010 08:54:45 -0700
-Message-ID: <1282838085-7210-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754026Ab0HZP6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:58:01 -0400
+Date: Thu, 26 Aug 2010 08:57:58 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Message-ID: <20100826085758.04ac4b44@nehalam>
+In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
+References: <4C763A67.5040107@dsn.okisemi.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-tempX_emergency will be used by max6696. It can also be used for other chips
-supporting three upper temperature limits.
+On Thu, 26 Aug 2010 18:56:55 +0900
+Masayuki Ohtake <masa-korg@dsn.okisemi.com> wrote:
 
- Documentation/hwmon/sysfs-interface |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> +static void pch_gbe_tx_queue(struct pch_gbe_adapter *adapter,
+> +		 struct pch_gbe_tx_ring *tx_ring, struct sk_buff *skb)
+> +{
+> +	struct pch_gbe_hw *hw = &adapter->hw;
+> +	struct pch_gbe_tx_desc *tx_desc;
+> +	struct pch_gbe_buffer *buffer_info;
+> +	struct sk_buff *tmp_skb;
+> +	unsigned int frame_ctrl;
+> +	unsigned int ring_num;
+> +	unsigned long flags;
+> +
+> +	PCH_GBE_DEBUG("%s\n", __func__);
+> +
+> +
+> +	/*-- Set frame control --*/
+> +	frame_ctrl = 0;
+> +	if (unlikely(skb->len < PCH_GBE_SHORT_PKT))
+> +		frame_ctrl |= PCH_GBE_TXD_CTRL_APAD;
+> +	if (unlikely(adapter->tx_csum == FALSE))
+> +		frame_ctrl |= PCH_GBE_TXD_CTRL_TCPIP_ACC_OFF;
+> +
+> +	/* Performs checksum processing */
+> +	/*
+> +	 * It is because the hardware accelerator does not support a checksum,
+> +	 * when the received data size is less than 64 bytes.
+> +	 */
+> +	if ((skb->len < PCH_GBE_SHORT_PKT) && (adapter->tx_csum == TRUE)) {
+> +		frame_ctrl |=
+> +			PCH_GBE_TXD_CTRL_APAD | PCH_GBE_TXD_CTRL_TCPIP_ACC_OFF;
+> +		if (skb->protocol == htons(ETH_P_IP)) {
+> +			struct iphdr *iph = ip_hdr(skb);
+> +			unsigned int offset;
+> +			iph->check = 0;
+> +			iph->check = ip_fast_csum((u8 *) iph, iph->ihl);
+> +			offset = skb_transport_offset(skb);
+> +			if (iph->protocol == IPPROTO_TCP) {
+> +				skb->csum = 0;
+> +				tcp_hdr(skb)->check = 0;
+> +				skb->csum =
+> +					skb_checksum(skb, offset,
+> +						skb->len - offset, 0);
+> +				tcp_hdr(skb)->check =
+> +					csum_tcpudp_magic(iph->saddr,
+> +							iph->daddr,
+> +							skb->len - offset,
+> +							IPPROTO_TCP, skb->csum);
+> +			} else if (iph->protocol == IPPROTO_UDP) {
+> +				skb->csum = 0;
+> +				udp_hdr(skb)->check = 0;
+> +				skb->csum =
+> +					skb_checksum(skb, offset,
+> +						skb->len - offset, 0);
+> +				udp_hdr(skb)->check =
+> +					csum_tcpudp_magic(iph->saddr,
+> +							iph->daddr,
+> +							skb->len - offset,
+> +							IPPROTO_UDP, skb->csum);
+> +			}
+> +		}
+> +	}
 
-diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
-index ff45d1f..1ceb2b9 100644
---- a/Documentation/hwmon/sysfs-interface
-+++ b/Documentation/hwmon/sysfs-interface
-@@ -310,6 +310,12 @@ temp[1-*]_crit_hyst
- 		from the critical value.
- 		RW
- 
-+temp[1-*]_emergency
-+		Temperature emergency value, typically greater than
-+		corresponding temp_crit values.
-+		Unit: millidegree Celsius
-+		RW
-+
- temp[1-*]_lcrit	Temperature critical min value, typically lower than
- 		corresponding temp_min values.
- 		Unit: millidegree Celsius
+
+Why not something simpler using skb_checksum_help which is
+safer since it handles case of shared skb correctly.
+
+	if (skb->ip_summed = CHECKSUM_COMPLETE &&
+            skb->len < PCH_GBE_SHORT_PKT) {
+		frame_ctrl |=
+			PCH_GBE_TXD_CTRL_APAD | PCH_GBE_TXD_CTRL_TCPIP_ACC_OFF;
+		skb->ip_summed = CHECKSUM_NONE;
+                if (skb_checksum_help(skb))
+                      goto drop;  /* could not expand header to find space */
+        }
+
+
+
 -- 
-1.7.0.87.g0901d
-
