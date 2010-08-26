@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab0HZOOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:14:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41012 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753813Ab0HZOOw convert rfc822-to-8bit (ORCPT
+	id S1753841Ab0HZOQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 10:16:28 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:47611 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753534Ab0HZOQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:14:52 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Date: Thu, 26 Aug 2010 09:13:16 -0500
-Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Topic: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Index: ActFJ29is6oB/tQ5RGOIv/ZsjaVfHAAAWRLC
-Message-ID: <496565EC904933469F292DDA3F1663E602F10ED4B4@dlee06.ent.ti.com>
-References: <496565EC904933469F292DDA3F1663E602F10ED4B1@dlee06.ent.ti.com>
-	<20100826215554N.fujita.tomonori@lab.ntt.co.jp>
-	<496565EC904933469F292DDA3F1663E602F10ED4B3@dlee06.ent.ti.com>,<20100826230139Y.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100826230139Y.fujita.tomonori@lab.ntt.co.jp>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Aug 2010 10:16:25 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: ecYiekYVM1kkUVxhm_0QloPfLCvTM39EC1LhcybP4CX5eZb
+ gKgoy.GlGdv6UC.jUf2uN90DfeSocDSqLzrIe4UTKNaqt9iTRv9Iju184wU9
+ NdypK_oug6ND1C7YbQnCa9JmZpRNBriB5oJlPJPG2R_GKBWgLoyGwKpAUk5Z
+ r0hyA2IMWRcw37Iq7o5DaWM.8t3uS3GYlRAW9UkaVqw4CWPYRZyuxLfNdp66
+ .PGHF57s7h6uWkTzc30BRl9upWcVv
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 26 Aug 2010 09:16:19 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+In-Reply-To: <alpine.DEB.2.00.1008252010260.10986@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1008260914420.15852@router.home>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
+ <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop> <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop> <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1008251604120.24931@router.home> <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com> <alpine.DEB.2.00.1008251630270.25660@router.home> <alpine.DEB.2.00.1008251604540.31521@chino.kir.corp.google.com> <alpine.DEB.2.00.1008252028030.32421@router.home>
+ <alpine.DEB.2.00.1008252010260.10986@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-________________________________________
->From: FUJITA Tomonori [fujita.tomonori@lab.ntt.co.jp]
->Sent: Thursday, August 26, 2010 9:03 AM
->To: Guzman Lugo, Fernando
->Cc: fujita.tomonori@lab.ntt.co.jp; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; ohad@wizery.com; hiroshi.doyu@nokia.com; ameya.palande@nokia.com; >felipe.contreras@nokia.com
->Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
->
->On Thu, 26 Aug 2010 08:16:24 -0500
->"Guzman Lugo, Fernando" <fernando.lugo@ti.com> wrote:
->
->> >From a quick look, arch/arm/plat-omap/iovmm.c does nothing wrong about
->> >scatter gather chaining. arm/arm/mm/dma-mapping.c looks fine too about
->> >it. Maybe just defining ARCH_HAS_SG_CHAIN works?
->>
->> I can try, but it looks tricky for me. Maybe someone else can tell us why
->> SG chain is not supported for ARM or if there is a problem just defining
->> ARCH_HAS_SG_CHAIN.
->
->I suppose that nobody in ARM has been interested in the feature. It
->was invented to improve I/O performance with large I/O requests. No
->wonder embeded people aren't interested in it.
->
->fujita@rose:~/git/linux-2.6$ find arch -name 'scatterlist.h'|xargs grep HAS_SG
->arch/x86/include/asm/scatterlist.h:#define ARCH_HAS_SG_CHAIN
->arch/ia64/include/asm/scatterlist.h:#define ARCH_HAS_SG_CHAIN
->arch/sparc/include/asm/scatterlist.h:#define ARCH_HAS_SG_CHAIN
->arch/powerpc/include/asm/scatterlist.h:#define ARCH_HAS_SG_CHAIN
+On Wed, 25 Aug 2010, David Rientjes wrote:
 
-Ok, so let me try SG chain, that should be the correct fix.
+> Because we can remove the flag, remove branches from the page allocator
+> slowpath, and none of these allocations actually are dependent on
+> __GFP_NOFAIL since they are all under PAGE_ALLOC_COSTLY_ORDER.
 
-Thanks a lot,
-Fernando.
+Then we can simply remove __GFP_NOFAIL? Functions are only needed for
+higher order allocs that can fail?
+
