@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab0HZObt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:31:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4238 "EHLO mx1.redhat.com"
+	id S1753885Ab0HZOge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 10:36:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42041 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752155Ab0HZObs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:31:48 -0400
-Date: Thu, 26 Aug 2010 10:31:05 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100826143105.GK4879@redhat.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100825094819.GB3198@erda.amd.com>
- <20100825104130.GA27891@elte.hu>
- <20100825110006.GB27891@elte.hu>
- <20100825201106.GH4879@redhat.com>
- <20100826090008.GA22783@erda.amd.com>
- <AANLkTim3+u-fV-RAC=Odede6BfGdYoXsN55Tqw6iSfVT@mail.gmail.com>
+	id S1751341Ab0HZOgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 10:36:32 -0400
+Date: Thu, 26 Aug 2010 10:35:43 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        fweisbec@gmail.com, rostedt@goodmis.org
+Subject: Re: [PATCH] workqueue: Add basic tracepoints to track workqueue
+	execution
+Message-ID: <20100826143542.GA2947@redhat.com>
+References: <20100821131402.577c4d75@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTim3+u-fV-RAC=Odede6BfGdYoXsN55Tqw6iSfVT@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100821131402.577c4d75@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 01:18:29PM +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 26, 2010 at 1:00 PM, Robert Richter <robert.richter@amd.com> wrote:
-> ...
-> >
-> > This could also be a race in the counter handling code, or we do not
-> > proper count the number of handled counters. Maybe 2 counters actually
-> > fired but we only noticed one counter and then accidentially cleared
-> > the 2nd without processing it.
-> >
-> > -Robert
-> >
+On Sat, Aug 21, 2010 at 01:14:02PM -0700, Arjan van de Ven wrote:
+> With the introduction of the new unified work queue thread pools,
+> we lost one feature: It's no longer possible to know which worker
+> is causing the CPU to wake out of idle. The result is that PowerTOP
+> now reports a lot of "kworker/a:b" instead of more readable results.
 > 
-> Any chance to get it tested on P4 machine since it has a bit
-> different design?
+> This patch adds a pair of tracepoints to the new workqueue code,
+> similar in style to the timer/hrtimer tracepoints.
+> 
 
-Well P4 uses a different pmu irq handler, so I am not sure it will give us
-much insight.  I haven't noticed this on an AMD or an intel i5 either.
+Hi,
 
-Cheers,
-Don
+it might also be nice to add a workqueue chapter to the traceopint docbook.
+Since you've already included kernel-doc style comments, the below is all that
+we need.
+
+current book is at: http://www.kernel.org/doc/htmldocs/tracepoint/
+
+thanks,
+
+-Jason
+
+
+Add a workqueue chapter to the tracepoint docbook
+
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+
+---
+ Documentation/DocBook/tracepoint.tmpl |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/DocBook/tracepoint.tmpl b/Documentation/DocBook/tracepoint.tmpl
+index e8473ea..b57a9ed 100644
+--- a/Documentation/DocBook/tracepoint.tmpl
++++ b/Documentation/DocBook/tracepoint.tmpl
+@@ -104,4 +104,9 @@
+    <title>Block IO</title>
+ !Iinclude/trace/events/block.h
+   </chapter>
++
++  <chapter id="workqueue">
++   <title>Workqueue</title>
++!Iinclude/trace/events/workqueue.h
++  </chapter>
+ </book>
+-- 
+1.6.0.6
+
