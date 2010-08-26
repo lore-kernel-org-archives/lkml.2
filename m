@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab0HZMMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 08:12:21 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60857 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab0HZMMU convert rfc822-to-8bit (ORCPT
+	id S1753263Ab0HZMQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 08:16:57 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41900 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab0HZMQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 08:12:20 -0400
-Subject: Re: [PATCH] perf: fix possible divide-by-zero in
- perf_swevent_overflow()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongdong Deng <dongdong.deng@windriver.com>
-Cc: mingo@elte.hu, fweisbec@gmail.com, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1282824438-13970-1-git-send-email-dongdong.deng@windriver.com>
-References: <1282824438-13970-1-git-send-email-dongdong.deng@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 26 Aug 2010 14:12:07 +0200
-Message-ID: <1282824727.1975.747.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 26 Aug 2010 08:16:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DOJCE2DrSTrHZZ4nFbm+hTeHUSd/5ujkPmKqPcrXhfp2BghXyIwthlt5sk7YAPIbg7
+         VBWMvKmsMjKbKAmeZmYfNKCEAgmPV/d74ynz+YfUTDqCs560ItPScaW9qpu0pSG/ng5t
+         borXlDJmYlyEy8aLBEDoSZaTkg1yCa7PBf10k=
+Date: Thu, 26 Aug 2010 14:16:16 +0200
+From: "Carlos R. Mafra" <crmafra2@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.35.3] BUG: unable to handle kernel NULL pointer
+ dereference at (null)
+Message-ID: <20100826121616.GA8036@Pilar.aei.mpg.de>
+References: <20100826095357.GA7202@Pilar.aei.mpg.de>
+ <20100826115336.GW14190@think>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100826115336.GW14190@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-26 at 20:07 +0800, Dongdong Deng wrote:
-> The event->hw.last_period is possible to zero, thus it will
-> cause divide_by_zero later in perf_swevent_set_period().
-
-How can it be zero?
-
-> This patch checks event->hw.last_period before invoke
-> perf_swevent_set_period() and replaces "event->hw" with "hwc".
+On Do 26.Aug'10 at  7:53:36 -0400, Chris Mason wrote:
+> On Thu, Aug 26, 2010 at 11:53:57AM +0200, Carlos R. Mafra wrote:
+> > Hi,
+> > 
+> > I've just got this BUG: message in dmesg which I think is btrfs related.
+> > 
+> > I have a btrfs filesystem in a memory card which I use to contain the 
+> > cache and config of chromium (to avoid writing to much in the SSD):
+> > 
+> > /dev/mmcblk0p1 on /home/mafra/mmc type btrfs (rw,noexec,nosuid,nodev,noatime,noacl,compress)
+> > 
+> > and the last message before the bug is about the memory card.
 > 
-> Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> ---
->  kernel/perf_event.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 403d180..ccba741 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -4050,8 +4050,8 @@ static void perf_swevent_overflow(struct perf_event *event, u64 overflow,
->  	struct hw_perf_event *hwc = &event->hw;
->  	int throttle = 0;
->  
-> -	data->period = event->hw.last_period;
-> -	if (!overflow)
-> +	data->period = hwc->last_period;
-> +	if (!overflow && hwc->last_period)
->  		overflow = perf_swevent_set_period(event);
->  
->  	if (hwc->interrupts == MAX_INTERRUPTS)
+> Hmmm it is definitely btrfs related.  Do you continue to get it after
+> rebooting?
 
+No, after rebooting chromium refused to open (like it did during the BUG) 
+but no BUG: message appeared.
 
+Then I deleted all chromium cache+config from the memory card and chromium
+worked again, but after suspending to RAM I noticed this:
+
+[ 6035.423238] PM: Syncing filesystems ... done.
+[ 6036.524889] Freezing user space processes ... 
+[ 6056.533079] Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze):
+[ 6056.533119] chrome        D 00000000ffffffff     0  7028   7015 0x00800004
+[ 6056.533124]  ffff8800630a1c08 0000000000000086 0000000000000000 0000000000012d40
+[ 6056.533129]  ffff8800630a1fd8 ffff8800630a1fd8 ffff88006303e0c0 0000000000012d40
+[ 6056.533133]  0000000000012d40 0000000000004000 0000000000004000 ffff8800630a1fd8
+[ 6056.533137] Call Trace:
+[ 6056.533145]  [<ffffffff81064029>] ? ktime_get_ts+0xa9/0xe0
+[ 6056.533150]  [<ffffffff810a3610>] ? sync_page_killable+0x0/0x40
+[ 6056.533155]  [<ffffffff81506bde>] io_schedule+0x6e/0xb0
+[ 6056.533158]  [<ffffffff810a35f8>] sync_page+0x38/0x50
+[ 6056.533161]  [<ffffffff810a3619>] sync_page_killable+0x9/0x40
+[ 6056.533164]  [<ffffffff81507332>] __wait_on_bit_lock+0x52/0xb0
+[ 6056.533168]  [<ffffffff810a3532>] __lock_page_killable+0x62/0x70
+[ 6056.533172]  [<ffffffff8105bb40>] ? wake_bit_function+0x0/0x40
+[ 6056.533175]  [<ffffffff810a3459>] ? find_get_page+0x19/0x90
+[ 6056.533178]  [<ffffffff810a5144>] generic_file_aio_read+0x494/0x6d0
+[ 6056.533183]  [<ffffffff810d4b22>] do_sync_read+0xd2/0x110
+[ 6056.533186]  [<ffffffff81025406>] ? do_page_fault+0x186/0x390
+[ 6056.533190]  [<ffffffff810d5273>] vfs_read+0xb3/0x160
+[ 6056.533193]  [<ffffffff810d536c>] sys_read+0x4c/0x80
+[ 6056.533197]  [<ffffffff81002d2b>] system_call_fastpath+0x16/0x1b
+[ 6056.533207] 
+[ 6056.533208] Restarting tasks ... done.
+
+but everything is working well AFAICT.
