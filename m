@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab0HZW1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 18:27:53 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:54888 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab0HZW1u (ORCPT
+	id S1754428Ab0HZW3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 18:29:25 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46112 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab0HZW3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 18:27:50 -0400
+	Thu, 26 Aug 2010 18:29:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=X6Akt1CUzzSys+cuVVu1rfOyxjkw9K0ijlTOtdAX+z8aF1QkjVGQkCr4aVka7PopWj
-         UV0Tj17SaiYd4xVKFDY8bHKhSNizsrJdjyMFgeCcbpFJ4WeUqijfXErhk5+8gv/2R5PA
-         Vm+WaRSyYgBjmzt78Jy7nAycuSO7IW/eeT0D8=
-Message-ID: <4C76EA95.9080909@gmail.com>
-Date: Thu, 26 Aug 2010 15:28:37 -0700
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=tLa5uZy8GBgwwsjgEE+wnIIW/3zM/evfyP5oCc81NJ7LbVmZbgoCdBj4Sf0O8Mf5G+
+         zr2veXSJCMQD8wRCxv1FeZI9fMvLg0zx3O0Q5N631H6Ofx2lEItHXDNVvG10SHMoOoex
+         xwVUG80WB2xBNGozwoDGf8x9wTNWIrUmjLcPA=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: paulmck@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, jkosina@suse.cz,
-        ksummit-2010-discuss@lists.linux-foundation.org
-Subject: Re: [rfc] MAINTAINERS: Remove broken URLs
-References: <20100826154537.GA4874@linux.vnet.ibm.com> <1282855631.1875.270.camel@Joe-Laptop>
-In-Reply-To: <1282855631.1875.270.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]MAINTAINERS update broken web address.
+Date: Thu, 26 Aug 2010 15:30:03 -0700
+Message-Id: <1282861803-17641-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 01:47 PM, Joe Perches wrote:
-> W:	janitor.kernelnewbies.org/
+The patch below updates a broken web address in the MAINTAINERS
+file. 
 
-this is changed to http://kernelnewbies.org/KernelJanitors
-Ill send out a patch if youd like, and/or you got it already..
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Justin P. Mattock
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 11e34d5..e4dff75 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3289,7 +3289,7 @@ F:	scripts/package/
+ 
+ KERNEL JANITORS
+ L:	kernel-janitors@vger.kernel.org
+-W:	http://janitor.kernelnewbies.org/
++W:	http://kernelnewbies.org/KernelJanitors
+ S:	Odd Fixes
+ 
+ KERNEL NFSD, SUNRPC, AND LOCKD SERVERS
+-- 
+1.7.1.rc1.21.gf3bd6
+
