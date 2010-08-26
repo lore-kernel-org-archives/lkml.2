@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab0HZKye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 06:54:34 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:30296 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab0HZKyc (ORCPT
+	id S1751947Ab0HZLF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 07:05:57 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37024 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab0HZLFy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 06:54:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=xTwJE6ACQrNKbgP4zjNEoX+n8vYbttT07swpUiTpc+goylFH/i82HmfpqQ1OEHygZv
-         GVyJLdG0p3iN0UQYmvNA==
-MIME-Version: 1.0
-In-Reply-To: <20100825.234149.189710316.davem@davemloft.net>
-References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
-	<20100825.234149.189710316.davem@davemloft.net>
-Date: Thu, 26 Aug 2010 03:54:28 -0700
-Message-ID: <AANLkTik8cHD_qsey8NBw-YWsoibwMM5RNP9SeKom2VtC@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
-From: Hugh Dickins <hughd@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, riel@redhat.com,
-        aarcange@redhat.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Thu, 26 Aug 2010 07:05:54 -0400
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+From: Peter Zijlstra <peterz@infradead.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <AANLkTikS9Bc1NmCCO5w=pT+LBLaeSyk2PBnAry+oDxM8@mail.gmail.com>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	 <1282310110.2605.976.camel@laptop>
+	 <20100825155814.25c783c7.akpm@linux-foundation.org>
+	 <20100825173125.0855a6b0@bike.lwn.net>
+	 <AANLkTinPaq+0MbdW81uoc5_OZ=1Gy_mVYEBnwv8zgOBd@mail.gmail.com>
+	 <1282810811.1975.246.camel@laptop>
+	 <AANLkTin7EBZw0-WY=NGOmYzZT5Cfy7oWVFBaT2cjK+vZ@mail.gmail.com>
+	 <1282817160.1975.476.camel@laptop>
+	 <AANLkTikS9Bc1NmCCO5w=pT+LBLaeSyk2PBnAry+oDxM8@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 26 Aug 2010 13:05:32 +0200
+Message-ID: <1282820732.1975.606.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 11:41 PM, David Miller <davem@davemloft.net> wrote:
-> From: Hugh Dickins <hughd@google.com>
-> Date: Wed, 25 Aug 2010 23:12:54 -0700 (PDT)
->
->> After several hours, kbuild tests hang with anon_vma_prepare() spinning on
->> a newly allocated anon_vma's lock - on a box with CONFIG_TREE_PREEMPT_RCU=y
->> (which makes this very much more likely, but it could happen without).
->>
->> The ever-subtle page_lock_anon_vma() now needs a further twist: since
->> anon_vma_prepare() and anon_vma_fork() are liable to change the ->root
->> of a reused anon_vma structure at any moment, page_lock_anon_vma()
->> needs to check page_mapped() again before succeeding, otherwise
->> page_unlock_anon_vma() might address a different root->lock.
->>
->> Signed-off-by: Hugh Dickins <hughd@google.com>
->
-> Interesting, is the condition which allows this to trigger specific
-> to this merge window or was it always possible?
+Even more offtopic ;-)
 
-Just specific to this merge window, which started using
-anon_vma->root->lock in place of anon_vma->lock (anon_vma->root is
-often anon_vma itself, but not always).  I _think_ that change was
-itself a simplification of the locking in 2.6.35, rather than plugging
-a particular hole (it's not been backported to -stable), but I may be
-wrong on that - Rik?
+On Thu, 2010-08-26 at 19:21 +0900, Minchan Kim wrote:
+> I agree highmem isn't a gorgeous. But my desktop isn't real machine?
+> Important thing is that we already have a highmem and many guys
+> include you(kmap stacking patch :))try to improve highmem problems. :)
 
-Hugh
+I have exactly 0 machines in daily use that use highmem, I had to test
+that kmap stuff in a 32bit qemu.
+
+Sadly some hardware folks still think its a sane thing to do, like ARM
+announcing 40bit PAE, I mean really?!
+
+At least AMD announced a 64bit tiny-chip and hopefully Intel Atom will
+soon be all 64bit too (please?!).
