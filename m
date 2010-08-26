@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab0HZKVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 06:21:51 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:51871 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab0HZKVt convert rfc822-to-8bit (ORCPT
+	id S1753639Ab0HZKV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 06:21:59 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53626 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab0HZKV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 06:21:49 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Date: Thu, 26 Aug 2010 13:18:22 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.36-rc2; KDE/4.4.3; x86_64; ; )
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-References: <201008201450.12585.mitov@issp.bas.bg> <Pine.LNX.4.64.1008261100150.14167@axis700.grange> <20100826091725.GC5355@pengutronix.de>
-In-Reply-To: <20100826091725.GC5355@pengutronix.de>
+	Thu, 26 Aug 2010 06:21:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=T5zZ+tnUHR8RPb4ZhPzwOJ9ZDgXwbyzXdiKBu3uuXIMtGxhexcPzY6NyVho/0jbX34
+         CMzp30ujaFN/IEvRpBOZ4fjGpvK3uUW8l1Sf2mBw5Yw47/kauXLinPKdR0aPUBD5IU1/
+         F1KKNG6hwukX5dIp2pUJnpgJ3Y2lClnARNoiE=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201008261318.31784.mitov@issp.bas.bg>
+In-Reply-To: <1282817160.1975.476.camel@laptop>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	<1282310110.2605.976.camel@laptop>
+	<20100825155814.25c783c7.akpm@linux-foundation.org>
+	<20100825173125.0855a6b0@bike.lwn.net>
+	<AANLkTinPaq+0MbdW81uoc5_OZ=1Gy_mVYEBnwv8zgOBd@mail.gmail.com>
+	<1282810811.1975.246.camel@laptop>
+	<AANLkTin7EBZw0-WY=NGOmYzZT5Cfy7oWVFBaT2cjK+vZ@mail.gmail.com>
+	<1282817160.1975.476.camel@laptop>
+Date: Thu, 26 Aug 2010 19:21:55 +0900
+Message-ID: <AANLkTikS9Bc1NmCCO5w=pT+LBLaeSyk2PBnAry+oDxM8@mail.gmail.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 26, 2010 12:17:25 pm Uwe Kleine-König wrote:
-> Hello,
-> 
-> On Thu, Aug 26, 2010 at 11:06:20AM +0200, Guennadi Liakhovetski wrote:
-> > On Thu, 26 Aug 2010, FUJITA Tomonori wrote:
-> > 
-> > > On Thu, 26 Aug 2010 09:04:14 +0300
-> > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > 
-> > > > On Thursday, August 26, 2010 08:40:47 am FUJITA Tomonori wrote:
-> > > > > On Fri, 20 Aug 2010 14:50:12 +0300
-> > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > > > 
-> > > > > > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> > > > > > > On Fri, 20 Aug 2010 11:13:45 +0300
-> > > > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > > > > > 
-> > > > > > > > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > > > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > > > > > > > 
-> > > > > > > > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > > > > > > > Helps for videobuf-dma-contig framework.
-> > > > > > > > > 
-> > > > > > > > > What you guys exactly want to do? If you just want to pre-allocate
-> > > > > > > > > coherent memory for latter usage,
-> > > > > > > > 
-> > > > > > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > > > > > > > We use coherent memory because it turns out to be contiguous.
-> > > > > > > 
-> > > > > > > Hmm, you don't care about coherency? You just need contiguous memory?
-> > > > > > 
-> > > > > > Yes. We just need contiguous memory. Coherency is important as far as when dma
-> > > > > > transfer finishes user land is able to see the new data. Could be done by something like
-> > > > > > dma_{,un}map_single()
-> > > > > 
-> > > > > Then, we should avoid using coherent memory as I exaplained before. In
-> > > > > addition, dma_alloc_coherent can't provide large enough contigous
-> > > > > memory for some drivers so this patch doesn't help much.
-> > > > 
-> > > > Please, look at drivers/media/video/videobuf-dma-contig.c. Using coherent memory
-> > > > is inavoidable for now, there is no alternative for it for now. The two new functions,
-> > > > which I propose are just helpers for those of us who already use coherent memory
-> > > > (via videobuf-dma-contig API). May be adding these two functions to 
-> > > > drivers/media/video/videobuf-dma-contig.c will be better solution?
-> > > 
-> > > If you add something to the videobuf-dma-contig API, that's fine by me
-> > > because drivers/media/video/videobuf-dma-contig.c uses the own
-> > > structure and plays with dma_alloc_coherent. As long as a driver
-> > > doesn't touch device->dma_mem directly, it's fine, I think (that is,
-> > > dt3155v4l driver is broken). There are already some workarounds for
-> > > contigous memory in several drivers anyway.
-> > 
-> > No, this will not work - this API has to be used from board code and 
-> > videobuf can be built modular.
-> > 
-> > > We will have the proper API for contiguous memory. I don't think that
-> > > adding such workaround to the DMA API is a good idea.
-> > 
-> > We have currently a number of boards broken in the mainline. They must be 
-> > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
-> > as I suggested earlier, we need either this or my patch series
-> > 
-> > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
-> this seems to be more mature to me.  The original patch in this thread
-> uses a symbol DT3155_COH_FLAGS which seems misplaced in generic code and
-> doesn't put the new functions in a header.
+On Thu, Aug 26, 2010 at 7:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-08-26 at 18:29 +0900, Minchan Kim wrote:
+>> As I said following mail, I said about free space problem.
+>> Of course, compaction could move anon pages into somewhere.
+>> What's is somewhere? At last, it's same zone.
+>> It can prevent fragment problem but not size of free space.
+>> So I mean it would be better to move it into another zone(ex, HIGHMEM)
+>> rather than OOM kill.
+>
+> Real machines don't have highmem, highmem sucks!! /me runs
 
-You are right. DT3155_COH_FLAGS should be defined, and a declaration should be 
-put in the headers.
+It's another topic.
+I agree highmem isn't a gorgeous. But my desktop isn't real machine?
+Important thing is that we already have a highmem and many guys
+include you(kmap stacking patch :))try to improve highmem problems. :)
 
-But it is just RFC :-)
+>
+> Does cross zone movement really matter, I though these crappy devices
+> were mostly used on crappy hardware with very limited memory, so pretty
+> much everything would be in zone_normal.. no?
 
-Marin Mitov
+No. Until now, many embedded devices have used to small memory. In
+that case, only there is a DMA zone in system. But as I know, mobile
+phone starts to use big(?) memory like 1G or above sooner or later. So
+they starts to use HIGHMEM. Otherwise, 2G/2G space configuration.
+Some embedded device uses many thread model to port easily from RTOS.
+In that case, they don't have enough address space for application if
+it uses 2G/2G model.
 
-> 
-> Best regards
-> Uwe
-> 
-> 
+So we should care of HIGHMEM in embedded system from now on.
+
+>
+> But sure, if there's really a need we can look at maybe doing cross zone
+> movement.
+>
+
+
+-- 
+Kind regards,
+Minchan Kim
