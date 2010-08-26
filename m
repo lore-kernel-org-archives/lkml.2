@@ -1,199 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab0HZQFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 12:05:10 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:41520 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab0HZQFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:05:08 -0400
-Date: Thu, 26 Aug 2010 09:05:04 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
-        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Message-ID: <20100826090504.30ce58e5@nehalam>
-In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
-References: <4C763A67.5040107@dsn.okisemi.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754386Ab0HZQKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:10:31 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41172 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754264Ab0HZQK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 12:10:28 -0400
+X-Sasl-enc: tBOgLF3llKuL19/mZwcDnO9axZFvByceGf3o9m2vHDkZ 1282839027
+Date: Thu, 26 Aug 2010 13:10:23 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-i2c@vger.kernel.org
+Subject: Re: [lm-sensors] [PATCH] hwmon: Add tempX_emergency to sysfs ABI
+Message-ID: <20100826161022.GA1383@khazad-dum.debian.net>
+References: <1282838085-7210-1-git-send-email-guenter.roeck@ericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282838085-7210-1-git-send-email-guenter.roeck@ericsson.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 26 Aug 2010, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+> tempX_emergency will be used by max6696. It can also be used for other chips
+> supporting three upper temperature limits.
+> 
+>  Documentation/hwmon/sysfs-interface |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
+> index ff45d1f..1ceb2b9 100644
+> --- a/Documentation/hwmon/sysfs-interface
+> +++ b/Documentation/hwmon/sysfs-interface
+> @@ -310,6 +310,12 @@ temp[1-*]_crit_hyst
+>  		from the critical value.
+>  		RW
+>  
+> +temp[1-*]_emergency
+> +		Temperature emergency value, typically greater than
+> +		corresponding temp_crit values.
+> +		Unit: millidegree Celsius
+> +		RW
+> +
 
-+static int pch_gbe_probe(struct pci_dev *pdev,
-+			  const struct pci_device_id *pci_id)
-+{
-+	struct net_device *netdev;
-+	struct pch_gbe_adapter *adapter;
-+	unsigned long mmio_start;
-+	unsigned long mmio_len;
-+	int i, ret;
-+
-+	PCH_GBE_DEBUG("pch_gbe_probe\n");
-+	ret = pci_enable_device(pdev);
-+	if (ret)
-+		return ret;
-+
-+	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))
-+		&& !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-+		;
-+	} else {
-+		ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-+		if (ret) {
-+			ret = dma_set_coherent_mask(&pdev->dev,
-+						    DMA_BIT_MASK(32));
-+			if (ret) {
-+				printk(KERN_ERR KBUILD_MODNAME ": ERR: "
-+				    "No usable DMA configuration, aborting\n");
-+				goto err_disable_device;
-+			}
-+		}
-+	}
-+	ret = pci_request_regions(pdev, KBUILD_MODNAME);
-+	if (ret) {
-+		printk(KERN_ERR KBUILD_MODNAME ": "
-+		    "ERR: Can't reserve PCI I/O and memory resources\n");
-+		goto err_disable_device;
-+	}
-+	pci_set_master(pdev);
-+
-+	netdev = alloc_etherdev((int)sizeof(struct pch_gbe_adapter));
-+	if (!netdev) {
-+		ret = -ENOMEM;
-+		printk(KERN_ERR KBUILD_MODNAME ": "
-+		    "ERR: Can't allocates and sets up an Ethernet device\n");
-+		goto err_release_pci;
-+	}
-+	SET_NETDEV_DEV(netdev, &pdev->dev);
-+
-+	pci_set_drvdata(pdev, netdev);
-+	adapter = netdev_priv(netdev);
-+	adapter->netdev = netdev;
-+	adapter->pdev = pdev;
-+	adapter->hw.back = adapter;
-+	mmio_start = pci_resource_start(pdev, PCH_GBE_PCI_BAR);
-+	mmio_len = pci_resource_len(pdev, PCH_GBE_PCI_BAR);
-+	adapter->hw.reg = ioremap_nocache(mmio_start, mmio_len);
-+	if (!adapter->hw.reg) {
-+		ret = -EIO;
-+		printk(KERN_ERR KBUILD_MODNAME ": " "Can't ioremap\n");
-+		goto err_free_netdev;
-+	}
-+
-+	netdev->netdev_ops = &pch_gbe_netdev_ops;
-+	netdev->watchdog_timeo = PCH_GBE_WATCHDOG_PERIOD;
-+	netif_napi_add(netdev, &adapter->napi,
-+		       pch_gbe_napi_poll, PCH_GBE_RX_WEIGHT);
-+	strncpy(netdev->name, pci_name(pdev), (int)sizeof(netdev->name) - 1);
-+	netdev->mem_start = mmio_start;
-+	netdev->mem_end = mmio_start + mmio_len;
-+	netdev->features = NETIF_F_HW_CSUM;
-+	pch_gbe_set_ethtool_ops(netdev);
-+
-+	pch_gbe_mac_reset_hw(&adapter->hw);
-+
-+	/* setup the private structure */
-+	ret = pch_gbe_sw_init(adapter);
-+	if (ret)
-+		goto err_iounmap;
-+
-+	/* Initialize PHY */
-+	ret = pch_gbe_init_phy(adapter);
-+	if (ret) {
-+		printk(KERN_ERR KBUILD_MODNAME ": " "PHY initialize error\n");
-+		goto err_free_adapter;
-+	}
-+	pch_gbe_hal_get_bus_info(&adapter->hw);
-+
-+	/* Read the MAC address. and store to the private data */
-+	ret = pch_gbe_hal_read_mac_addr(&adapter->hw);
-+	if (ret) {
-+		printk(KERN_ERR KBUILD_MODNAME ": " "MAC address Read Error\n");
-+		goto err_free_adapter;
-+	}
-+
-+	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
-+	if (!is_valid_ether_addr(netdev->dev_addr)) {
-+		printk(KERN_ERR KBUILD_MODNAME ": " "Invalid MAC Address\n");
-+		ret = -EIO;
-+		goto err_free_adapter;
-+	}
-+
-+	init_timer(&adapter->watchdog_timer);
-+	adapter->watchdog_timer.function = &pch_gbe_watchdog;
-+	adapter->watchdog_timer.data = (unsigned long)adapter;
-+
-+	INIT_WORK(&adapter->reset_task, pch_gbe_reset_task);
-+
-+	pch_gbe_check_options(adapter);
-+
-+	if (adapter->tx_csum)
-+		netdev->features |= NETIF_F_HW_CSUM;
-+	else
-+		netdev->features &= ~NETIF_F_HW_CSUM;
-+
-+	/* initialize the wol settings based on the eeprom settings */
-+	adapter->wake_up_evt = PCH_GBE_WL_INIT_SETTING;
-+	for (i = 0; i < 6; i++)
-+		printk(KERN_INFO "%2.2x%c",
-+			netdev->dev_addr[i], i == 5 ? '\n' : ':');
+If we have two-level alarms: critical, then emergency, it is best to have
+that written down than to imply it by "typically greater than corresponding
+temp_crit"...
 
-This is wrong since it produces KERN_INFO tag without newline, and probably
-you just want:
-         printk(KERN_INFO "%pM", netdev->dev_addr);
-
-or better yet, convert to dev_printk
-
-+
-+	/* reset the hardware with the new settings */
-+	pch_gbe_reset(adapter);
-+
-+	strcpy(netdev->name, "eth%d");
-
-This is unnecessary since you used alloc_etherdev()
-
-
-+	ret = register_netdev(netdev);
-+	if (ret)
-+		goto err_free_adapter;
-+	/* tell the stack to leave us alone until pch_gbe_open() is called */
-+	netif_carrier_off(netdev);
-+	netif_stop_queue(netdev);
-+
-+	PCH_GBE_DEBUG("OKIsemi(R) PCH Network Connection\n");
-+
-+	device_set_wakeup_enable(&pdev->dev, 1);
-+	return 0;
-+
-+err_free_adapter:
-+	pch_gbe_hal_phy_hw_reset(&adapter->hw);
-+	dev_put(adapter->polling_netdev);
-+	kfree(adapter->tx_ring);
-+	kfree(adapter->rx_ring);
-+	kfree(adapter->polling_netdev);
-+err_iounmap:
-+	iounmap(adapter->hw.reg);
-+err_free_netdev:
-+	free_netdev(netdev);
-+err_release_pci:
-+	pci_release_regions(pdev);
-+err_disable_device:
-+	pci_disable_device(pdev);
-+	return ret;
-+}
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
