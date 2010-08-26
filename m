@@ -1,89 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab0HZOlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:41:25 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:28138 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753823Ab0HZOlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:41:23 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: WtlvxwcVM1lO815XPO3yNjPQZZW0qeFJJnhscWG97RO_OXe
- 89rnRW2f_rXQUQE.1H6.5EKn2MOSiADTT6xOCVmk2TKIKRiYHwmXussAeuqX
- UDQumOHoKRD8jGGbYYVYSos.88cKfEwyediVuu_R5AxX8fQlN.duycG.ZPXm
- S.y3usXnDUUPaV9tRELT2fR1CPXcolSzdfchiIEqjqbtdE5txWjhPTEZIuGE
- 7LTZ3L1WehxlthsoD.9CEP9XxG9t4xEzcfQ--
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 26 Aug 2010 09:41:19 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (slab
- tree related)
-In-Reply-To: <alpine.DEB.2.00.1008252014560.10986@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1008260938360.16331@router.home>
-References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <20100825101320.bed89b2a.sfr@canb.auug.org.au> <4C74A01E.1060809@cs.helsinki.fi> <alpine.DEB.2.00.1008250905490.13026@router.home> <alpine.DEB.2.00.1008251656390.22018@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1008252031560.32421@router.home> <alpine.DEB.2.00.1008252014560.10986@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753923Ab0HZOle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 10:41:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8783 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753904Ab0HZOlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 10:41:32 -0400
+Date: Thu, 26 Aug 2010 10:40:18 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Len Brown <len.brown@intel.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Andy Grover <andy.grover@oracle.com>
+Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
+ and touch_softlockup_watchdog
+Message-ID: <20100826144018.GL4879@redhat.com>
+References: <20100817083945.GA12022@swordfish.minsk.epam.com>
+ <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
+ <20100817092407.GB12022@swordfish.minsk.epam.com>
+ <AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
+ <20100817103948.GA5352@swordfish.minsk.epam.com>
+ <20100817131320.GX4879@redhat.com>
+ <20100818024802.GA24748@nowhere>
+ <20100818130156.43a183d9.akpm@linux-foundation.org>
+ <20100820025749.GB4879@redhat.com>
+ <1282817671.4338.0.camel@maxim-laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282817671.4338.0.camel@maxim-laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, David Rientjes wrote:
+On Thu, Aug 26, 2010 at 01:14:31PM +0300, Maxim Levitsky wrote:
+> On Thu, 2010-08-19 at 22:57 -0400, Don Zickus wrote: 
+> > On Wed, Aug 18, 2010 at 01:01:56PM -0700, Andrew Morton wrote:
+> > > The surprise new requirement that touch_nmi_watchdog() be called from
+> > > non-preemptible code does seem to make sense IMO.  It's hard to see why
+> > > anyone would be touching the watchdog unless he's spinning in irqs-off
+> > > code.  Except, of course, when we have a utility function which can be
+> > > called from wither irqs-on or irqs-off: acpi_os_stall().
+> > > 
+> > > That being said, it's not good to introduce new API requirements by
+> > > accident!  An audit of all callers should first be performed, at least.
+> > > 
+> > > 
+> > > The surprise new requirement that touch_softlockup_watchdog() be called
+> > > from non-preemptible code doesn't make sense IMO.  If I have a piece of
+> > > code in the kernel which I expect to sit in TASK_UNINTERRUPTIBLE state
+> > > for three minutes waiting for my egg to boil, I should be able to do
+> > > that and I should be able to touch the softlockup detector without
+> > > needing to go non-preemptible.
+> > 
+> > Ok, so here is my patch that syncs the touch_*_watchdog back in line with
+> > the old semantics.  Hopefully this will undo any harm I caused.
+> 
+> Was this patch forgotten?
 
-> I'm really hoping that we can remove this hack soon when the percpu
-> allocator can handle these allocations on UP without any specialized slab
-> behavior.
+Hm, apparently it was separated out by the mail server.  Here it is again
+with some of the headers removed I guess.
 
-So do I. Here is a slightly less hacky version through using
-kmalloc_large instead:
+Cheers,
+Don
 
 
-Subject: Slub: UP bandaid
+From: Don Zickus <dzickus@redhat.com>
+Date: Thu, 19 Aug 2010 22:48:26 -0400
+Subject: [PATCH] [lockup detector] sync touch_*_watchdog back to old semantics
 
-Since the percpu allocator does not provide early allocation in UP
-mode (only in SMP configurations) use __get_free_page() to improvise
-a compound page allocation that can be later freed via kfree().
+During my rewrite, the semantics of touch_nmi_watchdog and
+touch_softlockup_watchdog changed enough to break some drivers
+(mostly over preemptable regions).
 
-Compound pages will be released when the cpu caches are resized.
+This change brings those touch_*_watchdog functions back in line
+to how they used to work.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- mm/slub.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ kernel/watchdog.c |   17 ++++++++++++-----
+ 1 files changed, 12 insertions(+), 5 deletions(-)
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-08-26 09:19:35.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-08-26 09:36:29.000000000 -0500
-@@ -2103,8 +2103,24 @@ init_kmem_cache_node(struct kmem_cache_n
-
- static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 613bc1f..99e35a2 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -122,7 +122,7 @@ static void __touch_watchdog(void)
+ 
+ void touch_softlockup_watchdog(void)
  {
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Will use reserve that does not require slab operation during
-+	 * early boot.
-+	 */
- 	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
- 			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
-+#else
-+	/*
-+	 * Special hack for UP mode. allocpercpu() falls back to kmalloc
-+	 * operations. So we cannot use that before the slab allocator is up
-+	 * Simply get the smallest possible compound page. The page will be
-+	 * released via kfree() when the cpu caches are resized later.
-+	 */
-+	if (slab_state < UP)
-+		s->cpu_slab = (__percpu void *)kmalloc_large(PAGE_SIZE << 1, GFP_NOWAIT);
-+	else
-+#endif
-
- 	s->cpu_slab = alloc_percpu(struct kmem_cache_cpu);
-
+-	__get_cpu_var(watchdog_touch_ts) = 0;
++	__raw_get_cpu_var(watchdog_touch_ts) = 0;
+ }
+ EXPORT_SYMBOL(touch_softlockup_watchdog);
+ 
+@@ -142,7 +142,14 @@ void touch_all_softlockup_watchdogs(void)
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ void touch_nmi_watchdog(void)
+ {
+-	__get_cpu_var(watchdog_nmi_touch) = true;
++	if (watchdog_enabled) {
++		unsigned cpu;
++
++		for_each_present_cpu(cpu) {
++			if (per_cpu(watchdog_nmi_touch, cpu) != true)
++				per_cpu(watchdog_nmi_touch, cpu) = true;
++		}
++	}
+ 	touch_softlockup_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+@@ -430,6 +437,9 @@ static int watchdog_enable(int cpu)
+ 		wake_up_process(p);
+ 	}
+ 
++	/* if any cpu succeeds, watchdog is considered enabled for the system */
++	watchdog_enabled = 1;
++
+ 	return 0;
+ }
+ 
+@@ -452,9 +462,6 @@ static void watchdog_disable(int cpu)
+ 		per_cpu(softlockup_watchdog, cpu) = NULL;
+ 		kthread_stop(p);
+ 	}
+-
+-	/* if any cpu succeeds, watchdog is considered enabled for the system */
+-	watchdog_enabled = 1;
+ }
+ 
+ static void watchdog_enable_all_cpus(void)
+-- 
+1.7.2.1
