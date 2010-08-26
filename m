@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0HZHCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 03:02:01 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:37116 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752551Ab0HZHB7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 03:01:59 -0400
-Date: Thu, 26 Aug 2010 09:01:45 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: James Morris <jmorris@namei.org>
-Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [AppArmor #7 0/13] AppArmor security module
-Message-ID: <20100826070145.GA11959@elf.ucw.cz>
-References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
- <alpine.LRH.2.00.1007300903440.7719@tundra.namei.org>
- <20100805062431.GA1546@ucw.cz>
- <alpine.LRH.2.00.1008052023030.14772@tundra.namei.org>
+	id S1752816Ab0HZHEO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 03:04:14 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:52252 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752239Ab0HZHEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 03:04:12 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+Date: Thu, 26 Aug 2010 10:01:52 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.36-rc2; KDE/4.4.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        akpm@linux-foundation.org
+References: <201008201450.12585.mitov@issp.bas.bg> <201008260904.19973.mitov@issp.bas.bg> <20100826152333K.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100826152333K.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1008052023030.14772@tundra.namei.org>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008261001.57678.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2010-08-05 20:27:24, James Morris wrote:
-> On Thu, 5 Aug 2010, Pavel Machek wrote:
+On Thursday, August 26, 2010 09:24:19 am FUJITA Tomonori wrote:
+> On Thu, 26 Aug 2010 09:04:14 +0300
+> Marin Mitov <mitov@issp.bas.bg> wrote:
 > 
-> > > Note that I added the patch below to update AA against the latest 
-> > > version of path_truncate:
+> > On Thursday, August 26, 2010 08:40:47 am FUJITA Tomonori wrote:
+> > > On Fri, 20 Aug 2010 14:50:12 +0300
+> > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > 
+> > > > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
+> > > > > On Fri, 20 Aug 2010 11:13:45 +0300
+> > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > > > 
+> > > > > > > > This tric is already used in drivers/staging/dt3155v4l.c
+> > > > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
+> > > > > > > > 
+> > > > > > > > Here proposed for general use by popular demand from video4linux folks.
+> > > > > > > > Helps for videobuf-dma-contig framework.
+> > > > > > > 
+> > > > > > > What you guys exactly want to do? If you just want to pre-allocate
+> > > > > > > coherent memory for latter usage,
+> > > > > > 
+> > > > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
+> > > > > > We use coherent memory because it turns out to be contiguous.
+> > > > > 
+> > > > > Hmm, you don't care about coherency? You just need contiguous memory?
+> > > > 
+> > > > Yes. We just need contiguous memory. Coherency is important as far as when dma
+> > > > transfer finishes user land is able to see the new data. Could be done by something like
+> > > > dma_{,un}map_single()
+> > > 
+> > > Then, we should avoid using coherent memory as I exaplained before. In
+> > > addition, dma_alloc_coherent can't provide large enough contigous
+> > > memory for some drivers so this patch doesn't help much.
 > > 
-> > Ok, so now we have two name-based "security" modules. Can we at least
-> > drop TOMOYO? That seems to have all apparmor disadvantages plus some
-> > more...
+> > Please, look at drivers/media/video/videobuf-dma-contig.c. Using coherent memory
+> > is inavoidable for now, there is no alternative for it for now. The two new functions,
+> > which I propose are just helpers for those of us who already use coherent memory
+> > (via videobuf-dma-contig API). May be adding these two functions to 
+> > drivers/media/video/videobuf-dma-contig.c will be better solution?
 > 
-> No.  The policy is that any security module which implements an access 
-> control scheme and meets a well-defined security goal, and passes 
-> technical review, may be merged.
-> 
-> aka, The Arjan Protocol:
-> 
-> http://kerneltrap.org/Linux/Documenting_Security_Module_Intent
+> If you add something to the videobuf-dma-contig API, that's fine by me
+> because drivers/media/video/videobuf-dma-contig.c uses the own
+> structure and plays with dma_alloc_coherent. As long as a driver
+> doesn't touch device->dma_mem directly, it's fine, 
 
-It seems that security subsystem has lower standards than rest of the
-kernel. Sad.
-									Pavel
+Why, my understanding is that device->dma_mem is designed exactly for keeping 
+some chunk of coherent memory for device's private use via dma_alloc_from_coherent()
+(and that is what dt3155v4l driver is using it for).
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> I think (that is, dt3155v4l driver is broken). 
+
+If you mean that allocating some coherent memory (4MB in case of dt3155v4l) during
+pci probe() (during system booting) for device's latter use (that is dead for the rest
+of the system) you are right. But this gives me at least 8 full size buffers warranted for 
+latter use. Without this hack the hardware will not work on strongly fragmented system.
+With this hack even if the system is strongly fragmented, this chunk of 4MB is available 
+for use (though videobuf-dma-contig APIs and dma_alloc_from_coherent()) __transparently__
+for users of videobuf-dma-contig (that is the gain - the transparency).
+
+> There are already some workarounds for
+> contigous memory in several drivers anyway.
+
+Sure, can these workarounds be exposed as API for general use?
+
+Thanks,
+
+Marin Mitov
+
+> 
+> We will have the proper API for contiguous memory. I don't think that
+> adding such workaround to the DMA API is a good idea.
+> 
