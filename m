@@ -1,91 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab0HZKV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 06:21:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53626 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab0HZKV4 (ORCPT
+	id S1753602Ab0HZK2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 06:28:10 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:36127 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab0HZK2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 06:21:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=T5zZ+tnUHR8RPb4ZhPzwOJ9ZDgXwbyzXdiKBu3uuXIMtGxhexcPzY6NyVho/0jbX34
-         CMzp30ujaFN/IEvRpBOZ4fjGpvK3uUW8l1Sf2mBw5Yw47/kauXLinPKdR0aPUBD5IU1/
-         F1KKNG6hwukX5dIp2pUJnpgJ3Y2lClnARNoiE=
+	Thu, 26 Aug 2010 06:28:08 -0400
+Date: Thu, 26 Aug 2010 12:28:03 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Message-ID: <20100826102803.GA5301@merkur.ravnborg.org>
+References: <4C763A67.5040107@dsn.okisemi.com>
 MIME-Version: 1.0
-In-Reply-To: <1282817160.1975.476.camel@laptop>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
-	<1282310110.2605.976.camel@laptop>
-	<20100825155814.25c783c7.akpm@linux-foundation.org>
-	<20100825173125.0855a6b0@bike.lwn.net>
-	<AANLkTinPaq+0MbdW81uoc5_OZ=1Gy_mVYEBnwv8zgOBd@mail.gmail.com>
-	<1282810811.1975.246.camel@laptop>
-	<AANLkTin7EBZw0-WY=NGOmYzZT5Cfy7oWVFBaT2cjK+vZ@mail.gmail.com>
-	<1282817160.1975.476.camel@laptop>
-Date: Thu, 26 Aug 2010 19:21:55 +0900
-Message-ID: <AANLkTikS9Bc1NmCCO5w=pT+LBLaeSyk2PBnAry+oDxM8@mail.gmail.com>
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 7:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-08-26 at 18:29 +0900, Minchan Kim wrote:
->> As I said following mail, I said about free space problem.
->> Of course, compaction could move anon pages into somewhere.
->> What's is somewhere? At last, it's same zone.
->> It can prevent fragment problem but not size of free space.
->> So I mean it would be better to move it into another zone(ex, HIGHMEM)
->> rather than OOM kill.
->
-> Real machines don't have highmem, highmem sucks!! /me runs
+Hi Masayuki Ohtake.
 
-It's another topic.
-I agree highmem isn't a gorgeous. But my desktop isn't real machine?
-Important thing is that we already have a highmem and many guys
-include you(kmap stacking patch :))try to improve highmem problems. :)
+Just a few comments after a very quick scan over some of the files.
 
->
-> Does cross zone movement really matter, I though these crappy devices
-> were mostly used on crappy hardware with very limited memory, so pretty
-> much everything would be in zone_normal.. no?
+	Sam
 
-No. Until now, many embedded devices have used to small memory. In
-that case, only there is a DMA zone in system. But as I know, mobile
-phone starts to use big(?) memory like 1G or above sooner or later. So
-they starts to use HIGHMEM. Otherwise, 2G/2G space configuration.
-Some embedded device uses many thread model to port easily from RTOS.
-In that case, they don't have enough address space for application if
-it uses 2G/2G model.
+On Thu, Aug 26, 2010 at 06:56:55PM +0900, Masayuki Ohtake wrote:
+> ---
 
-So we should care of HIGHMEM in embedded system from now on.
-
->
-> But sure, if there's really a need we can look at maybe doing cross zone
-> movement.
->
+"---" is used to truncate your changelog, random comments goes below "---".
+So there would be no changelog entry in this case.
 
 
--- 
-Kind regards,
-Minchan Kim
+> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+> index 2decc59..fcc6b7b 100644
+> --- a/drivers/net/Kconfig
+> +++ b/drivers/net/Kconfig
+> @@ -2004,6 +2004,11 @@ menuconfig NETDEV_1000
+>  	  If you say N, all options in this submenu will be skipped and disabled.
+>  
+>  if NETDEV_1000
+> +config PCH_GBE
+> +        tristate "PCH Gigabit Ethernet"
+> +        ---help---
+> +          This is an gigabit ethernet driver for PCH.
+> +          resources.
+
+Naive readers do not know what PCH is.
+Google says it is: Potlatch Corporation
+
+Please elaborate much more.
+
+For new stuff we use "help" - not "---help---".
+But you could not know as this is not documented anywhere.
+
+> diff --git a/drivers/net/pch_gbe/Makefile b/drivers/net/pch_gbe/Makefile
+> new file mode 100644
+> index 0000000..008fa22
+> --- /dev/null
+> +++ b/drivers/net/pch_gbe/Makefile
+> @@ -0,0 +1,6 @@
+> +ifeq ($(CONFIG_PCH_GBE_DEBUG_CORE),y)
+> +EXTRA_CFLAGS += -DDEBUG
+> +endif
+Use:
+ccflags-$(CONFIG_PCH_GBE_DEBUG_CORE) := -DDEBUG
+
+Btw. where do CONFIG_PCH_GBE_DEBUG_CORE come from. It was not in the Kconfig
+file you included.
+
+> +
+> +obj-$(CONFIG_PCH_GBE) += pch_gbe.o
+> +pch_gbe-objs := pch_gbe_phy.o pch_gbe_ethtool.o pch_gbe_param.o pch_gbe_api.o pch_gbe_main.o
+
+Please do not use -objs.
+Do like this:
+
+obj-$(CONFIG_PCH_GBE) += pch_gbe.o
+pch_gbe-y :=  pch_gbe_phy.o pch_gbe_ethtool.o pch_gbe_param.o
+pch_gbe-y += pch_gbe_api.o pch_gbe_main.o
+
+
+> diff --git a/drivers/net/pch_gbe/Module.symvers b/drivers/net/pch_gbe/Module.symvers
+> new file mode 100644
+> index 0000000..e69de29
+This file should be dropped.
+
+> diff --git a/drivers/net/pch_gbe/pch_gbe.h b/drivers/net/pch_gbe/pch_gbe.h
+> new file mode 100644
+> index 0000000..a2b92dd
+> --- /dev/null
+> +++ b/drivers/net/pch_gbe/pch_gbe.h
+> @@ -0,0 +1,425 @@
+> +/*
+> + * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
+> + */
+> +
+> +#ifndef _PCH_GBE_H_
+> +#define _PCH_GBE_H_
+> +
+> +#include <linux/netdevice.h>
+> +#include <linux/mii.h>
+> +
+> +#undef FALSE
+> +#define FALSE	0
+> +#undef TRUE
+> +#define TRUE	1
+Use true/false - no reason for these.
+
+> +
+> +#ifdef DEBUG
+> +#define PCH_GBE_DEBUG(fmt, args...)\
+> +	printk(KERN_DEBUG KBUILD_MODNAME ": " fmt, ##args)
+> +#else
+> +#define PCH_GBE_DEBUG(fmt, args...)	do { } while (0)
+> +#endif
+
+Use standard logging methods. 
+pr_* and similar.
+
+
+> +
+> +/* Device Driver infomation */
+> +#define DRV_STRING      "PCH Network Driver"
+> +#define DRV_EXT         "-NAPI"
+> +#define DRV_VERSION     "0.95"DRV_EXT
+> +#define DRV_DESCRIPTION \
+> +	"OKI semiconductor sample Linux driver for PCH Gigabit ethernet"
+> +#define DRV_COPYRIGHT   "Copyright(c) 2010 OKI semiconductor"
+> +#define FIRM_VERSION    "N/A"
+> +/* TX/RX descriptor defines */
+> +#define PCH_GBE_MAX_TXD                     4096
+> +#define PCH_GBE_MIN_TXD                        8
+> +#define PCH_GBE_MAX_RXD                     4096
+> +#define PCH_GBE_MIN_RXD                        8
+> +/* Number of Transmit and Receive Descriptors must be a multiple of 8 */
+> +#define PCH_GBE_TX_DESC_MULTIPLE               8
+> +#define PCH_GBE_RX_DESC_MULTIPLE               8
+
+> +/* only works for sizes that are powers of 2 */
+> +#define PCH_GBE_ROUNDUP(i, size) ((i) = (((i) + (size) - 1) & ~((size) - 1)))
+We have this already. Search include/linux/*
+
+> + * @read_mac_addr:	for pch_gbe_hal_read_mac_addr
+> + */
+> +struct pch_gbe_functions {
+> +	void (*get_bus_info) (struct pch_gbe_hw *);
+> +	s32(*init_hw) (struct pch_gbe_hw *);
+> +	s32(*read_phy_reg) (struct pch_gbe_hw *, u32, u16 *);
+> +	s32(*write_phy_reg) (struct pch_gbe_hw *, u32, u16);
+missign space after s32
+
+> +	void (*reset_phy) (struct pch_gbe_hw *);
+> +	void (*sw_reset_phy) (struct pch_gbe_hw *);
+> +	void (*power_up_phy) (struct pch_gbe_hw *hw);
+> +	void (*power_down_phy) (struct pch_gbe_hw *hw);
+> +	s32(*read_mac_addr) (struct pch_gbe_hw *);
+> +};
+> +
+
+
+
+> +	printk(KERN_ERR KBUILD_MODNAME ": " "ERROR: Registers not mapped\n");
+
+In several places...
+Use standard logging methods to do this simpler.
+
+
+> +++ b/drivers/net/pch_gbe/pch_gbe_api.h
+> @@ -0,0 +1,31 @@
+> +/*
+
+Why is two .h files needed for a single driver?
+As this file live in drivers/net/pch_gbe/ this is purely internal stuff.
+
+> +#include "pch_gbe_regs.h"
+> +#include "pch_gbe.h"
+> +#include "pch_gbe_api.h"
+
+As per comment above I realise that this single driver has three .h files.
+Maybe their size warrants this?
+
