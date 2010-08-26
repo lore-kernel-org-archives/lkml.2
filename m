@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab0HZKw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 06:52:56 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42220 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab0HZKww (ORCPT
+	id S1751604Ab0HZKye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 06:54:34 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:30296 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab0HZKyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 06:52:52 -0400
+	Thu, 26 Aug 2010 06:54:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rpK943H0zFVzjk49qduR7hpEeezzuX9eK1YpGXAqqFaY3Ub6zH7bWM4wt9BpgDUsKZ
-         b7LPcpDSbTe07U9gzD0PGAMtJgzAKKa6h1wKfmiwLl3WvyPeTQB5gdwbYLj7d+0EoBCm
-         3gEPbGD4i4kF2/hlqqLfUyBkQD2SwM0/YB8wg=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] h8300: fix a bug on get_user()
-Date: Thu, 26 Aug 2010 19:52:45 +0900
-Message-Id: <1282819965-6025-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=xTwJE6ACQrNKbgP4zjNEoX+n8vYbttT07swpUiTpc+goylFH/i82HmfpqQ1OEHygZv
+         GVyJLdG0p3iN0UQYmvNA==
+MIME-Version: 1.0
+In-Reply-To: <20100825.234149.189710316.davem@davemloft.net>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
+	<20100825.234149.189710316.davem@davemloft.net>
+Date: Thu, 26 Aug 2010 03:54:28 -0700
+Message-ID: <AANLkTik8cHD_qsey8NBw-YWsoibwMM5RNP9SeKom2VtC@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+From: Hugh Dickins <hughd@google.com>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, riel@redhat.com,
+        aarcange@redhat.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-current implementation of get_user() lacks parenthesis when it derefers ptr
-so usage like get_user(val, addr + i) had a potential bug. Fix it.
+On Wed, Aug 25, 2010 at 11:41 PM, David Miller <davem@davemloft.net> wrote:
+> From: Hugh Dickins <hughd@google.com>
+> Date: Wed, 25 Aug 2010 23:12:54 -0700 (PDT)
+>
+>> After several hours, kbuild tests hang with anon_vma_prepare() spinning on
+>> a newly allocated anon_vma's lock - on a box with CONFIG_TREE_PREEMPT_RCU=y
+>> (which makes this very much more likely, but it could happen without).
+>>
+>> The ever-subtle page_lock_anon_vma() now needs a further twist: since
+>> anon_vma_prepare() and anon_vma_fork() are liable to change the ->root
+>> of a reused anon_vma structure at any moment, page_lock_anon_vma()
+>> needs to check page_mapped() again before succeeding, otherwise
+>> page_unlock_anon_vma() might address a different root->lock.
+>>
+>> Signed-off-by: Hugh Dickins <hughd@google.com>
+>
+> Interesting, is the condition which allows this to trigger specific
+> to this merge window or was it always possible?
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/h8300/include/asm/uaccess.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Just specific to this merge window, which started using
+anon_vma->root->lock in place of anon_vma->lock (anon_vma->root is
+often anon_vma itself, but not always).  I _think_ that change was
+itself a simplification of the locking in 2.6.35, rather than plugging
+a particular hole (it's not been backported to -stable), but I may be
+wrong on that - Rik?
 
-diff --git a/arch/h8300/include/asm/uaccess.h b/arch/h8300/include/asm/uaccess.h
-index 356068c..b0e5cb9 100644
---- a/arch/h8300/include/asm/uaccess.h
-+++ b/arch/h8300/include/asm/uaccess.h
-@@ -91,7 +91,7 @@ extern int __put_user_bad(void);
- #define get_user(x, ptr)					\
- ({								\
-     int __gu_err = 0;						\
--    typeof(*(ptr)) __gu_val = *ptr;				\
-+    typeof(*(ptr)) __gu_val = *(ptr);				\
-     switch (sizeof(*(ptr))) {					\
-     case 1:							\
-     case 2:							\
--- 
-1.7.2.2
-
+Hugh
