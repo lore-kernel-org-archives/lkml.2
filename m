@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab0HZSpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:45:52 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:23476 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab0HZSpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:45:50 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52352088"
-Message-ID: <4C76B65C.9000702@codeaurora.org>
-Date: Thu, 26 Aug 2010 14:45:48 -0400
-From: Neil Leeder <nleeder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Horace Fu <horace.fu@quantatw.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
-References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <0680EC522D0CC943BC586913CF3768C003B3909F9C@dbde02.ent.ti.com>
-In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B3909F9C@dbde02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753698Ab0HZSsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:48:42 -0400
+Received: from xenotime.net ([72.52.115.56]:33751 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751826Ab0HZSsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 14:48:41 -0400
+Date: Thu, 26 Aug 2010 11:48:30 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Docbook: allow warning on unused documentation
+Message-Id: <20100826114830.4f7e116e.rdunlap@xenotime.net>
+In-Reply-To: <1282844594.3812.74.camel@jlt3.sipsolutions.net>
+References: <1282136967.13315.1.camel@jlt3.sipsolutions.net>
+	<20100826093710.111b103e.rdunlap@xenotime.net>
+	<1282841476.3812.69.camel@jlt3.sipsolutions.net>
+	<20100826101130.61f60090.rdunlap@xenotime.net>
+	<1282844594.3812.74.camel@jlt3.sipsolutions.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/13/2010 4:36 AM, Datta, Shubhrajyoti wrote:
->
-> Minor comments feel free to ignore if you feel so.
+On Thu, 26 Aug 2010 19:43:14 +0200 Johannes Berg wrote:
 
-Thanks for reviewing this, I'll address these in the next patch.
+> From: Johannes Berg <johannes.berg@intel.com>
+> 
+> When you don't use !E or !I but only !F, then
+> it's very easy to miss including some functions,
+> structs etc. in documentation. To help finding
+> which ones were missed, allow printing out the
+> unused ones as warnings.
+> 
+> For example, using this on mac80211 yields a
+> lot of warnings like this:
+> 
+>   Warning: didn't use docs for DOC: mac80211 workqueue
+>   Warning: didn't use docs for ieee80211_max_queues
+>   Warning: didn't use docs for ieee80211_bss_change
+>   Warning: didn't use docs for ieee80211_bss_conf
+> 
+> when generating the documentation for it.
+> 
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+> ---
+> v2: - fix comment
+>     - use !C instead of !A
+> 
+>  Documentation/kernel-doc-nano-HOWTO.txt |    5 +
+>  scripts/basic/docproc.c                 |  129 +++++++++++++++++++++++++++++++-
+>  scripts/kernel-doc                      |   52 ++++++++++++
+>  3 files changed, 183 insertions(+), 3 deletions(-)
 
->> +	err = i2c_master_send(context->ti2c_client, buf, 1);
->> +	if (err<  0)
->> +		goto i2c_fail;
->> +	msleep(100);
-> Could you explain the time or have a #define XXX
->
-Will add #define
+Applied, thanks.
 
->> +	gpio_direction_input(context->qcitp_gpio);
-> The result is not checked here.
-
-I'll check the result.
-
---
-Neil
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
