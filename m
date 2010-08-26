@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab0HZPUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 11:20:21 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:45328 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753991Ab0HZPUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 11:20:19 -0400
-Message-ID: <4C76862D.5050703@example.com>
-Date: Thu, 26 Aug 2010 17:20:13 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+	id S1754048Ab0HZPXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:23:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49289 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753991Ab0HZPXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:23:32 -0400
+Date: Thu, 26 Aug 2010 11:22:46 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100826152246.GN4879@redhat.com>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100825094819.GB3198@erda.amd.com>
+ <20100825104130.GA27891@elte.hu>
+ <20100825110006.GB27891@elte.hu>
+ <20100825201106.GH4879@redhat.com>
+ <20100826090008.GA22783@erda.amd.com>
+ <AANLkTim3+u-fV-RAC=Odede6BfGdYoXsN55Tqw6iSfVT@mail.gmail.com>
 MIME-Version: 1.0
-To: Arnd Hannemann <hannemann@nets.rwth-aachen.de>
-CC: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Which kernel.org WWW is the master server?
-References: <4C6D4864.2040002@example.com> <alpine.LRH.2.00.1008261536290.2372@twin.jikos.cz> <4C7683D3.5090500@nets.rwth-aachen.de>
-In-Reply-To: <4C7683D3.5090500@nets.rwth-aachen.de>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 9668946926827893158
-X-Ovh-Remote: 95.49.238.22 (afje22.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim3+u-fV-RAC=Odede6BfGdYoXsN55Tqw6iSfVT@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.2010 17:10, Arnd Hannemann wrote:
-> Am 26.08.2010 15:37, schrieb Jiri Kosina:
->> On Thu, 19 Aug 2010, Piotr Hosowicz wrote:
->>
->>
->>> I wrote a simple python script that tells me that a new kernel version
->>> appeared. The problem is that it is based exactly on this what appears on the
->>> webpage so sometimes it resolves the server IP that the version has changed,
->>> despite the fact that it is not true. Which server is the master server?
->>>
->> I guess that simply running
->>
->> 	finger @kernel.org
->>
->> will give you exactly the information you are looking for which much less
->> pain of connecting to www server, parsing html, etc.
->>
->
-> Not sure if this is still accurate:
->
->> Aug 21, 2003: Please don't use *finger.kernel.org* for any sort of
->> automatic monitoring. The number of automatic bots hitting this port
->> is causing the finger daemon to shut down more often than not. The
->> same information is available from
->> http://www.kernel.org/kdist/finger_banner
->> <http://kernel.org/kdist/finger_banner>.
+On Thu, Aug 26, 2010 at 01:18:29PM +0400, Cyrill Gorcunov wrote:
+> On Thu, Aug 26, 2010 at 1:00 PM, Robert Richter <robert.richter@amd.com> wrote:
+> ...
+> >
+> > This could also be a race in the counter handling code, or we do not
+> > proper count the number of handled counters. Maybe 2 counters actually
+> > fired but we only noticed one counter and then accidentially cleared
+> > the 2nd without processing it.
+> >
+> > -Robert
+> >
+> 
+> Any chance to get it tested on P4 machine since it has a bit
+> different design?
 
-Moreover it is written as the above.
+Hmm, I take that back.  I guess I can reproduce this on my i5 that I had
+using Ingo's config.
 
-Regards,
+Working on Robert's assumption, I added code to perf_event_intel.c that
+said if handled !=0 just add one to it (IOW always process handled as 0 or
+ something >1).  That seems to working good and catches the nmis that Ingo
+was seeing.
 
-Piotr Hosowicz
+I'll keep looking for the race condition to better fix it.
 
--- 
-"Bardzo fajna firma, tylko czasami nie p³aci. Do jej g³ównych
-zalet nale¿±: ekspres ci¶nieniowy (ale tylko na jednym z piê-
-ter) oraz fajne widoki z salki konferencyjnej. No i jakie¶
-pó³ roku temu odesz³o 90% pracowników dzia³u IT, ale mo¿e nie
-mieli racji ;)"
-NP: Peter Green Splinter Group - I Can't Help Myself
-NB: 2.6.36-rc2-git4
+Cheers,
+Don
