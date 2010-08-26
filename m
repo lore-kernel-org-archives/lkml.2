@@ -1,37 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab0HZSR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:17:57 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:50290 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab0HZSR4 (ORCPT
+	id S1752983Ab0HZSTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:19:18 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:55264 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab0HZSTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:17:56 -0400
-Message-ID: <4C76AFC4.9070601@cs.helsinki.fi>
-Date: Thu, 26 Aug 2010 21:17:40 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	Thu, 26 Aug 2010 14:19:16 -0400
+Date: Thu, 26 Aug 2010 20:19:13 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: hpa@zytor.com, fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 01/10] x86/iommu: Add IOMMU_INIT macros, .iommu_table
+	section, and iommu_table_entry structure.
+Message-ID: <20100826181913.GA5947@merkur.ravnborg.org>
+References: <1282845485-8991-1-git-send-email-konrad.wilk@oracle.com> <1282845485-8991-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: David Rientjes <rientjes@google.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm@kvack.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 25 (mm/slub)
-References: <20100825132057.c8416bef.sfr@canb.auug.org.au> <20100825094559.bc652afe.randy.dunlap@oracle.com> <alpine.DEB.2.00.1008251409260.22117@router.home> <20100825122134.2ac33360.randy.dunlap@oracle.com> <alpine.DEB.2.00.1008251447410.22117@router.home> <alpine.DEB.2.00.1008251622500.31521@chino.kir.corp.google.com> <alpine.DEB.2.00.1008252030470.32421@router.home>
-In-Reply-To: <alpine.DEB.2.00.1008252030470.32421@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282845485-8991-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.8.2010 4.31, Christoph Lameter wrote:
-> On Wed, 25 Aug 2010, David Rientjes wrote:
->
->> slub: fix SLUB_RESILIENCY_TEST for dynamic kmalloc caches
->
-> Acked-by: Christoph Lameter<cl@linux.com>
+> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+> index d0bb522..b92e040 100644
+> --- a/arch/x86/kernel/vmlinux.lds.S
+> +++ b/arch/x86/kernel/vmlinux.lds.S
+> @@ -260,6 +260,13 @@ SECTIONS
+>  		*(.altinstr_replacement)
+>  	}
+>  
+> +	.iommu_table : AT(ADDR(.iommu_table) - LOAD_OFFSET) {
+> +		__iommu_table = .;
+> +		*(.iommu_table)
+> +		. = ALIGN(8);
+> +		__iommu_table_end = .;
+> +	}
+> +
 
-Applied, thanks!
+So we have yet another magic section in vmlinux.lds.S
+A nice comemnt that expalins what this is used for and why
+it is discardable etc. would be nice.
 
+Lots of magic sections in same file miss this,
+but thats not an example to follwow.
+
+	Sam
