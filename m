@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab0HZJnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 05:43:43 -0400
-Received: from sh.osrg.net ([192.16.179.4]:37447 "EHLO sh.osrg.net"
+	id S1752643Ab0HZJoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 05:44:12 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:37880 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab0HZJnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 05:43:41 -0400
-Date: Thu, 26 Aug 2010 18:43:22 +0900
-To: mitov@issp.bas.bg
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [RFC][PATCH] add
- dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <201008261001.57678.mitov@issp.bas.bg>
-References: <201008260904.19973.mitov@issp.bas.bg>
-	<20100826152333K.fujita.tomonori@lab.ntt.co.jp>
-	<201008261001.57678.mitov@issp.bas.bg>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100826184231J.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 26 Aug 2010 18:43:23 +0900 (JST)
+	id S1751582Ab0HZJoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 05:44:10 -0400
+Date: Thu, 26 Aug 2010 10:43:56 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Iram Shahzad <iram.shahzad@jp.fujitsu.com>
+Subject: Re: [PATCH v2 1/2] compaction: handle active and inactive fairly
+	in too_many_isolated
+Message-ID: <20100826094356.GD20944@csn.ul.ie>
+References: <1282663879-4130-1-git-send-email-minchan.kim@gmail.com> <20100826090305.GC20944@csn.ul.ie> <AANLkTikE-_=8GCu=LjLiyyO9W+soSKAC0bkXfYAnwMux@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <AANLkTikE-_=8GCu=LjLiyyO9W+soSKAC0bkXfYAnwMux@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010 10:01:52 +0300
-Marin Mitov <mitov@issp.bas.bg> wrote:
-
-> > If you add something to the videobuf-dma-contig API, that's fine by me
-> > because drivers/media/video/videobuf-dma-contig.c uses the own
-> > structure and plays with dma_alloc_coherent. As long as a driver
-> > doesn't touch device->dma_mem directly, it's fine, 
+On Thu, Aug 26, 2010 at 06:39:49PM +0900, Minchan Kim wrote:
+> On Thu, Aug 26, 2010 at 6:03 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> > On Wed, Aug 25, 2010 at 12:31:18AM +0900, Minchan Kim wrote:
+> >> Iram reported compaction's too_many_isolated loops forever.
+> >> (http://www.spinics.net/lists/linux-mm/msg08123.html)
+> >>
+> >> The meminfo of situation happened was inactive anon is zero.
+> >> That's because the system has no memory pressure until then.
+> >> While all anon pages was in active lru, compaction could select
+> >> active lru as well as inactive lru. That's different things
+> >> with vmscan's isolated. So we has been two too_many_isolated.
+> >>
+> >> While compaction can isolated pages in both active and inactive,
+> >> current implementation of too_many_isolated only considers inactive.
+> >> It made Iram's problem.
+> >>
+> >> This patch handles active and inactive with fair.
+> >> That's because we can't expect where from and how many compaction would
+> >> isolated pages.
+> >>
+> >> This patch changes (nr_isolated > nr_inactive) with
+> >> nr_isolated > (nr_active + nr_inactive) / 2.
+> >>
+> >> Cc: Iram Shahzad <iram.shahzad@jp.fujitsu.com>
+> >> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> >> Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+> >> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> >
+> > Please send this patch on its own as it looks like it should be merged and
+> > arguably is a stable candidate for 2.6.35. Alternatively, Andrew, can you pick
+> > up just this patch? It seems unrelated to the second patch on COMPACTPAGEFAILED.
 > 
-> Why, my understanding is that device->dma_mem is designed exactly for keeping 
-> some chunk of coherent memory for device's private use via dma_alloc_from_coherent()
-> (and that is what dt3155v4l driver is using it for).
+> I thought it's not urgent and next patch would apply based on this
+> patch without HUNK.
 
-I don't think so. device->dma_mem can be accessed only via the
-DMA-API. I think that the DMA-API says that
-dma_declare_coherent_memory declares coherent memory that can be
-access exclusively by a certain device. It's not for reserving
-coherent memory that can be used for any device for a device.
+Well it fixes a known bug so I would consider it a little urgent. It's not
+earth shattering or anything but why delay unnecessarily?
 
-Anway, you don't need coherent memory. So using the API for coherent
-memory isn't a good idea.
-
-
-> > There are already some workarounds for
-> > contigous memory in several drivers anyway.
+> If Andrew doesn't have a response, I will resend as a standalone.
+> Thanks.
 > 
-> Sure, can these workarounds be exposed as API for general use?
 
-I don't think that's a good idea. Adding temporary workaround to the
-generic API and removing it soon after that doesn't sound a good
-developing maner.
+Thanks.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
