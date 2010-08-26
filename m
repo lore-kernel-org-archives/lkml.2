@@ -1,33 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab0HZPe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 11:34:28 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:56618 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754097Ab0HZPeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 11:34:25 -0400
-Date: Thu, 26 Aug 2010 08:34:21 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
-        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Message-ID: <20100826083421.456b0d1c@nehalam>
-In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
-References: <4C763A67.5040107@dsn.okisemi.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754073Ab0HZPhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:37:05 -0400
+Received: from xenotime.net ([72.52.115.56]:57711 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752658Ab0HZPhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:37:04 -0400
+Date: Thu, 26 Aug 2010 08:36:55 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: piotr@hosowicz.com
+Cc: Arnd Hannemann <hannemann@nets.rwth-aachen.de>,
+        Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Which kernel.org WWW is the master server?
+Message-Id: <20100826083655.ebb019bd.rdunlap@xenotime.net>
+In-Reply-To: <4C76862D.5050703@example.com>
+References: <4C6D4864.2040002@example.com>
+	<alpine.LRH.2.00.1008261536290.2372@twin.jikos.cz>
+	<4C7683D3.5090500@nets.rwth-aachen.de>
+	<4C76862D.5050703@example.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -35,193 +27,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010 18:56:55 +0900
-Masayuki Ohtake <masa-korg@dsn.okisemi.com> wrote:
+On Thu, 26 Aug 2010 17:20:13 +0200 Piotr Hosowicz wrote:
 
-> ---
-> Gigabit Ethernet driver of Topcliff PCH
+> On 26.08.2010 17:10, Arnd Hannemann wrote:
+> > Am 26.08.2010 15:37, schrieb Jiri Kosina:
+> >> On Thu, 19 Aug 2010, Piotr Hosowicz wrote:
+> >>
+> >>
+> >>> I wrote a simple python script that tells me that a new kernel version
+> >>> appeared. The problem is that it is based exactly on this what appears on the
+> >>> webpage so sometimes it resolves the server IP that the version has changed,
+> >>> despite the fact that it is not true. Which server is the master server?
+> >>>
+> >> I guess that simply running
+> >>
+> >> 	finger @kernel.org
+> >>
+> >> will give you exactly the information you are looking for which much less
+> >> pain of connecting to www server, parsing html, etc.
+> >>
+> >
+> > Not sure if this is still accurate:
+> >
+> >> Aug 21, 2003: Please don't use *finger.kernel.org* for any sort of
+> >> automatic monitoring. The number of automatic bots hitting this port
+> >> is causing the finger daemon to shut down more often than not. The
+> >> same information is available from
+> >> http://www.kernel.org/kdist/finger_banner
+> >> <http://kernel.org/kdist/finger_banner>.
 > 
-> Topcliff PCH is the platform controller hub that is going to be used in
-> Intel's upcoming general embedded platform. All IO peripherals in
-> Topcliff PCH are actually devices sitting on AMBA bus. 
-> Topcliff PCH has Gigabit Ethernet I/F. Using this I/F, it is able to 
-> access system devices connected to Gigabit Ethernet.
-> 
-> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-> ---
+> Moreover it is written as the above.
 
-You can initialize your function table at compile time.
+I have a script that reads finger_banner then adds mmotm & its base kernel tree,
+& linux-next & its base kernel tree to the finger_banner.  (It was written
+before finger_banner included linux-next info.)
 
-> +
-> +struct pch_gbe_hw;
-> +/**
-> + * struct  pch_gbe_functions - HAL APi function pointer
-> + * @get_bus_info:	for pch_gbe_hal_get_bus_info
-> + * @init_hw:		for pch_gbe_hal_init_hw
-> + * @read_phy_reg:	for pch_gbe_hal_read_phy_reg
-> + * @write_phy_reg:	for pch_gbe_hal_write_phy_reg
-> + * @reset_phy:		for pch_gbe_hal_phy_hw_reset
-> + * @sw_reset_phy:	for pch_gbe_hal_phy_sw_reset
-> + * @power_up_phy:	for pch_gbe_hal_power_up_phy
-> + * @power_down_phy:	for pch_gbe_hal_power_down_phy
-> + * @read_mac_addr:	for pch_gbe_hal_read_mac_addr
-> + */
-> +struct pch_gbe_functions {
-> +	void (*get_bus_info) (struct pch_gbe_hw *);
-> +	s32(*init_hw) (struct pch_gbe_hw *);
-> +	s32(*read_phy_reg) (struct pch_gbe_hw *, u32, u16 *);
-> +	s32(*write_phy_reg) (struct pch_gbe_hw *, u32, u16);
-> +	void (*reset_phy) (struct pch_gbe_hw *);
-> +	void (*sw_reset_phy) (struct pch_gbe_hw *);
-> +	void (*power_up_phy) (struct pch_gbe_hw *hw);
-> +	void (*power_down_phy) (struct pch_gbe_hw *hw);
-> +	s32(*read_mac_addr) (struct pch_gbe_hw *);
-> +};
+Output today is:
 
-...
+The latest linux-next version of the Linux kernel is:         next-20100826
+The latest snapshot 2.6 version of the Linux kernel is:       2.6.36-rc2-git4
+The latest mainline 2.6 version of the Linux kernel is:       2.6.36-rc2
+The latest stable 2.6.35 version of the Linux kernel is:      2.6.35.3  
+The latest stable 2.6.34 version of the Linux kernel is:      2.6.34.5  
+The latest stable 2.6.33 version of the Linux kernel is:      2.6.33.7  
+The latest stable 2.6.32 version of the Linux kernel is:      2.6.32.20 
+The latest stable 2.6.31 version of the Linux kernel is:      2.6.31.14 
+The latest stable 2.6.27 version of the Linux kernel is:      2.6.27.52 
+mmotm-2010-0811-1610 ... applies to: 2.6.35
+next-20100826 ... applies to: v2.6.36-rc2
 
-> +
-> +/*!
-> + * @ingroup Gigabit Ether driver Layer
-> + * @struct  pch_gbe_hw
-> + * @brief   Hardware infomation
-> + */
-> +struct pch_gbe_hw {
-> +	void *back;
-> +
-> +	struct pch_gbe_regs  __iomem *reg;
-> +	spinlock_t miim_lock;
-> +
-> +	struct pch_gbe_functions func;
-Should be:
-        const struct pch_gbe_functions *func;
 
-> +	struct pch_gbe_mac_info mac;
-> +	struct pch_gbe_phy_info phy;
-> +	struct pch_gbe_bus_info bus;
-> +
-> +	u16 vendor_id;
-> +	u16 device_id;
-> +	u16 subsystem_vendor_id;
-> +	u16 subsystem_device_id;
-> +	u8 revision_id;
-> +};
-...
+http://www.xenotime.net/linux/scripts/kcurrent
 
-> --- /dev/null
-> +++ b/drivers/net/pch_gbe/pch_gbe_api.c
-> @@ -0,0 +1,247 @@
-> +/*
-> + * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
-> + */
-> +
-> +#include "pch_gbe.h"
-> +#include "pch_gbe_phy.h"
-> +
-> +/* bus type values */
-> +#define pch_gbe_bus_type_unknown	0
-> +#define pch_gbe_bus_type_pci		1
-> +#define pch_gbe_bus_type_pcix		2
-> +#define pch_gbe_bus_type_pci_express	3
-> +#define pch_gbe_bus_type_reserved	4
-> +
-> +/* bus speed values */
-> +#define pch_gbe_bus_speed_unknown	0
-> +#define pch_gbe_bus_speed_33		1
-> +#define pch_gbe_bus_speed_66		2
-> +#define pch_gbe_bus_speed_100		3
-> +#define pch_gbe_bus_speed_120		4
-> +#define pch_gbe_bus_speed_133		5
-> +#define pch_gbe_bus_speed_2500		6
-> +#define pch_gbe_bus_speed_reserved	7
-> +
-> +/* bus width values */
-> +#define pch_gbe_bus_width_unknown	0
-> +#define pch_gbe_bus_width_pcie_x1	1
-> +#define pch_gbe_bus_width_pcie_x2	2
-> +#define pch_gbe_bus_width_pcie_x4	4
-> +#define pch_gbe_bus_width_32		5
-> +#define pch_gbe_bus_width_64		6
-> +#define pch_gbe_bus_width_reserved	7
-> +
-> +/**
-> + * pch_gbe_plat_get_bus_info - Obtain bus information for adapter
-> + * @hw:	Pointer to the HW structure
-> + */
-> +static void pch_gbe_plat_get_bus_info(struct pch_gbe_hw *hw)
-> +{
-> +	hw->bus.type  = pch_gbe_bus_type_pci_express;
-> +	hw->bus.speed = pch_gbe_bus_speed_2500;
-> +	hw->bus.width = pch_gbe_bus_width_pcie_x1;
-> +}
-> +
-> +/**
-> + * pch_gbe_plat_init_hw - Initialize hardware
-> + * @hw:	Pointer to the HW structure
-> + * Returns
-> + *	0:		Successfully
-> + *	Negative value:	Failed-EBUSY
-> + */
-> +static s32 pch_gbe_plat_init_hw(struct pch_gbe_hw *hw)
-> +{
-> +	s32 ret_val;
-> +
-> +	ret_val = pch_gbe_phy_get_id(hw);
-> +	if (ret_val) {
-> +		printk(KERN_ERR KBUILD_MODNAME ": "
-> +			"pch_gbe_phy_get_id error\n");
-> +		return ret_val;
-> +	}
-> +	pch_gbe_phy_init_setting(hw);
-> +	/* Setup Mac interface option RGMII */
-> +#ifdef PCH_GBE_MAC_IFOP_RGMII
-> +	pch_gbe_phy_set_rgmii(hw);
-> +#endif
-> +	return ret_val;
-> +}
-> +
-
-static const struct pch_gbe_functions pch_gbe_ops = {
-	.get_bus_info             = pch_gbe_plat_get_bus_info,
-	.init_hw                  = pch_gbe_plat_init_hw,
-	.read_phy_reg             = pch_gbe_phy_read_reg_miic,
-	.write_phy_reg            = pch_gbe_phy_write_reg_miic,
-	.reset_phy                = pch_gbe_phy_hw_reset,
-	.sw_reset_phy             = pch_gbe_phy_sw_reset,
-	.power_up_phy             = pch_gbe_phy_power_up,
-	.power_down_phy           = pch_gbe_phy_power_down,
-	.read_mac_addr            = pch_gbe_mac_read_mac_addr,
-}; 
-
-> +/**
-> + * pch_gbe_plat_init_function_pointers - Init func ptrs
-> + * @hw:	Pointer to the HW structure
-> + */
-> +void pch_gbe_plat_init_function_pointers(struct pch_gbe_hw *hw)
-> +{
-> +	struct pch_gbe_phy_info *phy = &hw->phy;
-> +	struct pch_gbe_functions *func = &hw->func;
-
-	const struct pch_gbe_functions *func = &hw->func;
-
-> +
-> +	/* Set PHY parameter */
-> +	phy->reset_delay_us     = PCH_GBE_PHY_RESET_DELAY_US;
-
-	func = &pch_gbe_ops;
-
-	(Don't init at run time)
-> +}
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
