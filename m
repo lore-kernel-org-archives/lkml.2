@@ -1,103 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab0HZRnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 13:43:01 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47277 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab0HZRm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 13:42:59 -0400
-Date: Thu, 26 Aug 2010 18:42:45 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] writeback: Do not congestion sleep when there are
-	no congested BDIs
-Message-ID: <20100826174245.GJ20944@csn.ul.ie>
-References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie> <1282835656-5638-4-git-send-email-mel@csn.ul.ie> <20100826173843.GD6873@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100826173843.GD6873@barrios-desktop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753496Ab0HZRnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 13:43:18 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:38291 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab0HZRnQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 13:43:16 -0400
+Subject: [PATCH] Docbook: allow warning on unused documentation
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100826101130.61f60090.rdunlap@xenotime.net>
+References: <1282136967.13315.1.camel@jlt3.sipsolutions.net>
+	 <20100826093710.111b103e.rdunlap@xenotime.net>
+	 <1282841476.3812.69.camel@jlt3.sipsolutions.net>
+	 <20100826101130.61f60090.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 19:43:14 +0200
+Message-ID: <1282844594.3812.74.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 02:38:43AM +0900, Minchan Kim wrote:
-> On Thu, Aug 26, 2010 at 04:14:16PM +0100, Mel Gorman wrote:
-> > If congestion_wait() is called with no BDIs congested, the caller will
-> > sleep for the full timeout and this is an unnecessary sleep. This patch
-> > checks if there are BDIs congested. If so, it goes to sleep as normal.
-> > If not, it calls cond_resched() to ensure the caller is not hogging the
-> > CPU longer than its quota but otherwise will not sleep.
-> > 
-> > This is aimed at reducing some of the major desktop stalls reported during
-> > IO. For example, while kswapd is operating, it calls congestion_wait()
-> > but it could just have been reclaiming clean page cache pages with no
-> > congestion. Without this patch, it would sleep for a full timeout but after
-> > this patch, it'll just call schedule() if it has been on the CPU too long.
-> > Similar logic applies to direct reclaimers that are not making enough
-> > progress.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > ---
-> >  mm/backing-dev.c |   20 ++++++++++++++------
-> >  1 files changed, 14 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> > index a49167f..6abe860 100644
-> > --- a/mm/backing-dev.c
-> > +++ b/mm/backing-dev.c
-> 
-> Function's decripton should be changed since we don't wait next write any more. 
-> 
+From: Johannes Berg <johannes.berg@intel.com>
 
-My bad. I need to check that "next write" thing. It doesn't appear to be
-happening but maybe that side of things just broke somewhere in the
-distant past. I lack context of how this is meant to work so maybe
-someone will educate me.
+When you don't use !E or !I but only !F, then
+it's very easy to miss including some functions,
+structs etc. in documentation. To help finding
+which ones were missed, allow printing out the
+unused ones as warnings.
 
-> > @@ -767,13 +767,21 @@ long congestion_wait(int sync, long timeout)
-> >  	DEFINE_WAIT(wait);
-> >  	wait_queue_head_t *wqh = &congestion_wqh[sync];
-> >  
-> > -	/* Check if this call to congestion_wait was necessary */
-> > -	if (atomic_read(&nr_bdi_congested[sync]) == 0)
-> > +	/*
-> > +	 * If there is no congestion, there is no point sleeping on the queue.
-> > +	 * This call was unecessary but in case we are spinning due to a bad
-> > +	 * caller, at least call cond_reched() and sleep if our CPU quota
-> > +	 * has expired
-> > +	 */
-> > +	if (atomic_read(&nr_bdi_congested[sync]) == 0) {
-> >  		unnecessary = true;
-> > -
-> > -	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
-> > -	ret = io_schedule_timeout(timeout);
-> > -	finish_wait(wqh, &wait);
-> > +		cond_resched();
-> > +		ret = 0;
-> 
-> "ret = timeout" is more proper as considering io_schedule_timeout's return value.
-> 
+For example, using this on mac80211 yields a
+lot of warnings like this:
 
-Good point, will fix.
+  Warning: didn't use docs for DOC: mac80211 workqueue
+  Warning: didn't use docs for ieee80211_max_queues
+  Warning: didn't use docs for ieee80211_bss_change
+  Warning: didn't use docs for ieee80211_bss_conf
 
-> > +	} else {
-> > +		prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
-> > +		ret = io_schedule_timeout(timeout);
-> > +		finish_wait(wqh, &wait);
-> > +	}
-> >  
-> >  	trace_writeback_congest_waited(jiffies_to_usecs(jiffies - start),
-> >  			unnecessary);
+when generating the documentation for it.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+v2: - fix comment
+    - use !C instead of !A
+
+ Documentation/kernel-doc-nano-HOWTO.txt |    5 +
+ scripts/basic/docproc.c                 |  129 +++++++++++++++++++++++++++++++-
+ scripts/kernel-doc                      |   52 ++++++++++++
+ 3 files changed, 183 insertions(+), 3 deletions(-)
+
+--- wireless-testing.orig/Documentation/kernel-doc-nano-HOWTO.txt	2010-08-26 16:00:18.000000000 +0200
++++ wireless-testing/Documentation/kernel-doc-nano-HOWTO.txt	2010-08-26 19:37:36.000000000 +0200
+@@ -345,5 +345,10 @@ documentation, in <filename>, for the fu
+ section titled <section title> from <filename>.
+ Spaces are allowed in <section title>; do not quote the <section title>.
+ 
++!C<filename> is replaced by nothing, but makes the tools check that
++all DOC: sections and documented functions, symbols, etc. are used.
++This makes sense to use when you use !F/!P only and want to verify
++that all documentation is included.
++
+ Tim.
+ */ <twaugh@redhat.com>
+--- wireless-testing.orig/scripts/basic/docproc.c	2010-08-26 16:00:18.000000000 +0200
++++ wireless-testing/scripts/basic/docproc.c	2010-08-26 19:37:17.000000000 +0200
+@@ -34,12 +34,14 @@
+  *
+  */
+ 
++#define _GNU_SOURCE
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <ctype.h>
+ #include <unistd.h>
+ #include <limits.h>
++#include <errno.h>
+ #include <sys/types.h>
+ #include <sys/wait.h>
+ 
+@@ -54,6 +56,7 @@ typedef void FILEONLY(char * file);
+ FILEONLY *internalfunctions;
+ FILEONLY *externalfunctions;
+ FILEONLY *symbolsonly;
++FILEONLY *findall;
+ 
+ typedef void FILELINE(char * file, char * line);
+ FILELINE * singlefunctions;
+@@ -65,12 +68,30 @@ FILELINE * docsection;
+ #define KERNELDOCPATH "scripts/"
+ #define KERNELDOC     "kernel-doc"
+ #define DOCBOOK       "-docbook"
++#define LIST          "-list"
+ #define FUNCTION      "-function"
+ #define NOFUNCTION    "-nofunction"
+ #define NODOCSECTIONS "-no-doc-sections"
+ 
+ static char *srctree, *kernsrctree;
+ 
++static char **all_list = NULL;
++static int all_list_len = 0;
++
++static void consume_symbol(const char *sym)
++{
++	int i;
++
++	for (i = 0; i < all_list_len; i++) {
++		if (!all_list[i])
++			continue;
++		if (strcmp(sym, all_list[i]))
++			continue;
++		all_list[i] = NULL;
++		break;
++	}
++}
++
+ static void usage (void)
+ {
+ 	fprintf(stderr, "Usage: docproc {doc|depend} file\n");
+@@ -248,6 +269,7 @@ static void docfunctions(char * filename
+ 		struct symfile * sym = &symfilelist[i];
+ 		for (j=0; j < sym->symbolcnt; j++) {
+ 			vec[idx++]     = type;
++			consume_symbol(sym->symbollist[j].name);
+ 			vec[idx++] = sym->symbollist[j].name;
+ 		}
+ 	}
+@@ -287,6 +309,11 @@ static void singfunc(char * filename, ch
+                         vec[idx++] = &line[i];
+                 }
+         }
++	for (i = 0; i < idx; i++) {
++        	if (strcmp(vec[i], FUNCTION))
++        		continue;
++		consume_symbol(vec[i + 1]);
++	}
+ 	vec[idx++] = filename;
+ 	vec[idx] = NULL;
+ 	exec_kernel_doc(vec);
+@@ -306,6 +333,10 @@ static void docsect(char *filename, char
+ 		if (*s == '\n')
+ 			*s = '\0';
+ 
++	asprintf(&s, "DOC: %s", line);
++	consume_symbol(s);
++	free(s);
++
+ 	vec[0] = KERNELDOC;
+ 	vec[1] = DOCBOOK;
+ 	vec[2] = FUNCTION;
+@@ -315,6 +346,84 @@ static void docsect(char *filename, char
+ 	exec_kernel_doc(vec);
+ }
+ 
++static void find_all_symbols(char *filename)
++{
++	char *vec[4]; /* kerneldoc -list file NULL */
++	pid_t pid;
++	int ret, i, count, start;
++	char real_filename[PATH_MAX + 1];
++	int pipefd[2];
++	char *data, *str;
++	size_t data_len = 0;
++
++	vec[0] = KERNELDOC;
++	vec[1] = LIST;
++	vec[2] = filename;
++	vec[3] = NULL;
++
++	if (pipe(pipefd)) {
++		perror("pipe");
++		exit(1);
++	}
++
++	switch (pid=fork()) {
++		case -1:
++			perror("fork");
++			exit(1);
++		case  0:
++			close(pipefd[0]);
++			dup2(pipefd[1], 1);
++			memset(real_filename, 0, sizeof(real_filename));
++			strncat(real_filename, kernsrctree, PATH_MAX);
++			strncat(real_filename, "/" KERNELDOCPATH KERNELDOC,
++					PATH_MAX - strlen(real_filename));
++			execvp(real_filename, vec);
++			fprintf(stderr, "exec ");
++			perror(real_filename);
++			exit(1);
++		default:
++			close(pipefd[1]);
++			data = malloc(4096);
++			do {
++				while ((ret = read(pipefd[0],
++						   data + data_len,
++						   4096)) > 0) {
++					data_len += ret;
++					data = realloc(data, data_len + 4096);
++				}
++			} while (ret == -EAGAIN);
++			if (ret != 0) {
++				perror("read");
++				exit(1);
++			}
++			waitpid(pid, &ret ,0);
++	}
++	if (WIFEXITED(ret))
++		exitstatus |= WEXITSTATUS(ret);
++	else
++		exitstatus = 0xff;
++
++	count = 0;
++	/* poor man's strtok, but with counting */
++	for (i = 0; i < data_len; i++) {
++		if (data[i] == '\n') {
++			count++;
++			data[i] = '\0';
++		}
++	}
++	start = all_list_len;
++	all_list_len += count;
++	all_list = realloc(all_list, sizeof(char *) * all_list_len);
++	str = data;
++	for (i = 0; i < data_len && start != all_list_len; i++) {
++		if (data[i] == '\0') {
++			all_list[start] = str;
++			str = data + i + 1;
++			start++;
++		}
++	}
++}
++
+ /*
+  * Parse file, calling action specific functions for:
+  * 1) Lines containing !E
+@@ -322,7 +431,8 @@ static void docsect(char *filename, char
+  * 3) Lines containing !D
+  * 4) Lines containing !F
+  * 5) Lines containing !P
+- * 6) Default lines - lines not matching the above
++ * 6) Lines containing !C
++ * 7) Default lines - lines not matching the above
+  */
+ static void parse_file(FILE *infile)
+ {
+@@ -365,6 +475,12 @@ static void parse_file(FILE *infile)
+ 						s++;
+ 					docsection(line + 2, s);
+ 					break;
++				case 'C':
++					while (*s && !isspace(*s)) s++;
++					*s = '\0';
++					if (findall)
++						findall(line+2);
++					break;
+ 				default:
+ 					defaultline(line);
+ 			}
+@@ -380,6 +496,7 @@ static void parse_file(FILE *infile)
+ int main(int argc, char *argv[])
+ {
+ 	FILE * infile;
++	int i;
+ 
+ 	srctree = getenv("SRCTREE");
+ 	if (!srctree)
+@@ -415,6 +532,7 @@ int main(int argc, char *argv[])
+ 		symbolsonly       = find_export_symbols;
+ 		singlefunctions   = noaction2;
+ 		docsection        = noaction2;
++		findall           = find_all_symbols;
+ 		parse_file(infile);
+ 
+ 		/* Rewind to start from beginning of file again */
+@@ -425,8 +543,16 @@ int main(int argc, char *argv[])
+ 		symbolsonly       = printline;
+ 		singlefunctions   = singfunc;
+ 		docsection        = docsect;
++		findall           = NULL;
+ 
+ 		parse_file(infile);
++
++		for (i = 0; i < all_list_len; i++) {
++			if (!all_list[i])
++				continue;
++			fprintf(stderr, "Warning: didn't use docs for %s\n",
++				all_list[i]);
++		}
+ 	}
+ 	else if (strcmp("depend", argv[1]) == 0)
+ 	{
+@@ -439,6 +565,7 @@ int main(int argc, char *argv[])
+ 		symbolsonly       = adddep;
+ 		singlefunctions   = adddep2;
+ 		docsection        = adddep2;
++		findall           = adddep;
+ 		parse_file(infile);
+ 		printf("\n");
+ 	}
+--- wireless-testing.orig/scripts/kernel-doc	2010-08-26 16:00:25.000000000 +0200
++++ wireless-testing/scripts/kernel-doc	2010-08-26 16:00:26.000000000 +0200
+@@ -44,12 +44,13 @@ use strict;
+ # Note: This only supports 'c'.
+ 
+ # usage:
+-# kernel-doc [ -docbook | -html | -text | -man ] [ -no-doc-sections ]
++# kernel-doc [ -docbook | -html | -text | -man | -list ] [ -no-doc-sections ]
+ #           [ -function funcname [ -function funcname ...] ] c file(s)s > outputfile
+ # or
+ #           [ -nofunction funcname [ -function funcname ...] ] c file(s)s > outputfile
+ #
+ #  Set output format using one of -docbook -html -text or -man.  Default is man.
++#  The -list format is for internal use by docproc.
+ #
+ #  -no-doc-sections
+ #	Do not output DOC: sections
+@@ -210,9 +211,16 @@ my %highlights_text = ( $type_constant,
+ 			$type_param, "\$1" );
+ my $blankline_text = "";
+ 
++# list mode
++my %highlights_list = ( $type_constant, "\$1",
++			$type_func, "\$1",
++			$type_struct, "\$1",
++			$type_param, "\$1" );
++my $blankline_list = "";
+ 
+ sub usage {
+-    print "Usage: $0 [ -v ] [ -docbook | -html | -text | -man ] [ -no-doc-sections ]\n";
++    print "Usage: $0 [ -v ] [ -docbook | -html | -text | -man | -list ]\n";
++    print "         [ -no-doc-sections ]\n";
+     print "         [ -function funcname [ -function funcname ...] ]\n";
+     print "         [ -nofunction funcname [ -nofunction funcname ...] ]\n";
+     print "         c source file(s) > outputfile\n";
+@@ -318,6 +326,10 @@ while ($ARGV[0] =~ m/^-(.*)/) {
+ 	$output_mode = "xml";
+ 	%highlights = %highlights_xml;
+ 	$blankline = $blankline_xml;
++    } elsif ($cmd eq "-list") {
++	$output_mode = "list";
++	%highlights = %highlights_list;
++	$blankline = $blankline_list;
+     } elsif ($cmd eq "-gnome") {
+ 	$output_mode = "gnome";
+ 	%highlights = %highlights_gnome;
+@@ -1361,6 +1373,42 @@ sub output_blockhead_text(%) {
+     }
+ }
+ 
++## list mode output functions
++
++sub output_function_list(%) {
++    my %args = %{$_[0]};
++
++    print $args{'function'} . "\n";
++}
++
++# output enum in list
++sub output_enum_list(%) {
++    my %args = %{$_[0]};
++    print $args{'enum'} . "\n";
++}
++
++# output typedef in list
++sub output_typedef_list(%) {
++    my %args = %{$_[0]};
++    print $args{'typedef'} . "\n";
++}
++
++# output struct as list
++sub output_struct_list(%) {
++    my %args = %{$_[0]};
++
++    print $args{'struct'} . "\n";
++}
++
++sub output_blockhead_list(%) {
++    my %args = %{$_[0]};
++    my ($parameter, $section);
++
++    foreach $section (@{$args{'sectionlist'}}) {
++	print "DOC: $section\n";
++    }
++}
++
+ ##
+ # generic output function for all types (function, struct/union, typedef, enum);
+ # calls the generated, variable output_ function name based on
+
+
