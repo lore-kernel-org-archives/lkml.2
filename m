@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab0HZO70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:59:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41765 "EHLO mail.skyhub.de"
+	id S1753985Ab0HZPA7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:00:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab0HZO7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:59:21 -0400
-Date: Thu, 26 Aug 2010 16:59:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: David Airlie <airlied@linux.ie>
-Cc: Ben Hutchings <ben@decadent.org.uk>, Eric Anholt <eric@anholt.net>,
-        Jordan Crouse <jcrouse@codeaurora.org>,
-        Matthew Garrett <mjg@redhat.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] i915, drm: Fix build dependency on VGA_ARB
-Message-ID: <20100826145917.GA3267@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	David Airlie <airlied@linux.ie>,
-	Ben Hutchings <ben@decadent.org.uk>, Eric Anholt <eric@anholt.net>,
-	Jordan Crouse <jcrouse@codeaurora.org>,
-	Matthew Garrett <mjg@redhat.com>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
+	id S1753877Ab0HZPA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:00:56 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] NOMMU: Stub out vm_get_page_prot() if there's no MMU
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: vapier.adi@gmail.com, konrad.wilk@oracle.com, gavinl@compacsort.com,
+        uclinux-dev@uclinux.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Thu, 26 Aug 2010 16:00:34 +0100
+Message-ID: <20100826150034.22254.54402.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get:
+Stub out vm_get_page_prot() if there's no MMU.
 
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-drivers/built-in.o: In function `intel_modeset_init':
-(.text+0xa993f): undefined reference to `vga_get'
-drivers/built-in.o: In function `intel_modeset_init':
-(.text+0xa9963): undefined reference to `vga_put'
-make: *** [.tmp_vmlinux1] Error 1
+This was added by commit:
 
-since CONFIG_AGB_ARB is not being selected. Make I915 driver select it
-as the numerous other things it selects.
+	commit 804af2cf6e7af31d2e664b54e657dddd9b531dbd
+	Author: Hugh Dickins <hugh@veritas.com>
+	Date:   Wed Jul 26 21:39:49 2006 +0100
+	Subject: [AGPGART] remove private page protection map
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
+and is used in commit:
+
+	commit c07fbfd17e614a76b194f371c5331e21e6cffb54
+	Author: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+	Date:   Tue Aug 10 18:02:45 2010 -0700
+	Subject: fbmem: VM_IO set, but not propagated
+
+in the fbmem video driver, but the function doesn't exist on NOMMU, resulting
+in an undefined symbol at link time.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
 
-This is on latest Linus git (v2.6.36-rc2-237-gd4348c6) after doing `make
-oldconfig' on an Acer Aspire One netbook.
+ include/linux/mm.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
- drivers/gpu/drm/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 831c693..e6b1210 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1363,7 +1363,15 @@ static inline unsigned long vma_pages(struct vm_area_struct *vma)
+ 	return (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ }
+ 
++#ifdef CONFIG_MMU
+ pgprot_t vm_get_page_prot(unsigned long vm_flags);
++#else
++static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
++{
++	return __pgprot(0);
++}
++#endif
++
+ struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+ 			unsigned long pfn, unsigned long size, pgprot_t);
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index 4cab0c6..43590ab 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -97,6 +97,7 @@ config DRM_I830
- config DRM_I915
- 	tristate "i915 driver"
- 	depends on AGP_INTEL
-+	select VGA_ARB
- 	select SHMEM
- 	select DRM_KMS_HELPER
- 	select FB_CFB_FILLRECT
--- 
-1.7.1
-
-
--- 
-Regards/Gruss,
-Boris.
