@@ -1,39 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0HZKJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 06:09:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47617 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab0HZKJS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 06:09:18 -0400
-Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C7638B7.9060306@kernel.org>
-References: <20100825132815.108d8217@bike.lwn.net>
-	 <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
-	 <4C762BF9.5010305@kernel.org> <20100826094613.GA6411@amd>
-	 <4C7638B7.9060306@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 26 Aug 2010 12:08:49 +0200
-Message-ID: <1282817329.1975.486.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753479Ab0HZKMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 06:12:46 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59410 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752035Ab0HZKMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 06:12:43 -0400
+Date: Thu, 26 Aug 2010 11:12:28 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+Message-ID: <20100826101227.GE20944@csn.ul.ie>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com> <1282310110.2605.976.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1282310110.2605.976.camel@laptop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-26 at 11:49 +0200, Tejun Heo wrote:
-> If there's a pressing need, doing stop_machine for
-> onlining too is definitely an option. 
+On Fri, Aug 20, 2010 at 03:15:10PM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
+> > Hello everyone,
+> > 
+> > The following patchset implements a Contiguous Memory Allocator.  For
+> > those who have not yet stumbled across CMA an excerpt from
+> > documentation:
+> > 
+> >    The Contiguous Memory Allocator (CMA) is a framework, which allows
+> >    setting up a machine-specific configuration for physically-contiguous
+> >    memory management. Memory for devices is then allocated according
+> >    to that configuration.
+> > 
+> >    The main role of the framework is not to allocate memory, but to
+> >    parse and manage memory configurations, as well as to act as an
+> >    in-between between device drivers and pluggable allocators. It is
+> >    thus not tied to any memory allocation method or strategy.
+> > 
+> > For more information please refer to the second patch from the
+> > patchset which contains the documentation.
+> 
 
-I would argue against that.. we should try and rid ourselves of
-stopmachine, not add more dependencies on it. If you want to sync
-against preempt_disable thingies synchronize_sched() is your friend.
+I'm only taking a quick look at this - slow as ever so pardon me if I
+missed anything.
+
+> So the idea is to grab a large chunk of memory at boot time and then
+> later allow some device to use it?
+>
+> I'd much rather we'd improve the regular page allocator to be smarter
+> about this. We recently added a lot of smarts to it like memory
+> compaction, which allows large gobs of contiguous memory to be freed for
+> things like huge pages.
+> 
+
+Quick glance tells me that buffer sizes of 20MB are being thrown about
+which the core page allocator doesn't handle very well (and couldn't
+without major modification). Fragmentation avoidance only works well on
+sizes < MAX_ORDER_NR_PAGES which likely will be 2MB or 4MB.
+
+That said, there are things the core VM can do to help. One is related
+to ZONE_MOVABLE and the second is on the use of MIGRATE_ISOLATE.
+
+ZONE_MOVABLE is setup when the command line has kernelcore= or movablecore=
+specified. In ZONE_MOVABLE only pages that can be migrated are allocated
+(or huge pages if specifically configured to be allowed).  The zone is setup
+during initialisation by slicing pieces from the end of existing zones and
+for various reasons, it would be best to maintain that behaviour unless CMA
+had a specific requirement for memory in the middle of an existing zone.
+
+So lets say the maximum amount of contiguous memory required by all
+devices is 64M and ZONE_MOVABLE is 64M. During normal operation, normal
+order-0 pages can be allocated from this zone meaning the memory is not
+pinned and unusable by anybody else. This avoids wasting memory. When a
+device needs a new buffer, compaction would need some additional smarts
+to compact or reclaim the size of memory needed by the driver but
+because all the pages in the zone are movable, it should be possible.
+Ideally it would have swap to reclaim because if not, compaction needs
+to know how to move pages outside a zone (something it currently
+avoids).
+
+Essentially, cma_alloc() would be a normal alloc_pages that uses
+ZONE_MOVABLE for buffers < MAX_ORDER_NR_PAGES but would need additional
+compaction smarts for the larger buffers. I think it would reuse as much
+of the existing VM as possible but without reviewing the code, I don't
+know for sure how useful the suggestion is.
+
+> If you want guarantees you can free stuff, why not add constraints to
+> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
+> certain region, those pages are easily freed/moved aside to satisfy
+> large contiguous allocations.
+> 
+
+Relatively handy to do something like this. It can also be somewhat
+contrained by doing something similar to MIGRATE_ISOLATE to have
+contiguous regions of memory in a zone unusable by non-movable
+allocationos. It would be a lot trickier when interacting with reclaim
+though so using ZONE_MOVABLE would have less gotchas.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
