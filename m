@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab0HZOox (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 10:44:53 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:59663 "EHLO
-	mail9.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753918Ab0HZOov (ORCPT
+	id S1753918Ab0HZOtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 10:49:46 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:40153 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab0HZOtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 10:44:51 -0400
-Date: Thu, 26 Aug 2010 08:43:42 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-In-Reply-To: <1282823827.2476.663.camel@edumazet-laptop>
-Message-ID: <alpine.WNT.2.00.1008260835020.2008@cluij.ucs.ualberta.ca>
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca> <20100823080543.319143e3@nehalam> <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca> <1282672647.2302.15.camel@achroite.uk.solarflarecom.com> <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
- <1282688441.22839.34.camel@localhost> <20100824153920.63360072@s6510> <alpine.WNT.2.00.1008251408520.632@cluij.ucs.ualberta.ca> <1282823827.2476.663.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+	Thu, 26 Aug 2010 10:49:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ILuPblTrkuT6zk7OH2qSiAkbyvWZeSV7a2zUQU+F/FRzupBa3A9fUY8acWPyCl8QT9
+         GNSNs3zTqq0uI5CWyWoqdhRH+S0NT5E5DQNb4nMiq/vSSt4jzEWVVORIA02D6OCniuHq
+         lgTo5F9riQSe+XVyVW4+VExh2r/zXHmdzlb9w=
+Date: Thu, 26 Aug 2010 07:49:37 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Neil Leeder <nleeder@codeaurora.org>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Horace Fu <horace.fu@quantatw.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Trilok Soni <tsoni@codeaurora.org>
+Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
+Message-ID: <20100826144937.GA8553@core.coreip.homeip.net>
+References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org>
+ <20100813024912.GA2661@core.coreip.homeip.net>
+ <4C65BF99.9030601@codeaurora.org>
+ <201008131754.49488.dmitry.torokhov@gmail.com>
+ <4C6AC393.8000109@codeaurora.org>
+ <BC741E3E-377E-45BF-80E1-A60F4E0FDFC9@gmail.com>
+ <4C6C52DE.4040700@codeaurora.org>
+ <20100819053311.GE5832@core.coreip.homeip.net>
+ <4C6DADDE.7030107@codeaurora.org>
+ <4C756049.2090408@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="633328-19643-1282833823=:2008"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C756049.2090408@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Neil,
 
---633328-19643-1282833823=:2008
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+On Wed, Aug 25, 2010 at 02:26:17PM -0400, Neil Leeder wrote:
+> 
+> Any comment on the above alternatives?
+> 
+> A third suggestion might be to have a fairly general serio driver,
+> and rewrite the original Quanta driver to use serio rather than
+> using i2c directly. I think that has its own set of problems, but
+> thought I'd mention it anyway. The nuvoTon EC doesn't present a
+> fully-working and reliable PS/2 interface to the driver so I'd lean
+> toward using the Quanta touchpad driver by itself.
+> 
 
-On Thu, 26 Aug 2010, Eric Dumazet wrote:
-> Le jeudi 26 août 2010 à 05:40 -0600, Marc Aurele La France a écrit :
+I concur that since EC firmware does not seem to support full PS/2
+protocol we should got with the original driver creating an input device
+rather than serio.
 
->> Steady now.  There's no need to YELL nor be arrogant.  You and I both know
->> there's a place for NFS over UDP.  That's not changing any time soon.  While
->> I'm aware of the issue you brought up, it is separate from the one at hand in
->> this discussion.
+Please send me the latest version of your driver and I will apply it to
+my .37 queue.
 
->> I do want to thank you, however, for reminding me of TCP.  It's something
->> 20/20 hindsight says I should have checked out before starting this thread.
->> Logistically, it'll be a few days before I can do so though.  If that allows
->> me to increase the MTU all the way up to 65520, then this UDP thing will
->> likely remain unresolved.
+Thanks.
 
-> Unfortunately, your infiniband device lacks NETIF_F_SG support.
-
-Oh, the device itself probably has something similar, but ipoib 
-(IP-over-Infiniband) doesn't export that capability.
-
-> MTU a bit larger than PAGE_SIZE-overhead will need high order
-> allocations ?
-
-Right.  And a 65520 MTU allocates sk_buff's with 128K contiguous payloads.
-
-Marc.
-
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
---633328-19643-1282833823=:2008--
+-- 
+Dmitry
