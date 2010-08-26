@@ -1,111 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964Ab0HZJRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 05:17:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57600 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab0HZJRt (ORCPT
+	id S1752873Ab0HZJSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 05:18:07 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:33893 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab0HZJSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 05:17:49 -0400
-Date: Thu, 26 Aug 2010 11:17:25 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, mitov@issp.bas.bg,
-        linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Subject: Re: [RFC][PATCH] add
-	dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Message-ID: <20100826091725.GC5355@pengutronix.de>
-References: <201008201450.12585.mitov@issp.bas.bg> <20100826144000C.fujita.tomonori@lab.ntt.co.jp> <201008260904.19973.mitov@issp.bas.bg> <20100826152333K.fujita.tomonori@lab.ntt.co.jp> <Pine.LNX.4.64.1008261100150.14167@axis700.grange>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <Pine.LNX.4.64.1008261100150.14167@axis700.grange>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 26 Aug 2010 05:18:03 -0400
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] omap3: move EMU peripheral addresses to a platform header
+Date: Thu, 26 Aug 2010 12:14:24 +0300
+Message-Id: <1282814066-23537-2-git-send-email-virtuoso@slind.org>
+X-Mailer: git-send-email 1.7.2.1.45.gb66c2
+In-Reply-To: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
+References: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+These addresses are also needed for the OFF code to save/restore the
+contexts of the EMU peripherals correctly.
 
-On Thu, Aug 26, 2010 at 11:06:20AM +0200, Guennadi Liakhovetski wrote:
-> On Thu, 26 Aug 2010, FUJITA Tomonori wrote:
-> 
-> > On Thu, 26 Aug 2010 09:04:14 +0300
-> > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > 
-> > > On Thursday, August 26, 2010 08:40:47 am FUJITA Tomonori wrote:
-> > > > On Fri, 20 Aug 2010 14:50:12 +0300
-> > > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > > 
-> > > > > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> > > > > > On Fri, 20 Aug 2010 11:13:45 +0300
-> > > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > > > > 
-> > > > > > > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > > > > > > 
-> > > > > > > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > > > > > > Helps for videobuf-dma-contig framework.
-> > > > > > > > 
-> > > > > > > > What you guys exactly want to do? If you just want to pre-allocate
-> > > > > > > > coherent memory for latter usage,
-> > > > > > > 
-> > > > > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > > > > > > We use coherent memory because it turns out to be contiguous.
-> > > > > > 
-> > > > > > Hmm, you don't care about coherency? You just need contiguous memory?
-> > > > > 
-> > > > > Yes. We just need contiguous memory. Coherency is important as far as when dma
-> > > > > transfer finishes user land is able to see the new data. Could be done by something like
-> > > > > dma_{,un}map_single()
-> > > > 
-> > > > Then, we should avoid using coherent memory as I exaplained before. In
-> > > > addition, dma_alloc_coherent can't provide large enough contigous
-> > > > memory for some drivers so this patch doesn't help much.
-> > > 
-> > > Please, look at drivers/media/video/videobuf-dma-contig.c. Using coherent memory
-> > > is inavoidable for now, there is no alternative for it for now. The two new functions,
-> > > which I propose are just helpers for those of us who already use coherent memory
-> > > (via videobuf-dma-contig API). May be adding these two functions to 
-> > > drivers/media/video/videobuf-dma-contig.c will be better solution?
-> > 
-> > If you add something to the videobuf-dma-contig API, that's fine by me
-> > because drivers/media/video/videobuf-dma-contig.c uses the own
-> > structure and plays with dma_alloc_coherent. As long as a driver
-> > doesn't touch device->dma_mem directly, it's fine, I think (that is,
-> > dt3155v4l driver is broken). There are already some workarounds for
-> > contigous memory in several drivers anyway.
-> 
-> No, this will not work - this API has to be used from board code and 
-> videobuf can be built modular.
-> 
-> > We will have the proper API for contiguous memory. I don't think that
-> > adding such workaround to the DMA API is a good idea.
-> 
-> We have currently a number of boards broken in the mainline. They must be 
-> fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
-> as I suggested earlier, we need either this or my patch series
-> 
-> http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
-this seems to be more mature to me.  The original patch in this thread
-uses a symbol DT3155_COH_FLAGS which seems misplaced in generic code and
-doesn't put the new functions in a header.
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-omap@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/mach-omap2/emu.c            |   14 ++++----------
+ arch/arm/plat-omap/include/plat/io.h |   20 ++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 10 deletions(-)
 
-Best regards
-Uwe
-
+diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
+index 9c442e2..6b41745 100644
+--- a/arch/arm/mach-omap2/emu.c
++++ b/arch/arm/mach-omap2/emu.c
+@@ -24,19 +24,13 @@
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Alexander Shishkin");
+ 
+-/* Cortex CoreSight components within omap3xxx EMU */
+-#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
+-#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
+-#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
+-#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
+-
+ static struct amba_device omap3_etb_device = {
+ 	.dev		= {
+ 		.init_name = "etb",
+ 	},
+ 	.res		= {
+-		.start	= ETB_BASE,
+-		.end	= ETB_BASE + SZ_4K - 1,
++		.start	= OMAP34XX_ETB_PHYS,
++		.end	= OMAP34XX_ETB_PHYS + OMAP34XX_ETB_SIZE - 1,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	.periphid	= 0x000bb907,
+@@ -47,8 +41,8 @@ static struct amba_device omap3_etm_device = {
+ 		.init_name = "etm",
+ 	},
+ 	.res		= {
+-		.start	= ETM_BASE,
+-		.end	= ETM_BASE + SZ_4K - 1,
++		.start	= OMAP34XX_ETM_PHYS,
++		.end	= OMAP34XX_ETM_PHYS + OMAP34XX_ETM_SIZE - 1,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	.periphid	= 0x102bb921,
+diff --git a/arch/arm/plat-omap/include/plat/io.h b/arch/arm/plat-omap/include/plat/io.h
+index 128b549..81f736a 100644
+--- a/arch/arm/plat-omap/include/plat/io.h
++++ b/arch/arm/plat-omap/include/plat/io.h
+@@ -185,6 +185,26 @@
+ 
+ /* 3430 IVA - currently unmapped */
+ 
++#define OMAP34XX_DBG_OFFSET	(0x00011000)
++#define OMAP34XX_DBG_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_DBG_OFFSET)
++#define OMAP34XX_DBG_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_DBG_OFFSET)
++#define OMAP34XX_DBG_SIZE	SZ_4K
++
++#define OMAP34XX_ETM_OFFSET	(0x00010000)
++#define OMAP34XX_ETM_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_ETM_OFFSET)
++#define OMAP34XX_ETM_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_ETM_OFFSET)
++#define OMAP34XX_ETM_SIZE	SZ_4K
++
++#define OMAP34XX_ETB_OFFSET	(0x0001b000)
++#define OMAP34XX_ETB_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_ETB_OFFSET)
++#define OMAP34XX_ETB_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_ETB_OFFSET)
++#define OMAP34XX_ETB_SIZE	SZ_4K
++
++#define OMAP34XX_DAP_OFFSET	(0x0001d000)
++#define OMAP34XX_DAP_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_DAP_OFFSET)
++#define OMAP34XX_DAP_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_DAP_OFFSET)
++#define OMAP34XX_DAP_SIZE	SZ_4K
++
+ /*
+  * ----------------------------------------------------------------------------
+  * Omap4 specific IO mapping
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.2.1.45.gb66c2
+
