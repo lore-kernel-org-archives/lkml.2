@@ -1,64 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab0HZQel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 12:34:41 -0400
-Received: from mx.ij.cx ([212.13.201.15]:57266 "EHLO wes.ijneb.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754183Ab0HZQei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:34:38 -0400
-X-Greylist: delayed 2558 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Aug 2010 12:34:38 EDT
-Date: Thu, 26 Aug 2010 16:51:55 +0100 (BST)
-From: Mark Hills <mark@pogo.org.uk>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: linux-kernel@vger.kernel.org
-Subject: cgroup: rmdir() does not complete
-Message-ID: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mark@pogo.org.uk
+	id S1754485Ab0HZQhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:37:21 -0400
+Received: from xenotime.net ([72.52.115.56]:48144 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753151Ab0HZQhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 12:37:20 -0400
+Date: Thu, 26 Aug 2010 09:37:10 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Docbook: allow warning on unused documentation
+Message-Id: <20100826093710.111b103e.rdunlap@xenotime.net>
+In-Reply-To: <1282136967.13315.1.camel@jlt3.sipsolutions.net>
+References: <1282136967.13315.1.camel@jlt3.sipsolutions.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am experiencing hung tasks when trying to rmdir() on a cgroup. One task 
-spins, others queue up behind it with the following:
+On Wed, 18 Aug 2010 15:09:27 +0200 Johannes Berg wrote:
 
-  INFO: task soaked-cgroup:27257 blocked for more than 120 seconds.
-  "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-  soaked-cgrou D ffff8800058157c0     0 27257  29411 0x00000000
-  ffff88004ffffdd8 0000000000000086 ffff88004ffffda8 ffff88004ffffeb8
-  0000000000000010 ffff880119813780 ffff88004ffffd48 ffff88004fffffd8
-  ffff88004fffffd8 000000000000f9b0 00000000000157c0 ffff880137693268
-  Call Trace:
-  [<ffffffff81115edb>] ? mntput_no_expire+0x24/0xe7
-  [<ffffffff81427acd>] __mutex_lock_common+0x14d/0x1b4
-  [<ffffffff81108a7c>] ? path_put+0x1d/0x22
-  [<ffffffff81427b48>] __mutex_lock_slowpath+0x14/0x16
-  [<ffffffff81427c4f>] mutex_lock+0x31/0x4b
-  [<ffffffff8110bdf8>] do_rmdir+0x74/0x102
-  [<ffffffff8110bebd>] sys_rmdir+0x11/0x13
-  [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
+> When you don't use !E or !I but only !F, then
+> it's very easy to miss including some functions,
+> structs etc. in documentation. To help finding
+> which ones were missed, allow printing out the
+> unused ones as warnings.
 
-Kernel is from Fedora, 2.6.33.6. In all cases the cgroup contains no 
-tasks.
+How do I test this?  Do I need to add !A to some source file?
 
-Commit ec64f5 ("fix frequent -EBUSY at rmdir") adds a busy wait loop to 
-the rmdir. It looks like what I am seeing here and indicates that some 
-cgroup subsystem is busy, indefinitely.
+> For example, using this on mac80211 yields a
+> lot of warnings like this:
+> 
+>   Warning: didn't use docs for DOC: mac80211 workqueue
+>   Warning: didn't use docs for ieee80211_max_queues
+>   Warning: didn't use docs for ieee80211_bss_change
+>   Warning: didn't use docs for ieee80211_bss_conf
+> 
+> when generating the documentation for it.
 
-I have not worked out how to reproduce it quickly. My only way is to 
-complete a 'dd' command in the cgroup, but then the problem is so rare it 
-is slow progress.
+> ---
+>  Documentation/kernel-doc-nano-HOWTO.txt |    5 +
+>  scripts/basic/docproc.c                 |  130 +++++++++++++++++++++++++++++++-
+>  scripts/kernel-doc                      |   52 ++++++++++++
+>  3 files changed, 184 insertions(+), 3 deletions(-)
+> 
+> --- wireless-testing.orig/Documentation/kernel-doc-nano-HOWTO.txt	2010-08-18 14:54:25.000000000 +0200
+> +++ wireless-testing/Documentation/kernel-doc-nano-HOWTO.txt	2010-08-18 14:57:12.000000000 +0200
+> @@ -345,5 +345,10 @@ documentation, in <filename>, for the fu
+>  section titled <section title> from <filename>.
+>  Spaces are allowed in <section title>; do not quote the <section title>.
+>  
+> +!A<filename> is replaced by nothing, but makes the tools verify that
+> +all DOC: sections and documented functions, symbols, etc. are used.
+> +This makes sense to use when you use !F/!P only and want to verify
+> +that all documentation is included.
+> +
+>  Tim.
+>  */ <twaugh@redhat.com>
+> --- wireless-testing.orig/scripts/basic/docproc.c	2010-08-18 14:54:26.000000000 +0200
+> +++ wireless-testing/scripts/basic/docproc.c	2010-08-18 14:56:27.000000000 +0200
+> @@ -34,12 +34,14 @@
+>   *
+>   */
+>  
+> +#define _GNU_SOURCE
 
-Documentation/cgroup.memory.txt describes how force_empty can be required 
-in some cases. Does this mean that with the patch above, these cases will 
-now spin on rmdir(), instead of returning -EBUSY? How can produce a 
-reliable test case requiring memory.force_empty to be used, to test this?
+Can you explain why that is needed?  (curious)
 
-Or is it likely to be some other cause, and how best to find it?
+>  #include <stdio.h>
+>  #include <stdlib.h>
+>  #include <string.h>
+>  #include <ctype.h>
+>  #include <unistd.h>
+>  #include <limits.h>
+> +#include <errno.h>
+>  #include <sys/types.h>
+>  #include <sys/wait.h>
 
-Thanks
+> @@ -315,6 +346,85 @@ static void docsect(char *filename, char
+>  	exec_kernel_doc(vec);
+>  }
+>  
+> +static void find_all_symbols(char *filename)
+> +{
+> +	char *vec[4]; /* kerneldoc -docbook -function "section" file NULL */
 
--- 
-Mark
+incorrect comment??
+
+> +	pid_t pid;
+> +	int ret, i, count, start;
+> +	char real_filename[PATH_MAX + 1];
+> +	int pipefd[2];
+> +	char *data, *str;
+> +	size_t data_len = 0;
+> +
+> +	vec[0] = KERNELDOC;
+> +	vec[1] = LIST;
+> +	vec[2] = filename;
+> +	vec[3] = NULL;
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
