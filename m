@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab0HZPOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 11:14:43 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45011 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753965Ab0HZPOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 11:14:19 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] writeback: Do not congestion sleep when there are no congested BDIs
-Date: Thu, 26 Aug 2010 16:14:16 +0100
-Message-Id: <1282835656-5638-4-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
-References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
+	id S1754018Ab0HZPUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:20:21 -0400
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:45328 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753991Ab0HZPUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:20:19 -0400
+Message-ID: <4C76862D.5050703@example.com>
+Date: Thu, 26 Aug 2010 17:20:13 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+MIME-Version: 1.0
+To: Arnd Hannemann <hannemann@nets.rwth-aachen.de>
+CC: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Which kernel.org WWW is the master server?
+References: <4C6D4864.2040002@example.com> <alpine.LRH.2.00.1008261536290.2372@twin.jikos.cz> <4C7683D3.5090500@nets.rwth-aachen.de>
+In-Reply-To: <4C7683D3.5090500@nets.rwth-aachen.de>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 9668946926827893158
+X-Ovh-Remote: 95.49.238.22 (afje22.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If congestion_wait() is called with no BDIs congested, the caller will
-sleep for the full timeout and this is an unnecessary sleep. This patch
-checks if there are BDIs congested. If so, it goes to sleep as normal.
-If not, it calls cond_resched() to ensure the caller is not hogging the
-CPU longer than its quota but otherwise will not sleep.
+On 26.08.2010 17:10, Arnd Hannemann wrote:
+> Am 26.08.2010 15:37, schrieb Jiri Kosina:
+>> On Thu, 19 Aug 2010, Piotr Hosowicz wrote:
+>>
+>>
+>>> I wrote a simple python script that tells me that a new kernel version
+>>> appeared. The problem is that it is based exactly on this what appears on the
+>>> webpage so sometimes it resolves the server IP that the version has changed,
+>>> despite the fact that it is not true. Which server is the master server?
+>>>
+>> I guess that simply running
+>>
+>> 	finger @kernel.org
+>>
+>> will give you exactly the information you are looking for which much less
+>> pain of connecting to www server, parsing html, etc.
+>>
+>
+> Not sure if this is still accurate:
+>
+>> Aug 21, 2003: Please don't use *finger.kernel.org* for any sort of
+>> automatic monitoring. The number of automatic bots hitting this port
+>> is causing the finger daemon to shut down more often than not. The
+>> same information is available from
+>> http://www.kernel.org/kdist/finger_banner
+>> <http://kernel.org/kdist/finger_banner>.
 
-This is aimed at reducing some of the major desktop stalls reported during
-IO. For example, while kswapd is operating, it calls congestion_wait()
-but it could just have been reclaiming clean page cache pages with no
-congestion. Without this patch, it would sleep for a full timeout but after
-this patch, it'll just call schedule() if it has been on the CPU too long.
-Similar logic applies to direct reclaimers that are not making enough
-progress.
+Moreover it is written as the above.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/backing-dev.c |   20 ++++++++++++++------
- 1 files changed, 14 insertions(+), 6 deletions(-)
+Regards,
 
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index a49167f..6abe860 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -767,13 +767,21 @@ long congestion_wait(int sync, long timeout)
- 	DEFINE_WAIT(wait);
- 	wait_queue_head_t *wqh = &congestion_wqh[sync];
- 
--	/* Check if this call to congestion_wait was necessary */
--	if (atomic_read(&nr_bdi_congested[sync]) == 0)
-+	/*
-+	 * If there is no congestion, there is no point sleeping on the queue.
-+	 * This call was unecessary but in case we are spinning due to a bad
-+	 * caller, at least call cond_reched() and sleep if our CPU quota
-+	 * has expired
-+	 */
-+	if (atomic_read(&nr_bdi_congested[sync]) == 0) {
- 		unnecessary = true;
--
--	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
--	ret = io_schedule_timeout(timeout);
--	finish_wait(wqh, &wait);
-+		cond_resched();
-+		ret = 0;
-+	} else {
-+		prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
-+		ret = io_schedule_timeout(timeout);
-+		finish_wait(wqh, &wait);
-+	}
- 
- 	trace_writeback_congest_waited(jiffies_to_usecs(jiffies - start),
- 			unnecessary);
+Piotr Hosowicz
+
 -- 
-1.7.1
-
+"Bardzo fajna firma, tylko czasami nie p³aci. Do jej g³ównych
+zalet nale¿±: ekspres ci¶nieniowy (ale tylko na jednym z piê-
+ter) oraz fajne widoki z salki konferencyjnej. No i jakie¶
+pó³ roku temu odesz³o 90% pracowników dzia³u IT, ale mo¿e nie
+mieli racji ;)"
+NP: Peter Green Splinter Group - I Can't Help Myself
+NB: 2.6.36-rc2-git4
