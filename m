@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab0HZEXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 00:23:40 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:14236 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751116Ab0HZEXj (ORCPT
+	id S1753103Ab0HZEfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 00:35:53 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47445 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab0HZEfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 00:23:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEADKGdUx5Ld90/2dsb2JhbACgQHK8WoU3BIRt
-Date: Thu, 26 Aug 2010 14:23:35 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
-Message-ID: <20100826042335.GB4781@amd>
-References: <20100825132815.108d8217@bike.lwn.net>
- <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
- <20100825141644.715258cc@bike.lwn.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100825141644.715258cc@bike.lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 26 Aug 2010 00:35:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 26 Aug 2010 13:30:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: =?UTF-8?B?TWljaGHFgg==?= Nazarewicz <m.nazarewicz@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+Message-Id: <20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	<1282310110.2605.976.camel@laptop>
+	<20100825155814.25c783c7.akpm@linux-foundation.org>
+	<20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<op.vh0wektv7p4s8u@localhost>
+	<20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 02:16:44PM -0600, Jonathan Corbet wrote:
-> On Wed, 25 Aug 2010 13:00:59 -0700
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > Grrr. Same disease as Nick and others. Why do you repeat the subject
-> > line in the body? Don't do that. We don't want the summary line twice
-> > in the commit message, and we don't want it twice in the email.
-> > 
-> > We simply don't want it twice. Full stop.
-> 
-> Sorry, I just pasted in the "git format-patch" output.  Will never ever
-> ever do it again I promise cross my heart.
-> 
-> > > lg_lock_global() currently only acquires spinlocks for online CPUs, but
-> > > it's meant to lock all possible CPUs.  At Nick's suggestion, change
-> > > for_each_online_cpu() to for_each_possible_cpu() to get the expected
-> > > behavior.  
-> > 
-> > Can you say what this actually matters for? Don't we do stop-machine
-> > for CPU hotplug anyway? And if we don't, shouldn't we? Exactly because
-> > otherwise "for_each_online_cpu()" is always racy (and that has nothing
-> > to do with the lglock).
-> 
-> As I understand it from Nick (after I asked him why the two lock
-> primitives were identical): the files_lock scalability work puts a
-> per-CPU list of open files into each superblock.  A CPU can be offlined
-> while there are open files in "its" lists, and nothing is done to shift
-> those files to a still-online CPU's list.  So there will still be
-> cross-CPU accesses to those lists as those files are closed; that means
-> we need to be sure to acquire locks associated with offline CPUs if we
-> want to avoid races.
-> 
-> lg_global_lock_online() is used (only) in the brlock implementation,
-> instead.  In this case, there's no leftover data if a CPU goes
-> offline, so no need to take locks associated with offline CPUs.
+On Thu, 26 Aug 2010 13:06:28 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Yep, thanks Jon, I owe a bit more documentation in that file, coming up.
+> On Thu, Aug 26, 2010 at 12:44 PM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Thu, 26 Aug 2010 11:50:17 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >
+> >> 128MB...too big ? But it's depend on config.
+> >>
+> >> IBM's ppc guys used 16MB section, and recently, a new interface to shrink
+> >> the number of /sys files are added, maybe usable.
+> >>
+> >> Something good with this approach will be you can create "cma" memory
+> >> before installing driver.
+> >>
+> >> But yes, complicated and need some works.
+> >>
+> > Ah, I need to clarify what I want to say.
+> >
+> > With compaction, it's helpful, but you can't get contiguous memory larger
+> > than MAX_ORDER, I think. To get memory larger than MAX_ORDER on demand,
+> > memory hot-plug code has almost all necessary things.
+> 
+> True. Doesn't patch's idea of Christoph helps this ?
+> http://lwn.net/Articles/200699/
+> 
 
+yes, I think so. But, IIRC,  it's own purpose of Chirstoph's work is
+for removing zones. please be careful what's really necessary.
+
+Thanks,
+-Kame
 
