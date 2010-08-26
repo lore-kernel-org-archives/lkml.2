@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab0HZLtd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 07:49:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49283 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab0HZLta convert rfc822-to-8bit (ORCPT
+	id S1753032Ab0HZLyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 07:54:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20150 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab0HZLyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 07:49:30 -0400
-Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282823139.1975.689.camel@laptop>
-References: <20100825132815.108d8217@bike.lwn.net>
-	 <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
-	 <4C762BF9.5010305@kernel.org> <20100826094613.GA6411@amd>
-	 <4C7638B7.9060306@kernel.org> <1282817329.1975.486.camel@laptop>
-	 <20100826113858.GA6856@amd>  <1282823139.1975.689.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 26 Aug 2010 13:49:00 +0200
-Message-ID: <1282823340.1975.697.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 26 Aug 2010 07:54:52 -0400
+Date: Thu, 26 Aug 2010 07:53:36 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: "Carlos R. Mafra" <crmafra2@gmail.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.35.3] BUG: unable to handle kernel NULL pointer
+ dereference at (null)
+Message-ID: <20100826115336.GW14190@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	"Carlos R. Mafra" <crmafra2@gmail.com>, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20100826095357.GA7202@Pilar.aei.mpg.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100826095357.GA7202@Pilar.aei.mpg.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-26 at 13:45 +0200, Peter Zijlstra wrote:
-> On Thu, 2010-08-26 at 21:38 +1000, Nick Piggin wrote:
-> > I think for CPU plug, stop_machine is reasonable (especially
-> > considering it is required in unload, which means any frequent
-> > amount of cpu plug activity already will require stop_machine to
-> > run anyway). 
+On Thu, Aug 26, 2010 at 11:53:57AM +0200, Carlos R. Mafra wrote:
+> Hi,
 > 
-> How is it required? 
+> I've just got this BUG: message in dmesg which I think is btrfs related.
 > 
-> Its currently implemented as such, and its sure a lot easier to do that
-> way, but I could imagine that unplugging a CPU could be done without it.
+> I have a btrfs filesystem in a memory card which I use to contain the 
+> cache and config of chromium (to avoid writing to much in the SSD):
+> 
+> /dev/mmcblk0p1 on /home/mafra/mmc type btrfs (rw,noexec,nosuid,nodev,noatime,noacl,compress)
+> 
+> and the last message before the bug is about the memory card.
 
-Not that reworking unplug to not use stop_machine is anywhere near my
-todo list, but it would be really nice to have ;-)
+Hmmm it is definitely btrfs related.  Do you continue to get it after
+rebooting?
+
+-chris
