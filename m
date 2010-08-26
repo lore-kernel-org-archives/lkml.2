@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab0ICVtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 17:49:11 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60235 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757562Ab0ICVtJ (ORCPT
+	id S1757637Ab0ICVtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 17:49:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63884 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757562Ab0ICVtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 17:49:09 -0400
+	Fri, 3 Sep 2010 17:49:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=KSByjj4XnxiCM/UFlw+4O1WATAfC5Npfuhn64EqKLk7W4f+PP7Polq7hYHnTqYkLBn
-         0CsSVqC4sy2tMWq8iJ23iKscEebG5Wy+43dAXAnLLNApCAOTGO9L/0ijERshX+y2U76T
-         bl5sXc593d2bbzcoUpgt2HIKVVGwYAN/4oW9w=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=FHwanK8qKp/Yhb2C2XluuUBy1pshrPfK1Ik9hSAMNP94c8PzwNbjYMSUoPw7xNgA0B
+         G/Emp3mdXYDIoaqfLH8EmwASlqEMXut2TM/tCW6wcD9wjjhca3xPnTF6rnlVRNb7CjSa
+         163Ghuy1eCZlfRPbMvXqXH8kXe77+p5kHngRo=
 From: "Mark F. Brown" <mark.brown314@gmail.com>
 To: Eric Miao <eric.y.miao@gmail.com>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
@@ -20,108 +20,55 @@ To: Eric Miao <eric.y.miao@gmail.com>,
         linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
         linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
 Cc: "Mark F. Brown" <mark.brown314@gmail.com>
-Subject: [PATCH v2 2/6] ARM: pxa168: added keypad support
-Date: Thu, 26 Aug 2010 11:27:33 -0400
-Message-Id: <1282836457-5651-3-git-send-email-mark.brown314@gmail.com>
+Subject: [PATCH v2 0/6] ARM: pxa168: add keypad support
+Date: Thu, 26 Aug 2010 11:27:31 -0400
+Message-Id: <1282836457-5651-1-git-send-email-mark.brown314@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282836457-5651-1-git-send-email-mark.brown314@gmail.com>
-References: <1282836457-5651-1-git-send-email-mark.brown314@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
----
- arch/arm/mach-mmp/include/mach/mfp-pxa168.h |    7 +++++++
- arch/arm/mach-mmp/include/mach/pxa168.h     |    7 +++++++
- arch/arm/mach-mmp/pxa168.c                  |    3 +++
- drivers/input/keyboard/Kconfig              |    2 +-
- 4 files changed, 18 insertions(+), 1 deletions(-)
+Version 1
+1) Make pxa27x_keypad.h accessible to mach-mmp
+2) Add a wakeup handler for pxa27x_keypad interrupts
+The wakeup callback fixes an issue on the pxa168 that prevents the keypad
+driver from being able to clear the keypad interrupt after reading KPC_PC
+3) Add initial board level support
 
-diff --git a/arch/arm/mach-mmp/include/mach/mfp-pxa168.h b/arch/arm/mach-mmp/include/mach/mfp-pxa168.h
-index ded43c4..4621067 100644
---- a/arch/arm/mach-mmp/include/mach/mfp-pxa168.h
-+++ b/arch/arm/mach-mmp/include/mach/mfp-pxa168.h
-@@ -289,4 +289,11 @@
- #define GPIO86_PWM1_OUT		MFP_CFG(GPIO86, AF2)
- #define GPIO86_PWM2_OUT		MFP_CFG(GPIO86, AF3)
- 
-+/* Keypad */
-+#define GPIO109_KP_MKIN1        MFP_CFG(GPIO109, AF7)
-+#define GPIO110_KP_MKIN0        MFP_CFG(GPIO110, AF7)
-+#define GPIO111_KP_MKOUT7       MFP_CFG(GPIO111, AF7)
-+#define GPIO112_KP_MKOUT6       MFP_CFG(GPIO112, AF7)
-+#define GPIO121_KP_MKIN4        MFP_CFG(GPIO121, AF7)
-+
- #endif /* __ASM_MACH_MFP_PXA168_H */
-diff --git a/arch/arm/mach-mmp/include/mach/pxa168.h b/arch/arm/mach-mmp/include/mach/pxa168.h
-index 220738f..f34e663 100644
---- a/arch/arm/mach-mmp/include/mach/pxa168.h
-+++ b/arch/arm/mach-mmp/include/mach/pxa168.h
-@@ -11,6 +11,7 @@ extern void __init pxa168_init_irq(void);
- #include <plat/i2c.h>
- #include <plat/pxa3xx_nand.h>
- #include <video/pxa168fb.h>
-+#include <plat/pxa27x_keypad.h>
- 
- extern struct pxa_device_desc pxa168_device_uart1;
- extern struct pxa_device_desc pxa168_device_uart2;
-@@ -27,6 +28,7 @@ extern struct pxa_device_desc pxa168_device_ssp4;
- extern struct pxa_device_desc pxa168_device_ssp5;
- extern struct pxa_device_desc pxa168_device_nand;
- extern struct pxa_device_desc pxa168_device_fb;
-+extern struct pxa_device_desc pxa168_device_keypad;
- 
- static inline int pxa168_add_uart(int id)
- {
-@@ -105,4 +107,9 @@ static inline int pxa168_add_fb(struct pxa168fb_mach_info *mi)
- 	return pxa_register_device(&pxa168_device_fb, mi, sizeof(*mi));
- }
- 
-+static inline int pxa168_add_keypad(struct pxa27x_keypad_platform_data *data)
-+{
-+	return pxa_register_device(&pxa168_device_keypad, data, sizeof(*data));
-+}
-+
- #endif /* __ASM_MACH_PXA168_H */
-diff --git a/arch/arm/mach-mmp/pxa168.c b/arch/arm/mach-mmp/pxa168.c
-index eaebf66..2fa16fb 100644
---- a/arch/arm/mach-mmp/pxa168.c
-+++ b/arch/arm/mach-mmp/pxa168.c
-@@ -77,6 +77,7 @@ static APBC_CLK(ssp2, PXA168_SSP2, 4, 0);
- static APBC_CLK(ssp3, PXA168_SSP3, 4, 0);
- static APBC_CLK(ssp4, PXA168_SSP4, 4, 0);
- static APBC_CLK(ssp5, PXA168_SSP5, 4, 0);
-+static APBC_CLK(keypad, PXA168_KPC, 0, 32000);
- 
- static APMU_CLK(nand, NAND, 0x01db, 208000000);
- static APMU_CLK(lcd, LCD, 0x7f, 312000000);
-@@ -98,6 +99,7 @@ static struct clk_lookup pxa168_clkregs[] = {
- 	INIT_CLKREG(&clk_ssp5, "pxa168-ssp.4", NULL),
- 	INIT_CLKREG(&clk_nand, "pxa3xx-nand", NULL),
- 	INIT_CLKREG(&clk_lcd, "pxa168-fb", NULL),
-+	INIT_CLKREG(&clk_keypad, "pxa27x-keypad", NULL),
- };
- 
- static int __init pxa168_init(void)
-@@ -150,3 +152,4 @@ PXA168_DEVICE(ssp3, "pxa168-ssp", 2, SSP3, 0xd401f000, 0x40, 56, 57);
- PXA168_DEVICE(ssp4, "pxa168-ssp", 3, SSP4, 0xd4020000, 0x40, 58, 59);
- PXA168_DEVICE(ssp5, "pxa168-ssp", 4, SSP5, 0xd4021000, 0x40, 60, 61);
- PXA168_DEVICE(fb, "pxa168-fb", -1, LCD, 0xd420b000, 0x1c8);
-+PXA168_DEVICE(keypad, "pxa27x-keypad", -1, KEYPAD, 0xd4012000, 0x4c);
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 9cc488d..aa037fe 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -338,7 +338,7 @@ config KEYBOARD_OPENCORES
- 
- config KEYBOARD_PXA27x
- 	tristate "PXA27x/PXA3xx keypad support"
--	depends on PXA27x || PXA3xx
-+	depends on PXA27x || PXA3xx || ARCH_MMP
- 	help
- 	  Enable support for PXA27x/PXA3xx keypad controller.
- 
--- 
-1.7.0.4
+Version 2
+1) Clean up for wakeup handler moved from pxa168-irq to pxa27x_keypad
+2) Reduced the number of rows to 5 for Aspenite
+
+Mark F. Brown (6):
+  ARM: pxa27x/pxa3xx: moved pxa27x_keypad.h to platform pxa directory
+  ARM: pxa168: added keypad support
+  ARM: pxa168: added wake clear register support for APMU
+  ARM: pxa27x_keypad: added wakeup event handler for keypad interrupts
+  ARM: pxa168: added keypad wake clear event support for platform
+  ARM: pxa168: aspenite: add board support for keypad
+
+ arch/arm/mach-mmp/aspenite.c                       |   27 ++++++++++++++++++++
+ arch/arm/mach-mmp/include/mach/mfp-pxa168.h        |    7 +++++
+ arch/arm/mach-mmp/include/mach/pxa168.h            |   12 +++++++++
+ arch/arm/mach-mmp/include/mach/regs-apmu.h         |   12 +++++++++
+ arch/arm/mach-mmp/pxa168.c                         |   13 +++++++++
+ arch/arm/mach-pxa/devices.c                        |    2 +-
+ arch/arm/mach-pxa/em-x270.c                        |    2 +-
+ arch/arm/mach-pxa/ezx.c                            |    2 +-
+ arch/arm/mach-pxa/littleton.c                      |    2 +-
+ arch/arm/mach-pxa/mainstone.c                      |    4 +-
+ arch/arm/mach-pxa/mioa701.c                        |    2 +-
+ arch/arm/mach-pxa/palmld.c                         |    2 +-
+ arch/arm/mach-pxa/palmt5.c                         |    2 +-
+ arch/arm/mach-pxa/palmtreo.c                       |    2 +-
+ arch/arm/mach-pxa/palmtx.c                         |    2 +-
+ arch/arm/mach-pxa/palmz72.c                        |    2 +-
+ arch/arm/mach-pxa/tavorevb.c                       |    2 +-
+ arch/arm/mach-pxa/z2.c                             |    2 +-
+ arch/arm/mach-pxa/zylonite.c                       |    2 +-
+ .../mach => plat-pxa/include/plat}/pxa27x_keypad.h |    1 +
+ drivers/input/keyboard/Kconfig                     |    2 +-
+ drivers/input/keyboard/pxa27x_keypad.c             |   12 ++++++++-
+ 22 files changed, 99 insertions(+), 17 deletions(-)
+ rename arch/arm/{mach-pxa/include/mach => plat-pxa/include/plat}/pxa27x_keypad.h (97%)
 
