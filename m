@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab0HZSud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:50:33 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:16652 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576Ab0HZSu1 (ORCPT
+	id S1754448Ab0HZSuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:50:09 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:43279 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab0HZSuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:50:27 -0400
-Subject: [PATCH 13/13] cciss: remove some superfluous tests from
-	cciss_bigpassthru()
+	Thu, 26 Aug 2010 14:50:04 -0400
+Subject: [PATCH 08/13] cciss: factor out cciss_getfirmver
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
         linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
-Date: Thu, 26 Aug 2010 13:56:35 -0500
-Message-ID: <20100826185635.9067.39029.stgit@beardog.cce.hp.com>
+Date: Thu, 26 Aug 2010 13:56:10 -0500
+Message-ID: <20100826185610.9067.23132.stgit@beardog.cce.hp.com>
 In-Reply-To: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
 References: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -29,48 +28,52 @@ From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/block/cciss.c |   25 ++++++++-----------------
- 1 files changed, 8 insertions(+), 17 deletions(-)
+ drivers/block/cciss.c |   27 +++++++++++++++------------
+ 1 files changed, 15 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index a7ec339..d3ce357 100644
+index 013d023..c4790ba 100644
 --- a/drivers/block/cciss.c
 +++ b/drivers/block/cciss.c
-@@ -1582,28 +1582,19 @@ static int cciss_bigpassthru(ctlr_info_t *h, void __user *argp)
- 	}
- 	c->cmd_type = CMD_IOCTL_PEND;
- 	c->Header.ReplyQueue = 0;
--
--	if (ioc->buf_size > 0) {
--		c->Header.SGList = sg_used;
--		c->Header.SGTotal = sg_used;
--	} else {
--		c->Header.SGList = 0;
--		c->Header.SGTotal = 0;
--	}
-+	c->Header.SGList = sg_used;
-+	c->Header.SGTotal = sg_used;
- 	c->Header.LUN = ioc->LUN_info;
- 	c->Header.Tag.lower = c->busaddr;
+@@ -1359,6 +1359,20 @@ static int cciss_getbustypes(ctlr_info_t *h, void __user *argp)
+ 	return 0;
+ }
  
- 	c->Request = ioc->Request;
--	if (ioc->buf_size > 0) {
--		for (i = 0; i < sg_used; i++) {
--			temp64.val =
--			    pci_map_single(h->pdev, buff[i], buff_size[i],
-+	for (i = 0; i < sg_used; i++) {
-+		temp64.val = pci_map_single(h->pdev, buff[i], buff_size[i],
- 				    PCI_DMA_BIDIRECTIONAL);
--			c->SG[i].Addr.lower = temp64.val32.lower;
--			c->SG[i].Addr.upper = temp64.val32.upper;
--			c->SG[i].Len = buff_size[i];
--			c->SG[i].Ext = 0;	/* we are not chaining */
++static int cciss_getfirmver(ctlr_info_t *h, void __user *argp)
++{
++	FirmwareVer_type firmware;
++
++	if (!argp)
++		return -EINVAL;
++	memcpy(firmware, h->firm_ver, 4);
++
++	if (copy_to_user
++	    (argp, firmware, sizeof(FirmwareVer_type)))
++		return -EFAULT;
++	return 0;
++}
++
+ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 		       unsigned int cmd, unsigned long arg)
+ {
+@@ -1385,18 +1399,7 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 	case CCISS_GETBUSTYPES:
+ 		return cciss_getbustypes(h, argp);
+ 	case CCISS_GETFIRMVER:
+-		{
+-			FirmwareVer_type firmware;
+-
+-			if (!arg)
+-				return -EINVAL;
+-			memcpy(firmware, h->firm_ver, 4);
+-
+-			if (copy_to_user
+-			    (argp, firmware, sizeof(FirmwareVer_type)))
+-				return -EFAULT;
+-			return 0;
 -		}
-+		c->SG[i].Addr.lower = temp64.val32.lower;
-+		c->SG[i].Addr.upper = temp64.val32.upper;
-+		c->SG[i].Len = buff_size[i];
-+		c->SG[i].Ext = 0;	/* we are not chaining */
- 	}
- 	c->waiting = &wait;
- 	enqueue_cmd_and_start_io(h, c);
++		return cciss_getfirmver(h, argp);
+ 	case CCISS_GETDRIVVER:
+ 		{
+ 			DriverVer_type DriverVer = DRIVER_VERSION;
 
