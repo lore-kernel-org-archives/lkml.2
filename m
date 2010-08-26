@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab0HZDJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 23:09:58 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38668 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab0HZDJ4 convert rfc822-to-8bit (ORCPT
+	id S1752451Ab0HZDMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 23:12:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:25736 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab0HZDMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 23:09:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=HLSC9O0tY3jxU06xOmjN+SWJGMg1EP9fs7rgLCx3nB/UHpJI+nnrwNeRh/ntIooA2i
-         mU/yzKFtW03Q6DlYpHOnRc3Z1F+ecnUu947GrcTkf83552hAtVBkNn23ITHG6AO3jEpK
-         pf2jSUOq8rzfGtLyQPUXNaGNSj2K14De2Sdts=
+	Wed, 25 Aug 2010 23:12:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=dzST9JDd8nedPG98MUjZ+BSGOnQFKuqzAHSROuUEJlvGXQkjRJjlyEanINgdMbGEj
+	Exlx+X2pNlDgnE1HMA09Q==
+Date: Wed, 25 Aug 2010 20:12:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+In-Reply-To: <alpine.DEB.2.00.1008252028030.32421@router.home>
+Message-ID: <alpine.DEB.2.00.1008252010260.10986@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
+ <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop> <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop> <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1008251604120.24931@router.home> <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com> <alpine.DEB.2.00.1008251630270.25660@router.home> <alpine.DEB.2.00.1008251604540.31521@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1008252028030.32421@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100825.153424.246521475.davem@davemloft.net>
-References: <20100825110049.F3C9.A69D9226@jp.fujitsu.com>
-	<20100825.153424.246521475.davem@davemloft.net>
-Date: Thu, 26 Aug 2010 12:09:55 +0900
-X-Google-Sender-Auth: sQ_6CeFS01eDKIguZyKk9VxyIhM
-Message-ID: <AANLkTinPhzMSQ01AXZmDQw8h4OnuS8yoQu7eKog637LL@mail.gmail.com>
-Subject: Re: [PATCH] tcp: select(writefds) don't hang up when a peer close connection
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yoshfuji@linux-ipv6.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, 25 Aug 2010, Christoph Lameter wrote:
 
-Thank you for quick responce!
+> > Right, I thought you said the slab layer passes __GFP_NOFAIL when there's
+> > no objects available.
+> 
+> Yes, the slab layer calls the page allocator when there are no objects
+> available and passes the __GFP_NOFAIL that the user may have set in the
+> call to the page allocator.
+> 
+> Why then add new functions that do the same?
+> 
 
-
->> SUS defined 'ready for writing' of select() as following.
->>
->> |  A descriptor shall be considered ready for writing when a call to an output
->> |  function with O_NONBLOCK clear would not block, whether or not the function
->> |  would transfer data successfully.
->>
->> That said, EPIPE situation is clearly one of 'ready for writing'.
->
-> How Linux should behave is defined by many things, and often it is
-> simply defined by how we've behaved for a very long time.  This is
-> because changing behavior can often break as many applications as it
-> can fix.  Standards don't necessarily tell us how we must behave,
-> since often is it impractical to follow their definions.
->
-> And in this case here, I call into question the behavior of Ruby and
-> the application from two perspectives:
->
-> 1) Unlike all of the other conditions signalled by poll() this is
->   one the application explicitly created and therefore knows about.
->
->   If the application calls close() or shutdown() with the send flag
->   set, IT KNOWS what is going to happen on a write() attempt.
-
-Umm??
-
-Probably my example is not so good. That's not my point.
-In the example application, client and server socket is in the same process.
-But it's NOT generic. usually, client and server are another process. then,
-client can't expect when server close socket.
-
-The most big matter is, this is can't be avoided in userland. In addition,
-EVERY application don't want application hang up. we don't hesitate
-userland change.
-
-> 2) Ruby and this script will have to deal with the past 13 years
->   worth of Linux kernels.  Even if I were to apply this fix now
->   it is not going to propagate onto a user's system any time soon.
->
->   Many systems would never ever get this fix.
->
->   Therefore it behooves Ruby and this script to make a very reasonable
->   change, which is to track when close() or send shutdown() calls occur
->   and behave appropriately on a write() call.
->
-> I'm therefore not applying this patch, because not only can applications
-> handle this properly with information they already have, the change has
-> the potential to break applications.
-
-At first, I was thinking two fix plan.
- 1) this patch
- 2) adding POLLWRHUP as POLLRDHUP.
-
-However I couldn't find any regression rick in (1). then I did choice (1).
-
-So, Can you please tell us what rick you worry? My thinking is, If
-select(writefds)
-returned, an application naturally call to write. (why not? If not,
-why do you call select?)
-and write return EPIPE. every network application have EPIPE error checking.
-
-But, there is any rick. I can remake a patch as (2).
-
-Thanks.
+Because we can remove the flag, remove branches from the page allocator 
+slowpath, and none of these allocations actually are dependent on 
+__GFP_NOFAIL since they are all under PAGE_ALLOC_COSTLY_ORDER.
