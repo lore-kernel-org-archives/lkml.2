@@ -1,110 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab0HZQhV (ORCPT <rfc822;w@1wt.eu>);
+	id S1754551Ab0HZQhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:37:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40237 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279Ab0HZQhV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Aug 2010 12:37:21 -0400
-Received: from xenotime.net ([72.52.115.56]:48144 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753151Ab0HZQhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:37:20 -0400
-Date: Thu, 26 Aug 2010 09:37:10 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Docbook: allow warning on unused documentation
-Message-Id: <20100826093710.111b103e.rdunlap@xenotime.net>
-In-Reply-To: <1282136967.13315.1.camel@jlt3.sipsolutions.net>
-References: <1282136967.13315.1.camel@jlt3.sipsolutions.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Date: Thu, 26 Aug 2010 09:38:38 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Joe Perches <joe@perches.com>,
+        ksummit-2010-discuss@lists.linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
+ todo list, add RCU todo list
+Message-ID: <20100826093838.74ab9958@infradead.org>
+In-Reply-To: <20100826092923.4bdbea69.rdunlap@xenotime.net>
+References: <20100826154537.GA4874@linux.vnet.ibm.com>
+	<1282837904.1875.64.camel@Joe-Laptop>
+	<20100826161451.GB2367@linux.vnet.ibm.com>
+	<1282839933.8133.11.camel@mulgrave.site>
+	<20100826092923.4bdbea69.rdunlap@xenotime.net>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Aug 2010 15:09:27 +0200 Johannes Berg wrote:
+On Thu, 26 Aug 2010 09:29:23 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-> When you don't use !E or !I but only !F, then
-> it's very easy to miss including some functions,
-> structs etc. in documentation. To help finding
-> which ones were missed, allow printing out the
-> unused ones as warnings.
-
-How do I test this?  Do I need to add !A to some source file?
-
-> For example, using this on mac80211 yields a
-> lot of warnings like this:
+> On Thu, 26 Aug 2010 11:25:33 -0500 James Bottomley wrote:
 > 
->   Warning: didn't use docs for DOC: mac80211 workqueue
->   Warning: didn't use docs for ieee80211_max_queues
->   Warning: didn't use docs for ieee80211_bss_change
->   Warning: didn't use docs for ieee80211_bss_conf
+> > On Thu, 2010-08-26 at 09:14 -0700, Paul E. McKenney wrote:
+> > > On Thu, Aug 26, 2010 at 08:51:44AM -0700, Joe Perches wrote:
+> > > > On Thu, 2010-08-26 at 08:45 -0700, Paul E. McKenney wrote:
+> > > > > Since T: and L: are already taken, add U: for URL of todo
+> > > > > list. Also add the RCU todo list to both the RCU and
+> > > > > RCUTORTURE projects.
+> > > > 
+> > > > Hi Paul
+> > > > 
+> > > > I think W: already works perfectly well for this use.
+> > > > 
+> > > > >From MAINTAINERS:
+> > > >         W: Web-page with status/info
+> > > > 
+> > > > > @@ -4801,6 +4802,7 @@ M:	Josh Triplett
+> > > > > <josh@freedesktop.org> M:	"Paul E. McKenney"
+> > > > > <paulmck@linux.vnet.ibm.com> S:	Supported
+> > > > >  T:
+> > > > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > > > > +U:
+> > > > > http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > > 
+> > > > W:
+> > > > http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > > 
+> > > > >  F:	Documentation/RCU/torture.txt
+> > > > >  F:	kernel/rcutorture.c
+> > > > >  
+> > > > > @@ -4826,6 +4828,7 @@ M:	"Paul E. McKenney"
+> > > > > <paulmck@linux.vnet.ibm.com> W:
+> > > > > http://www.rdrop.com/users/paulmck/rclock/ S:	Supported
+> > > > >  T:
+> > > > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > > > > +U:
+> > > > > http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > > 
+> > > > W:
+> > > > http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> > > 
+> > > OK, how about the following, then?
+> > 
+> > Got to say I really think overloading W which means web page/status
+> > information isn't a very good idea:
+> > 
+> > jejb@mulgrave:~/git/linux-2.6> grep -w 'W:' MAINTAINERS |wc -l
+> > 371
+> > 
+> > We already have ~400 of them ... how's anyone looking for a todo
+> > list going to find the right one in amongst all the others
+> > (assuming a newbie with no subject predisposition simply trying to
+> > find any todo list).
 > 
-> when generating the documentation for it.
-
-> ---
->  Documentation/kernel-doc-nano-HOWTO.txt |    5 +
->  scripts/basic/docproc.c                 |  130 +++++++++++++++++++++++++++++++-
->  scripts/kernel-doc                      |   52 ++++++++++++
->  3 files changed, 184 insertions(+), 3 deletions(-)
 > 
-> --- wireless-testing.orig/Documentation/kernel-doc-nano-HOWTO.txt	2010-08-18 14:54:25.000000000 +0200
-> +++ wireless-testing/Documentation/kernel-doc-nano-HOWTO.txt	2010-08-18 14:57:12.000000000 +0200
-> @@ -345,5 +345,10 @@ documentation, in <filename>, for the fu
->  section titled <section title> from <filename>.
->  Spaces are allowed in <section title>; do not quote the <section title>.
->  
-> +!A<filename> is replaced by nothing, but makes the tools verify that
-> +all DOC: sections and documented functions, symbols, etc. are used.
-> +This makes sense to use when you use !F/!P only and want to verify
-> +that all documentation is included.
-> +
->  Tim.
->  */ <twaugh@redhat.com>
-> --- wireless-testing.orig/scripts/basic/docproc.c	2010-08-18 14:54:26.000000000 +0200
-> +++ wireless-testing/scripts/basic/docproc.c	2010-08-18 14:56:27.000000000 +0200
-> @@ -34,12 +34,14 @@
->   *
->   */
->  
-> +#define _GNU_SOURCE
-
-Can you explain why that is needed?  (curious)
-
->  #include <stdio.h>
->  #include <stdlib.h>
->  #include <string.h>
->  #include <ctype.h>
->  #include <unistd.h>
->  #include <limits.h>
-> +#include <errno.h>
->  #include <sys/types.h>
->  #include <sys/wait.h>
-
-> @@ -315,6 +346,85 @@ static void docsect(char *filename, char
->  	exec_kernel_doc(vec);
->  }
->  
-> +static void find_all_symbols(char *filename)
-> +{
-> +	char *vec[4]; /* kerneldoc -docbook -function "section" file NULL */
-
-incorrect comment??
-
-> +	pid_t pid;
-> +	int ret, i, count, start;
-> +	char real_filename[PATH_MAX + 1];
-> +	int pipefd[2];
-> +	char *data, *str;
-> +	size_t data_len = 0;
-> +
-> +	vec[0] = KERNELDOC;
-> +	vec[1] = LIST;
-> +	vec[2] = filename;
-> +	vec[3] = NULL;
+> Did you have an alternate suggestion?
+> 
+> Do you prefer a Grand Unified Todo List?
+> 
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I have to say that I'm not yet convinced that keeping a todo list in a
+place that's not with the actual source code does not give me warm
+fuzzy feelings. Every time we've kept information about the source code
+separate from our source code it's been a failure; it gets out of sync
+fast and it just adds to the maintenance.
+
+A git commit that both fixes an issue and removed the line from the
+todo file (or moves it to a "done" section, whatever) is the ultimate
+goal obviously... having a U: seems to go in exactly the opposite
+direction.
+
+otoh having a kernel-doc type (eg structured, parsable) way of
+gathering todo items throughout the tree.... that I can see as useful.
