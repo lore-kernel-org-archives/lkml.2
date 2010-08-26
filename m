@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab0HZS5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:57:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45512 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab0HZS5g convert rfc822-to-8bit (ORCPT
+	id S1753384Ab0HZS7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:59:49 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34947
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751886Ab0HZS7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:57:36 -0400
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20100826180908.648103531@efficios.com>
-References: <20100826180908.648103531@efficios.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 26 Aug 2010 20:57:25 +0200
-Message-ID: <1282849045.1975.1587.camel@laptop>
+	Thu, 26 Aug 2010 14:59:47 -0400
+Date: Thu, 26 Aug 2010 12:00:02 -0700 (PDT)
+Message-Id: <20100826.120002.59671031.davem@davemloft.net>
+To: hughd@google.com
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, riel@redhat.com,
+        aarcange@redhat.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTik8cHD_qsey8NBw-YWsoibwMM5RNP9SeKom2VtC@mail.gmail.com>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
+	<20100825.234149.189710316.davem@davemloft.net>
+	<AANLkTik8cHD_qsey8NBw-YWsoibwMM5RNP9SeKom2VtC@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-26 at 14:09 -0400, Mathieu Desnoyers wrote:
-> Feedback is welcome,
+From: Hugh Dickins <hughd@google.com>
+Date: Thu, 26 Aug 2010 03:54:28 -0700
+
+> On Wed, Aug 25, 2010 at 11:41 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Hugh Dickins <hughd@google.com>
+>> Date: Wed, 25 Aug 2010 23:12:54 -0700 (PDT)
+>>
+>>> After several hours, kbuild tests hang with anon_vma_prepare() spinning on
+>>> a newly allocated anon_vma's lock - on a box with CONFIG_TREE_PREEMPT_RCU=y
+>>> (which makes this very much more likely, but it could happen without).
+>>>
+>>> The ever-subtle page_lock_anon_vma() now needs a further twist: since
+>>> anon_vma_prepare() and anon_vma_fork() are liable to change the ->root
+>>> of a reused anon_vma structure at any moment, page_lock_anon_vma()
+>>> needs to check page_mapped() again before succeeding, otherwise
+>>> page_unlock_anon_vma() might address a different root->lock.
+>>>
+>>> Signed-off-by: Hugh Dickins <hughd@google.com>
+>>
+>> Interesting, is the condition which allows this to trigger specific
+>> to this merge window or was it always possible?
 > 
-So we have the following components to this patch:
+> Just specific to this merge window, which started using
+> anon_vma->root->lock in place of anon_vma->lock (anon_vma->root is
+> often anon_vma itself, but not always).
 
-  - dynamic min_vruntime -- push the min_vruntime ahead at the
-       rate of the runqueue wide virtual clock. This approximates
-       the virtual clock, esp. when turning off sleeper fairness.
-       And is cheaper than actually computing the virtual clock.
-
-       It allows for better insertion and re-weighting behaviour,
-       but it does increase overhead somewhat.
-
-  - special wakeups using the next-buddy to get scheduled 'soon',
-       used by all wakeups from the input system and timers.
-
-  - special fork semantics related to those special wakeups.
-
-
-So while I would love to simply compute the virtual clock, it would add
-a s64 mult to every enqueue/dequeue and a s64 div to each
-enqueue/re-weight, which might be somewhat prohibitive, the dyn
-min_vruntime approximation seems to work well enough and costs a u32 div
-per enqueue.
-
-Adding a preference to all user generated wakeups (input) and
-propagating that state along the wakeup chain seems to make sense,
-adding the same to all timers is something that needs to be discussed, I
-can well imagine not all timers are equally important -- do we want to
-extend the timer interface?
-
-If we do decide we want both, we should at the very least merge the
-try_to_wake_up() conditional blob (they're really identical). Preferably
-we should reduce ttwu(), not add more to it... 
-
-Fudging fork seems dubious at best, it seems generated by the use of
-timer_create(.evp->sigev_notify = SIGEV_THREAD), which is a really
-broken thing to do, it has very ill defined semantics and is utterly
-unable to properly cope with error cases. Furthermore its trivial to
-actually correctly implement the desired behaviour, so I'm really
-skeptical on this front; friends don't let friends use SIGEV_THREAD.
-
+Ok, because I've been seeing mysterious hangs recently on one of my
+sparc64 boxes and I was wondering if this might explain them :-)
 
