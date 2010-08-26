@@ -1,47 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab0HZDvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 23:51:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41486
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751771Ab0HZDvj (ORCPT
+	id S1753114Ab0HZDwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 23:52:21 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:8896 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab0HZDwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 23:51:39 -0400
-Date: Wed, 25 Aug 2010 20:51:54 -0700 (PDT)
-Message-Id: <20100825.205154.191390581.davem@davemloft.net>
-To: kosaki.motohiro@jp.fujitsu.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yoshfuji@linux-ipv6.org, bhutchings@solarflare.com
-Subject: Re: [PATCH] tcp: select(writefds) don't hang up when a peer close
- connection
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTinPhzMSQ01AXZmDQw8h4OnuS8yoQu7eKog637LL@mail.gmail.com>
-References: <20100825110049.F3C9.A69D9226@jp.fujitsu.com>
-	<20100825.153424.246521475.davem@davemloft.net>
-	<AANLkTinPhzMSQ01AXZmDQw8h4OnuS8yoQu7eKog637LL@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Aug 2010 23:52:19 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=JOIvbi+MTdiyf5rMdfOm16A4aH8fu2juz8SvRQcAIgc0yus5H5Vx8Hz+xEr1k5805
+	kMtSd3DclqYxYbnU+ogKw==
+Date: Wed, 25 Aug 2010 20:52:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/2][BUGFIX] oom: remove totalpage normalization from
+ oom_badness()
+In-Reply-To: <20100826122025.38112f79.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1008252041490.15750@chino.kir.corp.google.com>
+References: <20100825184001.F3EF.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1008250300500.13300@chino.kir.corp.google.com> <20100826093923.d4ac29b6.kamezawa.hiroyu@jp.fujitsu.com> <alpine.DEB.2.00.1008251746200.28401@chino.kir.corp.google.com>
+ <20100826101139.eb05fe2d.kamezawa.hiroyu@jp.fujitsu.com> <alpine.DEB.2.00.1008251920510.6227@chino.kir.corp.google.com> <20100826122025.38112f79.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 26 Aug 2010 12:09:55 +0900
+On Thu, 26 Aug 2010, KAMEZAWA Hiroyuki wrote:
 
-> Probably my example is not so good. That's not my point.
-> In the example application, client and server socket is in the same process.
-> But it's NOT generic. usually, client and server are another process. then,
-> client can't expect when server close socket.
+> > Hmm, you need to know the amount of memory that you can use iff you know 
+> > the memcg limit and it's a static value.  Otherwise, you only need to know 
+> > the "memory usage of your application relative to others in the same 
+> > cgroup."  An oom_score_adj of +300 adds 30% of that memcg's limit to the 
+> > task, allowing all other tasks to use 30% more memory than that task with 
+> > it still be killed.  An oom_score_adj of -300 allows that task to use 30% 
+> > more memory than other tasks without getting killed.  These don't need to 
+> > know the actual limit.
+> > 
 > 
-> The most big matter is, this is can't be avoided in userland. In addition,
-> EVERY application don't want application hang up. we don't hesitate
-> userland change.
+> Hmm. What's complicated is oom_score_adj's behavior.
+> 
 
-Ok, you and Ben Hutchings have convinced me to reconsider.
+I understand it's a little tricky when dealing with memcg-constrained oom 
+conditions versus system-wide oom conditions.  Think of it this way: if 
+the system is oom, then every memcg, every cpuset, and every mempolicy is 
+also oom.  That doesn't imply that something in every memcg, every cpuset, 
+or every mempolicy must be killed, however.  What cgroup happens to be 
+penalized in this scenario isn't necessarily the scope of oom_score_adj's 
+purpose.  oom_score_adj certainly does have a stronger influence over a 
+task's priority when it's a system oom and not a memcg oom because the 
+size of available memory is different, but that's fine: we set positive 
+and negative oom_score_adj values for a reason based on the application, 
+and that's not necessarily (but can be) a function of the memcg or system 
+capacity.  Again, oom_score_adj is only meaningful when considered 
+relative to other candidate tasks since the badness score itself is 
+considered relative to other candidate tasks.
 
-And this matches what even BSD4.4-Lite does (I checked yesterday before
-my initial reply), so I will apply this patch.
+You can have multiple tasks that have +1000 oom_score_adj values (or 
+multiple tasks that have +15 oom_adj values).  Only one will be killed and 
+it's dependent only on the ordering of the tasklist.  That isn't an 
+exception case, that only means that we prevented needless oom killing.
 
-Thanks for your patience.
+> > > So, an approximate oom_score under memcg can be
+> > > 
+> > >  memcg_oom_score = (oom_score - oom_score_adj) * system_memory/memcg's limit
+> > > 		+ oom_score_adj.
+> > > 
+> > 
+> > Right, that's the exact score within the memcg.
+> > 
+> > But, I still wouldn't encourage a formula like this because the memcg 
+> > limit (or cpuset mems, mempolicy nodes, etc) are dynamic and may change 
+> > out from under us.  So it's more important to define oom_score_adj in the 
+> > user's mind as a proportion of memory available to be added (either 
+> > positively or negatively) to its memory use when comparing it to other 
+> > tasks.  The point is that the memcg limit isn't interesting in this 
+> > formula, it's more important to understand the priority of the task 
+> > _compared_ to other tasks memory usage in that memcg.
+> > 
+> 
+> yes. For defineing/understanding priority, oom_score_adj is that.
+> But it's priority isn't static.
+> 
+
+If the memcg limit changes because we're attaching more tasks, yes, we may 
+want to change its oom_score_adj relative to those tasks.  So 
+oom_score_adj is a function of the attached tasks and its allowed set of 
+resources in comparison to them, not the limit itself.
+
+> > If that tasks leaks memory or becomes 
+> > significantly large, for whatever reason, it could be killed, but we _can_ 
+> > discount the 1G in comparison to other tasks as the "cost of doing 
+> > business" when it comes to vital system tasks:
+> > 
+> > 	(memory usage) * (memory+swap limit / system memory)
+> > 
+> 
+> yes. under 8G system, -250 will allow ingnoring 2G of usage.
+> 
+
+Yeah, that conversion could be useful if the system RAM capacity or memcg 
+limit, etc, remains static.
+
+> == How about this text ? ==
+> 
+> When you set a task's oom_score_adj, it can get priority not to be oom-killed.
+
+And the reverse, it can get priority to be killed :)
+
+> oom_score_adj gives priority proportional to the memory limitation.
+> 
+> Assuming you set -250 to oom_score_adj.
+> 
+> Under 4G memory limit, it gets 25% of bonus...1G memory bonus for avoiding OOM.
+> Under 8G memory limit, it gets 25% of bonus...2G memory bonus for avoiding OOM.
+> 
+> Then, what bonus a task can get depends on the context of OOM. If you use
+> oom_score_adj and want to give bonus to a task, setting it in regard with
+> minimum memory limitation which a task is under will work well.
+
+Very nice, and the "bonus" there is what the task can safely use in 
+comparison to any other task competing for the same resources without 
+getting selected itself because of that memory.
