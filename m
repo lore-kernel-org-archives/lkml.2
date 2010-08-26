@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab0HZASu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 20:18:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40125 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab0HZASr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 20:18:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 26 Aug 2010 09:13:46 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: balbir@linux.vnet.ibm.com
-Cc: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "menage@google.com" <menage@google.com>,
-        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH 1/5] cgroup: do ID allocation under css allocator.
-Message-Id: <20100826091346.88eb3ecc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100825141500.GA32680@balbir.in.ibm.com>
-References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100825170640.5f365629.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100825141500.GA32680@balbir.in.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753744Ab0HZAT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 20:19:29 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:48981 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145Ab0HZAT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 20:19:27 -0400
+Date: Thu, 26 Aug 2010 02:19:24 +0200
+From: Samuel Thibault <Samuel.Thibault@ens-lyon.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>,
+        Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+Message-ID: <20100826001924.GE4762@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>,
+	Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
+References: <20100825094925.GA3632@pema> <20100825161214.GA15087@rhlx01.hs-esslingen.de> <20100825211257.GA636@pema> <4C7588FB.4050001@zytor.com> <20100825225036.GV4762@const.famille.thibault.fr> <4C75AFFC.5090601@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C75AFFC.5090601@zytor.com>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 19:45:00 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-
-> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-25 17:06:40]:
-> 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+H. Peter Anvin, le Wed 25 Aug 2010 17:06:20 -0700, a écrit :
+> On 08/25/2010 03:50 PM, Samuel Thibault wrote:
+> > H. Peter Anvin, le Wed 25 Aug 2010 14:19:55 -0700, a écrit :
+> >> At that point I'd almost prefer doing something like a BIOS signature
+> >> check if we can't do anything better.
 > > 
-> > Now, css'id is allocated after ->create() is called. But to make use of ID
-> > in ->create(), it should be available before ->create().
-> > 
-> > In another thinking, considering the ID is tightly coupled with "css",
-> > it should be allocated when "css" is allocated.
-> > This patch moves alloc_css_id() to css allocation routine. Now, only 2 subsys,
-> > memory and blkio are useing ID. (To support complicated hierarchy walk.)
->                        ^^^^ typo
-> > 
-> > ID will be used in mem cgroup's ->create(), later.
-> > 
-> > Note:
-> > If someone changes rules of css allocation, ID allocation should be moved too.
-> > 
+> > Well, there will be several versions of the BIOS signature, which the
+> > constructor is not likely to provide.
 > 
-> What rules? could you please elaborate?
-> 
-See Paul Menage's mail. He said "allocating css object under kernel/cgroup.c
-will make kernel/cgroup.c cleaner." But it seems too big for my purpose.
+> Then we'll gather them up, or something.
 
-> Seems cleaner, may be we need to update cgroups.txt?
+Who?  This is a very particular kind of device, on which you can install
+Linux only through some trick, thus machine coverage will most probably
+be very low.  Having to activate a module by hand is really not a
+problem here.
 
-Hmm. will look into.
+> What other forms of enumerable hardware is on this machine?  PCI?
 
-Thanks,
--Kame
+I don't remember and will let Shérab answer.
 
-> 
-> -- 
-> 	Three Cheers,
-> 	Balbir
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
-
+Samuel
