@@ -1,110 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab0HZAJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 20:09:49 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:55294 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752406Ab0HZAJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 20:09:46 -0400
-Date: Thu, 26 Aug 2010 10:09:40 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, David Rientjes <rientjes@google.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-Message-ID: <20100826000940.GR31488@dastard>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
- <1282656558.2605.2742.camel@laptop>
- <4C73CA24.3060707@fusionio.com>
- <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com>
- <20100825112433.GB4453@thunk.org>
- <1282736132.2605.3563.camel@laptop>
- <20100825115709.GD4453@thunk.org>
- <1282740516.2605.3644.camel@laptop>
- <20100825132417.GQ31488@dastard>
- <1282743342.2605.3707.camel@laptop>
+	id S1753518Ab0HZAOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 20:14:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57081 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752400Ab0HZAOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Aug 2010 20:14:19 -0400
+Date: Thu, 26 Aug 2010 00:12:46 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <tip-d0cd7425fab774a480cce17c2f649984312d0b55@git.kernel.org>
+References: <tip-d0cd7425fab774a480cce17c2f649984312d0b55@git.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/bios] x86, bios: Make the x86 early memory reservation a kernel option
+Message-ID: <tip-9ea77bdb39b62c9bf9fd3cdd1c25a9420bccd380@git.kernel.org>
+Git-Commit-ID: 9ea77bdb39b62c9bf9fd3cdd1c25a9420bccd380
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1282743342.2605.3707.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 Aug 2010 00:12:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 03:35:42PM +0200, Peter Zijlstra wrote:
-> On Wed, 2010-08-25 at 23:24 +1000, Dave Chinner wrote:
-> > 
-> > That is, the guarantee that we will always make progress simply does
-> > not exist in filesystems, so a mempool-like concept seems to me to
-> > be doomed from the start.... 
-> 
-> While I appreciate that it might be somewhat (a lot) harder for a
-> filesystem to provide that guarantee, I'd be deeply worried about your
-> claim that its impossible.
+Commit-ID:  9ea77bdb39b62c9bf9fd3cdd1c25a9420bccd380
+Gitweb:     http://git.kernel.org/tip/9ea77bdb39b62c9bf9fd3cdd1c25a9420bccd380
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 25 Aug 2010 16:38:20 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 25 Aug 2010 17:10:49 -0700
 
-I didn't say impossible, just that there's no way we can always
-guarantee of forward progress with a specific, bound pool of memory.
+x86, bios: Make the x86 early memory reservation a kernel option
 
-Sure, we know what the worst case amount of log space is needed for
-each transaction (i.e. how many pages that will be dirtied), but
-that does not take into account all the blocks that need to be read
-to make those modifications, the memory needed for stuff like btree
-cursors, log tickets, transaction commit vectors, btree blocks
-needed to do the searches, etc.  A typical transaction reservation
-on a 4k block filesystem is between 200-400k (it's worst case), and
-if you add in all the other allocations that might be required,
-we're at the order of requiring megabytes of RAM to guarantee a
-single transaction will succeed in low memory conditions. The exact
-requirement is very difficult to quantify algorithmically, but for a
-single transaction it should be possible.
+Add a kernel command-line option so the x86 early memory reservation
+size can be adjusted at runtime instead of only at compile time.
 
-However, consider the case of running a thousand concurrent
-transactions and in the middle of that the system runs out of
-memory. All the transactions need memory allocation to succeed, some
-are blocked waiting for resources held in other transactions, etc.
-Firstly, how to you stop all the transactions from making further
-progress to serialise access to the low memory pool?  Secondly, how
-do you select which transaction you want to use the low memory pool?
-What do you do if the selected transaction then blocks on a resource
-held by another transaction (which you can't know ahead of time)? Do
-you switch to another thread and hope the pool doesn't run dry? What
-do you do when (not if) the memory pool runs dry?
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <tip-d0cd7425fab774a480cce17c2f649984312d0b55@git.kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ Documentation/kernel-parameters.txt |    5 +++++
+ arch/x86/Kconfig                    |    2 +-
+ arch/x86/kernel/setup.c             |   28 ++++++++++++++++++++++++++--
+ 3 files changed, 32 insertions(+), 3 deletions(-)
 
-I'm sure this could be done, but it's lot of difficult, unrewarding
-work that greatly increases code complexity, touches a massive
-amount of the filesystem code base, exponentially increases the test
-matrix, is likely to have significant operational overhead, and even
-then there's no guarantee that we've got it right. That doesn't
-sound like a good solution to me.
-
-> It would render a system without swap very prone to deadlocks. Even with
-> the very tight dirty page accounting we currently have you can fill all
-> your memory with anonymous pages, at which point there's nothing free
-> and you require writeout of dirty pages to succeed.
-
-Then don't allow anonymous pages to fill all of memory when there is
-no swap available - i.e. keep a larger pool of free memory when
-there is no swap available. That's a much simpler solution than
-turning all the filesystems upside down to try to make them not need
-allocation....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 2c85c06..41ce93e 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2150,6 +2150,11 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			Reserves a hole at the top of the kernel virtual
+ 			address space.
+ 
++	reservelow=	[X86]
++			Format: nn[K]
++			Set the amount of memory to reserve for BIOS at
++			the bottom of the address space.
++
+ 	reset_devices	[KNL] Force drivers to reset the underlying device
+ 			during initialization.
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 683ae8f..d359000 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1326,7 +1326,7 @@ config X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK
+ 	  Set whether the default state of memory_corruption_check is
+ 	  on or off.
+ 
+-config X86_LOW_RESERVE
++config X86_RESERVE_LOW
+ 	int "Amount of low memory, in kilobytes, to reserve for the BIOS"
+ 	default 64
+ 	range 4 640
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index eb87f1c..af277e3 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -618,6 +618,8 @@ static __init void reserve_ibft_region(void)
+ 		reserve_early_overlap_ok(addr, addr + size, "ibft");
+ }
+ 
++static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
++
+ static void __init trim_bios_range(void)
+ {
+ 	/*
+@@ -627,9 +629,9 @@ static void __init trim_bios_range(void)
+ 	 *
+ 	 * This typically reserves additional memory (64KiB by default)
+ 	 * since some BIOSes are known to corrupt low memory.  See the
+-	 * Kconfig help text for X86_LOW_RESERVE.
++	 * Kconfig help text for X86_RESERVE_LOW.
+ 	 */
+-	e820_update_range(0, ALIGN(CONFIG_X86_LOW_RESERVE << 10, PAGE_SIZE),
++	e820_update_range(0, ALIGN(reserve_low, PAGE_SIZE),
+ 			  E820_RAM, E820_RESERVED);
+ 
+ 	/*
+@@ -641,6 +643,28 @@ static void __init trim_bios_range(void)
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
+ 
++static int __init parse_reservelow(char *p)
++{
++	unsigned long long size;
++
++	if (!p)
++		return -EINVAL;
++
++	size = memparse(p, &p);
++
++	if (size < 4096)
++		size = 4096;
++
++	if (size > 640*1024)
++		size = 640*1024;
++
++	reserve_low = size;
++
++	return 0;
++}
++
++early_param("reservelow", parse_reservelow);
++
+ /*
+  * Determine if we were loaded by an EFI loader.  If so, then we have also been
+  * passed the efi memmap, systab, etc., so we should use these data structures
