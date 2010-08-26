@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab0HZPm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 11:42:27 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:46169 "EHLO mail.vyatta.com"
+	id S1754190Ab0HZPnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 11:43:16 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:46210 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752309Ab0HZPmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 11:42:22 -0400
-Date: Thu, 26 Aug 2010 08:42:19 -0700
+	id S1753097Ab0HZPnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 11:43:14 -0400
+Date: Thu, 26 Aug 2010 08:43:12 -0700
 From: Stephen Hemminger <shemminger@vyatta.com>
 To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
@@ -23,7 +23,7 @@ Cc: LKML <linux-kernel@vger.kernel.org>, ML netdev <netdev@vger.kernel.org>,
         Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
         Takahiro Shimizu <shimizu394@dsn.okisemi.com>
 Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Message-ID: <20100826084219.322f43f9@nehalam>
+Message-ID: <20100826084312.2b23048f@nehalam>
 In-Reply-To: <4C763A67.5040107@dsn.okisemi.com>
 References: <4C763A67.5040107@dsn.okisemi.com>
 Organization: Vyatta
@@ -38,31 +38,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Thu, 26 Aug 2010 18:56:55 +0900
 Masayuki Ohtake <masa-korg@dsn.okisemi.com> wrote:
 
+> s32 pch_gbe_mac_read_mac_addr(struct pch_gbe_hw *hw)
+> +{
+> +	u32  adr1a, adr1b;
 > +
-> +static struct ethtool_ops pch_gbe_ethtool_ops = {
-> +	.get_settings = pch_gbe_get_settings,
-> +	.set_settings = pch_gbe_set_settings,
-> +	.get_drvinfo = pch_gbe_get_drvinfo,
-> +	.get_regs_len = pch_gbe_get_regs_len,
-> +	.get_regs = pch_gbe_get_regs,
-> +	.get_wol = pch_gbe_get_wol,
-> +	.set_wol = pch_gbe_set_wol,
-> +	.nway_reset = pch_gbe_nway_reset,
-> +	.get_link = ethtool_op_get_link,
-> +	.get_ringparam = pch_gbe_get_ringparam,
-> +	.set_ringparam = pch_gbe_set_ringparam,
-> +	.get_pauseparam = pch_gbe_get_pauseparam,
-> +	.set_pauseparam = pch_gbe_set_pauseparam,
-> +	.get_rx_csum = pch_gbe_get_rx_csum,
-> +	.set_rx_csum = pch_gbe_set_rx_csum,
-> +	.get_tx_csum = pch_gbe_get_tx_csum,
-> +	.set_tx_csum = pch_gbe_set_tx_csum,
-> +	.get_strings = pch_gbe_get_strings,
-> +	.get_ethtool_stats = pch_gbe_get_ethtool_stats,
-> +	.get_sset_count = pch_gbe_get_sset_count,
-> +};
+> +	PCH_GBE_DEBUG("pch_gbe_mac_read_mac_addr\n");
 > +
+> +	adr1a = ioread32(&hw->reg->mac_adr[0].high);
+> +	adr1b = ioread32(&hw->reg->mac_adr[0].low);
+> +
+> +	hw->mac.addr[0] = (u8)(adr1a & 0xFF);
+> +	hw->mac.addr[1] = (u8)((adr1a >> 8) & 0xFF);
+> +	hw->mac.addr[2] = (u8)((adr1a >> 16) & 0xFF);
+> +	hw->mac.addr[3] = (u8)((adr1a >> 24) & 0xFF);
+> +	hw->mac.addr[4] = (u8)(adr1b & 0xFF);
+> +	hw->mac.addr[5] = (u8)((adr1b >> 8) & 0xFF);
+> +
+> +	PCH_GBE_DEBUG("hw->mac.addr : 0x%02x %02x %02x %02x %02x %02x\n",
+> +		hw->mac.addr[0], hw->mac.addr[1], hw->mac.addr[2],
+> +		hw->mac.addr[3], hw->mac.addr[4], hw->mac.addr[5]);
 
-Should be const
-
--- 
+can use new %pM printk format here.
