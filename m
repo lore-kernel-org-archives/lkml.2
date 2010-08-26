@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab0HZIXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 04:23:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42201 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab0HZIXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 04:23:53 -0400
-Message-ID: <4C762495.7050203@redhat.com>
-Date: Thu, 26 Aug 2010 11:23:49 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1753251Ab0HZI1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 04:27:43 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:34486 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab0HZI1l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 04:27:41 -0400
+Date: Thu, 26 Aug 2010 17:24:38 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] hugetlb: add allocate function for hugepage migration
+Message-ID: <20100826082438.GV21389@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1282694127-14609-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100825012941.GD7283@localhost>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] KVM: x86 emulator: trap and propagate #DE from DIV
- and IDIV
-References: <1282648229-19575-1-git-send-email-avi@redhat.com> <1282648229-19575-4-git-send-email-avi@redhat.com> <20100825210501.GD32737@amt.cnet>
-In-Reply-To: <20100825210501.GD32737@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100825012941.GD7283@localhost>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/26/2010 12:05 AM, Marcelo Tosatti wrote:
->
->> @@ -3363,7 +3374,7 @@ special_insn:
->>   		break;
->>   	case 0xf6 ... 0xf7:	/* Grp3 */
->>   		if (emulate_grp3(ctxt, ops) != X86EMUL_CONTINUE)
->> -			goto cannot_emulate;
->> +			goto done;
->>   		break;
-> Must assign rc to emulate_grp3() retval.
+On Wed, Aug 25, 2010 at 09:29:41AM +0800, Wu Fengguang wrote:
+> > +static struct page *alloc_buddy_huge_page_node(struct hstate *h, int nid)
+> > +{
+> > +	struct page *page = __alloc_huge_page_node(h, nid);
+> >  	if (page) {
+> > -		if (arch_prepare_hugepage(page)) {
+> > -			__free_pages(page, huge_page_order(h));
+> > +		set_compound_page_dtor(page, free_huge_page);
+> > +		spin_lock(&hugetlb_lock);
+> > +		h->nr_huge_pages++;
+> > +		h->nr_huge_pages_node[nid]++;
+> > +		spin_unlock(&hugetlb_lock);
+> > +		put_page_testzero(page);
+> > +	}
+> > +	return page;
+> > +}
+> 
+> One would expect the alloc_buddy_huge_page_node() to only differ with
+> alloc_buddy_huge_page() in the alloc_pages/alloc_pages_exact_node
+> calls. However you implement alloc_buddy_huge_page_node() in a quite
+> different way. Can the two functions be unified at all?
 
-While there's not much difference between X86EMUL_PROPAGATE_FAULT and 
-X86EMUL_CONTINUE, it's bad form to break things internally.  I'll fix 
-and repost.
+Yes. I did it by adding argument @nid to alloc_buddy_huge_page().
+Code gets cleaner and work without problems.
 
--- 
-error compiling committee.c: too many arguments to function
-
+Thanks,
+Naoya
