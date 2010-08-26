@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab0HZB26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 21:28:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55901 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab0HZB2z (ORCPT
+	id S1754041Ab0HZB3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 21:29:17 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:48889 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668Ab0HZB3O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 21:28:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 26 Aug 2010 10:23:52 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Daniel Kiper <dkiper@net-space.pl>, konrad.wilk@oracle.com,
-        stefano.stabellini@eu.citrix.com, linux-mm@kvack.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        v.tolstov@selfip.ru, Dulloor <dulloor@gmail.com>
-Subject: Re: [PATCH] GSoC 2010 - Memory hotplug support for Xen guests -
- third fully working version
-Message-Id: <20100826102352.9d7bcfd0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C758C12.2020107@goop.org>
-References: <20100812012224.GA16479@router-fw-old.local.net-space.pl>
-	<4C649535.8050800@goop.org>
-	<20100816154444.GA28219@router-fw-old.local.net-space.pl>
-	<4C758C12.2020107@goop.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Aug 2010 21:29:14 -0400
+Date: Thu, 26 Aug 2010 03:28:41 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+In-reply-to: <1282310110.2605.976.camel@laptop>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <p.osciak@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <op.vh0ud3rg7p4s8u@localhost>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.61 (Linux)
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+ <1282310110.2605.976.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 14:33:06 -0700
-Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+On Fri, 20 Aug 2010 15:15:10 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+> So the idea is to grab a large chunk of memory at boot time and then
+> later allow some device to use it?
+>
+> I'd much rather we'd improve the regular page allocator to be smarter
+> about this. We recently added a lot of smarts to it like memory
+> compaction, which allows large gobs of contiguous memory to be freed for
+> things like huge pages.
+>
+> If you want guarantees you can free stuff, why not add constraints to
+> the page allocation type and only allow MIGRATE_MOVABLE pages inside a
+> certain region, those pages are easily freed/moved aside to satisfy
+> large contiguous allocations.
 
-> >> 2 requires a deeper understanding of the existing hotplug code.  It
-> >> needs to be refactored so that you can use the core hotplug machinery
-> >> without enabling the sysfs page-onlining mechanism, while still leaving
-> >> it available for physical hotplug.  In the short term, having a boolean
-> >> to disable the onlining mechanism is probably the pragmatic solution, so
-> >> the balloon code can simply disable it.
-> > I think that sysfs should stay intact because it contains some
-> > useful information for admins. We should reconsider avaibilty
-> > of /sys/devices/system/memory/probe. In physical systems it
-> > is available however usage without real hotplug support
-> > lead to big crash. I am not sure we should disable probe in Xen.
-> > Maybe it is better to stay in sync with standard behavior.
-> > Second solution is to prepare an interface (kernel option
-> > or only some enable/disable functions) which give possibilty
-> > to enable/disable probe interface when it is required.
-> 
-> My understanding is that on systems with real physical hotplug memory,
-> the process is:
-> 
->    1. you insert/enable a DIMM or whatever to make the memory
->       electrically active
->    2. the kernel notices this and generates a udev event
->    3. a usermode script sees this and, according to whatever policy it
->       wants to implement, choose to online the memory at some point
-> 
-> I'm concerned that if we partially implement this but leave "online" as
-> a timebomb then existing installs with hotplug scripts in place may poke
-> at it - thinking they're dealing with physical hotplug - and cause problems.
-> 
+I'm aware that grabbing a large chunk at boot time is a bit of waste of
+space and because of it I'm hoping to came up with a way of reusing the
+space when it's not used by CMA-aware devices.  My current idea was to
+use it for easily discardable data (page cache?).
 
-IIUC, IBM guys, using LPAR?, does memory hotplug on VM.
+> Also, please remove --chain-reply-to from your git config. You're using
+> 1.7 which should do the right thing (--no-chain-reply-to) by default.
 
-The operation is.
-	1. tell the region of memory to be added to a userland daemon.
-	2. The daemon write 0xXXXXXX > /sys/devices/system/memory/probe
-	   (This notifies that memory is added physically.)
-	   Here, memory is created.
-	3. Then, online memory.
+OK.
 
-I think VM guys can use similar method rather than simulating phyiscal hotplug.
-Then, you don't have to worry about udev etc...
-No ?
-
-Thanks,
--Kame
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
 
