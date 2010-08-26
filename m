@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab0HZGm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 02:42:28 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:49294 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751859Ab0HZGm0 (ORCPT
+	id S1752733Ab0HZGqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 02:46:14 -0400
+Received: from toccata.ens-lyon.fr ([140.77.166.68]:50996 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab0HZGqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 02:42:26 -0400
-Message-ID: <4C760CCA.4070403@euromail.se>
-Date: Thu, 26 Aug 2010 08:42:18 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+	Thu, 26 Aug 2010 02:46:12 -0400
+Date: Thu, 26 Aug 2010 08:45:49 +0200
+From: Sebastien Hinderer <Sebastien.Hinderer@ens-lyon.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
+        Andreas Mohr <andi@lisas.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+Message-ID: <20100826064549.GA3353@pema>
+References: <20100825094925.GA3632@pema>
+ <20100825161214.GA15087@rhlx01.hs-esslingen.de>
+ <20100825211257.GA636@pema>
+ <4C7588FB.4050001@zytor.com>
+ <20100825225036.GV4762@const.famille.thibault.fr>
+ <4C75AFFC.5090601@zytor.com>
 MIME-Version: 1.0
-To: Peter Hutterer <peter.hutterer@who-t.net>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pinglinux@gmail.com
-Subject: Re: [PATCH v2] input: add multitouch slot support to w8001.
-References: <20100826020141.GA24887@barra.bne.redhat.com>
-In-Reply-To: <20100826020141.GA24887@barra.bne.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OoWAF-0003Fj-69.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OoWAF-0003Fj-69 2f983f3279b9bb7a47891ee3ad4e728b
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C75AFFC.5090601@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 04:01 AM, Peter Hutterer wrote:
+Hi,
 
-> Some serial wacom devices support two-finger touch. Test for this during
-> init and parse the touch packets accordingly. Touch packets are
-> processed using Protocol B (MT Slots).
->
-> Note: there are several wacom versions that do touch but not two-finger
-> touch. These are not catered for here, touch events for these are simply
-> discarded.
->
-> Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
-> CC: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Changes to v1:
-> - model MT slot approach after Henrik's bamboo patches
-> - add a comment about what the missing bytes are in the data packets
->
-> Henrik, I think this addresses all your comments? The patch is certainly
-> a bit simpler now.
+> What other forms of enumerable hardware is on this machine?  PCI?
 
+Yes, just PCI I think.
 
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
+Below is the output of lspci -v if that helps.
 
-Yes, thanks, it looks fine now. And thanks for finding the bug in my own
-version. :-)
+Best wishes,
+Shérab.
 
-Cheers,
-Henrik
+00:00.0 Host bridge: Cyrix Corporation PCI Master
+	Flags: bus master, medium devsel, latency 0
+
+00:02.0 Ethernet controller: Davicom Semiconductor, Inc. 21x4x DEC-Tulip compatible 10/100 Ethernet (rev 40)
+	Subsystem: Davicom Semiconductor, Inc. DM9102A (DM9102AE, SM9102AF) Ethernet 100/10 MBit
+	Flags: bus master, medium devsel, latency 165, IRQ 11
+	I/O ports at 1000 [size=256]
+	Memory at fedfe000 (32-bit, non-prefetchable) [size=256]
+	[virtual] Expansion ROM at 08000000 [disabled] [size=256K]
+	Capabilities: [50] Power Management version 2
+	Kernel driver in use: dmfe
+
+00:12.0 ISA bridge: Cyrix Corporation 5530 Legacy [Kahlua] (rev 30)
+	Flags: bus master, medium devsel, latency 64
+
+00:12.1 Bridge: Cyrix Corporation 5530 SMI [Kahlua]
+	Flags: medium devsel
+	Memory at 40012000 (32-bit, non-prefetchable) [size=256]
+
+00:12.2 IDE interface: Cyrix Corporation 5530 IDE [Kahlua] (prog-if 80 [Master])
+	Flags: bus master, medium devsel, latency 0
+	[virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
+	[virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
+	[virtual] Memory at 00000170 (32-bit, non-prefetchable) [size=8]
+	[virtual] Memory at 00000370 (type 3, non-prefetchable) [size=1]
+	I/O ports at 1400 [size=16]
+	Kernel driver in use: CS5530 IDE
+
+00:12.3 Multimedia audio controller: Cyrix Corporation 5530 Audio [Kahlua]
+	Flags: bus master, medium devsel, latency 0
+	Memory at 40011000 (32-bit, non-prefetchable) [size=128]
+	Kernel driver in use: CS5530_Audio
+
+00:12.4 VGA compatible controller: Cyrix Corporation 5530 Video [Kahlua] (prog-if 00 [VGA controller])
+	Subsystem: Cyrix Corporation Device 0001
+	Flags: medium devsel
+	Memory at 40800000 (32-bit, non-prefetchable) [size=8M]
+	Expansion ROM at <unassigned> [disabled]
+
+00:13.0 USB Controller: Compaq Computer Corporation ZFMicro Chipset USB (rev 06) (prog-if 10 [OHCI])
+	Subsystem: Compaq Computer Corporation ZFMicro Chipset USB
+	Flags: bus master, medium devsel, latency 64, IRQ 9
+	Memory at fedff000 (32-bit, non-prefetchable) [size=4K]
+	Kernel driver in use: ohci_hcd
+
