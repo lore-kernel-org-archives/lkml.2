@@ -1,145 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab0HZVgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 17:36:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43818 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674Ab0HZVgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 17:36:06 -0400
-Date: Thu, 26 Aug 2010 21:33:58 GMT
-From: tip-bot for Haicheng Li <haicheng.li@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, ak@linux.intel.com, tglx@linutronix.de,
-        fengguang.wu@intel.com, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, haicheng.li@linux.intel.com,
-        linux-kernel@vger.kernel.org, ak@linux.intel.com, tglx@linutronix.de,
-        fengguang.wu@intel.com, hpa@linux.intel.com
-In-Reply-To: <4C6E4ECD.1090607@linux.intel.com>
-References: <4C6E4ECD.1090607@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: Separate x86_64 vmalloc_sync_all() into separate functions
-Message-ID: <tip-6afb5157b9eba4092e2f0f54d24a3806409bdde5@git.kernel.org>
-Git-Commit-ID: 6afb5157b9eba4092e2f0f54d24a3806409bdde5
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 Aug 2010 21:33:58 +0000 (UTC)
+	id S1753534Ab0HZWKp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 18:10:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50773 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753127Ab0HZWKn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 18:10:43 -0400
+Date: Thu, 26 Aug 2010 15:10:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Huang Shijie <shijie8@gmail.com>, linux-mm@kvack.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] percpu: fix a memory leak in pcpu_extend_area_map()
+Message-Id: <20100826151017.63b20d2e.akpm@linux-foundation.org>
+In-Reply-To: <4C5EA651.7080009@kernel.org>
+References: <1281261197-8816-1-git-send-email-shijie8@gmail.com>
+	<4C5EA651.7080009@kernel.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6afb5157b9eba4092e2f0f54d24a3806409bdde5
-Gitweb:     http://git.kernel.org/tip/6afb5157b9eba4092e2f0f54d24a3806409bdde5
-Author:     Haicheng Li <haicheng.li@linux.intel.com>
-AuthorDate: Wed, 19 May 2010 17:42:14 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 26 Aug 2010 14:02:29 -0700
+On Sun, 08 Aug 2010 14:42:57 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-x86, mm: Separate x86_64 vmalloc_sync_all() into separate functions
+> >From 206c53730b8b1707becca7a868ea8d14ebee24d2 Mon Sep 17 00:00:00 2001
+> From: Huang Shijie <shijie8@gmail.com>
+> Date: Sun, 8 Aug 2010 14:39:07 +0200
+> 
+> The original code did not free the old map.  This patch fixes it.
+> 
+> tj: use @old as memcpy source instead of @chunk->map, and indentation
+>     and description update
+> 
+> Signed-off-by: Huang Shijie <shijie8@gmail.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-No behavior change.
+Should have had a cc:stable in the changelog, IMO.
 
-Move some of vmalloc_sync_all() code into a new function
-sync_global_pgds() that will be useful for memory hotplug.
+> ---
+> Patch applied to percpu#for-linus w/ some updates.  Thanks a lot for
+> catching this.
+> 
 
-Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
-LKML-Reference: <4C6E4ECD.1090607@linux.intel.com>
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/pgtable_64.h |    2 ++
- arch/x86/mm/fault.c               |   24 +-----------------------
- arch/x86/mm/init_64.c             |   30 ++++++++++++++++++++++++++++++
- 3 files changed, 33 insertions(+), 23 deletions(-)
+This patch appears to have been lost?
 
-diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-index 076052c..f96ac9b 100644
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -102,6 +102,8 @@ static inline void native_pgd_clear(pgd_t *pgd)
- 	native_set_pgd(pgd, native_make_pgd(0));
- }
- 
-+extern void sync_global_pgds(unsigned long start, unsigned long end);
-+
- /*
-  * Conversion functions: convert a page and protection to a page entry,
-  * and a page entry and page directory to the page they refer to.
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 4c4508e..51f7ee7 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -326,29 +326,7 @@ out:
- 
- void vmalloc_sync_all(void)
- {
--	unsigned long address;
--
--	for (address = VMALLOC_START & PGDIR_MASK; address <= VMALLOC_END;
--	     address += PGDIR_SIZE) {
--
--		const pgd_t *pgd_ref = pgd_offset_k(address);
--		unsigned long flags;
--		struct page *page;
--
--		if (pgd_none(*pgd_ref))
--			continue;
--
--		spin_lock_irqsave(&pgd_lock, flags);
--		list_for_each_entry(page, &pgd_list, lru) {
--			pgd_t *pgd;
--			pgd = (pgd_t *)page_address(page) + pgd_index(address);
--			if (pgd_none(*pgd))
--				set_pgd(pgd, *pgd_ref);
--			else
--				BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
--		}
--		spin_unlock_irqrestore(&pgd_lock, flags);
--	}
-+	sync_global_pgds(VMALLOC_START & PGDIR_MASK, VMALLOC_END);
- }
- 
- /*
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 9a66746..61a1b4f 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -98,6 +98,36 @@ static int __init nonx32_setup(char *str)
- __setup("noexec32=", nonx32_setup);
- 
- /*
-+ * When memory was added/removed make sure all the processes MM have
-+ * suitable PGD entries in the local PGD level page.
-+ */
-+void sync_global_pgds(unsigned long start, unsigned long end)
-+{
-+       unsigned long address;
-+
-+       for (address = start; address <= end; address += PGDIR_SIZE) {
-+	       const pgd_t *pgd_ref = pgd_offset_k(address);
-+	       unsigned long flags;
-+	       struct page *page;
-+
-+	       if (pgd_none(*pgd_ref))
-+		       continue;
-+
-+	       spin_lock_irqsave(&pgd_lock, flags);
-+	       list_for_each_entry(page, &pgd_list, lru) {
-+		       pgd_t *pgd;
-+		       pgd = (pgd_t *)page_address(page) + pgd_index(address);
-+		       if (pgd_none(*pgd))
-+			       set_pgd(pgd, *pgd_ref);
-+		       else
-+			       BUG_ON(pgd_page_vaddr(*pgd)
-+					!= pgd_page_vaddr(*pgd_ref));
-+	       }
-+	       spin_unlock_irqrestore(&pgd_lock, flags);
-+       }
-+}
-+
-+/*
-  * NOTE: This function is marked __ref because it calls __init function
-  * (alloc_bootmem_pages). It's safe to do it ONLY when after_bootmem == 0.
-  */
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index e61dc2c..a1830d8 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -393,7 +393,9 @@ static int pcpu_extend_area_map(struct pcpu_chunk *chunk, int new_alloc)
+>  		goto out_unlock;
+> 
+>  	old_size = chunk->map_alloc * sizeof(chunk->map[0]);
+> -	memcpy(new, chunk->map, old_size);
+> +	old = chunk->map;
+> +
+> +	memcpy(new, old, old_size);
+> 
+>  	chunk->map_alloc = new_alloc;
+>  	chunk->map = new;
+
