@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab0HZSuV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:50:21 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:35376 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509Ab0HZSuR (ORCPT
+	id S1754589Ab0HZSu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:50:27 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:37374 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab0HZSuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:50:17 -0400
-Subject: [PATCH 11/13] cciss: factor out cciss_passthru
+	Thu, 26 Aug 2010 14:50:22 -0400
+Subject: [PATCH 12/13] cciss: factor out cciss_big_passthru
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
         linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
-Date: Thu, 26 Aug 2010 13:56:25 -0500
-Message-ID: <20100826185625.9067.18256.stgit@beardog.cce.hp.com>
+Date: Thu, 26 Aug 2010 13:56:30 -0500
+Message-ID: <20100826185630.9067.22734.stgit@beardog.cce.hp.com>
 In-Reply-To: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
 References: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -28,237 +28,332 @@ From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/block/cciss.c |  212 +++++++++++++++++++++++--------------------------
- 1 files changed, 101 insertions(+), 111 deletions(-)
+ drivers/block/cciss.c |  307 ++++++++++++++++++++++++-------------------------
+ 1 files changed, 151 insertions(+), 156 deletions(-)
 
 diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 3f24450..5a84080 100644
+index 5a84080..a7ec339 100644
 --- a/drivers/block/cciss.c
 +++ b/drivers/block/cciss.c
-@@ -1400,6 +1400,106 @@ static int cciss_getluninfo(ctlr_info_t *h,
+@@ -1500,6 +1500,155 @@ static int cciss_passthru(ctlr_info_t *h, void __user *argp)
  	return 0;
  }
  
-+static int cciss_passthru(ctlr_info_t *h, void __user *argp)
++static int cciss_bigpassthru(ctlr_info_t *h, void __user *argp)
 +{
-+	IOCTL_Command_struct iocommand;
++	BIG_IOCTL_Command_struct *ioc;
 +	CommandList_struct *c;
-+	char *buff = NULL;
++	unsigned char **buff = NULL;
++	int *buff_size = NULL;
 +	u64bit temp64;
++	BYTE sg_used = 0;
++	int status = 0;
++	int i;
 +	DECLARE_COMPLETION_ONSTACK(wait);
++	__u32 left;
++	__u32 sz;
++	BYTE __user *data_ptr;
 +
 +	if (!argp)
 +		return -EINVAL;
-+
 +	if (!capable(CAP_SYS_RAWIO))
 +		return -EPERM;
-+
-+	if (copy_from_user
-+	    (&iocommand, argp, sizeof(IOCTL_Command_struct)))
-+		return -EFAULT;
-+	if ((iocommand.buf_size < 1) &&
-+	    (iocommand.Request.Type.Direction != XFER_NONE)) {
-+		return -EINVAL;
++	ioc = (BIG_IOCTL_Command_struct *)
++	    kmalloc(sizeof(*ioc), GFP_KERNEL);
++	if (!ioc) {
++		status = -ENOMEM;
++		goto cleanup1;
 +	}
-+	if (iocommand.buf_size > 0) {
-+		buff = kmalloc(iocommand.buf_size, GFP_KERNEL);
-+		if (buff == NULL)
-+			return -EFAULT;
++	if (copy_from_user(ioc, argp, sizeof(*ioc))) {
++		status = -EFAULT;
++		goto cleanup1;
 +	}
-+	if (iocommand.Request.Type.Direction == XFER_WRITE) {
-+		/* Copy the data into the buffer we created */
-+		if (copy_from_user(buff, iocommand.buf, iocommand.buf_size)) {
-+			kfree(buff);
-+			return -EFAULT;
++	if ((ioc->buf_size < 1) &&
++	    (ioc->Request.Type.Direction != XFER_NONE)) {
++		status = -EINVAL;
++		goto cleanup1;
++	}
++	/* Check kmalloc limits  using all SGs */
++	if (ioc->malloc_size > MAX_KMALLOC_SIZE) {
++		status = -EINVAL;
++		goto cleanup1;
++	}
++	if (ioc->buf_size > ioc->malloc_size * MAXSGENTRIES) {
++		status = -EINVAL;
++		goto cleanup1;
++	}
++	buff = kzalloc(MAXSGENTRIES * sizeof(char *), GFP_KERNEL);
++	if (!buff) {
++		status = -ENOMEM;
++		goto cleanup1;
++	}
++	buff_size = kmalloc(MAXSGENTRIES * sizeof(int), GFP_KERNEL);
++	if (!buff_size) {
++		status = -ENOMEM;
++		goto cleanup1;
++	}
++	left = ioc->buf_size;
++	data_ptr = ioc->buf;
++	while (left) {
++		sz = (left > ioc->malloc_size) ? ioc->malloc_size : left;
++		buff_size[sg_used] = sz;
++		buff[sg_used] = kmalloc(sz, GFP_KERNEL);
++		if (buff[sg_used] == NULL) {
++			status = -ENOMEM;
++			goto cleanup1;
 +		}
-+	} else {
-+		memset(buff, 0, iocommand.buf_size);
++		if (ioc->Request.Type.Direction == XFER_WRITE) {
++			if (copy_from_user(buff[sg_used], data_ptr, sz)) {
++				status = -EFAULT;
++				goto cleanup1;
++			}
++		} else {
++			memset(buff[sg_used], 0, sz);
++		}
++		left -= sz;
++		data_ptr += sz;
++		sg_used++;
 +	}
 +	c = cmd_special_alloc(h);
 +	if (!c) {
-+		kfree(buff);
-+		return -ENOMEM;
++		status = -ENOMEM;
++		goto cleanup1;
 +	}
-+	/* Fill in the command type */
 +	c->cmd_type = CMD_IOCTL_PEND;
-+	/* Fill in Command Header */
-+	c->Header.ReplyQueue = 0;   /* unused in simple mode */
-+	if (iocommand.buf_size > 0) { /* buffer to fill */
-+		c->Header.SGList = 1;
-+		c->Header.SGTotal = 1;
-+	} else { /* no buffers to fill */
++	c->Header.ReplyQueue = 0;
++
++	if (ioc->buf_size > 0) {
++		c->Header.SGList = sg_used;
++		c->Header.SGTotal = sg_used;
++	} else {
 +		c->Header.SGList = 0;
 +		c->Header.SGTotal = 0;
 +	}
-+	c->Header.LUN = iocommand.LUN_info;
-+	/* use the kernel address the cmd block for tag */
++	c->Header.LUN = ioc->LUN_info;
 +	c->Header.Tag.lower = c->busaddr;
 +
-+	/* Fill in Request block */
-+	c->Request = iocommand.Request;
-+
-+	/* Fill in the scatter gather information */
-+	if (iocommand.buf_size > 0) {
-+		temp64.val = pci_map_single(h->pdev, buff,
-+			iocommand.buf_size, PCI_DMA_BIDIRECTIONAL);
-+		c->SG[0].Addr.lower = temp64.val32.lower;
-+		c->SG[0].Addr.upper = temp64.val32.upper;
-+		c->SG[0].Len = iocommand.buf_size;
-+		c->SG[0].Ext = 0;  /* we are not chaining */
-+	}
-+	c->waiting = &wait;
-+
-+	enqueue_cmd_and_start_io(h, c);
-+	wait_for_completion(&wait);
-+
-+	/* unlock the buffers from DMA */
-+	temp64.val32.lower = c->SG[0].Addr.lower;
-+	temp64.val32.upper = c->SG[0].Addr.upper;
-+	pci_unmap_single(h->pdev, (dma_addr_t) temp64.val, iocommand.buf_size,
-+			 PCI_DMA_BIDIRECTIONAL);
-+	check_ioctl_unit_attention(h, c);
-+
-+	/* Copy the error information out */
-+	iocommand.error_info = *(c->err_info);
-+	if (copy_to_user(argp, &iocommand, sizeof(IOCTL_Command_struct))) {
-+		kfree(buff);
-+		cmd_special_free(h, c);
-+		return -EFAULT;
-+	}
-+
-+	if (iocommand.Request.Type.Direction == XFER_READ) {
-+		/* Copy the data out of the buffer we created */
-+		if (copy_to_user(iocommand.buf, buff, iocommand.buf_size)) {
-+			kfree(buff);
-+			cmd_special_free(h, c);
-+			return -EFAULT;
++	c->Request = ioc->Request;
++	if (ioc->buf_size > 0) {
++		for (i = 0; i < sg_used; i++) {
++			temp64.val =
++			    pci_map_single(h->pdev, buff[i], buff_size[i],
++				    PCI_DMA_BIDIRECTIONAL);
++			c->SG[i].Addr.lower = temp64.val32.lower;
++			c->SG[i].Addr.upper = temp64.val32.upper;
++			c->SG[i].Len = buff_size[i];
++			c->SG[i].Ext = 0;	/* we are not chaining */
 +		}
 +	}
-+	kfree(buff);
++	c->waiting = &wait;
++	enqueue_cmd_and_start_io(h, c);
++	wait_for_completion(&wait);
++	/* unlock the buffers from DMA */
++	for (i = 0; i < sg_used; i++) {
++		temp64.val32.lower = c->SG[i].Addr.lower;
++		temp64.val32.upper = c->SG[i].Addr.upper;
++		pci_unmap_single(h->pdev,
++			(dma_addr_t) temp64.val, buff_size[i],
++			PCI_DMA_BIDIRECTIONAL);
++	}
++	check_ioctl_unit_attention(h, c);
++	/* Copy the error information out */
++	ioc->error_info = *(c->err_info);
++	if (copy_to_user(argp, ioc, sizeof(*ioc))) {
++		cmd_special_free(h, c);
++		status = -EFAULT;
++		goto cleanup1;
++	}
++	if (ioc->Request.Type.Direction == XFER_READ) {
++		/* Copy the data out of the buffer we created */
++		BYTE __user *ptr = ioc->buf;
++		for (i = 0; i < sg_used; i++) {
++			if (copy_to_user(ptr, buff[i], buff_size[i])) {
++				cmd_special_free(h, c);
++				status = -EFAULT;
++				goto cleanup1;
++			}
++			ptr += buff_size[i];
++		}
++	}
 +	cmd_special_free(h, c);
-+	return 0;
++	status = 0;
++cleanup1:
++	if (buff) {
++		for (i = 0; i < sg_used; i++)
++			kfree(buff[i]);
++		kfree(buff);
++	}
++	kfree(buff_size);
++	kfree(ioc);
++	return status;
 +}
 +
  static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
  	unsigned int cmd, unsigned long arg)
  {
-@@ -1435,117 +1535,7 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 	case CCISS_GETLUNINFO:
+@@ -1536,162 +1685,8 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
  		return cciss_getluninfo(h, disk, argp);
  	case CCISS_PASSTHRU:
--		{
--			IOCTL_Command_struct iocommand;
+ 		return cciss_passthru(h, argp);
+-	case CCISS_BIG_PASSTHRU:{
+-			BIG_IOCTL_Command_struct *ioc;
 -			CommandList_struct *c;
--			char *buff = NULL;
+-			unsigned char **buff = NULL;
+-			int *buff_size = NULL;
 -			u64bit temp64;
+-			BYTE sg_used = 0;
+-			int status = 0;
+-			int i;
 -			DECLARE_COMPLETION_ONSTACK(wait);
+-			__u32 left;
+-			__u32 sz;
+-			BYTE __user *data_ptr;
 -
 -			if (!arg)
 -				return -EINVAL;
--
 -			if (!capable(CAP_SYS_RAWIO))
 -				return -EPERM;
--
--			if (copy_from_user
--			    (&iocommand, argp, sizeof(IOCTL_Command_struct)))
--				return -EFAULT;
--			if ((iocommand.buf_size < 1) &&
--			    (iocommand.Request.Type.Direction != XFER_NONE)) {
--				return -EINVAL;
+-			ioc = (BIG_IOCTL_Command_struct *)
+-			    kmalloc(sizeof(*ioc), GFP_KERNEL);
+-			if (!ioc) {
+-				status = -ENOMEM;
+-				goto cleanup1;
 -			}
--#if 0				/* 'buf_size' member is 16-bits, and always smaller than kmalloc limit */
--			/* Check kmalloc limits */
--			if (iocommand.buf_size > 128000)
--				return -EINVAL;
--#endif
--			if (iocommand.buf_size > 0) {
--				buff = kmalloc(iocommand.buf_size, GFP_KERNEL);
--				if (buff == NULL)
--					return -EFAULT;
+-			if (copy_from_user(ioc, argp, sizeof(*ioc))) {
+-				status = -EFAULT;
+-				goto cleanup1;
 -			}
--			if (iocommand.Request.Type.Direction == XFER_WRITE) {
--				/* Copy the data into the buffer we created */
--				if (copy_from_user
--				    (buff, iocommand.buf, iocommand.buf_size)) {
--					kfree(buff);
--					return -EFAULT;
+-			if ((ioc->buf_size < 1) &&
+-			    (ioc->Request.Type.Direction != XFER_NONE)) {
+-				status = -EINVAL;
+-				goto cleanup1;
+-			}
+-			/* Check kmalloc limits  using all SGs */
+-			if (ioc->malloc_size > MAX_KMALLOC_SIZE) {
+-				status = -EINVAL;
+-				goto cleanup1;
+-			}
+-			if (ioc->buf_size > ioc->malloc_size * MAXSGENTRIES) {
+-				status = -EINVAL;
+-				goto cleanup1;
+-			}
+-			buff =
+-			    kzalloc(MAXSGENTRIES * sizeof(char *), GFP_KERNEL);
+-			if (!buff) {
+-				status = -ENOMEM;
+-				goto cleanup1;
+-			}
+-			buff_size = kmalloc(MAXSGENTRIES * sizeof(int),
+-						   GFP_KERNEL);
+-			if (!buff_size) {
+-				status = -ENOMEM;
+-				goto cleanup1;
+-			}
+-			left = ioc->buf_size;
+-			data_ptr = ioc->buf;
+-			while (left) {
+-				sz = (left >
+-				      ioc->malloc_size) ? ioc->
+-				    malloc_size : left;
+-				buff_size[sg_used] = sz;
+-				buff[sg_used] = kmalloc(sz, GFP_KERNEL);
+-				if (buff[sg_used] == NULL) {
+-					status = -ENOMEM;
+-					goto cleanup1;
 -				}
--			} else {
--				memset(buff, 0, iocommand.buf_size);
+-				if (ioc->Request.Type.Direction == XFER_WRITE) {
+-					if (copy_from_user
+-					    (buff[sg_used], data_ptr, sz)) {
+-						status = -EFAULT;
+-						goto cleanup1;
+-					}
+-				} else {
+-					memset(buff[sg_used], 0, sz);
+-				}
+-				left -= sz;
+-				data_ptr += sz;
+-				sg_used++;
 -			}
 -			c = cmd_special_alloc(h);
 -			if (!c) {
--				kfree(buff);
--				return -ENOMEM;
+-				status = -ENOMEM;
+-				goto cleanup1;
 -			}
--			/* Fill in the command type */
 -			c->cmd_type = CMD_IOCTL_PEND;
--			/* Fill in Command Header */
--			c->Header.ReplyQueue = 0;   /* unused in simple mode */
--			if (iocommand.buf_size > 0) /* buffer to fill */
--			{
--				c->Header.SGList = 1;
--				c->Header.SGTotal = 1;
--			} else /* no buffers to fill */
--			{
+-			c->Header.ReplyQueue = 0;
+-
+-			if (ioc->buf_size > 0) {
+-				c->Header.SGList = sg_used;
+-				c->Header.SGTotal = sg_used;
+-			} else {
 -				c->Header.SGList = 0;
 -				c->Header.SGTotal = 0;
 -			}
--			c->Header.LUN = iocommand.LUN_info;
--			/* use the kernel address the cmd block for tag */
+-			c->Header.LUN = ioc->LUN_info;
 -			c->Header.Tag.lower = c->busaddr;
 -
--			/* Fill in Request block */
--			c->Request = iocommand.Request;
--
--			/* Fill in the scatter gather information */
--			if (iocommand.buf_size > 0) {
--				temp64.val = pci_map_single(h->pdev, buff,
--					iocommand.buf_size,
--					PCI_DMA_BIDIRECTIONAL);
--				c->SG[0].Addr.lower = temp64.val32.lower;
--				c->SG[0].Addr.upper = temp64.val32.upper;
--				c->SG[0].Len = iocommand.buf_size;
--				c->SG[0].Ext = 0;  /* we are not chaining */
--			}
--			c->waiting = &wait;
--
--			enqueue_cmd_and_start_io(h, c);
--			wait_for_completion(&wait);
--
--			/* unlock the buffers from DMA */
--			temp64.val32.lower = c->SG[0].Addr.lower;
--			temp64.val32.upper = c->SG[0].Addr.upper;
--			pci_unmap_single(h->pdev, (dma_addr_t) temp64.val,
--					 iocommand.buf_size,
--					 PCI_DMA_BIDIRECTIONAL);
--
--			check_ioctl_unit_attention(h, c);
--
--			/* Copy the error information out */
--			iocommand.error_info = *(c->err_info);
--			if (copy_to_user
--			    (argp, &iocommand, sizeof(IOCTL_Command_struct))) {
--				kfree(buff);
--				cmd_special_free(h, c);
--				return -EFAULT;
--			}
--
--			if (iocommand.Request.Type.Direction == XFER_READ) {
--				/* Copy the data out of the buffer we created */
--				if (copy_to_user
--				    (iocommand.buf, buff, iocommand.buf_size)) {
--					kfree(buff);
--					cmd_special_free(h, c);
--					return -EFAULT;
+-			c->Request = ioc->Request;
+-			if (ioc->buf_size > 0) {
+-				for (i = 0; i < sg_used; i++) {
+-					temp64.val =
+-					    pci_map_single(h->pdev, buff[i],
+-						    buff_size[i],
+-						    PCI_DMA_BIDIRECTIONAL);
+-					c->SG[i].Addr.lower =
+-					    temp64.val32.lower;
+-					c->SG[i].Addr.upper =
+-					    temp64.val32.upper;
+-					c->SG[i].Len = buff_size[i];
+-					c->SG[i].Ext = 0;	/* we are not chaining */
 -				}
 -			}
--			kfree(buff);
+-			c->waiting = &wait;
+-			enqueue_cmd_and_start_io(h, c);
+-			wait_for_completion(&wait);
+-			/* unlock the buffers from DMA */
+-			for (i = 0; i < sg_used; i++) {
+-				temp64.val32.lower = c->SG[i].Addr.lower;
+-				temp64.val32.upper = c->SG[i].Addr.upper;
+-				pci_unmap_single(h->pdev,
+-					(dma_addr_t) temp64.val, buff_size[i],
+-					PCI_DMA_BIDIRECTIONAL);
+-			}
+-			check_ioctl_unit_attention(h, c);
+-			/* Copy the error information out */
+-			ioc->error_info = *(c->err_info);
+-			if (copy_to_user(argp, ioc, sizeof(*ioc))) {
+-				cmd_special_free(h, c);
+-				status = -EFAULT;
+-				goto cleanup1;
+-			}
+-			if (ioc->Request.Type.Direction == XFER_READ) {
+-				/* Copy the data out of the buffer we created */
+-				BYTE __user *ptr = ioc->buf;
+-				for (i = 0; i < sg_used; i++) {
+-					if (copy_to_user
+-					    (ptr, buff[i], buff_size[i])) {
+-						cmd_special_free(h, c);
+-						status = -EFAULT;
+-						goto cleanup1;
+-					}
+-					ptr += buff_size[i];
+-				}
+-			}
 -			cmd_special_free(h, c);
--			return 0;
+-			status = 0;
+-		      cleanup1:
+-			if (buff) {
+-				for (i = 0; i < sg_used; i++)
+-					kfree(buff[i]);
+-				kfree(buff);
+-			}
+-			kfree(buff_size);
+-			kfree(ioc);
+-			return status;
 -		}
-+		return cciss_passthru(h, argp);
- 	case CCISS_BIG_PASSTHRU:{
- 			BIG_IOCTL_Command_struct *ioc;
- 			CommandList_struct *c;
++	case CCISS_BIG_PASSTHRU:
++		return cciss_bigpassthru(h, argp);
+ 
+ 	/* scsi_cmd_ioctl handles these, below, though some are not */
+ 	/* very meaningful for cciss.  SG_IO is the main one people want. */
 
