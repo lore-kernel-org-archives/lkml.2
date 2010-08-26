@@ -1,125 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab0HZRfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 13:35:05 -0400
-Received: from n10.bullet.mail.ac4.yahoo.com ([76.13.13.238]:26696 "HELO
-	n10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752526Ab0HZRfB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 13:35:01 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 379441.69451.bm@omp204.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=kY916DCPSA1HehpxneS+N8bIxzz8By/UKnwaYwuM98w8Bb1CpAFmTVo3XScjbZSxc6XnqHFS4zlacd+6Fu64e9aHa1B7n7fye+5/FDJcUPLzv27DVEEOUdkBm0MuAY4x4dmFpfGyw9i5kKd3rc8URMX33B28Ldl4a6rqlYZb59M=;
-Message-ID: <216397.86259.qm@web180306.mail.gq1.yahoo.com>
-X-YMail-OSG: OySU9hMVM1mRK0fNEYHjDKcxmh0jF3TdvDewFLKHv1sc.KO
- LCm0O2RXAP2CPofUqe3D4Gj3tFWReG4JAN0AYOvBM4GomaYHq2bgtQYop4uL
- tgeE06Wp.OoBoxFjLClpWG2h7x7xMocv8AhaZo2OEulVQZWOv699jl2maC4S
- xhKi6Y2y7TDmk6PVNT0GcLy1NLaHqgnoTIWqHlwQY9Xy4wfBg2Qa5NNuzNe1
- s_I_hpFMvcmWe8wedNNcbaex7pSHIAsd2ezFs.RlhWTVWMzoriYrFx1V9cPk
- 1loJR8V3ARZss1JLZhFBLnIE4KPbnOhi.f6oOl4Qc2H0VHSdFE52EsoC2BKV
- TPORmctsDS.Wq7SM-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Thu, 26 Aug 2010 10:34:58 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] gpio: Add generic driver for simple memory mapped controllers
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+	id S1752971Ab0HZRfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 13:35:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50290 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab0HZRfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 13:35:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=E6+1PrJexSsYc6uc2RKwmef5K1unw7MQvVPYYHvvmah9J5h08YaB/7APqP3cJKapVB
+         8TPs5iL+dAxfkZ1WGPrQN/Yq0lSf2vdVgKSmOcG5tfZZ779OAhS7k7aJ/b8q+zzruZMz
+         9TkpbKHnsLT3M3JonmQlwR1C4Sq5czdbtrC0g=
+Date: Fri, 27 Aug 2010 02:35:34 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20100826174822.75094415@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 2/3] writeback: Record if the congestion was unnecessary
+Message-ID: <20100826173534.GC6873@barrios-desktop>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
+ <1282835656-5638-3-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282835656-5638-3-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
---- On Thu, 8/26/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> > Just rename it to match the IP block used.
+On Thu, Aug 26, 2010 at 04:14:15PM +0100, Mel Gorman wrote:
+> If congestion_wait() is called when there is no congestion, the caller
+> will wait for the full timeout. This can cause unreasonable and
+> unnecessary stalls. There are a number of potential modifications that
+> could be made to wake sleepers but this patch measures how serious the
+> problem is. It keeps count of how many congested BDIs there are. If
+> congestion_wait() is called with no BDIs congested, the tracepoint will
+> record that the wait was unnecessary.
 > 
-> There are zillions of IP blocks that have that interface,
-
-If there are "zillions" that suggests the HW
-engineers have version/naming issues just like
-certain software engineers.  Only goes to show
-how close Verilog and VHDL are to software! :)
-
-
-> how exactly do
-> you propose to rename it.
-
-My suggestion was to use the name provided/used
-by the hardware engineers.  (E.g. whatever the
-Verilog or VHDL equivalent of a module name is.)
-
-So -- NO RENAME -- except for the driver.
-
-If I understand you correctly, those engineers
-are not reusing a named module; they are at best
-just copying/pasting some Verilog/VHDL and adding
-ASIC/SoC/.../FPGA-specific hacks.  (Which calls into
-question just how much assurance there can be that
-one driver will work reliably for all instances...
-
-
-> > That removes all confusion.  Engineers will
-> >  be able to know more easily whether this
-> > driver is even relevant to them.
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  include/trace/events/writeback.h |   11 ++++++++---
+>  mm/backing-dev.c                 |   15 ++++++++++++---
+>  2 files changed, 20 insertions(+), 6 deletions(-)
 > 
-> Not unless its got a name about 1000 characters long
-> listing all the
-> devices it might drive - and changes name weekly.
+> diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+> index e3bee61..03bb04b 100644
+> --- a/include/trace/events/writeback.h
+> +++ b/include/trace/events/writeback.h
+> @@ -155,19 +155,24 @@ DEFINE_WBC_EVENT(wbc_writepage);
+>  
+>  TRACE_EVENT(writeback_congest_waited,
+>  
+> -	TP_PROTO(unsigned int usec_delayed),
+> +	TP_PROTO(unsigned int usec_delayed, bool unnecessary),
+>  
+> -	TP_ARGS(usec_delayed),
+> +	TP_ARGS(usec_delayed, unnecessary),
+>  
+>  	TP_STRUCT__entry(
+>  		__field(	unsigned int,	usec_delayed	)
+> +		__field(	unsigned int,	unnecessary	)
+>  	),
+>  
+>  	TP_fast_assign(
+>  		__entry->usec_delayed	= usec_delayed;
+> +		__entry->unnecessary	= unnecessary;
+>  	),
+>  
+> -	TP_printk("usec_delayed=%u", __entry->usec_delayed)
+> +	TP_printk("usec_delayed=%u unnecessary=%d",
+> +		__entry->usec_delayed,
+> +		__entry->unnecessary
+> +	)
+>  );
+>  
+>  #endif /* _TRACE_WRITEBACK_H */
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 7ae33e2..a49167f 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -724,6 +724,7 @@ static wait_queue_head_t congestion_wqh[2] = {
+>  		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[0]),
+>  		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[1])
+>  	};
+> +static atomic_t nr_bdi_congested[2];
+>  
+>  void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  {
+> @@ -731,7 +732,8 @@ void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  	wait_queue_head_t *wqh = &congestion_wqh[sync];
+>  
+>  	bit = sync ? BDI_sync_congested : BDI_async_congested;
+> -	clear_bit(bit, &bdi->state);
+> +	if (test_and_clear_bit(bit, &bdi->state))
+> +		atomic_dec(&nr_bdi_congested[sync]);
 
-Someone should have a few words with those hardware
-engineers about module naming and consistency, so
-software doesn't need to work around such issues.
+Hmm.. Now congestion_wait's semantics "wait for _a_ backing_dev to become uncongested"
+But this seems to consider whole backing dev. Is your intention? or Am I missing now?
 
-Such problems have been solved for decades, and
-there's no reason to create confusion higher up
-the system stack.  (or force workarounds.)
-
-
-> > An example might be "amba-9999 (a made-up
-> > number, likely not matching a GPIO controller).
-
-Note that such names are already used in Linux
-with IP blocks from AMBA; Designware blocks, as
-I noted, aren't dissimilar (dw_foo.c in at least
-a few cases).
-
-> What's wrong with a sensible generic name like
-> gpio-mmio-table ?
-
-
-That's a much better name.  I'ts got technical
-content, even!  (vs "simple" being "marketing",
-including easy confusion with other entities).
-
-All I'll say is that it might
- be *too* generic a name.  I know I can come up
-with current examples of GPIO done via MMIO
-(tables) that this driver won't fit at all.
-That can probably be worked around via docs and
-conventions.
-
-There'd need to be good docs on what this
-gpio-mmio-table interface expects.  Some of that
-belongs in Kconfig, not much; mostly I'd think
-it belongs in driver header comments, but also
-some in the patch comment itself.  I hear you
-strongly implying that there's no generic hardware
-doc to reference.  (As theree would be if this
-block came from the AMBA or DesignWare families.)
-
-
-
-
+-- 
+Kind regards,
+Minchan Kim
