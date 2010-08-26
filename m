@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab0HZSMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:12:10 -0400
-Received: from vms173003pub.verizon.net ([206.46.173.3]:64968 "EHLO
-	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab0HZSMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:12:09 -0400
-Date: Thu, 26 Aug 2010 14:11:51 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: =?ISO-8859-15?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-In-reply-to: <20100825094925.GA3632@pema>
-Message-id: <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain>
-References: <20100825094925.GA3632@pema>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: MULTIPART/MIXED; BOUNDARY="8323328-139430450-1282846313=:2062"
+	id S1752897Ab0HZSOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:14:30 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:42289 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab0HZSOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 14:14:23 -0400
+Message-Id: <20100826181339.888097101@efficios.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 26 Aug 2010 14:09:10 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tony Lindgren <tony@atomide.com>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC PATCH 02/11] sched: debug spread check account for nr_running
+References: <20100826180908.648103531@efficios.com>
+Content-Disposition: inline; filename=sched-fair-check-spread-with-running.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Thu, 26 Aug 2010 18:13:40 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Extracted from a "sched-misc-bits.patch" patch from
+Peter Zijlstra <a.p.zijlstra@chello.nl>.
 
---8323328-139430450-1282846313=:2062
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+This patch also moves the check_spread test where nr_running is always non-zero.
 
->     The Iris machines from EuroBraille do not have APM or ACPI support
->     to shut themselves down properly.
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched_fair.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-According to
-www.multitech.com/en_us/news/articles/success_stories/eurobraille.pdf :
+Index: linux-2.6-lttng.git/kernel/sched_fair.c
+===================================================================
+--- linux-2.6-lttng.git.orig/kernel/sched_fair.c
++++ linux-2.6-lttng.git/kernel/sched_fair.c
+@@ -715,7 +715,7 @@ static void check_spread(struct cfs_rq *
+ 	if (d < 0)
+ 		d = -d;
+ 
+-	if (d > 3*sysctl_sched_latency)
++	if (d > 3*cfs_rq->nr_running*sysctl_sched_latency)
+ 		schedstat_inc(cfs_rq, nr_spread_over);
+ #endif
+ }
+@@ -803,6 +803,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
++	check_spread(cfs_rq, se);
+ 
+ 	update_stats_dequeue(cfs_rq, se);
+ 	if (flags & DEQUEUE_SLEEP) {
+@@ -932,11 +933,9 @@ static void put_prev_entity(struct cfs_r
+ 	 * If still on the runqueue then deactivate_task()
+ 	 * was not called and update_curr() has to be done:
+ 	 */
+-	if (prev->on_rq)
+-		update_curr(cfs_rq);
+-
+-	check_spread(cfs_rq, prev);
+ 	if (prev->on_rq) {
++		update_curr(cfs_rq);
++		check_spread(cfs_rq, prev);
+ 		update_stats_wait_start(cfs_rq, prev);
+ 		/* Put 'current' back into the tree. */
+ 		__enqueue_entity(cfs_rq, prev);
 
-"EURObraille¢s latest invention is the IRIS portable assistant.
- The use of a powerful microprocessor coupled with the most advanced
- Microsoft Windows operating system provides the blind with a powerful
- computing solution"
-
-What version of Microsoft Windows ships on this box?
-Does it run in ACPI mode?  Does it power-off successfully?
-
-Does Linux run in ACPI mode?
-Please send along the dmesg from a Linux kernel built with:
-
-CONFIG_ACPI=y
-CONFIG_ACPI_DEBUG=y
-
-thanks,
-Len Brown, Intel Open Source Technology Center
-
---8323328-139430450-1282846313=:2062--
