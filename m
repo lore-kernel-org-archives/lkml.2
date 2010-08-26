@@ -1,27 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab0HZQ3c (ORCPT <rfc822;w@1wt.eu>);
+	id S1754526Ab0HZQ3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 12:29:37 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:53775 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754496Ab0HZQ3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Aug 2010 12:29:32 -0400
-Received: from xenotime.net ([72.52.115.56]:57101 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752759Ab0HZQ33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 12:29:29 -0400
-Date: Thu, 26 Aug 2010 09:29:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: paulmck@linux.vnet.ibm.com, Joe Perches <joe@perches.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org,
-        ksummit-2010-discuss@lists.linux-foundation.org
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
- todo list, add RCU todo list
-Message-Id: <20100826092923.4bdbea69.rdunlap@xenotime.net>
-In-Reply-To: <1282839933.8133.11.camel@mulgrave.site>
-References: <20100826154537.GA4874@linux.vnet.ibm.com>
-	<1282837904.1875.64.camel@Joe-Laptop>
-	<20100826161451.GB2367@linux.vnet.ibm.com>
-	<1282839933.8133.11.camel@mulgrave.site>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Date: Thu, 26 Aug 2010 09:29:29 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Joe Perches <joe@perches.com>
+Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Message-ID: <20100826092929.72b61549@nehalam>
+In-Reply-To: <1282839372.1875.78.camel@Joe-Laptop>
+References: <4C763A67.5040107@dsn.okisemi.com>
+	<20100826090504.30ce58e5@nehalam>
+	<1282839372.1875.78.camel@Joe-Laptop>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -29,60 +39,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010 11:25:33 -0500 James Bottomley wrote:
+On Thu, 26 Aug 2010 09:16:12 -0700
+Joe Perches <joe@perches.com> wrote:
 
-> On Thu, 2010-08-26 at 09:14 -0700, Paul E. McKenney wrote:
-> > On Thu, Aug 26, 2010 at 08:51:44AM -0700, Joe Perches wrote:
-> > > On Thu, 2010-08-26 at 08:45 -0700, Paul E. McKenney wrote:
-> > > > Since T: and L: are already taken, add U: for URL of todo list.
-> > > > Also add the RCU todo list to both the RCU and RCUTORTURE projects.
-> > > 
-> > > Hi Paul
-> > > 
-> > > I think W: already works perfectly well for this use.
-> > > 
-> > > >From MAINTAINERS:
-> > >         W: Web-page with status/info
-> > > 
-> > > > @@ -4801,6 +4802,7 @@ M:	Josh Triplett <josh@freedesktop.org>
-> > > >  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > >  S:	Supported
-> > > >  T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> > > > +U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
-> > > 
-> > > W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
-> > > 
-> > > >  F:	Documentation/RCU/torture.txt
-> > > >  F:	kernel/rcutorture.c
-> > > >  
-> > > > @@ -4826,6 +4828,7 @@ M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > >  W:	http://www.rdrop.com/users/paulmck/rclock/
-> > > >  S:	Supported
-> > > >  T:	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> > > > +U:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
-> > > 
-> > > W:	http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
+> On Thu, 2010-08-26 at 09:05 -0700, Stephen Hemminger wrote:
+> > +	for (i = 0; i < 6; i++)
+> > +		printk(KERN_INFO "%2.2x%c",
+> > +			netdev->dev_addr[i], i == 5 ? '\n' : ':');
 > > 
-> > OK, how about the following, then?
+> > you just want:
+> >          printk(KERN_INFO "%pM", netdev->dev_addr);
+> > 
+> > or better yet, convert to dev_printk
 > 
-> Got to say I really think overloading W which means web page/status
-> information isn't a very good idea:
+> or perhaps better still convert to netdev_info
 > 
-> jejb@mulgrave:~/git/linux-2.6> grep -w 'W:' MAINTAINERS |wc -l
-> 371
+> My message logging order preference:
 > 
-> We already have ~400 of them ... how's anyone looking for a todo list
-> going to find the right one in amongst all the others (assuming a newbie
-> with no subject predisposition simply trying to find any todo list).
+> if there's a netif_msg_<type> and a struct net_device
+> 	netif_<level>		(struct private *, netif_msg_<type>,
+> 				 struct net_device *, fmt, args...)
+> if there's a struct net_device
+> 	netdev_<level>		(struct net_device *, fmt, args...)
+> if there's a struct device
+> 	dev_<level>		(struct device *, fmt, args...)
+> otherwise
+> 	pr_<level>		(fmt, args...)
+> 
+> 
 
+At this point in process, netdevice isn't registered so it
+doesn't have a ethX name. so dev_info would be best.
 
-Did you have an alternate suggestion?
-
-Do you prefer a Grand Unified Todo List?
-
-I don't mind the kernelnewbies list/location, but we need to give it
-some TLC.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
