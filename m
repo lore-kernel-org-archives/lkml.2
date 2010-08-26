@@ -1,43 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab0HZBag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 21:30:36 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:39223 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752877Ab0HZBab (ORCPT
+	id S1754321Ab0HZBbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 21:31:50 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:37637 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752966Ab0HZBbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 21:30:31 -0400
+	Wed, 25 Aug 2010 21:31:47 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: zuPqxDMVM1kXH64xUYCr_Ew159XaW.3MJlXHbdTiWfT5obI
- zXF9ingyPgJpuGLuepsTKz2WgN8ShYOjOzmaYyzlAVyABDQISXlem0akC0Wa
- LhEch3nCiYVEWSyo4ucnFfRK.KRv44Iz9fMwyCBe7ARCU70N8KXS9RrQffpF
- k.CA6mtVg_wIdkv_cspHw9gnSPFDgTyg8ZaO5ftNI9QHRk8gbh4JnyumJtMe
- pygiOglUefnWyViN15vmISUvRhJNP
+X-YMail-OSG: ljfnz4gVM1m_RRigzf42seZEm.eObkHDXudfnl0XSpQSrAc
+ GPlrBnvrzawje8vO7KwJdD9MLAUWhk7XyUk19Nu1lW4Frw2rk.h2haumooVV
+ K5_crbS0jlSwoDXkTgSnuM8mGhQUv2raDSl1V1YHOTxrGGNnpUF1GFQXFkz.
+ PKL0nMnqK_pz0R73EfybxaMnpHm46_CtIy_YrgdZzR8siqo_9BdhIv_M.YA5
+ rHkiMfSDytGt9Twx5BtgW6O1kFzss00Oz5tl2sXa9VHqG6vbwW.7eJmmsSYX
+ izrl17g--
 X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 25 Aug 2010 20:30:24 -0500 (CDT)
+Date: Wed, 25 Aug 2010 20:31:43 -0500 (CDT)
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@router.home
 To: David Rientjes <rientjes@google.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-In-Reply-To: <alpine.DEB.2.00.1008251604540.31521@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1008252028030.32421@router.home>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <1282656558.2605.2742.camel@laptop> <4C73CA24.3060707@fusionio.com> <alpine.DEB.2.00.1008241309170.21242@chino.kir.corp.google.com> <20100825112433.GB4453@thunk.org>
- <1282736132.2605.3563.camel@laptop> <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop> <20100825132417.GQ31488@dastard> <1282743342.2605.3707.camel@laptop> <alpine.DEB.2.00.1008251347550.16484@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1008251604120.24931@router.home> <alpine.DEB.2.00.1008251418590.20253@chino.kir.corp.google.com> <alpine.DEB.2.00.1008251630270.25660@router.home> <alpine.DEB.2.00.1008251604540.31521@chino.kir.corp.google.com>
+cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm@kvack.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: linux-next: Tree for August 25 (mm/slub)
+In-Reply-To: <alpine.DEB.2.00.1008251622500.31521@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1008252030470.32421@router.home>
+References: <20100825132057.c8416bef.sfr@canb.auug.org.au> <20100825094559.bc652afe.randy.dunlap@oracle.com> <alpine.DEB.2.00.1008251409260.22117@router.home> <20100825122134.2ac33360.randy.dunlap@oracle.com> <alpine.DEB.2.00.1008251447410.22117@router.home>
+ <alpine.DEB.2.00.1008251622500.31521@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -47,21 +37,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 25 Aug 2010, David Rientjes wrote:
 
-> On Wed, 25 Aug 2010, Christoph Lameter wrote:
->
-> > If the higher order fails in slub then an order 0 alloc is attempted
-> > without __GFP_NORETRY. In both cases the nofail behavior of the page
-> > allocator determines the outcode.
-> >
->
-> Right, I thought you said the slab layer passes __GFP_NOFAIL when there's
-> no objects available.
+> slub: fix SLUB_RESILIENCY_TEST for dynamic kmalloc caches
 
-Yes, the slab layer calls the page allocator when there are no objects
-available and passes the __GFP_NOFAIL that the user may have set in the
-call to the page allocator.
-
-Why then add new functions that do the same?
-
-
+Acked-by: Christoph Lameter <cl@linux.com>
 
