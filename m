@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab0HZTtW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 15:49:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33489 "EHLO mail.zytor.com"
+	id S1754394Ab0HZTxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 15:53:42 -0400
+Received: from atl.turmel.org ([74.117.157.138]:33573 "EHLO atl.turmel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753701Ab0HZTtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 15:49:19 -0400
-Message-ID: <4C76C518.6030301@zytor.com>
-Date: Thu, 26 Aug 2010 12:48:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1753971Ab0HZTxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 15:53:39 -0400
+Message-ID: <4C76C641.30901@turmel.org>
+Date: Thu, 26 Aug 2010 15:53:37 -0400
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100815 Lightning/1.0b2 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 01/10] x86/iommu: Add IOMMU_INIT macros, .iommu_table
- section, and iommu_table_entry structure.
-References: <1282845485-8991-1-git-send-email-konrad.wilk@oracle.com> <1282845485-8991-2-git-send-email-konrad.wilk@oracle.com> <20100826181913.GA5947@merkur.ravnborg.org>
-In-Reply-To: <20100826181913.GA5947@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric.Valette@Free.fr
+CC: linux-kernel@vger.kernel.org, Florian Mickler <florian@mickler.org>
+Subject: Re: Please add generic support for root=UUID= at kernel parameter
+ command line (LABEL, BYID maybe also)
+References: <4C728790.7050805@Free.fr> <4C72EE8F.3040708@turmel.org> <4C768919.30104@Free.fr>
+In-Reply-To: <4C768919.30104@Free.fr>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 11:19 AM, Sam Ravnborg wrote:
-> 
-> So we have yet another magic section in vmlinux.lds.S
-> A nice comemnt that expalins what this is used for and why
-> it is discardable etc. would be nice.
-> 
-> Lots of magic sections in same file miss this,
-> but thats not an example to follwow.
-> 
+Hi Eric,
 
-Honestly, I think we this kind of problem -- a mergeable table -- often
-enough that we should implement a generic facility for it.  It obviously
-has to be based on sections, but I think we could automate its creation.
- The gPXE people have done that, and this is more or less a summary of
-their technique.
+On 08/26/2010 11:32 AM, Eric Valette wrote:
+> I found a solution myself using the grub embedded "search --fs-uuid". I do it once the linux boot partition and also on one partition of the external disk. If the search on the external disk report an error, I know root=/dev/sda1 else root=/dev/sdb1. But I really think this should be linux job!
 
-Basically, you have a set of sections with names like:
+Although this works now, there's no guarantee this will continue to work.  What if you plug in an eSATA enclosure that has a port multiplier and two disks?  I think you'll find your root device on /dev/sdc1.  Or maybe someday a robust scheme for simultaneous probing will be adopted (for faster booting, presumably), and the order will vary from boot to boot.
 
-	.table.<symbol>.<priority>
+> I also converted my /etc/fstab to LABEL=foo /foo syntax.
 
-... then the linker script looks something like:
+That's good.
 
-	.table : {
-		SORT_BY_NAME(.table.*)
-	}
+> Now I'm really puzzled grub2 as a "search by fs uuid" command that linux is unable to deliver for the root device!
 
-use SORT_BY_NAME() in the linker script.  To get the start and end
-symbols, we define them as solo symbols inside sections designed to sort
-first and last (written by hand into email, so adjustments may be
-needed, void where prohibited):
+The key word here is "unable".  The maintainers aren't *unable* to do this.  They are *unwilling* to do this.  I don't recall the precise discussion, but basically it boils down to the fact that early userspace (aka initramfs) can do this efficiently, and it needs to be supported in initramfs for other reasons, so it is pointless to duplicate this code in the kernel.  I'm sure block folk will chime in if this isn't a fair representation (my apologies in advance if so).
 
-#define TABLE(name, priority) \
-	__section(".table." ## name ## "." ## priority)
+Try dracut.  Seriously.  It's lean and mean just for this use-case, and you'll be protecting yourself against future changes in the block layer.  And you can put root=LABEL=foo on your kernel command line to match your fstab.
 
-#define DECLARE_TABLE(type, name) \
-	extern type __table ## name ## _start[0]; \
-	extern type __table ## name ## _end[0];
+Usage (from your kernel source dir):
 
-#define DEFINE_TABLE(type, name) \
-	type __table ## name ## _start[0] TABLE(name, 0); \
-	type __table ## name ## _end[0] TABLE(name, 9);
+$ make
+$ make modules
+# make modules_install
+# make install
+# dracut [-v] [-f] '' `make kernelrelease`
 
-Here "priority" is a digit from 1 (first) to 8 (last); 0 and 9 are used
-for the capstones.
+HTH,
 
-Presumably we need a few different flavors for init tables and so on,
-but this would make it a generic mechanism.
-
-	-hpa
+Phil
