@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab0HZGNB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 02:13:01 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:25191 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab0HZGNA (ORCPT
+	id S1752185Ab0HZGQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 02:16:24 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:50614 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab0HZGQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 02:13:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:message-id:user-agent:
-	mime-version:content-type:x-system-of-record;
-	b=k47rTJe4ssVOrbi67iAzTgDTNRqeI/fvamuq1drUg8oekIpGpqmBS3FEdXS9qGvfX
-	Fo5JFAlowMC2yER7dYe8A==
-Date: Wed, 25 Aug 2010 23:12:54 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH] mm: fix hang on anon_vma->root->lock
-Message-ID: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 26 Aug 2010 02:16:20 -0400
+Message-ID: <4C7606A9.40103@canonical.com>
+Date: Thu, 26 Aug 2010 14:16:09 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Corentin Chary <corentin.chary@gmail.com>
+CC: Len Brown <lenb@kernel.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Len Brown <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 8/8] ideapad: Change the driver name to ideapad_laptop
+References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>	<1282120734-11635-1-git-send-email-ike.pan@canonical.com>	<alpine.LFD.2.00.1008251656090.3037@localhost.localdomain> <AANLkTi=STq=_K2NPnK4GM+XwruaR09m6QJ7nkuCJVQvB@mail.gmail.com>
+In-Reply-To: <AANLkTi=STq=_K2NPnK4GM+XwruaR09m6QJ7nkuCJVQvB@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After several hours, kbuild tests hang with anon_vma_prepare() spinning on
-a newly allocated anon_vma's lock - on a box with CONFIG_TREE_PREEMPT_RCU=y
-(which makes this very much more likely, but it could happen without).
-
-The ever-subtle page_lock_anon_vma() now needs a further twist: since
-anon_vma_prepare() and anon_vma_fork() are liable to change the ->root
-of a reused anon_vma structure at any moment, page_lock_anon_vma()
-needs to check page_mapped() again before succeeding, otherwise
-page_unlock_anon_vma() might address a different root->lock.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-
- mm/rmap.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
-
---- 2.6.36-rc2/mm/rmap.c	2010-08-16 00:18:01.000000000 -0700
-+++ linux/mm/rmap.c	2010-08-24 03:22:17.000000000 -0700
-@@ -316,7 +316,7 @@ void __init anon_vma_init(void)
-  */
- struct anon_vma *page_lock_anon_vma(struct page *page)
- {
--	struct anon_vma *anon_vma;
-+	struct anon_vma *anon_vma, *root_anon_vma;
- 	unsigned long anon_mapping;
- 
- 	rcu_read_lock();
-@@ -327,8 +327,21 @@ struct anon_vma *page_lock_anon_vma(stru
- 		goto out;
- 
- 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
--	anon_vma_lock(anon_vma);
--	return anon_vma;
-+	root_anon_vma = ACCESS_ONCE(anon_vma->root);
-+	spin_lock(&root_anon_vma->lock);
-+
-+	/*
-+	 * If this page is still mapped, then its anon_vma cannot have been
-+	 * freed.  But if it has been unmapped, we have no security against
-+	 * the anon_vma structure being freed and reused (for another anon_vma:
-+	 * SLAB_DESTROY_BY_RCU guarantees that - so the spin_lock above cannot
-+	 * corrupt): with anon_vma_prepare() or anon_vma_fork() redirecting
-+	 * anon_vma->root before page_unlock_anon_vma() is called to unlock.
-+	 */
-+	if (page_mapped(page))
-+		return anon_vma;
-+
-+	spin_unlock(&root_anon_vma->lock);
- out:
- 	rcu_read_unlock();
- 	return NULL;
+On 08/26/2010 01:43 PM, Corentin Chary wrote:
+> On Wed, Aug 25, 2010 at 10:56 PM, Len Brown <lenb@kernel.org> wrote:
+>>>  drivers/platform/x86/ideapad_acpi.c   |  381 ---------------------------------
+>>>  drivers/platform/x86/ideapad_laptop.c |  381 +++++++++++++++++++++++++++++++++
+>>
+>> Acked-by: Len Brown <len.brown@intel.com>
+>>
+>> thanks,
+>> Len Brown, Intel Open Source Technology Center
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> Probably not very important .. but .. other drivers are called *-laptop.c, not
+> *_laptop.c ..
+> 
+> asus-laptop.c classmate-laptop.c compal-laptop.c dell-laptop.c eeepc-laptop.c
+> fujitsu-laptop.c msi-laptop.c panasonic-laptop.c sony-laptop.c topstar-laptop.c
+> 
+I choose _laptop.c not -laptop.c because when modprobe. We are using
+"modprobe asus-laptop", but when removing, using "modprobe asus_laptop".
