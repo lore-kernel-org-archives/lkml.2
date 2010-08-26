@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab0HZRXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 13:23:48 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44278 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab0HZRXp (ORCPT
+	id S1752687Ab0HZRZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 13:25:04 -0400
+Received: from smtp-good-out-1.t-2.net ([84.255.208.43]:53212 "EHLO
+	smtp-good-out-1.t-2.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab0HZRZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 13:23:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=S4rh0nE1/vtQHvSOmnlV5VrRemWLrf5VV8JTeZ5Ul8glJbnp5lyjWFjswkf4oMpzt9
-         Zc5cmp1GLyaGA0zxOxs2/6jW4LLeZt3r/nB8LaZzIbHzpU2yVq+nUVyrkXKB9LNqNb6e
-         L2ga/zVHsbv1ehF1IenR8JOT+qIYsJ59adKNk=
-Date: Fri, 27 Aug 2010 02:23:38 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] writeback: Account for time spent congestion_waited
-Message-ID: <20100826172338.GB6873@barrios-desktop>
-References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
- <1282835656-5638-2-git-send-email-mel@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282835656-5638-2-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 26 Aug 2010 13:25:01 -0400
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Kay Sievers <kay.sievers@vrfy.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>
+In-Reply-To: <20100825181647.GA22018@suse.de>
+References: <20100824225703.GA5913@suse.de>
+	 <20100825002221.68fc09a4@lxorguk.ukuu.org.uk>
+	 <20100824231241.GA6971@suse.de>
+	 <20100825005152.40ba2f12@lxorguk.ukuu.org.uk>
+	 <20100825004134.GA28884@suse.de>
+	 <20100825110813.5f7d7ac8@lxorguk.ukuu.org.uk>
+	 <20100825155716.GB16284@suse.de>
+	 <20100825181108.1dcd0d80@lxorguk.ukuu.org.uk>
+	 <20100825171045.GA19401@suse.de>
+	 <20100825191437.1df57c9d@lxorguk.ukuu.org.uk>
+	 <20100825181647.GA22018@suse.de>
+Content-Type: text/plain
+Date: Thu, 26 Aug 2010 19:24:44 +0200
+Message-Id: <1282843484.2440.23.camel@itpsd6lap>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 04:14:14PM +0100, Mel Gorman wrote:
-> There is strong evidence to indicate a lot of time is being spent in
-> congestion_wait(), some of it unnecessarily. This patch adds a
-> tracepoint for congestion_wait to record when congestion_wait() occurred
-> and how long was spent.
+On 25.08.2010 (sre) at 11:16 -0700 Greg KH wrote:
+> On Wed, Aug 25, 2010 at 07:14:37PM +0100, Alan Cox wrote:
+> > > > > That's one extra process, not that much, right?
+> > > > 
+> > > > About 150K or so way too much and its not robust.
+> > > 
+> > > Fair enough.  So, with this driver, would it make sense for the distros
+> > > to switch over to using it instead of the above line in their initrd?
+> > 
+> > Distros no - I doubt any normal PC distro would turn the facility on.
+> > Embedded - yes especially deeply embedded.
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> So should this be dependent on CONFIG_EMBEDDED then?
+> 
 
-I think that's enough to add tracepoint until solving this issue at least.
+Should i resend the patch with CONFIG_EMBEDDED dependency enabled? I do
+not have any real objections to that, except that the driver operates
+the same way regardless of the (non-)embedded configuration.
 
--- 
-Kind regards,
-Minchan Kim
+regards, Samo
+
