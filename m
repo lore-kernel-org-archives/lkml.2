@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab0HZIU5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 04:20:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36003 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab0HZIUz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 04:20:55 -0400
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-From: Peter Zijlstra <peterz@infradead.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <AANLkTinPaq+0MbdW81uoc5_OZ=1Gy_mVYEBnwv8zgOBd@mail.gmail.com>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
-	 <1282310110.2605.976.camel@laptop>
-	 <20100825155814.25c783c7.akpm@linux-foundation.org>
-	 <20100825173125.0855a6b0@bike.lwn.net>
-	 <AANLkTinPaq+0MbdW81uoc5_OZ=1Gy_mVYEBnwv8zgOBd@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 26 Aug 2010 10:20:11 +0200
-Message-ID: <1282810811.1975.246.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753214Ab0HZIXz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 04:23:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104Ab0HZIXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 04:23:53 -0400
+Message-ID: <4C762495.7050203@redhat.com>
+Date: Thu, 26 Aug 2010 11:23:49 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] KVM: x86 emulator: trap and propagate #DE from DIV
+ and IDIV
+References: <1282648229-19575-1-git-send-email-avi@redhat.com> <1282648229-19575-4-git-send-email-avi@redhat.com> <20100825210501.GD32737@amt.cnet>
+In-Reply-To: <20100825210501.GD32737@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-26 at 11:49 +0900, Minchan Kim wrote:
-> But one of
-> problems is anonymous page which can be has a role of pinned page in
-> non-swapsystem. 
+  On 08/26/2010 12:05 AM, Marcelo Tosatti wrote:
+>
+>> @@ -3363,7 +3374,7 @@ special_insn:
+>>   		break;
+>>   	case 0xf6 ... 0xf7:	/* Grp3 */
+>>   		if (emulate_grp3(ctxt, ops) != X86EMUL_CONTINUE)
+>> -			goto cannot_emulate;
+>> +			goto done;
+>>   		break;
+> Must assign rc to emulate_grp3() retval.
 
-Well, compaction can move those around, but if you've got too many of
-them its a simple matter of over-commit and for that we've got the
-OOM-killer ;-)
+While there's not much difference between X86EMUL_PROPAGATE_FAULT and 
+X86EMUL_CONTINUE, it's bad form to break things internally.  I'll fix 
+and repost.
+
+-- 
+error compiling committee.c: too many arguments to function
+
