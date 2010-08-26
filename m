@@ -1,140 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab0HZJ3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 05:29:50 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56117 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab0HZJ3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 05:29:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=u7TjaIJCWWw+quGEA0Vb0c3an4ks17yiWutON8VKzhtAcc6NSCM5L7WqsnqXNxr9vA
-         Zk00EivddGabgiyjEbOWTA/wq5zPgF95r+zw7v/CBjhcMzewd6NyLFSJHjRxEjNZUr4u
-         vDMFic0ze5yZf26uuLT3rXzdHYaf3jZ0Tnj8o=
-MIME-Version: 1.0
-In-Reply-To: <1282794715-28640-3-git-send-email-mark.brown314@gmail.com>
-References: <1282794715-28640-1-git-send-email-mark.brown314@gmail.com> <1282794715-28640-3-git-send-email-mark.brown314@gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 26 Aug 2010 17:29:26 +0800
-Message-ID: <AANLkTinCT8quoo938WgiFKd6VrMZGtxZFpkcamTzAeQB@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] pxa168: added initial support for TPO TD043MTEA1
- LCD display on Aspenite
-To: "Mark F. Brown" <mark.brown314@gmail.com>
-Cc: marek.vasut@gmail.com, linux-arm-kernel@lists.infradead.org,
-        haojian.zhuang@marvell.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1751819Ab0HZJcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 05:32:10 -0400
+Received: from sh.osrg.net ([192.16.179.4]:39731 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803Ab0HZJcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 05:32:08 -0400
+Date: Thu, 26 Aug 2010 18:30:02 +0900
+To: g.liakhovetski@gmx.de
+Cc: fujita.tomonori@lab.ntt.co.jp, mitov@issp.bas.bg,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, u.kleine-koenig@pengutronix.de,
+        philippe.retornaz@epfl.ch, gregkh@suse.de, jkrzyszt@tis.icnet.pl
+Subject: Re: [RFC][PATCH] add
+ dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <Pine.LNX.4.64.1008261100150.14167@axis700.grange>
+References: <201008260904.19973.mitov@issp.bas.bg>
+	<20100826152333K.fujita.tomonori@lab.ntt.co.jp>
+	<Pine.LNX.4.64.1008261100150.14167@axis700.grange>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100826182915S.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 26 Aug 2010 18:30:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7Q9UF75006857
 
-On Thu, Aug 26, 2010 at 11:51 AM, Mark F. Brown <mark.brown314@gmail.com> wrote:
-> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+On Thu, 26 Aug 2010 11:06:20 +0200 (CEST)
+Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
 
-Applied to 'devel'.
+> On Thu, 26 Aug 2010, FUJITA Tomonori wrote:
+> 
+> > On Thu, 26 Aug 2010 09:04:14 +0300
+> > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > 
+> > > On Thursday, August 26, 2010 08:40:47 am FUJITA Tomonori wrote:
+> > > > On Fri, 20 Aug 2010 14:50:12 +0300
+> > > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > > 
+> > > > > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
+> > > > > > On Fri, 20 Aug 2010 11:13:45 +0300
+> > > > > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > > > > 
+> > > > > > > > > This tric is already used in drivers/staging/dt3155v4l.c
+> > > > > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
+> > > > > > > > > 
+> > > > > > > > > Here proposed for general use by popular demand from video4linux folks.
+> > > > > > > > > Helps for videobuf-dma-contig framework.
+> > > > > > > > 
+> > > > > > > > What you guys exactly want to do? If you just want to pre-allocate
+> > > > > > > > coherent memory for latter usage,
+> > > > > > > 
+> > > > > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
+> > > > > > > We use coherent memory because it turns out to be contiguous.
+> > > > > > 
+> > > > > > Hmm, you don't care about coherency? You just need contiguous memory?
+> > > > > 
+> > > > > Yes. We just need contiguous memory. Coherency is important as far as when dma
+> > > > > transfer finishes user land is able to see the new data. Could be done by something like
+> > > > > dma_{,un}map_single()
+> > > > 
+> > > > Then, we should avoid using coherent memory as I exaplained before. In
+> > > > addition, dma_alloc_coherent can't provide large enough contigous
+> > > > memory for some drivers so this patch doesn't help much.
+> > > 
+> > > Please, look at drivers/media/video/videobuf-dma-contig.c. Using coherent memory
+> > > is inavoidable for now, there is no alternative for it for now. The two new functions,
+> > > which I propose are just helpers for those of us who already use coherent memory
+> > > (via videobuf-dma-contig API). May be adding these two functions to 
+> > > drivers/media/video/videobuf-dma-contig.c will be better solution?
+> > 
+> > If you add something to the videobuf-dma-contig API, that's fine by me
+> > because drivers/media/video/videobuf-dma-contig.c uses the own
+> > structure and plays with dma_alloc_coherent. As long as a driver
+> > doesn't touch device->dma_mem directly, it's fine, I think (that is,
+> > dt3155v4l driver is broken). There are already some workarounds for
+> > contigous memory in several drivers anyway.
+> 
+> No, this will not work - this API has to be used from board code and 
+> videobuf can be built modular.
+> 
+> > We will have the proper API for contiguous memory. I don't think that
+> > adding such workaround to the DMA API is a good idea.
+> 
+> We have currently a number of boards broken in the mainline. They must be 
+> fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
+> as I suggested earlier, we need either this or my patch series
+> 
+> http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
+> 
+> for 2.6.36.
 
-> ---
->  arch/arm/mach-mmp/aspenite.c |   60 ++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 60 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-mmp/aspenite.c b/arch/arm/mach-mmp/aspenite.c
-> index 0629394..9e1bd6b 100644
-> --- a/arch/arm/mach-mmp/aspenite.c
-> +++ b/arch/arm/mach-mmp/aspenite.c
-> @@ -23,6 +23,7 @@
->  #include <mach/mfp-pxa168.h>
->  #include <mach/pxa168.h>
->  #include <mach/gpio.h>
-> +#include <video/pxa168fb.h>
->
->  #include "common.h"
->
-> @@ -66,6 +67,36 @@ static unsigned long common_pin_config[] __initdata = {
->        GPIO115_I2S_BCLK,
->        GPIO116_I2S_RXD,
->        GPIO117_I2S_TXD,
-> +
-> +       /* LCD */
-> +       GPIO56_LCD_FCLK_RD,
-> +       GPIO57_LCD_LCLK_A0,
-> +       GPIO58_LCD_PCLK_WR,
-> +       GPIO59_LCD_DENA_BIAS,
-> +       GPIO60_LCD_DD0,
-> +       GPIO61_LCD_DD1,
-> +       GPIO62_LCD_DD2,
-> +       GPIO63_LCD_DD3,
-> +       GPIO64_LCD_DD4,
-> +       GPIO65_LCD_DD5,
-> +       GPIO66_LCD_DD6,
-> +       GPIO67_LCD_DD7,
-> +       GPIO68_LCD_DD8,
-> +       GPIO69_LCD_DD9,
-> +       GPIO70_LCD_DD10,
-> +       GPIO71_LCD_DD11,
-> +       GPIO72_LCD_DD12,
-> +       GPIO73_LCD_DD13,
-> +       GPIO74_LCD_DD14,
-> +       GPIO75_LCD_DD15,
-> +       GPIO76_LCD_DD16,
-> +       GPIO77_LCD_DD17,
-> +       GPIO78_LCD_DD18,
-> +       GPIO79_LCD_DD19,
-> +       GPIO80_LCD_DD20,
-> +       GPIO81_LCD_DD21,
-> +       GPIO82_LCD_DD22,
-> +       GPIO83_LCD_DD23,
->  };
->
->  static struct smc91x_platdata smc91x_info = {
-> @@ -134,6 +165,34 @@ static struct i2c_board_info aspenite_i2c_info[] __initdata = {
->        { I2C_BOARD_INFO("wm8753", 0x1b), },
->  };
->
-> +static struct fb_videomode video_modes[] = {
-> +       [0] = {
-> +               .pixclock       = 30120,
-> +               .refresh        = 60,
-> +               .xres           = 800,
-> +               .yres           = 480,
-> +               .hsync_len      = 1,
-> +               .left_margin    = 215,
-> +               .right_margin   = 40,
-> +               .vsync_len      = 1,
-> +               .upper_margin   = 34,
-> +               .lower_margin   = 10,
-> +               .sync           = FB_SYNC_VERT_HIGH_ACT | FB_SYNC_HOR_HIGH_ACT,
-> +       },
-> +};
-> +
-> +struct pxa168fb_mach_info aspenite_lcd_info = {
-> +       .id                     = "Graphic Frame",
-> +       .modes                  = video_modes,
-> +       .num_modes              = ARRAY_SIZE(video_modes),
-> +       .pix_fmt                = PIX_FMT_RGB565,
-> +       .io_pin_allocation_mode = PIN_MODE_DUMB_24,
-> +       .dumb_mode              = DUMB_MODE_RGB888,
-> +       .active                 = 1,
-> +       .panel_rbswap           = 0,
-> +       .invert_pixclock        = 0,
-> +};
-> +
->  static void __init common_init(void)
->  {
->        mfp_config(ARRAY_AND_SIZE(common_pin_config));
-> @@ -143,6 +202,7 @@ static void __init common_init(void)
->        pxa168_add_twsi(1, NULL, ARRAY_AND_SIZE(aspenite_i2c_info));
->        pxa168_add_ssp(1);
->        pxa168_add_nand(&aspenite_nand_info);
-> +       pxa168_add_fb(&aspenite_lcd_info);
->
->        /* off-chip devices */
->        platform_device_register(&smc91x_device);
-> --
-> 1.7.0.4
->
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Why can't you revert a commit that causes the regression?
+
+The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
+responsible for the regression. And the patchset even exnteds the
+definition of the DMA API (dma_declare_coherent_memory). Such change
+shouldn't applied after rc1. I think that DMA-API.txt says that
+dma_declare_coherent_memory() handles coherent memory for a particular
+device. It's not for the API that reserves coherent memory that can be
+used for any device for a single device.
