@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab0HZNQb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 09:16:31 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33506 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab0HZNQ3 convert rfc822-to-8bit (ORCPT
+	id S1752098Ab0HZNQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 09:16:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57262 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab0HZNQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 09:16:29 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Date: Thu, 26 Aug 2010 08:16:24 -0500
-Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Topic: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Index: ActFHippVrzaXIdfS9uiXGfAlr+Y9AAAVY4s
-Message-ID: <496565EC904933469F292DDA3F1663E602F10ED4B3@dlee06.ent.ti.com>
-References: <1277943660-4112-9-git-send-email-x0095840@ti.com>
-	<20100826155416J.fujita.tomonori@lab.ntt.co.jp>
-	<496565EC904933469F292DDA3F1663E602F10ED4B1@dlee06.ent.ti.com>,<20100826215554N.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100826215554N.fujita.tomonori@lab.ntt.co.jp>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 26 Aug 2010 09:16:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=vlKvj+fX3w+8ask1jk/7sTORUHMXla+c5Y5lRF/NKvKZ1euSz3y8RlyJV9cY4ZEaTP
+         WAasNVlEVt7bf/cuZbDOMjohjn5XSgAyRL0sb14InW41qn2UoCpX3h9kEJWVeg8Tp1gS
+         wTIijIJ1ilwvcrT//k9QCdhzHKbjsgltMgckI=
+From: Adam Jiang <jiang.adam@gmail.com>
+To: ralf@linux-mips.org
+Cc: dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
+        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
+        tj@kernel.org, linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Adam Jiang <jiang.adam@gmail.com>
+Subject: [PATCH] mips: irq: add stackoverflow detection
+Date: Thu, 26 Aug 2010 22:19:15 +0900
+Message-Id: <1282828755-11953-1-git-send-email-jiang.adam@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <linux-mips@linux-mips.org>
+References: <linux-mips@linux-mips.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->________________________________________
->From: FUJITA Tomonori [fujita.tomonori@lab.ntt.co.jp]
->Sent: Thursday, August 26, 2010 7:56 AM
->To: Guzman Lugo, Fernando
->Cc: fujita.tomonori@lab.ntt.co.jp; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; ohad@wizery.com; hiroshi.doyu@nokia.com; ameya.palande@nokia.com; >felipe.contreras@nokia.com
->Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
->
->On Thu, 26 Aug 2010 07:38:26 -0500
->"Guzman Lugo, Fernando" <fernando.lugo@ti.com> wrote:
->
->> >> due to a restriction in scatter gather lists, it can
->> >> not be created a list for a buffer bigger than 1MB.
->> >> This patch is spliting big mappings into 1MB mappings.
->> >
->> >I don't read the whole thread but the above description is incorrect.
->> >
->> >Why can't you use scatter gather chaining? You can create a scatter
->> >list for a buffer larger than 1MB.
->>
->> The thing is that ARM architecture does not support SG chaining. This patch should be
->> seen like a workaround until it is fixed in iovmm module.
->
->Fix iovmm module is easier than the workaround?
+Add stackoverflow detection to mips arch
+---
+ arch/mips/Kconfig.debug |    7 +++++++
+ arch/mips/kernel/irq.c  |   19 +++++++++++++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-I have not thought about possible fixes inside iovmm, but now I am reviewing the
-patches I will figure out how to fix this inside iovmm. Since he workaround still
-can fail to allocate big buffers even though there is space to allocate it.
-
->
->From a quick look, arch/arm/plat-omap/iovmm.c does nothing wrong about
->scatter gather chaining. arm/arm/mm/dma-mapping.c looks fine too about
->it. Maybe just defining ARCH_HAS_SG_CHAIN works?
-
-I can try, but it looks tricky for me. Maybe someone else can tell us why
-SG chain is not supported for ARM or if there is a problem just defining 
-ARCH_HAS_SG_CHAIN.
-
-Regards,
-Fernando.
-
-
+diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
+index 43dc279..f1a00a2 100644
+--- a/arch/mips/Kconfig.debug
++++ b/arch/mips/Kconfig.debug
+@@ -67,6 +67,13 @@ config CMDLINE_OVERRIDE
+ 
+ 	  Normally, you will choose 'N' here.
+ 
++config DEBUG_STACKOVERFLOW
++	bool "Check for stack overflows"
++	depends on DEBUG_KERNEL
++	help
++	  This option will cause messages to be printed if free stack space
++	  drops below a certain limit.
++
+ config DEBUG_STACK_USAGE
+ 	bool "Enable stack utilization instrumentation"
+ 	depends on DEBUG_KERNEL
+diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
+index c6345f5..8fdf79e 100644
+--- a/arch/mips/kernel/irq.c
++++ b/arch/mips/kernel/irq.c
+@@ -151,6 +151,25 @@ void __init init_IRQ(void)
+ #endif
+ }
+ 
++#ifdef DEBUG_STACKOVERFLOW
++static inline void check_stack_overflow(void)
++{
++	long sp;
++
++	asm volatile("move %0, $sp" : "=r" (sp));
++	sp = sp & (THREAD_SIZE-1);
++
++	/* check for stack overflow: is there less than 2KB free? */
++	if (unlikely(sp < (sizeof(struct thread_info) + 2048))) {
++		printk("do_IRQ: stack overflow: %ld\n",
++		       sp - sizeof(struct thread_info));
++		dump_stack();
++	}
++}
++#else
++static inline void check_stack_overflow(void) {}
++#endif
++
+ /*
+  * do_IRQ handles all normal device IRQ's (the special
+  * SMP cross-CPU interrupts have their own specific
+-- 
+1.7.1
 
