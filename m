@@ -1,64 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab0HZTXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 15:23:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41567 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab0HZTXp convert rfc822-to-8bit (ORCPT
+	id S1753818Ab0HZT0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 15:26:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49005 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062Ab0HZT0n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 15:23:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=AEDJryS9A3b9ez35T9YwB2NKY8X+tR3hSkPb+YCNXhajd3ANFaL6ySfnePyRlYM8Zu
-         +10BlU21jMTatCi2ECnTNKomXL+cFJZTRzq2sVVmaVYI2es3nAE67prO5gqqEtlVDb8e
-         QkDcYoZf0krco63T/3pB6KiiulV7SONIitc6U=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Jonathan Corbet <corbet@lwn.net>
-Subject: Re: i915: 2.6.36-rc2 hoses my Intel display
-Date: Thu, 26 Aug 2010 21:23:40 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2; KDE/4.4.5; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-References: <20100823110145.08eb72fd@bike.lwn.net>
-In-Reply-To: <20100823110145.08eb72fd@bike.lwn.net>
+	Thu, 26 Aug 2010 15:26:43 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <1282846407.2081.79.camel@ville-desktop>
+References: <1282846407.2081.79.camel@ville-desktop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 26 Aug 2010 13:26:22 -0600
+X-Google-Sender-Auth: 6WlJvyEOlZaQoqvzlBomYux-7hE
+Message-ID: <AANLkTimrAq_eBjt7h+PQbMuiDYypt7Pd618Xbq0R70HA@mail.gmail.com>
+Subject: Re: [PATCH] drivers/net/: ll_temac_main.c & ll_temac.h: Adding
+ ethtool interface
+To: Ville Sundell <ville.sundell@digilent.ro>
+Cc: davem@davemloft.net, john.linn@xilinx.com, dkirjanov@kernel.org,
+        jpirko@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Joshua Pederson <josh@digilentinc.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201008262123.41226.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziaÅ‚ek, 23 sierpnia 2010 o 19:01:45 Jonathan Corbet wrote:
-> So I decided to fire up -rc2 today to see what would happen...the
-> results are best described by the attached images.  Something is
-> clearly scrambled between my hardware and the i915 driver.  Display with X
-> is hosed, but things go weird before X gets a chance to run (it is worth
-> noting that the initial output from the kernel is legible).
-> 
-> FWIW, my hardware is:
-> 
-> 00:02.1 Display controller: Intel Corporation 82Q35 Express Integrated
-> Graphics Controller (rev 02) Subsystem: Dell OptiPlex 755
-> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx- Status: Cap+ 66MHz- UDF- FastB2B+
-> ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> 	Region 0: Memory at fea80000 (32-bit, non-prefetchable) [size=512K]
-> 	Capabilities: [d0] Power Management version 2
-> 		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
-> PME(D0-,D1-,D2-,D3hot-,D3cold-) Status: D0 NoSoftRst- PME-Enable- DSel=0
-> DScale=0 PME-
-> 
-> What else can I provide to help track this one down?
+On Thu, Aug 26, 2010 at 12:13 PM, Ville Sundell
+<ville.sundell@digilent.ro> wrote:
+> This patch adds an interface to the ethtool subsystem and
+> implements read/write functionality for handling settings with the
+> ethtool_cmd structure. "Speed" is the only setting implemented so far.
+> Other settings (like reading the duplex value) can be easily implemented
+> later on.
+>
+> One can read the speed of the link by reading /sys/class/net/eth0/speed.
+> It seems that you can't write to /sys/class/net/eth0/speed, so the
+> "ethtool" command line utility must be used to set the speed.
+>
+> So far, it is tested only in the DMA mode, since I don't have hardware
+> with DCR available.
+>
+> Signed-off-by: Ville Sundell <ville.sundell@digilent.ro>
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=17151
-for your bug report, please add your address to the CC list in there, thanks!
+The ll_temac driver uses phylib.  The Ethtool ops should then also be
+implemented using phylib and not by writing to the ll_temac registers
+directly.  Otherwise changes to the ll_temac speed will not be
+reflected in the PHY.
+
+g.
+
+
+> ---
+>
+> When using a non-static PHY and 100Mbit connection in Temac, the speed
+> is not changed and stays at the reset value (1000Mbit). This leads to a
+> situation where data is not sent or received correctly since
+> temac_adjust_link() is not called due to lack of static PHY.  Therefore
+> the link speed retains the reset value.
+>
+> There is also no possibility to read or set the link speed from the user
+> space.
+>
+> The patch is done against the newest version of ll_temac_main.cc and
+> ll_temac.h of the linux-next tree.
+>
+> Thanks to Michal Simek for his feedback on this patch!
+>
+> Regards,
+> Ville Sundell
+> Digilent Inc.
+>
+>  drivers/net/ll_temac.h      |    3 ++
+>  drivers/net/ll_temac_main.c |   76 +++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 79 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/ll_temac.h b/drivers/net/ll_temac.h
+> index 522abe2..ddd00cc 100644
+> --- a/drivers/net/ll_temac.h
+> +++ b/drivers/net/ll_temac.h
+> @@ -247,6 +247,9 @@ This option defaults to enabled (set) */
+>  #define XTE_EMCFG_LINKSPD_10           0x00000000 /* 10 Mbit LINKSPD_MASK */
+>  #define XTE_EMCFG_LINKSPD_100          (1 << 30)  /* 100 Mbit LINKSPD_MASK */
+>  #define XTE_EMCFG_LINKSPD_1000         (1 << 31)  /* 1000 Mbit LINKSPD_MASK */
+> +#define XTE_EMCFG_LINKSPD_NA           0xC0000000 /* For undefined speed */
+> +
+> +#define TEMAC_SPEED_NA                 0 /* To indicate XTE_EMCFG_LINKSPD_NA */
+>
+>  #define XTE_GMIC_OFFSET                        0x00000320 /* RGMII/SGMII config */
+>  #define XTE_MC_OFFSET                  0x00000340 /* MDIO configuration */
+> diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
+> index bdf2149..ae08fd4 100644
+> --- a/drivers/net/ll_temac_main.c
+> +++ b/drivers/net/ll_temac_main.c
+> @@ -951,6 +951,81 @@ static const struct attribute_group temac_attr_group = {
+>        .attrs = temac_device_attrs,
+>  };
+>
+> +/* Ethtool interface implementation
+> + * SETTINGS
+> + * With the following functions below, you can
+> + * read and set following settings:
+> + * Speed:
+> + *     Speed of the TEMAC controller is indicated by two most significant bits
+> + *     in the XTE_EMCFG_OFFSET register in the follwoing way:
+> + *     00 = 10 Mbit connection
+> + *     01 = 100 Mbit connection
+> + *     10 = 1000 Mbit connection
+> + *     11 = Undefined connection speed
+> +*/
+> +
+> +static int temac_get_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
+> +{
+> +       struct temac_local *lp = netdev_priv(ndev);
+> +       u32 reg = temac_indirect_in32(lp, XTE_EMCFG_OFFSET);
+> +
+> +       switch (reg & XTE_EMCFG_LINKSPD_MASK) {
+> +       case XTE_EMCFG_LINKSPD_10:
+> +               cmd->speed = SPEED_10;
+> +               break;
+> +       case XTE_EMCFG_LINKSPD_100:
+> +               cmd->speed = SPEED_100;
+> +               break;
+> +       case XTE_EMCFG_LINKSPD_1000:
+> +               cmd->speed = SPEED_1000;
+> +               break;
+> +       default:
+> +               cmd->speed = TEMAC_SPEED_NA; /* Undefined speed */
+> +               break;
+> +       }
+> +
+> +       /* TODO: Insert more setting reading code here */
+> +
+> +       return 0;
+> +}
+> +
+> +static int temac_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
+> +{
+> +       struct temac_local *lp = netdev_priv(ndev);
+> +       u32 reg = temac_indirect_in32(lp, XTE_EMCFG_OFFSET);
+> +
+> +       reg &= ~XTE_EMCFG_LINKSPD_MASK;
+> +       switch (cmd->speed) {
+> +       case SPEED_10:
+> +               reg |= XTE_EMCFG_LINKSPD_10;
+> +               break;
+> +       case SPEED_100:
+> +               reg |= XTE_EMCFG_LINKSPD_100;
+> +               break;
+> +       case SPEED_1000:
+> +               reg |= XTE_EMCFG_LINKSPD_1000;
+> +               break;
+> +       default:
+> +               reg |= XTE_EMCFG_LINKSPD_NA; /* Undefined speed */
+> +               break;
+> +       }
+> +
+> +       /* TODO: Insert more setting writing code here */
+> +
+> +       temac_indirect_out32(lp, XTE_EMCFG_OFFSET, reg);
+> +
+> +       return 0;
+> +}
+> +
+> +/*
+> + * Defining the ethtool operations.
+> + * This will be passed to the ethtool subsystem in the probe function
+> + */
+> +static const struct ethtool_ops temac_ethtool_ops = {
+> +       .get_settings = temac_get_settings,
+> +       .set_settings = temac_set_settings,
+> +};
+> +
+>  static int __init
+>  temac_of_probe(struct platform_device *op, const struct of_device_id *match)
+>  {
+> @@ -970,6 +1045,7 @@ temac_of_probe(struct platform_device *op, const struct of_device_id *match)
+>        ether_setup(ndev);
+>        dev_set_drvdata(&op->dev, ndev);
+>        SET_NETDEV_DEV(ndev, &op->dev);
+> +       SET_ETHTOOL_OPS(ndev, &temac_ethtool_ops);
+>        ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+>        ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
+>        ndev->netdev_ops = &temac_netdev_ops;
+>
+>
+>
+
+
 
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
