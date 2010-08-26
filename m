@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab0HZRzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 13:55:12 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57129 "EHLO
+	id S1752576Ab0HZR5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 13:57:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57139 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab0HZRzI (ORCPT
+	with ESMTP id S1752152Ab0HZR5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 13:55:08 -0400
-Date: Thu, 26 Aug 2010 18:54:40 +0100
+	Thu, 26 Aug 2010 13:57:35 -0400
+Date: Thu, 26 Aug 2010 18:57:19 +0100
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: u.kleine-koenig@pengutronix.de, mitov@issp.bas.bg,
-        linux-sh@vger.kernel.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        jkrzyszt@tis.icnet.pl, philippe.retornaz@epfl.ch,
-        akpm@linux-foundation.org, g.liakhovetski@gmx.de,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [RFC][PATCH] add
-	dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Message-ID: <20100826175440.GB13224@n2100.arm.linux.org.uk>
-References: <Pine.LNX.4.64.1008261100150.14167@axis700.grange> <20100826182915S.fujita.tomonori@lab.ntt.co.jp> <20100826095311.GA13051@pengutronix.de> <20100826185938A.fujita.tomonori@lab.ntt.co.jp>
+Cc: benh@kernel.crashing.org, khc@pm.waw.pl, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
+Message-ID: <20100826175719.GC13224@n2100.arm.linux.org.uk>
+References: <20100819234835Y.fujita.tomonori@lab.ntt.co.jp> <1282254713.22370.368.camel@pasglop> <20100826205344E.fujita.tomonori@lab.ntt.co.jp> <20100826225352S.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100826185938A.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100826225352S.fujita.tomonori@lab.ntt.co.jp>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 07:00:24PM +0900, FUJITA Tomonori wrote:
-> On Thu, 26 Aug 2010 11:53:11 +0200
-> Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+On Thu, Aug 26, 2010 at 10:54:39PM +0900, FUJITA Tomonori wrote:
+> On Thu, 26 Aug 2010 20:55:09 +0900
+> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 > 
-> > > > We have currently a number of boards broken in the mainline. They must be 
-> > > > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
-> > > > as I suggested earlier, we need either this or my patch series
-> > > > 
-> > > > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
-> > > > 
-> > > > for 2.6.36.
-> > > 
-> > > Why can't you revert a commit that causes the regression?
-> > > 
-> > > The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
-> > > responsible for the regression. And the patchset even exnteds the
-> > > definition of the DMA API (dma_declare_coherent_memory). Such change
-> > > shouldn't applied after rc1. I think that DMA-API.txt says that
-> > > dma_declare_coherent_memory() handles coherent memory for a particular
-> > > device. It's not for the API that reserves coherent memory that can be
-> > > used for any device for a single device.
-> > The patch that made the problem obvious for ARM is
-> > 309caa9cc6ff39d261264ec4ff10e29489afc8f8 aka v2.6.36-rc1~591^2~2^4~12.
-> > So this went in before v2.6.36-rc1.  One of the "architectures which
-> > similar restrictions" is x86 BTW.
+> > On Fri, 20 Aug 2010 07:51:52 +1000
+> > Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
 > > 
-> > And no, we won't revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 as it
-> > addresses a hardware restriction.
+> > > On Thu, 2010-08-19 at 23:50 +0900, FUJITA Tomonori wrote:
+> > > > 
+> > > > You mean that you like to permit architectures to modify
+> > > > dev->coherent_dma_mask behind a device? If so, I'm against it because
+> > > > it means dev->coherent_dma_mask has two meanings. That's confusing.
+> > > 
+> > > No it's not. It has one and only one meaning which is the mask defining
+> > > where the coherent memory can come from for that device. Nobody cares if
+> > > the device can do more and has been "clipped" at set_coherent_dma_mask()
+> > > time by the bus. This is not useful information.
+> > 
+> > Ok.
 > 
-> How these drivers were able to work without hitting the hardware restriction?
+> btw, I'm still not sure, letting architectures to clip the dma mask
+> (and coherent mask) behind a driver is correct by defintion of the DMA
+> API (it's not a real problem).
+> 
+> DMA-API.txt defines dma_set_mask is "checks to see if the mask is
+> possible and update the device parameters if it is". It means that
+> architectures can't clip the mask behind a driver, I think.
+> 
+> Lots of drivers do something like:
+> 
+> if (dma_set_mask(dev, DMA_BIT_MASK(64)))
+>         if (dma_set_mask(dev, DMA_BIT_MASK(32)))
+> 
+> What arm does is accepting whatever dma mask and setting the clipped
+> mask behind a driver. If we use this sementics (archs are free to clip
+> the mask), drivers don't need the second dma_set_mask call. And the
+> driver wrongly assumes that it successfully set 64bit dma mask (and
+> possibly set the hardware to 64bit dma mode needlessly).
 
-Well, OMAP processors have experienced lock-ups due to multiple mappings of
-memory, so the restriction in the architecture manual is for real.
+Ok, in that case lets disable all PCI drivers which do this on IXP4xx
+then, because they obviously can't cope with the 64MB window that this
+platform has.
 
-But more the issue is that the behaviour you get from a region is _totally_
-unpredictable (as the arch manual says).  With the VIPT caches, they can
-be searched irrespective of whether the page tabkes indicate that it's
-supposed to be cached or not - which means you can still hit cache lines
-for an ioremap'd region.
-
-And if you do, how do you know that the cached data is still valid - what
-if it's some critical data that results in corruption - how do you know
-whether that's happened or not?  It might not even cause a kernel
-exception.
-
-We have to adhere to the restrictions placed upon us by the architecture
-at hand, and if that means device drivers break, so be it - at least we
-get to know what needs to be fixed for these restrictions.
+Clearly they need to be rewritten such that they can cope with this,
+irrespective of the fact that they've worked for ages with the current
+solution.
