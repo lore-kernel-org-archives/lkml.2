@@ -1,128 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab0HZBYx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 21:24:53 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:52177 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab0HZBYv (ORCPT
+	id S1753300Ab0HZB26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 21:28:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55901 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab0HZB2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 21:24:51 -0400
-Subject: Re: [PATCH] tcp: select(writefds) don't hang up when a peer close
- connection
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-Cc: kosaki.motohiro@jp.fujitsu.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org
-In-Reply-To: <20100825.153424.246521475.davem@davemloft.net>
-References: <20100825110049.F3C9.A69D9226@jp.fujitsu.com>
-	 <20100825.153424.246521475.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Thu, 26 Aug 2010 02:24:46 +0100
-Message-ID: <1282785886.22839.199.camel@localhost>
+	Wed, 25 Aug 2010 21:28:55 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 26 Aug 2010 10:23:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Daniel Kiper <dkiper@net-space.pl>, konrad.wilk@oracle.com,
+        stefano.stabellini@eu.citrix.com, linux-mm@kvack.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        v.tolstov@selfip.ru, Dulloor <dulloor@gmail.com>
+Subject: Re: [PATCH] GSoC 2010 - Memory hotplug support for Xen guests -
+ third fully working version
+Message-Id: <20100826102352.9d7bcfd0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C758C12.2020107@goop.org>
+References: <20100812012224.GA16479@router-fw-old.local.net-space.pl>
+	<4C649535.8050800@goop.org>
+	<20100816154444.GA28219@router-fw-old.local.net-space.pl>
+	<4C758C12.2020107@goop.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Aug 2010 01:28:30.0790 (UTC) FILETIME=[FDCEFE60:01CB44BD]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17594.000
-X-TM-AS-Result: No--23.856200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 15:34 -0700, David Miller wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date: Wed, 25 Aug 2010 11:05:48 +0900 (JST)
+On Wed, 25 Aug 2010 14:33:06 -0700
+Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+
+> >> 2 requires a deeper understanding of the existing hotplug code.  It
+> >> needs to be refactored so that you can use the core hotplug machinery
+> >> without enabling the sysfs page-onlining mechanism, while still leaving
+> >> it available for physical hotplug.  In the short term, having a boolean
+> >> to disable the onlining mechanism is probably the pragmatic solution, so
+> >> the balloon code can simply disable it.
+> > I think that sysfs should stay intact because it contains some
+> > useful information for admins. We should reconsider avaibilty
+> > of /sys/devices/system/memory/probe. In physical systems it
+> > is available however usage without real hotplug support
+> > lead to big crash. I am not sure we should disable probe in Xen.
+> > Maybe it is better to stay in sync with standard behavior.
+> > Second solution is to prepare an interface (kernel option
+> > or only some enable/disable functions) which give possibilty
+> > to enable/disable probe interface when it is required.
 > 
-> > This issue come from ruby language community. Below test program
-> > hang up when only run on Linux.
-> > 
-> > 	% uname -mrsv
-> > 	Linux 2.6.26-2-486 #1 Sat Dec 26 08:37:39 UTC 2009 i686
-> > 	% ruby -rsocket -ve '
-> > 	BasicSocket.do_not_reverse_lookup = true
-> > 	serv = TCPServer.open("127.0.0.1", 0)
-> > 	s1 = TCPSocket.open("127.0.0.1", serv.addr[1])
-> > 	s2 = serv.accept
-> > 	s2.close
-> > 	s1.write("a") rescue p $!
-> > 	s1.write("a") rescue p $!
-> > 	Thread.new {
-> > 	  s1.write("a")
-> > 	}.join'
-> > 	ruby 1.9.3dev (2010-07-06 trunk 28554) [i686-linux]
-> > 	#<Errno::EPIPE: Broken pipe>
-> > 	[Hang Here]
-[...]
-> And in this case here, I call into question the behavior of Ruby and
-> the application from two perspectives:
+> My understanding is that on systems with real physical hotplug memory,
+> the process is:
 > 
-> 1) Unlike all of the other conditions signalled by poll() this is
->    one the application explicitly created and therefore knows about.
->
->    If the application calls close() or shutdown() with the send flag
->    set, IT KNOWS what is going to happen on a write() attempt.
-[...]
+>    1. you insert/enable a DIMM or whatever to make the memory
+>       electrically active
+>    2. the kernel notices this and generates a udev event
+>    3. a usermode script sees this and, according to whatever policy it
+>       wants to implement, choose to online the memory at some point
+> 
+> I'm concerned that if we partially implement this but leave "online" as
+> a timebomb then existing installs with hotplug scripts in place may poke
+> at it - thinking they're dealing with physical hotplug - and cause problems.
+> 
 
-This example seems to have both server (serv, s2) and client (s1) in the
-same process for simplicity.  The server socket (s2) is closed and the
-client cannot be expected to know that.  Of course the client ought to
-drop the connection after the first EPIPE, but it's reasonable to expect
-that this is a sticky condition just as it would be for a pipe.
+IIUC, IBM guys, using LPAR?, does memory hotplug on VM.
 
-Here's a similar test case in C:
+The operation is.
+	1. tell the region of memory to be added to a userland daemon.
+	2. The daemon write 0xXXXXXX > /sys/devices/system/memory/probe
+	   (This notifies that memory is added physically.)
+	   Here, memory is created.
+	3. Then, online memory.
 
-#include <assert.h>
-#include <signal.h>
-#include <stdio.h>
+I think VM guys can use similar method rather than simulating phyiscal hotplug.
+Then, you don't have to worry about udev etc...
+No ?
 
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-int main(void)
-{
-    struct sockaddr sa;
-    struct timeval tv;
-    int serv, s1, s2;
-    socklen_t len;
-    fd_set fds;
-
-    signal(SIGPIPE, SIG_IGN);
-
-    serv = socket(AF_INET, SOCK_STREAM, 0);
-    assert(serv >= 0);
-    assert(!listen(serv, 1));
-    len = sizeof(sa);
-    assert(!getsockname(serv, &sa, &len));
-
-    s1 = socket(AF_INET, SOCK_STREAM, 0);
-    assert(s1 >= 0);
-    assert(!connect(s1, &sa, len));
-    len = sizeof(sa);
-
-    s2 = accept(serv, &sa, &len);
-    assert(s2 >= 0);
-    close(s2);
-
-    for (;;) {
-	printf("write: %d\n", write(s1, "a", 1));
-	FD_ZERO(&fds);
-	FD_SET(s1, &fds);
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
-	printf("select: %d\n", select(s1 + 1, NULL, &fds, NULL, &tv));
-    }
-    return 0;
-}
-
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Thanks,
+-Kame
 
