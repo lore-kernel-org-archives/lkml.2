@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab0HZAax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Aug 2010 20:30:53 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28303 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab0HZAav (ORCPT
+	id S1753941Ab0HZAcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Aug 2010 20:32:11 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:35955 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab0HZAcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Aug 2010 20:30:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=I77zyD0aoQ/FqVGQem07LsxhNCRJoYsN05brGjE0PFYJd2d/b+TGMIsmP6W7z2Eno
-	r6zOJgFiuc0dC4bqv6aLg==
-Date: Wed, 25 Aug 2010 17:30:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Ted Ts'o" <tytso@mit.edu>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "reiserfs-devel@vger.kernel.org" <reiserfs-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-In-Reply-To: <20100826001901.GL4453@thunk.org>
-Message-ID: <alpine.DEB.2.00.1008251724360.25783@chino.kir.corp.google.com>
-References: <20100825115709.GD4453@thunk.org> <1282740516.2605.3644.camel@laptop> <1282740778.2605.3652.camel@laptop> <E25A6DCB-3188-4CF9-9DC4-631192B2F0E2@mit.edu> <1282743090.2605.3696.camel@laptop> <alpine.DEB.2.00.1008251340420.16484@chino.kir.corp.google.com>
- <1282769729.1975.96.camel@laptop> <alpine.DEB.2.00.1008251406260.20253@chino.kir.corp.google.com> <1282771677.1975.138.camel@laptop> <alpine.DEB.2.00.1008251606450.31521@chino.kir.corp.google.com> <20100826001901.GL4453@thunk.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 25 Aug 2010 20:32:09 -0400
+Date: Thu, 26 Aug 2010 09:32:05 +0900
+From: Simon Horman <horms@verge.net.au>
+To: David Miller <davem@davemloft.net>
+Cc: julia@diku.dk, wensong@linux-vs.org, ja@ssi.bg, kaber@trash.net,
+        netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 5/5] net/netfilter/ipvs: Eliminate memory leak
+Message-ID: <20100826003204.GA9771@verge.net.au>
+References: <Pine.LNX.4.64.1008241639300.15172@ask.diku.dk>
+ <20100825013443.GC7237@verge.net.au>
+ <20100825.163812.242150096.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100825.163812.242150096.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010, Ted Ts'o wrote:
-
-> > I'll repropose the patchset with __deprecated as you suggested.  Thanks!
+On Wed, Aug 25, 2010 at 04:38:12PM -0700, David Miller wrote:
+> From: Simon Horman <horms@verge.net.au>
+> Date: Wed, 25 Aug 2010 10:34:43 +0900
 > 
-> And what Dave and I are saying is that we'll either need to do our on
-> loop to avoid the deprecation warning, or the use of the deprecated
-> function will probably be used forever...
+> > On Tue, Aug 24, 2010 at 04:39:49PM +0200, Julia Lawall wrote:
+> >> Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > Thanks Julia, that looks good to me.
+> > 
+> > Signed-off-by: Simon Horman <horms@verge.net.au>
+> > 
+> > Patrick, I guess that this should go through nf-next-2.6.
 > 
+> Since Patrick appears to be offline, I'll apply this directly so
+> he has less to do when he comes back online :)
 
-We certainly hope that nobody will reimplement the same function without 
-the __deprecated warning, especially for order < PAGE_ALLOC_COSTLY_ORDER 
-where there's no looping at a higher level.  So perhaps the best 
-alternative is to implement the same _nofail() functions but do a 
-WARN_ON(get_order(size) > PAGE_ALLOC_COSTLY_ORDER) instead?
+I have a handful of other changes queued up,
+do you want to take them too?
 
-I think it's really sad that the caller can't know what the upper bounds 
-of its memory requirement are ahead of time or at least be able to 
-implement a memory freeing function when kmalloc() returns NULL.
