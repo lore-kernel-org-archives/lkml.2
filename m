@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab0HZJyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 05:54:09 -0400
-Received: from mail-in-10.arcor-online.net ([151.189.21.50]:45369 "EHLO
-	mail-in-10.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752000Ab0HZJyG (ORCPT
+	id S1752915Ab0HZJyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 05:54:38 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:45641 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab0HZJyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 05:54:06 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-12.arcor-online.net 061DF3D8001
-Date: Thu, 26 Aug 2010 11:53:59 +0200 (CEST)
-From: Bodo Eggert <7eggert@gmx.de>
-To: Valerie Aurora <vaurora@redhat.com>
-cc: 7eggert@gmx.de, David Woodhouse <dwmw2@infradead.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, jack@suse.cz, agruen@suse.de,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-In-Reply-To: <20100824172108.GA28718@shell>
-Message-ID: <alpine.LNX.2.00.1008250830430.2123@be10.lrz>
-References: <eVJmW-3Lf-15@gated-at.bofh.it> <eVJmW-3Lf-19@gated-at.bofh.it> <fdNs6-5F1-7@gated-at.bofh.it> <fdVfY-pv-23@gated-at.bofh.it> <fe6Ep-cD-13@gated-at.bofh.it> <fiCPo-73x-17@gated-at.bofh.it> <fiMc1-6ip-7@gated-at.bofh.it> <E1OlrzM-0001lZ-0z@be1.7eggert.dyndns.org>
- <20100824172108.GA28718@shell>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 26 Aug 2010 05:54:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Z+H+ZXA3QBPOGMeVjqYU5S/6pV740rZL3DM+LZ4J6bSlxfiMdZB8vYbdxv4VctrT33
+         ZPtx2SAMv/jK7DpTkXdnvFlYzAzlGVLoYHTVb0a5IBK23bEQahddKUHb+E1TDNHmXrjo
+         BvP1gaZk7KhRABbrSEUpylZV8Z2RvzCrvesNw=
+Date: Thu, 26 Aug 2010 11:53:57 +0200
+From: "Carlos R. Mafra" <crmafra2@gmail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [2.6.35.3] BUG: unable to handle kernel NULL pointer dereference
+ at (null)
+Message-ID: <20100826095357.GA7202@Pilar.aei.mpg.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010, Valerie Aurora wrote:
-> On Thu, Aug 19, 2010 at 01:24:07AM +0200, Bodo Eggert wrote:
->> Miklos Szeredi <miklos@szeredi.hu> wrote:
->>> On Tue, 17 Aug 2010, Valerie Aurora wrote:
+Hi,
 
->>> get_unlinked_inode() is a great idea.  But I feel that individual
->>> inodes for each fallthrough is excessive.  It'll make the first
->>> readdir() really really expensive and wastes a lot of disk and memory
->>> for no good reason.
->>>
->>> Not sure how to fix the hard link limits problem though...
->>
->> Do a hardlink if you can create a hard link, otherwise use a fresh inode
->> and use that for the next hardlink(s).
->
-> Bleah!  Then you have a code path that is only tested when you hit
-> LINK_MAX.  Sounds like a recipe for bugs for me.
+I've just got this BUG: message in dmesg which I think is btrfs related.
 
-You'll also hit it while creating the first whiteout, maybe on creating 
-the first whiteout since mounting, and on filesystems not supporting 
-hardlinks (are there some that support attributes but not hardlinks?).
-Maybe it will be possible to create immutable whiteout inodes, too.
+I have a btrfs filesystem in a memory card which I use to contain the 
+cache and config of chromium (to avoid writing to much in the SSD):
+
+/dev/mmcblk0p1 on /home/mafra/mmc type btrfs (rw,noexec,nosuid,nodev,noatime,noacl,compress)
+
+and the last message before the bug is about the memory card.
+
+[  148.149179] mmcblk0: retrying using single block read
+[  148.152014] BUG: unable to handle kernel NULL pointer dereference at (null)
+[  148.152021] IP: [<ffffffff811b1301>] extent_range_uptodate+0x51/0xa0
+[  148.152030] PGD 72c37067 PUD 7d64b067 PMD 0 
+[  148.152035] Oops: 0000 [#1] SMP 
+[  148.152038] last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+[  148.152041] CPU 1 
+[  148.152043] Modules linked in: snd_seq snd_seq_device snd_hda_codec_idt i2c_i801 snd_hda_intel snd_hda_codec sky2 uvcvideo iwlagn snd_hwdep evdev
+[  148.152053] 
+[  148.152057] Pid: 2731, comm: btrfs-endio-met Not tainted 2.6.35.3+ #12 VAIO/VGN-FZ240E
+[  148.152059] RIP: 0010:[<ffffffff811b1301>]  [<ffffffff811b1301>] extent_range_uptodate+0x51/0xa0
+[  148.152064] RSP: 0018:ffff880079acddd0  EFLAGS: 00010246
+[  148.152066] RAX: 0000000000000000 RBX: 0000000043eba000 RCX: 0000000000000000
+[  148.152068] RDX: 0000000000000001 RSI: 0000000000043eba RDI: 0000000000000001
+[  148.152071] RBP: ffff880079acddf0 R08: 0000000000000000 R09: 0000000000000000
+[  148.152073] R10: 0000000000001000 R11: 0000000000000000 R12: ffff88007b40eb18
+[  148.152076] R13: 0000000043ebadff R14: ffff880079ab0000 R15: ffff880079acde80
+[  148.152079] FS:  0000000000000000(0000) GS:ffff880001b00000(0000) knlGS:0000000000000000
+[  148.152081] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  148.152084] CR2: 0000000000000000 CR3: 0000000070be9000 CR4: 00000000000006e0
+[  148.152086] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  148.152088] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  148.152091] Process btrfs-endio-met (pid: 2731, threadinfo ffff880079acc000, task ffff880079aca8c0)
+[  148.152093] Stack:
+[  148.152094]  ffffffff8104e730 ffff880069b9c8f8 ffff88007e87ca40 ffff880069b9c8c0
+[  148.152098] <0> ffff880079acde20 ffffffff8118a42d ffff88007bbc70c0 ffff880069b9c8f8
+[  148.152102] <0> ffff88007bbc70d8 ffff88007bbc7110 ffff880079acdee0 ffffffff811b98f0
+[  148.152107] Call Trace:
+[  148.152113]  [<ffffffff8104e730>] ? process_timeout+0x0/0x10
+[  148.152118]  [<ffffffff8118a42d>] end_workqueue_fn+0x10d/0x130
+[  148.152122]  [<ffffffff811b98f0>] worker_loop+0xb0/0x5a0
+[  148.152126]  [<ffffffff811b9840>] ? worker_loop+0x0/0x5a0
+[  148.152130]  [<ffffffff8105b60e>] kthread+0x8e/0xa0
+[  148.152135]  [<ffffffff81003a54>] kernel_thread_helper+0x4/0x10
+[  148.152138]  [<ffffffff8105b580>] ? kthread+0x0/0xa0
+[  148.152142]  [<ffffffff81003a50>] ? kernel_thread_helper+0x0/0x10
+[  148.152144] Code: d3 ff ff 89 c2 b8 01 00 00 00 85 d2 75 56 4c 39 eb 77 51 0f 1f 80 00 00 00 00 48 89 de 49 8b 7c 24 10 48 c1 ee 0c e8 3f 21 ef ff <f6> 00 08 74 2a 48 89 c7 48 81 c3 00 10 00 00 e8 4b af ef ff 49 
+[  148.152176] RIP  [<ffffffff811b1301>] extent_range_uptodate+0x51/0xa0
+[  148.152180]  RSP <ffff880079acddd0>
+[  148.152182] CR2: 0000000000000000
+[  148.152185] ---[ end trace c11a5009b12451d7 ]---
+
+
+Full dmesg is here
+
+http://www.aei.mpg.de/~crmafra/dmesg-2.6.35.3.txt
+
+Is there something else I should provide to help debug this?
