@@ -1,345 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab0HZR0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 13:26:10 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45241 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab0HZR0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 13:26:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BbNYvzjKh5aUjASvSqzigS6DoggJXSV4twKqMytyiuJxvVEo0L1ohyiQZdTQRxCc5O
-         6xXEcDt2Jz9AnWmofYX10QJmy3KNDxDb+eL/hgPGtJ+ZpW1nTHXA6eOh+gaOyxIw1T1R
-         A+L70pwrML8vtB4mgX1LYb5GtrThGiAF9i7dM=
-Date: Thu, 26 Aug 2010 21:26:02 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Brownell <david-b@pacbell.net>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] gpio: Add driver for Anton GPIO controllers
-Message-ID: <20100826172602.GA20410@oksana.dev.rtsoft.ru>
-References: <20100826051705.GA25521@oksana.dev.rtsoft.ru>
- <290252.99759.qm@web180316.mail.gq1.yahoo.com>
+	id S1752816Ab0HZRcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 13:32:05 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:48650 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752526Ab0HZRcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 13:32:02 -0400
+Date: Thu, 26 Aug 2010 18:31:47 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC PATCH 0/3] Do not wait the full timeout on
+	congestion_wait when there is no congestion
+Message-ID: <20100826173147.GH20944@csn.ul.ie>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie> <20100826172038.GA6873@barrios-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <290252.99759.qm@web180316.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100826172038.GA6873@barrios-desktop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Anton GPIO controllers are not so complex controllers that may
-be found in various on-board FPGAs that are used to control board's
-switches, LEDs, chip-selects, Ethernet/USB PHY power, etc.
+On Fri, Aug 27, 2010 at 02:20:38AM +0900, Minchan Kim wrote:
+> On Thu, Aug 26, 2010 at 04:14:13PM +0100, Mel Gorman wrote:
+> > congestion_wait() is a bit stupid in that it goes to sleep even when there
+> > is no congestion. This causes stalls in a number of situations and may be
+> > partially responsible for bug reports about desktop interactivity.
+> > 
+> > This patch series aims to account for these unnecessary congestion_waits()
+> > and to avoid going to sleep when there is no congestion available. Patches
+> > 1 and 2 add instrumentation related to congestion which should be reuable
+> > by alternative solutions to congestion_wait. Patch 3 calls cond_resched()
+> > instead of going to sleep if there is no congestion.
+> > 
+> > Once again, I shoved this through performance test. Unlike previous tests,
+> > I ran this on a ported version of my usual test-suite that should be suitable
+> > for release soon. It's not quite as good as my old set but it's sufficient
+> > for this and related series. The tests I ran were kernbench vmr-stream
+> > iozone hackbench-sockets hackbench-pipes netperf-udp netperf-tcp sysbench
+> > stress-highalloc. Sysbench was a read/write tests and stress-highalloc is
+> > the usual stress the number of high order allocations that can be made while
+> > the system is under severe stress. The suite contains the necessary analysis
+> > scripts as well and I'd release it now except the documentation blows.
+> > 
+> > x86:    Intel Pentium D 3GHz with 3G RAM (no-brand machine)
+> > x86-64:	AMD Phenom 9950 1.3GHz with 3G RAM (no-brand machine)
+> > ppc64:	PPC970MP 2.5GHz with 3GB RAM (it's a terrasoft powerstation)
+> > 
+> > The disks on all of them were single disks and not particularly fast.
+> > 
+> > Comparison was between a 2.6.36-rc1 with patches 1 and 2 applied for
+> > instrumentation and a second test with patch 3 applied.
+> > 
+> > In all cases, kernbench, hackbench, STREAM and iozone did not show any
+> > performance difference because none of them were pressuring the system
+> > enough to be calling congestion_wait() so I won't post the results.
+> > About all worth noting for them is that nothing horrible appeared to break.
+> > 
+> > In the analysis scripts, I record unnecessary sleeps to be a sleep that
+> > had no congestion. The post-processing scripts for cond_resched() will only
+> > count an uncongested call to congestion_wait() as unnecessary if the process
+> > actually gets scheduled. Ordinarily, we'd expect it to continue uninterrupted.
+> > 
+> > One vague concern I have is when too many pages are isolated, we call
+> > congestion_wait(). This could now actively spin in the loop for its quanta
+> > before calling cond_resched(). If it's calling with no congestion, it's
+> > hard to know what the proper thing to do there is.
+> 
+> Suddenly, many processes could enter into the direct reclaim path by another
+> reason(ex, fork bomb) regradless of congestion. backing dev congestion is 
+> just one of them. 
+> 
 
-Usually these controllers do not privide any means of pin setup
-(in/out/open drain).
+This situation applys with or without this series, right?
 
-The driver provides:
-- Support for 8/16/32/64 bits registers;
-- Support for GPIO controllers with clear/set registers;
-- Support for GPIO controllers with a single "data" register;
-- Support for big endian bits/GPIOs ordering (mostly used on PowerPC).
+> I think if congestion_wait returns without calling io_schedule_timeout 
+> by your patch, too_many_isolated can schedule_timeout to wait for the system's 
+> calm to preventing OOM killing.
+> 
 
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
+More likely, to stop a loop in too_many_isolated() consuming CPU time it
+can do nothing with.
 
-In v2:
+> How about this?
+> 
+> If you don't mind, I will send the patch based on this patch series 
+> after your patch settle down or Could you add this to your patch series?
+> But I admit this doesn't almost affect your experiment. 
+> 
 
-- Hopefully addressed David's comments regarding driver name;
-- Now the driver fills gpio_chip.label.
+I think it's a related topic so could belong with the series.
 
- drivers/gpio/Kconfig      |    5 +
- drivers/gpio/Makefile     |    1 +
- drivers/gpio/anton_gpio.c |  244 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 250 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/anton_gpio.c
+> From 70d6584e125c3954d74a69bfcb72de17244635d2 Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan.kim@gmail.com>
+> Date: Fri, 27 Aug 2010 02:06:45 +0900
+> Subject: [PATCH] Wait regardless of congestion if too many pages are isolated
+> 
+> Suddenly, many processes could enter into the direct reclaim path
+> regradless of congestion. backing dev congestion is just one of them.
+> But current implementation calls congestion_wait if too many pages are isolated.
+> 
+> if congestion_wait returns without calling io_schedule_timeout,
+> too_many_isolated can schedule_timeout to wait for the system's calm
+> to preventing OOM killing.
+> 
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index f623953..4658ca6 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -70,6 +70,11 @@ config GPIO_MAX730X
- 
- comment "Memory mapped GPIO expanders:"
- 
-+config GPIO_ANTON
-+	tristate "Anton GPIO controllers support"
-+	help
-+	  Say yes here to support Anton GPIO controllers.
-+
- config GPIO_IT8761E
- 	tristate "IT8761E GPIO support"
- 	depends on GPIOLIB
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index a69e060..a31ddae 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
- 
- obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
- obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
-+obj-$(CONFIG_GPIO_ANTON)	+= anton_gpio.o
- obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
- obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
- obj-$(CONFIG_GPIO_MAX7300)	+= max7300.o
-diff --git a/drivers/gpio/anton_gpio.c b/drivers/gpio/anton_gpio.c
-new file mode 100644
-index 0000000..d044385
---- /dev/null
-+++ b/drivers/gpio/anton_gpio.c
-@@ -0,0 +1,244 @@
-+/*
-+ * Anton GPIO driver
-+ *
-+ * Copyright 2008 MontaVista Software, Inc.
-+ * Copyright 2008,2010 Anton Vorontsov <cbouatmailru@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/bug.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/spinlock.h>
-+#include <linux/compiler.h>
-+#include <linux/types.h>
-+#include <linux/log2.h>
-+#include <linux/ioport.h>
-+#include <linux/io.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mod_devicetable.h>
-+
-+struct agpio_chip {
-+	struct gpio_chip gc;
-+	void __iomem *reg_dat;
-+	void __iomem *reg_set;
-+	void __iomem *reg_clr;
-+	spinlock_t lock;
-+
-+	int bits;
-+	int big_endian_bits;
-+
-+	/* shadowed data register to clear/set bits safely */
-+	unsigned long data;
-+};
-+
-+static struct agpio_chip *to_agpio_chip(struct gpio_chip *gc)
-+{
-+	return container_of(gc, struct agpio_chip, gc);
-+}
-+
-+static unsigned long agpio_in(struct agpio_chip *agc)
-+{
-+	switch (agc->bits) {
-+	case 8:
-+		return __raw_readb(agc->reg_dat);
-+	case 16:
-+		return __raw_readw(agc->reg_dat);
-+	case 32:
-+		return __raw_readl(agc->reg_dat);
-+#if BITS_PER_LONG >= 64
-+	case 64:
-+		return __raw_readq(agc->reg_dat);
-+#endif
-+	}
-+	BUG();
-+}
-+
-+static void agpio_out(struct agpio_chip *agc, void __iomem *reg,
-+		      unsigned long data)
-+{
-+	switch (agc->bits) {
-+	case 8:
-+		__raw_writeb(data, reg);
-+		return;
-+	case 16:
-+		__raw_writew(data, reg);
-+		return;
-+	case 32:
-+		__raw_writel(data, reg);
-+		return;
-+#if BITS_PER_LONG >= 64
-+	case 64:
-+		__raw_writeq(data, reg);
-+		return;
-+#endif
-+	}
-+	BUG();
-+}
-+
-+static unsigned long agpio_pin2mask(struct agpio_chip *agc, unsigned int pin)
-+{
-+	if (agc->big_endian_bits)
-+		return 1 << (agc->bits - 1 - pin);
-+	else
-+		return 1 << pin;
-+}
-+
-+static int agpio_get(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	struct agpio_chip *agc = to_agpio_chip(gc);
-+
-+	return agpio_in(agc) & agpio_pin2mask(agc, gpio);
-+}
-+
-+static void agpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	struct agpio_chip *agc = to_agpio_chip(gc);
-+	unsigned long mask = agpio_pin2mask(agc, gpio);
-+	unsigned long flags;
-+
-+	if (agc->reg_set) {
-+		if (val)
-+			agpio_out(agc, agc->reg_set, mask);
-+		else
-+			agpio_out(agc, agc->reg_clr, mask);
-+		return;
-+	}
-+
-+	spin_lock_irqsave(&agc->lock, flags);
-+
-+	if (val)
-+		agc->data |= mask;
-+	else
-+		agc->data &= ~mask;
-+
-+	agpio_out(agc, agc->reg_dat, agc->data);
-+
-+	spin_unlock_irqrestore(&agc->lock, flags);
-+}
-+
-+static int agpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	return 0;
-+}
-+
-+static int agpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	agpio_set(gc, gpio, val);
-+	return 0;
-+}
-+
-+static int __devinit agpio_probe(struct platform_device *pdev)
-+{
-+	const struct platform_device_id *platid = platform_get_device_id(pdev);
-+	struct device *dev = &pdev->dev;
-+	struct agpio_chip *agc;
-+	struct resource *res_dat;
-+	struct resource *res_set;
-+	struct resource *res_clr;
-+	resource_size_t dat_sz;
-+	int bits;
-+
-+	res_dat = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res_dat)
-+		return -EINVAL;
-+
-+	dat_sz = resource_size(res_dat);
-+	if (!is_power_of_2(dat_sz))
-+		return -EINVAL;
-+
-+	bits = dat_sz * 8;
-+	if (bits > BITS_PER_LONG)
-+		return -EINVAL;
-+
-+	agc = devm_kzalloc(dev, sizeof(*agc), GFP_KERNEL);
-+	if (!agc)
-+		return -ENOMEM;
-+
-+	agc->reg_dat = devm_ioremap(dev, res_dat->start, dat_sz);
-+	if (!agc->reg_dat)
-+		return -ENOMEM;
-+
-+	res_set = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	res_clr = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-+	if (res_set && res_clr) {
-+		if (resource_size(res_set) != resource_size(res_clr) ||
-+				resource_size(res_set) != dat_sz)
-+			return -EINVAL;
-+
-+		agc->reg_set = devm_ioremap(dev, res_set->start, dat_sz);
-+		agc->reg_clr = devm_ioremap(dev, res_clr->start, dat_sz);
-+		if (!agc->reg_set || !agc->reg_clr)
-+			return -ENOMEM;
-+	} else if (res_set || res_clr) {
-+		return -EINVAL;
-+	}
-+
-+	spin_lock_init(&agc->lock);
-+
-+	agc->bits = bits;
-+	agc->big_endian_bits = !strcmp(platid->name, "anton-gpio-be");
-+	agc->data = agpio_in(agc);
-+
-+	agc->gc.ngpio = bits;
-+	agc->gc.direction_input = agpio_dir_in;
-+	agc->gc.direction_output = agpio_dir_out;
-+	agc->gc.get = agpio_get;
-+	agc->gc.set = agpio_set;
-+	agc->gc.label = dev_name(dev);
-+
-+	if (dev->platform_data)
-+		agc->gc.base = (unsigned long)dev->platform_data;
-+	else
-+		agc->gc.base = -1;
-+
-+	dev_set_drvdata(dev, agc);
-+
-+	return gpiochip_add(&agc->gc);
-+}
-+
-+static int __devexit agpio_remove(struct platform_device *pdev)
-+{
-+	struct agpio_chip *agc = dev_get_drvdata(&pdev->dev);
-+
-+	return gpiochip_remove(&agc->gc);
-+}
-+
-+static const struct platform_device_id agpio_id_table[] = {
-+	{ "anton-gpio", },
-+	{ "anton-gpio-be", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(platform, agpio_id_table);
-+
-+static struct platform_driver agpio_driver = {
-+	.driver = {
-+		.name = "anton-gpio",
-+	},
-+	.id_table = agpio_id_table,
-+	.probe = agpio_probe,
-+	.remove = __devexit_p(agpio_remove),
-+};
-+
-+static int __init agpio_init(void)
-+{
-+	return platform_driver_register(&agpio_driver);
-+}
-+module_init(agpio_init);
-+
-+static void __exit agpio_exit(void)
-+{
-+	platform_driver_unregister(&agpio_driver);
-+}
-+module_exit(agpio_exit);
-+
-+MODULE_DESCRIPTION("Driver for Anton GPIO controllers");
-+MODULE_AUTHOR("Anton Vorontsov <cbouatmailru@gmail.com>");
-+MODULE_LICENSE("GPL");
+I think the reasoning here might be a little off. How about;
+
+If many processes enter direct reclaim or memory compaction, too many pages
+can get isolated. In this situation, too_many_isolated() can call
+congestion_wait() but if there is no congestion, it fails to go to sleep
+and instead spins until it's quota expires.
+
+This patch checks if congestion_wait() returned without sleeping. If it
+did because there was no congestion, it unconditionally goes to sleep
+instead of hogging the CPU.
+
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  mm/backing-dev.c |    5 ++---
+>  mm/compaction.c  |    6 +++++-
+>  mm/vmscan.c      |    6 +++++-
+>  3 files changed, 12 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 6abe860..9431bca 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -756,8 +756,7 @@ EXPORT_SYMBOL(set_bdi_congested);
+>   * @timeout: timeout in jiffies
+>   *
+>   * Waits for up to @timeout jiffies for a backing_dev (any backing_dev) to exit
+> - * write congestion.  If no backing_devs are congested then just wait for the
+> - * next write to be completed.
+> + * write congestion.  If no backing_devs are congested then just returns.
+>   */  
+>  long congestion_wait(int sync, long timeout)
+>  {
+> @@ -776,7 +775,7 @@ long congestion_wait(int sync, long timeout)
+>         if (atomic_read(&nr_bdi_congested[sync]) == 0) {
+>                 unnecessary = true;
+>                 cond_resched();
+> -               ret = 0;
+> +               ret = timeout;
+>         } else {
+>                 prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
+>                 ret = io_schedule_timeout(timeout);
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 94cce51..7370683 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -253,7 +253,11 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>          * delay for some time until fewer pages are isolated
+>          */  
+>         while (unlikely(too_many_isolated(zone))) {
+> -               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +               long timeout = HZ/10;
+> +               if (timeout == congestion_wait(BLK_RW_ASYNC, timeout)) {
+> +                       set_current_state(TASK_INTERRUPTIBLE);
+> +                       schedule_timeout(timeout);
+> +               }
+> 
+
+We don't really need the timeout variable here but I see what you are
+at. It's unfortunate to just go to sleep for HZ/10 but if it's not
+congestion, we do not have any other event to wake up on at the moment.
+We'd have to introduce a too_many_isolated waitqueue that is kicked if
+pages are put back on the LRU.
+
+This is better than spinning though.
+
+>                 if (fatal_signal_pending(current))
+>                         return 0;
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 3109ff7..f5e3e28 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1337,7 +1337,11 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>         unsigned long nr_dirty;
+>         while (unlikely(too_many_isolated(zone, file, sc))) {
+> -               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +               long timeout = HZ/10;
+> +               if (timeout == congestion_wait(BLK_RW_ASYNC, timeout)) {
+> +                       set_current_state(TASK_INTERRUPTIBLE);
+> +                       schedule_timeout(timeout);
+> +               }
+> 
+>                 /* We are about to die and free our memory. Return now. */
+>                 if (fatal_signal_pending(current))
+
+This seems very reasonable. I'll review it more carefully tomorrow and if I
+spot nothing horrible, I'll add it onto the series. I'm not sure I'm hitting
+the too_many_isolated() case but I cannot think of a better alternative
+without adding more waitqueues.
+
 -- 
-1.7.0.5
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
