@@ -1,206 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab0HZLsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 07:48:06 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:53951 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab0HZLsC (ORCPT
+	id S1752792Ab0HZLtd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 07:49:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49283 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab0HZLta convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 07:48:02 -0400
-Message-Id: <20100826114756.968317703@linux.vnet.ibm.com>
-References: <20100826114122.292120483@linux.vnet.ibm.com>
-User-Agent: quilt/0.46-1
-Date: Thu, 26 Aug 2010 13:41:23 +0200
-From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, mmarek@suse.cz, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, brueckner@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com
-In-Reply-To: <20100825180601.GA2116@merkur.ravnborg.org>
-Subject: [PATCH v2 1/2] initramfs: Generalize initramfs_data.xxx.S variants
-Content-Disposition: inline; filename=irfs1.patch
+	Thu, 26 Aug 2010 07:49:30 -0400
+Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1282823139.1975.689.camel@laptop>
+References: <20100825132815.108d8217@bike.lwn.net>
+	 <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
+	 <4C762BF9.5010305@kernel.org> <20100826094613.GA6411@amd>
+	 <4C7638B7.9060306@kernel.org> <1282817329.1975.486.camel@laptop>
+	 <20100826113858.GA6856@amd>  <1282823139.1975.689.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 26 Aug 2010 13:49:00 +0200
+Message-ID: <1282823340.1975.697.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove initramfs_data.{lzo,lzma,gz,bz2}.S variants and use a common
-implementation in initramfs_data.S.  The common implementation expects
-the file name of the initramfs to be defined in INITRAMFS_IMAGE.
+On Thu, 2010-08-26 at 13:45 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-08-26 at 21:38 +1000, Nick Piggin wrote:
+> > I think for CPU plug, stop_machine is reasonable (especially
+> > considering it is required in unload, which means any frequent
+> > amount of cpu plug activity already will require stop_machine to
+> > run anyway). 
+> 
+> How is it required? 
+> 
+> Its currently implemented as such, and its sure a lot easier to do that
+> way, but I could imagine that unplugging a CPU could be done without it.
 
-Change the Makefile to set the INITRAMFS_IMAGE define symbol according
-to the selected compression method.
-
-Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
----
- usr/Makefile              |    6 ++++--
- usr/initramfs_data.S      |    5 +++--
- usr/initramfs_data.bz2.S  |   29 -----------------------------
- usr/initramfs_data.gz.S   |   29 -----------------------------
- usr/initramfs_data.lzma.S |   29 -----------------------------
- usr/initramfs_data.lzo.S  |   29 -----------------------------
- 6 files changed, 7 insertions(+), 120 deletions(-)
-
---- a/usr/Makefile
-+++ b/usr/Makefile
-@@ -18,13 +18,15 @@ suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZ
- # Lzo
- suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZO)   = .lzo
- 
-+AFLAGS_initramfs_data.o += -DINITRAMFS_IMAGE="usr/initramfs_data.cpio$(suffix_y)"
-+
- # Generate builtin.o based on initramfs_data.o
--obj-$(CONFIG_BLK_DEV_INITRD) := initramfs_data$(suffix_y).o
-+obj-$(CONFIG_BLK_DEV_INITRD) := initramfs_data.o
- 
- # initramfs_data.o contains the compressed initramfs_data.cpio image.
- # The image is included using .incbin, a dependency which is not
- # tracked automatically.
--$(obj)/initramfs_data$(suffix_y).o: $(obj)/initramfs_data.cpio$(suffix_y) FORCE
-+$(obj)/initramfs_data.o: $(obj)/initramfs_data.cpio$(suffix_y) FORCE
- 
- #####
- # Generate the initramfs cpio archive
---- a/usr/initramfs_data.S
-+++ b/usr/initramfs_data.S
-@@ -25,6 +25,7 @@ SECTIONS
-   in the ELF header, as required by certain architectures.
- */
- 
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio"
-+#include <linux/stringify.h>
- 
-+.section .init.ramfs,"a"
-+.incbin __stringify(INITRAMFS_IMAGE)
---- a/usr/initramfs_data.bz2.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.bz2"
---- a/usr/initramfs_data.gz.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.gz"
---- a/usr/initramfs_data.lzma.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.lzma"
---- a/usr/initramfs_data.lzo.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.lzo"
-
--- 
+Not that reworking unplug to not use stop_machine is anywhere near my
+todo list, but it would be really nice to have ;-)
