@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab0HZSC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 14:02:57 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45800 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab0HZSCz (ORCPT
+	id S1752928Ab0HZSDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 14:03:20 -0400
+Received: from smtp184-pc.aruba.it ([62.149.157.184]:45211 "HELO
+	smtp1-pc.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1752790Ab0HZSDS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 14:02:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=k30l1hOpqwBO86iC+LHpiLU0IK6BR4E9/ozF4r/tg+10STcDYBIaJP6AgVqjD8eNmY
-         O2F/B1DZF9JLFY2FAmeGWQSGzbHAzS8MlH7V5EBi9WCpq/ozrChOW60Mfv3hNqVYKkGI
-         5HCe3T38gqqWzrxSP/rfHdEYWsjAhhhlEzcTI=
-Date: Thu, 26 Aug 2010 22:02:50 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100826180250.GB6306@lenovo>
-References: <20100820152510.GA4167@elte.hu> <20100825094819.GB3198@erda.amd.com> <20100825104130.GA27891@elte.hu> <20100825110006.GB27891@elte.hu> <20100825201106.GH4879@redhat.com> <20100826090008.GA22783@erda.amd.com> <AANLkTim3+u-fV-RAC=Odede6BfGdYoXsN55Tqw6iSfVT@mail.gmail.com> <20100826152246.GN4879@redhat.com> <20100826153404.GA6306@lenovo> <20100826164031.GO4879@redhat.com>
+	Thu, 26 Aug 2010 14:03:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100826164031.GO4879@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: AtMail PHP 5.1
+Message-ID: <60829.1282845728@katamail.com>
+To: <info@amber.org>
+Reply-To: fedex001@gala.net
+Content-Type: text/plain; charset="utf-8"
+X-Origin: 189.80.110.108
+Date: Thu, 26 Aug 2010 20:02:07 +0200
+Subject: Contact Fedex
+From: "Mrs Amber" <amber_j001@katamail.com>
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 12:40:31PM -0400, Don Zickus wrote:
-> On Thu, Aug 26, 2010 at 07:34:04PM +0400, Cyrill Gorcunov wrote:
-> > > I'll keep looking for the race condition to better fix it.
-> > > 
-> > > Cheers,
-> > > Don
-> > > 
-> > 
-> > Sounds promising, mind to post new inter-diff? Ie what you have
-> > changed from Robert's patch.
-> 
-> It was really in Peter's patch, just a stupid hack for now.
-> 
-> Cheers,
-> Don
-> 
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 4539b4b..9e65a7b 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -777,7 +777,9 @@ again:
->  
->  done:
->  	intel_pmu_enable_all(0);
-> -	return handled;
-> +	if (!handled)
-> +		return handled;
-> +	return ++handled;
->  }
->  
->  static struct event_constraint *
-> 
+Greetings
+ 
+I have been waiting for you to contact me for your Confirmable Bank-draft of $750.000.00 United States Dollars,but I did not hear from 
+you. Then I went and deposited the Draft with FedEx COURIER SERVICE,The only money you will send to the FedEX COURIER SERVICE to 
+deliver your Draft direct to your postal Address in your country is ($150.00 US) Dollars only being Security Keeping Fee of the Courier 
+Company.
 
-ok, it seems it just treat any unknown nmi as being came from PMU, no?
 
-	-- Cyrill
+1) FULL NAMES:
+2) CONTACT ADDRESS:
+3) PHONE NUMBER/FAX:
+4) COUNTRY:
+ 
+Contact Person:Mr Fred Osamudia
+Phone number:+234 8139583375
+Email Address:fedex001@gala.net
+
+
+
+---- Nuova grafica e nuove funzionalità! Crea subito Gratis la tua nuova Casella di Posta  Katamail
