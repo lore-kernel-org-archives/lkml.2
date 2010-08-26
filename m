@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab0HaCgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 22:36:15 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64394 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655Ab0HaCgK (ORCPT
+	id S1756834Ab0HaCgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 22:36:22 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54033 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756804Ab0HaCgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 22:36:10 -0400
+	Mon, 30 Aug 2010 22:36:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=hqHQge25o06HISL7RE7nV53sM8TgkcWhFIY//Y031uNQDtpD6FtEqmPHkG0RRFK+VZ
-         Iz00MvJTNS9l5lhZFosnw6G0/sIoNu/kQTuw9ZF8joBG1t23eSnl0eGD4XdYD7BC9bFw
-         xHQ9HPFxU38ab0AUdl8x15r9R/pKOfbfBamLc=
+        b=Vup2+5B/CF1AZzezgs2PAwjIOpJ/ao1Kg3P2l/5qnzDqpKKElCMdo01MNNn7QLwLzT
+         wu3r/8A+9GdYWH9ITtBpze1RhFKoSv0nc77h52fuQ78GSmdiqCit07UAqycX2yulHsMF
+         IvScKfhMy4Vf4a17QQPavSb7lDz42fnEo1pAY=
 From: "Mark F. Brown" <mark.brown314@gmail.com>
 To: Eric Miao <eric.y.miao@gmail.com>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
@@ -20,9 +20,9 @@ To: Eric Miao <eric.y.miao@gmail.com>,
         linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
         linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
 Cc: "Mark F. Brown" <mark.brown314@gmail.com>
-Subject: [PATCH 1/5] ARM: pxa27x/pxa3xx: moved pxa27x_keypad.h to platform pxa directory
-Date: Thu, 26 Aug 2010 05:18:55 -0400
-Message-Id: <1282814339-10934-2-git-send-email-mark.brown314@gmail.com>
+Subject: [PATCH 3/5] ARM: pxa168: added wake clear register support for APMU
+Date: Thu, 26 Aug 2010 05:18:57 -0400
+Message-Id: <1282814339-10934-4-git-send-email-mark.brown314@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
 References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
@@ -30,366 +30,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mach-mmp utilizes pxa27x_keypad code so we need to move header to
-platform pxa directory.
-
 Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
 ---
- arch/arm/mach-pxa/devices.c                    |    2 +-
- arch/arm/mach-pxa/em-x270.c                    |    2 +-
- arch/arm/mach-pxa/ezx.c                        |    2 +-
- arch/arm/mach-pxa/include/mach/pxa27x_keypad.h |   59 ------------------------
- arch/arm/mach-pxa/littleton.c                  |    2 +-
- arch/arm/mach-pxa/mainstone.c                  |    4 +-
- arch/arm/mach-pxa/mioa701.c                    |    2 +-
- arch/arm/mach-pxa/palmld.c                     |    2 +-
- arch/arm/mach-pxa/palmt5.c                     |    2 +-
- arch/arm/mach-pxa/palmtreo.c                   |    2 +-
- arch/arm/mach-pxa/palmtx.c                     |    2 +-
- arch/arm/mach-pxa/palmz72.c                    |    2 +-
- arch/arm/mach-pxa/tavorevb.c                   |    2 +-
- arch/arm/mach-pxa/z2.c                         |    2 +-
- arch/arm/mach-pxa/zylonite.c                   |    2 +-
- arch/arm/plat-pxa/include/plat/pxa27x_keypad.h |   59 ++++++++++++++++++++++++
- drivers/input/keyboard/pxa27x_keypad.c         |    2 +-
- 17 files changed, 75 insertions(+), 75 deletions(-)
- delete mode 100644 arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
- create mode 100644 arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
+ arch/arm/mach-mmp/include/mach/regs-apmu.h |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-pxa/devices.c b/arch/arm/mach-pxa/devices.c
-index a2fc859..08b4103 100644
---- a/arch/arm/mach-pxa/devices.c
-+++ b/arch/arm/mach-pxa/devices.c
-@@ -11,7 +11,7 @@
- #include <mach/mmc.h>
- #include <mach/irda.h>
- #include <mach/ohci.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/pxa2xx_spi.h>
- #include <mach/camera.h>
- #include <mach/audio.h>
-diff --git a/arch/arm/mach-pxa/em-x270.c b/arch/arm/mach-pxa/em-x270.c
-index 0517c17..51286a7 100644
---- a/arch/arm/mach-pxa/em-x270.c
-+++ b/arch/arm/mach-pxa/em-x270.c
-@@ -43,7 +43,7 @@
- #include <mach/pxafb.h>
- #include <mach/ohci.h>
- #include <mach/mmc.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <plat/i2c.h>
- #include <mach/camera.h>
- #include <mach/pxa2xx_spi.h>
-diff --git a/arch/arm/mach-pxa/ezx.c b/arch/arm/mach-pxa/ezx.c
-index 3fe61f4..f997e84 100644
---- a/arch/arm/mach-pxa/ezx.c
-+++ b/arch/arm/mach-pxa/ezx.c
-@@ -32,7 +32,7 @@
- #include <mach/ohci.h>
- #include <plat/i2c.h>
- #include <mach/hardware.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/camera.h>
+diff --git a/arch/arm/mach-mmp/include/mach/regs-apmu.h b/arch/arm/mach-mmp/include/mach/regs-apmu.h
+index 9190305..ac47023 100644
+--- a/arch/arm/mach-mmp/include/mach/regs-apmu.h
++++ b/arch/arm/mach-mmp/include/mach/regs-apmu.h
+@@ -33,4 +33,16 @@
+ #define APMU_FNRST_DIS	(1 << 1)
+ #define APMU_AXIRST_DIS	(1 << 0)
  
- #include "devices.h"
-diff --git a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h b/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
-deleted file mode 100644
-index 7b4eadc..0000000
---- a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
-+++ /dev/null
-@@ -1,59 +0,0 @@
--#ifndef __ASM_ARCH_PXA27x_KEYPAD_H
--#define __ASM_ARCH_PXA27x_KEYPAD_H
--
--#include <linux/input.h>
--#include <linux/input/matrix_keypad.h>
--
--#define MAX_MATRIX_KEY_ROWS	(8)
--#define MAX_MATRIX_KEY_COLS	(8)
--#define MATRIX_ROW_SHIFT	(3)
--#define MAX_DIRECT_KEY_NUM	(8)
--
--/* pxa3xx keypad platform specific parameters
-- *
-- * NOTE:
-- * 1. direct_key_num indicates the number of keys in the direct keypad
-- *    _plus_ the number of rotary-encoder sensor inputs,  this can be
-- *    left as 0 if only rotary encoders are enabled,  the driver will
-- *    automatically calculate this
-- *
-- * 2. direct_key_map is the key code map for the direct keys, if rotary
-- *    encoder(s) are enabled, direct key 0/1(2/3) will be ignored
-- *
-- * 3. rotary can be either interpreted as a relative input event (e.g.
-- *    REL_WHEEL/REL_HWHEEL) or specific keys (e.g. UP/DOWN/LEFT/RIGHT)
-- *
-- * 4. matrix key and direct key will use the same debounce_interval by
-- *    default, which should be sufficient in most cases
-- */
--struct pxa27x_keypad_platform_data {
--
--	/* code map for the matrix keys */
--	unsigned int	matrix_key_rows;
--	unsigned int	matrix_key_cols;
--	unsigned int	*matrix_key_map;
--	int		matrix_key_map_size;
--
--	/* direct keys */
--	int		direct_key_num;
--	unsigned int	direct_key_map[MAX_DIRECT_KEY_NUM];
--
--	/* rotary encoders 0 */
--	int		enable_rotary0;
--	int		rotary0_rel_code;
--	int		rotary0_up_key;
--	int		rotary0_down_key;
--
--	/* rotary encoders 1 */
--	int		enable_rotary1;
--	int		rotary1_rel_code;
--	int		rotary1_up_key;
--	int		rotary1_down_key;
--
--	/* key debounce interval */
--	unsigned int	debounce_interval;
--};
--
--extern void pxa_set_keypad_info(struct pxa27x_keypad_platform_data *info);
--
--#endif /* __ASM_ARCH_PXA27x_KEYPAD_H */
-diff --git a/arch/arm/mach-pxa/littleton.c b/arch/arm/mach-pxa/littleton.c
-index 83f3236..eb58506 100644
---- a/arch/arm/mach-pxa/littleton.c
-+++ b/arch/arm/mach-pxa/littleton.c
-@@ -43,7 +43,7 @@
- #include <mach/pxafb.h>
- #include <mach/mmc.h>
- #include <mach/pxa2xx_spi.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/littleton.h>
- #include <plat/i2c.h>
- #include <plat/pxa3xx_nand.h>
-diff --git a/arch/arm/mach-pxa/mainstone.c b/arch/arm/mach-pxa/mainstone.c
-index c2a8717..126dca1 100644
---- a/arch/arm/mach-pxa/mainstone.c
-+++ b/arch/arm/mach-pxa/mainstone.c
-@@ -41,7 +41,7 @@
- #include <asm/mach/irq.h>
- #include <asm/mach/flash.h>
- 
--#include <mach/pxa27x.h>
-+#include <plat/pxa27x.h>
- #include <mach/gpio.h>
- #include <mach/mainstone.h>
- #include <mach/audio.h>
-@@ -50,7 +50,7 @@
- #include <mach/mmc.h>
- #include <mach/irda.h>
- #include <mach/ohci.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- 
- #include "generic.h"
- #include "devices.h"
-diff --git a/arch/arm/mach-pxa/mioa701.c b/arch/arm/mach-pxa/mioa701.c
-index dc66942..ffb3f5a 100644
---- a/arch/arm/mach-pxa/mioa701.c
-+++ b/arch/arm/mach-pxa/mioa701.c
-@@ -45,7 +45,7 @@
- 
- #include <mach/pxa27x.h>
- #include <mach/regs-rtc.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/pxafb.h>
- #include <mach/mmc.h>
- #include <mach/udc.h>
-diff --git a/arch/arm/mach-pxa/palmld.c b/arch/arm/mach-pxa/palmld.c
-index 91038ee..3ff0c4a 100644
---- a/arch/arm/mach-pxa/palmld.c
-+++ b/arch/arm/mach-pxa/palmld.c
-@@ -39,7 +39,7 @@
- #include <mach/mmc.h>
- #include <mach/pxafb.h>
- #include <mach/irda.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/palmasoc.h>
- #include <mach/palm27x.h>
- 
-diff --git a/arch/arm/mach-pxa/palmt5.c b/arch/arm/mach-pxa/palmt5.c
-index 1c28199..5b9f766 100644
---- a/arch/arm/mach-pxa/palmt5.c
-+++ b/arch/arm/mach-pxa/palmt5.c
-@@ -39,7 +39,7 @@
- #include <mach/mmc.h>
- #include <mach/pxafb.h>
- #include <mach/irda.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/udc.h>
- #include <mach/palmasoc.h>
- #include <mach/palm27x.h>
-diff --git a/arch/arm/mach-pxa/palmtreo.c b/arch/arm/mach-pxa/palmtreo.c
-index 52defd5..f685a60 100644
---- a/arch/arm/mach-pxa/palmtreo.c
-+++ b/arch/arm/mach-pxa/palmtreo.c
-@@ -39,7 +39,7 @@
- #include <mach/mmc.h>
- #include <mach/pxafb.h>
- #include <mach/irda.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/udc.h>
- #include <mach/ohci.h>
- #include <mach/pxa2xx-regs.h>
-diff --git a/arch/arm/mach-pxa/palmtx.c b/arch/arm/mach-pxa/palmtx.c
-index 144dc2b..89a3792 100644
---- a/arch/arm/mach-pxa/palmtx.c
-+++ b/arch/arm/mach-pxa/palmtx.c
-@@ -43,7 +43,7 @@
- #include <mach/mmc.h>
- #include <mach/pxafb.h>
- #include <mach/irda.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/udc.h>
- #include <mach/palmasoc.h>
- #include <mach/palm27x.h>
-diff --git a/arch/arm/mach-pxa/palmz72.c b/arch/arm/mach-pxa/palmz72.c
-index 87e4b10..38f4425 100644
---- a/arch/arm/mach-pxa/palmz72.c
-+++ b/arch/arm/mach-pxa/palmz72.c
-@@ -41,7 +41,7 @@
- #include <mach/mmc.h>
- #include <mach/pxafb.h>
- #include <mach/irda.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/udc.h>
- #include <mach/palmasoc.h>
- #include <mach/palm27x.h>
-diff --git a/arch/arm/mach-pxa/tavorevb.c b/arch/arm/mach-pxa/tavorevb.c
-index f02dcb5..0f440c9 100644
---- a/arch/arm/mach-pxa/tavorevb.c
-+++ b/arch/arm/mach-pxa/tavorevb.c
-@@ -25,7 +25,7 @@
- 
- #include <mach/pxa930.h>
- #include <mach/pxafb.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- 
- #include "devices.h"
- #include "generic.h"
-diff --git a/arch/arm/mach-pxa/z2.c b/arch/arm/mach-pxa/z2.c
-index f0d0228..8c44bc4 100644
---- a/arch/arm/mach-pxa/z2.c
-+++ b/arch/arm/mach-pxa/z2.c
-@@ -37,7 +37,7 @@
- #include <mach/z2.h>
- #include <mach/pxafb.h>
- #include <mach/mmc.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <mach/pxa2xx_spi.h>
- 
- #include <plat/i2c.h>
-diff --git a/arch/arm/mach-pxa/zylonite.c b/arch/arm/mach-pxa/zylonite.c
-index 2edad61..69df3ed 100644
---- a/arch/arm/mach-pxa/zylonite.c
-+++ b/arch/arm/mach-pxa/zylonite.c
-@@ -30,7 +30,7 @@
- #include <mach/zylonite.h>
- #include <mach/mmc.h>
- #include <mach/ohci.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- #include <plat/pxa3xx_nand.h>
- 
- #include "devices.h"
-diff --git a/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h b/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
-new file mode 100644
-index 0000000..7b4eadc
---- /dev/null
-+++ b/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
-@@ -0,0 +1,59 @@
-+#ifndef __ASM_ARCH_PXA27x_KEYPAD_H
-+#define __ASM_ARCH_PXA27x_KEYPAD_H
++/* Wake Clear Register */
++#define APMU_WAKE_CLR	APMU_REG(0x07c)
 +
-+#include <linux/input.h>
-+#include <linux/input/matrix_keypad.h>
++#define APMU_PXA168_KP_WAKE_CLR		(1 << 7)
++#define APMU_PXA168_CFI_WAKE_CLR	(1 << 6)
++#define APMU_PXA168_XD_WAKE_CLR		(1 << 5)
++#define APMU_PXA168_MSP_WAKE_CLR	(1 << 4)
++#define APMU_PXA168_SD4_WAKE_CLR	(1 << 3)
++#define APMU_PXA168_SD3_WAKE_CLR	(1 << 2)
++#define APMU_PXA168_SD2_WAKE_CLR	(1 << 1)
++#define APMU_PXA168_SD1_WAKE_CLR	(1 << 0)
 +
-+#define MAX_MATRIX_KEY_ROWS	(8)
-+#define MAX_MATRIX_KEY_COLS	(8)
-+#define MATRIX_ROW_SHIFT	(3)
-+#define MAX_DIRECT_KEY_NUM	(8)
-+
-+/* pxa3xx keypad platform specific parameters
-+ *
-+ * NOTE:
-+ * 1. direct_key_num indicates the number of keys in the direct keypad
-+ *    _plus_ the number of rotary-encoder sensor inputs,  this can be
-+ *    left as 0 if only rotary encoders are enabled,  the driver will
-+ *    automatically calculate this
-+ *
-+ * 2. direct_key_map is the key code map for the direct keys, if rotary
-+ *    encoder(s) are enabled, direct key 0/1(2/3) will be ignored
-+ *
-+ * 3. rotary can be either interpreted as a relative input event (e.g.
-+ *    REL_WHEEL/REL_HWHEEL) or specific keys (e.g. UP/DOWN/LEFT/RIGHT)
-+ *
-+ * 4. matrix key and direct key will use the same debounce_interval by
-+ *    default, which should be sufficient in most cases
-+ */
-+struct pxa27x_keypad_platform_data {
-+
-+	/* code map for the matrix keys */
-+	unsigned int	matrix_key_rows;
-+	unsigned int	matrix_key_cols;
-+	unsigned int	*matrix_key_map;
-+	int		matrix_key_map_size;
-+
-+	/* direct keys */
-+	int		direct_key_num;
-+	unsigned int	direct_key_map[MAX_DIRECT_KEY_NUM];
-+
-+	/* rotary encoders 0 */
-+	int		enable_rotary0;
-+	int		rotary0_rel_code;
-+	int		rotary0_up_key;
-+	int		rotary0_down_key;
-+
-+	/* rotary encoders 1 */
-+	int		enable_rotary1;
-+	int		rotary1_rel_code;
-+	int		rotary1_up_key;
-+	int		rotary1_down_key;
-+
-+	/* key debounce interval */
-+	unsigned int	debounce_interval;
-+};
-+
-+extern void pxa_set_keypad_info(struct pxa27x_keypad_platform_data *info);
-+
-+#endif /* __ASM_ARCH_PXA27x_KEYPAD_H */
-diff --git a/drivers/input/keyboard/pxa27x_keypad.c b/drivers/input/keyboard/pxa27x_keypad.c
-index 0e53b3b..0610d10 100644
---- a/drivers/input/keyboard/pxa27x_keypad.c
-+++ b/drivers/input/keyboard/pxa27x_keypad.c
-@@ -32,7 +32,7 @@
- #include <asm/mach/map.h>
- 
- #include <mach/hardware.h>
--#include <mach/pxa27x_keypad.h>
-+#include <plat/pxa27x_keypad.h>
- /*
-  * Keypad Controller registers
-  */
+ #endif /* __ASM_MACH_REGS_APMU_H */
 -- 
 1.7.0.4
 
