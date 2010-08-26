@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab0HZI2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 04:28:32 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:63654 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab0HZI23 (ORCPT
+	id S1753387Ab0HZI2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 04:28:41 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53035 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab0HZI2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 04:28:29 -0400
-Date: Thu, 26 Aug 2010 17:26:16 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] HWPOISON, hugetlb: fix unpoison for hugepage
-Message-ID: <20100826082616.GX21389@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1282694127-14609-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1282694127-14609-8-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20100825025432.GA15129@localhost>
+	Thu, 26 Aug 2010 04:28:37 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C7625D1.4060201@np.css.fujitsu.com>
+Date: Thu, 26 Aug 2010 17:29:05 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <20100825025432.GA15129@localhost>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Fenghua Yu <fenghua.yu@intel.com>
+CC: mingo Redhat <mingo@redhat.com>, "Brown, Len" <len.brown@intel.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        "H. Peter Anvin" <hpa@linux.jf.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKLM <linux-kernel@vger.kernel.org>
+Subject: [Patch-next] therm_throt.c: fix missing { and }.
+References: <4C75D3C4.6040802@np.css.fujitsu.com> <20100826060822.GA15021@fenghua-desk.sc.intel.com>
+In-Reply-To: <20100826060822.GA15021@fenghua-desk.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 10:54:32AM +0800, Wu Fengguang wrote:
-> On Wed, Aug 25, 2010 at 07:55:26AM +0800, Naoya Horiguchi wrote:
-> > Currently unpoisoning hugepages doesn't work because it's not enough
-> > to just clear PG_HWPoison bits and we need to link the hugepage
-> > to be unpoisoned back to the free hugepage list.
-> > To do this, we get and put hwpoisoned hugepage whose refcount is 0.
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-> > ---
-> >  mm/memory-failure.c |   16 +++++++++++++---
-> >  1 files changed, 13 insertions(+), 3 deletions(-)
-> > 
-> > diff --git v2.6.36-rc2/mm/memory-failure.c v2.6.36-rc2/mm/memory-failure.c
-> > index 60178d2..ab36690 100644
-> > --- v2.6.36-rc2/mm/memory-failure.c
-> > +++ v2.6.36-rc2/mm/memory-failure.c
-> > @@ -1154,9 +1154,19 @@ int unpoison_memory(unsigned long pfn)
-> >  	nr_pages = 1 << compound_order(page);
-> >  
-> >  	if (!get_page_unless_zero(page)) {
-> > -		if (TestClearPageHWPoison(p))
-> > +		/* The page to be unpoisoned was free one when hwpoisoned */
-> > +		if (TestClearPageHWPoison(page))
-> >  			atomic_long_sub(nr_pages, &mce_bad_pages);
-> >  		pr_debug("MCE: Software-unpoisoned free page %#lx\n", pfn);
-> > +		if (PageHuge(page)) {
-> > +			/*
-> > +			 * To unpoison free hugepage, we get and put it
-> > +			 * to move it back to the free list.
-> > +			 */
-> > +			get_page(page);
-> > +			clear_page_hwpoison_huge_page(page);
-> > +			put_page(page);
-> > +		}
-> >  		return 0;
-> >  	}
-> 
-> It's racy in free huge page detection.
-> 
-> alloc_huge_page() does not increase page refcount inside hugetlb_lock,
-> the alloc_huge_page()=>alloc_buddy_huge_page() path even drops the
-> lock temporarily! Then we never know reliably if a huge page is really
-> free.
+When the feature PTS is not supported by CPU, the sysfile
+package_power_limit_count for package should not be generated.
 
-I agree.
+This patch is used for fixing missing { and }. But I have not confirmed
+this patch because I don't have such machine.
 
-> Here is a scratched fix. It is totally untested. Just want to notice
-> you that with this patch, the huge page unpoisoning should go easier.
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+---
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Great.
-I adjusted this patch to real hugetlb code and passed libhugetlbfs test.
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index d9368ee..169d880 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -216,7 +216,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
+ 		err = sysfs_add_file_to_group(&sys_dev->kobj,
+ 					      &attr_core_power_limit_count.attr,
+ 					      thermal_attr_group.name);
+-	if (cpu_has(c, X86_FEATURE_PTS))
++	if (cpu_has(c, X86_FEATURE_PTS)) {
+ 		err = sysfs_add_file_to_group(&sys_dev->kobj,
+ 					      &attr_package_throttle_count.attr,
+ 					      thermal_attr_group.name);
+@@ -224,6 +224,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
+ 			err = sysfs_add_file_to_group(&sys_dev->kobj,
+ 					&attr_package_power_limit_count.attr,
+ 					thermal_attr_group.name);
++	}
+ 
+ 	return err;
+ }
+-- 
+1.7.1.1
 
-Thanks,
-Naoya
