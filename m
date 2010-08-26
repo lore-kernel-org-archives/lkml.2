@@ -1,93 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab0HZNXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 09:23:42 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42273 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933Ab0HZNV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752707Ab0HZNXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 09:23:37 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:33107 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752033Ab0HZNV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Aug 2010 09:21:26 -0400
-Message-Id: <20100826132125.323219835@sgi.com>
+Message-Id: <20100826132125.790903532@sgi.com>
 User-Agent: quilt/0.47-1
-Date: Thu, 26 Aug 2010 08:19:52 -0500
+Date: Thu, 26 Aug 2010 08:19:55 -0500
 From: steiner@sgi.com
 To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [Patch 15/25] GRU - reorder interrupt processing
+Subject: [Patch 18/25] GRU - contexts must contain cbrs
 References: <20100826131937.108920216@sgi.com>
-Content-Disposition: inline; filename=uv_gru_preload_tlb_inval
+Content-Disposition: inline; filename=uv_gru_cbr_check
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jack Steiner <steiner@sgi.com>
 
-Reorder the servicing of CBR completion interrupts & TLB miss interrupts.
-There is a small performance gain to service TLB misses first. Completion
-interrupts are rare.
-
+Don't allow users to create GRU contexts with 0 CBRs. This does
+not make sense & is not allowed by the chiplet. The chiplet will flag this
+as an error and fail to allocate the context.
 
 Signed-off-by: Jack Steiner <steiner@sgi.com>
 
 ---
- drivers/misc/sgi-gru/grufault.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/misc/sgi-gru/grufile.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux/drivers/misc/sgi-gru/grufault.c
+Index: linux/drivers/misc/sgi-gru/grufile.c
 ===================================================================
---- linux.orig/drivers/misc/sgi-gru/grufault.c	2010-07-19 10:25:40.978392010 -0500
-+++ linux/drivers/misc/sgi-gru/grufault.c	2010-07-19 10:25:45.626240841 -0500
-@@ -7,7 +7,7 @@
-  * These misses are reported either via interrupts or user polling of
-  * the user CB.
-  *
-- *  Copyright (c) 2008 Silicon Graphics, Inc.  All Rights Reserved.
-+ *  Copyright (c) 2008-2010 Silicon Graphics, Inc.  All Rights Reserved.
-  *
-  *  This program is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-@@ -559,19 +559,10 @@ static irqreturn_t gru_intr(int chiplet,
- 		imap.fault_bits[0], imap.fault_bits[1],
- 		dmap.fault_bits[0], dmap.fault_bits[1]);
+--- linux.orig/drivers/misc/sgi-gru/grufile.c	2010-06-09 08:11:46.261068458 -0500
++++ linux/drivers/misc/sgi-gru/grufile.c	2010-06-09 08:11:47.151963284 -0500
+@@ -175,7 +175,7 @@ static int gru_create_new_context(unsign
  
--	for_each_cbr_in_tfm(cbrnum, dmap.fault_bits) {
--		STAT(intr_cbr);
--		cmp = gru->gs_async_wq[cbrnum];
--		if (cmp)
--			complete(cmp);
--		gru_dbg(grudev, "gid %d, cbr_done %d, done %d\n",
--			gru->gs_gid, cbrnum, cmp ? cmp->done : -1);
--	}
--
- 	for_each_cbr_in_tfm(cbrnum, imap.fault_bits) {
--		STAT(intr_tfh);
- 		tfh = get_tfh_by_index(gru, cbrnum);
- 		prefetchw(tfh);	/* Helps on hdw, required for emulator */
-+		STAT(intr_tfh);
+ 	if (req.data_segment_bytes > max_user_dsr_bytes)
+ 		return -EINVAL;
+-	if (req.control_blocks > max_user_cbrs || !req.maximum_thread_count)
++	if (req.control_blocks == 0 || req.control_blocks > max_user_cbrs || !req.maximum_thread_count)
+ 		return -EINVAL;
  
- 		/*
- 		 * When hardware sets a bit in the faultmap, it implicitly
-@@ -596,6 +587,8 @@ static irqreturn_t gru_intr(int chiplet,
- 			gts->ustats.interrupts++;
- 		gts->ustats.fmm_tlbmiss++;
- 		multi = 1;
-+		if (!gts->ts_mm)
-+			continue;
- 		if (!gts->ts_force_cch_reload &&
- 					down_read_trylock(&gts->ts_mm->mmap_sem)) {
- 			gru_try_dropin(gru, gts, tfh, NULL);
-@@ -605,6 +598,15 @@ static irqreturn_t gru_intr(int chiplet,
- 			STAT(intr_mm_lock_failed);
- 		}
- 	}
-+	for_each_cbr_in_tfm(cbrnum, dmap.fault_bits) {
-+		STAT(intr_cbr);
-+		cmp = gru->gs_async_wq[cbrnum];
-+		if (cmp)
-+			complete(cmp);
-+		gru_dbg(grudev, "gid %d, cbr_done %d, done %d\n",
-+			gru->gs_gid, cbrnum, cmp ? cmp->done : -1);
-+	}
-+
- 	return IRQ_HANDLED;
- }
- 
+ 	if (!(req.options & GRU_OPT_MISS_MASK))
 
