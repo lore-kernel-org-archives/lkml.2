@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab0H0SL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:11:57 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:52720 "EHLO e1.ny.us.ibm.com"
+	id S1755210Ab0H0SMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:12:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28717 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392Ab0H0SLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:11:55 -0400
-Subject: Re: System time drifts when processor idle.
-From: john stultz <johnstul@us.ibm.com>
-To: jean-philippe francois <jp.francois@cynove.com>
-Cc: Lin Ming <lin@ming.vg>, venki@google.com, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        jslaby@suse.cz
-In-Reply-To: <AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
-References: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
-	 <AANLkTik0ZGs3i_mHtB0s6iT6X0cLgxMjRN7Hi9FK_ZLF@mail.gmail.com>
-	 <AANLkTikTF9uvKw+48_jJKLAwqp7MJnypvvUsHN3qQ58+@mail.gmail.com>
-	 <AANLkTin80q4tGPZ1FefWCUMmhpNKj3_-KZZB12gZvwSA@mail.gmail.com>
-	 <AANLkTin5cLQG9ApxhCs92Twm958MP0J+u4GdBysJ3aNk@mail.gmail.com>
-	 <AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Aug 2010 11:11:48 -0700
-Message-ID: <1282932708.1946.8.camel@work-vm>
+	id S1751392Ab0H0SMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 14:12:33 -0400
+Date: Fri, 27 Aug 2010 14:12:05 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Bob Copeland <me@bobcopeland.com>
+Cc: Matthew Wilcox <matthew@wil.cx>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Karel Zak <kzak@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: Sanity check mount flags passed to change_mnt_propagation()
+Message-ID: <20100827181205.GD26872@shell>
+References: <20100826200318.GA13636@shell> <20100827011436.GB3521@parisc-linux.org> <20100827174313.GA26872@shell> <AANLkTik-uXDtvA9G7sr1becN235PMzFWmuD5t9Xu4yZX@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik-uXDtvA9G7sr1becN235PMzFWmuD5t9Xu4yZX@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 16:12 +0200, jean-philippe francois wrote:
-> My Timekeeping bug is still present, here is an updated script and log.
-> I am willing to make test, but I don't know what kind of debugging
-> info is needed.
->
-> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
-> hpet acpi_pm 
-> cat /sys/devices/system/clocksource/clocksource0/current_clocksource
-> hpet
+On Fri, Aug 27, 2010 at 01:51:06PM -0400, Bob Copeland wrote:
+> On Fri, Aug 27, 2010 at 1:43 PM, Valerie Aurora <vaurora@redhat.com> wrote:
+> > On Thu, Aug 26, 2010 at 07:14:36PM -0600, Matthew Wilcox wrote:
+> >> Hrm. ?I think we can do this a bit more pithily.
+> >>
+> >> ? ? ? /* Only one propagation flag should be set, and no others */
+> >> ? ? ? if (hweight32(type) != 1 &&
+> >> ? ? ? ? ? (type & ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+> >> ? ? ? ? ? ? ? return 0;
+> >>
+> >> Too clever?
+> >
+> > I was hoping someone would go find the best bitop for me, thanks. :)
+> > hweight32() is an awkward name but the comment makes it clear. ?I'm
+> > happy with either.
+> >
+> > Thanks for the help,
+> 
+> Didn't read surrounding code, but is that supposed to be '||'?
+> 
+> Otherwise the case where only a single non-propagation flag is
+> set no longer returns 0...
 
-Huh. hpet was not what I would have expected.
+Yes, thanks!
 
+I'll run the test program again before resubmitting. :)
 
-So first, two experiments: 
-
-1) Does booting with "clock=acpi_pm" cause the issue to disappear?
-
-2) Does booting with "nohz=off" cause the issue to disappear?
-
-
-Venkatesh: You have any experience with HPETs that halt in idle?
-
-thanks
--john
-
-
+-VAL
