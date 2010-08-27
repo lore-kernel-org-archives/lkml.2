@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab0H0SNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:13:42 -0400
+	id S1755248Ab0H0SNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:13:44 -0400
 Received: from mga11.intel.com ([192.55.52.93]:35824 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab0H0SNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755193Ab0H0SNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Aug 2010 14:13:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,279,1280732400"; 
-   d="scan'208";a="601117112"
-Message-Id: <20100827181049.173087246@sbsiddha-MOBL3.sc.intel.com>
+   d="scan'208";a="832548440"
+Message-Id: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
 User-Agent: quilt/0.47-1
-Date: Fri, 27 Aug 2010 11:09:50 -0700
+Date: Fri, 27 Aug 2010 11:09:48 -0700
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [patch 3/3] x86, x2apic: simplify apic init in SMP and UP builds
-References: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=cleanup_enable_IR_seq.patch
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Weidong Han <weidong.han@intel.com>, stable@kernel.org
+Subject: [patch 1/3] x86, intr-remap: set redirection hint in the IRTE
+Content-Disposition: inline; filename=set_redir_hint_for_irte.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move enable_IR_x2apic() inside the default_setup_apic_routing()
+Currently the redirection hint in the interrupt-remapping table entry
+is set to 0, which means the remapped interrupt is directed to the
+processors listed in the destination. So in logical flat mode
+in the presence of intr-remapping, this results in a single
+interrupt multi-casted to multiple cpu's as specified by the destination
+bit mask. But what we really want is to send that interrupt to one of the cpus
+based on the lowest priority delivery mode.
 
-And for smp platforms, move the default_setup_apic_routing() after
-smp_sanity_check(). This cleans up the code that tries to avoid multiple
-calls to default_setup_apic_routing() when smp_sanity_check() fails (which
-goes through the APIC_init_uniprocessor() path)
+Set the redirection hint in the IRTE to '1' to indicate that we want
+the remapped interrupt to be directed to only one of the processors
+listed in the destination.
+
+This fixes the issue of same interrupt getting delivered to multiple cpu's
+in the logical flat mode in the presence of interrupt-remapping. While
+there is no functional issue observed with this behavior, this will
+impact performance of such configurations (<=8 cpu's using logical flat
+mode in the presence of interrupt-remapping)
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Weidong Han <weidong.han@intel.com>
+Cc: <stable@kernel.org> # [v2.6.32+]
 ---
- arch/x86/kernel/apic/apic.c     |    3 ---
- arch/x86/kernel/apic/probe_64.c |    3 +++
- arch/x86/kernel/smpboot.c       |    4 ++--
- 3 files changed, 5 insertions(+), 5 deletions(-)
 
-Index: tip/arch/x86/kernel/apic/apic.c
-===================================================================
---- tip.orig/arch/x86/kernel/apic/apic.c
-+++ tip/arch/x86/kernel/apic/apic.c
-@@ -1665,10 +1665,7 @@ int __init APIC_init_uniprocessor(void)
- 	}
- #endif
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index f1efeba..90f8a75 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1392,6 +1392,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+ 		irte.dlvry_mode = apic->irq_delivery_mode;
+ 		irte.vector = vector;
+ 		irte.dest_id = IRTE_DEST(destination);
++		irte.redir_hint = 1;
  
--#ifndef CONFIG_SMP
--	enable_IR_x2apic();
- 	default_setup_apic_routing();
--#endif
+ 		/* Set source-id of interrupt request */
+ 		set_ioapic_sid(&irte, apic_id);
+@@ -3343,6 +3344,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ 		irte.dlvry_mode = apic->irq_delivery_mode;
+ 		irte.vector = cfg->vector;
+ 		irte.dest_id = IRTE_DEST(dest);
++		irte.redir_hint = 1;
  
- 	verify_local_APIC();
- 	connect_bsp_APIC();
-Index: tip/arch/x86/kernel/apic/probe_64.c
-===================================================================
---- tip.orig/arch/x86/kernel/apic/probe_64.c
-+++ tip/arch/x86/kernel/apic/probe_64.c
-@@ -54,6 +54,9 @@ static int apicid_phys_pkg_id(int initia
-  */
- void __init default_setup_apic_routing(void)
- {
-+
-+	enable_IR_x2apic();
-+
- #ifdef CONFIG_X86_X2APIC
- 	if (x2apic_mode
- #ifdef CONFIG_X86_UV
-Index: tip/arch/x86/kernel/smpboot.c
-===================================================================
---- tip.orig/arch/x86/kernel/smpboot.c
-+++ tip/arch/x86/kernel/smpboot.c
-@@ -1107,8 +1107,6 @@ void __init native_smp_prepare_cpus(unsi
- 	}
- 	set_cpu_sibling_map(0);
- 
--	enable_IR_x2apic();
--	default_setup_apic_routing();
- 
- 	if (smp_sanity_check(max_cpus) < 0) {
- 		printk(KERN_INFO "SMP disabled\n");
-@@ -1116,6 +1114,8 @@ void __init native_smp_prepare_cpus(unsi
- 		goto out;
- 	}
- 
-+	default_setup_apic_routing();
-+
- 	preempt_disable();
- 	if (read_apic_id() != boot_cpu_physical_apicid) {
- 		panic("Boot APIC ID in local APIC unexpected (%d vs %d)",
+ 		/* Set source-id of interrupt request */
+ 		if (pdev)
 
 
