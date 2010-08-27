@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab0H0Dgw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 23:36:52 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37236 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887Ab0H0Dgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 23:36:49 -0400
-Date: Fri, 27 Aug 2010 04:36:35 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes.
-Message-ID: <alpine.DEB.2.00.1008270434490.30866@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753308Ab0H0DkT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 23:40:19 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:26869 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201Ab0H0DkR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 23:40:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=xqtG4aUUwqhJvjW4Fawa2z+l52+KZrVYUAPC+K86eSFCF3act/sws3UU1a6VqZibhT
+         aTotvnxxh+ptbW1LJoQg==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 26 Aug 2010 20:40:10 -0700
+Message-ID: <AANLkTi==Z-SbfSWBhxoZMpKLtCwA9O_oUgh8PWrMNRoG@mail.gmail.com>
+Subject: [GIT PULL] tegra fixes for 2.6.36
+From: Colin Cross <ccross@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
 Hi Linus,
+Please pull tegra fixes from:
 
-Some regression fixes, a couple around the BKL removal, and one in the 
-drm_mm code that was causing SIGBUS errors for some radeon users.
+git://android.git.kernel.org/kernel/tegra.git for-linus
 
-Dave.
+Thanks,
+Colin
 
-The following changes since commit d03330383c9255cdb184dd33594e89c3542f191b:
-
-  Merge remote branch 'nouveau/for-airlied' of /ssd/git/drm-nouveau-next into drm-core-next (2010-08-23 08:34:59 +1000)
+The following changes since commit d4348c678977c7093438bbbf2067c49396ae941b:
+  Linus Torvalds (1):
+        Merge branch 'perf-fixes-for-linus' of
+git://git.kernel.org/.../tip/linux-2.6-tip
 
 are available in the git repository at:
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+  git://android.git.kernel.org/kernel/tegra.git for-linus
 
-Adam Jackson (1):
-      drm/modes: Fix CVT-R modeline generation
+Olof Johansson (2):
+      arm: tegra: fix compilation of board-harmony.c
+      arm: tegra: VMALLOC_END should be unsigned long
 
-Alex Deucher (2):
-      drm/radeon/kms: remove stray radeon_i2c_destroy
-      drm/radeon/kms: add missing scratch update in dp_detect
-
-Arnd Bergmann (1):
-      drm: fix regression in drm locking since BKL removal.
-
-Ben Skeggs (3):
-      drm/nv50: add dcb type 14 to enum to prevent compiler complaint
-      drm: export drm_global_mutex for drivers to use
-      drm/nouveau: drop drm_global_mutex before sleeping in submission path
-
-Chris Wilson (1):
-      vgaarb: Wrap vga_(get|put) in CONFIG_VGA_ARB
-
-Daniel Vetter (1):
-      drm: mm: fix range restricted allocations
-
-Dave Airlie (1):
-      Merge remote branch 'nouveau/for-airlied' of /ssd/git/drm-nouveau-next into drm-fixes
-
-Francisco Jerez (4):
-      drm/nouveau: Use a helper function to match PCI device/subsystem IDs.
-      drm/nouveau: Fix backlight control on PPC machines with an internal TMDS panel.
-      drm/nouveau: Fix TMDS on some DCB1.5 boards.
-      drm/nv20: Don't use pushbuf calls on the original nv20.
-
-Patrice Mandin (1):
-      drm/nv30: Apply modesetting to the correct slave encoder
-
- drivers/gpu/drm/drm_fops.c                 |    1 +
- drivers/gpu/drm/drm_lock.c                 |    2 +
- drivers/gpu/drm/drm_mm.c                   |   24 ++++++----
- drivers/gpu/drm/drm_modes.c                |    5 ++-
- drivers/gpu/drm/nouveau/nouveau_bios.c     |   64 +++++++---------------------
- drivers/gpu/drm/nouveau/nouveau_bios.h     |    1 +
- drivers/gpu/drm/nouveau/nouveau_drv.h      |    9 ++++
- drivers/gpu/drm/nouveau/nouveau_gem.c      |    6 ++-
- drivers/gpu/drm/nouveau/nv04_dfp.c         |   31 ++++++++++++-
- drivers/gpu/drm/nouveau/nv17_tv.c          |   10 +---
- drivers/gpu/drm/radeon/radeon_connectors.c |    1 +
- drivers/gpu/drm/radeon/radeon_pm.c         |    2 -
- include/linux/vgaarb.h                     |   15 ++++++-
- 13 files changed, 95 insertions(+), 76 deletions(-)
+ arch/arm/mach-tegra/board-harmony.c        |    2 --
+ arch/arm/mach-tegra/include/mach/vmalloc.h |    2 +-
+ 2 files changed, 1 insertions(+), 3 deletions(-)
