@@ -1,90 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab0H0Ba2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 21:30:28 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45097 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab0H0BaX (ORCPT
+	id S1753251Ab0H0Bip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 21:38:45 -0400
+Received: from smtp-04.mandic.com.br ([200.225.81.151]:49474 "EHLO
+	smtp-04.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab0H0Bin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:30:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 27 Aug 2010 10:25:07 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mark Hills <mark@pogo.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: cgroup: rmdir() does not complete
-Message-Id: <20100827102507.dc3a5ac6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 26 Aug 2010 21:38:43 -0400
+Message-ID: <4C77171E.6060008@cesarb.net>
+Date: Thu, 26 Aug 2010 22:38:38 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
+ messages
+References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>	 <4C770299.6000708@cesarb.net> <1282869660.1836.5.camel@Joe-Laptop>
+In-Reply-To: <1282869660.1836.5.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010 16:51:55 +0100 (BST)
-Mark Hills <mark@pogo.org.uk> wrote:
+Em 26-08-2010 21:41, Joe Perches escreveu:
+> On Thu, 2010-08-26 at 21:11 -0300, Cesar Eduardo Barros wrote:
+>> Em 26-08-2010 20:33, Joe Perches escreveu:
+>>> On Thu, 26 Aug 2010, Cesar Eduardo Barros wrote:
+>>>> On my Dell Inspiron N4010, one of these messages is printed every five
+>>>> seconds. Change both to dev_dbg to quieten them even more.
+>>> I think you should instead fix your hardware or maybe change
+>>> your thermal throttling settings.
+>
+> I was probably a bit hasty in writing that.
+>
+>> Is there a way to know if all this is just an oddness of this model, or
+>> if there is something which is not working quite right?
+>>
+>> (All the output above is from 2.6.35.3; I am not running 2.3.36-rc2+
+>> right now because it hangs on resume, and I have not yet had the time to
+>> look at it.)
+>
+> Perhaps you might try this patch and get a bit more information.
 
-> I am experiencing hung tasks when trying to rmdir() on a cgroup. One task 
-> spins, others queue up behind it with the following:
-> 
->   INFO: task soaked-cgroup:27257 blocked for more than 120 seconds.
->   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->   soaked-cgrou D ffff8800058157c0     0 27257  29411 0x00000000
->   ffff88004ffffdd8 0000000000000086 ffff88004ffffda8 ffff88004ffffeb8
->   0000000000000010 ffff880119813780 ffff88004ffffd48 ffff88004fffffd8
->   ffff88004fffffd8 000000000000f9b0 00000000000157c0 ffff880137693268
->   Call Trace:
->   [<ffffffff81115edb>] ? mntput_no_expire+0x24/0xe7
->   [<ffffffff81427acd>] __mutex_lock_common+0x14d/0x1b4
->   [<ffffffff81108a7c>] ? path_put+0x1d/0x22
->   [<ffffffff81427b48>] __mutex_lock_slowpath+0x14/0x16
->   [<ffffffff81427c4f>] mutex_lock+0x31/0x4b
->   [<ffffffff8110bdf8>] do_rmdir+0x74/0x102
->   [<ffffffff8110bebd>] sys_rmdir+0x11/0x13
->   [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
-> 
-> Kernel is from Fedora, 2.6.33.6. In all cases the cgroup contains no 
-> tasks.
-> 
-> Commit ec64f5 ("fix frequent -EBUSY at rmdir") adds a busy wait loop to 
-> the rmdir. It looks like what I am seeing here and indicates that some 
-> cgroup subsystem is busy, indefinitely.
-> 
+Running with it right now. Unless I missed one, the messages do happen 
+exactly every five seconds. Here are the first few lines of the dmesg 
+(grepping for 'intel ips'), and it does seem a bit strange:
 
-Hmm. really spin ? sleeping-forever-no-wake-up ?
+$ dmesg | fgrep intel\ ips
+intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match expected value 
+(found 25, expected 35)
+intel ips 0000:00:1f.6: PCI INT C -> GSI 18 (level, low) -> IRQ 18
+intel ips 0000:00:1f.6: IPS driver initialized, MCP temp limit 65535
+intel ips 0000:00:1f.6: MCP power limit 65535 exceeded: 25615533
+intel ips 0000:00:1f.6: CPU power limit 8183 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6276 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 7952 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 7155 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5928 exceeded: 0
+intel ips 0000:00:1f.6: MCP power limit 65535 exceeded: 70848
+intel ips 0000:00:1f.6: CPU power limit 6430 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6474 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5508 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6569 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5250 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5023 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6209 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 7276 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 9027 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 7008 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5478 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6658 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5192 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6347 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5506 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4447 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4462 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4382 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4862 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5218 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4865 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4131 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5331 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6012 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5323 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4727 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4949 exceeded: 0
+intel ips 0000:00:1f.6: MCP power limit 65535 exceeded: 69539
+intel ips 0000:00:1f.6: CPU power limit 5045 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5070 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5113 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4262 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5158 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4865 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4302 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4430 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4841 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4532 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4814 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4803 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5139 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4050 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 6176 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4746 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 3739 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4863 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4917 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4099 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 4956 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 5018 exceeded: 0
+intel ips 0000:00:1f.6: CPU power limit 3863 exceeded: 0
 
-> I have not worked out how to reproduce it quickly. My only way is to 
-> complete a 'dd' command in the cgroup, but then the problem is so rare it 
-> is slow progress.
-> 
-please show how-to-reproduce in your way.
-And what cgroup is mounted ? memory cgroup only ?
+I think you put the parameters in the wrong order on the dev_info() call 
+for the CPU power limit; it is the limit that is 0.
 
-> Documentation/cgroup.memory.txt describes how force_empty can be required 
-> in some cases. 
+Two bogus things I can see:
 
-Ah, maybe that's wrong text. rmdir() calls force-empty automatically.
+- The first "MCP power limit exceeded" seems very bogus.
+- What do you mean, core_power_limit is zero?
 
-> Does this mean that with the patch above, these cases will 
-> now spin on rmdir(), instead of returning -EBUSY? How can produce a 
-> reliable test case requiring memory.force_empty to be used, to test this?
-> 
+I will go back to 2.6.35; not feeling like debugging my (unrelated) 
+suspend/resume problem right now. If you have another debugging patch, I 
+will probably test it only tomorrow night.
 
-Hmm. I'm not sure fedora-kernel has other (its own) featrues than stock kernel.
-I'm grad if you can check it can happen in stock kernel, 2.6.35.
-
-> Or is it likely to be some other cause, and how best to find it?
-> 
-
-At the first look, above mutex is the mutex in do_rmdir(), not kernel/cgroup.c
-Then, rmdir doesn't seem to reach cgroup code...
-Do you do another operation on the directory while rmdir is called ?
-
-Thanks,
--Kame
-
-
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
