@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab0H0O2p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 10:28:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64827 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab0H0O2m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 10:28:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [RFC PATCH 03/43] ptrace: change signature of arch_ptrace()
-Date: Fri, 27 Aug 2010 16:28:39 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-References: <1282902149-12991-1-git-send-email-namhyung@gmail.com> <1282902149-12991-4-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1282902149-12991-4-git-send-email-namhyung@gmail.com>
+	id S1753986Ab0H0Obr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 10:31:47 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35212 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751872Ab0H0Obo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 10:31:44 -0400
+Date: Fri, 27 Aug 2010 15:31:35 +0100
+From: Hedi Berriche <hedi@sgi.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Message-ID: <20100827143135.GY18967@zorg.emea.sgi.com>
+Mail-Followup-To: Petr Tesarik <ptesarik@suse.cz>,
+	linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Tony Luck <tony.luck@intel.com>
+References: <201008271537.35709.ptesarik@suse.cz> <20100827134802.GX18967@zorg.emea.sgi.com> <201008271609.16099.ptesarik@suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008271628.40023.arnd@arndb.de>
-X-Provags-ID: V02:K0:7fBsAN31JlR1z1P7M93H9z7C0RclLmtRkBbEcVYVEx6
- OkMlItjLL+om1BYF87ccKESIZPjbyWL+SfRj5Q8JitCEyq4rrG
- 02usUwM9fSnRfb6SZueqnfLV/gGnXDL5V/LhZjWX/46RiP4vZ4
- Uc+9aX/6Fb1mQfDK6zEU2wJm23zCZZy7Dvhr6pLGU7RL8F2j4a
- E3sKJjMREK8S7xsgjRedA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008271609.16099.ptesarik@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 August 2010, Namhyung Kim wrote:
-> change type of @addr and @data into unsigned long.
-> 
-> NOTE: This patch might break build if applied alone so should be used with
-> your arch counterpart.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+On Fri, Aug 27, 2010 at 15:09 Petr Tesarik wrote:
+| On Friday 27 of August 2010 15:48:02 Hedi Berriche wrote:
+|
+| > One more fact, the problem was introduced by commit
+| >
+| >     commit 9d40ee200a527ce08ab8c793ba8ae3e242edbb0e
+| >     Author: Tony Luck <tony.luck@intel.com>
+| >     Date:   Wed Oct 7 10:54:19 2009 -0700
+| >
+| >         [IA64] Squeeze ticket locks back into 4 bytes.
+| >
+| > Reverting the patch makes the problem go away.
+| >
+| > IOW, and as far as testing shows, the first incarnation of the ticket locks
+| > implementation on IA64 (commit 2c8696), the one that used 8 bytes, does not
+| > exhibit this problem.
+| 
+| I wouldn't be so sure about it. Given that I have only observed the problem 
+| when the spinlock value wraps around, then an 8-byte spinlock might only need 
+| much more time to trigger the bug.
 
-Would it be possible to rearrange your patches so that you don't break
-anything in the middle? I think merging all the trivial 'change signature'
-patches into one would also make reviewing easier. Nobody in their
-right mind is looking through a full series of 43 patches, especially
-if they do not make sense on their own, but one patch that changes a
-function signature tree-wide would be looked at by many people and can
-be applied standalone.
+That's a possibility and that's why I said "as far as testing shows".
 
-It does make sense to keep the 'foo: clean up arch_ptrace' patches
-separate though, since they are also useful on their own and need
-real review by the arch maintainers.
+That said, I'm letting my already over 36 hours run carry on chewing CPU
+time, and see if it will eventually trip the same problem seen with 4-byte
+ticket locks.
 
-	Arnd
+Cheers,
+Hedi.
+-- 
+Hedi Berriche
+Global Product Support
+http://www.sgi.com/support
