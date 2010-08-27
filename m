@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab0H0Jst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:48:49 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:50999 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990Ab0H0Jsn (ORCPT
+	id S1755030Ab0H0JtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:49:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42423 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618Ab0H0Jnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:48:43 -0400
-Message-ID: <4C7789BE.1060609@ct.jp.nec.com>
-Date: Fri, 27 Aug 2010 18:47:42 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Hannes Reinecke <hare@suse.de>, tytso@mit.edu,
-        linux-scsi@vger.kernel.org, jaxboe@fusionio.com, jack@suse.cz,
-        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
-        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
-        dm-devel@redhat.com
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com> <4C739DE9.5070803@ct.jp.nec.com> <4C73FA8F.5080800@kernel.org> <4C74CD95.1000208@ct.jp.nec.com> <20100825152831.GA8509@redhat.com>
-In-Reply-To: <20100825152831.GA8509@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Aug 2010 05:43:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=nZ2PcSFzPO7EuG5mSGlYwKJ7Iax97LsNuHLGCzVqCLpnQJ1J8VBzhnCtk2OFqlSXh3
+         NdvKxj0muey1ME/BA3YQ4DeZ96briwAe/B7YyXO3Hd2DvP2WmeB+H2C8kZLMRfrWOz/k
+         w2nHhiwEQ5UFgL99UAmKOYRwl3eo2O8zDGuBc=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Yoshinori Sato <ysato@users.sourceforge.jp>
+Subject: [RFC PATCH 17/43] ptrace, h8300: cleanup arch_ptrace()
+Date: Fri, 27 Aug 2010 18:42:03 +0900
+Message-Id: <1282902149-12991-18-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
+References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+use new regno, datap variables in order to remove duplicated expressions and
+unnecessary castings.
 
-On 08/26/2010 12:28 AM +0900, Mike Snitzer wrote:
-> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
->> Anyway, as you said, the flush error handling of dm-mpath is already
->> broken if data loss really happens on any storage used by dm-mpath.
->> Although it's a serious issue and quick fix is required, I think
->> you may leave the old behavior in your patch-set, since it's
->> a separate issue.
-> 
-> I'm not seeing where anything is broken with current mpath.  If a
-> multipathed LUN is WCE=1 then it should be fair to assume the cache is
-> mirrored or shared across ports.  Therefore retrying the SYNCHRONIZE
-> CACHE is needed.
-> 
-> Do we still have fear that SYNCHRONIZE CACHE can silently drop data?
-> Seems unlikely especially given what Tejun shared from SBC.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+---
+ arch/h8300/kernel/ptrace.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-Do we have any proof to wipe that fear?
+diff --git a/arch/h8300/kernel/ptrace.c b/arch/h8300/kernel/ptrace.c
+index 23a95f84..00ddc9c 100644
+--- a/arch/h8300/kernel/ptrace.c
++++ b/arch/h8300/kernel/ptrace.c
+@@ -54,6 +54,8 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
+ {
+ 	int ret;
++	int regno = addr >> 2; /* temporary hack. */
++	unsigned long __user *datap = (unsigned long __user *) data;
+ 
+ 	switch (request) {
+ 	/* read the word at location addr in the USER area. */
+@@ -66,12 +68,11 @@ long arch_ptrace(struct task_struct *child, long request,
+ 			}
+ 			
+ 		        ret = 0;  /* Default return condition */
+-			addr = addr >> 2; /* temporary hack. */
+ 
+-			if (addr < H8300_REGS_NO)
+-				tmp = h8300_get_reg(child, addr);
++			if (regno < H8300_REGS_NO)
++				tmp = h8300_get_reg(child, regno);
+ 			else {
+-				switch(addr) {
++				switch(regno) {
+ 				case 49:
+ 					tmp = child->mm->start_code;
+ 					break ;
+@@ -89,7 +90,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 				}
+ 			}
+ 			if (!ret)
+-				ret = put_user(tmp,(unsigned long *) data);
++				ret = put_user(tmp, datap);
+ 			break ;
+ 		}
+ 
+@@ -99,14 +100,13 @@ long arch_ptrace(struct task_struct *child, long request,
+ 				ret = -EIO;
+ 				break ;
+ 			}
+-			addr = addr >> 2; /* temporary hack. */
+ 			    
+-			if (addr == PT_ORIG_ER0) {
++			if (regno == PT_ORIG_ER0) {
+ 				ret = -EIO;
+ 				break ;
+ 			}
+-			if (addr < H8300_REGS_NO) {
+-				ret = h8300_put_reg(child, addr, data);
++			if (regno < H8300_REGS_NO) {
++				ret = h8300_put_reg(child, regno, data);
+ 				break ;
+ 			}
+ 			ret = -EIO;
+@@ -117,11 +117,11 @@ long arch_ptrace(struct task_struct *child, long request,
+ 			unsigned long tmp;
+ 			for (i = 0; i < H8300_REGS_NO; i++) {
+ 			    tmp = h8300_get_reg(child, i);
+-			    if (put_user(tmp, (unsigned long *) data)) {
++			    if (put_user(tmp, datap)) {
+ 				ret = -EFAULT;
+ 				break;
+ 			    }
+-			    data += sizeof(unsigned long);
++			    datap++;
+ 			}
+ 			ret = 0;
+ 			break;
+@@ -131,12 +131,12 @@ long arch_ptrace(struct task_struct *child, long request,
+ 			int i;
+ 			unsigned long tmp;
+ 			for (i = 0; i < H8300_REGS_NO; i++) {
+-			    if (get_user(tmp, (unsigned long *) data)) {
++			    if (get_user(tmp, datap)) {
+ 				ret = -EFAULT;
+ 				break;
+ 			    }
+ 			    h8300_put_reg(child, i, tmp);
+-			    data += sizeof(unsigned long);
++			    datap++;
+ 			}
+ 			ret = 0;
+ 			break;
+-- 
+1.7.2.2
 
-If retrying on flush failure is safe on all storages used with multipath
-(e.g. SCSI, CCISS, DASD, etc), then current dm-mpath should be fine in
-the real world.
-But I'm afraid if there is a storage where something like below can happen:
-    - a flush command is returned as error to mpath because a part of
-      cache has physically broken at the time or so, then that part of
-      data loses and the size of the cache is shrunk by the storage.
-    - mpath retries the flush command using other path.
-    - the flush command is returned as success to mpath.
-    - mpath passes the result, success, to upper layer, but some of
-      the data already lost.
-
-Thanks,
-Kiyoshi Ueda
