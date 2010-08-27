@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab0H0LDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 07:03:54 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:33426 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab0H0LDw (ORCPT
+	id S1754113Ab0H0LEB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 07:04:01 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52541 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab0H0LD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 07:03:52 -0400
+	Fri, 27 Aug 2010 07:03:58 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V19 06/15] vfs: Add handle based link syscall
-Date: Fri, 27 Aug 2010 16:32:53 +0530
-Message-Id: <1282906982-26918-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V19 07/15] vfs: Add handle based chown syscall
+Date: Fri, 27 Aug 2010 16:32:54 +0530
+Message-Id: <1282906982-26918-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,76 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c               |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ fs/open.c                |   20 ++++++++++++++++++++
  include/linux/syscalls.h |    2 ++
- 2 files changed, 47 insertions(+), 0 deletions(-)
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 4718802..304b187 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2706,6 +2706,51 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
- 	return sys_linkat(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
+diff --git a/fs/open.c b/fs/open.c
+index 7abdcba..5e06c12 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -623,6 +623,26 @@ out:
+ 	return error;
  }
  
-+SYSCALL_DEFINE4(handle_link, int, mountdirfd, struct file_handle __user *, uofh,
-+		int, newdfd, const char __user *, newname)
++SYSCALL_DEFINE4(handle_chown, int, mountdirfd, struct file_handle __user *, ufh,
++		uid_t, user, gid_t, group)
 +{
-+	char *to;
-+	int error;
-+	struct dentry *new_dentry;
-+	struct nameidata nd;
-+	struct path old_path;
++	struct path path;
++	int error = -EINVAL;
 +
-+	error = handle_to_path(mountdirfd, uofh, &old_path);
-+	if (error)
-+		return error;
-+
-+	error = user_path_parent(newdfd, newname, &nd, &to);
++	error = handle_to_path(mountdirfd, ufh, &path);
 +	if (error)
 +		goto out;
-+	error = -EXDEV;
-+	if (old_path.mnt != nd.path.mnt)
++	error = mnt_want_write(path.mnt);
++	if (error)
 +		goto out_release;
-+	new_dentry = lookup_create(&nd, 0);
-+	error = PTR_ERR(new_dentry);
-+	if (IS_ERR(new_dentry))
-+		goto out_unlock;
-+	error = mnt_want_write(nd.path.mnt);
-+	if (error)
-+		goto out_dput;
-+	error = security_path_link(old_path.dentry, &nd.path, new_dentry);
-+	if (error)
-+		goto out_drop_write;
-+	error = vfs_link(old_path.dentry, nd.path.dentry->d_inode, new_dentry);
-+out_drop_write:
-+	mnt_drop_write(nd.path.mnt);
-+out_dput:
-+	dput(new_dentry);
-+out_unlock:
-+	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
++	error = chown_common(&path, user, group);
++	mnt_drop_write(path.mnt);
 +out_release:
-+	path_put(&nd.path);
-+	putname(to);
++	path_put(&path);
 +out:
-+	path_put(&old_path);
-+
 +	return error;
 +}
 +
  /*
-  * The worst of all namespace operations - renaming directory. "Perverted"
-  * doesn't even start to describe it. Somebody in UCB had a heck of a trip...
+  * You have to be very careful that these write
+  * counts get cleaned up in error cases and
 diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index e45ef50..9c82364 100644
+index 9c82364..6dab72b 100644
 --- a/include/linux/syscalls.h
 +++ b/include/linux/syscalls.h
-@@ -850,4 +850,6 @@ asmlinkage long sys_handle_stat(int mountdirfd,
- 				struct file_handle __user *ufh,
- 				struct stat __user *statbuf);
+@@ -852,4 +852,6 @@ asmlinkage long sys_handle_stat(int mountdirfd,
  #endif
-+asmlinkage long sys_handle_link(int mountdirfd, struct file_handle __user *uofh,
-+				int newfd, const char __user *newname);
+ asmlinkage long sys_handle_link(int mountdirfd, struct file_handle __user *uofh,
+ 				int newfd, const char __user *newname);
++asmlinkage long sys_handle_chown(int mountdirfd, struct file_handle __user *ufh,
++				 uid_t user, gid_t group);
  #endif
 -- 
 1.7.0.4
