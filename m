@@ -1,135 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab0H0Jmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:42:40 -0400
+	id S1754217Ab0H0Jmw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:42:52 -0400
 Received: from mail-px0-f174.google.com ([209.85.212.174]:42732 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab0H0Jmi (ORCPT
+	with ESMTP id S1753874Ab0H0Jmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:42:38 -0400
+	Fri, 27 Aug 2010 05:42:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=u85tieC7U/VmmG/g9riIZg4kaY3sWJQgd8snIjxBc6Vvb57s8WgmKBtsrp8M9VghcV
-         5KXU2HTAfZNdvBw7YEP3nQSMJW8tsriAn0F2OEB/WQHCi2o/OvM2H/Bj4zjSRprOa1oO
-         AniUNPPT3f8YK7arPSmhpureRkMs8DYxdoJ2Q=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=pR/aoUO87YBB/qgoVZMmEcF8l9+XCUvYi0T0xF5tjMvFEuyWXwaQ9MoGg1a5O6r2I4
+         oLTE74SUJPyJPTUaeVb9FZ2soHJQpO4n4+ma5pj06DXuFguUbxcQCGj7cvEJK0T/0/24
+         aIN0+tvT3FlhIqVRoP9kahslTtuuk1/WPuv4s=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Arnd Bergmann <arnd@arndb.de>
 Cc: linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 00/43] ptrace cleanups
-Date: Fri, 27 Aug 2010 18:41:46 +0900
-Message-Id: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
+Subject: [RFC PATCH 01/43] ptrace: change signature of sys_ptrace() and friends
+Date: Fri, 27 Aug 2010 18:41:47 +0900
+Message-Id: <1282902149-12991-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
+References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Since user space API of ptrace syscall defines @addr and @data as void
+pointers, it would be more appropriate to define them as unsigned long
+in kernel. Therefore related functions are changed also.
 
-This patchset tries to cleanup architecture independent/dependent part of
-ptrace syscall. Specifically it changes prototype of sys_ptrace() to have
-its arguments @addr and @data to be unsigned long. Since user space API of
-ptrace() declares them as void pointers, and most of archs consider them
-unsigned already in their arch_ptrace(), it would be no harmful to change
-them from (signed) long into unsigned long, IMHO.
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ include/linux/ptrace.h   |    9 ++++++---
+ include/linux/syscalls.h |    3 ++-
+ kernel/ptrace.c          |   16 ++++++++++------
+ 3 files changed, 18 insertions(+), 10 deletions(-)
 
-ptrace() code accesses user area using above arguments frequently, changing
-them enables to drop unnecessary __force markup when casting them to __user
-pointers because sparse allows it only in case of unsigned long. And some
-duplicated/misused castings can be grouped into one place in favor of new
-variables to cleanup code further. This was suggested by Arnd Bergmann and
-comment from Christoph Hellwig was also helpful.
-
-Although I couldn't test all archs, I hope it will not break anything.
-Exceptional case will be "03/43 ptrace: change signature of arch_ptrace()"
-commit since it changes prototype of arch_ptrace() in system header file.
-It *will* break your build if it is applied alone, please use it with
-your arch counterpart. The same goes vice versa, of course.
-
-Any comments would be appreciated.
-Thanks.
-
-
-Namhyung Kim (43):
-  ptrace: change signature of sys_ptrace() and friends
-  ptrace: cleanup ptrace_request()
-  ptrace: change signature of arch_ptrace()
-  ptrace, x86: change signature of arch_ptrace()
-  ptrace, x86: cleanup arch_ptrace()
-  ptrace, alpha: change signature of arch_ptrace()
-  ptrace, arm: change signature of arch_ptrace()
-  ptrace, arm: cleanup arch_ptrace()
-  ptrace, avr32: change signature of arch_ptrace()
-  ptrace, avr32: cleanup arch_ptrace()
-  ptrace, blackfin: change signature of arch_ptrace()
-  ptrace, cris-v10: change signature of arch_ptrace()
-  ptrace, cris-v32: change signature of arch_ptrace()
-  ptrace, frv: change signature of arch_ptrace()
-  ptrace, frv: cleanup arch_ptrace()
-  ptrace, h8300: change signature of arch_ptrace()
-  ptrace, h8300: cleanup arch_ptrace()
-  ptrace, ia64: change signature of arch_ptrace()
-  ptrace, m32r: change signature of arch_ptrace()
-  ptrace, m32r: cleanup arch_ptrace()
-  ptrace, m68k: change signature of arch_ptrace()
-  ptrace, m68k: cleanup arch_ptrace()
-  ptrace, m68knommu: change signature of arch_ptrace()
-  ptrace, m68knommu: cleanup arch_ptrace()
-  ptrace, microblaze: change signature of arch_ptrace()
-  ptrace, mips: change signature of arch_ptrace()
-  ptrace, mips: cleanup arch_ptrace()
-  ptrace, mn10300: change signature of arch_ptrace()
-  ptrace, mn10300: cleanup arch_ptrace()
-  ptrace, parisc: change signature of arch_ptrace()
-  ptrace, powerpc: change signature of arch_ptrace()
-  ptrace, powerpc: cleanup arch_ptrace()
-  ptrace, s390: change signature of arch_ptrace()
-  ptrace, score: change signature of arch_ptrace()
-  ptrace, sh: change signature of arch_ptrace()
-  ptrace, sh: cleanup arch_ptrace()
-  ptrace, sparc: change signature of arch_ptrace()
-  ptrace, sparc: cleanup arch_ptrace()
-  ptrace, tile: change signature of arch_ptrace()
-  ptrace, um: change signature of arch_ptrace()
-  ptrace, um: cleanup arch_ptrace()
-  ptrace, xtensa: change signature of arch_ptrace()
-  ptrace, xtensa: cleanup arch_ptrace()
-
- arch/alpha/kernel/ptrace.c         |    7 ++--
- arch/arm/kernel/ptrace.c           |   36 +++++++++++--------
- arch/avr32/kernel/ptrace.c         |   11 +++---
- arch/blackfin/kernel/ptrace.c      |   16 +++++----
- arch/cris/arch-v10/kernel/ptrace.c |   11 +++---
- arch/cris/arch-v32/kernel/ptrace.c |    7 ++--
- arch/frv/kernel/ptrace.c           |   32 ++++++++---------
- arch/h8300/kernel/ptrace.c         |   33 +++++++++--------
- arch/ia64/kernel/ptrace.c          |    3 +-
- arch/m32r/kernel/ptrace.c          |   11 +++---
- arch/m68k/kernel/ptrace.c          |   51 +++++++++++++-------------
- arch/m68knommu/kernel/ptrace.c     |   70 ++++++++++++++++++-----------------
- arch/microblaze/kernel/ptrace.c    |    7 ++--
- arch/mips/kernel/ptrace.c          |   26 +++++++------
- arch/mn10300/kernel/ptrace.c       |   20 +++++-----
- arch/parisc/kernel/ptrace.c        |   13 ++++---
- arch/powerpc/kernel/ptrace.c       |   70 +++++++++++++++++++----------------
- arch/s390/kernel/ptrace.c          |    3 +-
- arch/score/kernel/ptrace.c         |    7 ++--
- arch/sh/kernel/ptrace_32.c         |   51 ++++++++++++++------------
- arch/sh/kernel/ptrace_64.c         |   27 ++++++++------
- arch/sparc/kernel/ptrace_32.c      |   57 +++++++++++------------------
- arch/sparc/kernel/ptrace_64.c      |   15 ++++----
- arch/tile/kernel/ptrace.c          |   11 +++---
- arch/um/kernel/ptrace.c            |   26 +++++++-------
- arch/um/sys-i386/ptrace.c          |    4 +-
- arch/um/sys-x86_64/ptrace.c        |   11 +++---
- arch/x86/kernel/ptrace.c           |   23 +++++-------
- arch/xtensa/kernel/ptrace.c        |   14 ++++---
- include/linux/ptrace.h             |   12 ++++--
- include/linux/syscalls.h           |    3 +-
- kernel/ptrace.c                    |   29 +++++++++------
- 32 files changed, 375 insertions(+), 342 deletions(-)
-
---
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 4272521..67a4cd7 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -108,7 +108,8 @@ extern int ptrace_attach(struct task_struct *tsk);
+ extern int ptrace_detach(struct task_struct *, unsigned int);
+ extern void ptrace_disable(struct task_struct *);
+ extern int ptrace_check_attach(struct task_struct *task, int kill);
+-extern int ptrace_request(struct task_struct *child, long request, long addr, long data);
++extern int ptrace_request(struct task_struct *child, long request,
++			  unsigned long addr, unsigned long data);
+ extern void ptrace_notify(int exit_code);
+ extern void __ptrace_link(struct task_struct *child,
+ 			  struct task_struct *new_parent);
+@@ -132,8 +133,10 @@ static inline void ptrace_unlink(struct task_struct *child)
+ 		__ptrace_unlink(child);
+ }
+ 
+-int generic_ptrace_peekdata(struct task_struct *tsk, long addr, long data);
+-int generic_ptrace_pokedata(struct task_struct *tsk, long addr, long data);
++int generic_ptrace_peekdata(struct task_struct *tsk, unsigned long addr,
++			    unsigned long data);
++int generic_ptrace_pokedata(struct task_struct *tsk, unsigned long addr,
++			    unsigned long data);
+ 
+ /**
+  * task_ptrace - return %PT_* flags that apply to a task
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index e6319d1..cacc27a 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -701,7 +701,8 @@ asmlinkage long sys_nfsservctl(int cmd,
+ asmlinkage long sys_syslog(int type, char __user *buf, int len);
+ asmlinkage long sys_uselib(const char __user *library);
+ asmlinkage long sys_ni_syscall(void);
+-asmlinkage long sys_ptrace(long request, long pid, long addr, long data);
++asmlinkage long sys_ptrace(long request, long pid, unsigned long addr,
++			   unsigned long data);
+ 
+ asmlinkage long sys_add_key(const char __user *_type,
+ 			    const char __user *_description,
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index f34d798..f838afe 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -402,7 +402,7 @@ int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long ds
+ 	return copied;
+ }
+ 
+-static int ptrace_setoptions(struct task_struct *child, long data)
++static int ptrace_setoptions(struct task_struct *child, unsigned long data)
+ {
+ 	child->ptrace &= ~PT_TRACE_MASK;
+ 
+@@ -481,7 +481,8 @@ static int ptrace_setsiginfo(struct task_struct *child, const siginfo_t *info)
+ #define is_sysemu_singlestep(request)	0
+ #endif
+ 
+-static int ptrace_resume(struct task_struct *child, long request, long data)
++static int ptrace_resume(struct task_struct *child, long request,
++			 unsigned long data)
+ {
+ 	if (!valid_signal(data))
+ 		return -EIO;
+@@ -558,7 +559,7 @@ static int ptrace_regset(struct task_struct *task, int req, unsigned int type,
+ #endif
+ 
+ int ptrace_request(struct task_struct *child, long request,
+-		   long addr, long data)
++		   unsigned long addr, unsigned long data)
+ {
+ 	int ret = -EIO;
+ 	siginfo_t siginfo;
+@@ -691,7 +692,8 @@ static struct task_struct *ptrace_get_task_struct(pid_t pid)
+ #define arch_ptrace_attach(child)	do { } while (0)
+ #endif
+ 
+-SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
++SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
++		unsigned long, data)
+ {
+ 	struct task_struct *child;
+ 	long ret;
+@@ -732,7 +734,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
+ 	return ret;
+ }
+ 
+-int generic_ptrace_peekdata(struct task_struct *tsk, long addr, long data)
++int generic_ptrace_peekdata(struct task_struct *tsk, unsigned long addr,
++			    unsigned long data)
+ {
+ 	unsigned long tmp;
+ 	int copied;
+@@ -743,7 +746,8 @@ int generic_ptrace_peekdata(struct task_struct *tsk, long addr, long data)
+ 	return put_user(tmp, (unsigned long __user *)data);
+ }
+ 
+-int generic_ptrace_pokedata(struct task_struct *tsk, long addr, long data)
++int generic_ptrace_pokedata(struct task_struct *tsk, unsigned long addr,
++			    unsigned long data)
+ {
+ 	int copied;
+ 
+-- 
 1.7.2.2
 
