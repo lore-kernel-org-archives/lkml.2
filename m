@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab0H0Jpo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:45:44 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37671 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886Ab0H0JpB (ORCPT
+	id S1754887Ab0H0Jpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:45:46 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42423 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab0H0Joz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:45:01 -0400
+	Fri, 27 Aug 2010 05:44:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=G8Ghpefuy7jKc2oAfRgSxbZL4xdzIDl98rcrAyAv5lrdilk4AVxFBBnR4tKg2WSjZ6
-         AE0PT+Dztx2Ezf6CgtDyWxqoN/cvfz/2l0XS3YvfT2NxdsdBOrFAiHJ5DZP7dO88edN9
-         e7aXZ6XOqQ0g/Rc+0mt1k+3PDjUrdgzskEzN4=
+        b=E07RrhjKYblcSai5z2+K4JEP0RbgdLfs+1KzDDgPfDRcgpsqvDDjaOB6qaoKfSyuvw
+         m6BAFU1Pf4M/7SZUMHA9qUYcfdRVD6izSgbUO0Ss+Vvoua4N2Ouj/Bc3Yxz0mRiJo3c8
+         PRJPgJT0JXnD4E6v0AN6Um1RnUxjlyv+G6Pnc=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>
-Subject: [RFC PATCH 41/43] ptrace, um: cleanup arch_ptrace()
-Date: Fri, 27 Aug 2010 18:42:27 +0900
-Message-Id: <1282902149-12991-42-git-send-email-namhyung@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>
+Subject: [RFC PATCH 39/43] ptrace, tile: change signature of arch_ptrace()
+Date: Fri, 27 Aug 2010 18:42:25 +0900
+Message-Id: <1282902149-12991-40-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
 References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
@@ -27,116 +27,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove unnecessary castings using void pointer and fix copy_to_user() return
-value.
+change type of @addr and @data into unsigned long according to commit
+f76671df26ef06321480e702770f88f61272be29 [PATCH 03/43]
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/um/kernel/ptrace.c     |   23 +++++++++++------------
- arch/um/sys-x86_64/ptrace.c |    7 +++----
- 2 files changed, 14 insertions(+), 16 deletions(-)
+ arch/tile/kernel/ptrace.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/um/kernel/ptrace.c b/arch/um/kernel/ptrace.c
-index 963d82b..137a1bc 100644
---- a/arch/um/kernel/ptrace.c
-+++ b/arch/um/kernel/ptrace.c
-@@ -46,7 +46,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 		 unsigned long addr, unsigned long data)
+diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
+index 7161bd0..704bf11 100644
+--- a/arch/tile/kernel/ptrace.c
++++ b/arch/tile/kernel/ptrace.c
+@@ -64,7 +64,8 @@ void ptrace_disable(struct task_struct *child)
+ 	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
+ }
+ 
+-long arch_ptrace(struct task_struct *child, long request, long addr, long data)
++long arch_ptrace(struct task_struct *child, long request,
++		 unsigned long addr, unsigned long data)
  {
- 	int i, ret;
--	unsigned long __user *p = (void __user *)data;
-+	void __user *p = (void __user *)data;
- 
- 	switch (request) {
- 	/* read word at location addr. */
-@@ -78,12 +78,14 @@ long arch_ptrace(struct task_struct *child, long request,
- 
- #ifdef PTRACE_GETREGS
- 	case PTRACE_GETREGS: { /* Get all gp regs from the child. */
-+		unsigned long tmp;
- 		if (!access_ok(VERIFY_WRITE, p, MAX_REG_OFFSET)) {
- 			ret = -EIO;
+ 	unsigned long __user *datap;
+ 	unsigned long tmp;
+@@ -84,7 +85,7 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
+ 	case PTRACE_PEEKUSR:  /* Read register from pt_regs. */
+ 		if (addr & (sizeof(data)-1))
  			break;
- 		}
- 		for ( i = 0; i < MAX_REG_OFFSET; i += sizeof(long) ) {
--			__put_user(getreg(child, i), p);
-+			tmp = getreg(child, i);
-+			__copy_to_user(p, &tmp, sizeof(tmp));
- 			p++;
- 		}
+-		if (addr < 0 || addr >= PTREGS_SIZE)
++		if (addr >= PTREGS_SIZE)
+ 			break;
+ 		tmp = getreg(child, addr);   /* Read register */
+ 		ret = put_user(tmp, datap);
+@@ -93,7 +94,7 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
+ 	case PTRACE_POKEUSR:  /* Write register in pt_regs. */
+ 		if (addr & (sizeof(data)-1))
+ 			break;
+-		if (addr < 0 || addr >= PTREGS_SIZE)
++		if (addr >= PTREGS_SIZE)
+ 			break;
+ 		putreg(child, addr, data);   /* Write register */
  		ret = 0;
-@@ -98,7 +100,7 @@ long arch_ptrace(struct task_struct *child, long request,
+@@ -102,7 +103,7 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
+ 	case PTRACE_GETREGS:  /* Get all registers from the child. */
+ 		if (!access_ok(VERIFY_WRITE, datap, PTREGS_SIZE))
  			break;
- 		}
- 		for ( i = 0; i < MAX_REG_OFFSET; i += sizeof(long) ) {
--			__get_user(tmp, p);
-+			__copy_from_user(&tmp, p, sizeof(tmp));
- 			putreg(child, i, tmp);
- 			p++;
- 		}
-@@ -108,24 +110,20 @@ long arch_ptrace(struct task_struct *child, long request,
- #endif
- #ifdef PTRACE_GETFPREGS
- 	case PTRACE_GETFPREGS: /* Get the child FPU state. */
--		ret = get_fpregs((struct user_i387_struct __user *) data,
--				 child);
-+		ret = get_fpregs(p, child);
- 		break;
- #endif
- #ifdef PTRACE_SETFPREGS
- 	case PTRACE_SETFPREGS: /* Set the child FPU state. */
--	        ret = set_fpregs((struct user_i387_struct __user *) data,
--				 child);
-+	        ret = set_fpregs(p, child);
- 		break;
- #endif
- 	case PTRACE_GET_THREAD_AREA:
--		ret = ptrace_get_thread_area(child, addr,
--					     (struct user_desc __user *) data);
-+		ret = ptrace_get_thread_area(child, addr, p);
- 		break;
- 
- 	case PTRACE_SET_THREAD_AREA:
--		ret = ptrace_set_thread_area(child, addr,
--					     (struct user_desc __user *) data);
-+		ret = ptrace_set_thread_area(child, addr, p);
- 		break;
- 
- 	case PTRACE_FAULTINFO: {
-@@ -135,7 +133,8 @@ long arch_ptrace(struct task_struct *child, long request,
- 		 * On i386, ptrace_faultinfo is smaller!
- 		 */
- 		ret = copy_to_user(p, &child->thread.arch.faultinfo,
--				   sizeof(struct ptrace_faultinfo));
-+				   sizeof(struct ptrace_faultinfo)) ?
-+			-EIO : 0;
- 		break;
- 	}
- 
-diff --git a/arch/um/sys-x86_64/ptrace.c b/arch/um/sys-x86_64/ptrace.c
-index 67e6368..f436136 100644
---- a/arch/um/sys-x86_64/ptrace.c
-+++ b/arch/um/sys-x86_64/ptrace.c
-@@ -179,15 +179,14 @@ long subarch_ptrace(struct task_struct *child, long request,
- 		    unsigned long addr, unsigned long data)
- {
- 	int ret = -EIO;
-+	void __user *datap = (void __user *) data;
- 
- 	switch (request) {
- 	case PTRACE_GETFPXREGS: /* Get the child FPU state. */
--		ret = get_fpregs((struct user_i387_struct __user *) data,
--				 child);
-+		ret = get_fpregs(datap, child);
- 		break;
- 	case PTRACE_SETFPXREGS: /* Set the child FPU state. */
--		ret = set_fpregs((struct user_i387_struct __user *) data,
--				 child);
-+		ret = set_fpregs(datap, child);
- 		break;
- 	}
- 
+-		for (i = 0; i < PTREGS_SIZE; i += sizeof(long)) {
++		for (i = 0; i < PTREGS_SIZE; i += sizeof(unsigned long)) {
+ 			ret = __put_user(getreg(child, i), datap);
+ 			if (ret != 0)
+ 				break;
+@@ -113,7 +114,7 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
+ 	case PTRACE_SETREGS:  /* Set all registers in the child. */
+ 		if (!access_ok(VERIFY_READ, datap, PTREGS_SIZE))
+ 			break;
+-		for (i = 0; i < PTREGS_SIZE; i += sizeof(long)) {
++		for (i = 0; i < PTREGS_SIZE; i += sizeof(unsigned long)) {
+ 			ret = __get_user(tmp, datap);
+ 			if (ret != 0)
+ 				break;
 -- 
 1.7.2.2
 
