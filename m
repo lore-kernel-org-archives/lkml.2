@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab0H0Xs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 19:48:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29910 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735Ab0H0XsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 19:48:25 -0400
-Message-ID: <4C784EBF.2010908@redhat.com>
-Date: Fri, 27 Aug 2010 13:48:15 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752239Ab0H0Xvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 19:51:55 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51765 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab0H0Xvy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 19:51:54 -0400
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 17/35] Implement getnsboottime kernel API
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-18-git-send-email-zamsden@redhat.com> <4C77FE57.7050105@siemens.com>
-In-Reply-To: <4C77FE57.7050105@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1282682582-15980-1-git-send-email-eparis@redhat.com>
+References: <1282682582-15980-1-git-send-email-eparis@redhat.com>
+Date: Fri, 27 Aug 2010 19:51:53 -0400
+Message-ID: <AANLkTimbQivEd7z1+sdLgChieGrY3c9iQWXVKgcYRAY=@mail.gmail.com>
+Subject: Re: [PATCH -v2] fanotify: drops the packed attribute from userspace
+ event metadata
+From: Eric Paris <eparis@parisplace.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Schwab <schwab@redhat.com>,
+        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Andreas Gruenbacher <agruen@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2010 08:05 AM, Jan Kiszka wrote:
-> Zachary Amsden wrote:
->    
->> Add a kernel call to get the number of nanoseconds since boot.  This
->> is generally useful enough to make it a generic call.
->>
->> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->> ---
->>   include/linux/time.h      |    1 +
->>   kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
->>   2 files changed, 28 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/time.h b/include/linux/time.h
->> index ea3559f..5d04108 100644
->> --- a/include/linux/time.h
->> +++ b/include/linux/time.h
->> @@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
->>   extern void getrawmonotonic(struct timespec *ts);
->>   extern void getboottime(struct timespec *ts);
->>   extern void monotonic_to_bootbased(struct timespec *ts);
->> +extern s64 getnsboottime(void);
->>
->>   extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
->>   extern int timekeeping_valid_for_hres(void);
->> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
->> index caf8d4d..d250f0a 100644
->> --- a/kernel/time/timekeeping.c
->> +++ b/kernel/time/timekeeping.c
->> @@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
->>   }
->>   EXPORT_SYMBOL_GPL(ktime_get_ts);
->>
->> +
->> +/**
->> + * getnsboottime - get the bootbased clock in nsec format
->> + *
->> + * The function calculates the bootbased clock from the realtime
->> + * clock and the wall_to_monotonic offset and stores the result
->> + * in normalized timespec format in the variable pointed to by @ts.
->> + */
->>      
-> This thing is not returning anything in some ts variable. And I also had
-> a hard time spotting the key difference to getboottime - the name is
-> really confusing.
+I liked this version until I realized that userspace doesn't have
+aligned_u64 as a valid type.
+
+I'm feeling more like my old version of the patch.  Anyone have
+thoughts or comments?
+
+-Eric
+
+On Tue, Aug 24, 2010 at 4:43 PM, Eric Paris <eparis@redhat.com> wrote:
+> The userspace event metadata structure was packed so when sent from a kernel
+> with a certain set of alignment rules to a userspace listener with a different
+> set of alignment rules the userspace process would be able to use the
+> structure.  On some arches just using packed, even if it doesn't do anything
+> to the alignment can cause a severe performance hit.  From now on we are
+> not going to set the packed attribute and will just need to be very careful
+> to make sure the structure is naturally aligned.
 >
-> Besides this, if you have good suggestion how to provide a compat
-> version for older kernels, I'm all ears. Please also have a careful look
-> at kvm-kmod's kvm_getboottime again, right now I'm a bit confused about
-> what it is supposed to return and what it actually does (note that
-> kvm-kmod cannot account for time spent in suspend state).
+> Cc: Andreas Schwab <schwab@redhat.com>
+> Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+> Cc: Andreas Gruenbacher <agruen@suse.de>
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+>  include/linux/fanotify.h |   13 ++++++++-----
+>  1 files changed, 8 insertions(+), 5 deletions(-)
 >
-> Thanks!
-> Jan
+> diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
+> index 0535461..b892e46 100644
+> --- a/include/linux/fanotify.h
+> +++ b/include/linux/fanotify.h
+> @@ -65,20 +65,23 @@
+>                                 FAN_ALL_PERM_EVENTS |\
+>                                 FAN_Q_OVERFLOW)
 >
->    
->> +s64 getnsboottime(void)
->> +{
->> +	unsigned int seq;
->> +	s64 secs, nsecs;
->> +
->> +	WARN_ON(timekeeping_suspended);
->> +
->> +	do {
->> +		seq = read_seqbegin(&xtime_lock);
->> +		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
->> +		secs += total_sleep_time.tv_sec;
->> +		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
->> +		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
->> +
->> +	} while (read_seqretry(&xtime_lock, seq));
->> +	return nsecs + (secs * NSEC_PER_SEC);
->> +}
->> +EXPORT_SYMBOL_GPL(getnsboottime);
->> +
->>   /**
->>    * do_gettimeofday - Returns the time of day in a timeval
->>    * @tv:		pointer to the timeval to be set
->>      
->    
-
-Yes, we should probably change the name before making this an actual 
-kernel API, John made some better suggestions.
-
-For kvm-kmod, the following conversion should work:
-
-static inline u64 get_kernel_ns(void)
-{
-     struct timespec ts;
-
-     WARN_ON(preemptible());
-     ktime_get_ts(&ts);
-     monotonic_to_bootbased(&ts);
-     return timespec_to_ns(&ts);
-}
-
-The only real point to getnsboottime is to stop the unnecessary 
-conversions, but looking at it now, it doesn't appear to actually save 
-any, does it?  Maybe it is better to just drop the thing all-together.
-
-Zach
+> -#define FANOTIFY_METADATA_VERSION      1
+> -
+> +#define FANOTIFY_METADATA_VERSION      2
+> +/*
+> + * These structures must be naturally aligned so that a 32 bit userspace process
+> + * will find the offsets the same as a 64bit process.
+> + */
+>  struct fanotify_event_metadata {
+>        __u32 event_len;
+>        __u32 vers;
+> -       __u64 mask;
+> +       aligned_u64 mask;
+>        __s32 fd;
+>        __s32 pid;
+> -} __attribute__ ((packed));
+> +};
+>
+>  struct fanotify_response {
+>        __s32 fd;
+>        __u32 response;
+> -} __attribute__ ((packed));
+> +};
+>
+>  /* Legit userspace responses to a _PERM event */
+>  #define FAN_ALLOW      0x01
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
