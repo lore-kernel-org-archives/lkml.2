@@ -1,223 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab0H0Q7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:59:37 -0400
-Received: from mgw-sa02.nokia.com ([147.243.1.48]:34616 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab0H0Q7e (ORCPT
+	id S1754412Ab0H0RIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 13:08:12 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:12876 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab0H0RII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:59:34 -0400
-Subject: Re: [PATCH 1/3] drivers: misc: ak8974 / ami305 magnetometer driver
-From: Onkalo Samu <samu.p.onkalo@nokia.com>
-Reply-To: samu.p.onkalo@nokia.com
-To: ext Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        ext Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-In-Reply-To: <20100827133109.1eb974ed@lxorguk.ukuu.org.uk>
-References: <1282910083-8629-1-git-send-email-samu.p.onkalo@nokia.com>
-	 <1282910083-8629-2-git-send-email-samu.p.onkalo@nokia.com>
-	 <20100827133109.1eb974ed@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia Oyj
-Date: Fri, 27 Aug 2010 19:59:13 +0300
-Message-ID: <1282928353.2194.27.camel@noppispoppis.nmp.nokia.com>
+	Fri, 27 Aug 2010 13:08:08 -0400
+Date: Fri, 27 Aug 2010 19:07:44 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: Fix checkpatch errors in lm90 driver
+Message-ID: <20100827190744.4f36c485@hyperion.delvare>
+In-Reply-To: <20100827164833.GB22316@ericsson.com>
+References: <1282838076-7175-1-git-send-email-guenter.roeck@ericsson.com>
+	<20100827134523.6bcc70aa@hyperion.delvare>
+	<20100827134926.GA21827@ericsson.com>
+	<20100827172403.4c22bbce@hyperion.delvare>
+	<20100827164833.GB22316@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan, Thank you for the comments.
-Dmitry, there is one question for you.
-
--Samu
-
-On Fri, 2010-08-27 at 14:31 +0200, ext Alan Cox wrote:
-> > +static int ak8974_regulators_on(struct ak8974_chip *chip)
-> > +{
-> > +	int ret;
-> > +	ret = regulator_bulk_enable(ARRAY_SIZE(chip->regs), chip->regs);
-> > +	if (ret == 0)
-> > +		msleep(AK8974_POWERON_DELAY);
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static inline void ak8974_regulators_off(struct ak8974_chip *chip)
-> > +{
-> > +	regulator_bulk_disable(ARRAY_SIZE(chip->regs), chip->regs);
-> > +}
+On Fri, 27 Aug 2010 09:48:33 -0700, Guenter Roeck wrote:
+> On Fri, Aug 27, 2010 at 11:24:03AM -0400, Jean Delvare wrote:
+> Hi Jean,
 > 
-> That bit seems platform specific but in generic code ?
+> > Hi Guenter,
+> > 
+> > On Fri, 27 Aug 2010 06:49:26 -0700, Guenter Roeck wrote:
+> > > Next question: lm90_update_device() currently does not return any errors.
+> > > In recent drivers, we pass i2c read errors up to userland. Before I introduce
+> > > the max6696 changes, does it make sense to add error checking/return
+> > > into the driver, similar to what I have done in the smm665 and jc42 drivers ?
+> > 
+> > So far, most hwmon driver authors decided to ignore such errors, or
+> > limited their handling to logging the issue, mainly because the caching
+> > mechanism makes handling of such errors tough. Now I admit that the
+> > approach you took in the jc42 driver is interesting. I never considered
+> > having a single error value being returned by the update function the
+> > way you did.
+> > 
+> > This has the obvious drawback that transient I/O errors cause _all_
+> > sensor values to be unavailable, which is discussable, especially for a
+> > device with many features. It's hard to justify that all values of a
+> > full-featured hardware monitoring chip could be unavailable because,
+> > for example, one of the temperature sensors is unreliable. So this
+> > approach is fine for your small jc42 driver, but I don't think it can be
+> > generalized.
+>
+> On the plus side, though, a transient failure only causes a single read
+> operation to fail, since I don't update the timestamp nor the valid flag
+> in the error case. As a result, the next read will again try to update
+> all values. So it isn't really that bad. Only real drawback of my approach
+> is that a transient read failure on one sensor register will likely be
+> reported while trying to read data for another sensor.
+
+Good point, I had missed this implementation detail. But this cuts both
+ways: if there are too many transient errors (like the W83L785TS-S had)
+the update function may keep failing forever, even though each value
+could have been updated at some point in time.
+
+> Of course, you are right that a permanent error on a single register will
+> cause all sensor read operations to fail, which isn't really desirable.
+> I have no idea if that can happen in the real world, though. Seems to be
+> unlikely that a failing sensor would cause an I2C operation failure.
+> But who knows - maybe it does happen with some chips.
+
+In all honesty, I can't remember any such device. In general, failing
+sensors are reported through data flags, not low-level errors. The only
+two drivers I know which needed special error handling are w83l785ts
+and thinkpad_acpi - the latter isn't I2C-based so there's no register
+caching needed.
+
+> > In the general case, I think I am fine with pretty much anything which
+> > doesn't plain ignore error codes (as many drivers still do...) and
+> > doesn't block all readings on transient errors. This can mean returning
+> > 0 on error, or returning the previous last known value (definitely
+> > acceptable for transient errors, but not so for long-standing ones),
 > 
+> Basic reason for returning errors in the first place was that I was asked
+> to do so in review feedback for one of my drivers - specifically, that I
+> should not drop errors. So we would need some clear(er) guidelines
+> for new drivers if we want to go along that path.
 
-If the regulator frame work is not configured, this code does nothing.
-I have understood (hopefully correctly) that if the frame work is in use
-drivers could support that directly assuming that regulators are
-configured for that platform. If that is not the case, this should be
-platform specific.
+I don't remember that discussion, but I think the only thing we really
+want to avoid is negative errno values being returned to user-space
+silently as negative (or large positive) temperature or voltage values.
+As long as this doesn't happen, I think we are on the safe side.
 
-> 
-> > +static ssize_t ak8974_misc_read(struct file *file, char __user *buf,
-> > +			size_t count, loff_t *offset)
-> > +{
-> > +	struct ak8974_chip *chip = container_of(file->private_data,
-> > +						struct ak8974_chip,
-> > +						miscdev);
-> > +	struct ak8974_data data;
-> 
-> So we have a different API to the ak8975 just posted and to the other
-> existing devices. This needs sorting out across the devices before there
-> is a complete disaster. Right now we have a mix of submissions pending
-> which variously use
-> 
-> 	misc + sysfs
-> 	sysfs
-> 	input (reporting X Y Z etc axes)
-> 
+> > with or without logging. Or if you really want to pass error codes down
+> > to user-space, I think you have to rework the update() function and the
+> > per-device data structure altogether, to be able to store error codes
+> > in the data structure.
+>
+> Seems to be a bit excessive, and it doesn't seem to be worth the effort
+> and added complexity.
 
-About year ago I send driver for the same chip with input-device
-interface. During that time I asked from Dmitry Torokhov that is that a
-correct interface for this kind of driver. I understood that input
-should not be used for this kind of sensors.
+I tend to agree. Which is why nobody did it so far (or maybe once in one
+rare driver, can't remember.)
 
-sysfs is quite handy interface for small sensors. However, one problem
-is that the driver doesn't know when the interface is in use.
-I ended up to misc device to get information about the usercount for PM
-purposes.
+But at least this is the "best" way to handle errors, in that it
+doesn't introduce a policy at driver level. Errors are reported exactly
+as if no register value caching was done.
 
-Dmitry, what is your opinion about using input device interface for this
-kind of sensors?
+> > A different (and complementary) approach is to repeat the failing
+> > command and see if it helps. The w83l785ts driver does exactly this. If
+> > we want to generalize this, it would probably make sense to implement
+> > it at the the i2c-core level (i.e. add a "retries" i2c_client
+> > attribute.)
+> > 
+> Still doesn't solve the permanent error case, though. Question remains, then,
+> if it is likely that a single i2c register would return a permanent error
+> while others still work.
 
-> Someone needs to decide on a single API before it's too late.
-> 
+It could in specific cases. Think of a new device which is a
+stripped-down version of one we already support. One can forcibly bind
+the driver to the new device, but maybe the device will return I/O
+errors on non-existent features. Obviously this is a transient
+situation though, as proper support for the new device would have to be
+added at some point anyway.
 
-That is definitely true. Could it be IIO?
+For a device we properly support, no, I can't imagine a permanent error
+other than global.
 
-> > +
-> > +	if (count < sizeof(data))
-> > +		return -EINVAL;
-> > +
-> > +	if (*offset >= chip->offset) {
-> > +		schedule_work(&chip->work);
-> > +		if (file->f_flags & O_NONBLOCK)
-> > +			return -EAGAIN;
-> > +		if (wait_event_interruptible(chip->misc_wait,
-> > +						(*offset < chip->offset)))
-> > +			return -ERESTARTSYS;
-> > +	}
-> > +
-> > +	mutex_lock(&chip->lock);
-> > +	data.x = chip->x;
-> > +	data.y = chip->y;
-> > +	data.z = chip->z;
-> > +	data.valid = chip->valid;
-> > +	*offset = chip->offset;
-> > +	mutex_unlock(&chip->lock);
-> 
-> What happens if you have two readers - is it fine they get copies of the
-> same event when it races ?
+> > I admit I have been ignoring the issue mainly so far, because it's not
+> > a big problem in practice (except on one board with the w83l785ts
+> > driver, thus the extra code in that driver), so adding complex or
+> > invasive code to deal with it isn't too appealing.
+>
+> I'll take that as a hint and won't make any changes to lm90 driver error 
+> handling.
 
-Yes, it makes sense to report latest available information for all
-users.
+If you have other, more important things on your to-do list, then
+that's the right thing to do ;)
 
-> 
-> 
-> > +
-> > +	return copy_to_user(buf, &data, sizeof(data)) ? -EFAULT : sizeof(data);
-> 
-> Pedantically if data is consumed and a partial copy occurs you should
-> return the bytes successfully copied.
-
-I need to check that.
-
-> 
-> > +static DEVICE_ATTR(chip_id, S_IRUGO, ak8974_show_chip_id, NULL);
-> > +
-> > +static ssize_t ak8974_show_range(struct device *dev,
-> > +				    struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct ak8974_chip *chip = dev_get_drvdata(dev);
-> > +	return sprintf(buf, "%d\n", chip->max_range);
-> > +}
-> 
-> Other devices make all of this sysfs or use input. We need to work out
-> what the right interface actually is.
-> 
-
-As mentioned above, sysfs is not used to get information about the user
-count for PM purposes.
-
-> > +	snprintf(chip->name, sizeof(chip->name), "ak8974%d",
-> > +		atomic_add_return(1, &device_number) - 1);
-> 
-> Surely this is serialized anyway ?
-
-Is it possible that when there are several chips on the system (in
-different bussed for example), probe functions are running in parallel?
-
-> 
-> 
-> > +#ifdef CONFIG_PM
-> > +static int ak8974_suspend(struct i2c_client *client, pm_message_t mesg)
-> > +{
-> > +	struct ak8974_chip *chip = i2c_get_clientdata(client);
-> > +	mutex_lock(&chip->users_lock);
-> > +	if (chip->users > 0)
-> > +		ak8974_enable(chip, AK8974_PWR_OFF);
-> > +	mutex_unlock(&chip->users_lock);
-> > +	return 0;
-> > +}
-> > +
-> > +static int ak8974_resume(struct i2c_client *client)
-> > +{
-> > +	struct ak8974_chip *chip = i2c_get_clientdata(client);
-> > +	mutex_lock(&chip->users_lock);
-> > +	if (chip->users > 0)
-> > +		ak8974_enable(chip, AK8974_PWR_ON);
-> > +	mutex_unlock(&chip->users_lock);
-> > +	return 0;
-> > +}
-> 
-> The whole chip->users thing you are implementing is basically a
-> reimplementation of the kernel runtime pm stuff - so can that be used
-> instead ?
-
-True. Most probably it can be used instead of own implementation.
-
-> 
-> 
-> > +#ifndef __LINUX_I2C_AK8974_H
-> > +#define __LINUX_I2C_AK8974_H
-> > +
-> > +#define AK8974_NO_MAP		  0
-> > +#define AK8974_DEV_X		  1
-> > +#define AK8974_DEV_Y		  2
-> > +#define AK8974_DEV_Z		  3
-> > +#define AK8974_INV_DEV_X	 -1
-> > +#define AK8974_INV_DEV_Y	 -2
-> > +#define AK8974_INV_DEV_Z	 -3
-> > +
-> > +struct ak8974_platform_data {
-> > +	s8 axis_x;
-> > +	s8 axis_y;
-> > +	s8 axis_z;
-> > +};
-> > +
-> > +/* Device name: /dev/ak8974n, where n is a running number */
-> > +struct ak8974_data {
-> > +	__s16 x;
-> > +	__s16 y;
-> > +	__s16 z;
-> > +	__u16 valid;
-> > +} __attribute__((packed));
-> 
-> This could go in the C file.
-
-
-
+-- 
+Jean Delvare
