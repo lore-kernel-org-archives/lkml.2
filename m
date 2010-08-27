@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab0H0PvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:51:22 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:38253 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab0H0PvU (ORCPT
+	id S1751742Ab0H0PxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:53:25 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58316 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab0H0PxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:51:20 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(z3cfcs329eqzbb2cK1432N98dN179dNzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7TILH-02-2H7-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 17:48:56 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100827154855.GQ22783@erda.amd.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
- <20100826211424.GQ4879@redhat.com>
- <20100827081038.GF22783@erda.amd.com>
- <20100827134429.GS4879@redhat.com>
- <20100827140523.GM22783@erda.amd.com>
- <20100827150523.GT4879@redhat.com>
+	Fri, 27 Aug 2010 11:53:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=CJPPssUOffdYdt/t6MsIzNKP10Nw3vnUUIKZ19clAhqd0LaO6AxXIsFmTH5LpzOB/N
+         ku2vNzoHw+4bi/62zj2Yy2Gwwg1b1CUfM6EwbIy/fuuqMwwIvF5Vxf/KerDqg6PvHt0S
+         kTd6nJjfEc3F/6kN5dFYTef9RsU8pqcbCa4Uw=
+From: Namhyung Kim <namhyung@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 14/43] ptrace, frv: change signature of arch_ptrace()
+References: <8762ywgqkt.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+	<87aao8gvbm.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+	<1282902149-12991-15-git-send-email-namhyung@gmail.com>
+	<1282902149-12991-1-git-send-email-namhyung@gmail.com>
+	<4072.1282906906@redhat.com> <5542.1282911123@redhat.com>
+	<7665.1282915390@redhat.com>
+Date: Sat, 28 Aug 2010 00:53:08 +0900
+In-Reply-To: <7665.1282915390@redhat.com> (David Howells's message of "Fri, 27
+	Aug 2010 14:23:10 +0100")
+Message-ID: <871v9kgihn.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100827150523.GT4879@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.08.10 11:05:23, Don Zickus wrote:
-> The status masks seem to be identical, 0x1 (and when I forced pmc0
-> unusable, everything was 0x2).
+David Howells <dhowells@redhat.com> writes:
+> If patch 3 breaks all architectures, such that none of them then compile, this
+> is bad.  The fixes should be combined into that patch.
+>
+> If it breaks them such that there are warnings, but they still compile, we can
+> probably live with that, but it's still icky.
+>
 
-So this should also happen if only one counter is running?
-Back-to-back nmis actually only occur then 2 different counters
-trigger simultaneously.
-
-> > > Now I wonder how the event was
-> > > ever reloaded, unless it was by accident because of how the scheduler
-> > > deals with perf counters (perf_start/stop all the time).
-> > 
-> > The nmi might be queued be the cpu regardless of of the overflow
-> > state.
-> > 
-> > I am wondering why this happens at all, because events are disabled by
-> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0). Hmm, maybe this is exactly the
-> 
-> Heh.  Not sure why it isn't working then.  Then again you shouldn't need
-> the loop if it was working I would think.
-> 
-> > reason because the nmi could fire again after reenabling the counters.
-> > 
-> > Is there a reason for disabling all counters?
-> 
-> It would be a nice to have that way we wouldn't have to 'eat' all these
-> extra nmis.  But I guess it isn't working correctly.
-
-What about the erratum mentioned in this thread before? We might
-identify affected cpus and return handled=2 for them. This solution
-will be still better than before. And, all other cpu models have the
-nmi detection fixed. In a next step we could try to use a timer for
-detection.
-
--Robert
+OK. I'll combine those patches into one on next round.
+Thanks.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Regards,
+Namhyung Kim
 
