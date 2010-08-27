@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab0H0Lg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 07:36:56 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44974 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473Ab0H0Lgx (ORCPT
+	id S1754694Ab0H0LhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 07:37:06 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:35334 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab0H0LhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 07:36:53 -0400
-X-AuditID: b753bd60-a78bfba000005a63-7d-4c77a35220b8
+	Fri, 27 Aug 2010 07:37:01 -0400
+X-AuditID: b753bd60-a78bfba000005a63-8f-4c77a35a8100
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip  0/5] Perf and tracing/kprobe fixes
+Subject: [PATCH -tip  1/5] tracing/kprobe: Fix a memory leak in error case
 To: Arnaldo Carvalho de Melo <acme@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Date: Fri, 27 Aug 2010 20:38:37 +0900
-Message-ID: <20100827113837.22882.92630.stgit@ltc236.sdl.hitachi.co.jp>
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 27 Aug 2010 20:38:46 +0900
+Message-ID: <20100827113846.22882.12670.stgit@ltc236.sdl.hitachi.co.jp>
+In-Reply-To: <20100827113837.22882.92630.stgit@ltc236.sdl.hitachi.co.jp>
+References: <20100827113837.22882.92630.stgit@ltc236.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+X-FMFTCR: RANGEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fix a memory leak which happens when a field name conflicts
+with others. In error case, free_trace_probe() will free all
+arguments until nr_args, so this increments nr_args the
+begining of the loop instead of the end.
 
-This series of patches fixes a memory leak and perf probe bugs.
-It also adds a check of invalid argument name for special characters
-which will cause a fail on perf-trace event format parsing, and
-assigns "argN" name for no-name arguments.
-
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org
 ---
 
-Masami Hiramatsu (5):
-      tracing/kprobe: Check invalid argument name
-      tracing/kprobes: Set a name for each argument automatically
-      perf probe: Don't make argument names from raw parameters
-      perf probe: Fix return probe support
-      tracing/kprobe: Fix a memory leak in error case
+ kernel/trace/trace_kprobe.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-
- kernel/trace/trace_kprobe.c    |   43 +++++++++++++++++++++++-----------------
- tools/perf/util/probe-event.c  |    1 +
- tools/perf/util/probe-finder.c |   42 +++++++++++++++++++++++++++------------
- 3 files changed, 55 insertions(+), 31 deletions(-)
-
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 8b27c98..0116c03 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -992,6 +992,9 @@ static int create_trace_probe(int argc, char **argv)
+ 	/* parse arguments */
+ 	ret = 0;
+ 	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
++		/* Increment count for freeing args in error case */
++		tp->nr_args++;
++
+ 		/* Parse argument name */
+ 		arg = strchr(argv[i], '=');
+ 		if (arg)
+@@ -1021,11 +1024,8 @@ static int create_trace_probe(int argc, char **argv)
+ 		ret = parse_probe_arg(arg, tp, &tp->args[i], is_return);
+ 		if (ret) {
+ 			pr_info("Parse error at argument%d. (%d)\n", i, ret);
+-			kfree(tp->args[i].name);
+ 			goto error;
+ 		}
+-
+-		tp->nr_args++;
+ 	}
+ 
+ 	ret = register_trace_probe(tp);
 
