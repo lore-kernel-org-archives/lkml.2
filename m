@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab0H0V3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 17:29:08 -0400
-Received: from madara.hpl.hp.com ([192.6.19.124]:52517 "EHLO madara.hpl.hp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab0H0V3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 17:29:05 -0400
-X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Aug 2010 17:29:05 EDT
-Date: Fri, 27 Aug 2010 14:22:54 -0700
-From: Jean Tourrilhes <jt@hpl.hp.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] wireless: fix 64K kernel heap content leak via ioctl
-Message-ID: <20100827212254.GB32275@bougret.hpl.hp.com>
-Reply-To: jt@hpl.hp.com
-References: <20100827210240.GC4703@outflux.net>
+	id S1753136Ab0H0Vc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 17:32:28 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42982 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab0H0VcZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 17:32:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=SpL1sZ7HdXKAU2KzOfutn2TvnZuMkhBgPEy9dNwszug1KwEkgXudmSv82vmip33WZu
+         GzmoTbiv3OuPUMl034olI+x04wofigz14IZW025aIHyWNmCLSdJdjhDMwVofMqaxJiDj
+         fda8l3tpKdeBjc40yFpl9SEGMz3UOj6NuwmsA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100827210240.GC4703@outflux.net>
-Organisation: HP Labs Palo Alto
-Address: HP Labs, 1U-17, 1501 Page Mill road, Palo Alto, CA 94304, USA.
-E-mail: jt@hpl.hp.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C7824F2.1050709@mandriva.org>
+References: <AANLkTinq81V6afODRS26Nk1vi68_VUMAfs-tu-P8=dBP@mail.gmail.com>
+ <4C780888.9000301@zytor.com> <AANLkTikCssQSvRX1Gfq0V8B91Sp2gtTCJaPJ=_n9VJXZ@mail.gmail.com>
+ <4C7824F2.1050709@mandriva.org>
+From: Matteo Croce <matteo@openwrt.org>
+Date: Fri, 27 Aug 2010 23:32:04 +0200
+X-Google-Sender-Auth: 0MM1yS6inhWdyv3xiYBXgILezVI
+Message-ID: <AANLkTinjHK-oTmt-6cmN16jWWv9ZjW44wA-A3VTLm+A_@mail.gmail.com>
+Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
+To: Thomas Backlund <tmb@mandriva.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Natale Vinto <ebballon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 02:02:41PM -0700, Kees Cook wrote:
-> This problem was originally tracked down by Brad Spengler.
-> 
-> When calling wireless ioctls, if a driver does not correctly
-> validate/shrink iwp->length, the resulting copy_to_user can leak up to
-> 64K of kernel heap contents.
-> 
-> It seems that this is triggerable[1] in 2.6.32 at least on ath5k, but
-> I was not able to track down how. The twisty maze of ioctl handlers
-> stumped me. :)
+can I ignore the return value when I expect val to be non zero?
+the doc says: "On error, the variable @x is set to zero."
 
-	You can always ask.
+On Fri, Aug 27, 2010 at 10:49 PM, Thomas Backlund <tmb@mandriva.org> wrote:
+> 27.08.2010 23:15, Matteo Croce skrev:
+>>
+>> On Fri, Aug 27, 2010 at 8:48 PM, H. Peter Anvin<hpa@zytor.com>  wrote:
+>>>
+>>> You're doing user-space references without get_user().
+>>>
+>>>        -hpa
+>>>
+>>> --
+>>> H. Peter Anvin, Intel Open Source Technology Center
+>>> I work for Intel.  I don't speak on their behalf.
+>>>
+>>>
+>>
+>> Here with get_user.
+>> I CC Natale which is my beta tester, he have some Alix boards running
+>> 24/24
+>> with my patch
+>>
+>> --- a/arch/x86/kernel/Makefile  2010-08-27 19:42:01.795858001 +0200
+>> +++ b/arch/x86/kernel/Makefile  2010-08-27 19:42:12.525858001 +0200
+>> @@ -88,6 +88,8 @@
+>>  obj-$(CONFIG_APB_TIMER)               += apb_timer.o
+>>
+>>  obj-$(CONFIG_K8_NB)           += k8.o
+>> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
+>> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
+>
+> Same line added twice...
+>
+> --
+> Thomas
+>
 
-> Other drivers I checked did not appear to have any problems,
-> but the potential remains. I'm not sure if this patch is the right approach;
-> it was fixed differently[2] in grsecurity.
 
-	Did you tried your patch for real ? With large scan request ?
-	I ask because at first glance, it looks incorrect, asI believe
-it kills large request. But someone would need to test, for sure.
 
-> [1] http://forums.grsecurity.net/viewtopic.php?f=3&t=2290&start=0
-> [2] http://grsecurity.net/~spender/wireless-infoleak-fix2.patch
-
-	I believe this patch would make the situation worse.
-
-	Would you mind validating the following patch ? I've just
-verified that it compiles and I believe it does what you are asking in
-a much more predictable way.
-	Regards,
-
-	Jean
-
-Signed-off-by: Jean Tourrilhes <jt@hpl.hp.com>
-
-diff -u -p wext.j2.c wext.c
---- wext.j2.c   2010-08-27 14:17:26.000000000 -0700
-+++ wext.c      2010-08-27 14:19:33.000000000 -0700
-@@ -800,9 +800,12 @@ static int ioctl_standard_iw_point(struc
-                        goto out;
-                }
- 
--               if (copy_to_user(iwp->pointer, extra,
--                                iwp->length *
--                                descr->token_size)) {
-+               /* Verify how much we should return. Some driver
-+                * may abuse iwp->length... */
-+               if((iwp->length * descr->token_size) < extra_size)
-+                       extra_size = iwp->length * descr->token_size;
-+
-+               if (copy_to_user(iwp->pointer, extra, extra_size)) {
-                        err = -EFAULT;
-                        goto out;
-                }
+-- 
+Matteo Croce
+OpenWrt developer
+  _______                     ________        __
+ |       |.-----.-----.-----.|  |  |  |.----.|  |_
+ |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
+ |_______||   __|_____|__|__||________||__|  |____|
+          |__| W I R E L E S S   F R E E D O M
+ KAMIKAZE (bleeding edge) ------------------
+  * 10 oz Vodka       Shake well with ice and strain
+  * 10 oz Triple sec  mixture into 10 shot glasses.
+  * 10 oz lime juice  Salute!
+ ---------------------------------------------------
