@@ -1,254 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab0H0MfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 08:35:08 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:32996 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751786Ab0H0MfE (ORCPT
+	id S1752727Ab0H0Mhp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 08:37:45 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:41334 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab0H0Mhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 08:35:04 -0400
-Date: Fri, 27 Aug 2010 08:35:00 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        kexec <kexec@lists.infradead.org>
-Message-ID: <2136707099.1405541282912500148.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Subject: kdump regression compared to v2.6.35
+	Fri, 27 Aug 2010 08:37:42 -0400
+Date: Fri, 27 Aug 2010 08:37:19 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: Re: [RFC PATCH v4 1/5] irq: add tracepoint to softirq_raise
+Message-ID: <20100827123719.GA17607@hmsreliant.think-freely.org>
+References: <4C4FCDA1.3000803@jp.fujitsu.com>
+ <4C4FCE31.5090004@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4FCE31.5090004@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a head-up, the kdump kernel is stuck here. Bisect indicated that cc41f5cede3c63836d1c0958204630b07f5b5ee7 was also good.
+On Wed, Jul 28, 2010 at 03:29:05PM +0900, Koki Sanagi wrote:
+> CHANGE-LOG since v3:
+>   -change arguments of softirq tracepoint into original one.
+> 
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> 
+> Add a tracepoint for tracing when softirq action is raised.
+> 
+> It and the existed tracepoints complete softirq's tracepoints:
+> softirq_raise, softirq_entry and softirq_exit.
+> 
+> And when this tracepoint is used in combination with
+> the softirq_entry tracepoint we can determine
+> the softirq raise latency.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+Sorry its taken me awhile to get back to these, I've been on PTO
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Kernel command line: ro root=/dev/mapper/vg_intels3e3601-lv_root rd_LVM_LV=vg_intels3e3601/lv_root rd_LVM_LV=vg_intels3e3601/lv_swap rd_NO_LUKS rd_NO_MD rd_NO_DM LANG=en_US.UTF-8 SYSFONT=latarcyrheb-sun16 KEYBOARDTYPE=pc KEYTABLE=us console=ttyS0,115200 irqpoll maxcpus=1 reset_devices cgroup_disable=memory  memmap=exactmap memmap=640K@0K memmap=130412K@49792K elfcorehdr=180204K memmap=128K$896K memmap=2124K#1978520K memmap=4280K#1980644K memmap=464K$1984924K memmap=156K#1985388K memmap=84K$1985544K memmap=92K#1985628K memmap=8K$1985720K memmap=124K#1985728K memmap=136K$1985852K memmap=192K#1985988K memmap=260K$1986180K memmap=2816K#1986440K memmap=176K$1989256K memmap=3028K#1989432K memmap=2048K#1992460K memmap=2072K#1994508K memmap=8K$1996580K memmap=324K#1996588K memmap=428K$1996912K memmap=31584K#1997340K memmap=960K$2028924K memmap=1248K#2029884K memmap=288K#2031132K memmap=192K#2031420K memmap=327684K$2031612K memmap=16384K$4128768K memmap=16K$4174960K memmap=16384K$417!
- 7920K
-Misrouted IRQ fixup and polling support enabled
-This may significantly impact system performance
-Disabling memory control group subsystem
-PID hash table entries: 512 (order: 0, 4096 bytes)
-Checking aperture...
-No AGP bridge found
-Queued invalidation will be enabled to support x2apic and Intr-remapping.
-Subtract (141 early reservations)
-  #1 [0004000000 - 00052b1548]   TEXT DATA BSS
-  #2 [000ab63000 - 000afef000]         RAMDISK
-  #3 [00052b2000 - 00052b2220]             BRK
-  #4 [000009b000 - 00000fdd20]   BIOS reserved
-  #5 [00000fdd30 - 0000100000]   BIOS reserved
-  #6 [00000fdd20 - 00000fdd30]    MP-table mpf
-  #7 [0000000012 - 000000f012]    MP-table mpc
-  #8 [0000010000 - 0000012000]      TRAMPOLINE
-  #9 [0000012000 - 0000016000]     ACPI WAKEUP
-  #10 [0000016000 - 0000017000]         PGTABLE
-  #11 [0000017000 - 000001703c]       ACPI SLIT
-  #12 [000000f040 - 000000f4c0]      MEMNODEMAP
-  #13 [00030a0000 - 00030c7000]       NODE_DATA
-  #14 [00030c7000 - 00030c8000]         BOOTMEM
-  #15 [00034c8000 - 00034c8030]         BOOTMEM
-  #16 [00038c9000 - 00038ca000]         BOOTMEM
-  #17 [00038ca000 - 00038cb000]         BOOTMEM
-  #18 [0003a00000 - 0003e00000]        MEMMAP 0
-  #19 [00030c8000 - 00030e0000]         BOOTMEM
-  #20 [00030e0000 - 00030f8000]         BOOTMEM
-  #21 [00030f8000 - 00030f9000]         BOOTMEM
-  #22 [00030f9000 - 00030f9041]         BOOTMEM
-  #23 [00030f9080 - 00030f9149]         BOOTMEM
-  #24 [00030f9180 - 00030f9768]         BOOTMEM
-  #25 [00030f9780 - 00030f97e8]         BOOTMEM
-  #26 [00030f9800 - 00030f9868]         BOOTMEM
-  #27 [00030f9880 - 00030f98e8]         BOOTMEM
-  #28 [00030f9900 - 00030f9968]         BOOTMEM
-  #29 [00030f9980 - 00030f99e8]         BOOTMEM
-  #30 [00030f9a00 - 00030f9a68]         BOOTMEM
-  #31 [00030f9a80 - 00030f9ae8]         BOOTMEM
-  #32 [00030f9b00 - 00030f9b68]         BOOTMEM
-  #33 [00030f9b80 - 00030f9be8]         BOOTMEM
-  #34 [00030f9c00 - 00030f9c68]         BOOTMEM
-  #35 [00030f9c80 - 00030f9ce8]         BOOTMEM
-  #36 [00030f9d00 - 00030f9d68]         BOOTMEM
-  #37 [00030f9d80 - 00030f9de8]         BOOTMEM
-  #38 [00030f9e00 - 00030f9e68]         BOOTMEM
-  #39 [00030f9e80 - 00030f9ee8]         BOOTMEM
-  #40 [00030f9f00 - 00030f9f68]         BOOTMEM
-  #41 [00030f9f80 - 00030f9fe8]         BOOTMEM
-  #42 [00030fa000 - 00030fa068]         BOOTMEM
-  #43 [00030fa080 - 00030fa0e8]         BOOTMEM
-  #44 [00030fa100 - 00030fa168]         BOOTMEM
-  #45 [00030fa180 - 00030fa1e8]         BOOTMEM
-  #46 [00030fa200 - 00030fa268]         BOOTMEM
-  #47 [00030fa280 - 00030fa2e8]         BOOTMEM
-  #48 [00030fa300 - 00030fa368]         BOOTMEM
-  #49 [00030fa380 - 00030fa3e8]         BOOTMEM
-  #50 [00030fa400 - 00030fa468]         BOOTMEM
-  #51 [00030fa480 - 00030fa4e8]         BOOTMEM
-  #52 [00030fa500 - 00030fa568]         BOOTMEM
-  #53 [00030fa580 - 00030fa5e8]         BOOTMEM
-  #54 [00030fa600 - 00030fa668]         BOOTMEM
-  #55 [00030fa680 - 00030fa6e8]         BOOTMEM
-  #56 [00030fa700 - 00030fa768]         BOOTMEM
-  #57 [00030fa780 - 00030fa7e8]         BOOTMEM
-  #58 [00030fa800 - 00030fa820]         BOOTMEM
-  #59 [00030fa840 - 00030fac0e]         BOOTMEM
-  #60 [00030fac40 - 00030fb00e]         BOOTMEM
-  #61 [0005400000 - 000541e000]         BOOTMEM
-  #62 [0005420000 - 000543e000]         BOOTMEM
-  #63 [0005440000 - 000545e000]         BOOTMEM
-  #64 [0005460000 - 000547e000]         BOOTMEM
-  #65 [0005480000 - 000549e000]         BOOTMEM
-  #66 [00054a0000 - 00054be000]         BOOTMEM
-  #67 [00054c0000 - 00054de000]         BOOTMEM
-  #68 [00054e0000 - 00054fe000]         BOOTMEM
-  #69 [0005500000 - 000551e000]         BOOTMEM
-  #70 [0005520000 - 000553e000]         BOOTMEM
-  #71 [0005540000 - 000555e000]         BOOTMEM
-  #72 [0005560000 - 000557e000]         BOOTMEM
-  #73 [0005580000 - 000559e000]         BOOTMEM
-  #74 [00055a0000 - 00055be000]         BOOTMEM
-  #75 [00055c0000 - 00055de000]         BOOTMEM
-  #76 [00055e0000 - 00055fe000]         BOOTMEM
-  #77 [0005600000 - 000561e000]         BOOTMEM
-  #78 [0005620000 - 000563e000]         BOOTMEM
-  #79 [0005640000 - 000565e000]         BOOTMEM
-  #80 [0005660000 - 000567e000]         BOOTMEM
-  #81 [0005680000 - 000569e000]         BOOTMEM
-  #82 [00056a0000 - 00056be000]         BOOTMEM
-  #83 [00056c0000 - 00056de000]         BOOTMEM
-  #84 [00056e0000 - 00056fe000]         BOOTMEM
-  #85 [0005700000 - 000571e000]         BOOTMEM
-  #86 [0005720000 - 000573e000]         BOOTMEM
-  #87 [0005740000 - 000575e000]         BOOTMEM
-  #88 [0005760000 - 000577e000]         BOOTMEM
-  #89 [0005780000 - 000579e000]         BOOTMEM
-  #90 [00057a0000 - 00057be000]         BOOTMEM
-  #91 [00057c0000 - 00057de000]         BOOTMEM
-  #92 [00057e0000 - 00057fe000]         BOOTMEM
-  #93 [0005800000 - 000581e000]         BOOTMEM
-  #94 [0005820000 - 000583e000]         BOOTMEM
-  #95 [0005840000 - 000585e000]         BOOTMEM
-  #96 [0005860000 - 000587e000]         BOOTMEM
-  #97 [0005880000 - 000589e000]         BOOTMEM
-  #98 [00058a0000 - 00058be000]         BOOTMEM
-  #99 [00058c0000 - 00058de000]         BOOTMEM
-  #100 [00058e0000 - 00058fe000]         BOOTMEM
-  #101 [0005900000 - 000591e000]         BOOTMEM
-  #102 [0005920000 - 000593e000]         BOOTMEM
-  #103 [0005940000 - 000595e000]         BOOTMEM
-  #104 [0005960000 - 000597e000]         BOOTMEM
-  #105 [0005980000 - 000599e000]         BOOTMEM
-  #106 [00059a0000 - 00059be000]         BOOTMEM
-  #107 [00059c0000 - 00059de000]         BOOTMEM
-  #108 [00059e0000 - 00059fe000]         BOOTMEM
-  #109 [0005a00000 - 0005a1e000]         BOOTMEM
-  #110 [0005a20000 - 0005a3e000]         BOOTMEM
-  #111 [0005a40000 - 0005a5e000]         BOOTMEM
-  #112 [0005a60000 - 0005a7e000]         BOOTMEM
-  #113 [0005a80000 - 0005a9e000]         BOOTMEM
-  #114 [0005aa0000 - 0005abe000]         BOOTMEM
-  #115 [0005ac0000 - 0005ade000]         BOOTMEM
-  #116 [0005ae0000 - 0005afe000]         BOOTMEM
-  #117 [0005b00000 - 0005b1e000]         BOOTMEM
-  #118 [0005b20000 - 0005b3e000]         BOOTMEM
-  #119 [0005b40000 - 0005b5e000]         BOOTMEM
-  #120 [0005b60000 - 0005b7e000]         BOOTMEM
-  #121 [0005b80000 - 0005b9e000]         BOOTMEM
-  #122 [0005ba0000 - 0005bbe000]         BOOTMEM
-  #123 [0005bc0000 - 0005bde000]         BOOTMEM
-  #124 [0005be0000 - 0005bfe000]         BOOTMEM
-  #125 [00030fd040 - 00030fd048]         BOOTMEM
-  #126 [00030fd080 - 00030fd088]         BOOTMEM
-  #127 [00030fd0c0 - 00030fd1c0]         BOOTMEM
-  #128 [00030fd1c0 - 00030fd3c0]         BOOTMEM
-  #129 [00030fd3c0 - 00030fd4d0]         BOOTMEM
-  #130 [00030fd500 - 00030fd548]         BOOTMEM
-  #131 [00030fd580 - 00030fd5c8]         BOOTMEM
-  #132 [00030fb040 - 00030fb240]         BOOTMEM
-  #133 [00030fb240 - 00030fb440]         BOOTMEM
-  #134 [00030fb440 - 00030fb640]         BOOTMEM
-  #135 [00030fb640 - 00030fb840]         BOOTMEM
-  #136 [00030fb840 - 00030fba40]         BOOTMEM
-  #137 [00030fba40 - 00030fbc40]         BOOTMEM
-  #138 [00030fbc40 - 00030fbe40]         BOOTMEM
-  #139 [00030fbe40 - 00030fc040]         BOOTMEM
-  #140 [00030fc040 - 00030fd040]         BOOTMEM
-Memory: 94968k/180204k available (4766k kernel code, 49156k absent, 36080k reserved, 7642k data, 1448k init)
-Hierarchical RCU implementation.
-	RCU-based detection of stalled CPUs is disabled.
-	Verbose stalled-CPUs detection is disabled.
-NR_IRQS:262400 nr_irqs:2008
-Extended CMOS year: 2000
-Spurious LAPIC timer interrupt on cpu 0
-Console: colour VGA+ 80x25
-console [ttyS0] enabled
-Fast TSC calibration using PIT
-Detected 1994.798 MHz processor.
-Calibrating delay loop (skipped), value calculated using timer frequency.. 3989.59 BogoMIPS (lpj=1994798)
-pid_max: default: 65536 minimum: 512
-Security Framework initialized
-SELinux:  Initializing.
-Dentry cache hash table entries: 16384 (order: 5, 131072 bytes)
-Inode-cache hash table entries: 8192 (order: 4, 65536 bytes)
-Mount-cache hash table entries: 256
-Initializing cgroup subsys ns
-Initializing cgroup subsys cpuacct
-Initializing cgroup subsys memory
-Initializing cgroup subsys devices
-Initializing cgroup subsys freezer
-Initializing cgroup subsys net_cls
-Initializing cgroup subsys blkio
-CPU: Physical Processor ID: 3
-CPU: Processor Core ID: 0
-mce: CPU supports 22 MCE banks
-using mwait in idle threads.
-Performance Events: PEBS fmt1+, Nehalem events, Intel PMU driver.
-... version:                3
-... bit width:              48
-... generic registers:      4
-... value mask:             0000ffffffffffff
-... max period:             000000007fffffff
-... fixed-purpose events:   3
-... event mask:             000000070000000f
-SMP alternatives: switching to UP code
-ACPI: Core revision 20100702
-ftrace: converting mcount calls to 0f 1f 44 00 00
-ftrace: allocating 18514 entries in 73 pages
-DMAR: Host address width 48
-DMAR: DRHD base: 0x000000fd800000 flags: 0x0
-IOMMU 0: reg_base_addr fd800000 ver 1:0 cap c90780106f0462 ecap f020fe
-DMAR: DRHD base: 0x000000fd000000 flags: 0x1
-IOMMU 1: reg_base_addr fd000000 ver 1:0 cap c90780106f0462 ecap f020fe
-DMAR: RMRR base: 0x0000007be29000 end: 0x0000007be2bfff
-DMAR: RMRR base: 0x0000007be16000 end: 0x0000007be16fff
-DMAR: RMRR base: 0x0000007be13000 end: 0x0000007be13fff
-DMAR: RMRR base: 0x0000007be10000 end: 0x0000007be10fff
-DMAR: RMRR base: 0x0000007be0d000 end: 0x0000007be0dfff
-DMAR: RMRR base: 0x0000007be0a000 end: 0x0000007be0afff
-DMAR: RMRR base: 0x0000007be07000 end: 0x0000007be07fff
-DMAR: RMRR base: 0x0000007be04000 end: 0x0000007be04fff
-DMAR: RMRR base: 0x0000007be01000 end: 0x0000007be01fff
-DMAR: ATSR flags: 0x0
-DMAR: ATSR flags: 0x0
-DMAR: RHSA base: 0x000000fd000000 proximity domain: 0x0
-DMAR: RHSA base: 0x000000fd800000 proximity domain: 0x2
-IOAPIC id 10 under DRHD base  0xfd800000 IOMMU 0
-IOAPIC id 8 under DRHD base  0xfd000000 IOMMU 1
-IOAPIC id 9 under DRHD base  0xfd000000 IOMMU 1
-Enabled Interrupt-remapping
-Setting APIC routing to cluster x2apic
-..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-CPU0: Intel(R) Xeon(R) CPU           X7550  @ 2.00GHz stepping 06
-Brought up 1 CPUs
-Total of 1 processors activated (3989.59 BogoMIPS).
-devtmpfs: initialized
-regulator: core version 0.5
-NET: Registered protocol family 16
-ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
-ACPI: bus type pci registered
-PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0x80000000-0x8fffffff] (base 0x80000000)
-PCI: MMCONFIG at [mem 0x80000000-0x8fffffff] reserved in E820
-PCI: Using configuration type 1 for base access
-bio: create slab <bio-0> at 0
+> [ factorize softirq events with DECLARE_EVENT_CLASS ]
+> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+> ---
+>  include/linux/interrupt.h  |    8 +++++++-
+>  include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
+>  2 files changed, 31 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index c233113..5460db4 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -18,6 +18,7 @@
+>  #include <asm/atomic.h>
+>  #include <asm/ptrace.h>
+>  #include <asm/system.h>
+> +#include <trace/events/irq.h>
+>  
+>  /*
+>   * These correspond to the IORESOURCE_IRQ_* defines in
+> @@ -402,7 +403,12 @@ asmlinkage void do_softirq(void);
+>  asmlinkage void __do_softirq(void);
+>  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+>  extern void softirq_init(void);
+> -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
+> +static inline void __raise_softirq_irqoff(unsigned int nr)
+> +{
+> +	trace_softirq_raise((struct softirq_action *)&nr, NULL);
+> +	or_softirq_pending(1UL << nr);
+> +}
+> +
+>  extern void raise_softirq_irqoff(unsigned int nr);
+>  extern void raise_softirq(unsigned int nr);
+>  extern void wakeup_softirqd(void);
+> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+> index 0e4cfb6..3ddda02 100644
+> --- a/include/trace/events/irq.h
+> +++ b/include/trace/events/irq.h
+> @@ -5,7 +5,9 @@
+>  #define _TRACE_IRQ_H
+>  
+>  #include <linux/tracepoint.h>
+> -#include <linux/interrupt.h>
+> +
+> +struct irqaction;
+> +struct softirq_action;
+>  
+>  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
+>  #define show_softirq_name(val)				\
+> @@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
+>  	),
+>  
+>  	TP_fast_assign(
+> -		__entry->vec = (int)(h - vec);
+> +		if (vec)
+> +			__entry->vec = (int)(h - vec);
+> +		else
+> +			__entry->vec = *((int *)h);
+>  	),
+>  
+>  	TP_printk("vec=%d [action=%s]", __entry->vec,
+> @@ -136,6 +141,23 @@ DEFINE_EVENT(softirq, softirq_exit,
+>  	TP_ARGS(h, vec)
+>  );
+>  
+> +/**
+> + * softirq_raise - called immediately when a softirq is raised
+> + * @h: pointer to struct softirq_action
+> + * @vec: pointer to first struct softirq_action in softirq_vec array
+> + *
+> + * The @h parameter contains a pointer to the softirq vector number which is
+> + * raised. @vec is NULL and it means @h includes vector number not
+> + * softirq_action. When used in combination with the softirq_entry tracepoint
+> + * we can determine the softirq raise latency.
+> + */
+> +DEFINE_EVENT(softirq, softirq_raise,
+> +
+> +	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
+> +
+> +	TP_ARGS(h, vec)
+> +);
+> +
+>  #endif /*  _TRACE_IRQ_H */
+>  
+>  /* This part must be outside protection */
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
