@@ -1,51 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab0H0Owp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 10:52:45 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:33081 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754116Ab0H0Owm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 10:52:42 -0400
-Date: Fri, 27 Aug 2010 15:52:31 +0100
-From: Hedi Berriche <hedi@sgi.com>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Message-ID: <20100827145231.GZ18967@zorg.emea.sgi.com>
-Mail-Followup-To: Petr Tesarik <ptesarik@suse.cz>,
-	linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Tony Luck <tony.luck@intel.com>
-References: <201008271537.35709.ptesarik@suse.cz> <201008271609.16099.ptesarik@suse.cz> <20100827143135.GY18967@zorg.emea.sgi.com> <201008271640.49542.ptesarik@suse.cz>
+	id S1754187Ab0H0PB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:01:26 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:1164 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab0H0PBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 11:01:23 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2cK1432N98dN853kzz1202hzz8275dhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7TGAB-01-5WN-02
+X-M-MSG: 
+Date: Fri, 27 Aug 2010 16:59:01 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH V2 4/4] sh: Use the perf-events backend for oprofile
+Message-ID: <20100827145901.GO22783@erda.amd.com>
+References: <cover.1282848651.git.matt@console-pimps.org>
+ <c741813aa911f0048cfab1a1a30534e8d7bb6765.1282848651.git.matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <201008271640.49542.ptesarik@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <c741813aa911f0048cfab1a1a30534e8d7bb6765.1282848651.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 15:40 Petr Tesarik wrote:
-| On Friday 27 of August 2010 16:31:35 Hedi Berriche wrote:
-|
-| > That said, I'm letting my already over 36 hours run carry on chewing CPU
-| > time, and see if it will eventually trip the same problem seen with 4-byte
-| > ticket locks.
-| 
-| Hm, this doesn't sound like a viable approach. Since the siglock gets 
-| initialized to 0 when a new process is started, it may never actually wrap 
-| around.
-| 
-| I would rather attach a SystemTap probe somewhere during process fork and add 
-| a bias to the siglock. That should work fine. Let me knock up the SystemTap 
-| script...
+On 26.08.10 15:09:19, Matt Fleming wrote:
+> Use the perf-events based wrapper for oprofile available in
+> drivers/oprofile. This allows us to centralise the code to control
+> performance counters.
+> 
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> ---
+> 
+> Paul,
+> 
+> I dropped the CONFIG_PERF_EVENTS dependency from the Makefile in this
+> version because to do anything useful we need perf events anyway.
 
-That would be nice. Ta!
+Initialization should simply fail with a printk message for this case,
+implement function stubs for the !CONFIG_PERF_EVENTS case instead in
+the oprofile.h header file.
 
-Cheers,
-Hedi.
+> 
+>  arch/sh/oprofile/Makefile  |    2 +-
+>  arch/sh/oprofile/common.c  |   96 ++++++++-----------------------------------
+>  arch/sh/oprofile/op_impl.h |   33 ---------------
+>  3 files changed, 19 insertions(+), 112 deletions(-)
+>  delete mode 100644 arch/sh/oprofile/op_impl.h
+> 
+> diff --git a/arch/sh/oprofile/Makefile b/arch/sh/oprofile/Makefile
+> index 4886c5c..e1015ae 100644
+> --- a/arch/sh/oprofile/Makefile
+> +++ b/arch/sh/oprofile/Makefile
+> @@ -4,6 +4,6 @@ DRIVER_OBJS = $(addprefix ../../../drivers/oprofile/, \
+>  		oprof.o cpu_buffer.o buffer_sync.o \
+>  		event_buffer.o oprofile_files.o \
+>  		oprofilefs.o oprofile_stats.o \
+> -		timer_int.o )
+> +		timer_int.o oprofile_perf.o )
+>  
+>  oprofile-y	:= $(DRIVER_OBJS) common.o backtrace.o
+> diff --git a/arch/sh/oprofile/common.c b/arch/sh/oprofile/common.c
+> index ac60493..f8d4a84 100644
+> --- a/arch/sh/oprofile/common.c
+> +++ b/arch/sh/oprofile/common.c
+> @@ -17,71 +17,23 @@
+>  #include <linux/init.h>
+>  #include <linux/errno.h>
+>  #include <linux/smp.h>
+> +#include <linux/perf_event.h>
+
+I don't see a reason why this must be included here.
+
+It's only for sh_pmu_name() and sh_pmu_num_events(), so the interface
+looks wrong here. It should be in oprofile_perf.c. The functions
+should be generic non-arch perf code. See below.
+
+>  #include <asm/processor.h>
+> -#include "op_impl.h"
+> -
+> -static struct op_sh_model *model;
+> -
+> -static struct op_counter_config ctr[20];
+>  
+>  extern void sh_backtrace(struct pt_regs * const regs, unsigned int depth);
+>  
+> -static int op_sh_setup(void)
+> -{
+> -	/* Pre-compute the values to stuff in the hardware registers.  */
+> -	model->reg_setup(ctr);
+> -
+> -	/* Configure the registers on all cpus.  */
+> -	on_each_cpu(model->cpu_setup, NULL, 1);
+> -
+> -        return 0;
+> -}
+> -
+> -static int op_sh_create_files(struct super_block *sb, struct dentry *root)
+> -{
+> -	int i, ret = 0;
+> -
+> -	for (i = 0; i < model->num_counters; i++) {
+> -		struct dentry *dir;
+> -		char buf[4];
+> -
+> -		snprintf(buf, sizeof(buf), "%d", i);
+> -		dir = oprofilefs_mkdir(sb, root, buf);
+> -
+> -		ret |= oprofilefs_create_ulong(sb, dir, "enabled", &ctr[i].enabled);
+> -		ret |= oprofilefs_create_ulong(sb, dir, "event", &ctr[i].event);
+> -		ret |= oprofilefs_create_ulong(sb, dir, "kernel", &ctr[i].kernel);
+> -		ret |= oprofilefs_create_ulong(sb, dir, "user", &ctr[i].user);
+> -
+> -		if (model->create_files)
+> -			ret |= model->create_files(sb, dir);
+> -		else
+> -			ret |= oprofilefs_create_ulong(sb, dir, "count", &ctr[i].count);
+> -
+> -		/* Dummy entries */
+> -		ret |= oprofilefs_create_ulong(sb, dir, "unit_mask", &ctr[i].unit_mask);
+> -	}
+> -
+> -	return ret;
+> -}
+> -
+> -static int op_sh_start(void)
+> +static char *op_name_from_perf_name(const char *name)
+>  {
+> -	/* Enable performance monitoring for all counters.  */
+> -	on_each_cpu(model->cpu_start, NULL, 1);
+> +	if (!strcmp(name, "SH-4A"))
+> +		return "sh/sh4a";
+> +	if (!strcmp(name, "SH7750"))
+> +		return "sh/sh7750";
+
+With that implementation we always have to touch the code for new
+cpus. Maybe we derive it from the perf name, e.g. making all lowercase
+and removing dashes?
+
+>  
+> -	return 0;
+> -}
+> -
+> -static void op_sh_stop(void)
+> -{
+> -	/* Disable performance monitoring for all counters.  */
+> -	on_each_cpu(model->cpu_stop, NULL, 1);
+> +	return NULL;
+>  }
+>  
+>  int __init oprofile_arch_init(struct oprofile_operations *ops)
+>  {
+> -	struct op_sh_model *lmodel = NULL;
+>  	int ret;
+>  
+>  	/*
+> @@ -91,40 +43,28 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+>  	 */
+>  	ops->backtrace = sh_backtrace;
+>  
+> -	/*
+> -	 * XXX
+> -	 *
+> -	 * All of the SH7750/SH-4A counters have been converted to perf,
+> -	 * this infrastructure hook is left for other users until they've
+> -	 * had a chance to convert over, at which point all of this
+> -	 * will be deleted.
+> -	 */
+> -
+> -	if (!lmodel)
+> -		return -ENODEV;
+>  	if (!(current_cpu_data.flags & CPU_HAS_PERF_COUNTER))
+>  		return -ENODEV;
+>  
+> -	ret = lmodel->init();
+> -	if (unlikely(ret != 0))
+> -		return ret;
+> +	ops->setup		= oprofile_perf_setup;
+> +	ops->create_files	= oprofile_perf_create_files;
+> +	ops->start		= oprofile_perf_start;
+> +	ops->stop		= oprofile_perf_stop;
+> +	ops->cpu_type		= op_name_from_perf_name(sh_pmu_name());
+>  
+> -	model = lmodel;
+> +	oprofile_perf_set_num_counters(sh_pmu_num_events());
+>  
+> -	ops->setup		= op_sh_setup;
+> -	ops->create_files	= op_sh_create_files;
+> -	ops->start		= op_sh_start;
+> -	ops->stop		= op_sh_stop;
+> -	ops->cpu_type		= lmodel->cpu_type;
+> +	ret = oprofile_perf_init();
+
+Instead of exporting all the functions above implement something like:
+
+	name = op_name_from_perf_name(sh_pmu_name());
+	num_events = sh_pmu_num_events();
+	ret = oprofile_perf_init(ops, name, num_events);
+
+We will then have only oprofile_perf_init() and oprofile_perf_exit()
+as interface which is much cleaner.
+
+-Robert
+
+> +	if (ret != 0)
+> +		return ret;
+>  
+>  	printk(KERN_INFO "oprofile: using %s performance monitoring.\n",
+> -	       lmodel->cpu_type);
+> +	       ops->cpu_type);
+>  
+>  	return 0;
+>  }
+>  
+>  void oprofile_arch_exit(void)
+>  {
+> -	if (model && model->exit)
+> -		model->exit();
+> +	oprofile_perf_exit();
+>  }
+
 -- 
-Hedi Berriche
-Global Product Support
-http://www.sgi.com/support
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
