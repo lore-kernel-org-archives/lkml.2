@@ -1,129 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab0H0IT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 04:19:59 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54126 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab0H0ITy convert rfc822-to-8bit (ORCPT
+	id S1752669Ab0H0IVy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 04:21:54 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56880 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab0H0IVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 04:19:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=r2+wpID1n8iGs1FEdpkK28Cwh+iFbFrctpTp14a4Qd1xIlZz1NmKSySVXPTbQ52QxJ
-         hr8xR70TdxQhTA7lUlKQ==
-MIME-Version: 1.0
-In-Reply-To: <4C718115.8070103@garzik.org>
-References: <4C702070.5020809@jungers.net>
-	<4C71808B.7070704@garzik.org>
-	<4C718115.8070103@garzik.org>
-Date: Fri, 27 Aug 2010 01:19:49 -0700
-Message-ID: <AANLkTi=fQsHVpNu2TZeDNdcofoorFFfsASU=XDqUB9b4@mail.gmail.com>
-Subject: Re: possible esata regression in 2.6.35
-From: Gwendal Grignou <gwendal@google.com>
-To: Jeff Garzik <jeff@garzik.org>, kernel@teksavvy.com
-Cc: Nicolas Jungers <nicolas@jungers.net>, linux-kernel@vger.kernel.org,
-        Linux IDE mailing list <linux-ide@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 27 Aug 2010 04:21:51 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 27 Aug 2010 17:16:39 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: =?UTF-8?B?TWljaGHFgg==?= Nazarewicz <m.nazarewicz@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+Message-Id: <20100827171639.83c8642c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTimB+s0tO=wrODAU4qCaZnCBoLZ2A9pGjR_jheOj@mail.gmail.com>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	<1282310110.2605.976.camel@laptop>
+	<20100825155814.25c783c7.akpm@linux-foundation.org>
+	<20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<op.vh0wektv7p4s8u@localhost>
+	<20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
+	<20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTimB+s0tO=wrODAU4qCaZnCBoLZ2A9pGjR_jheOj@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I can reproduce the problem on uptsream-linux using a PC with Marvell
-7042 controller and Sil3726 PMP. Without the SIl3726, it works fine.
+On Thu, 26 Aug 2010 18:36:24 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-What I can see on the SATA analyzer [I will send clean trace tomorrow]
-is the disk send the DATA FIS back to the PMP, but the PMP does not
-manage to have the data accepted by the host.
+> On Thu, Aug 26, 2010 at 1:30 PM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Thu, 26 Aug 2010 13:06:28 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> >
+> >> On Thu, Aug 26, 2010 at 12:44 PM, KAMEZAWA Hiroyuki
+> >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >> > On Thu, 26 Aug 2010 11:50:17 +0900
+> >> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >> >
+> >> >> 128MB...too big ? But it's depend on config.
+> >> >>
+> >> >> IBM's ppc guys used 16MB section, and recently, a new interface to shrink
+> >> >> the number of /sys files are added, maybe usable.
+> >> >>
+> >> >> Something good with this approach will be you can create "cma" memory
+> >> >> before installing driver.
+> >> >>
+> >> >> But yes, complicated and need some works.
+> >> >>
+> >> > Ah, I need to clarify what I want to say.
+> >> >
+> >> > With compaction, it's helpful, but you can't get contiguous memory larger
+> >> > than MAX_ORDER, I think. To get memory larger than MAX_ORDER on demand,
+> >> > memory hot-plug code has almost all necessary things.
+> >>
+> >> True. Doesn't patch's idea of Christoph helps this ?
+> >> http://lwn.net/Articles/200699/
+> >>
+> >
+> > yes, I think so. But, IIRC, Â it's own purpose of Chirstoph's work is
+> > for removing zones. please be careful what's really necessary.
+> 
+> Ahh. Sorry for missing point.
+> You're right. The patch can't help our problem.
+> 
+> How about changing following this?
+> The thing is MAX_ORDER is static. But we want to avoid too big
+> MAX_ORDER of whole zones to support devices which requires big
+> allocation chunk.
+> So let's add MAX_ORDER into each zone and then, each zone can have
+> different max order.
+> For example, while DMA[32], NORMAL, HIGHMEM can have normal size 11,
+> MOVABLE zone could have a 15.
+> 
+> This approach has a big side effect?
+> 
 
-Non data commands work fine.
+Hm...need to check hard coded MAX_ORDER usages...I don't think
+side-effect is big. Hmm. But I think enlarging MAX_ORDER isn't an
+important thing. A code which strips contiguous chunks of pages from
+buddy allocator is a necessaty thing, as..
 
-In dmesg:
-[10058.404047] ata29: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[10058.404742] ata29.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6
-ports, feat 0x1/0x9
-[10058.405250] ata29.00: hard resetting link
-[10058.809151] ata29.00: link resume succeeded after 1 retries
-[10058.911613] ata29.01: hard resetting link
-[10059.217572] ata29.02: hard resetting link
-[10059.523572] ata29.03: hard resetting link
-[10059.829505] ata29.04: hard resetting link
-[10060.134572] ata29.05: hard resetting link
-[10065.440079] ata29.03: qc timeout (cmd 0xec)
-[10065.440085] ata29.03: failed to IDENTIFY (I/O error, err_mask=0x4)
-[10065.440092] ata29.15: hard resetting link
-[10065.947049] ata29.15: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[10065.947737] ata29.00: hard resetting link
-[10066.352106] ata29.00: link resume succeeded after 1 retries
-[10066.454616] ata29.01: hard resetting link
-[10066.760591] ata29.02: hard resetting link
-[10067.066570] ata29.03: hard resetting link
-[10067.372505] ata29.05: hard resetting link
-[10077.677071] ata29.03: qc timeout (cmd 0xec)
-[10077.677076] ata29.03: failed to IDENTIFY (I/O error, err_mask=0x4)
-[10077.677081] ata29.15: hard resetting link
-[10078.184073] ata29.15: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[10078.184783] ata29.00: hard resetting link
-[10078.589185] ata29.00: link resume succeeded after 1 retries
-[10078.691593] ata29.01: hard resetting link
-[10078.997592] ata29.02: hard resetting link
-[10079.303571] ata29.03: hard resetting link
-[10079.609505] ata29.04: hard resetting link
-[10079.914572] ata29.05: hard resetting link
-[10110.220078] ata29.03: qc timeout (cmd 0xec)
-[10110.220083] ata29.03: failed to IDENTIFY (I/O error, err_mask=0x4)
-[10110.220087] ata29.03: failed to recover link after 3 tries, disabling
-[10110.220094] ata29.15: hard resetting link
-[10110.727044] ata29.15: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[10111.033375] ata29.00: hard resetting link
-[10111.338571] ata29.01: hard resetting link
-[10111.644591] ata29.02: hard resetting link
-[10111.950594] ata29.05: hard resetting link
-[10112.256643] ata29: EH complete
+What I can think of at 1st is...
+==
+	int steal_pages(unsigned long start_pfn, unsigned long end_pfn)
+	{
+		/* Be careful mutal execution with memory hotplug, because reusing code */
 
+		split [start_pfn, end_pfn) to pageblock_order
+		
+		for each pageblock in the range {
+			Mark this block as MIGRATE_ISOLATE
+			try-to-free pages in the range or
+			migrate pages in the range to somewhere.
+			/* Here all pages in the range are on buddy allocator
+			and free and never be allocated by anyone else. */
+		}
 
-Gwendal.
+		please see __rmqueue_fallback(). it selects migration-type at 1st.
+		Then, if you can pass start_migratetype of MIGLATE_ISOLATE,
+		you can automatically strip all MIGRATE_ISOLATE pages from free_area[].
+
+		return chunk of pages.
+	}
+==
+
+Thanks,
+-Kame
 
 
 
-
-On Sun, Aug 22, 2010 at 12:57 PM, Jeff Garzik <jeff@garzik.org> wrote:
-> On 08/22/2010 03:54 PM, Jeff Garzik wrote:
->>
->> On 08/21/2010 02:52 PM, Nicolas Jungers wrote:
->>>
->>> My arm box doesn't succeed to use my esata port multiplier (addonics
->>> sil3726 based). It was working well with 2.6.34.1 and 2.6.34.4 but not
->>> with both 2.6.35.2 and 2.6.35.3. I haven't test other kernels.
->>>
->>> The kernels are from http://sheeva.with-linux.com/sheeva/ with for
->>> example the following config
->>> http://sheeva.with-linux.com/sheeva/2.6.35.3/sheeva-2.6.35.3.config
->>>
->>> The symptoms are in the console a loop on the esata links. Here is the
->>> start of it:
->>>
->>> ata2: exception Emask 0x10 SAct 0x0 SErr 0x4010000 action 0xe frozen
->>> ata2: edma_err_cause=00000010 pp_flags=00000000, dev connect
->>> ata2: SError: { PHYRdyChg DevExch }
->>> ata2: hard resetting link
->>> ata2: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
->>> ata2.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
->>
->> Can you post or link to the entire dmesg?
->>
->> Notably, we need to see the probe messages to determine what SATA chip
->> you are using... From the edma_err_cause config I'd guess sata_mv, but
->> more info would be useful.
->
-> Nevermind, I see the reply (it got auto-sorted into the wrong folder
-> locally).
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
