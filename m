@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab0H0F5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 01:57:50 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59068 "EHLO mgw2.diku.dk"
+	id S1754198Ab0H0F6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 01:58:09 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59078 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752284Ab0H0F5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 01:57:43 -0400
+	id S1754050Ab0H0F5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 01:57:44 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] drivers/media/video/em28xx: Remove potential NULL dereference
-Date: Fri, 27 Aug 2010 07:57:18 +0200
-Message-Id: <1282888640-27042-2-git-send-email-julia@diku.dk>
+Subject: [PATCH 3/3] drivers/staging/tm6000: Remove potential NULL dereference
+Date: Fri, 27 Aug 2010 07:57:20 +0200
+Message-Id: <1282888640-27042-4-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1282888640-27042-1-git-send-email-julia@diku.dk>
 References: <1282888640-27042-1-git-send-email-julia@diku.dk>
@@ -45,26 +45,25 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/media/video/em28xx/em28xx-video.c |    3 ++-
+ drivers/staging/tm6000/tm6000-alsa.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/video/em28xx/em28xx-video.c b/drivers/media/video/em28xx/em28xx-video.c
-index 7b9ec6e..95a4b60 100644
---- a/drivers/media/video/em28xx/em28xx-video.c
-+++ b/drivers/media/video/em28xx/em28xx-video.c
-@@ -277,12 +277,13 @@ static void em28xx_copy_vbi(struct em28xx *dev,
+diff --git a/drivers/staging/tm6000/tm6000-alsa.c b/drivers/staging/tm6000/tm6000-alsa.c
+index 087137d..a06b3c6 100644
+--- a/drivers/staging/tm6000/tm6000-alsa.c
++++ b/drivers/staging/tm6000/tm6000-alsa.c
+@@ -426,11 +426,12 @@ error:
+ 
+ static int tm6000_audio_fini(struct tm6000_core *dev)
  {
- 	void *startwrite, *startread;
- 	int  offset;
--	int bytesperline = dev->vbi_width;
-+	int bytesperline;
+-	struct snd_tm6000_card	*chip = dev->adev;
++	struct snd_tm6000_card	*chip;
  
- 	if (dev == NULL) {
- 		em28xx_isocdbg("dev is null\n");
- 		return;
- 	}
-+	bytesperline = dev->vbi_width;
+ 	if (!dev)
+ 		return 0;
  
- 	if (dma_q == NULL) {
- 		em28xx_isocdbg("dma_q is null\n");
++	chip = dev->adev;
+ 	if (!chip)
+ 		return 0;
+ 
 
