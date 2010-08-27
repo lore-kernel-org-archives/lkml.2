@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab0H0ELN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 00:11:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51622 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab0H0ELM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 00:11:12 -0400
-Date: Fri, 27 Aug 2010 14:11:00 +1000
-From: Neil Brown <neilb@suse.de>
-To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaurora@redhat.com,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-Subject: Re: [PATCH 2/5] vfs: make i_op->permission take a dentry instead of
- an inode
-Message-ID: <20100827141100.45feae88@notabene>
-In-Reply-To: <1282854242.16993.6.camel@moss-terrapins.epoch.ncsc.mil>
-References: <20100826183340.027591901@szeredi.hu>
-	<20100826183501.528625301@szeredi.hu>
-	<1282854242.16993.6.camel@moss-terrapins.epoch.ncsc.mil>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752801Ab0H0ENj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 00:13:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:45985 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab0H0ENf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 00:13:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52282783"
+From: Saravana Kannan <skannan@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@suse.de>,
+        mark gross <markgross@thegnar.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: [PATCH] pm_qos: Add system bus performance parameter
+Date: Thu, 26 Aug 2010 21:13:23 -0700
+Message-Id: <1282882403-29824-2-git-send-email-skannan@codeaurora.org>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
+References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010 16:24:02 -0400
-"David P. Quigley" <dpquigl@tycho.nsa.gov> wrote:
+Some drivers/devices might need some minimum system bus performance to
+provide acceptable service. Provide a PM QoS parameter to send these requests
+to.
 
-> I may be missing something but I looked at your patch series and I see
-> no good reason for this patch at all. You just churned a lot of code for
-> something that you don't even have a need for in the patch set. Your
-> only two new callers of this function could just as easily have used the
-> inode since it isn't doing anything special with the dentry. It actually
-> pulls the inode out of it and uses it in generic_permission and
-> security_inode_permission. If you are going to change this you should
-> also change generic_permission as well. Honestly I'd rather see the
-> dentry requirement removed from inode operations instead but
-> unfortunately this isn't possible as I found out with my attempts to
-> remove the dentry requirement for get/setxattr
+The new parameter is named "system bus performance" since it is generic enough
+for the unit of the request to be frequency, bandwidth or something else that
+might be appropriate. It's up to each implementation of the QoS provider to
+define what the unit of the request would be.
 
+Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+---
+ kernel/pm_qos_params.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-union_permission needs the dentry to get access to d_fsdata, which caches the
-upperpath and lowerpath which were found at lookup time.
-
-Is that what you missed?
-
-NeilBrown
+diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+index 996a4de..1a44a67 100644
+--- a/kernel/pm_qos_params.c
++++ b/kernel/pm_qos_params.c
+@@ -93,12 +93,21 @@ static struct pm_qos_object network_throughput_pm_qos = {
+ 	.type = PM_QOS_MAX,
+ };
+ 
++static BLOCKING_NOTIFIER_HEAD(system_bus_performance_notifier);
++static struct pm_qos_object system_bus_performance_pm_qos = {
++	.requests = PLIST_HEAD_INIT(system_bus_performance_pm_qos.requests, pm_qos_lock),
++	.notifiers = &system_bus_performance_notifier,
++	.name = "system_bus_performance",
++	.default_value = 0,
++	.type = PM_QOS_MAX,
++};
+ 
+ static struct pm_qos_object *pm_qos_array[] = {
+ 	&null_pm_qos,
+ 	&cpu_dma_pm_qos,
+ 	&network_lat_pm_qos,
+ 	&network_throughput_pm_qos
++	&system_bus_performance_pm_qos
+ };
+ 
+ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+-- 
+1.7.1.1
+---
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
