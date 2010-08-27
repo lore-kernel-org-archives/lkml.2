@@ -1,58 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab0H0OIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 10:08:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56702 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab0H0OIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 10:08:43 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Hedi Berriche <hedi@sgi.com>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Date: Fri, 27 Aug 2010 16:09:14 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>
-References: <201008271537.35709.ptesarik@suse.cz> <20100827134802.GX18967@zorg.emea.sgi.com>
-In-Reply-To: <20100827134802.GX18967@zorg.emea.sgi.com>
+	id S1753894Ab0H0OMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 10:12:31 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40190 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab0H0OM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 10:12:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=BQwVQRkhuq3iIY2obifIZlnSXy5PYJ2o9coFUtmbjKWxCiWLz0PeES47NniyqFE4qq
+         xLaeMyIuEogwpXBzxLmBKIhrt4VAUg41aByLJXQPPkY7p17akU1+xDbWnAqca1VVkpV0
+         EqqlRlBJXe6tvWycETV+aGiZLCCAgInfk8mv0=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008271609.16099.ptesarik@suse.cz>
+In-Reply-To: <AANLkTin5cLQG9ApxhCs92Twm958MP0J+u4GdBysJ3aNk@mail.gmail.com>
+References: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
+	<AANLkTik0ZGs3i_mHtB0s6iT6X0cLgxMjRN7Hi9FK_ZLF@mail.gmail.com>
+	<AANLkTikTF9uvKw+48_jJKLAwqp7MJnypvvUsHN3qQ58+@mail.gmail.com>
+	<AANLkTin80q4tGPZ1FefWCUMmhpNKj3_-KZZB12gZvwSA@mail.gmail.com>
+	<AANLkTin5cLQG9ApxhCs92Twm958MP0J+u4GdBysJ3aNk@mail.gmail.com>
+Date: Fri, 27 Aug 2010 16:12:27 +0200
+X-Google-Sender-Auth: VTdc43UvrE6xCmp196bUHqlZ2nw
+Message-ID: <AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
+Subject: Re: System time drifts when processor idle.
+From: jean-philippe francois <jp.francois@cynove.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Lin Ming <lin@ming.vg>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001636283bde6e2f57048eceb4df
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 of August 2010 15:48:02 Hedi Berriche wrote:
-> On Fri, Aug 27, 2010 at 14:38 Petr Tesarik wrote:
-> | Hi everybody,
-> |
-> | SGI has recently experienced failures with the new ticket spinlock
-> | implementation. Hedi Berriche sent me a simple test case that can
-> | trigger the failure on the siglock.
->
-> One more fact, the problem was introduced by commit
->
->     commit 9d40ee200a527ce08ab8c793ba8ae3e242edbb0e
->     Author: Tony Luck <tony.luck@intel.com>
->     Date:   Wed Oct 7 10:54:19 2009 -0700
->
->         [IA64] Squeeze ticket locks back into 4 bytes.
->
-> Reverting the patch makes the problem go away.
->
-> IOW, and as far as testing shows, the first incarnation of the ticket locks
-> implementation on IA64 (commit 2c8696), the one that used 8 bytes, does not
-> exhibit this problem.
+--001636283bde6e2f57048eceb4df
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I wouldn't be so sure about it. Given that I have only observed the problem 
-when the spinlock value wraps around, then an 8-byte spinlock might only need 
-much more time to trigger the bug.
+Hi,
 
-Just my two cents,
-Petr Tesarik
-L3 International
-Novell, Inc.
+My Timekeeping bug is still present, here is an updated script and log.
+I am willing to make test, but I don't know what kind of debugging
+info is needed.
+
+I am all eyes to any advice that could help solve this BUG.
+
+Thank you,
+Jean-Philippe Fran=E7ois
+
+--001636283bde6e2f57048eceb4df
+Content-Type: application/x-sh; name="clocktest.sh"
+Content-Disposition: attachment; filename="clocktest.sh"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gdd47yk81
+
+IyEvYmluL2Jhc2gKIyBzZXQgaHdjbG9jayB0byBzeXN0ZW0gY2xvY2sgdG8gc3RhcnQKIyB0aGUg
+bG9nIGZpbGUgd2l0aCB0aGUgc2FtZSB0aW1lIApod2Nsb2NrIC13CiNzb21lIGluZm8gYXNrZWQg
+b24gbGttbAp1bmFtZSAtYQplY2hvICJjYXQgL3N5cy9kZXZpY2VzL3N5c3RlbS9jbG9ja3NvdXJj
+ZS9jbG9ja3NvdXJjZTAvYXZhaWxhYmxlX2Nsb2Nrc291cmNlIiAKY2F0IC9zeXMvZGV2aWNlcy9z
+eXN0ZW0vY2xvY2tzb3VyY2UvY2xvY2tzb3VyY2UwL2F2YWlsYWJsZV9jbG9ja3NvdXJjZSAKZWNo
+byAiY2F0IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY2xvY2tzb3VyY2UvY2xvY2tzb3VyY2UwL2N1cnJl
+bnRfY2xvY2tzb3VyY2UiCmNhdCAvc3lzL2RldmljZXMvc3lzdGVtL2Nsb2Nrc291cmNlL2Nsb2Nr
+c291cmNlMC9jdXJyZW50X2Nsb2Nrc291cmNlCmVjaG8gIl9fX19fX19fX19fX19fX19fX19fX19f
+XyIKZWNobyAiICBzeXN0ZW0gfCBoYXJkd2FyZShSVEMpIgp3aGlsZSBbWyB0cnVlIF1dCmRvIAoJ
+c3lzdGltZT0kKGRhdGUgKyVIOiVNOiVTKQoJaHd0aW1lPSQoaHdjbG9jayAtcikKCWVjaG8gIiRz
+eXN0aW1lIHwgJGh3dGltZSIgCglzbGVlcCAyMApkb25lCgo=
+--001636283bde6e2f57048eceb4df
+Content-Type: text/x-log; charset=UTF-8; name="clocktest.log"
+Content-Disposition: attachment; filename="clocktest.log"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gdd48fjy2
+
+TGludXgganAgMi42LjM2LTAyMDYzNnJjMS1nZW5lcmljICMyMDEwMDgxNzEzMDYgU01QIFR1ZSBB
+dWcgMTcgMTQ6MTY6MjggVVRDIDIwMTAgaTY4NiBHTlUvTGludXgKY2F0IC9zeXMvZGV2aWNlcy9z
+eXN0ZW0vY2xvY2tzb3VyY2UvY2xvY2tzb3VyY2UwL2F2YWlsYWJsZV9jbG9ja3NvdXJjZQpocGV0
+IGFjcGlfcG0gCmNhdCAvc3lzL2RldmljZXMvc3lzdGVtL2Nsb2Nrc291cmNlL2Nsb2Nrc291cmNl
+MC9jdXJyZW50X2Nsb2Nrc291cmNlCmhwZXQKX19fX19fX19fX19fX19fX19fX19fX19fCiAgc3lz
+dGVtIHwgaGFyZHdhcmUoUlRDKQoxNTo0NjozNyB8IHZlbi4gMjcgYW/Du3QgMjAxMCAxNTo0Njoz
+OCBDRVNUICAtMC41MDA1NTAgc2Vjb25kZXMKMTU6NDY6NTggfCB2ZW4uIDI3IGFvw7t0IDIwMTAg
+MTU6NDY6NTkgQ0VTVCAgLTAuOTg1OTUzIHNlY29uZGVzCjE1OjQ3OjE5IHwgdmVuLiAyNyBhb8O7
+dCAyMDEwIDE1OjQ3OjIwIENFU1QgIC0xLjAwMTU5MSBzZWNvbmRlcwoxNTo0Nzo0MCB8IHZlbi4g
+MjcgYW/Du3QgMjAxMCAxNTo0Nzo0MSBDRVNUICAtMC45ODU5MzIgc2Vjb25kZXMKMTU6NDg6MDEg
+fCB2ZW4uIDI3IGFvw7t0IDIwMTAgMTU6NDg6MDIgQ0VTVCAgLTAuOTg1OTYxIHNlY29uZGVzCjE1
+OjQ4OjIyIHwgdmVuLiAyNyBhb8O7dCAyMDEwIDE1OjQ4OjIzIENFU1QgIC0xLjAwMTU1OCBzZWNv
+bmRlcwoxNTo0ODo0MyB8IHZlbi4gMjcgYW/Du3QgMjAxMCAxNTo0ODo0NCBDRVNUICAtMC45ODU5
+MDggc2Vjb25kZXMKMTU6NDk6MDQgfCB2ZW4uIDI3IGFvw7t0IDIwMTAgMTU6NTQ6MDQgQ0VTVCAg
+LTAuMDMyODAwIHNlY29uZGVzCjE1OjQ5OjI0IHwgdmVuLiAyNyBhb8O7dCAyMDEwIDE1OjU0OjI1
+IENFU1QgIC0wLjk4NTkyMCBzZWNvbmRlcwoxNTo0OTo0NSB8IHZlbi4gMjcgYW/Du3QgMjAxMCAx
+NTo1NDo0NiBDRVNUICAtMS4wMDE1NzQgc2Vjb25kZXMKMTU6NTA6MDYgfCB2ZW4uIDI3IGFvw7t0
+IDIwMTAgMTU6NTU6MDcgQ0VTVCAgLTAuOTg1OTM5IHNlY29uZGVzCjE1OjUwOjI3IHwgdmVuLiAy
+NyBhb8O7dCAyMDEwIDE1OjU1OjI4IENFU1QgIC0wLjk4NTkyMyBzZWNvbmRlcwoxNTo1MDo0OCB8
+IHZlbi4gMjcgYW/Du3QgMjAxMCAxNTo1NTo0OSBDRVNUICAtMS4wMDE1NTQgc2Vjb25kZXMKMTU6
+NTE6MDkgfCB2ZW4uIDI3IGFvw7t0IDIwMTAgMTU6NTY6MTAgQ0VTVCAgLTAuOTg1OTM2IHNlY29u
+ZGVzCjE1OjUxOjMwIHwgdmVuLiAyNyBhb8O7dCAyMDEwIDE1OjU2OjMxIENFU1QgIC0wLjk4NTky
+OCBzZWNvbmRlcwoxNTo1MTo1MSB8IHZlbi4gMjcgYW/Du3QgMjAxMCAxNTo1Njo1MiBDRVNUICAt
+MC45ODU5NTIgc2Vjb25kZXMKMTU6NTI6MTIgfCB2ZW4uIDI3IGFvw7t0IDIwMTAgMTU6NTc6MTMg
+Q0VTVCAgLTEuMDAxNTM4IHNlY29uZGVzCjE1OjUyOjMzIHwgdmVuLiAyNyBhb8O7dCAyMDEwIDE1
+OjU3OjM0IENFU1QgIC0wLjk4NTkzNiBzZWNvbmRlcwoxNTo1Mjo1NCB8IHZlbi4gMjcgYW/Du3Qg
+MjAxMCAxNTo1Nzo1NSBDRVNUICAtMS4wMDU4NjEgc2Vjb25kZXMKMTU6NTM6MTUgfCB2ZW4uIDI3
+IGFvw7t0IDIwMTAgMTU6NTg6MTYgQ0VTVCAgLTAuOTkwMTkyIHNlY29uZGVzCjE1OjUzOjM2IHwg
+dmVuLiAyNyBhb8O7dCAyMDEwIDE1OjU4OjM3IENFU1QgIC0wLjk5MDE4NSBzZWNvbmRlcwoxNTo1
+Mzo1NyB8IHZlbi4gMjcgYW/Du3QgMjAxMCAxNTo1ODo1OCBDRVNUICAtMC45ODU5MzMgc2Vjb25k
+ZXMKMTU6NTQ6MTggfCB2ZW4uIDI3IGFvw7t0IDIwMTAgMTU6NTk6MTkgQ0VTVCAgLTAuOTg1OTMx
+IHNlY29uZGVzCjE1OjU0OjM5IHwgdmVuLiAyNyBhb8O7dCAyMDEwIDE1OjU5OjQwIENFU1QgIC0w
+Ljk4NTkzOCBzZWNvbmRlcwoxNTo1NTowMCB8IHZlbi4gMjcgYW/Du3QgMjAxMCAxNjowMDowMSBD
+RVNUICAtMS4wMDU4MTMgc2Vjb25kZXMKMTU6NTU6MjEgfCB2ZW4uIDI3IGFvw7t0IDIwMTAgMTY6
+MDA6MjIgQ0VTVCAgLTAuOTkwMTgyIHNlY29uZGVzCjE1OjU1OjQyIHwgdmVuLiAyNyBhb8O7dCAy
+MDEwIDE2OjAwOjQzIENFU1QgIC0wLjk4NTkzMiBzZWNvbmRlcwoxNTo1NjowMyB8IHZlbi4gMjcg
+YW/Du3QgMjAxMCAxNjowMTowNCBDRVNUICAtMC45ODU5MjUgc2Vjb25kZXMK
+--001636283bde6e2f57048eceb4df--
