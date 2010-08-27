@@ -1,126 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab0H0M4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 08:56:18 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:49066 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab0H0M4Q (ORCPT
+	id S1753120Ab0H0M6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 08:58:44 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39296 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab0H0M6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 08:56:16 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7TA0W-01-IVC-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 14:43:44 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 1/4] oprofile: Handle initialisation failure more
- gracefully
-Message-ID: <20100827124344.GJ22783@erda.amd.com>
-References: <cover.1282848651.git.matt@console-pimps.org>
- <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
+	Fri, 27 Aug 2010 08:58:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=PnvFrbxrGoeVHfKbL34MZI2RbfOIugDCS0Z2a9dmOok/JWT5QKqBcm5iWAzPRfeVNQ
+         eB64ULxPk7Cf/HtTrWAW1RQCV4reMPMSnj7LS8WtInf71RnzPCeOHKlyLxlM0fKtTAWC
+         cAHqYHBV5E2z6+93OtaXokY9YkRYZwQlbFHZg=
+From: Namhyung Kim <namhyung@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 14/43] ptrace, frv: change signature of arch_ptrace()
+References: <87aao8gvbm.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+	<1282902149-12991-15-git-send-email-namhyung@gmail.com>
+	<1282902149-12991-1-git-send-email-namhyung@gmail.com>
+	<4072.1282906906@redhat.com> <5542.1282911123@redhat.com>
+Date: Fri, 27 Aug 2010 21:58:26 +0900
+In-Reply-To: <5542.1282911123@redhat.com> (David Howells's message of "Fri, 27
+	Aug 2010 13:12:03 +0100")
+Message-ID: <8762ywgqkt.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.10 15:09:16, Matt Fleming wrote:
-> From: Will Deacon <will.deacon@arm.com>
-> 
-> The current implementation is not entirely safe in the case that
-> oprofile_arch_init() fails. We need to make sure that we always call
-> exit_driverfs() if we've called init_driverfs(). Also, avoid a potential
-> double free when freeing 'counter_config', e.g. don't free
-> 'counter_config' in both oprofile_arch_init() and oprofile_arch_exit().
-> 
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/arm/oprofile/common.c |   15 ++++++++-------
->  1 files changed, 8 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-> index 0691176..482779c 100644
-> --- a/arch/arm/oprofile/common.c
-> +++ b/arch/arm/oprofile/common.c
-> @@ -275,10 +275,12 @@ out:
->  	return ret;
->  }
->  
-> -static void  exit_driverfs(void)
-> +static void exit_driverfs(void)
->  {
-> -	platform_device_unregister(oprofile_pdev);
-> -	platform_driver_unregister(&oprofile_driver);
-> +	if (!IS_ERR_OR_NULL(oprofile_pdev)) {
-> +		platform_device_unregister(oprofile_pdev);
-> +		platform_driver_unregister(&oprofile_driver);
-> +	}
+David Howells <dhowells@redhat.com> writes:
+> Namhyung Kim <namhyung@gmail.com> wrote:
+>> I just wanted to let you know it depends on that.
+>
+> The patch being part of the series is probably sufficient, though a note of
+> the subject line of the previous patch would be useful.
+>
 
-The root cause that makes this check necessary is that
-oprofile_arch_exit() is called though oprofile_arch_init() failed. We
-should better fix this instead. I have to admit we will then have to
-check all architectural implementations.
+I see. Will do that hereafter.
 
->  }
->  #else
->  static int __init init_driverfs(void) { return 0; }
-> @@ -363,10 +365,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
->  	}
->  
->  	ret = init_driverfs();
-> -	if (ret) {
-> -		kfree(counter_config);
 
-We should not return from oprofile_arch_init() with allocated
-resources if the function fails. To fix duplicate kfrees, we should
-free it here and then set counter_config to NULL. It should also be
-freed if for_each_possible_cpu() or op_name_from_perf_id() fails.
+>> What is the proper way to handle this?
+>
+> A summary of the changes being made is good:
+>
+> 	ptrace: Fix up the arguments arch_ptrace() in arch FRV
+>
+> 	Fix up the arguments to arch_ptrace() to take account of the fact that
+> 	addr and data are now unsigned long rather than long as of a preceding
+> 	patch in this series.
+>
+> 	Signed-off-by: ...
+>
 
-Also, the pointer should be NULLed after freeing in
-oprofile_arch_exit(). There, we also don't need the NULL pointer check
-as it is save to call kfree(NULL).
+Thanks. I will use this on the next round. :-)
 
--Robert
 
-> +	if (ret)
->  		return ret;
-> -	}
->  
->  	for_each_possible_cpu(cpu) {
->  		perf_events[cpu] = kcalloc(perf_num_counters,
-> @@ -401,8 +401,9 @@ void oprofile_arch_exit(void)
->  	int cpu, id;
->  	struct perf_event *event;
->  
-> +	exit_driverfs();
-> +
->  	if (*perf_events) {
-> -		exit_driverfs();
->  		for_each_possible_cpu(cpu) {
->  			for (id = 0; id < perf_num_counters; ++id) {
->  				event = perf_events[cpu][id];
-> -- 
-> 1.7.1
-> 
-> 
+> Note, however, that if the earlier patch breaks the compilation and then this
+> patch fixes it up, you should roll this patch into the earlier patch, and the
+> earlier patch is not complete without it.
+>
+> Think what happens if patch 3/43 breaks an arch, and then patch 43/43, say,
+> mends that arch, and then bisection lands on patch 3 during its progress.  You
+> may end up having to 'git bisect skip' all the patches between 3 and 43 one at
+> a time.
+>
+
+In this series, 3/43 changes the prototype of arch_ptrace() in
+include/linux/ptrace.h and the following patches change it for each arch in
+arch/xxx/kernel/ptrace.c. Do you mean all of arch change patches should be
+combinded into a patch?
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Regards,
+Namhyung Kim
