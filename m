@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0H0PaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:30:12 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:59945 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754525Ab0H0PaJ (ORCPT
+	id S1754667Ab0H0PaV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:30:21 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:2805 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650Ab0H0PaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:30:09 -0400
-Date: Fri, 27 Aug 2010 11:30:06 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-Message-ID: <20100827153006.GD14926@Krystal>
-References: <1282849045.1975.1587.camel@laptop> <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain> <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain> <20100826231806.GK2367@linux.vnet.ibm.com> <20100826232858.GA28177@Krystal> <20100826233811.GM2367@linux.vnet.ibm.com> <20100826235323.GC4194@Krystal> <20100827000911.GO2367@linux.vnet.ibm.com> <20100827151807.GA14926@Krystal> <alpine.LFD.2.00.1008271719270.2768@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1008271719270.2768@localhost.localdomain>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:27:37 up 216 days, 18:04,  4 users,  load average: 0.04, 0.08,
-	0.06
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 27 Aug 2010 11:30:17 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52334635"
+Subject: Re: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+In-Reply-To: <1282917280.26355.33.camel@e102109-lin.cambridge.arm.com>
+References: <1282712273-344-4-git-send-email-johlstei@codeaurora.org>
+	 <1282917280.26355.33.camel@e102109-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Aug 2010 08:29:38 -0700
+Message-ID: <1282922978.5075.13.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner (tglx@linutronix.de) wrote:
-> On Fri, 27 Aug 2010, Mathieu Desnoyers wrote:
-> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > Why couldn't the timer_create() call record the start time, and then
-> > > compute the sleeps from that time?  So if timer_create() executed at
-> > > time t=100 and the period is 5, upon awakening and completing the first
-> > > invocation of the function in question, the thread does a sleep calculated
-> > > to wake at t=110.
+On Fri, 2010-08-27 at 14:54 +0100, Catalin Marinas wrote:
+> On Wed, 2010-08-25 at 05:57 +0100, Jeff Ohlstein wrote:
+> > From: Daniel Walker <dwalker@codeaurora.org>
 > > 
-> > Let's focus on the userspace thread execution, right between the samping of the
-> > current time and the call to sleep:
+> > ScorpionMP does not have the SMP/nAMP and TLB ops broadcasting bits in
+> > ACTLR.
 > > 
-> >   Thread A
-> >   current_time = read current time();
-> >   sleep(period_end - current_time);
+> > Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
+> > Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+> > ---
+> >  arch/arm/mm/proc-v7.S |   24 ++++++++++++++++++++++++
+> >  1 files changed, 24 insertions(+), 0 deletions(-)
 > > 
-> > If the thread is preempted between these two operations, then we end up sleeping
-> > for longer than what is needed. This kind of imprecision will add up over time,
-> > so that after e.g. one day, instead of having the expected number of timer
-> > executions, we'll have less than that. This kind of accumulated drift is an
-> > unwanted side-effect of using delays in lieue of real periodic timers.
+> > diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> > index 7aaf88a..98fd7e5 100644
+> > --- a/arch/arm/mm/proc-v7.S
+> > +++ b/arch/arm/mm/proc-v7.S
+> > @@ -196,6 +196,7 @@ __v7_setup:
+> >         orreq   r0, r0, #(1 << 6) | (1 << 0)    @ Enable SMP/nAMP mode and
+> >         mcreq   p15, 0, r0, c1, c0, 1           @ TLB ops broadcasting
+> >  #endif
+> > +__v7_msm_setup:
+> >         adr     r12, __v7_setup_stack           @ the local stack
+> >         stmia   r12, {r0-r5, r7, r9, r11, lr}
+> >         bl      v7_flush_dcache_all
 > 
-> Nonsense, that's why we provide clock_nanosleep(ABSTIME)
+> It may be better to move the generic __v7_setup here and have a specific
+> entry for ARM Ltd cores (mask 0xff0f0000 and value 0x410f0000).
 
-If we're using CLOCK_MONOTONIC, you're right, this could work. I was only
-thinking of relative delays.
+I'm not sure I follow you.. Are you saying there are other cpu's that
+don't need the SMP stuff at the top of __v7_setup ?
 
-So do you think Paul's ideal would be a good candidate for the timer_create
-SIGEV_THREAD glibc implementation then ?
+> In general, I would have liked a different way (still ID-based) of
+> handling such issues without duplicating the whole structure. But I see
+> this becoming the standard as proc-v6.S follows it as well.
 
-Thanks,
+This whole thing was something Russell specifically asked for (and
+practically wrote for me).
 
-Mathieu
-
-> 
-> Thanks,
-> 
-> 	tglx
+Daniel
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
+
