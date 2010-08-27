@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab0H0TkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:40:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39132 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709Ab0H0TkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:40:06 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Date: Fri, 27 Aug 2010 21:40:36 +0200
-User-Agent: KMail/1.9.10
-Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hedi Berriche <hedi@sgi.com>
-References: <201008271537.35709.ptesarik@suse.cz> <987664A83D2D224EAE907B061CE93D53015D91D029@orsmsx505.amr.corp.intel.com> <201008271916.30369.ptesarik@suse.cz>
-In-Reply-To: <201008271916.30369.ptesarik@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008272140.37453.ptesarik@suse.cz>
+	id S1753534Ab0H0Tmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:42:32 -0400
+Received: from wsip-70-167-241-26.dc.dc.cox.net ([70.167.241.26]:59097 "EHLO
+	firewall1" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752143Ab0H0Tm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 15:42:28 -0400
+From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kyle Moffett <kyle@moffetthome.net>,
+        Stephen Hemminger <shemminger@linux-foundation.org>,
+        netdev@vger.kernel.org, Kyle Moffett <Kyle.D.Moffett@boeing.com>
+Subject: [PATCH 1/2] ethtool.h: Add #defines for unidirectional ethernet duplex
+Date: Fri, 27 Aug 2010 15:42:17 -0400
+Message-Id: <1282938138-17844-2-git-send-email-Kyle.D.Moffett@boeing.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1282938138-17844-1-git-send-email-Kyle.D.Moffett@boeing.com>
+References: <1282938138-17844-1-git-send-email-Kyle.D.Moffett@boeing.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 of August 2010 19:16:29 Petr Tesarik wrote:
-> On Friday 27 of August 2010 18:08:03 Luck, Tony wrote:
-> > > Hedi Berriche sent me a simple test case that can
-> > > trigger the failure on the siglock.
-> >
-> > Can you post the test case please. How long does it typically take
-> > to reproduce the problem?
->
-> I let Hedi send it. It's really easy to reproduce. In fact, I can reproduce
-> it within 5 minutes on an 8-CPU system.
->
-> > > Next, CPU 5 releases the spinlock with st2.rel, changing the lock
-> > > value to 0x0 (correct).
-> > >
-> > > SO FAR SO GOOD.
-> > >
-> > > Now, CPU 4, CPU 5 and CPU 7 all want to acquire the lock again.
-> > > Interestingly, CPU 5 and CPU 7 are both granted the same ticket,
-> >
-> > What is the duplicate ticket number that CPUs 5 & 7 get at this point?
-> > Presumably 0x0, yes? Or do they see a stale 0x7fff?
->
-> They get a zero, yes.
->
-> > > and the spinlock value (as seen from the debug fault handler) is
-> > > 0x0 after single-stepping over the fetchadd4.acq, in both cases.
-> > > CPU 4 correctly sets the spinlock value to 0x1.
-> >
-> > Is the fault handler using "ld.acq" to look at the spinlock value?
-> > If not, then this might be a red herring. [Though clearly something
-> > bad is going on here].
->
-> Right. I also realized I was reading the spinlock value with a plain "ld4".
-> When I changed it to "ld4.acq", this is what happens:
->
-> 1. We're in _spin_lock_irq, which starts like this:
->
-> 0xa0000001008ea000 <_spin_lock_irq>:    [MMI]       rsm 0x4000;;
-> 0xa0000001008ea001 <_spin_lock_irq+1>:              fetchadd4.acq
-> r15=[r32],1 0xa0000001008ea002 <_spin_lock_irq+2>:              nop.i 0x0;;
->
-> AFAICS the spinlock value should be 0x0 (after having wrapped around from
-> 0xffff0000 at release on the same CPU).
->
-> 2. fetchadd4.acq generates a debug exception (because it writes to the
-> watched location)
-> 3. ld4.acq inside the debug fault handler reads 0x0 from the location
-> 4. the handler sets PSR.ss on return
-> 5. fetchadd4.acq puts 0x1 (why?) in r15 and generates a Single step fault
-> 6. the fault handler now reads 0x0 (sic!) from the spinlock location
-> (again, using ld4.acq)
-> 7. the resulting kernel crash dump contains ZERO in the spinlock location
+A large variety of fiber ethernet PHYs and some copper ethernet PHYs
+support forced "unidirectional link" modes.  Some signalling modes are
+designed for last-mile ethernet plants while others are designed for
+strict security isolation (fiber with no return-path).
 
-I have another crash dump which recorded the same values in the debug fault 
-handler, but the resulting crash dump contains 0x1 (not 0x0) in the spinlock. 
-R15 was still 0x1 (even though it should contain the original value, not the 
-incremented one, shouldn't it?).
+In order to configure those kinds of forced modes from userspace, we
+need to add additional options to the "ethtool" interface.  As such
+"unidirectional" ethernet modes most closely resemble ethernet "duplex",
+we add two additional DUPLEX_* defines to the ethtool interface:
 
-Petr Tesarik
+  #define DUPLEX_TXONLY 0x02
+  #define DUPLEX_RXONLY 0x03
+
+Most ethernet PHYs will still need to be configured internally in a mode
+with autoneg off and duplex full, except for a few model-specific PHY
+register adjustments.
+
+Most PHYs can simply use a regular forced-mode for rx-only configuration,
+but it may be useful in the ethernet driver to completely disable the TX
+queues or similar.
+
+Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+---
+ drivers/net/phy/phy.c   |   23 ++++++++++++++++-------
+ include/linux/ethtool.h |    4 +++-
+ 2 files changed, 19 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 64be466..1103a80 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -44,14 +44,23 @@
+  */
+ void phy_print_status(struct phy_device *phydev)
+ {
+-	pr_info("PHY: %s - Link is %s", dev_name(&phydev->dev),
+-			phydev->link ? "Up" : "Down");
+-	if (phydev->link)
+-		printk(" - %d/%s", phydev->speed,
+-				DUPLEX_FULL == phydev->duplex ?
+-				"Full" : "Half");
+-
+-	printk("\n");
++	const char *strduplex = "Unknown";
++
++	/* Not much to show if the link is down */
++	if (!phydev->link) {
++		pr_info("PHY: %s - Link is Down\n", dev_name(&phydev->dev));
++		return;
++	}
++
++	/* Otherwise we need to print out speed and duplex */
++	switch (phydev->duplex) {
++		case DUPLEX_HALF:   strduplex = "Half";    break;
++		case DUPLEX_FULL:   strduplex = "Full";    break;
++		case DUPLEX_TXONLY: strduplex = "TX-Only"; break;
++		case DUPLEX_RXONLY: strduplex = "RX-Only"; break;
++	}
++	pr_info("PHY: %s - Link is Up - %d/%s\n", dev_name(&phydev->dev),
++			phydev->speed, strduplex);
+ }
+ EXPORT_SYMBOL(phy_print_status);
+ 
+diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
+index b4207ca..ccf2e32 100644
+--- a/include/linux/ethtool.h
++++ b/include/linux/ethtool.h
+@@ -703,9 +703,11 @@ struct ethtool_ops {
+ #define SPEED_2500		2500
+ #define SPEED_10000		10000
+ 
+-/* Duplex, half or full. */
++/* Duplex: half/full or unidirectional communication */
+ #define DUPLEX_HALF		0x00
+ #define DUPLEX_FULL		0x01
++#define DUPLEX_TXONLY		0x02
++#define DUPLEX_RXONLY		0x03
+ 
+ /* Which connector port. */
+ #define PORT_TP		0x00
+-- 
+1.7.1
+
