@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab0H0SDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:03:50 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37430 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab0H0SDr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:03:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Bo0UOQoddIqUE8i55ThwnOENlyr9r8ladu3PcK8G1q2SUwq5yG+vi52y/PBcVlLeRR
-         X+6lhqTjxD8HhFGtfhDBiYWgO9q367y8nUne6iH/34M98w/+QSQ4MNrxGYO1K4W0rMRC
-         l7GrONzO7Kr9D5hKqtC/gnne+HLzH6UYJRRxM=
-Date: Fri, 27 Aug 2010 20:03:01 +0200
-From: "Carlos R. Mafra" <crmafra2@gmail.com>
-To: liubo <liubo2009@cn.fujitsu.com>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [2.6.35.3] BUG: unable to handle kernel NULL pointer
- dereference at (null)
-Message-ID: <20100827180301.GA5981@Pilar.aei.mpg.de>
-References: <20100826095357.GA7202@Pilar.aei.mpg.de>
- <4C778779.1090808@cn.fujitsu.com>
+	id S1755175Ab0H0SFi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:05:38 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:17236 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159Ab0H0SFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 14:05:35 -0400
+Message-ID: <4C77FE57.7050105@siemens.com>
+Date: Fri, 27 Aug 2010 20:05:11 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C778779.1090808@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Zachary Amsden <zamsden@redhat.com>
+CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM timekeeping 17/35] Implement getnsboottime kernel API
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-18-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1282291669-25709-18-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr 27.Aug'10 at 17:38:01 +0800, liubo wrote:
-> On 08/26/2010 05:53 PM, Carlos R. Mafra wrote:
-> > Hi,
-> >
-> > I've just got this BUG: message in dmesg which I think is btrfs related.
-> >   
-> [...]
+Zachary Amsden wrote:
+> Add a kernel call to get the number of nanoseconds since boot.  This
+> is generally useful enough to make it a generic call.
 > 
-> > [  148.152107] Call Trace:
-> > [  148.152113]  [<ffffffff8104e730>] ? process_timeout+0x0/0x10
-> > [  148.152118]  [<ffffffff8118a42d>] end_workqueue_fn+0x10d/0x130
-> > [  148.152122]  [<ffffffff811b98f0>] worker_loop+0xb0/0x5a0
-> > [  148.152126]  [<ffffffff811b9840>] ? worker_loop+0x0/0x5a0
-> > [  148.152130]  [<ffffffff8105b60e>] kthread+0x8e/0xa0
-> > [  148.152135]  [<ffffffff81003a54>] kernel_thread_helper+0x4/0x10
-> > [  148.152138]  [<ffffffff8105b580>] ? kthread+0x0/0xa0
-> > [  148.152142]  [<ffffffff81003a50>] ? kernel_thread_helper+0x0/0x10
-> > [  148.152144] Code: d3 ff ff 89 c2 b8 01 00 00 00 85 d2 75 56 4c 39 eb 77 51 0f 1f 80 00 00 00 00 48 89 de 49 8b 7c 24 10 48 c1 ee 0c e8 3f 21 ef ff <f6> 00 08 74 2a 48 89 c7 48 81 c3 00 10 00 00 e8 4b af ef ff 49 
-> > [  148.152176] RIP  [<ffffffff811b1301>] extent_range_uptodate+0x51/0xa0
-> > [  148.152180]  RSP <ffff880079acddd0>
-> > [  148.152182] CR2: 0000000000000000
-> > [  148.152185] ---[ end trace c11a5009b12451d7 ]---
-> >
-> >   
+> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
+> ---
+>  include/linux/time.h      |    1 +
+>  kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
+>  2 files changed, 28 insertions(+), 0 deletions(-)
 > 
-> Hi, Carlos,
-> Did you hit this bug under heavy memory stress?
+> diff --git a/include/linux/time.h b/include/linux/time.h
+> index ea3559f..5d04108 100644
+> --- a/include/linux/time.h
+> +++ b/include/linux/time.h
+> @@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
+>  extern void getrawmonotonic(struct timespec *ts);
+>  extern void getboottime(struct timespec *ts);
+>  extern void monotonic_to_bootbased(struct timespec *ts);
+> +extern s64 getnsboottime(void);
+>  
+>  extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+>  extern int timekeeping_valid_for_hres(void);
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index caf8d4d..d250f0a 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
+>  }
+>  EXPORT_SYMBOL_GPL(ktime_get_ts);
+>  
+> +
+> +/**
+> + * getnsboottime - get the bootbased clock in nsec format
+> + *
+> + * The function calculates the bootbased clock from the realtime
+> + * clock and the wall_to_monotonic offset and stores the result
+> + * in normalized timespec format in the variable pointed to by @ts.
+> + */
 
-Not at all! 
+This thing is not returning anything in some ts variable. And I also had
+a hard time spotting the key difference to getboottime - the name is
+really confusing.
 
-My laptop had been recently booted (see the timings in the dmesg)
-and it was basically idle: just a couple xterms and WindowMaker running,
-apart from the chromium which I tried to open and led to the bug.
- 
-> And, could you reproduce the bug? or show some reproduce steps for us?
+Besides this, if you have good suggestion how to provide a compat
+version for older kernels, I'm all ears. Please also have a careful look
+at kvm-kmod's kvm_getboottime again, right now I'm a bit confused about
+what it is supposed to return and what it actually does (note that
+kvm-kmod cannot account for time spent in suspend state).
 
-Unfortunately not. That was the first time, and it didn't repeat so far.
+Thanks!
+Jan
 
-> After digging into extent_range_uptodate(), IMO, this NULL pointer bug that issued page 
-> can barely be hit. 
-> 
-> Maybe, due to heavy memory stress, a page of the extent_buffer has been freed before, 
-> which leads that it is missing in page_cache and return NULL.
+> +s64 getnsboottime(void)
+> +{
+> +	unsigned int seq;
+> +	s64 secs, nsecs;
+> +
+> +	WARN_ON(timekeeping_suspended);
+> +
+> +	do {
+> +		seq = read_seqbegin(&xtime_lock);
+> +		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
+> +		secs += total_sleep_time.tv_sec;
+> +		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
+> +		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
+> +
+> +	} while (read_seqretry(&xtime_lock, seq));
+> +	return nsecs + (secs * NSEC_PER_SEC);
+> +}
+> +EXPORT_SYMBOL_GPL(getnsboottime);
+> +
+>  /**
+>   * do_gettimeofday - Returns the time of day in a timeval
+>   * @tv:		pointer to the timeval to be set
 
-Could it be that the memory card had some bad block and btrfs could not
-recover from the failure?
-
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
