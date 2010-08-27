@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab0H0MvB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 08:51:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58414 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab0H0Mu7 convert rfc822-to-8bit (ORCPT
+	id S1753051Ab0H0M4S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 08:56:18 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:49066 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab0H0M4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 08:50:59 -0400
-Subject: Re: [PATCH] perf: fix possible divide-by-zero in
- perf_swevent_overflow()
-From: Peter Zijlstra <peterz@infradead.org>
-To: DDD <dongdong.deng@windriver.com>
-Cc: mingo@elte.hu, fweisbec@gmail.com, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C77ADC1.5030502@windriver.com>
-References: <1282824438-13970-1-git-send-email-dongdong.deng@windriver.com>
-	 <1282824727.1975.747.camel@laptop>  <4C765FD3.9060904@windriver.com>
-	 <1282827486.1975.845.camel@laptop>  <4C77ADC1.5030502@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 27 Aug 2010 14:50:45 +0200
-Message-ID: <1282913445.1975.2414.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 27 Aug 2010 08:56:16 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7TA0W-01-IVC-02
+X-M-MSG: 
+Date: Fri, 27 Aug 2010 14:43:44 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 1/4] oprofile: Handle initialisation failure more
+ gracefully
+Message-ID: <20100827124344.GJ22783@erda.amd.com>
+References: <cover.1282848651.git.matt@console-pimps.org>
+ <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 20:21 +0800, DDD wrote:
+On 26.08.10 15:09:16, Matt Fleming wrote:
+> From: Will Deacon <will.deacon@arm.com>
+> 
+> The current implementation is not entirely safe in the case that
+> oprofile_arch_init() fails. We need to make sure that we always call
+> exit_driverfs() if we've called init_driverfs(). Also, avoid a potential
+> double free when freeing 'counter_config', e.g. don't free
+> 'counter_config' in both oprofile_arch_init() and oprofile_arch_exit().
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>  arch/arm/oprofile/common.c |   15 ++++++++-------
+>  1 files changed, 8 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> index 0691176..482779c 100644
+> --- a/arch/arm/oprofile/common.c
+> +++ b/arch/arm/oprofile/common.c
+> @@ -275,10 +275,12 @@ out:
+>  	return ret;
+>  }
+>  
+> -static void  exit_driverfs(void)
+> +static void exit_driverfs(void)
+>  {
+> -	platform_device_unregister(oprofile_pdev);
+> -	platform_driver_unregister(&oprofile_driver);
+> +	if (!IS_ERR_OR_NULL(oprofile_pdev)) {
+> +		platform_device_unregister(oprofile_pdev);
+> +		platform_driver_unregister(&oprofile_driver);
+> +	}
 
-> >> Maybe the root cause was from kgdb/hw_breakpoint_layer,
-> > 
-> > Yeah, I think there's a bug in the hw_breakpoint stuff, does something
-> > like the below fix it?
+The root cause that makes this check necessary is that
+oprofile_arch_exit() is called though oprofile_arch_init() failed. We
+should better fix this instead. I have to admit we will then have to
+check all architectural implementations.
 
-> Thanks for your patch, but I still could reproduce the problem with your 
-> patch.
+>  }
+>  #else
+>  static int __init init_driverfs(void) { return 0; }
+> @@ -363,10 +365,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+>  	}
+>  
+>  	ret = init_driverfs();
+> -	if (ret) {
+> -		kfree(counter_config);
 
-Frederic, any clue as to what makes hw breakpoints go funny and have
-last_period == 0?
+We should not return from oprofile_arch_init() with allocated
+resources if the function fails. To fix duplicate kfrees, we should
+free it here and then set counter_config to NULL. It should also be
+freed if for_each_possible_cpu() or op_name_from_perf_id() fails.
 
-> > ---
-> >  kernel/hw_breakpoint.c |   13 ++++++++++++-
-> >  1 files changed, 12 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-> > index d71a987..f57ebee 100644
-> > --- a/kernel/hw_breakpoint.c
-> > +++ b/kernel/hw_breakpoint.c
-> > @@ -600,9 +600,20 @@ static int __init init_hw_breakpoint(void)
-> >  }
-> >  core_initcall(init_hw_breakpoint);
-> >  
-> > +static int hw_breakpoint_enable(struct perf_event *event)
-> > +{
-> > +     struct hw_perf_event *hwc = &event->hw;
-> > +
-> > +     if (hwc->sample_period) {
-> > +             hwc->last_period = hwc->sample_period;
-> > +             perf_swevent_set_period(event);
-> > +     }
-> > +
-> > +     return arch_install_hw_breakpoint(event);
-> > +}
-> >  
-> >  struct pmu perf_ops_bp = {
-> > -     .enable         = arch_install_hw_breakpoint,
-> > +     .enable         = hw_breakpoint_enable,
-> >       .disable        = arch_uninstall_hw_breakpoint,
-> >       .read           = hw_breakpoint_pmu_read,
-> >  };
-> > 
-> > 
+Also, the pointer should be NULLed after freeing in
+oprofile_arch_exit(). There, we also don't need the NULL pointer check
+as it is save to call kfree(NULL).
+
+-Robert
+
+> +	if (ret)
+>  		return ret;
+> -	}
+>  
+>  	for_each_possible_cpu(cpu) {
+>  		perf_events[cpu] = kcalloc(perf_num_counters,
+> @@ -401,8 +401,9 @@ void oprofile_arch_exit(void)
+>  	int cpu, id;
+>  	struct perf_event *event;
+>  
+> +	exit_driverfs();
+> +
+>  	if (*perf_events) {
+> -		exit_driverfs();
+>  		for_each_possible_cpu(cpu) {
+>  			for (id = 0; id < perf_num_counters; ++id) {
+>  				event = perf_events[cpu][id];
+> -- 
+> 1.7.1
+> 
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
