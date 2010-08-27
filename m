@@ -1,57 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab0H0Syl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:54:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41535 "EHLO mga11.intel.com"
+	id S1755283Ab0H0S6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:58:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31296 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752797Ab0H0Syj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:54:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,279,1280732400"; 
-   d="scan'208";a="601127965"
-Message-ID: <4C7809ED.9070506@linux.intel.com>
-Date: Fri, 27 Aug 2010 11:54:37 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	id S1752370Ab0H0S6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 14:58:08 -0400
+Date: Fri, 27 Aug 2010 14:57:44 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100827185744.GV4879@redhat.com>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100823085339.GA26713@elte.hu>
+ <20100826211424.GQ4879@redhat.com>
+ <20100827081038.GF22783@erda.amd.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Masayuki Ohtak <masa-korg@dsn.okisemi.com>, meego-dev@meego.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100827081038.GF22783@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/27/2010 11:53 AM, Thomas Gleixner wrote:
-> B1;2401;0cOn Fri, 27 Aug 2010, Grant Likely wrote:
->    
->> [cc'ing Thomas Gleixner and David Woodhouse since this driver needs to
->> get some data about the platform (to know what spi_devices are
->> present) and I don't know how that is handled for x86 SoCs.]
->>      
-> The best way to do all this platform specific configuration is to use
-> device tree. I really don't want to have x86/mach-xyz/board[A-Z]
-> horror, which is unavoidable when we don't get a sensible way to
-> configure the boards. SFI was meant to provide a lightweight ACPI, but
-> now that device tree is generic and more platforms are using it, I
-> really want to standartize on that and forget SFI.
->
-> That makes even more sense, as all these AMBA peripherals which are
-> duct-taped to a x86 core can be found in other SoCs with different
-> cores as well.
->    
+On Fri, Aug 27, 2010 at 10:10:38AM +0200, Robert Richter wrote:
+> >  
+> >  	inc_irq_stat(apic_perf_irqs);
+> >  	ack = status;
+> > +	intel_pmu_ack_status(ack);
+> 
+> I would slightly change the patch:
+> 
+> There is no need for the ack variable anymore, you could directly work
+> with the status.
+> 
+> I would call intel_pmu_ack_status() as close as possible after the
+> intel_pmu_get_status(), which is after 'again:'.
+> 
 
-I tentatively agree, but this has to coexist with ACPI, which most of 
-these platforms will also have,
-for power management if nothing else.
+Here is another version of the patch, which uses Robert's suggestion of
+removing the ack variable
+
+Cheers,
+Don 
+
+--
+
+From: Don Zickus <dzickus@redhat.com>
+Date: Fri, 27 Aug 2010 14:43:03 -0400
+Subject: [PATCH] [x86] perf: fix accidentally ack'ing a second event on intel perf counter
+
+During testing of a patch to stop having the perf subsytem swallow nmis,
+it was uncovered that Nehalem boxes were randomly getting unknown nmis
+when using the perf tool.
+
+Moving the ack'ing of the PMI closer to when we get the status allows
+the hardware to properly re-set the PMU bit signaling another PMI was
+triggered during the processing of the first PMI.  This allows the new
+logic for dealing with the shortcomings of multiple PMIs to handle the
+extra NMI by 'eat'ing it later.
+
+Now one can wonder why are we getting a second PMI when we disable all
+the PMUs in the begining of the NMI handler to prevent such a case, for
+that I do not know.  But I know the fix below helps deal with this quirk.
+
+Tested on multiple Nehalems where the problem was occuring.  With the
+patch, the code now loops a second time to handle the second PMI (whereas
+before it was not).
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 4539b4b..ee05c90 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -712,7 +712,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct perf_sample_data data;
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+-	u64 ack, status;
++	u64 status;
+ 	int handled = 0;
+ 
+ 	perf_sample_data_init(&data, 0);
+@@ -729,6 +729,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 	loops = 0;
+ again:
++	intel_pmu_ack_status(status);
+ 	if (++loops > 100) {
+ 		WARN_ONCE(1, "perfevents: irq loop stuck!\n");
+ 		perf_event_print_debug();
+@@ -737,7 +738,6 @@ again:
+ 	}
+ 
+ 	inc_irq_stat(apic_perf_irqs);
+-	ack = status;
+ 
+ 	intel_pmu_lbr_read();
+ 
+@@ -766,8 +766,6 @@ again:
+ 			x86_pmu_stop(event);
+ 	}
+ 
+-	intel_pmu_ack_status(ack);
+-
+ 	/*
+ 	 * Repeat if there is more work to be done:
+ 	 */
+-- 
+1.7.2.1
 
