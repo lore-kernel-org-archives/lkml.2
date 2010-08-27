@@ -1,166 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab0H0Qxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:53:55 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:56287 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab0H0Qxx (ORCPT
+	id S1754740Ab0H0Q7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:59:37 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:34616 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab0H0Q7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:53:53 -0400
-To: Neil Brown <neilb@suse.de>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaurora@redhat.com,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-In-reply-to: <20100827213502.31af4a4c@notabene> (message from Neil Brown on
-	Fri, 27 Aug 2010 21:35:02 +1000)
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-References: <20100826183340.027591901@szeredi.hu>
-	<20100827170551.19616048@notabene>
-	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu> <20100827213502.31af4a4c@notabene>
-Message-Id: <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 27 Aug 2010 18:53:45 +0200
+	Fri, 27 Aug 2010 12:59:34 -0400
+Subject: Re: [PATCH 1/3] drivers: misc: ak8974 / ami305 magnetometer driver
+From: Onkalo Samu <samu.p.onkalo@nokia.com>
+Reply-To: samu.p.onkalo@nokia.com
+To: ext Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        ext Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+In-Reply-To: <20100827133109.1eb974ed@lxorguk.ukuu.org.uk>
+References: <1282910083-8629-1-git-send-email-samu.p.onkalo@nokia.com>
+	 <1282910083-8629-2-git-send-email-samu.p.onkalo@nokia.com>
+	 <20100827133109.1eb974ed@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Fri, 27 Aug 2010 19:59:13 +0300
+Message-ID: <1282928353.2194.27.camel@noppispoppis.nmp.nokia.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010, Neil Brown wrote:
-> I was wondering why you even bothered to fiddle st_ino.  Given that lots of
-> other things come from one fs or the other, having the merged directories
-> appear to be from the upper filesystem doesn't seem like a problem.  I don't
-> really care either way though.
+Alan, Thank you for the comments.
+Dmitry, there is one question for you.
 
-"rm -rf" complains if st_ino of a directory changes spontaneously.
+-Samu
 
-> > > The lower filesystem can be any filesystem supported by Linux and does not
-> > > need to be writable.  It could even be another union.
-> > 
-> > Almost.  Xattr namespace issues currently prevent that, but with
-> > escaping it could be worked around if necessary.
+On Fri, 2010-08-27 at 14:31 +0200, ext Alan Cox wrote:
+> > +static int ak8974_regulators_on(struct ak8974_chip *chip)
+> > +{
+> > +	int ret;
+> > +	ret = regulator_bulk_enable(ARRAY_SIZE(chip->regs), chip->regs);
+> > +	if (ret == 0)
+> > +		msleep(AK8974_POWERON_DELAY);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static inline void ak8974_regulators_off(struct ak8974_chip *chip)
+> > +{
+> > +	regulator_bulk_disable(ARRAY_SIZE(chip->regs), chip->regs);
+> > +}
 > 
-> But you never access the xattrs for the lower directory so that shouldn't
-> matter.
-
-Ah, right.  Another small issue is that currently unionfs accesses
-inode->i_* from the underlying filesystems instead of calling
-->getattr(), which will break if the underlying fs is a union with its
-dummy inodes.  But that should be easy to fix.
-
-> I actually think that your approach can work quite will with either the
-> upper or lower changing independently.  Certainly it can produce some odd
-> situations, but even NFS can do that (though maybe not quite so odd).
-> 
-> It think the best approach would be to handle the few that can be handled and
-> explicitly document the rest - people might even find them useful.
-
-I think it's best to leave that stuff until someone actually cares.
-The "people might find it useful" argument is not strong enough to put
-nontrivial effort into thinking about all the weird corner cases.
-
-> Anyway, here is my next instalment which are the review comments, now that I
-> have some documentation to read :-)
-> 
-> In no particular order:
-> 
-> 1/ You call union_remove_whiteouts on an upper directory once you have
->    determined that the merged directory is empty, which implies that the only
->    things in the the upper directory are whiteouts.
->    union_remove_whiteouts calls union_unlink_writeout on every entry.
->    It checks that each entry is a DT_LNK - which we assume it must be - but
->    doesn't check the the inode there is really a whiteout.
->    It seem inconsistent to do the one check but not the other.
-
-The DT_LNK check is done to filter out "." and "..".  Added comment.
-
->    As this could race with independent changes on the upper filesystem, I
->    thick it would be safest to at least check the i_mode and i_size of the
->    dentry->d_inode that is found, and possible do a readlink as well to
->    ensure we only delete whiteouts.
-> 
-> 1a/ A minor optimisation for union_is_white would be to check i_size matches
->     size of (union-whiteout)
-
-I'm not fond of relying on inode->i_* members directly as unionfs
-itself doesn't play by those rules.  But maybe it's OK here as
-anything wanting to be an upper filesystem will be sufficiently
-"normal" for this to work.
-
-Fixed.
-
-> 2/ It bothers me that the 'dev_name' arg to union_get_sb is unused, yet there
->    are mandatory options.  I think it would be nice if dev_name were required
->    to be lower,upper and options were left for other things.
->    So the typical usage would be:
-> 
->        mount -t union /path/to/lower,/path/to/upper /mount/point
+> That bit seems platform specific but in generic code ?
 > 
 
-I think that's a matter of taste.  The 'dev_name' argument is just a
-specialized option, and when that option needs a structure like your
-example then IMO it's better to just move it to normal options.
-
-> 3/ I think it would be great if you made use of d_revalidate to handle some
->    of the worst problems caused by underlying filesystem changes.  If you
->    cache i_mtime and i_version of the parent in the dentry and re-do the
->    lookup if either is different from the directory you could hide most of
->    the issues mentioned in the doco about dentries expiring.  And if you
->    called d_revalidate in the underlying filesystem at the same time you could
->    probably hide all the rest.
-
-As I said, I'd leave it until someone actually needs this.
+If the regulator frame work is not configured, this code does nothing.
+I have understood (hopefully correctly) that if the frame work is in use
+drivers could support that directly assuming that regulators are
+configured for that platform. If that is not the case, this should be
+platform specific.
 
 > 
-> 4/ The problem you mentioned about ->i_mutex which is taken during unlink
->    being quasi-global could be eased somewhat by simply having a small pool
->    of inodes and assigning them to dentries pseudo-randomly.  Or possibly
->    having one 'file' inode per directory (that might be a bit wasteful
->    though).
-
-That's an idea, but I'm inclined just to add some hacks to the VFS to
-omit the locking if some inode flag is set.
-
-> 5/ I wonder if it would be useful to recognise 'fallthrough' objects (much 
->    like whiteouts but inverted) and to optionally (based on mount option) copy
->    up any directory on readdir and fill it with fall-throughs for any lower
->    name that isn't in the upper.  This helps with enormous directories
->    (though not if upper is RAMFS of course) and ensures a stable directory
->    cookie.
-
-I'm not sure if the stable directory cookie problem is important
-enough.  AFAIR some ancient versions of libc relied on directory
-seeking and also some weird apps might, but anything sane will not
-touch that interface (and I'm hoping someday we can get rid of it for
-good).
-
-As for caching large directories, I think that's best done with the
-page cache, not by permanently copying up the contents to the upper
-directory.
-
-> While I like the idea of being able to work with changeable filesystems and
-> think most scenarios can be handled adequately, there is one that I'm not
-> comfortable with.
-> If you open a file readonly and get a handle on the file in the lower
-> filesystem, and then you fchmod the handle, it will work but will change the
-> lower filesystem - which you don't really want (I think).
-> The only way to avoid this currently is to require the lower vfsmnt to be
-> mounted readonly.  That is probably acceptable (it can be mounted read-write
-> elsewhere) but I'd like it to be easier than that.
-> An alternate would be to teach mnt_want_write_file about some new flag which
-> marks the 'struct file' as 'really-readonly' and have union_open set that
-> flag.  Note sure if I really like that or not.
-> Probably for now just:
+> > +static ssize_t ak8974_misc_read(struct file *file, char __user *buf,
+> > +			size_t count, loff_t *offset)
+> > +{
+> > +	struct ak8974_chip *chip = container_of(file->private_data,
+> > +						struct ak8974_chip,
+> > +						miscdev);
+> > +	struct ak8974_data data;
 > 
-> 6/  require  __mnt_is_readonly(lowerpath.mnt) at mount time.
+> So we have a different API to the ak8975 just posted and to the other
+> existing devices. This needs sorting out across the devices before there
+> is a complete disaster. Right now we have a mix of submissions pending
+> which variously use
+> 
+> 	misc + sysfs
+> 	sysfs
+> 	input (reporting X Y Z etc axes)
+> 
 
-Right, that's at the front of the todo list.
+About year ago I send driver for the same chip with input-device
+interface. During that time I asked from Dmitry Torokhov that is that a
+correct interface for this kind of driver. I understood that input
+should not be used for this kind of sensors.
 
-> Finally, I think it is really important to document all the non-standard
-> aspects of the unioned filesystem in some detail and suggest work-around for
-> potentially problematic behaviour.
+sysfs is quite handy interface for small sensors. However, one problem
+is that the driver doesn't know when the interface is in use.
+I ended up to misc device to get information about the usercount for PM
+purposes.
 
-I agree completely.  I just tend to write code first and documentation
-later (or as late as possibly can) so your contribution in this area
-really warms my heart :)
+Dmitry, what is your opinion about using input device interface for this
+kind of sensors?
 
-Thanks,
-Miklos
+> Someone needs to decide on a single API before it's too late.
+> 
+
+That is definitely true. Could it be IIO?
+
+> > +
+> > +	if (count < sizeof(data))
+> > +		return -EINVAL;
+> > +
+> > +	if (*offset >= chip->offset) {
+> > +		schedule_work(&chip->work);
+> > +		if (file->f_flags & O_NONBLOCK)
+> > +			return -EAGAIN;
+> > +		if (wait_event_interruptible(chip->misc_wait,
+> > +						(*offset < chip->offset)))
+> > +			return -ERESTARTSYS;
+> > +	}
+> > +
+> > +	mutex_lock(&chip->lock);
+> > +	data.x = chip->x;
+> > +	data.y = chip->y;
+> > +	data.z = chip->z;
+> > +	data.valid = chip->valid;
+> > +	*offset = chip->offset;
+> > +	mutex_unlock(&chip->lock);
+> 
+> What happens if you have two readers - is it fine they get copies of the
+> same event when it races ?
+
+Yes, it makes sense to report latest available information for all
+users.
+
+> 
+> 
+> > +
+> > +	return copy_to_user(buf, &data, sizeof(data)) ? -EFAULT : sizeof(data);
+> 
+> Pedantically if data is consumed and a partial copy occurs you should
+> return the bytes successfully copied.
+
+I need to check that.
+
+> 
+> > +static DEVICE_ATTR(chip_id, S_IRUGO, ak8974_show_chip_id, NULL);
+> > +
+> > +static ssize_t ak8974_show_range(struct device *dev,
+> > +				    struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct ak8974_chip *chip = dev_get_drvdata(dev);
+> > +	return sprintf(buf, "%d\n", chip->max_range);
+> > +}
+> 
+> Other devices make all of this sysfs or use input. We need to work out
+> what the right interface actually is.
+> 
+
+As mentioned above, sysfs is not used to get information about the user
+count for PM purposes.
+
+> > +	snprintf(chip->name, sizeof(chip->name), "ak8974%d",
+> > +		atomic_add_return(1, &device_number) - 1);
+> 
+> Surely this is serialized anyway ?
+
+Is it possible that when there are several chips on the system (in
+different bussed for example), probe functions are running in parallel?
+
+> 
+> 
+> > +#ifdef CONFIG_PM
+> > +static int ak8974_suspend(struct i2c_client *client, pm_message_t mesg)
+> > +{
+> > +	struct ak8974_chip *chip = i2c_get_clientdata(client);
+> > +	mutex_lock(&chip->users_lock);
+> > +	if (chip->users > 0)
+> > +		ak8974_enable(chip, AK8974_PWR_OFF);
+> > +	mutex_unlock(&chip->users_lock);
+> > +	return 0;
+> > +}
+> > +
+> > +static int ak8974_resume(struct i2c_client *client)
+> > +{
+> > +	struct ak8974_chip *chip = i2c_get_clientdata(client);
+> > +	mutex_lock(&chip->users_lock);
+> > +	if (chip->users > 0)
+> > +		ak8974_enable(chip, AK8974_PWR_ON);
+> > +	mutex_unlock(&chip->users_lock);
+> > +	return 0;
+> > +}
+> 
+> The whole chip->users thing you are implementing is basically a
+> reimplementation of the kernel runtime pm stuff - so can that be used
+> instead ?
+
+True. Most probably it can be used instead of own implementation.
+
+> 
+> 
+> > +#ifndef __LINUX_I2C_AK8974_H
+> > +#define __LINUX_I2C_AK8974_H
+> > +
+> > +#define AK8974_NO_MAP		  0
+> > +#define AK8974_DEV_X		  1
+> > +#define AK8974_DEV_Y		  2
+> > +#define AK8974_DEV_Z		  3
+> > +#define AK8974_INV_DEV_X	 -1
+> > +#define AK8974_INV_DEV_Y	 -2
+> > +#define AK8974_INV_DEV_Z	 -3
+> > +
+> > +struct ak8974_platform_data {
+> > +	s8 axis_x;
+> > +	s8 axis_y;
+> > +	s8 axis_z;
+> > +};
+> > +
+> > +/* Device name: /dev/ak8974n, where n is a running number */
+> > +struct ak8974_data {
+> > +	__s16 x;
+> > +	__s16 y;
+> > +	__s16 z;
+> > +	__u16 valid;
+> > +} __attribute__((packed));
+> 
+> This could go in the C file.
+
+
+
