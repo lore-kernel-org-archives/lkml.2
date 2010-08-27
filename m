@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab0H0LFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 07:05:13 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:38924 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab0H0LFI (ORCPT
+	id S1753838Ab0H0LDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 07:03:45 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52522 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab0H0LDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 07:05:08 -0400
-X-AuditID: b753bd60-a84dbba000000a18-6d-4c779bdf79f4
-Message-ID: <4C779BDB.70003@hitachi.com>
-Date: Fri, 27 Aug 2010 20:04:59 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv11 2.6.36-rc2-tip 10/15] 10: tracing: config option to
- enable both kprobe-tracer and uprobe-tracer.
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6> <20100825134315.5447.96501.sendpatchset@localhost6.localdomain6> <4C76038A.40400@hitachi.com> <20100827093135.GI14431@linux.vnet.ibm.com>
-In-Reply-To: <20100827093135.GI14431@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+	Fri, 27 Aug 2010 07:03:40 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V19 04/15] vfs: Add handle based readlink syscall
+Date: Fri, 27 Aug 2010 16:32:51 +0530
+Message-Id: <1282906982-26918-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/08/27 18:31), Srikar Dronamraju wrote:
->>>  config PROBE_EVENTS
->>> -	def_bool n
->>> +	bool "Enable kprobes and uprobe based dynamic events"
->>> +	select TRACING
->>> +	default n
->>
->> Hmm, without this series, KPROBE_EVENT is set "y" by default.
->> (PROBE_EVENTS is introduced by 8/15)
->> I'd like to set this "y" by default, because it doesn't
->> affect other parts.
->>
->> Thank you,
->>
-> 
-> This is based on what we discussed here
-> http://lkml.org/lkml/2010/8/2/86.
-> 
-> To recollect, 
-> Frederic wanted that there should be one option to select both
-> UPROBE_EVENT and KPROBE_EVENT. 
-> 
-> However if we make PROBE_EVENTS (which is the option to enable both
-> events) default "Y", then both UPROBE_EVENT and KPROBE_EVENT will be
-> selected.
-> 
-> Also if we look at http://lkml.org/lkml/2010/6/21/160, Steven
-> Rostedt didnt want UPROBE_EVENT to selected by default.
-> 
-> I agree that we should keep UPROBE_EVENT to be 'default n' till it gets
-> tested. Hence we have two choices. Either set the common knob to be
-> 'default n' or dont have the common knob for now (i.e drop this
-> patch for now).
-> 
-> I think we should go with the first one, i.e have a common knob thats
-> by default unselected.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/stat.c                |   28 ++++++++++++++++++++++++++++
+ include/linux/syscalls.h |    3 +++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-Yeah, I'm OK to have a common knob, but I just don't like to set
-KPROBE_EVENT unselected by default. I think there is no reason
-to change default selecting (currently, KPROBE_EVENT=y by default.)
-
-So, I think we should have below selecting list;
---- Tracers
-...
-[*] Enable dynamic events
-   [ ] Enable user-space dynamic events (EXPERIMENTAL)
-...
-
-What would you think about this ? :)
-
-Thank you,
-
-
+diff --git a/fs/stat.c b/fs/stat.c
+index 12e90e2..29052eb 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -319,6 +319,34 @@ SYSCALL_DEFINE3(readlink, const char __user *, path, char __user *, buf,
+ 	return sys_readlinkat(AT_FDCWD, path, buf, bufsiz);
+ }
+ 
++SYSCALL_DEFINE4(handle_readlink, int, mountdirfd,
++		struct file_handle __user *, ufh,
++		char __user *, buf, int, bufsiz)
++{
++	long retval = 0;
++	struct path path;
++	struct inode *inode;
++
++	if (bufsiz <= 0)
++		return -EINVAL;
++	retval = handle_to_path(mountdirfd, ufh, &path);
++	if (retval)
++		goto out_err;
++
++	inode = path.dentry->d_inode;
++	retval = -EINVAL;
++	if (inode->i_op->readlink) {
++		retval = security_inode_readlink(path.dentry);
++		if (!retval) {
++			touch_atime(path.mnt, path.dentry);
++			retval = inode->i_op->readlink(path.dentry,
++						       buf, bufsiz);
++		}
++	}
++	path_put(&path);
++out_err:
++	return retval;
++}
+ 
+ /* ---------- LFS-64 ----------- */
+ #ifdef __ARCH_WANT_STAT64
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 4dc527c..35ecae3 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -838,4 +838,7 @@ asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
+ asmlinkage long sys_open_by_handle_at(int mountdirfd,
+ 				      struct file_handle __user *handle,
+ 				      int flags);
++asmlinkage long sys_handle_readlink(int mountdirfd,
++				    struct file_handle __user *ufh,
++				    char __user *buf, int bufsiz);
+ #endif
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.0.4
+
