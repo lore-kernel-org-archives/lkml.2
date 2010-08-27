@@ -1,186 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab0H0H50 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 03:57:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58081 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385Ab0H0H5X (ORCPT
+	id S1753550Ab0H0H5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 03:57:47 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36932 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385Ab0H0H5p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 03:57:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MH0CxVaHwvV7hYX3dRg4BvxCLhsKl9L3pm9HrzteVrTgGRQvdKqQ4c9mmLUYvVCgTR
-         CwiJC228ZHGZzGPDH6Dj/ZYew0qX9kBH1olEbvrXSh26xZuFd0hMgEC1UQ5euieFEBa5
-         jEE4y6l35qk4TObUwtTvsvl1iVssdHv4a0Z8A=
-Date: Fri, 27 Aug 2010 09:57:27 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Christian Riesch <christian.riesch@omicron.at>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100827075727.GA3818@riccoc20.at.omicron.at>
-References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
- <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
- <20100817085324.GB3330@riccoc20.at.omicron.at>
- <1282090963.1734.97.camel@localhost>
- <20100818071942.GA4096@riccoc20.at.omicron.at>
- <1282176776.2865.100.camel@localhost.localdomain>
- <20100819055518.GA4084@riccoc20.at.omicron.at>
- <1282594125.3111.344.camel@localhost.localdomain>
- <AANLkTi=nKrRHH6+9mvny718gov8Q+u7DHFikdgNY8YdX@mail.gmail.com>
- <1282874269.4371.74.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282874269.4371.74.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 27 Aug 2010 03:57:45 -0400
+Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100827055105.GA3857@amd>
+References: <20100825132815.108d8217@bike.lwn.net>
+	 <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
+	 <4C762BF9.5010305@kernel.org> <20100826094613.GA6411@amd>
+	 <4C7638B7.9060306@kernel.org> <1282817329.1975.486.camel@laptop>
+	 <20100826113858.GA6856@amd> <1282823139.1975.689.camel@laptop>
+	 <20100827055105.GA3857@amd>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 27 Aug 2010 09:57:36 +0200
+Message-ID: <1282895856.1975.1711.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 06:57:49PM -0700, john stultz wrote:
-> On Wed, 2010-08-25 at 11:40 +0200, Christian Riesch wrote:
-> > 2) Master clock:
-> > We have one or more network ports. Our system has a really good clock
-> > (ovenized quartz crystal, an atomic clock, a GPS timing receiver...)
-> > and it distributes this time on the network. In such a case we do not
-> > steer our clock based on the (packet) timestamps we get from our
-> > timestamping unit. Instead, we directly drive our clock hardware with
-> > a very stable frequency that we get from the OCXO or the atomic
-> > clock...
->
-> Ok. Following you here...
->
-> > or we use one of the ancillary features of the PTP clock that
-> > Richard mentioned to timestamp not network packets but a 1pps signal
-> > and use these timestamps to steer the clock.
->
-> Wait.. I thought we weren't using PTP to steer the clock? But now we're
-> using the pps signal from it to do so? Do I misunderstand you? Or did
-> you just not mean this?
+On Fri, 2010-08-27 at 15:51 +1000, Nick Piggin wrote:
+> 
+> I don't see what is so nice about stop_machine()less cpu plug/unplug
+> or module unload. Module load definitely is nice because you can
+> have a lot of modules and on demand loading from non-privileged
+> operations. 
 
-The master node in a PTP network probably takes its time from a
-precise external time source, like GPS. The GPS provides a 1 PPS
-directly to the PTP clock hardware, which latches the PTP hardware
-clock time on the PPS edge. This provides one sample as input to a
-clock servo (in the PTPd) that, in turn, regulates the PTP clock
-hardware.
+There's a large three lettered company that's promoting cpu hotplug use
+for power management, they hotplug at an astonishing rate.
 
-> > Packet time stamping is
-> > used to distribute the time to the slaves, but it is not part of the
-> > control loop in this case.
->
-> I assume here you mean PTPd is steering the PTP clock according to the
-> system time (which is NTP/GPS/whatever sourced)? And then the PTP clock
-> distributes that time through the network?
+I've been saying hotplug isn't for that, and its a terrible slow path
+and disrupts your whole machine etc.. they don't seem to care much.
 
-Yes, but in this case, "system time" has nothing to do with the Linux
-system time. For a PTP master clock, it really doesn't matter whether
-the Linux time is correct, or not. It doesn't hurt either (but see
-below about chaining servos).
+The trouble seems to be that some smaller chips are now also wanting to
+use hotplug for PM because they want to safe silicon and not make their
+chips symmetric or crap like that...
 
-> So first of all, thanks for the extra explanation and context here! I
-> really appreciate it, as I'm not familiar with all the hardware details
-> and possible use cases, but I'm trying to learn.
->
-> So in the two cases you mention, the time "flow" is something like:
->
-> #1) [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
-> 	[PTP Clock] => [PTP Clients on Network2]
-
-I would only draw the PTP clock once, perhaps like this:
-
-                                +------------------------------+
-                                |                              ^
-                                V                              |
-[Master Clock on NW 1]--->[HW timestamp]--->[PTPd]--adj-->[PTP Clock]
-[Slaves on NW 2,3,...]<---[HW timestamp]<---[    ]
-
->
-> #2) [GPS] => [NTPd] => [System Time] => [PTPd] => [PTP clock] =>
-> 	[PTP clients on Network]
-
-Nope. More like this:
-
-                                      +------------------------------+
-                                      |                              ^
-                                      V                              |
-[GPS]----------PPS--------->[Latch  timestamp]--->[PTPd]--adj-->[PTP Clock]
-[Slaves on NW 1,2,3,...]<---[HW pkt timestamp]<---[    ]
-
-> And the original case:
-> #3) [Master Clock on Network] => [PTP clock] => [PTPd] => [PTP clock]
-
-More like:
-
-[Master Clock on NW 1]--->[HW timestamp]--->[PTPd]--adj-->[PTP Clock]
-
-> With a secondary control flow:
-> 	[PPS signal from PTP clock] => [NTPd] => [System Time]
-
-Yes.
-
-
-> So, just brainstorming here, I guess the question I'm trying to figure
-> out here, is can the "System Time" and "PTP clock" be merged/globbed
-> into a single "Time" interface from the userspace point of view?
-
-This is the core issue and source of misunderstanding, in my view. The
-fact of the matter is, the current generation of computers has
-multiple clocks, and these are usually unsynchronized. I think we
-should not try too hard to cover up or work around this. It is a fact
-of life.
-
-It would be nice if there were only one clock, and that clock could do
-everything that we need. Indeed, the next generation of SoC computers may
-all have PTP build in to the main CPU. Well, one can always wish.
-
-If we can make it appear that multiple clocks are just one clock, then
-I agree that we should do it. But I would not want to sacrifice
-synchronization accuracy or application features just to keep that
-illusion.
-
-> In other words, if internal to the kernel, the PTP clock was always
-> synced to the system time, couldn't the flow look something like:
->
-> #3') [Master clock on network] => [PTP clock] => [PTPd] =>
-> 	 [System Time] => [in-kernel sync thread] => [PTP clock]
->
-> So PTPd sees the offset adjustment from the PTP clock, and then feeds
-> that offset correction right into (a possibly enhanced) adjtimex. The
-> kernel would then immediately steer the PTP clock by the same amount to
-> keep it in sync with system time (along with a periodic offset/freq
-> correction step to deal with crystal drift).
->
-> Similarly:
->
-> #2') [GPS] => [NTPd] => [System Time] => [in-kernel sync thread] =>
-> 		[PTP clock] => [PTP clients on Network]
->
-> and
->
-> #1') [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
-> 	[System Time] => [in-kernel sync thread] => [PTP Clock] =>
-> 	[PTP Clients on Network2]
->
-> Now, I realize PTP purists probably won't like this, because it
-> effectively makes the in-kernel sync thread similar to a PTP boundary
-> clock (or worse, since the control loop isn't exactly direct).
-
-I don't like it. The experience with PTP boundary clocks already shows
-that the errors in servo loops cascade. It worsens the PTP performance.
-
-However, I think it would fine just to synch the Linux system time to
-the PTP clock using the PPS interface, which is what my patch set
-implements. Linux user applications would not be able to detect the
-difference.
-
-Richard
-
-
-
+Its all really sad, and I'd prefer to keep hotplug slow and simple and
+simply never use it except when you like suspend your laptop -- but even
+there, people want auto-demand suspend crazy lot.
