@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0H0FBh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 01:01:37 -0400
-Received: from sh.osrg.net ([192.16.179.4]:45680 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab0H0FBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 01:01:36 -0400
-Date: Fri, 27 Aug 2010 14:00:17 +0900
-To: u.kleine-koenig@pengutronix.de
-Cc: fujita.tomonori@lab.ntt.co.jp, g.liakhovetski@gmx.de, mitov@issp.bas.bg,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org, philippe.retornaz@epfl.ch, gregkh@suse.de,
-        jkrzyszt@tis.icnet.pl
-Subject: Re: [RFC][PATCH] add
-	dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100827044142.GB31863@pengutronix.de>
-References: <20100826095311.GA13051@pengutronix.de>
-	<20100826185938A.fujita.tomonori@lab.ntt.co.jp>
-	<20100827044142.GB31863@pengutronix.de>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp-2
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100827140005Y.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 27 Aug 2010 14:00:21 +0900 (JST)
+	id S1753774Ab0H0FNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 01:13:23 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:51549 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753381Ab0H0FNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 01:13:21 -0400
+Date: Fri, 27 Aug 2010 15:13:16 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] writeback: Do not congestion sleep when there are
+ no congested BDIs
+Message-ID: <20100827051316.GH705@dastard>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
+ <1282835656-5638-4-git-send-email-mel@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282835656-5638-4-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010 06:41:42 +0200
-Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+On Thu, Aug 26, 2010 at 04:14:16PM +0100, Mel Gorman wrote:
+> If congestion_wait() is called with no BDIs congested, the caller will
+> sleep for the full timeout and this is an unnecessary sleep.
 
-> Hello,
-> 
-> On Thu, Aug 26, 2010 at 07:00:24PM +0900, FUJITA Tomonori wrote:
-> > On Thu, 26 Aug 2010 11:53:11 +0200
-> > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> > 
-> > > > > We have currently a number of boards broken in the mainline. They must be 
-> > > > > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
-> > > > > as I suggested earlier, we need either this or my patch series
-> > > > > 
-> > > > > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
-> > > > > 
-> > > > > for 2.6.36.
-> > > > 
-> > > > Why can't you revert a commit that causes the regression?
-> > > > 
-> > > > The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
-> > > > responsible for the regression. And the patchset even exnteds the
-> > > > definition of the DMA API (dma_declare_coherent_memory). Such change
-> > > > shouldn't applied after rc1. I think that DMA-API.txt says that
-> > > > dma_declare_coherent_memory() handles coherent memory for a particular
-> > > > device. It's not for the API that reserves coherent memory that can be
-> > > > used for any device for a single device.
-> > > The patch that made the problem obvious for ARM is
-> > > 309caa9cc6ff39d261264ec4ff10e29489afc8f8 aka v2.6.36-rc1~591^2~2^4~12.
-> > > So this went in before v2.6.36-rc1.  One of the "architectures which
-> > > similar restrictions" is x86 BTW.
-> > > 
-> > > And no, we won't revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 as it
-> > > addresses a hardware restriction.
-> > 
-> > How these drivers were able to work without hitting the hardware restriction?
-> In my case the machine in question is an ARMv5, the hardware restriction
-> is on ARMv6+ only.  You could argue that so the breaking patch for arm
-> should only break ARMv6, but I don't think this is sensible from a
-> maintainers POV.  We need an API that works independant of the machine
-> that runs the code.
+That, I think, is an invalid assumption. congestion_wait is used in
+some places as a backoff mechanism that waits for some IO work to be
+done, with congestion disappearing being a indication that progress
+has been made and so we can retry sooner than the entire timeout.
 
-Agreed. But insisting that the DMA API needs to be extended wrongly
-after rc2 to fix the regression is not sensible too. The related DMA
-API wasn't changed in 2.6.36-rc1. The API isn't responsible for the
-regression at all.
+For example, if _xfs_buf_lookup_pages() fails to allocate page cache
+pages for a buffer, it will kick the xfsbufd to writeback dirty
+buffers (so they can be freed) and immediately enter
+congestion_wait(). If there isn't congestion when we enter
+congestion_wait(), we still want to give the xfsbufds a chance to
+clean some pages before we retry the allocation for the new buffer.
+Removing the congestion_wait() sleep behaviour will effectively
+_increase_ memory pressure with XFS on fast disk subsystems because
+it now won't backoff between failed allocation attempts...
+
+Perhaps a congestion_wait_iff_congested() variant is needed for the
+VM? I can certainly see how it benefits the VM from a latency
+perspective, but it is the opposite behaviour that is expected in
+other places...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
