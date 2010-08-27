@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab0H0EmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 00:42:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51601 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069Ab0H0EmJ (ORCPT
+	id S1753542Ab0H0FAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 01:00:45 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34351 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab0H0FAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 00:42:09 -0400
-Date: Fri, 27 Aug 2010 06:41:42 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: g.liakhovetski@gmx.de, mitov@issp.bas.bg, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, akpm@linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        philippe.retornaz@epfl.ch, gregkh@suse.de, jkrzyszt@tis.icnet.pl
-Subject: Re: [RFC][PATCH] add
-	dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Message-ID: <20100827044142.GB31863@pengutronix.de>
-References: <Pine.LNX.4.64.1008261100150.14167@axis700.grange> <20100826182915S.fujita.tomonori@lab.ntt.co.jp> <20100826095311.GA13051@pengutronix.de> <20100826185938A.fujita.tomonori@lab.ntt.co.jp>
+	Fri, 27 Aug 2010 01:00:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Q5iz8aQvLQKv9m6TY/wXBpWrHztCj7t+M/ACkQg/CF5QX17yIbaJ2680ntLOH6XCkc
+         y70PeOdJ1lqGwIwz7Kpb2IFNCA3x2AHzz9rE9d5vdv4vYp1xhu+iqUcp1p1W/swDjDdg
+         ivyPJ/gG94kGWeMlzEu84VuqxXTBaweFrCp9g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100826185938A.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTi=xUMSZ7wX-2BtJ0-+2BYLCTW=VPTAErinb5Zd2@mail.gmail.com>
+References: <1282867897-31201-1-git-send-email-yinghan@google.com>
+	<AANLkTimaLBJa9hmufqQy3jk7GD-mJDbg=Dqkaja0nOMk@mail.gmail.com>
+	<AANLkTi=xUMSZ7wX-2BtJ0-+2BYLCTW=VPTAErinb5Zd2@mail.gmail.com>
+Date: Fri, 27 Aug 2010 14:00:41 +0900
+Message-ID: <AANLkTinP_q7S4_O921hdBoedmTp-7gw0+=4DPHZGmysi@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: fix missing place to check nr_swap_pages.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Aug 27, 2010 at 12:31 PM, Ying Han <yinghan@google.com> wrote:
+> On Thu, Aug 26, 2010 at 6:03 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>>
+>> Hello.
+>>
+>> On Fri, Aug 27, 2010 at 9:11 AM, Ying Han <yinghan@google.com> wrote:
+>> > Fix a missed place where checks nr_swap_pages to do shrink_active_list. Make the
+>> > change that moves the check to common function inactive_anon_is_low.
+>> >
+>>
+>> Hmm.. AFAIR, we discussed it at that time but we concluded it's not good.
+>> That's because nr_swap_pages < 0 means both "NO SWAP" and "NOT enough
+>> swap space now". If we have a swap device or file but not enough space
+>> now, we need to aging anon pages to make inactive list enough size.
+>> Otherwise, working set pages would be swapped out more fast before
+>> promotion.
+>
+> We found the problem on one of our workloads where more TLB flush
+> happens without the change. Kswapd seems to be calling
+> shrink_active_list() which eventually clears access bit of those ptes
+> and does TLB flush
+> with ptep_clear_flush_young(). This system does not have swap
+> configured, and why aging the anon lru in that
+> case?
 
-On Thu, Aug 26, 2010 at 07:00:24PM +0900, FUJITA Tomonori wrote:
-> On Thu, 26 Aug 2010 11:53:11 +0200
-> Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> 
-> > > > We have currently a number of boards broken in the mainline. They must be 
-> > > > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
-> > > > as I suggested earlier, we need either this or my patch series
-> > > > 
-> > > > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
-> > > > 
-> > > > for 2.6.36.
-> > > 
-> > > Why can't you revert a commit that causes the regression?
-> > > 
-> > > The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
-> > > responsible for the regression. And the patchset even exnteds the
-> > > definition of the DMA API (dma_declare_coherent_memory). Such change
-> > > shouldn't applied after rc1. I think that DMA-API.txt says that
-> > > dma_declare_coherent_memory() handles coherent memory for a particular
-> > > device. It's not for the API that reserves coherent memory that can be
-> > > used for any device for a single device.
-> > The patch that made the problem obvious for ARM is
-> > 309caa9cc6ff39d261264ec4ff10e29489afc8f8 aka v2.6.36-rc1~591^2~2^4~12.
-> > So this went in before v2.6.36-rc1.  One of the "architectures which
-> > similar restrictions" is x86 BTW.
-> > 
-> > And no, we won't revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 as it
-> > addresses a hardware restriction.
-> 
-> How these drivers were able to work without hitting the hardware restriction?
-In my case the machine in question is an ARMv5, the hardware restriction
-is on ARMv6+ only.  You could argue that so the breaking patch for arm
-should only break ARMv6, but I don't think this is sensible from a
-maintainers POV.  We need an API that works independant of the machine
-that runs the code.  And it's good to let developers that don't have the full
-range of machines supported by the kernel at hand notice when they
-introduce an incompatibility.
+True. I also wanted it but we have to care swap configured but
+non-enabling still yet system as well as non-swap configured system at
+that time.
 
-Best regards
-Uwe
+If your system is no swap configured, how about this?
+(It's a not formal proper patch but just quick patch to show the concept).
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3109ff7..641c6a6 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1580,6 +1580,11 @@ static void shrink_active_list(unsigned long
+nr_pages, struct zone *zone,
+        spin_unlock_irq(&zone->lru_lock);
+ }
+
++/*
++ * If system doesn't have a swap configuration,
++ * it doesn't need to age anon pages in kswapd.
++ */
++#ifdef CONFIG_SWAP
+ static int inactive_anon_is_low_global(struct zone *zone)
+ {
+        unsigned long active, inactive;
+@@ -1611,6 +1616,12 @@ static int inactive_anon_is_low(struct zone
+*zone, struct scan_control *sc)
+                low = mem_cgroup_inactive_anon_is_low(sc->mem_cgroup);
+        return low;
+ }
++#else
++static inline int inactive_anon_is_low(struct zone *zone, struct
+scan_control *sc)
++{
++       return 0;
++}
++#endif
+
+ static int inactive_file_is_low_global(struct zone *zone)
+ {
+
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Kind regards,
+Minchan Kim
