@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab0H0Nop (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 09:44:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451Ab0H0Noo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 09:44:44 -0400
-Date: Fri, 27 Aug 2010 09:44:29 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100827134429.GS4879@redhat.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
- <20100826211424.GQ4879@redhat.com>
- <20100827081038.GF22783@erda.amd.com>
+	id S1753544Ab0H0NqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 09:46:13 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:34010 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab0H0NqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 09:46:09 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(ze80izbb2cK1432N98dNzz1202hzz8275dhz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-SS: 0,
+X-WSS-ID: 0L7TCRN-01-1XC-02
+X-M-MSG: 
+Date: Fri, 27 Aug 2010 15:43:01 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 2/4] sh: Accessor functions for the sh_pmu state
+Message-ID: <20100827134301.GL22783@erda.amd.com>
+References: <cover.1282848651.git.matt@console-pimps.org>
+ <f259830dbccb084d27d127676b979d9cb502e36f.1282848651.git.matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100827081038.GF22783@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <f259830dbccb084d27d127676b979d9cb502e36f.1282848651.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 10:10:38AM +0200, Robert Richter wrote:
-> On 26.08.10 17:14:24, Don Zickus wrote:
-> > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> > index 4539b4b..d16ebd8 100644
-> > --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> > @@ -738,6 +738,7 @@ again:
-> >  
-> >  	inc_irq_stat(apic_perf_irqs);
-> >  	ack = status;
-> > +	intel_pmu_ack_status(ack);
+On 26.08.10 15:09:17, Matt Fleming wrote:
+> Introduce some accessor functions for getting at the name and number of
+> counters of the current sh_pmu instance.
 > 
-> I would slightly change the patch:
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> ---
+>  arch/sh/include/asm/perf_event.h |    2 ++
+>  arch/sh/kernel/perf_event.c      |   13 +++++++++++++
+>  2 files changed, 15 insertions(+), 0 deletions(-)
 > 
-> There is no need for the ack variable anymore, you could directly work
-> with the status.
+> diff --git a/arch/sh/include/asm/perf_event.h b/arch/sh/include/asm/perf_event.h
+> index 3d0c9f3..5b7fa84 100644
+> --- a/arch/sh/include/asm/perf_event.h
+> +++ b/arch/sh/include/asm/perf_event.h
+> @@ -25,6 +25,8 @@ struct sh_pmu {
+>  extern int register_sh_pmu(struct sh_pmu *);
+>  extern int reserve_pmc_hardware(void);
+>  extern void release_pmc_hardware(void);
+> +extern int sh_pmu_num_events(void);
+> +extern const char *sh_pmu_name(void);
+>  
+>  static inline void set_perf_event_pending(void)
+>  {
+> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+> index 7a3dc35..086f788 100644
+> --- a/arch/sh/kernel/perf_event.c
+> +++ b/arch/sh/kernel/perf_event.c
+> @@ -60,6 +60,19 @@ static inline int sh_pmu_initialized(void)
+>  }
+>  
+>  /*
+> + * Return the number of events for the current sh_pmu.
+> + */
+> +int sh_pmu_num_events(void)
+> +{
+> +	return sh_pmu->num_events;
+> +}
+> +
+> +const char *sh_pmu_name(void)
+> +{
+> +	return sh_pmu->name;
+> +}
+> +
+> +/*
+
+This probably needs EXPORT_SYMBOLS*(), but not really sure. Have you
+compiled oprofile as module?
+
+This accessor functions should be generic for all architectures.
+
+-Robert
+
+>   * Release the PMU if this is the last perf_event.
+>   */
+>  static void hw_perf_event_destroy(struct perf_event *event)
+> -- 
+> 1.7.1
 > 
-> I would call intel_pmu_ack_status() as close as possible after the
-> intel_pmu_get_status(), which is after 'again:'.
+> 
 
-Yeah, I can do that.  The other patch was just a proof of concept to see
-what others thought.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-What is funny is that this problem was masked by the
-perf_event_nmi_handler swallowing all the nmis.  I wonder if we were
-losing events as a result of this bug too because if you think about it,
-we processed the first event, a second event came in and we accidentally
-ack'd it, thus dropping it on the floor.  Now I wonder how the event was
-ever reloaded, unless it was by accident because of how the scheduler
-deals with perf counters (perf_start/stop all the time).
-
-Cheers,
-Don
