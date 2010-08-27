@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab0H0ETF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 00:19:05 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7968 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab0H0ETD (ORCPT
+	id S1752624Ab0H0Ec4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 00:32:56 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:45836 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751450Ab0H0Ecv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 00:19:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52410568"
-Message-ID: <4C773CB6.1070306@codeaurora.org>
-Date: Thu, 26 Aug 2010 21:19:02 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-arm-msm@vger.kernel.org, markgross@thegnar.org,
+	Fri, 27 Aug 2010 00:32:51 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: NIBsyh8VM1nkdTKm.H5Y.fToZ47.fqRKaomHcuXHBFu03FQ
+ AJ923OIU0UOUywmlDDLQruiSr2wxcn.zwkhux6Yu2E45pqKKUHEpGRv1mBE0
+ 68Tp3.LGYjHa8T37rNB5HZFOVRgAJ1MVbzRYJYxKRCsrIc2yxCSopBLBx4PR
+ Eb6FgiDtEVJjgE6zQAiuxNM9omLvdsxuF3u88H1eyT3eVTskcQZm.modBpfG
+ DJwm.7QXHy8_N3KpVfrGR9RL0KksL2xpBzALTvCDE8FUTW6Fx0s2dYVF48oX
+ WYsvfoDGX1eS5.b_JTLTG06yH51kNDkAHO91aZoTmEJ2PVCu3hsf7oRcp3Ei
+ iKL54h0opkHybl9pUCw--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, Tejun Heo <teheo@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
         James Bottomley <James.Bottomley@suse.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: Add system bus performance parameter
-References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
-In-Reply-To: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/4] tcm: Add WriteCache + FUA Write support to TCM/FILEIO
+Date: Thu, 26 Aug 2010 21:32:48 -0700
+Message-Id: <1282883568-10809-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Saravana Kannan wrote:
-> Maintainers,
-> 
-> I'm adding this parameter since it would be useful to some of the drivers of
-> devices present in the ARM MSM chipsets.  Without the PM QoS parameter, there
-> appears to be no clean way (in my opinion) to get requests from multiple
-> drivers to increase the system bus performance (which is possible in MSM
-> chipsets).
-> 
-> Adding this parameter would also allow me to delete some code in the Android
-> specific implementation of arch/arm/mach-msm/clock.c that's unnecessarily
-> mach-msm specific and use the generic clkdev library that's available for the
-> ARM architecture. This would in turn allow me to upstream (after further clean
-> up) more code that's currently present only in the kernel used in Android.
-> 
-> Thanks,
-> Saravana
-> ---
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Looks like the --compose option in git doesn't send email to all the 
-recipients of the patch sets.  Adding others who might have missed my 
-cover letter.  Sorry about the mix up.
+Greetings hch, tejun and Co,
 
--Saravana
+This patch series adds WriteCache + FUA Write emulation support into TCM v4 Core and
+ConfigFS generic code at lio-core-2.6.git/lio-4.0.  The series changes the TCM
+subsystem plugin API at include/target/target_core_transport.h:struct se_subsystem_api
+that allows SYNCHRONIZE_CACHE emulation to be shared amoungst multiple TCM subsystem
+plugins (eg: FILEIO, IBLOCK, RAMDISK).  This series includes initial support for
+WCE=1 and DPOFUA=1 using the TCM/FILEIO subsystem plugin.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+This first patch adds the device attribute infrastructure emulation into
+target_core_transport.c and target_core_device.c, and adds four new configfs attributes
+that appear in /sys/kernel/config/target/core/fileio_$ID/$DEV/attrib/
+
+The second patch adds SYNCHRONIZE_CACHE and SYNCHRONIZE_CACHE_16 emulation code
+capable of LBA + Range (Number of Blocks) context flushing in target_core_transport.c:
+transport_generic_synchronize_cache(). This function uses the new struct se_subsystem_api
+->do_sync_cache() and ->do_sync_cache_range() function pointers to make the calls out
+into TCM subsystem plugin dependent code.
+
+The third patch updates the MODE_SENSE* emulation for TYPE_DISK to change the
+Caching Control Page to set WCE=1, and device type specific area for DPOFUA=1
+for the FUA Write emulation bit.  And the final patch modifies TCM/FILEIO to use
+the new struct se_subsystem_api callers using fs/sync.c:vfs_fsync() and
+vfs_fsync_range() from below transport_generic_synchronize_cache()
+
+Here are the remaining item(s) on the TODO:
+
+	*) Support FUA READs..?
+	*) Support for DPO aside from FUA WRITE/READ (is this possible..?)
+	*) Using kernel level fcntl() to enable/disable O_SYNC using
+	   emulate_write_cache configfs attribute (see patch #4)
+	*) Add sense data for failed FUA WRITE task case in TCM/FILEIO
+	   drivers/target/target_core_file.c:fd_do_task().
+
+Comments are welcome,
+
+Thanks!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+
+Nicholas Bellinger (4):
+  tcm: Add WriteCache and FUADPO infrastructure and attributes
+  tcm: Add SYNCHRONIZE_CACHE* CDB infrastructure and emulation
+  tcm: Add WriteCache and DPOFUA emulation bits to MODE_SENSE
+  tcm/fileio: Add WriteCache and Forced Unit Access WRITE emulation
+
+ drivers/target/target_core_configfs.c  |   16 +++
+ drivers/target/target_core_device.c    |   84 +++++++++++++++++
+ drivers/target/target_core_file.c      |  159 +++++++++++++++++++++++++++++++-
+ drivers/target/target_core_transport.c |  156 ++++++++++++++++++++++++++++---
+ include/target/target_core_base.h      |    7 ++
+ include/target/target_core_device.h    |    4 +
+ include/target/target_core_transport.h |   39 ++++++++
+ 7 files changed, 450 insertions(+), 15 deletions(-)
+
