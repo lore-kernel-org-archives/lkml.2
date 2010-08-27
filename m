@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab0H0TsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:48:04 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38694 "EHLO mgw2.diku.dk"
+	id S1753984Ab0H0Ttv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:49:51 -0400
+Received: from void.printf.net ([89.145.121.20]:33150 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab0H0TsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:48:02 -0400
-From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: kernel-janitors@vger.kernel.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net/ipv4: Eliminate kstrdup memory leak
-Date: Fri, 27 Aug 2010 21:47:43 +0200
-Message-Id: <1282938463-26450-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1752045Ab0H0Ttr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 15:49:47 -0400
+Date: Fri, 27 Aug 2010 20:49:39 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-mmc@vger.kernel.org
+Subject: [PATCH RESEND] initialise DMA engine before MMC
+Message-ID: <20100827194939.GJ23079@void.printf.net>
+References: <Pine.LNX.4.64.1006071312060.12965@axis700.grange>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1006071312060.12965@axis700.grange>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The string clone is only used as a temporary copy of the argument val
-within the while loop, and so it should be freed before leaving the
-function.  The call to strsep, however, modifies clone, so a pointer to the
-front of the string is kept in saved_clone, to make it possible to free it.
+Hi,
 
-The sematic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Andrew, mind taking this one?
 
-// <smpl>
-@r exists@
-local idexpression x;
-expression E;
-identifier l;
-statement S;
-@@
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Date: Mon, 7 Jun 2010 13:16:36 +0200 (CEST)
 
-*x= \(kasprintf\|kstrdup\)(...);
-...
-if (x == NULL) S
-... when != kfree(x)
-    when != E = x
-if (...) {
-  <... when != kfree(x)
-* goto l;
-  ...>
-* return ...;
-}
-// </smpl>
+To use DMA engine based DMA with MMC in a non-modular build, the DMA 
+engine has to initialise before MMC.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
 ---
- net/ipv4/tcp_cong.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv4/tcp_cong.c b/net/ipv4/tcp_cong.c
-index 0ec9bd0..850c737 100644
---- a/net/ipv4/tcp_cong.c
-+++ b/net/ipv4/tcp_cong.c
-@@ -196,10 +196,10 @@ void tcp_get_allowed_congestion_control(char *buf, size_t maxlen)
- int tcp_set_allowed_congestion_control(char *val)
- {
- 	struct tcp_congestion_ops *ca;
--	char *clone, *name;
-+	char *saved_clone, *clone, *name;
- 	int ret = 0;
- 
--	clone = kstrdup(val, GFP_USER);
-+	saved_clone = clone = kstrdup(val, GFP_USER);
- 	if (!clone)
- 		return -ENOMEM;
- 
-@@ -226,6 +226,7 @@ int tcp_set_allowed_congestion_control(char *val)
- 	}
- out:
- 	spin_unlock(&tcp_cong_list_lock);
-+	kfree(saved_clone);
- 
- 	return ret;
- }
-
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 91874e0..b713e75 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -92,6 +92,7 @@ obj-$(CONFIG_EISA)		+= eisa/
+ obj-y				+= lguest/
+ obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
+ obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
++obj-$(CONFIG_DMA_ENGINE)	+= dma/
+ obj-$(CONFIG_MMC)		+= mmc/
+ obj-$(CONFIG_MEMSTICK)		+= memstick/
+ obj-$(CONFIG_NEW_LEDS)		+= leds/
+@@ -102,7 +103,6 @@ obj-$(CONFIG_CRYPTO)		+= crypto/
+ obj-$(CONFIG_SUPERH)		+= sh/
+ obj-$(CONFIG_ARCH_SHMOBILE)	+= sh/
+ obj-$(CONFIG_GENERIC_TIME)	+= clocksource/
+-obj-$(CONFIG_DMA_ENGINE)	+= dma/
+ obj-$(CONFIG_DCA)		+= dca/
+ obj-$(CONFIG_HID)		+= hid/
+ obj-$(CONFIG_PPC_PS3)		+= ps3/
+--
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
