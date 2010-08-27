@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab0H0Rx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 13:53:58 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:59445 "EHLO
-	mail7.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750983Ab0H0Rx4 (ORCPT
+	id S1755118Ab0H0RzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 13:55:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20126 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab0H0RzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 13:53:56 -0400
-Date: Fri, 27 Aug 2010 11:53:00 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-To: Roland Dreier <rdreier@cisco.com>
-cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-In-Reply-To: <adaeidk2cyo.fsf@cisco.com>
-Message-ID: <alpine.WNT.2.00.1008271149330.1120@cluij.ucs.ualberta.ca>
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca> <20100823080543.319143e3@nehalam> <alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca> <1282672647.2302.15.camel@achroite.uk.solarflarecom.com> <alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
- <1282688441.22839.34.camel@localhost> <20100824153920.63360072@s6510> <alpine.WNT.2.00.1008251408520.632@cluij.ucs.ualberta.ca> <1282823827.2476.663.camel@edumazet-laptop> <alpine.WNT.2.00.1008260835020.2008@cluij.ucs.ualberta.ca> <20100826165359.3b79b27d@nehalam>
- <adaiq2w2fk0.fsf@cisco.com> <adaeidk2cyo.fsf@cisco.com>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+	Fri, 27 Aug 2010 13:55:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=r65LJTEBsoECSiKrjbK3RyNnb07sFg8vCqUwnmmUzd+jSmQ5nDxjpCXSA5NR2YhMmC
+         Un+3ad/4pm2geGZh7XFQ==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <alpine.DEB.2.00.1008271159160.18495@router.home>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
+	<20100826235052.GZ6803@random.random>
+	<AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com>
+	<20100827095546.GC6803@random.random>
+	<AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
+	<alpine.DEB.2.00.1008271159160.18495@router.home>
+Date: Fri, 27 Aug 2010 10:55:11 -0700
+Message-ID: <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+From: Hugh Dickins <hughd@google.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010, Roland Dreier wrote:
+On Fri, Aug 27, 2010 at 10:13 AM, Christoph Lameter <cl@linux.com> wrote:
 
-> By the way, for the original poster: is using NFS/RDMA a possibility?
-> That might give even better performance than any config of IPoIB if you
-> have an InfiniBand fabric anyway.
+> The basic problem with SLAB_DESTROY_BY_RCU is that you get a reference to
+> an object that is guaranteed only to have the same type (the instance may
+> fluctuate and be replaced from under you unless other measures are taken).
 
-Yes, NFS/RDMA is a possibility I need to look at as well.
+(I wouldn't describe that as a "problem with SLAB_DESTROY_BY_RCU":
+it's precisely the nature of SLAB_DESTROY_BY_RCU, what makes it useful
+in solving backward-locking problems elsewhere.)
 
-Thanks.
+>
+> Typically one must take a lock within the memory structure to pin down
+> the object (or take a refcount). Only then can you follow pointers and
+> such. It is only possible to verify that the right object has been
+> reached *after* locking. Following a pointer without having determined
+> that we hit the right object should not occur.
+>
+> A solution here would be to take the anon_vma->lock (prevents the object
+> switching under us) and then verify that the mapping is the one we are
+> looking for and that the pointer points to the right root. Then take the
+> root lock.
+>
+> Hughs solution takes a global spinlock which will limit scalability.
 
-Marc.
+Eh?  My solution was a second page_mapped(page) test i.e. testing an atomic.
 
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
+Hugh
