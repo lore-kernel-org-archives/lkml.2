@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab0H0Qeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:34:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36094 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab0H0Qem (ORCPT
+	id S1754011Ab0H0QgC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:36:02 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:43097 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab0H0QgA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:34:42 -0400
+	Fri, 27 Aug 2010 12:36:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RF1o0o9WtIrGWQGci2THVJraAiZ3AzQDKjahFx43K/gdWPK87Pt7qGp/GW8uKbWmnV
-         MGVD3abmpjIiB1Vn4G7asvIHoYN4EXO8P6TmE1rocUySfGzFUORCzhK6YiZWvqgcxUT0
-         xQ0nUcr26fblJZ006PgZx6N4FyO/uPloeLzNQ=
-Date: Fri, 27 Aug 2010 09:34:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Rafi Rubin <rafi@seas.upenn.edu>, jkosina@suse.cz,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chatty@enac.fr, micki@n-trig.com
-Subject: Re: [PATCH 4/4] firmware sysfs node
-Message-ID: <20100827163436.GB13030@core.coreip.homeip.net>
-References: <1282798497-19791-1-git-send-email-rafi@seas.upenn.edu>
- <1282798497-19791-5-git-send-email-rafi@seas.upenn.edu>
- <4C77AAE1.6050001@euromail.se>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Y92PJu/pWDn5NIjG+i9YXJfFgpszL9KcsMNkrjtsgKTUwWLZ/GF7yooF6zu0kmZ4go
+         IR65o7yBYbgWlokWBKbw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C77AAE1.6050001@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTinP_q7S4_O921hdBoedmTp-7gw0+=4DPHZGmysi@mail.gmail.com>
+References: <1282867897-31201-1-git-send-email-yinghan@google.com>
+	<AANLkTimaLBJa9hmufqQy3jk7GD-mJDbg=Dqkaja0nOMk@mail.gmail.com>
+	<AANLkTi=xUMSZ7wX-2BtJ0-+2BYLCTW=VPTAErinb5Zd2@mail.gmail.com>
+	<AANLkTinP_q7S4_O921hdBoedmTp-7gw0+=4DPHZGmysi@mail.gmail.com>
+Date: Fri, 27 Aug 2010 09:35:58 -0700
+Message-ID: <AANLkTin6+nHOowdptW2jaxg9urn3OLf9ArgGzKjWnQLM@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: fix missing place to check nr_swap_pages.
+From: Ying Han <yinghan@google.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 02:09:05PM +0200, Henrik Rydberg wrote:
-> On 08/26/2010 06:54 AM, Rafi Rubin wrote:
-> 
-> > Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
-> > ---
-> >  drivers/hid/hid-ntrig.c |   21 +++++++++++++++++++++
-> >  1 files changed, 21 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-> > index ab0ca7f..e341e88 100644
-> > --- a/drivers/hid/hid-ntrig.c
-> > +++ b/drivers/hid/hid-ntrig.c
-> > @@ -375,6 +375,26 @@ static ssize_t set_deactivate_slack(struct device *dev,
-> >  static DEVICE_ATTR(deactivate_slack, S_IWUSR | S_IRUGO, show_deactivate_slack,
-> >  		   set_deactivate_slack);
-> >  
-> > +static ssize_t show_firmware(struct device *dev,
-> > +			       struct device_attribute *attr,
-> > +			       char *buf)
-> > +{
-> > +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> > +	struct ntrig_data *nd = hid_get_drvdata(hdev);
-> > +
-> > +	if (!(nd->firmware_version[0] || nd->firmware_version[1] ||
-> > +	      nd->firmware_version[2] || nd->firmware_version[3]))
-> > +		return sprintf(buf, "Firmware version unavailable");
-> 
-> 
-> If this sysfs node should really be added (see EVIO), it is probably better if
-> it returns the same format for all devices. If all numbers are zero, that is
-> understandable also by someone reading the node.
-> 
+On Thu, Aug 26, 2010 at 10:00 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+> On Fri, Aug 27, 2010 at 12:31 PM, Ying Han <yinghan@google.com> wrote:
+> > On Thu, Aug 26, 2010 at 6:03 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> >>
+> >> Hello.
+> >>
+> >> On Fri, Aug 27, 2010 at 9:11 AM, Ying Han <yinghan@google.com> wrote:
+> >> > Fix a missed place where checks nr_swap_pages to do shrink_active_list. Make the
+> >> > change that moves the check to common function inactive_anon_is_low.
+> >> >
+> >>
+> >> Hmm.. AFAIR, we discussed it at that time but we concluded it's not good.
+> >> That's because nr_swap_pages < 0 means both "NO SWAP" and "NOT enough
+> >> swap space now". If we have a swap device or file but not enough space
+> >> now, we need to aging anon pages to make inactive list enough size.
+> >> Otherwise, working set pages would be swapped out more fast before
+> >> promotion.
+> >
+> > We found the problem on one of our workloads where more TLB flush
+> > happens without the change. Kswapd seems to be calling
+> > shrink_active_list() which eventually clears access bit of those ptes
+> > and does TLB flush
+> > with ptep_clear_flush_young(). This system does not have swap
+> > configured, and why aging the anon lru in that
+> > case?
+>
+> True. I also wanted it but we have to care swap configured but
+> non-enabling still yet system as well as non-swap configured system at
+> that time.
 
-Yes, I think we should stick it into input_id and be done with it. Note
-that input_id is not only available via EVIOCGID ioctl but also already
-exported in sysfs.
+Agree.  In our case, we cares about the case where swap is not enabled
+but is configured .
+>
+> If your system is no swap configured, how about this?
+> (It's a not formal proper patch but just quick patch to show the concept).
 
--- 
-Dmitry
+In our system, we do have swap configured. In vmscan.c, there are
+couple of places where we skip scanning
+and shrinking anon lru while the condition if(nr_swap_pages <= 0)  is
+true. It still make sense to me to add it
+to the shrink_active() condition as the initial patch.
+
+Also, we found it is quite often to hit the condition
+inactive_anon_is_low on machine with small numa node size, since the
+zone->inactive_ratio is set based on the zone->present_pages.
+
+--Ying
+
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 3109ff7..641c6a6 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1580,6 +1580,11 @@ static void shrink_active_list(unsigned long
+> nr_pages, struct zone *zone,
+>        spin_unlock_irq(&zone->lru_lock);
+>  }
+>
+> +/*
+> + * If system doesn't have a swap configuration,
+> + * it doesn't need to age anon pages in kswapd.
+> + */
+> +#ifdef CONFIG_SWAP
+>  static int inactive_anon_is_low_global(struct zone *zone)
+>  {
+>        unsigned long active, inactive;
+> @@ -1611,6 +1616,12 @@ static int inactive_anon_is_low(struct zone
+> *zone, struct scan_control *sc)
+>                low = mem_cgroup_inactive_anon_is_low(sc->mem_cgroup);
+>        return low;
+>  }
+> +#else
+> +static inline int inactive_anon_is_low(struct zone *zone, struct
+> scan_control *sc)
+> +{
+> +       return 0;
+> +}
+> +#endif
+>
+>  static int inactive_file_is_low_global(struct zone *zone)
+>  {
+>
+>
+> --
+> Kind regards,
+> Minchan Kim
