@@ -1,146 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab0H0UO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 16:14:27 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54838 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab0H0UOS (ORCPT
+	id S1752758Ab0H0UPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 16:15:21 -0400
+Received: from exprod5og113.obsmtp.com ([64.18.0.26]:44104 "EHLO
+	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab0H0UPT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 16:14:18 -0400
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-From: John Stultz <johnstul@us.ibm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>
-In-Reply-To: <20100827110855.GA11657@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
-	 <1282176776.2865.100.camel@localhost.localdomain>
-	 <20100819055518.GA4084@riccoc20.at.omicron.at>
-	 <201008191428.04546.arnd@arndb.de>
-	 <20100819153847.GA10695@riccoc20.at.omicron.at>
-	 <1282594899.3111.358.camel@localhost.localdomain>
-	 <20100827110855.GA11657@riccoc20.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Aug 2010 13:14:11 -0700
-Message-ID: <1282940051.2268.18.camel@jstultz-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Aug 2010 16:15:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinZLdSTVenJ=ShK9-f27eMQSyv=j6vYK+F3K96s@mail.gmail.com>
+References: <AANLkTimoCn9uWQ1NTJAhRu7cq1MA+oo6E5p30zeXA3f1@mail.gmail.com>
+	<4C779111.8000803@kernel.org>
+	<AANLkTinZLdSTVenJ=ShK9-f27eMQSyv=j6vYK+F3K96s@mail.gmail.com>
+Date: Fri, 27 Aug 2010 15:15:15 -0500
+Message-ID: <AANLkTi=xAbbbyOLWG=3fJzeJo8FsvnQR5+M-LbG8cqtX@mail.gmail.com>
+Subject: Re: [PATCH] scatterlist: prevent invalid free when alloc fails
+From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: torvalds@osdl.org, linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        OLUSANYA SOYANNWO <olusanya.soyannwo@motorola.com>,
+        Hu Tao <taohu@motorola.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 13:08 +0200, Richard Cochran wrote:
-> On Mon, Aug 23, 2010 at 01:21:39PM -0700, john stultz wrote:
-> > On Thu, 2010-08-19 at 17:38 +0200, Richard Cochran wrote:
-> > > On Thu, Aug 19, 2010 at 02:28:04PM +0200, Arnd Bergmann wrote:
-> > > > My point was that a syscall is better than an ioctl based interface here,
-> > > > which I definitely still think. Given that John knows much more about
-> > > > clocks than I do, we still need to get agreement on the question that
-> > > > he raised, which is whether we actually need to expose this clock to the
-> > > > user or not.
-> > > > 
-> > > > If we can find a way to sync system time accurate enough with PTP and
-> > > > PPS, user applications may not need to see two separate clocks at all.
-> > > 
-> > > At the very least, one user application (the PTPd) needs to see the
-> > > PTP clock.
-> > > 
-> > > > > SYSCALL_DEFINE3(clock_adjtime, const clockid_t, clkid,
-> > > > > 		int, ppb, struct timespec __user *, ts)
-> > > > > 
-> > > > > ppb - desired frequency adjustment in parts per billion
-> > > > > ts  - desired time step (or jump) in <sec,nsec> to correct
-> > > > >       a measured offset
-> > > > > 
-> > > > > Arguably, this syscall might be useful for other clocks, too.
-> > > > 
-> > > > This is a mix of adjtime and adjtimex with the addition of
-> > > > the clkid parameter, right?
-> > > 
-> > > Sort of, but not really. ADJTIME(3) takes an offset and slowly
-> > > corrects the clock using a servo in the kernel, over hours.
-> > > 
-> > > For this function, the offset passed in the 'ts' parameter will be
-> > > immediately corrected, by jumping to the new time. This reflects the
-> > > way that PTP works. After the first few samples, the PTPd has an
-> > > estimate of the offset to the master and the rate difference. The PTPd
-> > > can proceed in one of two ways.
-> > > 
-> > > 1. If resetting the clock is not desired, then the clock is set to the
-> > >    maximum adjustment (in the right direction) until the clock time is
-> > >    close to the master's time.
-> > > 
-> > > 2. The estimated offset is added to the current time, resulting in a
-> > >    jump in time.
-> > > 
-> > > We need clock_adjtime(id, 0, ts) for the second case.
-> > >
-> > > > Have you considered passing a struct timex instead of ppb and ts?
-> > > 
-> > > Yes, but the timex is not suitable, IMHO.
-> > 
-> > Could you expand on this?
-> 
-> We need to able to specify that the call is for a PTP clock. We could
-> add that to the modes flag, like this:
-> 
-> /*timex.h*/
-> #define ADJ_PTP_0 0x10000
-> #define ADJ_PTP_1 0x20000
-> #define ADJ_PTP_2 0x30000
-> #define ADJ_PTP_3 0x40000
-> 
-> I can live with this, if everyone else can, too.
+On Fri, Aug 27, 2010 at 2:45 PM, Jeffrey Carlyle
+<jeff.carlyle@motorola.com> wrote:
+> On Fri, Aug 27, 2010 at 5:18 AM, Tejun Heo <tj@kernel.org> wrote:
+>> On 08/26/2010 06:04 PM, Jeffrey Carlyle wrote:
+>>> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+>>> index a5ec428..acf2c6e 100644
+>>> --- a/lib/scatterlist.c
+>>> +++ b/lib/scatterlist.c
+>>> @@ -163,7 +163,7 @@ void __sg_free_table(struct sg_table *table,
+>>> unsigned int max_ents,
+>>>               return;
+>>>
+>>>       sgl = table->sgl;
+>>> -     while (table->orig_nents) {
+>>> +     while (table->orig_nents && sgl) {
+>>>               unsigned int alloc_size = table->orig_nents;
+>>>               unsigned int sg_size;
+>>
+>> Why is this change necessary?
+>
+> Well the problem we were seeing manifested itself when we called
+> free_fn on a NULL value. This was a naive attempt at avoiding that. If
+> the logic in __sg_alloc_table is corrected, I agree that we shouldn't
+> need this.
 
-I wasn't suggesting adding the clock multiplexing to the timex, just
-using the timex to specify the adjustments in the clock_adjtime call. 
-
-So I was asking why a timex was not suitable instead of using just the
-ppb and timespec.
-
-
-> > Could we not add a adjustment mode ADJ_SETOFFSET or something that would
-> > provide the instantaneous offset correction?
-> 
-> Yes, but we would also need to add a struct timespec to the struct
-> timex, in order to get nanosecond resolution. I think it would be
-> possible to do in the padding at the end?
-
-
-The existing struct timeval in the timex can be also used as a timespec.
-NTPv4 uses it that way specifying the ADJ_NANO flag.
-
-
-> > You're right that the timex is a little crufty. But its legacy that we
-> > will support indefinitely. So following the established interface helps
-> > maintainability.
-> 
-> We can use it for PTP, with the modifications suggested above. Or we
-> can just introduce the clock_adjtime method, instead.
-
-Again, I think you misunderstood my suggestion. I was suggesting
-something like clock_adjtime(clock_id, struct timex*).
-
-
-> > So if the clock_adjtime interface is needed, it would seem best for it
-> > to be generic enough to support not only PTP, but also the NTP kernel
-> > PLL.
-> 
-> For the proposed clock_adjime, what else is needed to support clock
-> adjustment in general?
-> 
-> I don't mind making the interface generic enough to support any
-> (realistic) conceivable clock adjustment scheme, but beyond the
-> present PTP hardware clocks, I don't know what else might be needed.
-
-I think using the timex struct covers most of the existing knowledge of
-what is needed. 
-
-thanks
--john
-
-
+Actually, please disregard the comment about trying to free NULL. I
+don't think we need to add the "&& sgl" under any circumstances.
