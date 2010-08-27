@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab0H0SNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:13:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35824 "EHLO mga11.intel.com"
+	id S1755212Ab0H0SPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:15:12 -0400
+Received: from www.tglx.de ([62.245.132.106]:57143 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755193Ab0H0SNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:13:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,279,1280732400"; 
-   d="scan'208";a="832548440"
-Message-Id: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Fri, 27 Aug 2010 11:09:48 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Weidong Han <weidong.han@intel.com>, stable@kernel.org
-Subject: [patch 1/3] x86, intr-remap: set redirection hint in the IRTE
-Content-Disposition: inline; filename=set_redir_hint_for_irte.patch
+	id S1755115Ab0H0SPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 14:15:09 -0400
+Date: Fri, 27 Aug 2010 20:14:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC PATCH 09/11] sched: timer-driven next buddy (update)
+In-Reply-To: <20100827180241.GB22679@Krystal>
+Message-ID: <alpine.LFD.2.00.1008272010070.2768@localhost.localdomain>
+References: <20100826180908.648103531@efficios.com> <20100826181341.635603837@efficios.com> <20100827180241.GB22679@Krystal>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the redirection hint in the interrupt-remapping table entry
-is set to 0, which means the remapped interrupt is directed to the
-processors listed in the destination. So in logical flat mode
-in the presence of intr-remapping, this results in a single
-interrupt multi-casted to multiple cpu's as specified by the destination
-bit mask. But what we really want is to send that interrupt to one of the cpus
-based on the lowest priority delivery mode.
 
-Set the redirection hint in the IRTE to '1' to indicate that we want
-the remapped interrupt to be directed to only one of the processors
-listed in the destination.
 
-This fixes the issue of same interrupt getting delivered to multiple cpu's
-in the logical flat mode in the presence of interrupt-remapping. While
-there is no functional issue observed with this behavior, this will
-impact performance of such configurations (<=8 cpu's using logical flat
-mode in the presence of interrupt-remapping)
+On Fri, 27 Aug 2010, Mathieu Desnoyers wrote:
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Weidong Han <weidong.han@intel.com>
-Cc: <stable@kernel.org> # [v2.6.32+]
----
+> Sorry, I forgot that I based this patchset on top of my LTTng tree all along, so
+> this new patch version is needed for reject-less application of the patchset on
+> a vanilla 2.6.35.2 tree.
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index f1efeba..90f8a75 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1392,6 +1392,7 @@ int setup_ioapic_entry(int apic_id, int irq,
- 		irte.dlvry_mode = apic->irq_delivery_mode;
- 		irte.vector = vector;
- 		irte.dest_id = IRTE_DEST(destination);
-+		irte.redir_hint = 1;
+That does not change my opinion on that much.
+
+As I said before I strongly object to implement special handling for a
+particular wakeup scenario as this will open a can of worms for all
+other special cases and workloads.
+
+Thanks,
+
+	tglx
+
+
+
  
- 		/* Set source-id of interrupt request */
- 		set_ioapic_sid(&irte, apic_id);
-@@ -3343,6 +3344,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
- 		irte.dlvry_mode = apic->irq_delivery_mode;
- 		irte.vector = cfg->vector;
- 		irte.dest_id = IRTE_DEST(dest);
-+		irte.redir_hint = 1;
- 
- 		/* Set source-id of interrupt request */
- 		if (pdev)
-
-
