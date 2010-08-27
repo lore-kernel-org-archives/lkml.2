@@ -1,88 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab0H0Qgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:36:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45768 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752696Ab0H0Qgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:36:37 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Hedi Berriche <hedi@sgi.com>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Date: Fri, 27 Aug 2010 18:37:08 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>
-References: <201008271537.35709.ptesarik@suse.cz> <201008271640.49542.ptesarik@suse.cz> <20100827145231.GZ18967@zorg.emea.sgi.com>
-In-Reply-To: <20100827145231.GZ18967@zorg.emea.sgi.com>
+	id S1754149Ab0H0QlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:41:08 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:42122 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab0H0QlF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 12:41:05 -0400
+X-SpamScore: -23
+X-BigFish: VPS-23(zzbb2cK1432N1a09M98dN4015Lzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L7TKWE-01-ASK-02
+X-M-MSG: 
+Date: Fri, 27 Aug 2010 18:38:39 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: Matt Fleming <matt@console-pimps.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 1/4] oprofile: Handle initialisation failure more
+ gracefully
+Message-ID: <20100827163839.GR22783@erda.amd.com>
+References: <cover.1282848651.git.matt@console-pimps.org>
+ <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
+ <20100827124344.GJ22783@erda.amd.com>
+ <1282922125.22128.5.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_2m+dMnDsSqTIwWo"
-Message-Id: <201008271837.10014.ptesarik@suse.cz>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1282922125.22128.5.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_2m+dMnDsSqTIwWo
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+On 27.08.10 11:15:25, Will Deacon wrote:
 
-On Friday 27 of August 2010 16:52:31 Hedi Berriche wrote:
-> On Fri, Aug 27, 2010 at 15:40 Petr Tesarik wrote:
-> | On Friday 27 of August 2010 16:31:35 Hedi Berriche wrote:
-> | > That said, I'm letting my already over 36 hours run carry on chewing
-> | > CPU time, and see if it will eventually trip the same problem seen with
-> | > 4-byte ticket locks.
-> |
-> | Hm, this doesn't sound like a viable approach. Since the siglock gets
-> | initialized to 0 when a new process is started, it may never actually
-> | wrap around.
-> |
-> | I would rather attach a SystemTap probe somewhere during process fork and
-> | add a bias to the siglock. That should work fine. Let me knock up the
-> | SystemTap script...
->
-> That would be nice. Ta!
+> > > The current implementation is not entirely safe in the case that
+> > > oprofile_arch_init() fails. We need to make sure that we always call
+> > > exit_driverfs() if we've called init_driverfs(). Also, avoid a potential
+> > > double free when freeing 'counter_config', e.g. don't free
+> > > 'counter_config' in both oprofile_arch_init() and oprofile_arch_exit().
 
-Here it is. I don't have a system with the old 64-bit ticket spinlocks at 
-hand, so this is completely untested, but it should work fine.
+I am not sure if it is worth the memory handling code, we could
+alternativly implement fixed size arrays with MAX_COUNTERS. This would
+eas it a lot. But, this code will become generic, so we can stick with
+this implementation.
 
-Adjust if needed.
+But, cpu varables should be used, maybe with a later patch.
 
-Petr
+> > The root cause that makes this check necessary is that
+> > oprofile_arch_exit() is called though oprofile_arch_init() failed. We
+> > should better fix this instead. I have to admit we will then have to
+> > check all architectural implementations.
+> > 
+> 
+> I took a look through all of the oprofile_arch_{init,exit} functions
+> and it looks like only ARM needs fixing. Nobody else does any allocation
+> here [well, until Matt's unified version comes into play].
 
---Boundary-00=_2m+dMnDsSqTIwWo
-Content-Type: text/x-csrc;
-  charset="iso 8859-15";
-  name="biaslock.stp"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="biaslock.stp"
+Great, many thanks.
 
-/* Bias the spin lock on fork */
+> How about something like this? This removes the exit call
+> from the init code and sets pointers to NULL after they have been
+> freed. We still have to do some checking so that we don't try to
+> release a NULL perf event:
+> 
+> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> index 0691176..12253eb 100644
+> --- a/arch/arm/oprofile/common.c
+> +++ b/arch/arm/oprofile/common.c
+> @@ -275,10 +275,12 @@ out:
+>  	return ret;
+>  }
+>  
+> -static void  exit_driverfs(void)
+> +static void __exit exit_driverfs(void)
+>  {
+> -	platform_device_unregister(oprofile_pdev);
+> -	platform_driver_unregister(&oprofile_driver);
+> +	if (!IS_ERR_OR_NULL(oprofile_pdev)) {
 
-%{
-#define LOCK_BIAS ((1ULL << 32) - (1ULL << 15))
-%}
+This check is obsolete here as we do not call oprofile_arch_exit() on
+failure.
 
-function bias_siglock (task:long)
-%{
-	struct task_struct *tsk = (struct task_struct*)THIS->task;
-	tsk->sighand->siglock.raw_lock.lock = LOCK_BIAS + (LOCK_BIAS << 32);
-%}
+> +		platform_device_unregister(oprofile_pdev);
+> +		platform_driver_unregister(&oprofile_driver);
+> +	}
+>  }
+>  #else
+>  static int __init init_driverfs(void) { return 0; }
+> @@ -365,6 +367,7 @@ int __init oprofile_arch_init(struct
+> oprofile_operations *ops)
+>  	ret = init_driverfs();
+>  	if (ret) {
+>  		kfree(counter_config);
+> +		counter_config = NULL;
 
-function is_err (value:long)
-%{
-	THIS->__retvalue = IS_ERR_VALUE((unsigned long)THIS->value);
-%}
+Dito, obsolete now.
 
-probe kernel.function("copy_process").return
-{
-	if (!is_err($return))
-		bias_siglock($return);
-}
+>  		return ret;
+>  	}
+>  
+> @@ -374,8 +377,10 @@ int __init oprofile_arch_init(struct
+> oprofile_operations *ops)
+>  		if (!perf_events[cpu]) {
+>  			pr_info("oprofile: failed to allocate %d perf events "
+>  					"for cpu %d\n", perf_num_counters, cpu);
+> -			while (--cpu >= 0)
+> +			while (--cpu >= 0) {
+>  				kfree(perf_events[cpu]);
+> +				perf_events[cpu] = NULL;
+> +			}
 
---Boundary-00=_2m+dMnDsSqTIwWo--
+counter_config must be freed here.
+
+>  			return -ENOMEM;
+>  		}
+>  	}
+> @@ -396,25 +401,27 @@ int __init oprofile_arch_init(struct
+> oprofile_operations *ops)
+>  	return ret;
+>  }
+>  
+> -void oprofile_arch_exit(void)
+> +void __exit oprofile_arch_exit(void)
+>  {
+>  	int cpu, id;
+>  	struct perf_event *event;
+>  
+> -	if (*perf_events) {
+> -		exit_driverfs();
+> -		for_each_possible_cpu(cpu) {
+> -			for (id = 0; id < perf_num_counters; ++id) {
+> -				event = perf_events[cpu][id];
+> -				if (event != NULL)
+> -					perf_event_release_kernel(event);
+> -			}
+> -			kfree(perf_events[cpu]);
+> +	exit_driverfs();
+
+If we shutdown all this in reverse order, this should be after the
+loop.
+
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		if (!perf_events[cpu])
+> +			continue;
+
+Should be never NULL, the check can be removed.
+
+> +
+> +		for (id = 0; id < perf_num_counters; ++id) {
+> +			event = perf_events[cpu][id];
+> +			if (event != NULL)
+
+	if (event)
+		...
+
+> +				perf_event_release_kernel(event);
+>  		}
+> +
+> +		kfree(perf_events[cpu]);
+>  	}
+>  
+> -	if (counter_config)
+> -		kfree(counter_config);
+> +	kfree(counter_config);
+>  }
+>  #else
+>  int __init oprofile_arch_init(struct oprofile_operations *ops)
+> @@ -422,5 +429,5 @@ int __init oprofile_arch_init(struct
+> oprofile_operations *ops)
+>  	pr_info("oprofile: hardware counters not available\n");
+>  	return -ENODEV;
+>  }
+> -void oprofile_arch_exit(void) {}
+> +void __exit oprofile_arch_exit(void) {}
+>  #endif /* CONFIG_HW_PERF_EVENTS */
+> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+> index b336cd9..3094af0 100644
+> --- a/drivers/oprofile/oprof.c
+> +++ b/drivers/oprofile/oprof.c
+> @@ -257,15 +257,11 @@ static int __init oprofile_init(void)
+>  		printk(KERN_INFO "oprofile: using timer interrupt.\n");
+>  		err = oprofile_timer_init(&oprofile_ops);
+>  		if (err)
+> -			goto out_arch;
+> +			goto out;
+
+A 'return err;' here would remove the goto. I would preffer this.
+
+Thanks,
+
+-Robert
+
+>  	}
+>  	err = oprofilefs_register();
+> -	if (err)
+> -		goto out_arch;
+> -	return 0;
+>  
+> -out_arch:
+> -	oprofile_arch_exit();
+> +out:
+>  	return err;
+>  }
+>  
+> 
+> Thanks,
+> 
+> Will
+> 
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
