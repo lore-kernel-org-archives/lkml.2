@@ -1,94 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab0H0A16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 20:27:58 -0400
-Received: from sh.osrg.net ([192.16.179.4]:46975 "EHLO sh.osrg.net"
+	id S1752352Ab0H0AlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 20:41:07 -0400
+Received: from mail.perches.com ([173.55.12.10]:1448 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753645Ab0H0A14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 20:27:56 -0400
-Date: Fri, 27 Aug 2010 09:26:20 +0900
-To: linux@arm.linux.org.uk
-Cc: fujita.tomonori@lab.ntt.co.jp, u.kleine-koenig@pengutronix.de,
-        mitov@issp.bas.bg, linux-sh@vger.kernel.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, jkrzyszt@tis.icnet.pl,
-        philippe.retornaz@epfl.ch, akpm@linux-foundation.org,
-        g.liakhovetski@gmx.de, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-Subject: Re: [RFC][PATCH] add
-	dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100826175440.GB13224@n2100.arm.linux.org.uk>
-References: <20100826095311.GA13051@pengutronix.de>
-	<20100826185938A.fujita.tomonori@lab.ntt.co.jp>
-	<20100826175440.GB13224@n2100.arm.linux.org.uk>
+	id S1751130Ab0H0AlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 20:41:01 -0400
+Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
+ messages
+From: Joe Perches <joe@perches.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4C770299.6000708@cesarb.net>
+References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>
+	 <4C770299.6000708@cesarb.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 17:41:00 -0700
+Message-ID: <1282869660.1836.5.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp-2
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100827092457G.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 27 Aug 2010 09:26:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Aug 2010 18:54:40 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On Thu, 2010-08-26 at 21:11 -0300, Cesar Eduardo Barros wrote:
+> Em 26-08-2010 20:33, Joe Perches escreveu:
+> > On Thu, 26 Aug 2010, Cesar Eduardo Barros wrote:
+> >> On my Dell Inspiron N4010, one of these messages is printed every five
+> >> seconds. Change both to dev_dbg to quieten them even more.
+> > I think you should instead fix your hardware or maybe change
+> > your thermal throttling settings.
 
-> On Thu, Aug 26, 2010 at 07:00:24PM +0900, FUJITA Tomonori wrote:
-> > On Thu, 26 Aug 2010 11:53:11 +0200
-> > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> > 
-> > > > > We have currently a number of boards broken in the mainline. They must be 
-> > > > > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
-> > > > > as I suggested earlier, we need either this or my patch series
-> > > > > 
-> > > > > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
-> > > > > 
-> > > > > for 2.6.36.
-> > > > 
-> > > > Why can't you revert a commit that causes the regression?
-> > > > 
-> > > > The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
-> > > > responsible for the regression. And the patchset even exnteds the
-> > > > definition of the DMA API (dma_declare_coherent_memory). Such change
-> > > > shouldn't applied after rc1. I think that DMA-API.txt says that
-> > > > dma_declare_coherent_memory() handles coherent memory for a particular
-> > > > device. It's not for the API that reserves coherent memory that can be
-> > > > used for any device for a single device.
-> > > The patch that made the problem obvious for ARM is
-> > > 309caa9cc6ff39d261264ec4ff10e29489afc8f8 aka v2.6.36-rc1~591^2~2^4~12.
-> > > So this went in before v2.6.36-rc1.  One of the "architectures which
-> > > similar restrictions" is x86 BTW.
-> > > 
-> > > And no, we won't revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 as it
-> > > addresses a hardware restriction.
-> > 
-> > How these drivers were able to work without hitting the hardware restriction?
-> 
-> Well, OMAP processors have experienced lock-ups due to multiple mappings of
-> memory, so the restriction in the architecture manual is for real.
-> 
-> But more the issue is that the behaviour you get from a region is _totally_
-> unpredictable (as the arch manual says).  With the VIPT caches, they can
-> be searched irrespective of whether the page tabkes indicate that it's
-> supposed to be cached or not - which means you can still hit cache lines
-> for an ioremap'd region.
-> 
-> And if you do, how do you know that the cached data is still valid - what
-> if it's some critical data that results in corruption - how do you know
-> whether that's happened or not?  It might not even cause a kernel
-> exception.
-> 
-> We have to adhere to the restrictions placed upon us by the architecture
-> at hand, and if that means device drivers break, so be it - at least we
-> get to know what needs to be fixed for these restrictions.
+I was probably a bit hasty in writing that.
 
-I didn't say the commit is technically wrong. I simply meant that the
-commit broke some of working systems (so some complain, I guess).
+> Is there a way to know if all this is just an oddness of this model, or 
+> if there is something which is not working quite right?
+> 
+> (All the output above is from 2.6.35.3; I am not running 2.3.36-rc2+ 
+> right now because it hangs on resume, and I have not yet had the time to 
+> look at it.)
 
-As I wrote, the related DMA API wasn't changed in 2.6.36-rc1. It's not
-related with the regression at all. As long as nobody tries to extend
-the API wrongly after rc2, I have no complaint.
+Perhaps you might try this patch and get a bit more information.
 
-btw, Marin Mitov said that these drivers don't need coherent memory,
-they just want contiguous memory. Telling the page allocater to
-reserve some memory at boot time is enough, I guess.
+It seems a sensible patch and perhaps should be applied anyway.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/platform/x86/intel_ips.c |   58 +++++++++++++++++++++++++++++--------
+ 1 files changed, 45 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
+index 9024480..73f9ad1 100644
+--- a/drivers/platform/x86/intel_ips.c
++++ b/drivers/platform/x86/intel_ips.c
+@@ -598,17 +598,36 @@ static bool mcp_exceeded(struct ips_driver *ips)
+ {
+ 	unsigned long flags;
+ 	bool ret = false;
++	u16 mcp_avg_temp;
++	u16 mcp_temp_limit;
++	u16 mcp_power_limit;
++	u32 cpu_avg_power;
++	u32 mch_avg_power;
+ 
+ 	spin_lock_irqsave(&ips->turbo_status_lock, flags);
+-	if (ips->mcp_avg_temp > (ips->mcp_temp_limit * 100))
+-		ret = true;
+-	if (ips->cpu_avg_power + ips->mch_avg_power > ips->mcp_power_limit)
+-		ret = true;
++
++	mcp_avg_temp = ips->mcp_avg_temp;
++	mcp_temp_limit = ips->mcp_temp_limit;
++	mcp_power_limit = ips->mcp_power_limit;
++	cpu_avg_power = ips->cpu_avg_power;
++	mch_avg_power = ips->mch_avg_power;
++
+ 	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
+ 
+-	if (ret)
++	if ((cpu_avg_power + mch_avg_power) > mcp_power_limit) {
+ 		dev_info(&ips->dev->dev,
+-			 "MCP power or thermal limit exceeded\n");
++			 "MCP power limit %d exceeded: %d\n",
++			 mcp_power_limit,
++			 cpu_avg_power + mch_avg_power);
++		ret = true;
++	}
++	if (mcp_avg_temp > (mcp_temp_limit * 100)) {
++		dev_info(&ips->dev->dev,
++			 "MCP thermal limit %d exceeded: %d\n",
++			 mcp_temp_limit * 100,
++			 mcp_avg_temp);
++		ret = true;
++	}
+ 
+ 	return ret;
+ }
+@@ -623,20 +642,33 @@ static bool mcp_exceeded(struct ips_driver *ips)
+ static bool cpu_exceeded(struct ips_driver *ips, int cpu)
+ {
+ 	unsigned long flags;
+-	int avg;
+ 	bool ret = false;
++	int avg;
++	int core_temp_limit;
++	u16 core_power_limit;
++	u32 cpu_avg_power;
+ 
+ 	spin_lock_irqsave(&ips->turbo_status_lock, flags);
++
+ 	avg = cpu ? ips->ctv2_avg_temp : ips->ctv1_avg_temp;
+-	if (avg > (ips->limits->core_temp_limit * 100))
+-		ret = true;
+-	if (ips->cpu_avg_power > ips->core_power_limit * 100)
+-		ret = true;
++	core_temp_limit = ips->limits->core_temp_limit;
++	core_power_limit = ips->core_power_limit;
++	cpu_avg_power = ips->cpu_avg_power;
++
+ 	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
+ 
+-	if (ret)
++	if (cpu_avg_power > (core_power_limit * 100)) {
++		dev_info(&ips->dev->dev,
++			 "CPU power limit %d exceeded: %d\n",
++			 cpu_avg_power, core_power_limit * 100);
++		ret = true;
++	}
++	if (avg > (core_temp_limit * 100)) {
+ 		dev_info(&ips->dev->dev,
+-			 "CPU power or thermal limit exceeded\n");
++			 "CPU thermal limit %d exceeded: %d\n",
++			 core_temp_limit * 100, avg);
++		ret = true;
++	}
+ 
+ 	return ret;
+ }
+
+
