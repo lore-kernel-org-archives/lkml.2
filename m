@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab0H0PXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:23:24 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:44489 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753469Ab0H0PXV (ORCPT
+	id S1754599Ab0H0PYb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:24:31 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:3275 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab0H0PY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:23:21 -0400
-Date: Fri, 27 Aug 2010 11:23:19 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-Message-ID: <20100827152319.GC14926@Krystal>
-References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop> <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain> <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain> <20100826230934.GA4194@Krystal> <20100826233651.GB28177@Krystal> <1282894718.1975.1654.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282894718.1975.1654.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:21:47 up 216 days, 17:58,  4 users,  load average: 0.00, 0.02,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 27 Aug 2010 11:24:28 -0400
+Date: Fri, 27 Aug 2010 17:24:03 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: Fix checkpatch errors in lm90 driver
+Message-ID: <20100827172403.4c22bbce@hyperion.delvare>
+In-Reply-To: <20100827134926.GA21827@ericsson.com>
+References: <1282838076-7175-1-git-send-email-guenter.roeck@ericsson.com>
+	<20100827134523.6bcc70aa@hyperion.delvare>
+	<20100827134926.GA21827@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Thu, 2010-08-26 at 19:36 -0400, Mathieu Desnoyers wrote:
-> > > The only thing we might have to be careful about is what happens if the timer
-> > > re-fires before the thread completes its execution. We might want to let the
-> > > signal handler detect these overruns somehow.
-> > 
-> > Hrm, thinking about it a little more, one of the "plus" sides of these
-> > SIGEV_THREAD timers is that a single timer can fork threads that will run on
-> > many cores on a multi-core system. If we go for preallocation of a single
-> > thread, we lose that. Maybe we could think of a way to preallocate a thread pool
-> > instead ? 
-> 
-> Why try and fix a broken thing, just let the app spawn threads and use
-> SIGEV_THREAD_ID itself, it knows its requirements and can do what suits
-> the situation best. No need to try and patch up braindead posix stuff.
+Hi Guenter,
 
-As I dig through the code and learn more about the posix standard, my
-understanding is that the _implementation_ is broken. The standard just leaves
-enough rope for the implementation to either do the right thing or to hang
-itself. Sadly glibc seems to have chosen the second option.
+On Fri, 27 Aug 2010 06:49:26 -0700, Guenter Roeck wrote:
+> Next question: lm90_update_device() currently does not return any errors.
+> In recent drivers, we pass i2c read errors up to userland. Before I introduce
+> the max6696 changes, does it make sense to add error checking/return
+> into the driver, similar to what I have done in the smm665 and jc42 drivers ?
 
-Mathieu
+So far, most hwmon driver authors decided to ignore such errors, or
+limited their handling to logging the issue, mainly because the caching
+mechanism makes handling of such errors tough. Now I admit that the
+approach you took in the jc42 driver is interesting. I never considered
+having a single error value being returned by the update function the
+way you did.
 
+This has the obvious drawback that transient I/O errors cause _all_
+sensor values to be unavailable, which is discussable, especially for a
+device with many features. It's hard to justify that all values of a
+full-featured hardware monitoring chip could be unavailable because,
+for example, one of the temperature sensors is unreliable. So this
+approach is fine for your small jc42 driver, but I don't think it can be
+generalized.
+
+In the general case, I think I am fine with pretty much anything which
+doesn't plain ignore error codes (as many drivers still do...) and
+doesn't block all readings on transient errors. This can mean returning
+0 on error, or returning the previous last known value (definitely
+acceptable for transient errors, but not so for long-standing ones),
+with or without logging. Or if you really want to pass error codes down
+to user-space, I think you have to rework the update() function and the
+per-device data structure altogether, to be able to store error codes
+in the data structure.
+
+A different (and complementary) approach is to repeat the failing
+command and see if it helps. The w83l785ts driver does exactly this. If
+we want to generalize this, it would probably make sense to implement
+it at the the i2c-core level (i.e. add a "retries" i2c_client
+attribute.)
+
+I admit I have been ignoring the issue mainly so far, because it's not
+a big problem in practice (except on one board with the w83l785ts
+driver, thus the extra code in that driver), so adding complex or
+invasive code to deal with it isn't too appealing.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Jean Delvare
