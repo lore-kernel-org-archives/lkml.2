@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab0H0Sxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:53:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45963 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751762Ab0H0Sxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:53:34 -0400
-Date: Fri, 27 Aug 2010 19:53:44 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Onkalo Samu <samu.p.onkalo@nokia.com>
-Cc: ext Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        ext Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 1/3] drivers: misc: ak8974 / ami305 magnetometer driver
-Message-ID: <20100827185343.GA6626@opensource.wolfsonmicro.com>
-References: <1282910083-8629-1-git-send-email-samu.p.onkalo@nokia.com>
- <1282910083-8629-2-git-send-email-samu.p.onkalo@nokia.com>
- <20100827133109.1eb974ed@lxorguk.ukuu.org.uk>
- <1282928353.2194.27.camel@noppispoppis.nmp.nokia.com>
+	id S1755290Ab0H0SyF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:54:05 -0400
+Received: from www.tglx.de ([62.245.132.106]:44586 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab0H0SyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 14:54:03 -0400
+Date: Fri, 27 Aug 2010 20:53:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Masayuki Ohtak <masa-korg@dsn.okisemi.com>, meego-dev@meego.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
+        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        arjan@linux.intel.com, gregkh@suse.de,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+In-Reply-To: <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain>
+References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282928353.2194.27.camel@noppispoppis.nmp.nokia.com>
-X-Cookie: Are you sure the back door is locked?
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 07:59:13PM +0300, Onkalo Samu wrote:
-> On Fri, 2010-08-27 at 14:31 +0200, ext Alan Cox wrote:
+B1;2401;0cOn Fri, 27 Aug 2010, Grant Likely wrote:
+> [cc'ing Thomas Gleixner and David Woodhouse since this driver needs to
+> get some data about the platform (to know what spi_devices are
+> present) and I don't know how that is handled for x86 SoCs.]
 
-> > > +static int ak8974_regulators_on(struct ak8974_chip *chip)
-> > > +{
-> > > +	int ret;
-> > > +	ret = regulator_bulk_enable(ARRAY_SIZE(chip->regs), chip->regs);
+The best way to do all this platform specific configuration is to use
+device tree. I really don't want to have x86/mach-xyz/board[A-Z]
+horror, which is unavoidable when we don't get a sensible way to
+configure the boards. SFI was meant to provide a lightweight ACPI, but
+now that device tree is generic and more platforms are using it, I
+really want to standartize on that and forget SFI.
 
-> > That bit seems platform specific but in generic code ?
+That makes even more sense, as all these AMBA peripherals which are
+duct-taped to a x86 core can be found in other SoCs with different
+cores as well.
 
-> If the regulator frame work is not configured, this code does nothing.
-> I have understood (hopefully correctly) that if the frame work is in use
-> drivers could support that directly assuming that regulators are
-> configured for that platform. If that is not the case, this should be
-> platform specific.
+Thanks,
 
-Your understanding is correct - the regulator API provides separation
-between the driver and the platform so that the driver code can work
-with any platform.  The driver requests supplies in terms of the
-physical supplies the chip has (using the struct device and the supply
-names from the datasheet).  The regulator API them matches this with
-actual regulators on a given system using data provied separately by the
-code specific to that machine so that the regulator and the consumer
-using it don't need to know about each other.
-
-If the regulator API is disabled then the basic regulator API calls
-compile to inline stubs that report success, and there's a facility for
-optionally automatically stubbing out missing supplies when the API is
-enabled.
+	tglx
