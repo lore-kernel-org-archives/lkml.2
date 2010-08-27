@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab0H0NuI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 09:50:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20128 "EHLO mx1.redhat.com"
+	id S1753683Ab0H0NvI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 09:51:08 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:51118 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510Ab0H0NuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 09:50:05 -0400
-Date: Fri, 27 Aug 2010 09:49:40 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Cc: Tejun Heo <tj@kernel.org>, Hannes Reinecke <hare@suse.de>, tytso@mit.edu,
-        linux-scsi@vger.kernel.org, jaxboe@fusionio.com, jack@suse.cz,
-        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
-        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
-        dm-devel@redhat.com
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-Message-ID: <20100827134940.GA22504@redhat.com>
-References: <4C6ABBCB.9030306@kernel.org>
- <20100817165929.GB13800@lst.de>
- <4C6E3C1A.50205@ct.jp.nec.com>
- <4C72660A.7070009@kernel.org>
- <20100823141733.GA21158@redhat.com>
- <4C739DE9.5070803@ct.jp.nec.com>
- <4C73FA8F.5080800@kernel.org>
- <4C74CD95.1000208@ct.jp.nec.com>
- <20100825152831.GA8509@redhat.com>
- <4C7789BE.1060609@ct.jp.nec.com>
+	id S1753307Ab0H0NvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 09:51:05 -0400
+Date: Fri, 27 Aug 2010 06:49:26 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: Fix checkpatch errors in lm90 driver
+Message-ID: <20100827134926.GA21827@ericsson.com>
+References: <1282838076-7175-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100827134523.6bcc70aa@hyperion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4C7789BE.1060609@ct.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100827134523.6bcc70aa@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27 2010 at  5:47am -0400,
-Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
-
-> Hi Mike,
+On Fri, Aug 27, 2010 at 07:45:23AM -0400, Jean Delvare wrote:
+> Hi Guenter,
 > 
-> On 08/26/2010 12:28 AM +0900, Mike Snitzer wrote:
-> > Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
-> >> Anyway, as you said, the flush error handling of dm-mpath is already
-> >> broken if data loss really happens on any storage used by dm-mpath.
-> >> Although it's a serious issue and quick fix is required, I think
-> >> you may leave the old behavior in your patch-set, since it's
-> >> a separate issue.
-> > 
-> > I'm not seeing where anything is broken with current mpath.  If a
-> > multipathed LUN is WCE=1 then it should be fair to assume the cache is
-> > mirrored or shared across ports.  Therefore retrying the SYNCHRONIZE
-> > CACHE is needed.
-> > 
-> > Do we still have fear that SYNCHRONIZE CACHE can silently drop data?
-> > Seems unlikely especially given what Tejun shared from SBC.
+> On Thu, 26 Aug 2010 08:54:36 -0700, Guenter Roeck wrote:
+> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > ---
+> > The main rationale for this cleanup is to prepare the driver for adding max6696
+> > support.
 > 
-> Do we have any proof to wipe that fear?
+> I'm fine with mostly anything, except...
 > 
-> If retrying on flush failure is safe on all storages used with multipath
-> (e.g. SCSI, CCISS, DASD, etc), then current dm-mpath should be fine in
-> the real world.
-> But I'm afraid if there is a storage where something like below can happen:
->     - a flush command is returned as error to mpath because a part of
->       cache has physically broken at the time or so, then that part of
->       data loses and the size of the cache is shrunk by the storage.
->     - mpath retries the flush command using other path.
->     - the flush command is returned as success to mpath.
->     - mpath passes the result, success, to upper layer, but some of
->       the data already lost.
+[...]
+> >  	/* detection and identification */
+> > -	if ((man_id = i2c_smbus_read_byte_data(new_client,
+> > -						LM90_REG_R_MAN_ID)) < 0
+> > -	 || (chip_id = i2c_smbus_read_byte_data(new_client,
+> > -						LM90_REG_R_CHIP_ID)) < 0
+> > -	 || (reg_config1 = i2c_smbus_read_byte_data(new_client,
+> > -						LM90_REG_R_CONFIG1)) < 0
+> > -	 || (reg_convrate = i2c_smbus_read_byte_data(new_client,
+> > -						LM90_REG_R_CONVRATE)) < 0)
+> > +	man_id = i2c_smbus_read_byte_data(new_client, LM90_REG_R_MAN_ID);
+> > +	if (man_id < 0)
+> > +		return -ENODEV;
+> > +
+> > +	chip_id = i2c_smbus_read_byte_data(new_client, LM90_REG_R_CHIP_ID);
+> > +	if (chip_id < 0)
+> > +		return -ENODEV;
+> > +
+> > +	reg_config1 = i2c_smbus_read_byte_data(new_client, LM90_REG_R_CONFIG1);
+> > +	if (reg_config1 < 0)
+> > +		return -ENODEV;
+> > +
+> > +	reg_convrate = i2c_smbus_read_byte_data(new_client,
+> > +						LM90_REG_R_CONVRATE);
+> > +	if (reg_convrate < 0)
+> >  		return -ENODEV;
+> 
+> ... this. I think this check should be relaxed a bit, cascaded error
+> checking is done in many drivers and I don't think this is anything to
+> worry about.
+> 
+I agree. I struggled with that myself when I made the changes, but let checkpatch win.
 
-That does seem like a valid concern.  But I'm not seeing why its unique
-to SYNCHRONIZE CACHE.  Any IO that fails on the target side should be
-passed up once the error gets to DM.
+> No need to resend, I've just dropped the two chunks I don't like, and
+> applied the resulting patch. Thanks!
+> 
+Great, thanks. 
 
-Mike
+Next question: lm90_update_device() currently does not return any errors.
+In recent drivers, we pass i2c read errors up to userland. Before I introduce
+the max6696 changes, does it make sense to add error checking/return
+into the driver, similar to what I have done in the smm665 and jc42 drivers ?
+
+Guenter
+
