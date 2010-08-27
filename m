@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab0H0IMq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 04:12:46 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:40236 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab0H0IMo (ORCPT
+	id S1752422Ab0H0INe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 04:13:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47550 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab0H0INd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 04:12:44 -0400
-X-SpamScore: 6
-X-BigFish: VPS6(z3cfcs329eqzbb2cK1432N98dNzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L7SXDQ-01-8T9-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 10:10:38 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100827081038.GF22783@erda.amd.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
- <20100826211424.GQ4879@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100826211424.GQ4879@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Fri, 27 Aug 2010 04:13:33 -0400
+Subject: Re: divide by zero bug in find_busiest_group
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chetan Ahuja <chetan.ahuja@gmail.com>
+Cc: Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+In-Reply-To: <1282895494.1975.1693.camel@laptop>
+References: <AANLkTimT4T-6dO=Uo05DexYf3exq=0SkZemHuB5aRP3Q@mail.gmail.com>
+	 <AANLkTim75Z-X--LDJX8MLYF8G=vPW_GniVFQrkL7QoAy@mail.gmail.com>
+	 <AANLkTikg7Q_oOecNgVLPPTu3dOu3aO776f4y1bw410PV@mail.gmail.com>
+	 <1282895494.1975.1693.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 27 Aug 2010 10:13:30 +0200
+Message-ID: <1282896810.1975.1768.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.10 17:14:24, Don Zickus wrote:
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 4539b4b..d16ebd8 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -738,6 +738,7 @@ again:
->  
->  	inc_irq_stat(apic_perf_irqs);
->  	ack = status;
-> +	intel_pmu_ack_status(ack);
-
-I would slightly change the patch:
-
-There is no need for the ack variable anymore, you could directly work
-with the status.
-
-I would call intel_pmu_ack_status() as close as possible after the
-intel_pmu_get_status(), which is after 'again:'.
-
--Robert
-
->  
->  	intel_pmu_lbr_read();
->  
-> @@ -766,8 +767,6 @@ again:
->  			x86_pmu_stop(event);
->  	}
->  
-> -	intel_pmu_ack_status(ack);
-> -
->  	/*
->  	 * Repeat if there is more work to be done:
->  	 */
+On Fri, 2010-08-27 at 09:51 +0200, Peter Zijlstra wrote:
 > 
+> Load balancing works by balancing this group hierarchy, a number of
+> groups are contained in a domain. Each cpu does a load-balance pull,
+> from the busiest group in that domain to his local domain. 
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+s/local domain/local group/
 
+> Since there's
+> ever smaller groups/domains you eventually end up with a nicely spread
+> load. 
