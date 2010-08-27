@@ -1,40 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab0H0Qa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:30:57 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42789 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab0H0Qay (ORCPT
+	id S1753918Ab0H0Qdx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:33:53 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41632 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab0H0Qdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:30:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=OKU4UaoTJ6NUeED4t1jbavYSjwJpkElT+lhXM9AOogkg2beejNZcPpuwwctvWEftKE
-         q03AWsz8TBLyojtuQybx9bQjWNSFSz1tUaxD4nrD1Cjx7aujWdsPSFvR4Efh7+XFXiip
-         5Lys2XDCalh9T7DprNEe8Hg2NHRHm/UKD4rtw=
-MIME-Version: 1.0
-In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
-References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 27 Aug 2010 12:30:31 -0400
-Message-ID: <AANLkTimU5ys+mS-04KmfxSbdSHB=sAyWA43T4yHO_saX@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/43] ptrace cleanups
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 27 Aug 2010 12:33:52 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52340982"
+Subject: Re: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+In-Reply-To: <1282925072.26355.61.camel@e102109-lin.cambridge.arm.com>
+References: <1282922978.5075.13.camel@m0nster>
+	 <1282925072.26355.61.camel@e102109-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Aug 2010 09:33:46 -0700
+Message-ID: <1282926826.5075.21.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 05:41, Namhyung Kim wrote:
-> Although I couldn't test all archs, I hope it will not break anything.
-> Exceptional case will be "03/43 ptrace: change signature of arch_ptrace()"
-> commit since it changes prototype of arch_ptrace() in system header file.
-> It *will* break your build if it is applied alone, please use it with
-> your arch counterpart. The same goes vice versa, of course.
+On Fri, 2010-08-27 at 17:04 +0100, Catalin Marinas wrote:
+> On Fri, 2010-08-27 at 16:29 +0100, Daniel Walker wrote:
+> > On Fri, 2010-08-27 at 14:54 +0100, Catalin Marinas wrote:
+> > > On Wed, 2010-08-25 at 05:57 +0100, Jeff Ohlstein wrote:
+> > > > From: Daniel Walker <dwalker@codeaurora.org>
+> > > >
+> > > > ScorpionMP does not have the SMP/nAMP and TLB ops broadcasting bits in
+> > > > ACTLR.
+> > > >
+> > > > Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
+> > > > Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+> > > > ---
+> > > >  arch/arm/mm/proc-v7.S |   24 ++++++++++++++++++++++++
+> > > >  1 files changed, 24 insertions(+), 0 deletions(-)
+> > > >
+> > > > diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> > > > index 7aaf88a..98fd7e5 100644
+> > > > --- a/arch/arm/mm/proc-v7.S
+> > > > +++ b/arch/arm/mm/proc-v7.S
+> > > > @@ -196,6 +196,7 @@ __v7_setup:
+> > > >         orreq   r0, r0, #(1 << 6) | (1 << 0)    @ Enable SMP/nAMP mode and
+> > > >         mcreq   p15, 0, r0, c1, c0, 1           @ TLB ops broadcasting
+> > > >  #endif
+> > > > +__v7_msm_setup:
+> > > >         adr     r12, __v7_setup_stack           @ the local stack
+> > > >         stmia   r12, {r0-r5, r7, r9, r11, lr}
+> > > >         bl      v7_flush_dcache_all
+> > >
+> > > It may be better to move the generic __v7_setup here and have a specific
+> > > entry for ARM Ltd cores (mask 0xff0f0000 and value 0x410f0000).
+> > 
+> > I'm not sure I follow you.. Are you saying there are other cpu's that
+> > don't need the SMP stuff at the top of __v7_setup ?
+> 
+> The SMP/nAMP bit is something specific to the ARM11MPCore and Cortex-A9
+> processors produced by ARM. If you core doesn't need this, it should use
+> a default __v7_setup without any additional bits being set.
+> 
+> I'm not aware of other MP ARM processors produced by other companies
+> that would require exactly the same bit being set.
 
-sounds like these changes should be squashed into one then
--mike
+So your saying it makes more sense to change the msm entry into the
+default entry, and make the current default into the
+ARM11MPCore/Cortex-A9 entry?
+
+There's 4 or 5 other cpu's that have SMP but none have had to jump over
+those bits AFAIK ..
+
+Daniel
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
+
