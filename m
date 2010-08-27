@@ -1,103 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab0H0BLb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 21:11:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59297 "EHLO mga02.intel.com"
+	id S1752861Ab0H0BOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 21:14:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55360 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392Ab0H0BL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:11:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,277,1280732400"; 
-   d="scan'208";a="549181915"
-Date: Fri, 27 Aug 2010 09:11:06 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Shaohua <shaohua.li@intel.com>
-Subject: Re: [PATCH 3/3] writeback: Do not congestion sleep when there are
- no congested BDIs
-Message-ID: <20100827011106.GB7353@localhost>
-References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
- <1282835656-5638-4-git-send-email-mel@csn.ul.ie>
- <20100826173843.GD6873@barrios-desktop>
- <20100826174245.GJ20944@csn.ul.ie>
- <20100826181735.GB6805@cmpxchg.org>
- <20100826202324.GK20944@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100826202324.GK20944@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751392Ab0H0BOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 21:14:11 -0400
+Date: Fri, 27 Aug 2010 11:14:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-Id: <20100827111400.58bf82d1.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__27_Aug_2010_11_14_00_+1000_8dEXRpqSHJ3=dM=T"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 04:23:24AM +0800, Mel Gorman wrote:
-> On Thu, Aug 26, 2010 at 08:17:35PM +0200, Johannes Weiner wrote:
-> > On Thu, Aug 26, 2010 at 06:42:45PM +0100, Mel Gorman wrote:
-> > > On Fri, Aug 27, 2010 at 02:38:43AM +0900, Minchan Kim wrote:
-> > > > On Thu, Aug 26, 2010 at 04:14:16PM +0100, Mel Gorman wrote:
-> > > > > If congestion_wait() is called with no BDIs congested, the caller will
-> > > > > sleep for the full timeout and this is an unnecessary sleep. This patch
-> > > > > checks if there are BDIs congested. If so, it goes to sleep as normal.
-> > > > > If not, it calls cond_resched() to ensure the caller is not hogging the
-> > > > > CPU longer than its quota but otherwise will not sleep.
-> > > > > 
-> > > > > This is aimed at reducing some of the major desktop stalls reported during
-> > > > > IO. For example, while kswapd is operating, it calls congestion_wait()
-> > > > > but it could just have been reclaiming clean page cache pages with no
-> > > > > congestion. Without this patch, it would sleep for a full timeout but after
-> > > > > this patch, it'll just call schedule() if it has been on the CPU too long.
-> > > > > Similar logic applies to direct reclaimers that are not making enough
-> > > > > progress.
-> > > > > 
-> > > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > > > > ---
-> > > > >  mm/backing-dev.c |   20 ++++++++++++++------
-> > > > >  1 files changed, 14 insertions(+), 6 deletions(-)
-> > > > > 
-> > > > > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> > > > > index a49167f..6abe860 100644
-> > > > > --- a/mm/backing-dev.c
-> > > > > +++ b/mm/backing-dev.c
-> > > > 
-> > > > Function's decripton should be changed since we don't wait next write any more. 
-> > > > 
-> > > 
-> > > My bad. I need to check that "next write" thing. It doesn't appear to be
-> > > happening but maybe that side of things just broke somewhere in the
-> > > distant past. I lack context of how this is meant to work so maybe
-> > > someone will educate me.
-> > 
-> > On every retired io request the congestion state on the bdi is checked
-> > and the congestion waitqueue woken up.
-> > 
-> > So without congestion, we still only wait until the next write
-> > retires, but without any IO, we sleep the full timeout.
-> > 
-> > Check __freed_requests() in block/blk-core.c.
-> > 
-> 
-> Seems reasonable. Still, if there is no write IO going on and no
-> congestion there seems to be no point going to sleep for the full
-> timeout. It still feels wrong.
+--Signature=_Fri__27_Aug_2010_11_14_00_+1000_8dEXRpqSHJ3=dM=T
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah the stupid sleeping feels wrong. However there are ~20
-congestion_wait() callers spread randomly in VM, FS and block drivers.
-Many of them may be added by rule of thumb, however what if some of
-them happen to depend on the old stupid sleeping behavior? Obviously
-you've done extensive tests on the page reclaim paths, however that's
-far from enough to cover the wider changes made by this patch.
+Hi all,
 
-We may have to do the conversions case by case. Converting to
-congestion_wait_check() (see http://lkml.org/lkml/2010/8/18/292) or
-other waiting schemes.
+After merging the nert tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Thanks,
-Fengguang
+drivers/net/stmmac/stmmac_timer.c: In function 'stmmac_open_ext_timer':
+drivers/net/stmmac/stmmac_timer.c:60: error: 'CONFIG_RTC_HCTOSYS_DEVICE' un=
+declared (first use in this function)
+
+Maybe exposed by commit ac75791aa943c7953521cb4fa7728bf51f9abd2d ("stmmac:
+remove dead option in the driver's Kconfig") since presumably we used to
+not build this driver.
+
+I have used the net tree from next-20100826 (with the 2 reverts) for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__27_Aug_2010_11_14_00_+1000_8dEXRpqSHJ3=dM=T
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMdxFYAAoJEDMEi1NhKgbsrRwH/3V+p6pcvpDIOZxjMWIAsKRF
+uy4o+ysnHqfnJKw8yauk+hYOV0ztpHjBVxjVjjvOpOCgsMg7tuKzWvNQ00VwrdDw
+ea6uFmphk3zJ4K84AXBzOGam5WYGk4pLfrMhqYN0z8SdTbri8O8LamYRypdzWyyG
+7OUgIMU/fSOPUK8xEj+dPhir0pup+XLOtxnWOj2/tuXhl7tlwClJwlwutZZXhwTg
+YBy5a4Mx1g1i8VeJdsQclQzxy439q9KBDJFm1nbmIkc/O5blTMPuKvc8DuTtu3/E
+z5g6jRSKXp+E+HBE2fx5U9ciAEANOcd64lLT0f8Zx0yFZonNZWLZGoiYde1AeEc=
+=brKZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_Aug_2010_11_14_00_+1000_8dEXRpqSHJ3=dM=T--
