@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab0H0BEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 21:04:33 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:44776 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab0H0BE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:04:29 -0400
-Date: Fri, 27 Aug 2010 09:56:39 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Mark Hills <mark@pogo.org.uk>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: cgroup: rmdir() does not complete
-Message-Id: <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752582Ab0H0BLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 21:11:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59297 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab0H0BL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 21:11:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,277,1280732400"; 
+   d="scan'208";a="549181915"
+Date: Fri, 27 Aug 2010 09:11:06 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Shaohua <shaohua.li@intel.com>
+Subject: Re: [PATCH 3/3] writeback: Do not congestion sleep when there are
+ no congested BDIs
+Message-ID: <20100827011106.GB7353@localhost>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
+ <1282835656-5638-4-git-send-email-mel@csn.ul.ie>
+ <20100826173843.GD6873@barrios-desktop>
+ <20100826174245.GJ20944@csn.ul.ie>
+ <20100826181735.GB6805@cmpxchg.org>
+ <20100826202324.GK20944@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100826202324.GK20944@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Fri, Aug 27, 2010 at 04:23:24AM +0800, Mel Gorman wrote:
+> On Thu, Aug 26, 2010 at 08:17:35PM +0200, Johannes Weiner wrote:
+> > On Thu, Aug 26, 2010 at 06:42:45PM +0100, Mel Gorman wrote:
+> > > On Fri, Aug 27, 2010 at 02:38:43AM +0900, Minchan Kim wrote:
+> > > > On Thu, Aug 26, 2010 at 04:14:16PM +0100, Mel Gorman wrote:
+> > > > > If congestion_wait() is called with no BDIs congested, the caller will
+> > > > > sleep for the full timeout and this is an unnecessary sleep. This patch
+> > > > > checks if there are BDIs congested. If so, it goes to sleep as normal.
+> > > > > If not, it calls cond_resched() to ensure the caller is not hogging the
+> > > > > CPU longer than its quota but otherwise will not sleep.
+> > > > > 
+> > > > > This is aimed at reducing some of the major desktop stalls reported during
+> > > > > IO. For example, while kswapd is operating, it calls congestion_wait()
+> > > > > but it could just have been reclaiming clean page cache pages with no
+> > > > > congestion. Without this patch, it would sleep for a full timeout but after
+> > > > > this patch, it'll just call schedule() if it has been on the CPU too long.
+> > > > > Similar logic applies to direct reclaimers that are not making enough
+> > > > > progress.
+> > > > > 
+> > > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > > > ---
+> > > > >  mm/backing-dev.c |   20 ++++++++++++++------
+> > > > >  1 files changed, 14 insertions(+), 6 deletions(-)
+> > > > > 
+> > > > > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> > > > > index a49167f..6abe860 100644
+> > > > > --- a/mm/backing-dev.c
+> > > > > +++ b/mm/backing-dev.c
+> > > > 
+> > > > Function's decripton should be changed since we don't wait next write any more. 
+> > > > 
+> > > 
+> > > My bad. I need to check that "next write" thing. It doesn't appear to be
+> > > happening but maybe that side of things just broke somewhere in the
+> > > distant past. I lack context of how this is meant to work so maybe
+> > > someone will educate me.
+> > 
+> > On every retired io request the congestion state on the bdi is checked
+> > and the congestion waitqueue woken up.
+> > 
+> > So without congestion, we still only wait until the next write
+> > retires, but without any IO, we sleep the full timeout.
+> > 
+> > Check __freed_requests() in block/blk-core.c.
+> > 
+> 
+> Seems reasonable. Still, if there is no write IO going on and no
+> congestion there seems to be no point going to sleep for the full
+> timeout. It still feels wrong.
 
-On Thu, 26 Aug 2010 16:51:55 +0100 (BST)
-Mark Hills <mark@pogo.org.uk> wrote:
+Yeah the stupid sleeping feels wrong. However there are ~20
+congestion_wait() callers spread randomly in VM, FS and block drivers.
+Many of them may be added by rule of thumb, however what if some of
+them happen to depend on the old stupid sleeping behavior? Obviously
+you've done extensive tests on the page reclaim paths, however that's
+far from enough to cover the wider changes made by this patch.
 
-> I am experiencing hung tasks when trying to rmdir() on a cgroup. One task 
-> spins, others queue up behind it with the following:
-> 
->   INFO: task soaked-cgroup:27257 blocked for more than 120 seconds.
->   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->   soaked-cgrou D ffff8800058157c0     0 27257  29411 0x00000000
->   ffff88004ffffdd8 0000000000000086 ffff88004ffffda8 ffff88004ffffeb8
->   0000000000000010 ffff880119813780 ffff88004ffffd48 ffff88004fffffd8
->   ffff88004fffffd8 000000000000f9b0 00000000000157c0 ffff880137693268
->   Call Trace:
->   [<ffffffff81115edb>] ? mntput_no_expire+0x24/0xe7
->   [<ffffffff81427acd>] __mutex_lock_common+0x14d/0x1b4
->   [<ffffffff81108a7c>] ? path_put+0x1d/0x22
->   [<ffffffff81427b48>] __mutex_lock_slowpath+0x14/0x16
->   [<ffffffff81427c4f>] mutex_lock+0x31/0x4b
->   [<ffffffff8110bdf8>] do_rmdir+0x74/0x102
->   [<ffffffff8110bebd>] sys_rmdir+0x11/0x13
->   [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
-> 
-> Kernel is from Fedora, 2.6.33.6. In all cases the cgroup contains no 
-> tasks.
-> 
-> Commit ec64f5 ("fix frequent -EBUSY at rmdir") adds a busy wait loop to 
-> the rmdir. It looks like what I am seeing here and indicates that some 
-> cgroup subsystem is busy, indefinitely.
-> 
-The commit had caused a bug about rmdir, but it was fixed by the commit 88703267.
-The fix was merged in 2.6.31, so it seems that you hit a new one...
-
-> I have not worked out how to reproduce it quickly. My only way is to 
-> complete a 'dd' command in the cgroup, but then the problem is so rare it 
-> is slow progress.
-> 
-> Documentation/cgroup.memory.txt describes how force_empty can be required 
-> in some cases. Does this mean that with the patch above, these cases will 
-> now spin on rmdir(), instead of returning -EBUSY? How can produce a 
-> reliable test case requiring memory.force_empty to be used, to test this?
-> 
-You don't need to touch "force_empty". rmdir() does what "force_empty" does.
-
-> Or is it likely to be some other cause, and how best to find it?
-> 
-What cgroup subsystem did you mount where the directory existed you tried
-to rmdir() first ?
-If you mounted several subsystems on the same hierarchy, can you mount them
-separately to narrow down the cause ?
-
+We may have to do the conversions case by case. Converting to
+congestion_wait_check() (see http://lkml.org/lkml/2010/8/18/292) or
+other waiting schemes.
 
 Thanks,
-Daisuke Nishimura.
+Fengguang
