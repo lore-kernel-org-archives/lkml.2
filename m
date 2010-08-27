@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab0H0Trr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:47:47 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:60679 "EHLO e5.ny.us.ibm.com"
+	id S1754132Ab0H0TsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:48:04 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38694 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177Ab0H0Trp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:47:45 -0400
-Date: Fri, 27 Aug 2010 14:31:24 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        ecryptfs-devel@lists.launchpad.net
-Subject: [GIT PULL] eCryptfs fixes for 2.6.36-rc3
-Message-ID: <20100827193117.GA1149@ecryptfs>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753509Ab0H0TsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 15:48:02 -0400
+From: Julia Lawall <julia@diku.dk>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: kernel-janitors@vger.kernel.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net/ipv4: Eliminate kstrdup memory leak
+Date: Fri, 27 Aug 2010 21:47:43 +0200
+Message-Id: <1282938463-26450-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The string clone is only used as a temporary copy of the argument val
+within the while loop, and so it should be freed before leaving the
+function.  The call to strsep, however, modifies clone, so a pointer to the
+front of the string is kept in saved_clone, to make it possible to free it.
 
-The following changes since commit 76be97c1fc945db08aae1f1b746012662d643e97:
+The sematic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-  Linux 2.6.36-rc2 (2010-08-22 17:43:29 -0700)
+// <smpl>
+@r exists@
+local idexpression x;
+expression E;
+identifier l;
+statement S;
+@@
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
+*x= \(kasprintf\|kstrdup\)(...);
+...
+if (x == NULL) S
+... when != kfree(x)
+    when != E = x
+if (...) {
+  <... when != kfree(x)
+* goto l;
+  ...>
+* return ...;
+}
+// </smpl>
 
-Jerome Marchand (1):
-      ecryptfs: properly mark init functions
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Julia Lawall (1):
-      fs/ecryptfs: Return -ENOMEM on memory allocation failure
+---
+ net/ipv4/tcp_cong.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Tyler Hicks (1):
-      eCryptfs: Fix encrypted file name lookup regression
+diff --git a/net/ipv4/tcp_cong.c b/net/ipv4/tcp_cong.c
+index 0ec9bd0..850c737 100644
+--- a/net/ipv4/tcp_cong.c
++++ b/net/ipv4/tcp_cong.c
+@@ -196,10 +196,10 @@ void tcp_get_allowed_congestion_control(char *buf, size_t maxlen)
+ int tcp_set_allowed_congestion_control(char *val)
+ {
+ 	struct tcp_congestion_ops *ca;
+-	char *clone, *name;
++	char *saved_clone, *clone, *name;
+ 	int ret = 0;
+ 
+-	clone = kstrdup(val, GFP_USER);
++	saved_clone = clone = kstrdup(val, GFP_USER);
+ 	if (!clone)
+ 		return -ENOMEM;
+ 
+@@ -226,6 +226,7 @@ int tcp_set_allowed_congestion_control(char *val)
+ 	}
+ out:
+ 	spin_unlock(&tcp_cong_list_lock);
++	kfree(saved_clone);
+ 
+ 	return ret;
+ }
 
- fs/ecryptfs/crypto.c    |    3 +--
- fs/ecryptfs/inode.c     |   31 ++++++++++++++++++++++++-------
- fs/ecryptfs/keystore.c  |    2 ++
- fs/ecryptfs/kthread.c   |    2 +-
- fs/ecryptfs/messaging.c |    2 +-
- fs/ecryptfs/miscdev.c   |    2 +-
- 6 files changed, 30 insertions(+), 12 deletions(-)
