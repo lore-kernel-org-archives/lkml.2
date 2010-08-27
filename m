@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0H0QTo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:19:44 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:38549 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab0H0QTj (ORCPT
+	id S1753639Ab0H0QTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:19:49 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6502 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab0H0QTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Aug 2010 12:19:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52468101"
+X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52339604"
 From: Gregory Bean <gbean@codeaurora.org>
 To: dwalker@codeaurora.org
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 2/5 v3] msm: documentation: add gpiomux documentation.
-Date: Fri, 27 Aug 2010 09:19:32 -0700
-Message-Id: <1282925975-26367-2-git-send-email-gbean@codeaurora.org>
+Subject: [PATCH 3/5 v3] msm: convert 8x50 to gpiomux.
+Date: Fri, 27 Aug 2010 09:19:33 -0700
+Message-Id: <1282925975-26367-3-git-send-email-gbean@codeaurora.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282925975-26367-1-git-send-email-gbean@codeaurora.org>
 References: <1282925975-26367-1-git-send-email-gbean@codeaurora.org>
@@ -22,211 +22,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Change the gpio-init code from deprecated gpio_tlmm_config
+to the new gpiomux api.
+
 Signed-off-by: Gregory Bean <gbean@codeaurora.org>
 ---
- Documentation/arm/00-INDEX        |    2 +
- Documentation/arm/msm/gpiomux.txt |  179 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 181 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/arm/msm/gpiomux.txt
+ arch/arm/mach-msm/board-qsd8x50.c |   12 ------------
+ arch/arm/mach-msm/gpiomux-8x50.c  |   11 ++++++++++-
+ 2 files changed, 10 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/arm/00-INDEX b/Documentation/arm/00-INDEX
-index 7f5fc3b..ecf7d04 100644
---- a/Documentation/arm/00-INDEX
-+++ b/Documentation/arm/00-INDEX
-@@ -6,6 +6,8 @@ Interrupts
- 	- ARM Interrupt subsystem documentation
- IXP2000
- 	- Release Notes for Linux on Intel's IXP2000 Network Processor
-+msm
-+	- MSM specific documentation
- Netwinder
- 	- Netwinder specific documentation
- Porting
-diff --git a/Documentation/arm/msm/gpiomux.txt b/Documentation/arm/msm/gpiomux.txt
-new file mode 100644
-index 0000000..d37f708
---- /dev/null
-+++ b/Documentation/arm/msm/gpiomux.txt
-@@ -0,0 +1,179 @@
-+This document provides an overview of the msm_gpiomux interface, which
-+is used to provide gpio pin multiplexing and configuration on mach-msm
-+targets.
-+
-+History
-+=======
-+
-+The first-generation API for gpio configuration & multiplexing on msm
-+is the function gpio_tlmm_config().  This function has a few notable
-+shortcomings, which led to its deprecation and replacement by gpiomux:
-+
-+The 'disable' parameter:  Setting the second parameter to
-+gpio_tlmm_config to GPIO_CFG_DISABLE tells the peripheral
-+processor in charge of the subsystem to perform a look-up into a
-+low-power table and apply the low-power/sleep setting for the pin.
-+As the msm family evolved this became problematic. Not all pins
-+have sleep settings, not all peripheral processors will accept requests
-+to apply said sleep settings, and not all msm targets have their gpio
-+subsystems managed by a peripheral processor. In order to get consistent
-+behavior on all targets, drivers are forced to ignore this parameter,
-+rendering it useless.
-+
-+The 'direction' flag: for all mux-settings other than raw-gpio (0),
-+the output-enable bit of a gpio is hard-wired to a known
-+input (usually VDD or ground).  For those settings, the direction flag
-+is meaningless at best, and deceptive at worst.  In addition, using the
-+direction flag to change output-enable (OE) directly can cause trouble in
-+gpiolib, which has no visibility into gpio direction changes made
-+in this way.  Direction control in gpio mode should be made through gpiolib.
-+
-+The abbreviation in the function's name has also been known to make
-+some folks break into choruses of 'Under the Sea'.
-+
-+Key Features of gpiomux
-+=======================
-+
-+- A consistent interface across all generations of msm.  Drivers can expect
-+the same results on every target.
-+- gpiomux plays nicely with gpiolib.  Functions that should belong to gpiolib
-+are left to gpiolib and not duplicated here.  gpiomux is written with the
-+intent that gpio_chips will call gpiomux reference-counting methods
-+from their request() and free() hooks, providing full integration.
-+- Tabular configuration.  Instead of having to call gpio_tlmm_config
-+hundreds of times, gpio configuration is placed in a single table.
-+- Per-gpio sleep.  Each gpio is individually reference counted, allowing only
-+those lines which are in use to be put in high-power states.
-+- 0 means 'do nothing': all flags are designed so that the default memset-zero
-+equates to a sensible default of 'no configuration', preventing users
-+from having to provide hundreds of 'no-op' configs for unused or
-+unwanted lines.
-+
-+Usage
-+=====
-+
-+To use gpiomux, provide configuration information for relevant gpio lines
-+in the msm_gpiomux_configs table.  Since a 0 equates to "unconfigured",
-+only those lines to be managed by gpiomux need to be specified.  Here
-+is a completely fictional example:
-+
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index e3cc807..fb0fe67 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -35,21 +35,10 @@
+ 
+ extern struct sys_timer msm_timer;
+ 
+-static struct msm_gpio uart3_config_data[] = {
+-	{ GPIO_CFG(86, 1, GPIO_INPUT,   GPIO_PULL_DOWN, GPIO_2MA), "UART2_Rx"},
+-	{ GPIO_CFG(87, 1, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_Tx"},
+-};
+-
+ static struct platform_device *devices[] __initdata = {
+ 	&msm_device_uart3,
+ };
+ 
+-static void msm8x50_init_uart3(void)
+-{
+-	msm_gpios_request_enable(uart3_config_data,
+-				ARRAY_SIZE(uart3_config_data));
+-}
+-
+ static void __init qsd8x50_map_io(void)
+ {
+ 	msm_map_qsd8x50_io();
+@@ -64,7 +53,6 @@ static void __init qsd8x50_init_irq(void)
+ 
+ static void __init qsd8x50_init(void)
+ {
+-	msm8x50_init_uart3();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
+ }
+ 
+diff --git a/arch/arm/mach-msm/gpiomux-8x50.c b/arch/arm/mach-msm/gpiomux-8x50.c
+index 7b380b3..4406e0f 100644
+--- a/arch/arm/mach-msm/gpiomux-8x50.c
++++ b/arch/arm/mach-msm/gpiomux-8x50.c
+@@ -16,4 +16,13 @@
+  */
+ #include "gpiomux.h"
+ 
+-struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {};
 +struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
-+	[12] = {
-+		.active = GPIOMUX_VALID | GPIOMUX_DRV_8MA | GPIOMUX_FUNC_1,
-+		.suspended = GPIOMUX_VALID | GPIOMUX_PULL_DOWN,
++	[86] = { /* UART3 RX */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_1 | GPIOMUX_VALID,
 +	},
-+	[34] = {
-+		.suspended = GPIOMUX_VALID | GPIOMUX_PULL_DOWN,
++	[87] = { /* UART3 TX */
++		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
++			     GPIOMUX_FUNC_1 | GPIOMUX_VALID,
 +	},
 +};
-+
-+To indicate that a gpio is in use, call msm_gpiomux_get() to increase
-+its reference count.  To decrease the reference count, call msm_gpiomux_put().
-+
-+The effect of this configuration is as follows:
-+
-+When the system boots, gpios 12 and 34 will be initialized with their
-+'suspended' configurations.  All other gpios, which were left unconfigured,
-+will not be touched.
-+
-+When msm_gpiomux_get() is called on gpio 12 to raise its reference count
-+above 0, its active configuration will be applied.  Since no other gpio
-+line has a valid active configuration, msm_gpiomux_get() will have no
-+effect on any other line.
-+
-+When msm_gpiomux_put() is called on gpio 12 or 34 to drop their reference
-+count to 0, their suspended configurations will be applied.
-+Since no other gpio line has a valid suspended configuration, no other
-+gpio line will be effected by msm_gpiomux_put().  Since gpio 34 has no valid
-+active configuration, this is effectively a no-op for gpio 34 as well,
-+with one small caveat, see the section "About Output-Enable Settings".
-+
-+All of the GPIOMUX_VALID flags may seem like unnecessary overhead, but
-+they address some important issues.  As unused entries (all those
-+except 12 and 34) are zero-filled, gpiomux needs a way to distinguish
-+the used fields from the unused.  In addition, the all-zero pattern
-+is a valid configuration!  Therefore, gpiomux defines an additional bit
-+which is used to indicate when a field is used.  This has the pleasant
-+side-effect of allowing calls to msm_gpiomux_write to use '0' to indicate
-+that a value should not be changed:
-+
-+  msm_gpiomux_write(0, GPIOMUX_VALID, 0);
-+
-+replaces the active configuration of gpio 0 with an all-zero configuration,
-+but leaves the suspended configuration as it was.
-+
-+Static Configurations
-+=====================
-+
-+To install a static configuration, which is applied at boot and does
-+not change after that, install a configuration with a suspended component
-+but no active component, as in the previous example:
-+
-+	[34] = {
-+		.suspended = GPIOMUX_VALID | GPIOMUX_PULL_DOWN,
-+	},
-+
-+The suspended setting is applied during boot, and the lack of any valid
-+active setting prevents any other setting from being applied at runtime.
-+If other subsystems attempting to access the line is a concern, one could
-+*really* anchor the configuration down by calling msm_gpiomux_get on the
-+line at initialization to move the line into active mode.  With the line
-+held, it will never be re-suspended, and with no valid active configuration,
-+no new configurations will be applied.
-+
-+But then, if having other subsystems grabbing for the line is truly a concern,
-+it should be reserved with gpio_request instead, which carries an implicit
-+msm_gpiomux_get.
-+
-+gpiomux and gpiolib
-+===================
-+
-+It is expected that msm gpio_chips will call msm_gpiomux_get() and
-+msm_gpiomux_put() from their request and free hooks, like this fictional
-+example:
-+
-+static int request(struct gpio_chip *chip, unsigned offset)
-+{
-+        return msm_gpiomux_get(chip->base + offset);
-+}
-+
-+static void free(struct gpio_chip *chip, unsigned offset)
-+{
-+        msm_gpiomux_put(chip->base + offset);
-+}
-+
-+	...somewhere in a gpio_chip declaration...
-+	.request = request,
-+	.free    = free,
-+
-+This provides important functionality:
-+- It guarantees that a gpio line will have its 'active' config applied
-+  when the line is requested, and will not be suspended while the line
-+  remains requested; and
-+- It guarantees that gpio-direction settings from gpiolib behave sensibly.
-+  See "About Output-Enable Settings."
-+
-+This mechanism allows for "auto-request" of gpiomux lines via gpiolib
-+when it is suitable.  Drivers wishing more exact control are, of course,
-+free to also use msm_gpiomux_set and msm_gpiomux_get.
-+
-+About Output-Enable Settings
-+============================
-+
-+Some msm targets do not have the ability to query the current gpio
-+configuration setting.  This means that changes made to the output-enable
-+(OE) bit by gpiolib cannot be consistently detected and preserved by gpiomux.
-+Therefore, when gpiomux applies a configuration setting, any direction
-+settings which may have been applied by gpiolib are lost and the default
-+input settings are re-applied.
-+
-+For this reason, drivers should not assume that gpio direction settings
-+continue to hold if they free and then re-request a gpio.  This seems like
-+common sense - after all, anybody could have obtained the line in the
-+meantime - but it needs saying.
-+
-+This also means that calls to msm_gpiomux_write will reset the OE bit,
-+which means that if the gpio line is held by a client of gpiolib and
-+msm_gpiomux_write is called, the direction setting has been lost and
-+gpiolib's internal state has been broken.
-+Release gpio lines before reconfiguring them.
 -- 
 1.7.0.4
 
