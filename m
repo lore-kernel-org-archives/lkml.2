@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab0H0Sco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:32:44 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:41065 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752048Ab0H0Scm (ORCPT
+	id S1752048Ab0H0SdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:33:07 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31433 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab0H0SdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:32:42 -0400
-Date: Fri, 27 Aug 2010 14:32:40 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-Message-ID: <20100827183240.GC22679@Krystal>
-References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop> <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain> <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain> <20100826230934.GA4194@Krystal> <1282894655.1975.1650.camel@laptop> <20100827152125.GB14926@Krystal> <1282923686.1975.2780.camel@laptop> <20100827160946.GG14926@Krystal> <1282930072.1975.2962.camel@laptop>
+	Fri, 27 Aug 2010 14:33:02 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6087"; a="52354724"
+Message-ID: <4C7804DE.9020008@codeaurora.org>
+Date: Fri, 27 Aug 2010 11:33:02 -0700
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282930072.1975.2962.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:25:59 up 216 days, 21:02,  4 users,  load average: 0.04, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Kevin Hilman <khilman@deeprootsystems.com>
+CC: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@suse.de>,
+        mark gross <markgross@thegnar.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
+References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>	<1282882403-29824-2-git-send-email-skannan@codeaurora.org> <87hbigqg8d.fsf@deeprootsystems.com>
+In-Reply-To: <87hbigqg8d.fsf@deeprootsystems.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Fri, 2010-08-27 at 12:09 -0400, Mathieu Desnoyers wrote:
-> > > The specification also doesn't cover the case where the handler takes
-> > > more time to execute than the timer interval.
-> > 
-> > Why should it ? It seems valid for a workload to result in spawning many threads
-> > bound to more than a single core on a multi-core system. So concurrency
-> > management should be performed by the application. 
+Kevin Hilman wrote:
+> Saravana Kannan <skannan@codeaurora.org> writes:
 > 
-> The problem with allowing concurrency is that the moment you want to do
-> that you get the spawner context and error propagation problems.
+>> Some drivers/devices might need some minimum system bus performance to
+>> provide acceptable service. Provide a PM QoS parameter to send these requests
+>> to.
+>>
+>> The new parameter is named "system bus performance" since it is generic enough
+>> for the unit of the request to be frequency, bandwidth or something else that
+>> might be appropriate. It's up to each implementation of the QoS provider to
+>> define what the unit of the request would be.
+>>
+>> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> 
+> With this current design, only one system-wide bus would be managed.
+> What if a platform has more than one independently scalable bus?
+> 
+> I think the only scalable way to handle this kind of thing is to have
+> per-device QoS constraints that can then be combined/aggregated by parent
+> devices/busses.
+> 
+> At LPC this year, I've proposed per-device QoS constraints[1] as a topic
+> for the PM mini-conf.  I hope some folks from the MSM camp can be there
+> for these discussions.
+> 
+> Kevin
+> 
+> [1] http://www.linuxplumbersconf.org/2010/ocw/proposals/819
 
-These are problems you get only when you allow spawning any number of threads.
-If, instead, you create a thread pool at timer creation, then you can allow
-concurrency without problems with spawner context and error proparation.
+Yeah, I'm planning on rounding up some MSM folks for LPC this year. 
+Power is a big concern for us so it would be good to join the 
+discussion.  Initially, I was very keen on the per-device QoS contraints 
+but I've since cooled on it.  For our HW, there's not a generic unit 
+that can convey enough data for us to act on.  At least not w/o lookup 
+tables, etc., at which point the unit loses it's value and becomes a 
+generic handle.  I'm looking forward to a good group discussion on this 
+topic.  Thanks.
 
-> Thus we're limited to spawning a single thread at timer_create() and
-> handling expirations in there. At that point you have to specify what
-> happens to an expiration while the handler is running, will it queue
-> handlers or will you have to carefully craft your handler using
-> timer_getoverrun().
-
-With my statement above in mind, it's true that we'd have to handle what happens
-when the thread pool is exhausted. But couldn't we simply increment an overrun
-counter from userland ? (It might be a different counter than kernel space kept
-internally in userland)
-
-> But I really don't understand why POSIX would provide this composite
-> functionality instead of providing the separate bits to implement this,
-> which I think is only SIGEV_THREAD_ID which is missing.
-
-Higher abstraction API vs low-level control. A long running battle. ;)
-
-Thanks,
-
-Mathieu
+- Bryan
 
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
