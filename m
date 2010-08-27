@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab0H0EdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 00:33:18 -0400
-Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:28645 "HELO
-	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752887Ab0H0Ec6 (ORCPT
+	id S1753402Ab0H0EdU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 00:33:20 -0400
+Received: from smtp102.sbc.mail.gq1.yahoo.com ([67.195.15.61]:44810 "HELO
+	smtp102.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753023Ab0H0EdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 00:32:58 -0400
+	Fri, 27 Aug 2010 00:33:07 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: C8hAMs8VM1nhhz2LCMOK6NF06xXSfBo7l2RQ.kuDgiE.hyP
- udwEUyf.qki5hA7l9A5VdwvlSaxvMnlXvd531wIrSQerP1duzpYTYvirbYVM
- 4itKwzSuXo2uIQB3dJhkn.DuyZdGLd9bJn9SIOdZds3evdCuSOmqKDgYVU4G
- wCkyxM3keqxHgL0jjmK.yolheOYBSTDxB0pdhqeDqxs_Uq60NPq6K72Oz_4M
- zzYhLfwtz9h8CSfloYKNH6_NvEHrQbavxwszJ6x9eUMzBrJaGJWeFxFueHT8
- qOpSwqT0r8HT9_EwS8NHLwfm4zDq0SHYrEm4W1DgRrar9uZmtrIe8BYVChie
- 0oJLtWvXdc9g1m2LcBA--
+X-YMail-OSG: Y6tBbloVM1mceAqLvKbrIK9KOY4KEq9EtMXw9KpjJ3suS52
+ v.Txa4sHS5GrTVdujaUfzxGRgvdaJcgzc.DeIJlnseBT0sW24p3kynHdf1VT
+ GoYqPOVVxkLYsl9wVK0213QE8uGdhQh64s3zHg8iVonaHa1fn5kfUTAS8QC7
+ sSHUYg8oz4ctdCuAoQJuqEihpNuMCeat9nEV1hICWFgNFCvZVQ8UObg4uoDq
+ GLlqxHknbymQ4UEEiZUBa7DfKTN04f_R5pEVIsy7MrJHnWYDOowNzZIdeY3B
+ NVCS6N1pNPdTUSd__Jc1A.iXTpqv32pZGjra.EacHGCaVlvAsLgbdZr7Fh38
+ IJsE9d5uwyng3urKI9w--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: Christoph Hellwig <hch@lst.de>, Tejun Heo <teheo@suse.de>,
         Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
         James Bottomley <James.Bottomley@suse.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 1/4] tcm: Add WriteCache and FUADPO infrastructure and attributes
-Date: Thu, 26 Aug 2010 21:32:56 -0700
-Message-Id: <1282883576-10830-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 2/4] tcm: Add SYNCHRONIZE_CACHE* CDB infrastructure and emulation
+Date: Thu, 26 Aug 2010 21:33:03 -0700
+Message-Id: <1282883583-10851-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,282 +34,255 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds six new struct se_subsystem_api releated to
-WriteCache emulation support, FUA Write, FUA READ and DPO.  The main two
-for the SYNCHRONIZE_CACHE* op path callers are:
+This patch adds support for SYNCHRONIZE_CACHE and SYNCHRONIZE_CACHE_16
+CDB emulation using a 32-bit and 64-bit Logical Block Address (LBA) and
+Number of Blocks Range (converted to bytes by TCM) on a per struct se_cmd +
+single struct se_task context basis into struct se_subsystem_api backstores
+based on the received LBA + Range using ->do_sync_cache() and
+->do_sync_cache_range() API callers.
 
-	/*
-	 * Notify subsystem backstore when a SYNCHRONIZE_CACHE has been
-	 * received with WriteCache=1
-	 */
-	void (*do_sync_cache)(struct se_cmd *);
-	/*
-	 * do_sync_cache_range():
-	 *
-	 * Notify subsystem backstore when a SYNCHRONIZE_CACHE w/ explict
-	 * LBA + Range has been received with WriteCache=1
-	 */
-	void (*do_sync_cache_range)(struct se_cmd *, unsigned long long, u32)
+It adds the the new transport_generic_synchronize_cache(), which is assigned
+to struct se_cmd->transport_emulate_cdb() when TCM is handling WriteCache
+emulation.  This patch also sets T_TASK(cmd)->t_task_fua for WRITE_10,
+WRITE_12, and WRITE_16 in transport_generic_cmd_sequencer(), which are
+used for Forced Unit Access WRITE emulation in TCM/FILEIO.
 
-that are used in the following patch.
+It also adds a new callback mechinisim for SYNCHRONIZE_CACHE* and is
+used by TCM/FILEIO (and other TCM subsystem plugins).  This patch adds a
+common completion caller in transport_complete_sync_cache(), and adds the
+SCF_EMULATE_CDB_ASYNC and SCF_EMULATE_SYNC_CACHE bits, and updates
+__transport_execute_tasks() to skip local completion case when processing
+a SYNCHRONIZE_CACHE* CDB.
 
-This patch also adds the four (emulate_write_cache, emulate_fua_write,
-emulate_fua_read, emulate_dpo) new struct se_dev_attrib values releated to
-WriteCache, FUA and DPO configuration on a per struct se_device basis in:
-
-	 /sys/kernel/config/target/core/$SUBNAME_$HBAID/$DEV/attrib/
-
-It also sets the following hardcoded defaults, where are listed in the
-diff for include/target/target_core_transport.h:
-
-	/* Emulation for Direct Page Out */
-	#define DA_EMULATE_DPO                         0
-	/* Emulation for Forced Unit Access WRITEs */
-	#define DA_EMULATE_FUA_WRITE                   1
-	/* Emulation for Forced Unit Access READs */
-	#define DA_EMULATE_FUA_READ                    0
-	/* Emulation for WriteCache and SYNCHRONIZE_CACHE */
-	#define DA_EMULATE_WRITE_CACHE                 0
+It also adds a special case usage of transport_get_sectors() for
+SCF_EMULATE_SYNC_CACHE to check to ensure the received LBA + Range does not
+exceed past the end of the struct se_device.  Finally, this patch also adds a
+passthrough for TCM/pSCSI to not setup the cmd->transport_emulate_cdb() caller,
+and allows a method to disable the WriteCache, et al. emulation for an attached
+struct scsi_device.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_configfs.c  |   16 ++++++
- drivers/target/target_core_device.c    |   84 ++++++++++++++++++++++++++++++++
- include/target/target_core_base.h      |    4 ++
- include/target/target_core_device.h    |    4 ++
- include/target/target_core_transport.h |   39 +++++++++++++++
- 5 files changed, 147 insertions(+), 0 deletions(-)
+ drivers/target/target_core_transport.c |  124 +++++++++++++++++++++++++++++--
+ include/target/target_core_base.h      |    3 +
+ 2 files changed, 119 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-index b48340a..3e71fa9 100644
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -545,6 +545,18 @@ static struct target_core_dev_attrib_attribute				\
- 	__CONFIGFS_EATTR_RO(_name,					\
- 	target_core_dev_show_attr_##_name);
- 
-+DEF_DEV_ATTRIB(emulate_dpo);
-+SE_DEV_ATTR(emulate_dpo, S_IRUGO | S_IWUSR);
-+
-+DEF_DEV_ATTRIB(emulate_fua_write);
-+SE_DEV_ATTR(emulate_fua_write, S_IRUGO | S_IWUSR);
-+
-+DEF_DEV_ATTRIB(emulate_fua_read);
-+SE_DEV_ATTR(emulate_fua_read, S_IRUGO | S_IWUSR);
-+
-+DEF_DEV_ATTRIB(emulate_write_cache);
-+SE_DEV_ATTR(emulate_write_cache, S_IRUGO | S_IWUSR);
-+
- DEF_DEV_ATTRIB(emulate_ua_intlck_ctrl);
- SE_DEV_ATTR(emulate_ua_intlck_ctrl, S_IRUGO | S_IWUSR);
- 
-@@ -578,6 +590,10 @@ SE_DEV_ATTR(task_timeout, S_IRUGO | S_IWUSR);
- CONFIGFS_EATTR_OPS(target_core_dev_attrib, se_dev_attrib, da_group);
- 
- static struct configfs_attribute *target_core_dev_attrib_attrs[] = {
-+	&target_core_dev_attrib_emulate_dpo.attr,
-+	&target_core_dev_attrib_emulate_fua_write.attr,
-+	&target_core_dev_attrib_emulate_fua_read.attr,
-+	&target_core_dev_attrib_emulate_write_cache.attr,
- 	&target_core_dev_attrib_emulate_ua_intlck_ctrl.attr,
- 	&target_core_dev_attrib_emulate_tas.attr,
- 	&target_core_dev_attrib_enforce_pr_isids.attr,
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index efc85be..5230e12 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1025,6 +1025,10 @@ int se_dev_check_shutdown(struct se_device *dev)
- 
- void se_dev_set_default_attribs(struct se_device *dev)
- {
-+	DEV_ATTRIB(dev)->emulate_dpo = DA_EMULATE_DPO;
-+	DEV_ATTRIB(dev)->emulate_fua_write = DA_EMULATE_FUA_WRITE;
-+	DEV_ATTRIB(dev)->emulate_fua_read = DA_EMULATE_FUA_READ;
-+	DEV_ATTRIB(dev)->emulate_write_cache = DA_EMULATE_WRITE_CACHE;
- 	DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl = DA_EMULATE_UA_INTLLCK_CTRL;
- 	DEV_ATTRIB(dev)->emulate_tas = DA_EMULATE_TAS;
- 	DEV_ATTRIB(dev)->emulate_reservations = DA_EMULATE_RESERVATIONS;
-@@ -1075,6 +1079,86 @@ int se_dev_set_task_timeout(struct se_device *dev, u32 task_timeout)
- 	return 0;
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 97b6254..076faa5 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1168,6 +1168,32 @@ void transport_complete_cmd(struct se_cmd *cmd, int success)
+ 	cmd->transport_add_cmd_to_queue(cmd, t_state);
  }
  
-+int se_dev_set_emulate_dpo(struct se_device *dev, int flag)
++/*
++ * Completion function used by TCM subsystem plugins (such as FILEIO)
++ * for queueing up response from a struct se_subsystem_api
++ * ->do_sync_cache() and ->do_sync_cache_range().  This completion is
++ * enabled by setting 'struct se_cmd->se_cmd_flags |= SCF_EMULATE_SYNC_CACHE |
++ * SCF_EMULATE_CDB_ASYNC
++ */
++void transport_complete_sync_cache(struct se_cmd *cmd, int good)
 +{
-+	if ((flag != 0) && (flag != 1)) {
-+		printk(KERN_ERR "Illegal value %d\n", flag);
-+		return -1;
++	struct se_task *task = list_entry(T_TASK(cmd)->t_task_list.next,
++				struct se_task, t_list);
++
++	if (good) {
++		cmd->scsi_status = SAM_STAT_GOOD;
++		task->task_scsi_status = GOOD;
++	} else {
++		task->task_scsi_status = SAM_STAT_CHECK_CONDITION;
++		task->task_error_status = PYX_TRANSPORT_ILLEGAL_REQUEST;
++		TASK_CMD(task)->transport_error_status =
++					PYX_TRANSPORT_ILLEGAL_REQUEST;
 +	}
-+	if (TRANSPORT(dev)->dpo_emulated == NULL) {
-+		printk(KERN_ERR "TRANSPORT(dev)->dpo_emulated is NULL\n");
-+		return -1;
++
++	transport_complete_task(task, good);
++}
++EXPORT_SYMBOL(transport_complete_sync_cache);
++
+ /*	transport_complete_task():
+  *
+  *	Called from interrupt and non interrupt context depending
+@@ -4143,11 +4169,15 @@ check_depth:
+ 		}
+ 		/*
+ 		 * Handle the successful completion for transport_emulate_cdb()
+-		 * usage.
++		 * for synchronous operation, following SCF_EMULATE_CDB_ASYNC 
++		 * Otherwise the caller is expected to complete the task with
++		 * proper status.
+ 		 */
+-		cmd->scsi_status = SAM_STAT_GOOD;
+-		task->task_scsi_status = GOOD;
+-		transport_complete_task(task, 1);
++		if (!(cmd->se_cmd_flags & SCF_EMULATE_CDB_ASYNC)) {
++			cmd->scsi_status = SAM_STAT_GOOD;
++			task->task_scsi_status = GOOD;
++			transport_complete_task(task, 1);
++		}
+ 	} else {
+ 		error = TRANSPORT(dev)->do_task(task);
+ 		if (error != 0) {
+@@ -5141,6 +5171,42 @@ int transport_get_sense_data(struct se_cmd *cmd)
+ 	return -1;
+ }
+ 
++static int transport_generic_synchronize_cache(struct se_cmd *cmd)
++{
++	struct se_device *dev = cmd->se_dev;
++	/*
++	 * Determine if we will be flushing the entire device.
++	 */
++	if ((T_TASK(cmd)->t_task_lba == 0) && (cmd->data_length == 0)) {
++		if (TRANSPORT(dev)->do_sync_cache == NULL) {
++			printk(KERN_ERR "TRANSPORT(dev)->do_sync_cache is NULL\n");
++			return PYX_TRANSPORT_LU_COMM_FAILURE;
++		}
++		/*
++		 * The TCM subsystem plugin is expected to handle the
++		 * completion of the SYNCHRONIZE_CACHE op emulation
++		 */
++		TRANSPORT(dev)->do_sync_cache(cmd);
++		return 0;
 +	}
-+	if (TRANSPORT(dev)->dpo_emulated(dev) == 0) {
-+		printk(KERN_ERR "TRANSPORT(dev)->dpo_emulated not supported\n");
-+		return -1;
++	/*
++	 * Otherwise we are flushing a specific range of LBAs.  The
++	 * ->do_sync_cache_range() caller is expected to handle any
++	 * LBA -> offset conversion.
++	 */
++	if (TRANSPORT(dev)->do_sync_cache_range == NULL) {
++		printk(KERN_ERR "TRANSPORT(dev)->do_sync_cache_range is NULL\n");
++		return PYX_TRANSPORT_LU_COMM_FAILURE;
 +	}
-+	DEV_ATTRIB(dev)->emulate_dpo = flag;
-+	printk(KERN_INFO "dev[%p]: SE Device Page Out (DPO) Emulation"
-+			" bit: %d\n", dev, DEV_ATTRIB(dev)->emulate_dpo);
++	/*
++	 * The TCM subsystem plugin is expected to handle the
++	 * completion of the SYNCHRONIZE_CACHE op emulation
++	 */
++	TRANSPORT(dev)->do_sync_cache_range(cmd, T_TASK(cmd)->t_task_lba,
++					cmd->data_length);
 +	return 0;
 +}
 +
-+int se_dev_set_emulate_fua_write(struct se_device *dev, int flag)
-+{
-+	if ((flag != 0) && (flag != 1)) {
-+		printk(KERN_ERR "Illegal value %d\n", flag);
-+		return -1;
-+	}
-+	if (TRANSPORT(dev)->fua_write_emulated == NULL) {
-+		printk(KERN_ERR "TRANSPORT(dev)->fua_write_emulated is NULL\n");
-+		return -1;
-+	}
-+	if (TRANSPORT(dev)->fua_write_emulated(dev) == 0) {
-+		printk(KERN_ERR "TRANSPORT(dev)->fua_write_emulated not supported\n");
-+		return -1;
-+	}
-+	DEV_ATTRIB(dev)->emulate_fua_write = flag;
-+	printk(KERN_INFO "dev[%p]: SE Device Forced Unit Access WRITEs: %d\n",
-+			dev, DEV_ATTRIB(dev)->emulate_fua_write);
-+	return 0;
-+}
+ static inline void transport_dev_get_mem_buf(
+ 	struct se_device *dev,
+ 	struct se_cmd *cmd)
+@@ -5313,6 +5379,7 @@ static int transport_generic_cmd_sequencer(
+ 		transport_get_maps(cmd);
+ 		cmd->transport_split_cdb = &split_cdb_XX_10;
+ 		cmd->transport_get_lba = &transport_lba_32;
++		T_TASK(cmd)->t_task_fua = (cdb[1] & 0x8);
+ 		ret = TGCS_DATA_SG_IO_CDB;
+ 		break;
+ 	case WRITE_12:
+@@ -5325,6 +5392,7 @@ static int transport_generic_cmd_sequencer(
+ 		transport_get_maps(cmd);
+ 		cmd->transport_split_cdb = &split_cdb_XX_12;
+ 		cmd->transport_get_lba = &transport_lba_32;
++		T_TASK(cmd)->t_task_fua = (cdb[1] & 0x8);
+ 		ret = TGCS_DATA_SG_IO_CDB;
+ 		break;
+ 	case WRITE_16:
+@@ -5337,6 +5405,7 @@ static int transport_generic_cmd_sequencer(
+ 		transport_get_maps(cmd);
+ 		cmd->transport_split_cdb = &split_cdb_XX_16;
+ 		cmd->transport_get_long_lba = &transport_lba_64;
++		T_TASK(cmd)->t_task_fua = (cdb[1] & 0x8);
+ 		ret = TGCS_DATA_SG_IO_CDB;
+ 		break;
+ 	case 0xa3:
+@@ -5617,6 +5686,46 @@ static int transport_generic_cmd_sequencer(
+ 				&core_scsi2_emulate_crh : NULL;
+ 		ret = TGCS_NON_DATA_CDB;
+ 		break;
++	case SYNCHRONIZE_CACHE:
++	case 0x91: /* SYNCHRONIZE_CACHE_16: */
++		SET_GENERIC_TRANSPORT_FUNCTIONS(cmd);
++		cmd->transport_allocate_resources =
++				&transport_generic_allocate_none;
++		transport_get_maps(cmd);
++		/*
++		 * Extract LBA and range to be flushed for emulated SYNCHRONIZE_CACHE
++		 */
++		if (cdb[0] == SYNCHRONIZE_CACHE) {
++			sectors = transport_get_sectors_10(cdb, cmd, &sector_ret);
++			T_TASK(cmd)->t_task_lba = transport_lba_32(cdb);
++		} else {
++			sectors = transport_get_sectors_16(cdb, cmd, &sector_ret);
++			T_TASK(cmd)->t_task_lba = transport_lba_64(cdb);
++		}
++                if (sector_ret)
++                        return TGCS_UNSUPPORTED_CDB;
 +
-+int se_dev_set_emulate_fua_read(struct se_device *dev, int flag)
-+{
-+	if ((flag != 0) && (flag != 1)) {
-+		printk(KERN_ERR "Illegal value %d\n", flag);
-+		return -1;
-+	}
-+	if (TRANSPORT(dev)->fua_read_emulated == NULL) {
-+		printk(KERN_ERR "TRANSPORT(dev)->fua_read_emulated is NULL\n");
-+		return -1;
-+	}
-+	if (TRANSPORT(dev)->fua_read_emulated(dev) == 0) {
-+		printk(KERN_ERR "TRANSPORT(dev)->fua_read_emulated not supported\n");
-+		return -1;
-+	}
-+	DEV_ATTRIB(dev)->emulate_fua_read = flag;
-+	printk(KERN_INFO "dev[%p]: SE Device Forced Unit Access READs: %d\n",
-+			dev, DEV_ATTRIB(dev)->emulate_fua_read);
-+	return 0;
-+}
-+
-+int se_dev_set_emulate_write_cache(struct se_device *dev, int flag)
-+{
-+	if ((flag != 0) && (flag != 1)) {
-+		printk(KERN_ERR "Illegal value %d\n", flag);
-+		return -1;
-+	}
-+	if (TRANSPORT(dev)->write_cache_emulated == NULL) {
-+		printk(KERN_ERR "TRANSPORT(dev)->write_cache_emulated is NULL\n");
-+		return -1;
-+	}
-+	if (TRANSPORT(dev)->write_cache_emulated(dev) == 0) {
-+		printk(KERN_ERR "TRANSPORT(dev)->write_cache_emulated not supported\n");
-+		return -1;
-+	}
-+	DEV_ATTRIB(dev)->emulate_write_cache = flag;
-+	printk(KERN_INFO "dev[%p]: SE Device WRITE_CACHE_EMULATION flag: %d\n",
-+			dev, DEV_ATTRIB(dev)->emulate_write_cache);
-+	return 0;
-+}
-+
- int se_dev_set_emulate_ua_intlck_ctrl(struct se_device *dev, int flag)
++                size = transport_get_size(sectors, cdb, cmd);
++		ret = TGCS_NON_DATA_CDB;
++		/*
++		 * For TCM/pSCSI passthrough, skip cmd->transport_emulate_cdb()
++		 */
++		if (TRANSPORT(dev)->transport_type == TRANSPORT_PLUGIN_PHBA_PDEV)
++			break;
++		/*
++		 * Setup the transport_generic_synchronize_cache() callback
++		 * Also set SCF_EMULATE_CDB_ASYNC to ensure asynchronous operation
++		 * for SYNCHRONIZE_CACHE* Immed=1 case in __transport_execute_tasks()
++		 */
++		cmd->transport_emulate_cdb = &transport_generic_synchronize_cache;
++		cmd->se_cmd_flags |= (SCF_EMULATE_SYNC_CACHE | SCF_EMULATE_CDB_ASYNC);
++		/*
++		 * Check to ensure that LBA + Range does not exceed past end of
++		 * device.
++		 */
++		if (transport_get_sectors(cmd) < 0)
++			return TGCS_INVALID_CDB_FIELD;
++		break;
+ 	case ALLOW_MEDIUM_REMOVAL:
+ 	case GPCMD_CLOSE_TRACK:
+ 	case ERASE:
+@@ -5627,7 +5736,6 @@ static int transport_generic_cmd_sequencer(
+ 	case GPCMD_SET_SPEED:
+ 	case SPACE:
+ 	case START_STOP:
+-	case SYNCHRONIZE_CACHE:
+ 	case TEST_UNIT_READY:
+ 	case VERIFY:
+ 	case WRITE_FILEMARKS:
+@@ -6435,12 +6543,12 @@ static inline long long transport_dev_end_lba(struct se_device *dev)
+ 	return dev->dev_sectors_total + 1;
+ }
+ 
+-int transport_get_sectors(
+-	struct se_cmd *cmd)
++int transport_get_sectors(struct se_cmd *cmd)
  {
- 	if ((flag != 0) && (flag != 1) && (flag != 2)) {
+ 	struct se_device *dev = SE_DEV(cmd);
+ 
+-	if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB))
++	if (!(cmd->se_cmd_flags & SCF_EMULATE_SYNC_CACHE) &&
++	    !(cmd->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB))
+ 		return 0;
+ 
+ 	T_TASK(cmd)->t_task_sectors =
 diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 6d82641..a32762c 100644
+index a32762c..d6c2879 100644
 --- a/include/target/target_core_base.h
 +++ b/include/target/target_core_base.h
-@@ -707,6 +707,10 @@ struct se_dev_entry {
- }  ____cacheline_aligned;
+@@ -173,6 +173,8 @@
+ #define SCF_PASSTHROUGH_SG_TO_MEM		0x00200000
+ #define SCF_PASSTHROUGH_CONTIG_TO_SG		0x00400000
+ #define SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC	0x00800000
++#define SCF_EMULATE_SYNC_CACHE			0x01000000
++#define SCF_EMULATE_CDB_ASYNC			0x02000000
  
- struct se_dev_attrib {
-+	int		emulate_dpo;
-+	int		emulate_fua_write;
-+	int		emulate_fua_read;
-+	int		emulate_write_cache;
- 	int		emulate_ua_intlck_ctrl;
- 	int		emulate_tas;
- 	int		emulate_reservations;
-diff --git a/include/target/target_core_device.h b/include/target/target_core_device.h
-index e895604..283ccc7 100644
---- a/include/target/target_core_device.h
-+++ b/include/target/target_core_device.h
-@@ -66,6 +66,10 @@ extern int se_dev_check_online(struct se_device *);
- extern int se_dev_check_shutdown(struct se_device *);
- extern void se_dev_set_default_attribs(struct se_device *);
- extern int se_dev_set_task_timeout(struct se_device *, u32);
-+extern int se_dev_set_emulate_dpo(struct se_device *, int);
-+extern int se_dev_set_emulate_fua_write(struct se_device *, int);
-+extern int se_dev_set_emulate_fua_read(struct se_device *, int);
-+extern int se_dev_set_emulate_write_cache(struct se_device *, int);
- extern int se_dev_set_emulate_ua_intlck_ctrl(struct se_device *, int);
- extern int se_dev_set_emulate_tas(struct se_device *, int);
- extern int se_dev_set_enforce_pr_isids(struct se_device *, int);
-diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
-index d1a3a9a..fa59ed7 100644
---- a/include/target/target_core_transport.h
-+++ b/include/target/target_core_transport.h
-@@ -115,6 +115,14 @@
- /* struct se_dev_attrib sanity values */
- /* 10 Minutes, see transport_get_default_task_timeout()  */
- #define DA_TASK_TIMEOUT_MAX			600
-+/* Emulation for Direct Page Out */
-+#define DA_EMULATE_DPO				0
-+/* Emulation for Forced Unit Access WRITEs */
-+#define DA_EMULATE_FUA_WRITE			1
-+/* Emulation for Forced Unit Access READs */
-+#define DA_EMULATE_FUA_READ			0
-+/* Emulation for WriteCache and SYNCHRONIZE_CACHE */
-+#define DA_EMULATE_WRITE_CACHE			0
- /* Emulation for UNIT ATTENTION Interlock Control */
- #define DA_EMULATE_UA_INTLLCK_CTRL		0
- /* Emulation for TASK_ABORTED status (TAS) by default */
-@@ -170,6 +178,7 @@ extern struct se_queue_req *__transport_get_qr_from_queue(
- 					struct se_queue_obj *);
- extern void transport_remove_cmd_from_queue(struct se_cmd *,
- 					    struct se_queue_obj *);
-+extern void transport_complete_sync_cache(struct se_cmd *, int);
- extern void transport_complete_cmd(struct se_cmd *, int);
- extern void transport_complete_task(struct se_task *, int);
- extern void transport_add_task_to_execute_queue(struct se_task *,
-@@ -409,6 +418,36 @@ struct se_subsystem_api {
- 	 */
- 	int (*do_tmr)(struct se_cmd *cmd);
- 	/*
-+	 * do_sync_cache():
-+	 *
-+	 * Notify subsystem backstore when a SYNCHRONIZE_CACHE has been
-+	 * received with WriteCache=1
-+	 */
-+	void (*do_sync_cache)(struct se_cmd *);
-+	/*
-+	 * do_sync_cache_range():
-+	 *
-+	 * Notify subsystem backstore when a SYNCHRONIZE_CACHE w/ explict
-+	 * LBA + Range has been received with WriteCache=1
-+	 */
-+	void (*do_sync_cache_range)(struct se_cmd *, unsigned long long, u32);
-+	/*
-+	 * dpo_emulated():
-+	 */
-+	int (*dpo_emulated)(struct se_device *);
-+	/*
-+	 * fua_write_emulated():
-+	 */
-+	int (*fua_write_emulated)(struct se_device *);
-+	/*
-+	 * fua_read_emulated():
-+	 */
-+	int (*fua_read_emulated)(struct se_device *);
-+	/*
-+	 * write_cache_emulated():
-+	 */
-+	int (*write_cache_emulated)(struct se_device *);
-+	/*
- 	 * transport_complete():
- 	 *
- 	 * Use transport_generic_complete() for majority of DAS transport
+ /* struct se_device->type */
+ #define PSCSI					1
+@@ -414,6 +416,7 @@ struct se_transport_task {
+ 	unsigned char		t_task_cdb[SCSI_CDB_SIZE];
+ 	unsigned long long	t_task_lba;
+ 	int			t_tasks_failed;
++	int			t_task_fua;
+ 	u32			t_task_cdbs;
+ 	u32			t_task_check;
+ 	u32			t_task_no;
 -- 
 1.5.6.5
 
