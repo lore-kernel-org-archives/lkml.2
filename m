@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab0H0Joe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:44:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33242 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab0H0Jo3 (ORCPT
+	id S1754857Ab0H0Jou (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:44:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42423 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab0H0Jop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:44:29 -0400
+	Fri, 27 Aug 2010 05:44:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=H3zeQOa5cNGvM3eutjR7fD8pgRELxC4oXqLXGQAf/IKTZJv0SH6dZQrYMWrQ2sufGk
-         Q0yQYobtShpBpSzEdkoqgDOAUfBv9hd+/cTdOJn6PjJFlZAjGwiuTy9Nu//krdQ0f52l
-         HVuMtguZ+4+y4TkOsuZF1RRKEiSGDqukDX4Hg=
+        b=jT0D2RBn72M2vOLg+aA5HaaLoq03/qXXfAugtE9nsAZKvLoB47jLCaH2gLHyJhifEF
+         A6bz6P6Tr+I5doCNU/jdT7oMw9+JsicB2RYGgll8bC9j5PCx1222DYDSmxeO2eD72lba
+         HH1AaaDg8Dg+LzhtTaAcWsaaVljD+25JO7ARU=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [RFC PATCH 31/43] ptrace, powerpc: change signature of arch_ptrace()
-Date: Fri, 27 Aug 2010 18:42:17 +0900
-Message-Id: <1282902149-12991-32-git-send-email-namhyung@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+Subject: [RFC PATCH 36/43] ptrace, sh: cleanup arch_ptrace()
+Date: Fri, 27 Aug 2010 18:42:22 +0900
+Message-Id: <1282902149-12991-37-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
 References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
@@ -29,69 +27,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change type of @addr and @data into unsigned long according to commit
-f76671df26ef06321480e702770f88f61272be29 [PATCH 03/43]
+remove unnecessary castings, get rid of dummy pointer in favour of offsetof()
+macro and use temporary variables in order to improve readability.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/powerpc/kernel/ptrace.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ arch/sh/kernel/ptrace_32.c |   38 +++++++++++++++++++++-----------------
+ arch/sh/kernel/ptrace_64.c |   17 ++++++++++-------
+ 2 files changed, 31 insertions(+), 24 deletions(-)
 
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 11f3cd9..e4b6d75 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -1406,8 +1406,8 @@ static long ppc_del_hwdebug(struct task_struct *child, long addr, long data)
-  * Here are the old "legacy" powerpc specific getregs/setregs ptrace calls,
-  * we mark them as obsolete now, they will be removed in a future version
-  */
--static long arch_ptrace_old(struct task_struct *child, long request, long addr,
--			    long data)
-+static long arch_ptrace_old(struct task_struct *child, long request,
-+			    unsigned long addr, unsigned long data)
+diff --git a/arch/sh/kernel/ptrace_32.c b/arch/sh/kernel/ptrace_32.c
+index c81a6b9..926f706 100644
+--- a/arch/sh/kernel/ptrace_32.c
++++ b/arch/sh/kernel/ptrace_32.c
+@@ -341,7 +341,6 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
+ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
  {
+-	struct user * dummy = NULL;
+ 	unsigned long __user *datap = (unsigned long __user *)data;
+ 	int ret;
+ 
+@@ -356,17 +355,20 @@ long arch_ptrace(struct task_struct *child, long request,
+ 
+ 		if (addr < sizeof(struct pt_regs))
+ 			tmp = get_stack_long(child, addr);
+-		else if (addr >= (unsigned long) &dummy->fpu &&
+-			 addr < (unsigned long) &dummy->u_fpvalid) {
++		else if (addr >= offsetof(struct user, fpu) &&
++			 addr < offsetof(struct user, u_fpvalid)) {
+ 			if (!tsk_used_math(child)) {
+-				if (addr == (unsigned long)&dummy->fpu.fpscr)
++				if (addr == offsetof(struct user, fpu.fpscr))
+ 					tmp = FPSCR_INIT;
+ 				else
+ 					tmp = 0;
+-			} else
++			} else {
++				unsigned long index;
++				index = addr - offsetof(struct user, fpu);
+ 				tmp = ((unsigned long *)child->thread.xstate)
+-					[(addr - (unsigned long)&dummy->fpu) >> 2];
+-		} else if (addr == (unsigned long) &dummy->u_fpvalid)
++					[index >> 2];
++			}
++		} else if (addr == offsetof(struct user, u_fpvalid))
+ 			tmp = !!tsk_used_math(child);
+ 		else if (addr == PT_TEXT_ADDR)
+ 			tmp = child->mm->start_code;
+@@ -389,13 +391,15 @@ long arch_ptrace(struct task_struct *child, long request,
+ 
+ 		if (addr < sizeof(struct pt_regs))
+ 			ret = put_stack_long(child, addr, data);
+-		else if (addr >= (unsigned long) &dummy->fpu &&
+-			 addr < (unsigned long) &dummy->u_fpvalid) {
++		else if (addr >= offsetof(struct user, fpu) &&
++			 addr < offsetof(struct user, u_fpvalid)) {
++			unsigned long index;
++			index = addr - offsetof(struct user, fpu);
+ 			set_stopped_child_used_math(child);
+ 			((unsigned long *)child->thread.xstate)
+-				[(addr - (unsigned long)&dummy->fpu) >> 2] = data;
++				[index >> 2] = data;
+ 			ret = 0;
+-		} else if (addr == (unsigned long) &dummy->u_fpvalid) {
++		} else if (addr == offsetof(struct user, u_fpvalid)) {
+ 			conditional_stopped_child_used_math(data, child);
+ 			ret = 0;
+ 		}
+@@ -405,35 +409,35 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		return copy_regset_to_user(child, &user_sh_native_view,
+ 					   REGSET_GENERAL,
+ 					   0, sizeof(struct pt_regs),
+-					   (void __user *)data);
++					   datap);
+ 	case PTRACE_SETREGS:
+ 		return copy_regset_from_user(child, &user_sh_native_view,
+ 					     REGSET_GENERAL,
+ 					     0, sizeof(struct pt_regs),
+-					     (const void __user *)data);
++					     datap);
+ #ifdef CONFIG_SH_FPU
+ 	case PTRACE_GETFPREGS:
+ 		return copy_regset_to_user(child, &user_sh_native_view,
+ 					   REGSET_FPU,
+ 					   0, sizeof(struct user_fpu_struct),
+-					   (void __user *)data);
++					   datap);
+ 	case PTRACE_SETFPREGS:
+ 		return copy_regset_from_user(child, &user_sh_native_view,
+ 					     REGSET_FPU,
+ 					     0, sizeof(struct user_fpu_struct),
+-					     (const void __user *)data);
++					     datap);
+ #endif
+ #ifdef CONFIG_SH_DSP
+ 	case PTRACE_GETDSPREGS:
+ 		return copy_regset_to_user(child, &user_sh_native_view,
+ 					   REGSET_DSP,
+ 					   0, sizeof(struct pt_dspregs),
+-					   (void __user *)data);
++					   datap);
+ 	case PTRACE_SETDSPREGS:
+ 		return copy_regset_from_user(child, &user_sh_native_view,
+ 					     REGSET_DSP,
+ 					     0, sizeof(struct pt_dspregs),
+-					     (const void __user *)data);
++					     datap);
+ #endif
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
+diff --git a/arch/sh/kernel/ptrace_64.c b/arch/sh/kernel/ptrace_64.c
+index c2c2ed5..5a33fac 100644
+--- a/arch/sh/kernel/ptrace_64.c
++++ b/arch/sh/kernel/ptrace_64.c
+@@ -308,6 +308,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
+ {
+ 	int ret;
++	unsigned long __user *datap = (unsigned long __user *) data;
+ 
  	switch (request) {
- 	case PPC_PTRACE_GETREGS:	/* Get GPRs 0 - 31. */
-@@ -1434,7 +1434,8 @@ static long arch_ptrace_old(struct task_struct *child, long request, long addr,
- 	return -EPERM;
- }
- 
--long arch_ptrace(struct task_struct *child, long request, long addr, long data)
-+long arch_ptrace(struct task_struct *child, long request,
-+		 unsigned long addr, unsigned long data)
- {
- 	int ret = -EPERM;
- 
-@@ -1446,11 +1447,11 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
- 		ret = -EIO;
- 		/* convert to index and check */
- #ifdef CONFIG_PPC32
--		index = (unsigned long) addr >> 2;
-+		index = addr >> 2;
- 		if ((addr & 3) || (index > PT_FPSCR)
- 		    || (child->thread.regs == NULL))
- #else
--		index = (unsigned long) addr >> 3;
-+		index = addr >> 3;
- 		if ((addr & 7) || (index > PT_FPSCR))
- #endif
+ 	/* read the word at location addr in the USER area. */
+@@ -322,13 +323,14 @@ long arch_ptrace(struct task_struct *child, long request,
+ 			tmp = get_stack_long(child, addr);
+ 		else if ((addr >= offsetof(struct user, fpu)) &&
+ 			 (addr <  offsetof(struct user, u_fpvalid))) {
+-			tmp = get_fpu_long(child, addr - offsetof(struct user, fpu));
++			unsigned long index = addr - offsetof(struct user, fpu);
++			tmp = get_fpu_long(child, index);
+ 		} else if (addr == offsetof(struct user, u_fpvalid)) {
+ 			tmp = !!tsk_used_math(child);
+ 		} else {
  			break;
-@@ -1474,11 +1475,11 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
- 		ret = -EIO;
- 		/* convert to index and check */
- #ifdef CONFIG_PPC32
--		index = (unsigned long) addr >> 2;
-+		index = addr >> 2;
- 		if ((addr & 3) || (index > PT_FPSCR)
- 		    || (child->thread.regs == NULL))
- #else
--		index = (unsigned long) addr >> 3;
-+		index = addr >> 3;
- 		if ((addr & 7) || (index > PT_FPSCR))
+ 		}
+-		ret = put_user(tmp, (unsigned long *)data);
++		ret = put_user(tmp, datap);
+ 		break;
+ 	}
+ 
+@@ -359,7 +361,8 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		}
+ 		else if ((addr >= offsetof(struct user, fpu)) &&
+ 			 (addr <  offsetof(struct user, u_fpvalid))) {
+-			ret = put_fpu_long(child, addr - offsetof(struct user, fpu), data);
++			unsigned long index = addr - offsetof(struct user, fpu);
++			ret = put_fpu_long(child, index, data);
+ 		}
+ 		break;
+ 
+@@ -367,23 +370,23 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		return copy_regset_to_user(child, &user_sh64_native_view,
+ 					   REGSET_GENERAL,
+ 					   0, sizeof(struct pt_regs),
+-					   (void __user *)data);
++					   datap);
+ 	case PTRACE_SETREGS:
+ 		return copy_regset_from_user(child, &user_sh64_native_view,
+ 					     REGSET_GENERAL,
+ 					     0, sizeof(struct pt_regs),
+-					     (const void __user *)data);
++					     datap);
+ #ifdef CONFIG_SH_FPU
+ 	case PTRACE_GETFPREGS:
+ 		return copy_regset_to_user(child, &user_sh64_native_view,
+ 					   REGSET_FPU,
+ 					   0, sizeof(struct user_fpu_struct),
+-					   (void __user *)data);
++					   datap);
+ 	case PTRACE_SETFPREGS:
+ 		return copy_regset_from_user(child, &user_sh64_native_view,
+ 					     REGSET_FPU,
+ 					     0, sizeof(struct user_fpu_struct),
+-					     (const void __user *)data);
++					     datap);
  #endif
- 			break;
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
 -- 
 1.7.2.2
 
