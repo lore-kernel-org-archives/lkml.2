@@ -1,305 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab0H0WJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 18:09:36 -0400
-Received: from fly.osdn.org.ua ([212.40.45.6]:43772 "EHLO fly.osdn.org.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab0H0WJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 18:09:33 -0400
-X-Greylist: delayed 1982 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Aug 2010 18:09:33 EDT
-Date: Sat, 28 Aug 2010 00:36:29 +0300
-From: Michael Shigorin <mike@osdn.org.ua>
-To: linux-kernel@vger.kernel.org
-Subject: fs hang in 2.6.27.y | Fwd: [Bug 15658] New: [PATCH] x86 constant_test_bit() prone to misoptimization with gcc-4.4
-Message-ID: <20100827213629.GA11342@osdn.org.ua>
-Reply-To: shigorin@gmail.com
-Mail-Followup-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wxDdMuZNg1r63Hyj"
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.1i
+	id S1753463Ab0H0WJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 18:09:54 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41257 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab0H0WJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 18:09:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=R9Lts4iu/EgvZTeP/ezB5+AD9r8Rp1ZT33wX52A8uUhWayijO6AQbUtL7TZaInnURF
+         SfqPn1LtDikFASrTOyD9/hxpgl5EstIpW8tqIcESe0EZllppwnuGHtL0xfuRU1eF/JCu
+         lYkfXmPRfCgxEmEnsBFLRg8BakBRsIC/NuZbQ=
+MIME-Version: 1.0
+In-Reply-To: <20100827101651.GC5348@loge.amd.com>
+References: <20100827101651.GC5348@loge.amd.com>
+Date: Fri, 27 Aug 2010 18:09:51 -0400
+X-Google-Sender-Auth: GR1rzksfPAs1f1U8pmVSK9Y6cJc
+Message-ID: <AANLkTinMCi=bxqJ+3WhNOM6AoaHLi_8WOUSi_wrzno5p@mail.gmail.com>
+Subject: Re: [PATCH] bitops: Provide generic sign_extend function (moving it
+ out from wireless code)
+From: Bob Copeland <me@bobcopeland.com>
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>, Zhu Yi <yi.zhu@intel.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 27, 2010 at 6:16 AM, Andreas Herrmann
+<herrmann.der.user@googlemail.com> wrote:
 
---wxDdMuZNg1r63Hyj
-Content-Type: multipart/mixed; boundary="4SFOXa2GPu3tIq4H"
-Content-Disposition: inline
+> -static int sign_extend(int val, const int nbits)
+> -static s32 sign_extend(u32 oper, int index)
 
+Note these two are specified slightly differently, so return different
+values with the same arguments.  The ath[59]k version takes the number
+of bits (1-based) while the other one takes the position of the high
+order bit (0-based).  I think the former is a little more natural but
+it's a matter of taste.
 
---4SFOXa2GPu3tIq4H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Anyway I personally have no problem with merging them once the above
+is fixed.  I wrote a similar patch when I wrote the ath5k version, but
+never bothered to submit it.
 
-	Hello,
-I was told that lkml is still highly preferred over bugzilla,
-so reposting the bugreport here.
-
-The problem first manifested as "ext3 hang" in 2.6.27 based
-kernel; the cause appeared to be somewhat more involved,
-see the analysis below.  hpa@ confirmed he's seen similar
-problems elsewhere.
-
-This has been worked around in mainline since but our folks
-consider the fix potentially broken and propose the real one
-(this seems to have not been fixed for -stable, not sure;
-the patch is for 2.6.27.y).
-
-PS: please CC me, not on the list [yet] -- and rather a proxy
-than a developer.  Thanks in advance.
-
------ Forwarded message from bugzilla-daemon/bugzilla.kernel.org -----
-
-Date: Tue, 6 Jul 2010 11:38:15 GMT
-From: bugzilla-daemon/bugzilla.kernel.org
-To: shigorin/gmail.com
-Subject: [Bug 15658] New: [PATCH] x86 constant_test_bit() prone to misoptim=
-ization with gcc-4.4
-
-https://bugzilla.kernel.org/show_bug.cgi?id=3D15658
-
-        AssignedTo: platform_x86_64/kernel-bugs.osdl.org
-                CC: greg/kroah.com, vsu/altlinux.org, mingo/elte.hu
-
-
-Created an attachment (id=3D25776)
- --> (https://bugzilla.kernel.org/attachment.cgi?id=3D25776)
-bluntly drop overcasting instead of fiddling with gcc's sense of humour
-
-While debugging bit_spin_lock() hang, it was tracked down to gcc-4.4
-misoptimization of constant_test_bit() when 'const volatile unsigned long
-*addr' cast to 'unsigned long *' with subsequent unconditional jump to pause
-(and not to the test) leading to hang.
-
-Compiling with gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING yields inlined
-constant_test_bit() and correct jump.
-
-Other arches than asm-x86 (it's include/asm-x86/bitops.h) may implement this
-slightly differently; 2.6.29 mitigates the misoptimization by changing the
-function prototype (commit c4295fbb6048d85f0b41c5ced5cbf63f6811c46c) but
-probably fixing the issue itself would be better.
-
-Here's my translation of original analysis which led to the above conclusion
-(Russian text in internal bugzilla; I'm no kernel hacker so take it with gr=
-ain
-of salt and blame me, not them):
-
----
-Gory details
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-
-Slightly simplified bit_spin_lock() main part:
--------------------include/linux/bit_spinlock.h-----------------------
-
-static inline void bit_spin_lock(int bitnum, unsigned long *addr)
-{
-        <...>
-        while (test_and_set_bit_lock(bitnum, addr)) {
-                while (test_bit(bitnum, addr)) {
-                        <...>
-                        cpu_relax();
-                        <...>
-                }
-        }
-        <...>
-}
-----------------------------------------------------------------------
-
-Outer loop is an attempt to set the needed bit in atomic manner.
-If the bit was already set, inner loop waits to reset it and so forth.
-
-Assembly code generated by gcc-4.4 for the internal loop:
-----------------------------------------------------------------------
-$ rpm2cpio kernel-image-tmc-srv-2.6.27-tmc24.x86_64.rpm | cpio -idmv *jbd.ko
-<...>
-$ cd ./lib/modules/2.6.27-tmc-srv-tmc24/kernel/fs/jbd/
-$ objdump -d --no-show-raw-insn jbd.ko | grep -A92 "<journal_get_undo_acces=
-s>:"
-| tail -7
-    240a:       mov    %rbx,%rsi
-    240d:       mov    $0x16,%edi
-    2412:       callq  30 <constant_test_bit>
-    2417:       test   %eax,%eax
-    2419:       je     2328 <journal_get_undo_access+0x48>
-    241f:       pause
-    2421:       jmp    241f <journal_get_undo_access+0x13f>
-----------------------------------------------------------------------
-
-Offsets:
-  240a, 240d - preparing arguments (bit no. 32, bitmap address in rsi)
-  2412 - call to constant_test_bit()
-  2417 - returned value test
-  2419 - break if 0
-  241f - otherwise pause and then
-  2421 - unconditional jump *but* not to the test but to the pause
-
-Thus endless loop.  That is, in C equivalent:
-----------------------------------------------------------------------
-static inline void bit_spin_lock(int bitnum, unsigned long *addr)
-{
-        <...>
-        while (test_and_set_bit_lock(bitnum, addr)) {
-                if (test_bit(bitnum, addr))
-                        while (1)
-                                cpu_relax();
-        }
-        <...>
-}
-----------------------------------------------------------------------
-
-When using gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING kernel configurati=
-on
-parameter constant_test_bit() function gets inlined and the unconditional j=
-ump
-in the inner loop goes before condition test as it should.
-
-It is worth mentioning that bit_spin_lock() is used in several places and
-not all of them result in wrong code being generated.  For example,
-end_buffer_async_read() has no problem with the inner loop:
-----------------------------------------------------------------------
-$ rpm2cpio kernel-modules-oprofile-tmc-srv-2.6.27-tmc24.x86_64.rpm | cpio -=
-idmv
-*vmlinux
-<...>
-$ cd ./lib/modules/2.6.27-tmc-srv-tmc24/
-$ objdump -d --no-show-raw-insn vmlinux | grep -A106 "<end_buffer_async_rea=
-d>:"
-| tail -7
-ffffffff802f55e2:       mov    %r13,%rsi
-ffffffff802f55e5:       mov    $0x4,%edi
-ffffffff802f55ea:       callq  ffffffff802f4360 <constant_test_bit>
-ffffffff802f55ef:       test   %eax,%eax
-ffffffff802f55f1:       je     ffffffff802f54f9 <end_buffer_async_read+0x49>
-ffffffff802f55f7:       pause
-ffffffff802f55f9:       jmp    ffffffff802f55e2 <end_buffer_async_read+0x13=
-2>
-----------------------------------------------------------------------
-
-
-Hang scenario
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-The below is my take at what leads from the above problem to the "hung"
-system state observed.
-
-1. At some moment the process changing the filesystem tries to "lock"
-   struct buffer_head by means of bit_spin_lock() but fails at first
-   and then goes to internal loop to wait for the buffer being freed.
-
-2. Due to the problem described above the wait comes a bit long.
-
-3. kjournald kernel thread wakes (because current transaction times out
-   or gets oversized) to commit the transaction into on-disk journal.
-   But upon changing it to T_LOCKED state kjournald notices that not all
-   atomic operations on the transactions are complete.  Thus it cannot
-   continue and goes to sleep (in journal_commit_transaction()). Of course,
-   it waits for the process looping indefinitely as described in (1).
-
-4. Subsequent filesystem change requests result in a new active (T_RUNNING)
-   transaction.  As free space in that transaction ends up, all the process=
-es
-   trying to change the filesystem march to sleep until kjournald would com=
-mit
-   that transaction.  But it's not done with the previous one yet as in (3).
-
-And so it all "hangs".
-
-
-Solutions
-=3D=3D=3D=3D=3D=3D=3D=3D=3D
-IMHO it looks very much like a bug in gcc-4.4.  Adding 'volatile' qualifier
-to the datatype of the data addressed by the second parameter to
-bit_spin_lock() doesn't help.  Maybe there's an upstream fix.  Maybe it
-gets fixed by some flags.  Disabling CONFIG_OPTIMIZE_INLINING does help.
-gcc-4.3 does compile things right, at least for JBD.  Maybe there are other
-possibilities... not me to judge.
----
-
-I wasn't able to find anything similar upon a /quick/ google search, so pos=
-ting
-a new bug.
-
-These folks from Massive Computing worked on this one:
-* Volodymyr G. Lukiianyk (volodymyrgl/gmail.com) -- analysis
-* Alexander Chumachenko (ledest/gmail.com) -- pin-up and fix
-
---- Comment #1 from Michael Shigorin <shigorin/gmail.com>  2010-07-06 11:38=
-:07 ---
-ping
-
---- Comment #2 from H. Peter Anvin <hpa@zytor.com>  2010-07-06 23:01:48 ---
-I have seen in other contexts that gcc 4.4 seems to mishandle "const volati=
-le".
-
------ End forwarded message -----
-
---=20
- ---- WBR, Michael Shigorin <mike@altlinux.ru>
-  ------ Linux.Kiev http://www.linux.kiev.ua/
-
---4SFOXa2GPu3tIq4H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-x86-avoid-constant_test_bit-misoptimization-due-to-c.patch"
-Content-Transfer-Encoding: quoted-printable
-
-=46rom ef5e7cca16541bd0d9fb36d13c7e40c6ecc4fd77 Mon Sep 17 00:00:00 2001
-From: Led <led@altlinux.ru>
-Date: Wed, 31 Mar 2010 21:09:20 +0300
-Subject: [PATCH] x86: avoid 'constant_test_bit()' misoptimization due to ca=
-st to non-volatile
-
-While debugging bit_spin_lock() hang, it was tracked down to gcc-4.4
-misoptimization of constant_test_bit() when 'const volatile unsigned long *=
-addr'
-cast to 'unsigned long *' with subsequent unconditional jump to pause
-(and not to the test) leading to hang.
-
-Compiling with gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING yields inlined
-constant_test_bit() and correct jump.
-
-Other arches than asm-x86 may implement this slightly differently;
-2.6.29 mitigates the misoptimization by changing the function prototype
-(commit c4295fbb6048d85f0b41c5ced5cbf63f6811c46c) but probably fixing the i=
-ssue
-itself is better.
----
- include/asm-x86/bitops.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/asm-x86/bitops.h b/include/asm-x86/bitops.h
-index cfb2b64..89352ed 100644
---- a/include/asm-x86/bitops.h
-+++ b/include/asm-x86/bitops.h
-@@ -295,7 +295,7 @@ static inline int test_and_change_bit(int nr, volatile =
-unsigned long *addr)
- static inline int constant_test_bit(int nr, const volatile unsigned long *=
-addr)
- {
- 	return ((1UL << (nr % BITS_PER_LONG)) &
--		(((unsigned long *)addr)[nr / BITS_PER_LONG])) !=3D 0;
-+		(addr[nr / BITS_PER_LONG])) !=3D 0;
- }
-=20
- static inline int variable_test_bit(int nr, volatile const unsigned long *=
-addr)
---=20
-1.7.0.3
-
-
---4SFOXa2GPu3tIq4H--
-
---wxDdMuZNg1r63Hyj
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
-
-iD8DBQFMeC/dbsPDprYMm3IRAhqyAJ0ZaBlde96yxBtQbvDiMv/TTLpwpwCeO0f5
-3Q3l5iA0/7y+T4oj5UQ4f5g=
-=iosa
------END PGP SIGNATURE-----
-
---wxDdMuZNg1r63Hyj--
+-- 
+Bob Copeland %% www.bobcopeland.com
