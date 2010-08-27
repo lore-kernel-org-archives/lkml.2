@@ -1,223 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab0H0PQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:16:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33376 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753469Ab0H0PQZ (ORCPT
+	id S1754384Ab0H0PSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:18:13 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:51318 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753469Ab0H0PSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:16:25 -0400
-Subject: Re: [PATCH 1/4] oprofile: Handle initialisation failure more
- gracefully
-From: Will Deacon <will.deacon@arm.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org
-In-Reply-To: <20100827124344.GJ22783@erda.amd.com>
-References: <cover.1282848651.git.matt@console-pimps.org>
-	 <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
-	 <20100827124344.GJ22783@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Aug 2010 16:15:25 +0100
-Message-ID: <1282922125.22128.5.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Aug 2010 15:15:28.0886 (UTC) FILETIME=[AEE95960:01CB45FA]
+	Fri, 27 Aug 2010 11:18:10 -0400
+Date: Fri, 27 Aug 2010 11:18:07 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
+Message-ID: <20100827151807.GA14926@Krystal>
+References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop> <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain> <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain> <20100826231806.GK2367@linux.vnet.ibm.com> <20100826232858.GA28177@Krystal> <20100826233811.GM2367@linux.vnet.ibm.com> <20100826235323.GC4194@Krystal> <20100827000911.GO2367@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100827000911.GO2367@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:11:58 up 216 days, 17:48,  5 users,  load average: 0.03, 0.04,
+	0.07
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
-
-On Fri, 2010-08-27 at 13:43 +0100, Robert Richter wrote:
-> On 26.08.10 15:09:16, Matt Fleming wrote:
-> > From: Will Deacon <will.deacon@arm.com>
-> >
-> > The current implementation is not entirely safe in the case that
-> > oprofile_arch_init() fails. We need to make sure that we always call
-> > exit_driverfs() if we've called init_driverfs(). Also, avoid a potential
-> > double free when freeing 'counter_config', e.g. don't free
-> > 'counter_config' in both oprofile_arch_init() and oprofile_arch_exit().
-> >
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  arch/arm/oprofile/common.c |   15 ++++++++-------
-> >  1 files changed, 8 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-> > index 0691176..482779c 100644
-> > --- a/arch/arm/oprofile/common.c
-> > +++ b/arch/arm/oprofile/common.c
-> > @@ -275,10 +275,12 @@ out:
-> >       return ret;
-> >  }
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Thu, Aug 26, 2010 at 07:53:23PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > On Thu, Aug 26, 2010 at 07:28:58PM -0400, Mathieu Desnoyers wrote:
+> > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > On Fri, Aug 27, 2010 at 12:22:46AM +0200, Thomas Gleixner wrote:
+> > > > > > On Thu, 26 Aug 2010, Thomas Gleixner wrote:
+> > > > > > > On Thu, 26 Aug 2010, Peter Zijlstra wrote:
+> > > > > > > > 
+> > > > > > > > Fudging fork seems dubious at best, it seems generated by the use of
+> > > > > > > > timer_create(.evp->sigev_notify = SIGEV_THREAD), which is a really
+> > > > > > > > broken thing to do, it has very ill defined semantics and is utterly
+> > > > > > > > unable to properly cope with error cases. Furthermore its trivial to
+> > > > > > > > actually correctly implement the desired behaviour, so I'm really
+> > > > > > > > skeptical on this front; friends don't let friends use SIGEV_THREAD.
+> > > > > > > 
+> > > > > > > SIGEV_THREAD is the best proof that the whole posix timer interface
+> > > > > > > was comitte[e]d under the influence of not to be revealed
+> > > > > > > mind-altering substances.
+> > > > > > > 
+> > > > > > > I completely object to add timer specific wakeup magic and support for
+> > > > > > > braindead fork orgies to the kernel proper. All that mess can be fixed
+> > > > > > > in user space by using sensible functionality.
+> > > > > > > 
+> > > > > > > Providing support for misdesigned crap just for POSIX compliance
+> > > > > > > reasons and to make some of the blind abusers of that very same crap
+> > > > > > > happy would be a completely stupid decision.
+> > > > > > > 
+> > > > > > > In fact that would make a brilliant precedence case for forcing the
+> > > > > > > kernel to solve user space madness at the expense of kernel
+> > > > > > > complexity. If we follow down that road we get requests for extra
+> > > > > > > functionality for AIO, networking and whatever in a split second with
+> > > > > > > no real good reason to reject them anymore.
+> > > > > > 
+> > > > > > I really risked eye cancer and digged into the glibc code.
+> > > > > > 
+> > > > > > 	/* There is not much we can do if the allocation fails.  */
+> > > > > > 	(void) pthread_create (&th, &tk->attr, timer_sigev_thread, td);
+> > > > > > 
+> > > > > > So if the helper thread which gets the signal fails to create the
+> > > > > > thread then everything is toast.
+> > > > > > 
+> > > > > > What about fixing the f*cked up glibc implementation in the first place
+> > > > > > instead of fiddling in the kernel to support this utter madness? 
+> > > > > > 
+> > > > > > WTF can't the damned delivery thread not be created when timer_create
+> > > > > > is called and the signal be delivered to that very thread directly via
+> > > > > > SIGEV_THREAD_ID ?
+> > > > > 
+> > > > > C'mon, Thomas!!!  That is entirely too sensible!!!  ;-)
+> > > > > 
+> > > > > But if you are going to create the thread at timer_create() time,
+> > > > > why not just have the new thread block for the desired duration?
+> > > > 
+> > > > The timer infrastructure allows things like periodic timer which restarts when
+> > > > it fires, detection of missed timer events, etc. If you try doing this in a
+> > > > userland thread context with a simple sleep, then your period becomes however
+> > > > long you sleep for _and_ the thread execution time. This is all in all quite
+> > > > different from the timer semantic.
+> > > 
+> > > Hmmm...  Why couldn't the thread in question set the next sleep time based
+> > > on the timer period?  Yes, if the function ran for longer than the period,
+> > > there would be a delay, but the POSIX semantics allow such a delay, right?
 > > 
-> > -static void  exit_driverfs(void)
-> > +static void exit_driverfs(void)
-> >  {
-> > -     platform_device_unregister(oprofile_pdev);
-> > -     platform_driver_unregister(&oprofile_driver);
-> > +     if (!IS_ERR_OR_NULL(oprofile_pdev)) {
-> > +             platform_device_unregister(oprofile_pdev);
-> > +             platform_driver_unregister(&oprofile_driver);
-> > +     }
+> > I'm afraid you'll have a large error accumulation over time, and getting the
+> > precise picture of how much time between now and where the the period end is
+> > expected to be is kind of hard to do precisely from user-space. In a few words,
+> > this solution would be terrible for jitter. This is why we usually rely on
+> > timers rather than delays in these periodic workloads.
 > 
-> The root cause that makes this check necessary is that
-> oprofile_arch_exit() is called though oprofile_arch_init() failed. We
-> should better fix this instead. I have to admit we will then have to
-> check all architectural implementations.
-> 
+> Why couldn't the timer_create() call record the start time, and then
+> compute the sleeps from that time?  So if timer_create() executed at
+> time t=100 and the period is 5, upon awakening and completing the first
+> invocation of the function in question, the thread does a sleep calculated
+> to wake at t=110.
 
-I took a look through all of the oprofile_arch_{init,exit} functions
-and it looks like only ARM needs fixing. Nobody else does any allocation
-here [well, until Matt's unified version comes into play].
+Let's focus on the userspace thread execution, right between the samping of the
+current time and the call to sleep:
 
-> >  }
-> >  #else
-> >  static int __init init_driverfs(void) { return 0; }
-> > @@ -363,10 +365,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
-> >       }
-> > 
-> >       ret = init_driverfs();
-> > -     if (ret) {
-> > -             kfree(counter_config);
-> 
-> We should not return from oprofile_arch_init() with allocated
-> resources if the function fails. To fix duplicate kfrees, we should
-> free it here and then set counter_config to NULL. It should also be
-> freed if for_each_possible_cpu() or op_name_from_perf_id() fails.
-> 
-> Also, the pointer should be NULLed after freeing in
-> oprofile_arch_exit(). There, we also don't need the NULL pointer check
-> as it is save to call kfree(NULL).
+  Thread A
+  current_time = read current time();
+  sleep(period_end - current_time);
 
-
-How about something like this? This removes the exit call
-from the init code and sets pointers to NULL after they have been
-freed. We still have to do some checking so that we don't try to
-release a NULL perf event:
-
-diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index 0691176..12253eb 100644
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -275,10 +275,12 @@ out:
- 	return ret;
- }
- 
--static void  exit_driverfs(void)
-+static void __exit exit_driverfs(void)
- {
--	platform_device_unregister(oprofile_pdev);
--	platform_driver_unregister(&oprofile_driver);
-+	if (!IS_ERR_OR_NULL(oprofile_pdev)) {
-+		platform_device_unregister(oprofile_pdev);
-+		platform_driver_unregister(&oprofile_driver);
-+	}
- }
- #else
- static int __init init_driverfs(void) { return 0; }
-@@ -365,6 +367,7 @@ int __init oprofile_arch_init(struct
-oprofile_operations *ops)
- 	ret = init_driverfs();
- 	if (ret) {
- 		kfree(counter_config);
-+		counter_config = NULL;
- 		return ret;
- 	}
- 
-@@ -374,8 +377,10 @@ int __init oprofile_arch_init(struct
-oprofile_operations *ops)
- 		if (!perf_events[cpu]) {
- 			pr_info("oprofile: failed to allocate %d perf events "
- 					"for cpu %d\n", perf_num_counters, cpu);
--			while (--cpu >= 0)
-+			while (--cpu >= 0) {
- 				kfree(perf_events[cpu]);
-+				perf_events[cpu] = NULL;
-+			}
- 			return -ENOMEM;
- 		}
- 	}
-@@ -396,25 +401,27 @@ int __init oprofile_arch_init(struct
-oprofile_operations *ops)
- 	return ret;
- }
- 
--void oprofile_arch_exit(void)
-+void __exit oprofile_arch_exit(void)
- {
- 	int cpu, id;
- 	struct perf_event *event;
- 
--	if (*perf_events) {
--		exit_driverfs();
--		for_each_possible_cpu(cpu) {
--			for (id = 0; id < perf_num_counters; ++id) {
--				event = perf_events[cpu][id];
--				if (event != NULL)
--					perf_event_release_kernel(event);
--			}
--			kfree(perf_events[cpu]);
-+	exit_driverfs();
-+
-+	for_each_possible_cpu(cpu) {
-+		if (!perf_events[cpu])
-+			continue;
-+
-+		for (id = 0; id < perf_num_counters; ++id) {
-+			event = perf_events[cpu][id];
-+			if (event != NULL)
-+				perf_event_release_kernel(event);
- 		}
-+
-+		kfree(perf_events[cpu]);
- 	}
- 
--	if (counter_config)
--		kfree(counter_config);
-+	kfree(counter_config);
- }
- #else
- int __init oprofile_arch_init(struct oprofile_operations *ops)
-@@ -422,5 +429,5 @@ int __init oprofile_arch_init(struct
-oprofile_operations *ops)
- 	pr_info("oprofile: hardware counters not available\n");
- 	return -ENODEV;
- }
--void oprofile_arch_exit(void) {}
-+void __exit oprofile_arch_exit(void) {}
- #endif /* CONFIG_HW_PERF_EVENTS */
-diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
-index b336cd9..3094af0 100644
---- a/drivers/oprofile/oprof.c
-+++ b/drivers/oprofile/oprof.c
-@@ -257,15 +257,11 @@ static int __init oprofile_init(void)
- 		printk(KERN_INFO "oprofile: using timer interrupt.\n");
- 		err = oprofile_timer_init(&oprofile_ops);
- 		if (err)
--			goto out_arch;
-+			goto out;
- 	}
- 	err = oprofilefs_register();
--	if (err)
--		goto out_arch;
--	return 0;
- 
--out_arch:
--	oprofile_arch_exit();
-+out:
- 	return err;
- }
- 
+If the thread is preempted between these two operations, then we end up sleeping
+for longer than what is needed. This kind of imprecision will add up over time,
+so that after e.g. one day, instead of having the expected number of timer
+executions, we'll have less than that. This kind of accumulated drift is an
+unwanted side-effect of using delays in lieue of real periodic timers.
 
 Thanks,
 
-Will
+Mathieu
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
