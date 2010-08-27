@@ -1,78 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab0H0Hxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 03:53:42 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:37052 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab0H0Hxk (ORCPT
+	id S1753426Ab0H0H50 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 03:57:26 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58081 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385Ab0H0H5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 03:53:40 -0400
-X-SpamScore: 6
-X-BigFish: VPS6(z3cfcs329eqzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7SWHV-02-DG3-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 09:51:32 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100827075132.GD22783@erda.amd.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
- <20100826211424.GQ4879@redhat.com>
+	Fri, 27 Aug 2010 03:57:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MH0CxVaHwvV7hYX3dRg4BvxCLhsKl9L3pm9HrzteVrTgGRQvdKqQ4c9mmLUYvVCgTR
+         CwiJC228ZHGZzGPDH6Dj/ZYew0qX9kBH1olEbvrXSh26xZuFd0hMgEC1UQ5euieFEBa5
+         jEE4y6l35qk4TObUwtTvsvl1iVssdHv4a0Z8A=
+Date: Fri, 27 Aug 2010 09:57:27 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Christian Riesch <christian.riesch@omicron.at>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Message-ID: <20100827075727.GA3818@riccoc20.at.omicron.at>
+References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
+ <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+ <20100817085324.GB3330@riccoc20.at.omicron.at>
+ <1282090963.1734.97.camel@localhost>
+ <20100818071942.GA4096@riccoc20.at.omicron.at>
+ <1282176776.2865.100.camel@localhost.localdomain>
+ <20100819055518.GA4084@riccoc20.at.omicron.at>
+ <1282594125.3111.344.camel@localhost.localdomain>
+ <AANLkTi=nKrRHH6+9mvny718gov8Q+u7DHFikdgNY8YdX@mail.gmail.com>
+ <1282874269.4371.74.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100826211424.GQ4879@redhat.com>
+In-Reply-To: <1282874269.4371.74.camel@localhost.localdomain>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.10 17:14:24, Don Zickus wrote:
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 4539b4b..d16ebd8 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -738,6 +738,7 @@ again:
->  
->  	inc_irq_stat(apic_perf_irqs);
->  	ack = status;
-> +	intel_pmu_ack_status(ack);
+On Thu, Aug 26, 2010 at 06:57:49PM -0700, john stultz wrote:
+> On Wed, 2010-08-25 at 11:40 +0200, Christian Riesch wrote:
+> > 2) Master clock:
+> > We have one or more network ports. Our system has a really good clock
+> > (ovenized quartz crystal, an atomic clock, a GPS timing receiver...)
+> > and it distributes this time on the network. In such a case we do not
+> > steer our clock based on the (packet) timestamps we get from our
+> > timestamping unit. Instead, we directly drive our clock hardware with
+> > a very stable frequency that we get from the OCXO or the atomic
+> > clock...
+>
+> Ok. Following you here...
+>
+> > or we use one of the ancillary features of the PTP clock that
+> > Richard mentioned to timestamp not network packets but a 1pps signal
+> > and use these timestamps to steer the clock.
+>
+> Wait.. I thought we weren't using PTP to steer the clock? But now we're
+> using the pps signal from it to do so? Do I misunderstand you? Or did
+> you just not mean this?
 
-Yes, not immediately ack'ing the status was suspect to me too. Though
-it must then be the same counter that retriggers. Or, it is a cpu
-bug. You could add a debug print of the status register for the case
-the loop is reentered, would be interesting...
+The master node in a PTP network probably takes its time from a
+precise external time source, like GPS. The GPS provides a 1 PPS
+directly to the PTP clock hardware, which latches the PTP hardware
+clock time on the PPS edge. This provides one sample as input to a
+clock servo (in the PTPd) that, in turn, regulates the PTP clock
+hardware.
 
-Thank for fixing this.
+> > Packet time stamping is
+> > used to distribute the time to the slaves, but it is not part of the
+> > control loop in this case.
+>
+> I assume here you mean PTPd is steering the PTP clock according to the
+> system time (which is NTP/GPS/whatever sourced)? And then the PTP clock
+> distributes that time through the network?
 
--Robert
+Yes, but in this case, "system time" has nothing to do with the Linux
+system time. For a PTP master clock, it really doesn't matter whether
+the Linux time is correct, or not. It doesn't hurt either (but see
+below about chaining servos).
 
->  
->  	intel_pmu_lbr_read();
->  
-> @@ -766,8 +767,6 @@ again:
->  			x86_pmu_stop(event);
->  	}
->  
-> -	intel_pmu_ack_status(ack);
-> -
->  	/*
->  	 * Repeat if there is more work to be done:
->  	 */
-> 
+> So first of all, thanks for the extra explanation and context here! I
+> really appreciate it, as I'm not familiar with all the hardware details
+> and possible use cases, but I'm trying to learn.
+>
+> So in the two cases you mention, the time "flow" is something like:
+>
+> #1) [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
+> 	[PTP Clock] => [PTP Clients on Network2]
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+I would only draw the PTP clock once, perhaps like this:
+
+                                +------------------------------+
+                                |                              ^
+                                V                              |
+[Master Clock on NW 1]--->[HW timestamp]--->[PTPd]--adj-->[PTP Clock]
+[Slaves on NW 2,3,...]<---[HW timestamp]<---[    ]
+
+>
+> #2) [GPS] => [NTPd] => [System Time] => [PTPd] => [PTP clock] =>
+> 	[PTP clients on Network]
+
+Nope. More like this:
+
+                                      +------------------------------+
+                                      |                              ^
+                                      V                              |
+[GPS]----------PPS--------->[Latch  timestamp]--->[PTPd]--adj-->[PTP Clock]
+[Slaves on NW 1,2,3,...]<---[HW pkt timestamp]<---[    ]
+
+> And the original case:
+> #3) [Master Clock on Network] => [PTP clock] => [PTPd] => [PTP clock]
+
+More like:
+
+[Master Clock on NW 1]--->[HW timestamp]--->[PTPd]--adj-->[PTP Clock]
+
+> With a secondary control flow:
+> 	[PPS signal from PTP clock] => [NTPd] => [System Time]
+
+Yes.
+
+
+> So, just brainstorming here, I guess the question I'm trying to figure
+> out here, is can the "System Time" and "PTP clock" be merged/globbed
+> into a single "Time" interface from the userspace point of view?
+
+This is the core issue and source of misunderstanding, in my view. The
+fact of the matter is, the current generation of computers has
+multiple clocks, and these are usually unsynchronized. I think we
+should not try too hard to cover up or work around this. It is a fact
+of life.
+
+It would be nice if there were only one clock, and that clock could do
+everything that we need. Indeed, the next generation of SoC computers may
+all have PTP build in to the main CPU. Well, one can always wish.
+
+If we can make it appear that multiple clocks are just one clock, then
+I agree that we should do it. But I would not want to sacrifice
+synchronization accuracy or application features just to keep that
+illusion.
+
+> In other words, if internal to the kernel, the PTP clock was always
+> synced to the system time, couldn't the flow look something like:
+>
+> #3') [Master clock on network] => [PTP clock] => [PTPd] =>
+> 	 [System Time] => [in-kernel sync thread] => [PTP clock]
+>
+> So PTPd sees the offset adjustment from the PTP clock, and then feeds
+> that offset correction right into (a possibly enhanced) adjtimex. The
+> kernel would then immediately steer the PTP clock by the same amount to
+> keep it in sync with system time (along with a periodic offset/freq
+> correction step to deal with crystal drift).
+>
+> Similarly:
+>
+> #2') [GPS] => [NTPd] => [System Time] => [in-kernel sync thread] =>
+> 		[PTP clock] => [PTP clients on Network]
+>
+> and
+>
+> #1') [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
+> 	[System Time] => [in-kernel sync thread] => [PTP Clock] =>
+> 	[PTP Clients on Network2]
+>
+> Now, I realize PTP purists probably won't like this, because it
+> effectively makes the in-kernel sync thread similar to a PTP boundary
+> clock (or worse, since the control loop isn't exactly direct).
+
+I don't like it. The experience with PTP boundary clocks already shows
+that the errors in servo loops cascade. It worsens the PTP performance.
+
+However, I think it would fine just to synch the Linux system time to
+the PTP clock using the PPS interface, which is what my patch set
+implements. Linux user applications would not be able to detect the
+difference.
+
+Richard
+
+
 
