@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab0H0BUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 21:20:50 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48443 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab0H0BUr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:20:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=v00Tgv6XK8knZ00x7vZnZC+mtchw/aEm1spViljnHaFxMcdq875lAIK+8KxyMnx1lM
-         mMdIN+e8lTYRp9V309qlIgEgQXr4sUBT5jdCB7yjUNokUk1Tq4J2rvnFWPg2y1MGpDLz
-         XPxeEoUeeOQEpTbgZfgm5vietHfH+NyaiBu94=
-MIME-Version: 1.0
-In-Reply-To: <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
-References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
-Date: Fri, 27 Aug 2010 06:50:44 +0530
-X-Google-Sender-Auth: 98zM79fGVVqq_QUqaznb0p0k3_c
-Message-ID: <AANLkTi=YaUTVWQ23SVE250hd+qMgdTGvk0fZ4J5zPmkh@mail.gmail.com>
-Subject: Re: cgroup: rmdir() does not complete
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Mark Hills <mark@pogo.org.uk>,
+	id S1753255Ab0H0BWN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 21:22:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53846 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752255Ab0H0BWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 21:22:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,277,1280732400"; 
+   d="scan'208";a="317679626"
+Date: Fri, 27 Aug 2010 09:21:47 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Li Shaohua <shaohua.li@intel.com>
+Subject: Re: [RFC PATCH 0/3] Do not wait the full timeout on
+ congestion_wait when there is no congestion
+Message-ID: <20100827012147.GC7353@localhost>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
+ <20100826172038.GA6873@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100826172038.GA6873@barrios-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 6:26 AM, Daisuke Nishimura
-<nishimura@mxp.nes.nec.co.jp> wrote:
-> Hi.
->
-> On Thu, 26 Aug 2010 16:51:55 +0100 (BST)
-> Mark Hills <mark@pogo.org.uk> wrote:
->
->> I am experiencing hung tasks when trying to rmdir() on a cgroup. One task
->> spins, others queue up behind it with the following:
->>
->>   INFO: task soaked-cgroup:27257 blocked for more than 120 seconds.
->>   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->>   soaked-cgrou D ffff8800058157c0     0 27257  29411 0x00000000
->>   ffff88004ffffdd8 0000000000000086 ffff88004ffffda8 ffff88004ffffeb8
->>   0000000000000010 ffff880119813780 ffff88004ffffd48 ffff88004fffffd8
->>   ffff88004fffffd8 000000000000f9b0 00000000000157c0 ffff880137693268
->>   Call Trace:
->>   [<ffffffff81115edb>] ? mntput_no_expire+0x24/0xe7
->>   [<ffffffff81427acd>] __mutex_lock_common+0x14d/0x1b4
->>   [<ffffffff81108a7c>] ? path_put+0x1d/0x22
->>   [<ffffffff81427b48>] __mutex_lock_slowpath+0x14/0x16
->>   [<ffffffff81427c4f>] mutex_lock+0x31/0x4b
->>   [<ffffffff8110bdf8>] do_rmdir+0x74/0x102
->>   [<ffffffff8110bebd>] sys_rmdir+0x11/0x13
->>   [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
->>
->> Kernel is from Fedora, 2.6.33.6. In all cases the cgroup contains no
->> tasks.
->>
->> Commit ec64f5 ("fix frequent -EBUSY at rmdir") adds a busy wait loop to
->> the rmdir. It looks like what I am seeing here and indicates that some
->> cgroup subsystem is busy, indefinitely.
->>
-> The commit had caused a bug about rmdir, but it was fixed by the commit 88703267.
-> The fix was merged in 2.6.31, so it seems that you hit a new one...
->
->> I have not worked out how to reproduce it quickly. My only way is to
->> complete a 'dd' command in the cgroup, but then the problem is so rare it
->> is slow progress.
->>
->> Documentation/cgroup.memory.txt describes how force_empty can be required
->> in some cases. Does this mean that with the patch above, these cases will
->> now spin on rmdir(), instead of returning -EBUSY? How can produce a
->> reliable test case requiring memory.force_empty to be used, to test this?
->>
-> You don't need to touch "force_empty". rmdir() does what "force_empty" does.
->
->> Or is it likely to be some other cause, and how best to find it?
->>
-> What cgroup subsystem did you mount where the directory existed you tried
-> to rmdir() first ?
-> If you mounted several subsystems on the same hierarchy, can you mount them
-> separately to narrow down the cause ?
->
+Minchan,
 
-It would also be nice to see what your mounted cgroup (filesystem
-perspective) looks like and what /proc/cgroups looks like when the
-problem occurs.
+It's much cleaner to keep the unchanged congestion_wait() and add a
+congestion_wait_check() for converting problematic wait sites. The
+too_many_isolated() wait is merely a protective mechanism, I won't
+bother to improve it at the cost of more code.
 
-Balbir
+Thanks,
+Fengguang
+
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 94cce51..7370683 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -253,7 +253,11 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>          * delay for some time until fewer pages are isolated
+>          */  
+>         while (unlikely(too_many_isolated(zone))) {
+> -               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +               long timeout = HZ/10;
+> +               if (timeout == congestion_wait(BLK_RW_ASYNC, timeout)) {
+> +                       set_current_state(TASK_INTERRUPTIBLE);
+> +                       schedule_timeout(timeout);
+> +               }
+> 
+>                 if (fatal_signal_pending(current))
+>                         return 0;
+
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 3109ff7..f5e3e28 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1337,7 +1337,11 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>         unsigned long nr_dirty;
+>         while (unlikely(too_many_isolated(zone, file, sc))) {
+> -               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +               long timeout = HZ/10;
+> +               if (timeout == congestion_wait(BLK_RW_ASYNC, timeout)) {
+> +                       set_current_state(TASK_INTERRUPTIBLE);
+> +                       schedule_timeout(timeout);
+> +               }
+> 
+>                 /* We are about to die and free our memory. Return now. */
+>                 if (fatal_signal_pending(current))
+> -- 
+> 1.7.0.5
+> 
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
