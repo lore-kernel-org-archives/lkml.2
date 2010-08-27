@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab0H0TX3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:23:29 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53947 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab0H0TX1 convert rfc822-to-8bit (ORCPT
+	id S1755343Ab0H0T1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:27:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61086 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab0H0T1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:23:27 -0400
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20100827183240.GC22679@Krystal>
-References: <20100826180908.648103531@efficios.com>
-	 <1282849045.1975.1587.camel@laptop>
-	 <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain>
-	 <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain>
-	 <20100826230934.GA4194@Krystal> <1282894655.1975.1650.camel@laptop>
-	 <20100827152125.GB14926@Krystal> <1282923686.1975.2780.camel@laptop>
-	 <20100827160946.GG14926@Krystal> <1282930072.1975.2962.camel@laptop>
-	 <20100827183240.GC22679@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 27 Aug 2010 21:23:14 +0200
-Message-ID: <1282936994.1975.3119.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 27 Aug 2010 15:27:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [RFC PATCH 02/43] ptrace: cleanup ptrace_request()
+Date: Fri, 27 Aug 2010 21:26:56 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.5.0; x86_64; ; )
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org
+References: <1282902149-12991-1-git-send-email-namhyung@gmail.com> <201008271623.01761.arnd@arndb.de> <87sk20f2z4.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+In-Reply-To: <87sk20f2z4.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008272126.56786.arnd@arndb.de>
+X-Provags-ID: V02:K0:HR50NiMIqH/rJ9PQ7/teoZ0zc/yLrSE2BqVoXEOT6F0
+ Xjb7MzXKqA7fCd5TRGhcAr0wumH5TArx4/rgqo+AFPHBYJ7jlj
+ QH1LRTcTpIBlBrRvkkvE6poAicDkg9mVvSbnUVu0EXCrkj63ei
+ sSXdZRWjVMal8es/mppuZJ28tO8tXUsFWUKvT28Yc9MswehLPh
+ ikKjnXpCb2EVYWROcg8tg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 14:32 -0400, Mathieu Desnoyers wrote:
+On Friday 27 August 2010 18:13:35 Namhyung Kim wrote:
+> Arnd Bergmann <arnd@arndb.de> writes:
+> > If you introduce two pointers, 'siginfo_t __user *usiginfo' and
+> > 'unsigned long __user *datap' instead of just 'datap', you can use
+> > get_user/put_user everywhere, which would make the code better readable
+> > and faster.
+> >
+> > Otherwise this change looks good.
+> >
 > 
-> These are problems you get only when you allow spawning any number of threads.
-> If, instead, you create a thread pool at timer creation, then you can allow
-> concurrency without problems with spawner context and error proparation.
+> Despite I don't know how much it can run faster, I just want to keep it as is
+> unless it would be a serious mistake. :-)
 
-That would be a massive resource waste for the normal case where the
-interval > handler runtime.
+No, not a mistake, your code is fine as it is and not performance
+critical at all.
 
+However, in general using get_user/put_user is preferred over
+copy_from_user/copy_to_user for scalar values.
 
+	Arnd
