@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab0H0NCc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 09:02:32 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:4472 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab0H0NC1 (ORCPT
+	id S1753178Ab0H0NDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 09:03:51 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57519 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab0H0NDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 09:02:27 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7TARU-02-AOS-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 14:59:56 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH V2 3/4] oprofile: Abstract the perf-events backend
-Message-ID: <20100827125956.GK22783@erda.amd.com>
-References: <cover.1282848651.git.matt@console-pimps.org>
- <fe3e173aaa85f4cd73ea4b5abca50976fc40a01f.1282848651.git.matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <fe3e173aaa85f4cd73ea4b5abca50976fc40a01f.1282848651.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Fri, 27 Aug 2010 09:03:50 -0400
+Subject: RE: [PATCH 2/2] regulator: tps6586x-regulator - fix bit_mask
+ parameter for tps6586x_set_bits()
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Gary King <GKing@nvidia.com>
+Cc: Mike Rapoport <mike@compulab.co.il>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Axel Lin <axel.lin@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <A0A1E7539300DF49AA383E614C7827BC04EA05BE3A@HQMAIL01.nvidia.com>
+References: <1282487895.23014.19.camel@phoenix>
+	 <1282488162.23014.24.camel@phoenix>
+	 <20100823100248.GG6061@rakim.wolfsonmicro.main>
+	 <4C7248C3.9040304@compulab.co.il>,<1282730014.2991.155.camel@odin>
+	 <A0A1E7539300DF49AA383E614C7827BC04EA05BE3A@HQMAIL01.nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Aug 2010 14:03:44 +0100
+Message-ID: <1282914224.3025.28.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.10 15:09:18, Matt Fleming wrote:
-> Move the perf-events backend from arch/arm/oprofile into
-> drivers/oprofile so that the code can be shared between architectures.
+On Thu, 2010-08-26 at 14:25 -0700, Gary King wrote:
+> The patch seems fine.
 > 
-> This allows each architecture to maintain only a single copy of the
-> PMU accessor functions instead of one for both perf and OProfile. It
-> also becomes possible for other architectures to delete much of their
-> OProfile code in favour of the common code now available in
-> drivers/oprofile/oprofile_perf.c.
+> - Gary
+> ________________________________________
+> From: Liam Girdwood [lrg@slimlogic.co.uk]
+> Sent: Wednesday, August 25, 2010 2:53 AM
+> To: Mike Rapoport
+> Cc: Mark Brown; Gary King; Axel Lin; linux-kernel
+> Subject: Re: [PATCH 2/2] regulator: tps6586x-regulator - fix bit_mask parameter for tps6586x_set_bits()
 > 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> ---
->  arch/arm/oprofile/Makefile       |    4 +
->  arch/arm/oprofile/common.c       |  215 +++-----------------------------------
->  drivers/oprofile/oprofile_perf.c |  209 ++++++++++++++++++++++++++++++++++++
->  include/linux/oprofile.h         |   12 ++
->  4 files changed, 242 insertions(+), 198 deletions(-)
->  create mode 100644 drivers/oprofile/oprofile_perf.c
+> On Mon, 2010-08-23 at 13:09 +0300, Mike Rapoport wrote:
+> > Mark Brown wrote:
+> > > On Sun, Aug 22, 2010 at 10:42:42PM +0800, Axel Lin wrote:
+> > >> The third parameter of tps6586x_set_bits() is the bit_mask,
+> > >> thus we should use (1 << ri->go_bit) instead of ri->go_bit.
+> > >>
+> > >> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > >
+> > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > >
+> > > but I'd be much happier if someone who actually has the hardware could
+> > > verify that this is OK.
+> >
+> > I don't have the hardware handy at the moment.
+> > Gary, can you please verify the fix?
+> >
+> 
+> Do we have any news on this testing ? I'd like to have these upstream
+> for rc3.
+> 
 
-Could we split this patch in 2 for better review? One that only moves
-the code and a 2nd that changes it.
+Applied.
 
--Robert
+Thanks
 
+Liam
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
