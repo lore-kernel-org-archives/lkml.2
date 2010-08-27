@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab0H0Okp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 10:40:45 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:56894 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab0H0Okn (ORCPT
+	id S1754096Ab0H0Otc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 10:49:32 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60999 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751562Ab0H0Ota (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 10:40:43 -0400
-Date: Fri, 27 Aug 2010 16:40:39 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: hpa@zytor.com, fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 01/10] x86/iommu: Add IOMMU_INIT macros, .iommu_table
-	section, and iommu_table_entry structure.
-Message-ID: <20100827144039.GA7438@merkur.ravnborg.org>
-References: <1282845485-8991-1-git-send-email-konrad.wilk@oracle.com> <1282845485-8991-2-git-send-email-konrad.wilk@oracle.com> <20100826181913.GA5947@merkur.ravnborg.org> <20100827143844.GA32547@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100827143844.GA32547@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 27 Aug 2010 10:49:30 -0400
+Date: Fri, 27 Aug 2010 16:06:24 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: john stultz <johnstul@us.ibm.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Message-ID: <20100827160624.433b3374@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100827143437.GB3293@riccoc20.at.omicron.at>
+References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
+	<AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+	<20100817085324.GB3330@riccoc20.at.omicron.at>
+	<1282090963.1734.97.camel@localhost>
+	<20100818071942.GA4096@riccoc20.at.omicron.at>
+	<1282176776.2865.100.camel@localhost.localdomain>
+	<20100819055518.GA4084@riccoc20.at.omicron.at>
+	<1282594125.3111.344.camel@localhost.localdomain>
+	<20100827123849.GC11657@riccoc20.at.omicron.at>
+	<20100827143844.646eccf6@lxorguk.ukuu.org.uk>
+	<20100827143437.GB3293@riccoc20.at.omicron.at>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 10:38:44AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Aug 26, 2010 at 08:19:13PM +0200, Sam Ravnborg wrote:
-> > > diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-> > > index d0bb522..b92e040 100644
-> > > --- a/arch/x86/kernel/vmlinux.lds.S
-> > > +++ b/arch/x86/kernel/vmlinux.lds.S
-> > > @@ -260,6 +260,13 @@ SECTIONS
-> > >  		*(.altinstr_replacement)
-> > >  	}
-> > >  
-> > > +	.iommu_table : AT(ADDR(.iommu_table) - LOAD_OFFSET) {
-> > > +		__iommu_table = .;
-> > > +		*(.iommu_table)
-> > > +		. = ALIGN(8);
-> > > +		__iommu_table_end = .;
-> > > +	}
-> > > +
-> > 
-> > So we have yet another magic section in vmlinux.lds.S
-> > A nice comemnt that expalins what this is used for and why
-> > it is discardable etc. would be nice.
-> > 
-> > Lots of magic sections in same file miss this,
-> > but thats not an example to follwow.
+> Sorry for causing confusion, but please understand "a hardware clock
+> with timestamping capabilities than can be used for PTP support"
+> whenever I wrote "PTP" or "PTP clock."
+
+Ok that makes sense.
 > 
-> Sure. Will provide one and also explain the other sections that I am
-> familiar with.
+> Well, what I just said is not entirely true.
+> most are bound to the PTP protocol. That may change in the future...
 
-Appreciated - thanks!
+Which seems fine to me too - its an implementation detail of that time
+source.
 
-	Sam
+> > Specialist applications will presumably need to know which time source or
+> > sources they are tracking and synchronizing too out of multiple potential
+> > PTP sources
+> 
+> Yes, the PTPd will have some special knowledge.
+
+Not only that but consumers of different time synchronizations will need
+to be able to describe which time source they want to talk about from a
+selection of PTP or similar things.
+
+> > system time bimble track a source makes sense just as with NTP but making
+> > it a new clock seems the wrong model extending a non-too-bright API when
+> > you can just put the time sources in a file tree.
+> 
+> Don't get your meaning here, what did you mean by "file tree?"
+
+Something like
+
+	/sys/class/timesource/<name>/...
+
+at which point we don't have to enumerate them all, add special system
+calls and then fret about the fact you can't access them from things like
+shell scripts.
+
+The fact SYS5.4 Unix and SuS got obsessed with numbering things
+rather than using names unlike Unix doesn't mean it's the right model to
+number them - usually the reverse is true, a heirarchy of file names is
+rather more future proof.
+
+Alan
