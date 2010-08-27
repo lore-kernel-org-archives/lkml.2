@@ -1,123 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab0H0QgC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:36:02 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43097 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab0H0QgA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:36:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Y92PJu/pWDn5NIjG+i9YXJfFgpszL9KcsMNkrjtsgKTUwWLZ/GF7yooF6zu0kmZ4go
-         IR65o7yBYbgWlokWBKbw==
+	id S1754125Ab0H0Qgj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:36:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45768 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752696Ab0H0Qgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 12:36:37 -0400
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: Hedi Berriche <hedi@sgi.com>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Date: Fri, 27 Aug 2010 18:37:08 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+References: <201008271537.35709.ptesarik@suse.cz> <201008271640.49542.ptesarik@suse.cz> <20100827145231.GZ18967@zorg.emea.sgi.com>
+In-Reply-To: <20100827145231.GZ18967@zorg.emea.sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinP_q7S4_O921hdBoedmTp-7gw0+=4DPHZGmysi@mail.gmail.com>
-References: <1282867897-31201-1-git-send-email-yinghan@google.com>
-	<AANLkTimaLBJa9hmufqQy3jk7GD-mJDbg=Dqkaja0nOMk@mail.gmail.com>
-	<AANLkTi=xUMSZ7wX-2BtJ0-+2BYLCTW=VPTAErinb5Zd2@mail.gmail.com>
-	<AANLkTinP_q7S4_O921hdBoedmTp-7gw0+=4DPHZGmysi@mail.gmail.com>
-Date: Fri, 27 Aug 2010 09:35:58 -0700
-Message-ID: <AANLkTin6+nHOowdptW2jaxg9urn3OLf9ArgGzKjWnQLM@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: fix missing place to check nr_swap_pages.
-From: Ying Han <yinghan@google.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_2m+dMnDsSqTIwWo"
+Message-Id: <201008271837.10014.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 10:00 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->
-> On Fri, Aug 27, 2010 at 12:31 PM, Ying Han <yinghan@google.com> wrote:
-> > On Thu, Aug 26, 2010 at 6:03 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> >>
-> >> Hello.
-> >>
-> >> On Fri, Aug 27, 2010 at 9:11 AM, Ying Han <yinghan@google.com> wrote:
-> >> > Fix a missed place where checks nr_swap_pages to do shrink_active_list. Make the
-> >> > change that moves the check to common function inactive_anon_is_low.
-> >> >
-> >>
-> >> Hmm.. AFAIR, we discussed it at that time but we concluded it's not good.
-> >> That's because nr_swap_pages < 0 means both "NO SWAP" and "NOT enough
-> >> swap space now". If we have a swap device or file but not enough space
-> >> now, we need to aging anon pages to make inactive list enough size.
-> >> Otherwise, working set pages would be swapped out more fast before
-> >> promotion.
-> >
-> > We found the problem on one of our workloads where more TLB flush
-> > happens without the change. Kswapd seems to be calling
-> > shrink_active_list() which eventually clears access bit of those ptes
-> > and does TLB flush
-> > with ptep_clear_flush_young(). This system does not have swap
-> > configured, and why aging the anon lru in that
-> > case?
->
-> True. I also wanted it but we have to care swap configured but
-> non-enabling still yet system as well as non-swap configured system at
-> that time.
+--Boundary-00=_2m+dMnDsSqTIwWo
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-Agree.  In our case, we cares about the case where swap is not enabled
-but is configured .
+On Friday 27 of August 2010 16:52:31 Hedi Berriche wrote:
+> On Fri, Aug 27, 2010 at 15:40 Petr Tesarik wrote:
+> | On Friday 27 of August 2010 16:31:35 Hedi Berriche wrote:
+> | > That said, I'm letting my already over 36 hours run carry on chewing
+> | > CPU time, and see if it will eventually trip the same problem seen with
+> | > 4-byte ticket locks.
+> |
+> | Hm, this doesn't sound like a viable approach. Since the siglock gets
+> | initialized to 0 when a new process is started, it may never actually
+> | wrap around.
+> |
+> | I would rather attach a SystemTap probe somewhere during process fork and
+> | add a bias to the siglock. That should work fine. Let me knock up the
+> | SystemTap script...
 >
-> If your system is no swap configured, how about this?
-> (It's a not formal proper patch but just quick patch to show the concept).
+> That would be nice. Ta!
 
-In our system, we do have swap configured. In vmscan.c, there are
-couple of places where we skip scanning
-and shrinking anon lru while the condition if(nr_swap_pages <= 0)  is
-true. It still make sense to me to add it
-to the shrink_active() condition as the initial patch.
+Here it is. I don't have a system with the old 64-bit ticket spinlocks at 
+hand, so this is completely untested, but it should work fine.
 
-Also, we found it is quite often to hit the condition
-inactive_anon_is_low on machine with small numa node size, since the
-zone->inactive_ratio is set based on the zone->present_pages.
+Adjust if needed.
 
---Ying
+Petr
 
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 3109ff7..641c6a6 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1580,6 +1580,11 @@ static void shrink_active_list(unsigned long
-> nr_pages, struct zone *zone,
->        spin_unlock_irq(&zone->lru_lock);
->  }
->
-> +/*
-> + * If system doesn't have a swap configuration,
-> + * it doesn't need to age anon pages in kswapd.
-> + */
-> +#ifdef CONFIG_SWAP
->  static int inactive_anon_is_low_global(struct zone *zone)
->  {
->        unsigned long active, inactive;
-> @@ -1611,6 +1616,12 @@ static int inactive_anon_is_low(struct zone
-> *zone, struct scan_control *sc)
->                low = mem_cgroup_inactive_anon_is_low(sc->mem_cgroup);
->        return low;
->  }
-> +#else
-> +static inline int inactive_anon_is_low(struct zone *zone, struct
-> scan_control *sc)
-> +{
-> +       return 0;
-> +}
-> +#endif
->
->  static int inactive_file_is_low_global(struct zone *zone)
->  {
->
->
-> --
-> Kind regards,
-> Minchan Kim
+--Boundary-00=_2m+dMnDsSqTIwWo
+Content-Type: text/x-csrc;
+  charset="iso 8859-15";
+  name="biaslock.stp"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="biaslock.stp"
+
+/* Bias the spin lock on fork */
+
+%{
+#define LOCK_BIAS ((1ULL << 32) - (1ULL << 15))
+%}
+
+function bias_siglock (task:long)
+%{
+	struct task_struct *tsk = (struct task_struct*)THIS->task;
+	tsk->sighand->siglock.raw_lock.lock = LOCK_BIAS + (LOCK_BIAS << 32);
+%}
+
+function is_err (value:long)
+%{
+	THIS->__retvalue = IS_ERR_VALUE((unsigned long)THIS->value);
+%}
+
+probe kernel.function("copy_process").return
+{
+	if (!is_err($return))
+		bias_siglock($return);
+}
+
+--Boundary-00=_2m+dMnDsSqTIwWo--
