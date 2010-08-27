@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab0H0CAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 22:00:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27806 "EHLO mx1.redhat.com"
+	id S1754964Ab0H0CAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 22:00:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3524 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754896Ab0H0CAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 22:00:17 -0400
+	id S1754949Ab0H0CAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 22:00:31 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 13/22] MIPS: Fix IRQ flags handling
+Subject: [PATCH 16/22] Fix IA64 irqflags
 To: linux-arch@vger.kernel.org
 Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Date: Fri, 27 Aug 2010 03:00:12 +0100
-Message-ID: <20100827020012.27277.65923.stgit@warthog.procyon.org.uk>
+Date: Fri, 27 Aug 2010 03:00:28 +0100
+Message-ID: <20100827020027.27277.22930.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100827015905.27277.39167.stgit@warthog.procyon.org.uk>
 References: <20100827015905.27277.39167.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -29,153 +29,201 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
 
- arch/mips/include/asm/irqflags.h |   53 +++++++++++++++++++++-----------------
- 1 files changed, 29 insertions(+), 24 deletions(-)
+ arch/ia64/include/asm/irqflags.h |   94 ++++++++++++++++++++++++++++++++++++++
+ arch/ia64/include/asm/system.h   |   76 -------------------------------
+ 2 files changed, 94 insertions(+), 76 deletions(-)
+ create mode 100644 arch/ia64/include/asm/irqflags.h
 
-diff --git a/arch/mips/include/asm/irqflags.h b/arch/mips/include/asm/irqflags.h
-index 701ec0b..9ef3b0d 100644
---- a/arch/mips/include/asm/irqflags.h
-+++ b/arch/mips/include/asm/irqflags.h
-@@ -17,7 +17,7 @@
- #include <asm/hazards.h>
- 
- __asm__(
--	"	.macro	raw_local_irq_enable				\n"
-+	"	.macro	arch_local_irq_enable				\n"
- 	"	.set	push						\n"
- 	"	.set	reorder						\n"
- 	"	.set	noat						\n"
-@@ -40,7 +40,7 @@ __asm__(
- 
- extern void smtc_ipi_replay(void);
- 
--static inline void raw_local_irq_enable(void)
-+static inline void arch_local_irq_enable(void)
- {
- #ifdef CONFIG_MIPS_MT_SMTC
- 	/*
-@@ -50,7 +50,7 @@ static inline void raw_local_irq_enable(void)
- 	smtc_ipi_replay();
- #endif
- 	__asm__ __volatile__(
--		"raw_local_irq_enable"
-+		"arch_local_irq_enable"
- 		: /* no outputs */
- 		: /* no inputs */
- 		: "memory");
-@@ -76,7 +76,7 @@ static inline void raw_local_irq_enable(void)
-  * Workaround: mask EXL bit of the result or place a nop before mfc0.
-  */
- __asm__(
--	"	.macro	raw_local_irq_disable\n"
-+	"	.macro	arch_local_irq_disable\n"
- 	"	.set	push						\n"
- 	"	.set	noat						\n"
- #ifdef CONFIG_MIPS_MT_SMTC
-@@ -97,17 +97,17 @@ __asm__(
- 	"	.set	pop						\n"
- 	"	.endm							\n");
- 
--static inline void raw_local_irq_disable(void)
-+static inline void arch_local_irq_disable(void)
- {
- 	__asm__ __volatile__(
--		"raw_local_irq_disable"
-+		"arch_local_irq_disable"
- 		: /* no outputs */
- 		: /* no inputs */
- 		: "memory");
- }
- 
- __asm__(
--	"	.macro	raw_local_save_flags flags			\n"
-+	"	.macro	arch_local_save_flags flags			\n"
- 	"	.set	push						\n"
- 	"	.set	reorder						\n"
- #ifdef CONFIG_MIPS_MT_SMTC
-@@ -118,13 +118,15 @@ __asm__(
- 	"	.set	pop						\n"
- 	"	.endm							\n");
- 
--#define raw_local_save_flags(x)						\
--__asm__ __volatile__(							\
--	"raw_local_save_flags %0"					\
--	: "=r" (x))
+diff --git a/arch/ia64/include/asm/irqflags.h b/arch/ia64/include/asm/irqflags.h
+new file mode 100644
+index 0000000..f82d6be
+--- /dev/null
++++ b/arch/ia64/include/asm/irqflags.h
+@@ -0,0 +1,94 @@
++/*
++ * IRQ flags defines.
++ *
++ * Copyright (C) 1998-2003 Hewlett-Packard Co
++ *	David Mosberger-Tang <davidm@hpl.hp.com>
++ * Copyright (C) 1999 Asit Mallick <asit.k.mallick@intel.com>
++ * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
++ */
++
++#ifndef _ASM_IA64_IRQFLAGS_H
++#define _ASM_IA64_IRQFLAGS_H
++
++#ifdef CONFIG_IA64_DEBUG_IRQ
++extern unsigned long last_cli_ip;
++static inline void arch_maybe_save_ip(unsigned long flags)
++{
++	if (flags & IA64_PSR_I)
++		last_cli_ip = ia64_getreg(_IA64_REG_IP);
++}
++#else
++#define arch_maybe_save_ip(flags) do {} while (0)
++#endif
++
++/*
++ * - clearing psr.i is implicitly serialized (visible by next insn)
++ * - setting psr.i requires data serialization
++ * - we need a stop-bit before reading PSR because we sometimes
++ *   write a floating-point register right before reading the PSR
++ *   and that writes to PSR.mfl
++ */
++
 +static inline unsigned long arch_local_save_flags(void)
 +{
-+	unsigned long flags;
-+	asm volatile("arch_local_save_flags %0" : "=r" (flags));
-+	return flags;
++	ia64_stop();
++#ifdef CONFIG_PARAVIRT
++	return ia64_get_psr_i();
++#else
++	return ia64_getreg(_IA64_REG_PSR);
++#endif
 +}
- 
- __asm__(
--	"	.macro	raw_local_irq_save result			\n"
-+	"	.macro	arch_local_irq_save result			\n"
- 	"	.set	push						\n"
- 	"	.set	reorder						\n"
- 	"	.set	noat						\n"
-@@ -148,15 +150,18 @@ __asm__(
- 	"	.set	pop						\n"
- 	"	.endm							\n");
- 
--#define raw_local_irq_save(x)						\
--__asm__ __volatile__(							\
--	"raw_local_irq_save\t%0"					\
--	: "=r" (x)							\
--	: /* no inputs */						\
--	: "memory")
++
 +static inline unsigned long arch_local_irq_save(void)
 +{
-+	unsigned long flags;
-+	asm volatile("arch_local_irq_save\t%0"
-+		     : "=r" (flags)
-+		     : /* no inputs */
-+		     : "memory");
++	unsigned long flags = arch_local_save_flags();
++
++	ia64_stop();
++	ia64_rsm(IA64_PSR_I);
++	arch_maybe_save_ip(flags);
 +	return flags;
 +}
- 
- __asm__(
--	"	.macro	raw_local_irq_restore flags			\n"
-+	"	.macro	arch_local_irq_restore flags			\n"
- 	"	.set	push						\n"
- 	"	.set	noreorder					\n"
- 	"	.set	noat						\n"
-@@ -196,7 +201,7 @@ __asm__(
- 	"	.endm							\n");
- 
- 
--static inline void raw_local_irq_restore(unsigned long flags)
++
++static inline void arch_local_irq_disable(void)
++{
++#ifdef CONFIG_IA64_DEBUG_IRQ
++	arch_local_irq_save();
++#else
++	ia64_stop();
++	ia64_rsm(IA64_PSR_I);
++#endif
++}
++
++static inline void arch_local_irq_enable(void)
++{
++	ia64_stop();
++	ia64_ssm(IA64_PSR_I);
++	ia64_srlz_d();
++}
++
 +static inline void arch_local_irq_restore(unsigned long flags)
- {
- 	unsigned long __tmp1;
++{
++#ifdef CONFIG_IA64_DEBUG_IRQ
++	unsigned long old_psr = arch_local_save_flags();
++#endif
++	ia64_intrin_local_irq_restore(flags & IA64_PSR_I);
++	arch_maybe_save_ip(old_psr & ~flags);
++}
++
++static inline bool arch_irqs_disabled_flags(unsigned long flags)
++{
++	return (flags & IA64_PSR_I) == 0;
++}
++
++static inline bool arch_irqs_disabled(void)
++{
++	return arch_irqs_disabled_flags(arch_local_save_flags());
++}
++
++static inline void arch_safe_halt(void)
++{
++	ia64_pal_halt_light();	/* PAL_HALT_LIGHT */
++}
++
++
++#endif /* _ASM_IA64_IRQFLAGS_H */
+diff --git a/arch/ia64/include/asm/system.h b/arch/ia64/include/asm/system.h
+index 9f342a5..2feb7f6 100644
+--- a/arch/ia64/include/asm/system.h
++++ b/arch/ia64/include/asm/system.h
+@@ -107,87 +107,11 @@ extern struct ia64_boot_param {
+  */
+ #define set_mb(var, value)	do { (var) = (value); mb(); } while (0)
  
-@@ -211,24 +216,24 @@ static inline void raw_local_irq_restore(unsigned long flags)
- #endif
+-#define safe_halt()         ia64_pal_halt_light()    /* PAL_HALT_LIGHT */
+-
+ /*
+  * The group barrier in front of the rsm & ssm are necessary to ensure
+  * that none of the previous instructions in the same group are
+  * affected by the rsm/ssm.
+  */
+-/* For spinlocks etc */
+-
+-/*
+- * - clearing psr.i is implicitly serialized (visible by next insn)
+- * - setting psr.i requires data serialization
+- * - we need a stop-bit before reading PSR because we sometimes
+- *   write a floating-point register right before reading the PSR
+- *   and that writes to PSR.mfl
+- */
+-#ifdef CONFIG_PARAVIRT
+-#define __local_save_flags()	ia64_get_psr_i()
+-#else
+-#define __local_save_flags()	ia64_getreg(_IA64_REG_PSR)
+-#endif
+-
+-#define __local_irq_save(x)			\
+-do {						\
+-	ia64_stop();				\
+-	(x) = __local_save_flags();		\
+-	ia64_stop();				\
+-	ia64_rsm(IA64_PSR_I);			\
+-} while (0)
+-
+-#define __local_irq_disable()			\
+-do {						\
+-	ia64_stop();				\
+-	ia64_rsm(IA64_PSR_I);			\
+-} while (0)
+-
+-#define __local_irq_restore(x)	ia64_intrin_local_irq_restore((x) & IA64_PSR_I)
+-
+-#ifdef CONFIG_IA64_DEBUG_IRQ
+-
+-  extern unsigned long last_cli_ip;
+-
+-# define __save_ip()		last_cli_ip = ia64_getreg(_IA64_REG_IP)
+-
+-# define local_irq_save(x)					\
+-do {								\
+-	unsigned long __psr;					\
+-								\
+-	__local_irq_save(__psr);				\
+-	if (__psr & IA64_PSR_I)					\
+-		__save_ip();					\
+-	(x) = __psr;						\
+-} while (0)
+-
+-# define local_irq_disable()	do { unsigned long __x; local_irq_save(__x); } while (0)
+-
+-# define local_irq_restore(x)					\
+-do {								\
+-	unsigned long __old_psr, __psr = (x);			\
+-								\
+-	local_save_flags(__old_psr);				\
+-	__local_irq_restore(__psr);				\
+-	if ((__old_psr & IA64_PSR_I) && !(__psr & IA64_PSR_I))	\
+-		__save_ip();					\
+-} while (0)
+-
+-#else /* !CONFIG_IA64_DEBUG_IRQ */
+-# define local_irq_save(x)	__local_irq_save(x)
+-# define local_irq_disable()	__local_irq_disable()
+-# define local_irq_restore(x)	__local_irq_restore(x)
+-#endif /* !CONFIG_IA64_DEBUG_IRQ */
+-
+-#define local_irq_enable()	({ ia64_stop(); ia64_ssm(IA64_PSR_I); ia64_srlz_d(); })
+-#define local_save_flags(flags)	({ ia64_stop(); (flags) = __local_save_flags(); })
+-
+-#define irqs_disabled()				\
+-({						\
+-	unsigned long __ia64_id_flags;		\
+-	local_save_flags(__ia64_id_flags);	\
+-	(__ia64_id_flags & IA64_PSR_I) == 0;	\
+-})
  
- 	__asm__ __volatile__(
--		"raw_local_irq_restore\t%0"
-+		"arch_local_irq_restore\t%0"
- 		: "=r" (__tmp1)
- 		: "0" (flags)
- 		: "memory");
- }
+ #ifdef __KERNEL__
  
--static inline void __raw_local_irq_restore(unsigned long flags)
-+static inline void __arch_local_irq_restore(unsigned long flags)
- {
- 	unsigned long __tmp1;
- 
- 	__asm__ __volatile__(
--		"raw_local_irq_restore\t%0"
-+		"arch_local_irq_restore\t%0"
- 		: "=r" (__tmp1)
- 		: "0" (flags)
- 		: "memory");
- }
- 
--static inline int raw_irqs_disabled_flags(unsigned long flags)
-+static inline int arch_irqs_disabled_flags(unsigned long flags)
- {
- #ifdef CONFIG_MIPS_MT_SMTC
- 	/*
 
