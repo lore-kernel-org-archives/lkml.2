@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab0H0Hvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 03:51:40 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54498 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab0H0Hvi convert rfc822-to-8bit (ORCPT
+	id S1753248Ab0H0Hxm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 03:53:42 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:37052 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab0H0Hxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 03:51:38 -0400
-Subject: Re: divide by zero bug in find_busiest_group
-From: Peter Zijlstra <peterz@infradead.org>
-To: Chetan Ahuja <chetan.ahuja@gmail.com>
-Cc: Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-In-Reply-To: <AANLkTikg7Q_oOecNgVLPPTu3dOu3aO776f4y1bw410PV@mail.gmail.com>
-References: <AANLkTimT4T-6dO=Uo05DexYf3exq=0SkZemHuB5aRP3Q@mail.gmail.com>
-	 <AANLkTim75Z-X--LDJX8MLYF8G=vPW_GniVFQrkL7QoAy@mail.gmail.com>
-	 <AANLkTikg7Q_oOecNgVLPPTu3dOu3aO776f4y1bw410PV@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 27 Aug 2010 09:51:34 +0200
-Message-ID: <1282895494.1975.1693.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 27 Aug 2010 03:53:40 -0400
+X-SpamScore: 6
+X-BigFish: VPS6(z3cfcs329eqzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7SWHV-02-DG3-02
+X-M-MSG: 
+Date: Fri, 27 Aug 2010 09:51:32 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100827075132.GD22783@erda.amd.com>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100823085339.GA26713@elte.hu>
+ <20100826211424.GQ4879@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100826211424.GQ4879@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-26 at 16:52 -0700, Chetan Ahuja wrote:
->  For one thing, I don't understand the reason for recomputing
-> cpu_power dynamically. How does cpu_power of a gorup (which I believe
-> refers to the group of "hyper-threaded" cores on one physical core)
-> change while inthe system is in operation ? Is this in support of
-> hot-swappable CPU's or something ?
+On 26.08.10 17:14:24, Don Zickus wrote:
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 4539b4b..d16ebd8 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -738,6 +738,7 @@ again:
+>  
+>  	inc_irq_stat(apic_perf_irqs);
+>  	ack = status;
+> +	intel_pmu_ack_status(ack);
 
-No the groups are used for increasingly larger accumulations of cpus,
-the first group is the singleton group which contains on the one cpu in
-question, after that we start following the machine topology,
-hyper-threads, multi-core, package, node etc. until the last group spans
-the whole machine.
+Yes, not immediately ack'ing the status was suspect to me too. Though
+it must then be the same counter that retriggers. Or, it is a cpu
+bug. You could add a debug print of the status register for the case
+the loop is reentered, would be interesting...
 
-The dynamic cpu_power computation comes from RT tasks, when we
-load-balance SCHED_OTHER tasks, we want each cpu to have an equal amount
-of pending work, however when one CPU is say 50% busy with RT tasks (and
-hopefully soon IRQ load), it cannot perform the same amount of work as
-another unloaded cpu, therefore we need to normalize the relative load
-levels between cpu. We use cpu_power as this load normalization factor.
+Thank for fixing this.
 
-Load balancing works by balancing this group hierarchy, a number of
-groups are contained in a domain. Each cpu does a load-balance pull,
-from the busiest group in that domain to his local domain. Since there's
-ever smaller groups/domains you eventually end up with a nicely spread
-load.
+-Robert
 
->   To be honest, for my use case, I'd  like to just disable the whole
-> work-stealing stuff (referred to as load-balancing in the kernel).
-> There seems to be no config option that isolates just the dynamic
-> load-balancing parts (or is there ?) so maybe I'd just hack away the
-> load-balancing functions by hand so as never to worry about those
-> denominators again. 
+>  
+>  	intel_pmu_lbr_read();
+>  
+> @@ -766,8 +767,6 @@ again:
+>  			x86_pmu_stop(event);
+>  	}
+>  
+> -	intel_pmu_ack_status(ack);
+> -
+>  	/*
+>  	 * Repeat if there is more work to be done:
+>  	 */
+> 
 
-You can do that at runtime, read: Documentation/cgroups/cpusets.txt
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
