@@ -1,249 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab0H0Irx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 04:47:53 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:53523 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab0H0Irt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 04:47:49 -0400
-To: Neil Brown <neilb@suse.de>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaurora@redhat.com,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-In-reply-to: <20100827170551.19616048@notabene> (message from Neil Brown on
-	Fri, 27 Aug 2010 17:05:51 +1000)
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-References: <20100826183340.027591901@szeredi.hu> <20100827170551.19616048@notabene>
-Message-Id: <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 27 Aug 2010 10:47:39 +0200
+	id S1753264Ab0H0Isc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 04:48:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50894 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752857Ab0H0Is3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 04:48:29 -0400
+Message-ID: <4C777C04.7080906@cn.fujitsu.com>
+Date: Fri, 27 Aug 2010 16:49:08 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.5) Gecko/20091121 Lightning/1.0b1 Thunderbird/3.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Subject: [Patch] ext4: avoid null dereference
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+ac->inode is set to null in function ext4_mb_release_group_pa(),
+and then trace_ext4_mballoc_discard(ac) is called, the kernel
+will panic.
 
-On Fri, 27 Aug 2010, Neil Brown wrote:
->  My first problem with this that there isn't nearly enough documentation.
-> So I offer the following to fix this problem.  Please correct anything that I
-> got glaringly wrong.  I don't claim it is at all complete, but touches on the
-> things that I thought were interesting.
+BUG: unable to handle kernel NULL pointer dereference at 000000a4
+IP: [<f87e1714>] ftrace_raw_event_ext4__mballoc+0x54/0xc0 [ext4]
+*pdpt = 0000000000abd001 *pde = 0000000000000000
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/cpu/cpu1/cache/index1/shared_cpu_map
+Modules linked in: autofs4 sunrpc p4_clockmod ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb3i cxgb3 mdio ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr ipv6 iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror dm_region_hash dm_log dm_mod raid0 floppy e1000 sg pcspkr i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support i6300esb sky2 e752x_edac edac_core ext4 mbcache jbd2 sd_mod crc_t10dif mptspi mptscsih mptbase scsi_transport_spi pata_acpi ata_generic ata_piix [last unloaded: mperf]
 
-Whoa, thank you very much.  I'll add it to the patchset with some
-fixes (see below).
+Pid: 550, comm: flush-8:16 Not tainted 2.6.36-rc1 #1 SE7320EP2/Altos G530
+EIP: 0060:[<f87e1714>] EFLAGS: 00010206 CPU: 1
+EIP is at ftrace_raw_event_ext4__mballoc+0x54/0xc0 [ext4]
+EAX: f32ac840 EBX: f3f1cf88 ECX: f32ac840 EDX: 00000000
+ESI: f32ac83c EDI: f880b9d8 EBP: 00000000 ESP: f4b77ae4
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process flush-8:16 (pid: 550, ti=f4b76000 task=f613e540 task.ti=f4b76000)
+Stack:
+ 00000286 00000000 00000286 f705ec80 f304ad90 f3f1cf88 f4b77b74 f63dc600
+<0> f87f5ac1 0000000d f4b77b18 f304a490 00000000 00007df3 00000012 f3c204f8
+<0> f3c20184 f3c20508 f3f1cf88 f87f8356 0000002b 95ac1b28 95ac41fc 00000001
+Call Trace:
+ [<f87f5ac1>] ? ext4_mb_release_group_pa+0x121/0x150 [ext4]
+ [<f87f8356>] ? ext4_mb_discard_group_preallocations+0x336/0x400 [ext4]
+ [<f87fb7f1>] ? ext4_mb_new_blocks+0x3d1/0x4f0 [ext4]
+ [<c05a6c5b>] ? __make_request+0x10b/0x440
+ [<f87f1fb4>] ? ext4_ext_map_blocks+0x1334/0x1980 [ext4]
+ [<c04ac78a>] ? rb_reserve_next_event+0xaa/0x3b0
+ [<f87d18d6>] ? ext4_map_blocks+0xd6/0x1d0 [ext4]
+ [<f87d2da7>] ? mpage_da_map_blocks+0xc7/0x8a0 [ext4]
+ [<c04c8a68>] ? find_get_pages_tag+0x38/0x110
+ [<c04d23a5>] ? __pagevec_release+0x15/0x20
+ [<f87d3ca5>] ? ext4_da_writepages+0x2b5/0x5d0 [ext4]
+ [<c04cfbe0>] ? __writepage+0x0/0x30
+ [<c04d0e34>] ? do_writepages+0x14/0x30
+ [<c0526600>] ? writeback_single_inode+0xa0/0x240
+ [<c0526971>] ? writeback_sb_inodes+0xc1/0x180
+ [<c0526ab8>] ? writeback_inodes_wb+0x88/0x140
+ [<c0526d7b>] ? wb_writeback+0x20b/0x320
+ [<c045aca7>] ? lock_timer_base+0x27/0x50
+ [<c0526fe0>] ? wb_do_writeback+0x150/0x190
+ [<c05270a8>] ? bdi_writeback_thread+0x88/0x1f0
+ [<c043b680>] ? complete+0x40/0x60
+ [<c0527020>] ? bdi_writeback_thread+0x0/0x1f0
+ [<c0469474>] ? kthread+0x74/0x80
+ [<c0469400>] ? kthread+0x0/0x80
+ [<c040a23e>] ? kernel_thread_helper+0x6/0x10
+Code: e0 ff ff 8b 57 24 8b 68 14 8d 44 24 0c 89 0c 24 b9 24 00 00 00 89 6c 24 04 e8 a9 cf cc c7 85 c0 89 c6 74 47 e8 1e 8a cc c7 8b 13 <8b> 92 a4 00 00 00 89 c1 8b 52 08 89 50 0c 8b 13 8b 52 20 89 50
+EIP: [<f87e1714>] ftrace_raw_event_ext4__mballoc+0x54/0xc0 [ext4] SS:ESP 0068:f4b77ae4
+CR2: 00000000000000a4
 
-> Hybrid Union Filesystem
-> =======================
-> 
-> This document describes a prototype for a new approach to providing
-> union-filesystem functionality in Linux.
-> A union-filesystem tries to present the union of two different filesystems as
-> though it were a single filesystem.  The result will inevitably fail to look
-> exactly like a normal filesystem for various technical reasons.  The
-> expectation is that many use cases will be able to ignore these differences.
-> 
-> This approach is 'hybrid' because the objects that appear in the filesystem
-> do not all appear to belong to that filesystem.  In many case an object
-> accessed in the hybrid-union will be indistinguishable from accessing the
-> corresponding object from the original filesystem.  This is most obvious
-> from the 'st_dev' field returned by stat(2).  Some objects will report an
-> st_dev from one original filesystem, some from the other, none will report an
-> st_dev from the union itself.
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 
-Hmm, that's a bug.  Directories actually come from the union itself
-for various reasons, and it does report the correct st_ino but not
-st_dev.  Fixed.
+---
+ include/trace/events/ext4.h |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
->  Similarly st_ino will only be unique when
-> combined with st_dev, and both of these can change over the lifetime of an
-> object.
-> Many applications and tools ignore these values and will not be affected.
-> 
-> Upper and Lower
-> ---------------
-> 
-> A union filesystem combines two filesystems - an 'upper' filesystem and a
-> 'lower' filesystem.  Note that while in set theory, 'union' is a commutative
-> operation, in filesystems it is not - the two filesystems are treated
-> differently.  When a name exists in both filesystems, the object in the
-> 'upper' filesystem is visible while the object in the 'lower' filesystem is
-> either hidden or, in the case of directories, merged with the 'upper' object.
-> 
-> It would be more correct to refer to an upper and lower 'directory tree'
-> rather than 'filesystem' as it is quite possible for both directory trees to
-> be in the same filesystem and there is no requirement that the root of a
-> filesystem be given for either upper or lower.
-> 
-> The lower filesystem can be any filesystem supported by Linux and does not
-> need to be writable.  It could even be another union.
-
-Almost.  Xattr namespace issues currently prevent that, but with
-escaping it could be worked around if necessary.
-
-> The upper filesystem will normally be writeable and if it is it must support
-> the creation of trusted.* extended attributes, and must provide valid d_type
-> in readdir responses, at least for symbolic links - so NFS is not suitable.
-> 
-> A read-only union of two read-only filesystems is support for any filesystem
-> type.
-
-s/is support for/may use/
-
-> 
-> Directories
-> -----------
-> 
-> Unioning mainly involved directories.  If a given name appears in both upper
-> ad lower filesystems and refers to a non-directory in either, then the lower
-> object is hidden - the name refers only to the upper object.
-> 
-> Where both upper and lower objects are directories, a merged directory is
-> formed.
-> 
-> At mount time, the two directories given as mount options are combined
-> into a merged directory.  Then whenever a lookup is requested in such a
-> merged directory, the lookup is performed in each actual directory and the
-> combined result is cached in the dentry belonging to the union filesystem.
-> If both actual lookups find directories, both are stored and a merged
-> directory is create, otherwise only one is stored: the upper if it exists,
-> else the lower.
-> 
-> Only the lists of names from directories are merged.  Other content such as
-> metadata and extended attributes are reported for the upper directory only.
-> These attributes of the lower directory are hidden.
-> 
-> whiteouts and opaque directories
-> --------------------------------
-> 
-> In order to support rm and rmdir without changing the lower filesystem, a
-> union filesystem needs to record in the upper filesystem that files have been
-> removed.  This is done using whiteouts and opaque directories (non-directories
-> are always opaque).
-> 
-> The hybrid union filesystem uses extended attributes with a "trusted.union."
-> prefix to record these details.
-> 
-> A whiteout is created as a symbolic link with target "(union-whiteout)" and
-> with xattr "trusted.union.whiteout" set to "y".  When a whiteout is found in
-> the upper level of a merged directory, any matching name in the lower level
-> is ignored, and the whiteout itself is also hidden.
-> 
-> A directory is made opaque by setting the xattr "trusted.union.opaque" to "y".
-> Where the upper filesystem contains an opaque directory, any directory in the
-> lower filesystem with the same name is ignored.
-> 
-> readdir
-> -------
-> 
-> When a 'readdir' request is made on a merged directory, the upper and lower
-> directories are each read and the name lists merged in the obvious way (upper
-> is read first, then lower - entries that already exist are not re-added).
-> This merged name list is cached in the 'struct file' and so remains as long as
-> the file is kept open.  If the directory is opened and read by two processes
-> at the same time, they will each have separate caches.
-> A seekdir to the start of the directory (offset 0) followed by a readdir will
-> cause the cache to be discarded and rebuilt.
-> 
-> This means that changes to the merged directory do not appear while a
-> directory is being read.  This is unlikely to be noticed by many programs.
-> 
-> seek offsets are assigned sequentially when the directories are read.  Thus
-> if
->   - read part of a directory
->   - remember an offset, and close the directory
->   - re-open the directory some time later
->   - seek to the remembered offset
-> 
-> there may be little correlation between the old and new locations in the list
-> of filenames, particularly if anything has changed in the directory.
-> 
-> Readdir on directories that are not merged is simply handled by the
-> underlying directory (upper or lower).
-> 
-> 
-> Non-directories
-> ---------------
-> 
-> Objects that are not directories (files, symlinks, device-special files etc)
-> are presented either from the upper or lower filesystem as appropriate.
-> When a file in the lower filesystem is accessed in a way the requires
-> write-access; such as opening for write access, changing some metadata etc,
-> the file is first copied from the lower filesystem to the upper filesystem
-> (copy_up).  Note that creating a hard-link also requires copy-up, though of
-> course creation of a symlink does not.
-> 
-> The copy_up process first makes sure that the containing directory exists
-> in the upper filesystem - creating it and any parents as necessary.  It then
-> creates the object with the same metadata (owner, mode, mtime, symlink-target
-> etc) and then if the object is a file, the data is copied from the lower to
-> the upper filesystem.  Finally any extended attributes are copied up.
-> 
-> Once the copy_up is complete, the hybrid-union filesystem simply provides
-> direct access to the newly created file in the upper filesystem - future
-> operations on the file are barely noticed by the hybrid-union (though an
-> operation on the name of the file such as rename or unlink will of course be
-> noticed and handled).
-> 
-> Changes to underlying filesystems
-> ---------------------------------
-> 
-
-For now I refuse to even think about what happens in this case.
-
-The easiest way out of this mess might simply be to enforce exclusive
-modification to the underlying filesystems on a local level, same as
-the union mount strategy.  For NFS and other remote filesystems we
-either
-
- a) add some way to enforce it,
- b) live with the consequences if not enforced on the system level, or
- c) disallow them to be part of the union.
+diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+index 01e9e00..6a1fcff 100644
+--- a/include/trace/events/ext4.h
++++ b/include/trace/events/ext4.h
+@@ -796,8 +796,9 @@ DECLARE_EVENT_CLASS(ext4__mballoc,
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->dev		= ac->ac_inode->i_sb->s_dev;
+-		__entry->ino		= ac->ac_inode->i_ino;
++		__entry->dev		= ac->ac_sb->s_dev;
++		__entry->ino		= ac->ac_inode ?
++						ac->ac_inode->i_ino : 0;
+ 		__entry->result_logical	= ac->ac_b_ex.fe_logical;
+ 		__entry->result_start	= ac->ac_b_ex.fe_start;
+ 		__entry->result_group	= ac->ac_b_ex.fe_group;
+-- 
+1.6.0.2.GIT
 
 
-> The hybrid-union filesystem does not insist that the upper and lower
-> filesystems that it combines remain read-only.  This is certainly preferred
-> but it is non-trivial to enforce (e.g. for NFS) and so cannot be depended on.
-> A system integrator should ensure the underlying filesystems are not changed
-> - except through the hybrid union - if they want predictable behaviour, or
-> must accept the consequences.
-> The hybrid-union filesystem only ensures that unexpected changes do not cause
-> a system crash or serious corruption to either underlying filesystem.
-> 
-> The exact behaviour of the hybrid-union is best described in terms from the
-> 'dcache' and as objects can expire from the 'dcache' at unpredictable times,
-> the exact behaviour when the underlying filesystems change is in
-> general unpredictable.
-> 
-> Each dcache entry in the hybrid union holds a reference to a corresponding
-> dcache entry in upper or lower filesystem or, in the case of merged
-> directories, in both the upper and lower filesystems.
-> 
-> If a referenced file is rename directly in one of the filesystems, that
-> renaming will not be noticed in the hybrid union until the referencing dcache
-> entry expires.
-> 
-> If a referenced file is unlinked from a local filesystem, it could similarly
-> still be accessibly through the hybrid while the dcache entry persists.  If a
-> referenced file is on an NFS filesystem and is unlinked remotely, the file in
-> the hybrid-union will become 'stale' returning ESTALE for most accesses.  It
-> will not disappear until the dcache entry expires from the dcache.
-> 
-> If a referenced file is changed, either contents or metadata, that change
-> will be immediately visible in the hybrid union.
-> 
-> If the contents of a directory are changed, then a readdir will not see that
-> change unless it opens the file or seeks to the start of the file after the
-> change was made.  Then it will be visible.
-> 
-> Changes will *not* be visible to a lookup if the name that is changed is
-> currently cached in the the dcache, whether positive or negative.
-> e.g. If a name is looked for in the hybrid union and not found, a negative
-> dcache entry will be created.  If the same name is directly created in the
-> upper filesystem it will not immediately become visible to the hybrid, though
-> it will be visible in a readdir.  This could be confusing, and could
-> probably be fixed using dcache revalidation.
-> 
 
-Thanks,
-Miklos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
