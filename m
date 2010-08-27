@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab0H0NhG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 09:37:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38986 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab0H0NhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 09:37:04 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: linux-ia64@vger.kernel.org
-Subject: Serious problem with ticket spinlocks on ia64
-Date: Fri, 27 Aug 2010 15:37:33 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Hedi Berriche <hedi@sgi.com>
+	id S1753483Ab0H0Nho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 09:37:44 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37741 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab0H0Nhm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 09:37:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=X/jatIW1S969oxac3FzKGN40IOVZBhxJX/3OVKBTj1SM+wZkSZn1dvOXXeGS3qbkUE
+         VpODSg1xPI7v+k8wlgex6vWtErrLNA/xIcwrsJ2WYIfMGtc1WgM6WqN4/f260o5RaAum
+         kJW6tVNauhJ3FAfV3woyl24gAMy7rVJAcN6xk=
+Date: Fri, 27 Aug 2010 15:37:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: DDD <dongdong.deng@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu, acme@redhat.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: fix possible divide-by-zero in
+	perf_swevent_overflow()
+Message-ID: <20100827133735.GC5241@nowhere>
+References: <1282824438-13970-1-git-send-email-dongdong.deng@windriver.com> <1282824727.1975.747.camel@laptop> <4C765FD3.9060904@windriver.com> <1282827486.1975.845.camel@laptop> <4C77ADC1.5030502@windriver.com> <1282913445.1975.2414.camel@laptop> <4C77BB6B.9090706@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201008271537.35709.ptesarik@suse.cz>
+In-Reply-To: <4C77BB6B.9090706@windriver.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everybody,
+On Fri, Aug 27, 2010 at 09:19:39PM +0800, DDD wrote:
+> Peter Zijlstra wrote:
+>> On Fri, 2010-08-27 at 20:21 +0800, DDD wrote:
+>>
+>>>>> Maybe the root cause was from kgdb/hw_breakpoint_layer,
+>>>> Yeah, I think there's a bug in the hw_breakpoint stuff, does something
+>>>> like the below fix it?
+>>
+>>> Thanks for your patch, but I still could reproduce the problem with 
+>>> your patch.
+>>
+>> Frederic, any clue as to what makes hw breakpoints go funny and have
+>> last_period == 0?
+>
+> Hi Peter,
+>
+> Thanks for you take care of it, I have got the root cause of it now.
+>
+> It is the kgdb using hw_breakpoint_layer's API problem, and I have a RFC  
+> patch for it.(maybe it is not correctly), I will contact with Jason to  
+> fix this problem.
+>
+> Thank you very much,
+> Dongdong
 
-SGI has recently experienced failures with the new ticket spinlock
-implementation. Hedi Berriche sent me a simple test case that can
-trigger the failure on the siglock. To debug the issue, I wrote a
-small module that watches writes to current->sighand->siglock and
-records the values.
 
-I observed that the __ticket_spin_lock() primitive fails when the
-tail wraps around to zero. I reconstructed the following:
+Thanks!
 
-CPU 7 holds the spinlock
-CPU 5 wants to acquire the spinlock
-Spinlock value is 0xfffcffff
-	 (now serving 0x7fffe, next ticket 0x7ffff)
+We are waiting for your patch then.
 
-CPU 7 executes st2.rel to release the spinlock.
-At the same time CPU 5 executes a fetchadd4.acq.
-The resulting lock value is 0xfffe0000 (correct), and CPU 5 has
-recorded its ticket number (0x7fff).
-
-Consequently, the first spinlock loop iteration succeeds, and CPU 5
-now holds the spinlock.
-
-Next, CPU 5 releases the spinlock with st2.rel, changing the lock
-value to 0x0 (correct).
-
-SO FAR SO GOOD.
-
-Now, CPU 4, CPU 5 and CPU 7 all want to acquire the lock again.
-Interestingly, CPU 5 and CPU 7 are both granted the same ticket,
-and the spinlock value (as seen from the debug fault handler) is
-0x0 after single-stepping over the fetchadd4.acq, in both cases.
-CPU 4 correctly sets the spinlock value to 0x1.
-
-I don't know if the simultaneos acquire attempt and release are
-necessary to trigger the bug, but I noted it here.
-
-I've only seen this happen when the spinlock wraps around to zero,
-but I don't know whether it cannot happen otherwise.
-
-In any case, there seems to be a serious problem with memory
-ordering, and I'm not an expert to tell exactly what it is.
-
-Any ideas?
-
-Petr Tesarik
-L3 International
-Novell, Inc.
