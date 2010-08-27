@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab0H0VCG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 17:02:06 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41287 "EHLO mgw2.diku.dk"
+	id S1752649Ab0H0VDE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 17:03:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53160 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932Ab0H0VBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 17:01:48 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Tony Luck <tony.luck@intel.com>
-Cc: kernel-janitors@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] arch/ia64/kernel: Move up iounmap
-Date: Fri, 27 Aug 2010 23:01:30 +0200
-Message-Id: <1282942890-465-2-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1751615Ab0H0VDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 17:03:02 -0400
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Date: Fri, 27 Aug 2010 23:03:32 +0200
+User-Agent: KMail/1.9.10
+Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hedi Berriche <hedi@sgi.com>
+References: <201008271537.35709.ptesarik@suse.cz> <987664A83D2D224EAE907B061CE93D53015D91D029@orsmsx505.amr.corp.intel.com> <987664A83D2D224EAE907B061CE93D53015D91D3B7@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D53015D91D3B7@orsmsx505.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201008272303.34228.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By moving the iounmap up above the test, it takes place whether the test
-succeeds or fails.
+On Friday 27 of August 2010 22:29:41 Luck, Tony wrote:
+> > If this is a memory ordering problem (and that seems quite plausible)
+> > then a liberal sprinkling of "ia64_mf()" calls throughout the spinlock
+> > routines would probably make it go away.
+>
+> I think I take this back ... if it were a memory ordering problem, then
+> it could show up any time - not just at wrap-around.
 
-The sematic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+One more idea. The wrap-around case is the only one when the high word is 
+modified. This is in fact the only case when the fetchadd.acq competes with 
+the st2.rel about the actual contents of that location. I don't know if it 
+matters...
 
-// <smpl>
-@r exists@
-local idexpression x;
-expression E,E1;
-identifier l;
-statement S;
-@@
-
-*x = ioremap_nocache(...);
-...
-if (x == NULL) S
-... when != iounmap(x)
-    when != if (...) { ... iounmap(x); ... }
-    when != E = x
-if (...) {
-  ... when != iounmap(x)
-      when != if (...) { ... iounmap(x); ... }
-(
-  return <+...x...+>;
-|
-* return ...;
-)
-}
-... when != x = E1
-iounmap(x);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- arch/ia64/kernel/cyclone.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/ia64/kernel/cyclone.c b/arch/ia64/kernel/cyclone.c
-index 71e3586..d52f1f7 100644
---- a/arch/ia64/kernel/cyclone.c
-+++ b/arch/ia64/kernel/cyclone.c
-@@ -59,13 +59,13 @@ int __init init_cyclone_clock(void)
- 		return -ENODEV;
- 	}
- 	base = readq(reg);
-+	iounmap(reg);
- 	if(!base){
- 		printk(KERN_ERR "Summit chipset: Could not find valid CBAR"
- 				" value.\n");
- 		use_cyclone = 0;
- 		return -ENODEV;
- 	}
--	iounmap(reg);
- 
- 	/* setup PMCC */
- 	offset = (base + CYCLONE_PMCC_OFFSET);
-
+Petr Tesarik
