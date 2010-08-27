@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab0H0PV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:21:59 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:45117 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754495Ab0H0PVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:21:51 -0400
-X-Authenticated: #489911
-X-Provags-ID: V01U2FsdGVkX19ESCICW7hEOMMWMF86bbNwSy1rd2MSDTgozufJlo
-	cK3XB9hHcmnRoG
-Message-ID: <4C77D804.9060500@gmx.net>
-Date: Fri, 27 Aug 2010 17:21:40 +0200
-From: Patrick Loschmidt <Patrick.Loschmidt@gmx.net>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1754556Ab0H0PXY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:23:24 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:44489 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753469Ab0H0PXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 11:23:21 -0400
+Date: Fri, 27 Aug 2010 11:23:19 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
+Message-ID: <20100827152319.GC14926@Krystal>
+References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop> <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain> <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain> <20100826230934.GA4194@Krystal> <20100826233651.GB28177@Krystal> <1282894718.1975.1654.camel@laptop>
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, john stultz <johnstul@us.ibm.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>, Rodolfo Giometti <giometti@linux.it>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>	<AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>	<20100817085324.GB3330@riccoc20.at.omicron.at>	<1282090963.1734.97.camel@localhost>	<20100818071942.GA4096@riccoc20.at.omicron.at>	<1282176776.2865.100.camel@localhost.localdomain>	<20100819055518.GA4084@riccoc20.at.omicron.at>	<1282594125.3111.344.camel@localhost.localdomain>	<20100827123849.GC11657@riccoc20.at.omicron.at>	<20100827143844.646eccf6@lxorguk.ukuu.org.uk>	<20100827143437.GB3293@riccoc20.at.omicron.at> <20100827160624.433b3374@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100827160624.433b3374@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282894718.1975.1654.camel@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:21:47 up 216 days, 17:58,  4 users,  load average: 0.00, 0.02,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Thu, 2010-08-26 at 19:36 -0400, Mathieu Desnoyers wrote:
+> > > The only thing we might have to be careful about is what happens if the timer
+> > > re-fires before the thread completes its execution. We might want to let the
+> > > signal handler detect these overruns somehow.
+> > 
+> > Hrm, thinking about it a little more, one of the "plus" sides of these
+> > SIGEV_THREAD timers is that a single timer can fork threads that will run on
+> > many cores on a multi-core system. If we go for preallocation of a single
+> > thread, we lose that. Maybe we could think of a way to preallocate a thread pool
+> > instead ? 
+> 
+> Why try and fix a broken thing, just let the app spawn threads and use
+> SIGEV_THREAD_ID itself, it knows its requirements and can do what suits
+> the situation best. No need to try and patch up braindead posix stuff.
 
-I'd like to add my two cents about the discussion. Just to shortly
-introduce myself: I'm working with PTP since version 2002 (now 2008 or
-PTPv2) and I'm developing matching network cards, drivers, and also
-sometimes a bit of the stack.
+As I dig through the code and learn more about the posix standard, my
+understanding is that the _implementation_ is broken. The standard just leaves
+enough rope for the implementation to either do the right thing or to hang
+itself. Sadly glibc seems to have chosen the second option.
 
-I always had the problem of different HW implementations (even my own)
-and how to access the clocks there. So reading this thread, I strongly
-support the idea to provide a driver class, which allows the userspace
-to run certain standard operations (settime, gettime, adjtime, ...) as
-proposed and leave the detailed implementation to a specific PTP clock
-driver. I always made my own char device, but I don't want to open this
-discussion again as for me it doesn't matter.
+Mathieu
 
-Concerning the long discussion about PTP clock, system time, etc. I'd
-like to say, that from a point of view of PTP every node/host has only
-one clock. That means, that if you have a NIC with integrated clock
-(required for HW timestamping) it is counted as a node. As soon as you
-want to use multiple NICs this is actually outside the PTP protocol
-definition, unless you have only one clock available to both network
-interfaces (which is hard to achieve).
 
-So the solution to treat a PTP enabled NIC as a time source for the
-system time is in general sufficient, unless for applications that
-require precise timestamps in applications. I know of use cases where
-code gets instrumented to measure time delays, processing time, and
-sequence in SW, e.g. distributed databases for trading systems at the
-stock exchange.
-
-Summarizing I think it would be a huge step forward, if all the
-different HW implementations could be controlled via a standardised
-interface through the kernel. I need timestamps from my network card
-with ps resolution and to steer the onboard clock from user space. Then
-I would be happy already. :-)
-
-Thanks,
-Patrick
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
