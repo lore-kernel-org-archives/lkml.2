@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab0H0LDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 07:03:45 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52522 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488Ab0H0LDk (ORCPT
+	id S1754325Ab0H0LGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 07:06:49 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:59667 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab0H0LGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 07:03:40 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
-        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
-Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V19 04/15] vfs: Add handle based readlink syscall
-Date: Fri, 27 Aug 2010 16:32:51 +0530
-Message-Id: <1282906982-26918-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Fri, 27 Aug 2010 07:06:44 -0400
+X-Greylist: delayed 1135 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Aug 2010 07:06:43 EDT
+Message-ID: <c065aaeb33752e7fce8958c8501a5a15.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20100826180908.648103531@efficios.com>
+References: <20100826180908.648103531@efficios.com>
+Date: Fri, 27 Aug 2010 12:47:30 +0200 (CEST)
+Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Ingo Molnar" <mingo@elte.hu>, "Steven Rostedt" <rostedt@goodmis.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 9b84bad32751a42de3aa9e7877f1ca86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/stat.c                |   28 ++++++++++++++++++++++++++++
- include/linux/syscalls.h |    3 +++
- 2 files changed, 31 insertions(+), 0 deletions(-)
+Hello,
 
-diff --git a/fs/stat.c b/fs/stat.c
-index 12e90e2..29052eb 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -319,6 +319,34 @@ SYSCALL_DEFINE3(readlink, const char __user *, path, char __user *, buf,
- 	return sys_readlinkat(AT_FDCWD, path, buf, bufsiz);
- }
- 
-+SYSCALL_DEFINE4(handle_readlink, int, mountdirfd,
-+		struct file_handle __user *, ufh,
-+		char __user *, buf, int, bufsiz)
-+{
-+	long retval = 0;
-+	struct path path;
-+	struct inode *inode;
-+
-+	if (bufsiz <= 0)
-+		return -EINVAL;
-+	retval = handle_to_path(mountdirfd, ufh, &path);
-+	if (retval)
-+		goto out_err;
-+
-+	inode = path.dentry->d_inode;
-+	retval = -EINVAL;
-+	if (inode->i_op->readlink) {
-+		retval = security_inode_readlink(path.dentry);
-+		if (!retval) {
-+			touch_atime(path.mnt, path.dentry);
-+			retval = inode->i_op->readlink(path.dentry,
-+						       buf, bufsiz);
-+		}
-+	}
-+	path_put(&path);
-+out_err:
-+	return retval;
-+}
- 
- /* ---------- LFS-64 ----------- */
- #ifdef __ARCH_WANT_STAT64
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 4dc527c..35ecae3 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -838,4 +838,7 @@ asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
- asmlinkage long sys_open_by_handle_at(int mountdirfd,
- 				      struct file_handle __user *handle,
- 				      int flags);
-+asmlinkage long sys_handle_readlink(int mountdirfd,
-+				    struct file_handle __user *ufh,
-+				    char __user *buf, int bufsiz);
- #endif
--- 
-1.7.0.4
+On Thu, August 26, 2010 20:09, Mathieu Desnoyers wrote:
+> Hi,
+>
+> Following the findings I presented a few months ago
+> (http://lkml.org/lkml/2010/4/18/13) about CFS having large vruntime spread
+> issues, Peter Zijlstra and I pursued the discussion and the implementation
+> effort (my work on this is funded by Nokia). I recently put the result
+> together
+> and came up with this patchset, combining both his work and mine.
+>
+> With this patchset, I got the following results with wakeup-latency.c (a 10ms
+> periodic timer), running periodic-fork.sh, Xorg, make -j3 and firefox (playing
+> a
+> youtube video), with Xorg moving terminal windows around, in parallel on a UP
+> system (links to the test program source in the dyn min_vruntime patch). The
+> Xorg interactivity is very good with the new features enabled, but was poor
+> originally with the vanilla mainline scheduler. The 10ms timer delays are as
+> follow:
+>
+>                          2.6.35.2 mainline*   with low-latency features**
+> maximum latency:                34465.2 µs                    8261.4 µs
+> average latency:                 6445.5 µs                     211.2 µs
+> missed timer events:                yes                           no
+>
+> * 2.6.35.2 mainline test needs to run periodic-fork.sh for a few minutes first
+>   to let it rip the spread apart.
+>
+> ** low-latency features:
+>
+> with the patchset applied and CONFIG_SCHED_DEBUG=y
+> (with debugfs mounted in /sys/debugfs)
+>
+> for opt in DYN_MIN_VRUNTIME \
+>         NO_FAIR_SLEEPERS FAIR_SLEEPERS_INTERACTIVE FAIR_SLEEPERS_TIMER \
+>         INTERACTIVE TIMER \
+>         INTERACTIVE_FORK_EXPEDITED TIMER_FORK_EXPEDITED;
+> do echo $opt > /sys/debugfs/sched_features;
+> done
+>
+> These patches are designed to allow individual enabling of each feature and to
+> make sure that the object size of sched.o does not grow when the features are
+> disabled on a CONFIG_SCHED_DEBUG=n kernel.
+
+Please don't hide scheduler improvements behind obscure CONFIG_SCHED_DEBUG
+options. If it doesn't make the scheduler better just don't merge it. If it
+does then it should be enabled by default.
+
+Thank you,
+
+Indan
+
+
+P.S. Tony Luck seems to be chopped of the CC list.
+
 
