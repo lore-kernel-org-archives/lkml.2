@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab0H0PuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:50:17 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:39398 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751561Ab0H0PuP (ORCPT
+	id S1754263Ab0H0PvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:51:22 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:38253 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab0H0PvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:50:15 -0400
-Date: Fri, 27 Aug 2010 11:50:13 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-Message-ID: <20100827155013.GF14926@Krystal>
-References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop> <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain> <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain> <20100826230934.GA4194@Krystal> <20100826233651.GB28177@Krystal> <alpine.LFD.2.00.1008271033030.2768@localhost.localdomain>
+	Fri, 27 Aug 2010 11:51:20 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(z3cfcs329eqzbb2cK1432N98dN179dNzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7TILH-02-2H7-02
+X-M-MSG: 
+Date: Fri, 27 Aug 2010 17:48:56 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100827154855.GQ22783@erda.amd.com>
+References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
+ <20100820152510.GA4167@elte.hu>
+ <20100823085339.GA26713@elte.hu>
+ <20100826211424.GQ4879@redhat.com>
+ <20100827081038.GF22783@erda.amd.com>
+ <20100827134429.GS4879@redhat.com>
+ <20100827140523.GM22783@erda.amd.com>
+ <20100827150523.GT4879@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1008271033030.2768@localhost.localdomain>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:44:33 up 216 days, 18:21,  5 users,  load average: 0.11, 0.07,
-	0.03
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100827150523.GT4879@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner (tglx@linutronix.de) wrote:
-> On Thu, 26 Aug 2010, Mathieu Desnoyers wrote:
-[...] 
-> > Hrm, thinking about it a little more, one of the "plus" sides of these
-> > SIGEV_THREAD timers is that a single timer can fork threads that will run on
-> > many cores on a multi-core system. If we go for preallocation of a single
-> > thread, we lose that. Maybe we could think of a way to preallocate a thread pool
-> > instead ?
+On 27.08.10 11:05:23, Don Zickus wrote:
+> The status masks seem to be identical, 0x1 (and when I forced pmc0
+> unusable, everything was 0x2).
+
+So this should also happen if only one counter is running?
+Back-to-back nmis actually only occur then 2 different counters
+trigger simultaneously.
+
+> > > Now I wonder how the event was
+> > > ever reloaded, unless it was by accident because of how the scheduler
+> > > deals with perf counters (perf_start/stop all the time).
+> > 
+> > The nmi might be queued be the cpu regardless of of the overflow
+> > state.
+> > 
+> > I am wondering why this happens at all, because events are disabled by
+> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0). Hmm, maybe this is exactly the
 > 
-> Why should a single timer fork many threads? Just because a previous
-> thread did not complete before the timer fires again? That's
-> braindamage as all threads call the same function which then needs to
-> be serialized anyway. We really do not need a function which creates
-> tons of threads which get all stuck on the same resource.
+> Heh.  Not sure why it isn't working then.  Then again you shouldn't need
+> the loop if it was working I would think.
+> 
+> > reason because the nmi could fire again after reenabling the counters.
+> > 
+> > Is there a reason for disabling all counters?
+> 
+> It would be a nice to have that way we wouldn't have to 'eat' all these
+> extra nmis.  But I guess it isn't working correctly.
 
-It could make sense if the workload is mostly CPU-bound and there is only a very
-short critical section shared between the threads. But I agree that in many
-cases this will generate an utter contention mess.
+What about the erratum mentioned in this thread before? We might
+identify affected cpus and return handled=2 for them. This solution
+will be still better than before. And, all other cpu models have the
+nmi detection fixed. In a next step we could try to use a timer for
+detection.
 
-Thanks,
-
-Mathieu
-
+-Robert
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
