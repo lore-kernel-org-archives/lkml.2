@@ -1,131 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0H0LIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 07:08:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37505 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab0H0LIu (ORCPT
+	id S1753549Ab0H0LQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 07:16:24 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:60745 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab0H0LQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 07:08:50 -0400
+	Fri, 27 Aug 2010 07:16:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=istmhNkAWI8970ugNGPoSTAiyjLN97KpTg16FlO+wrfpcRpUKxVTAXFG/oUObz6PhZ
-         uNS0mptw13F9vIkdHV/b5AliuEbWKzMm9JlJRpCGlkcLcf1CsKWG0qsDEwKKVqzzgO+1
-         ItE628s5x9y3LKS6JZLXJu7HKIokhORZ8bR84=
-Date: Fri, 27 Aug 2010 13:08:55 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100827110855.GA11657@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <1282176776.2865.100.camel@localhost.localdomain>
- <20100819055518.GA4084@riccoc20.at.omicron.at>
- <201008191428.04546.arnd@arndb.de>
- <20100819153847.GA10695@riccoc20.at.omicron.at>
- <1282594899.3111.358.camel@localhost.localdomain>
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=XFQWfooB8IHlkyW6ekysFYFxRta7WjFUeOANt84x3ng/ixtPZjP3XqKccw+dJXzKI8
+         9ARcwc4rOmcj0gd5N634OwSyXlSz5JlQuDi4o0u6MjG0jlGRHLdgJYhBlOjDJ8hE7QD/
+         akVhIz4N7dy6JtniHRAgu9UjWYPB7MKzUhlvk=
+From: Namhyung Kim <namhyung@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 14/43] ptrace, frv: change signature of arch_ptrace()
+References: <1282902149-12991-15-git-send-email-namhyung@gmail.com>
+	<1282902149-12991-1-git-send-email-namhyung@gmail.com>
+	<4072.1282906906@redhat.com>
+Date: Fri, 27 Aug 2010 20:15:57 +0900
+In-Reply-To: <4072.1282906906@redhat.com> (David Howells's message of "Fri, 27
+	Aug 2010 12:01:46 +0100")
+Message-ID: <87aao8gvbm.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282594899.3111.358.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 01:21:39PM -0700, john stultz wrote:
-> On Thu, 2010-08-19 at 17:38 +0200, Richard Cochran wrote:
-> > On Thu, Aug 19, 2010 at 02:28:04PM +0200, Arnd Bergmann wrote:
-> > > My point was that a syscall is better than an ioctl based interface here,
-> > > which I definitely still think. Given that John knows much more about
-> > > clocks than I do, we still need to get agreement on the question that
-> > > he raised, which is whether we actually need to expose this clock to the
-> > > user or not.
-> > > 
-> > > If we can find a way to sync system time accurate enough with PTP and
-> > > PPS, user applications may not need to see two separate clocks at all.
-> > 
-> > At the very least, one user application (the PTPd) needs to see the
-> > PTP clock.
-> > 
-> > > > SYSCALL_DEFINE3(clock_adjtime, const clockid_t, clkid,
-> > > > 		int, ppb, struct timespec __user *, ts)
-> > > > 
-> > > > ppb - desired frequency adjustment in parts per billion
-> > > > ts  - desired time step (or jump) in <sec,nsec> to correct
-> > > >       a measured offset
-> > > > 
-> > > > Arguably, this syscall might be useful for other clocks, too.
-> > > 
-> > > This is a mix of adjtime and adjtimex with the addition of
-> > > the clkid parameter, right?
-> > 
-> > Sort of, but not really. ADJTIME(3) takes an offset and slowly
-> > corrects the clock using a servo in the kernel, over hours.
-> > 
-> > For this function, the offset passed in the 'ts' parameter will be
-> > immediately corrected, by jumping to the new time. This reflects the
-> > way that PTP works. After the first few samples, the PTPd has an
-> > estimate of the offset to the master and the rate difference. The PTPd
-> > can proceed in one of two ways.
-> > 
-> > 1. If resetting the clock is not desired, then the clock is set to the
-> >    maximum adjustment (in the right direction) until the clock time is
-> >    close to the master's time.
-> > 
-> > 2. The estimated offset is added to the current time, resulting in a
-> >    jump in time.
-> > 
-> > We need clock_adjtime(id, 0, ts) for the second case.
-> >
-> > > Have you considered passing a struct timex instead of ppb and ts?
-> > 
-> > Yes, but the timex is not suitable, IMHO.
-> 
-> Could you expand on this?
+David Howells <dhowells@redhat.com> writes:
+> That description means nothing.  Commit
+> f76671df26ef06321480e702770f88f61272be29 is not upstream.
+>
 
-We need to able to specify that the call is for a PTP clock. We could
-add that to the modes flag, like this:
+Hi,
+Thank you for noticing. My bad.
+I just wanted to let you know it depends on that.
+What is the proper way to handle this?
 
-/*timex.h*/
-#define ADJ_PTP_0 0x10000
-#define ADJ_PTP_1 0x20000
-#define ADJ_PTP_2 0x30000
-#define ADJ_PTP_3 0x40000
-
-I can live with this, if everyone else can, too.
- 
-> Could we not add a adjustment mode ADJ_SETOFFSET or something that would
-> provide the instantaneous offset correction?
-
-Yes, but we would also need to add a struct timespec to the struct
-timex, in order to get nanosecond resolution. I think it would be
-possible to do in the padding at the end?
-
-> You're right that the timex is a little crufty. But its legacy that we
-> will support indefinitely. So following the established interface helps
-> maintainability.
-
-We can use it for PTP, with the modifications suggested above. Or we
-can just introduce the clock_adjtime method, instead.
- 
-> So if the clock_adjtime interface is needed, it would seem best for it
-> to be generic enough to support not only PTP, but also the NTP kernel
-> PLL.
-
-For the proposed clock_adjime, what else is needed to support clock
-adjustment in general?
-
-I don't mind making the interface generic enough to support any
-(realistic) conceivable clock adjustment scheme, but beyond the
-present PTP hardware clocks, I don't know what else might be needed.
-
-Richard
+-- 
+Regards,
+Namhyung Kim
 
 
