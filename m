@@ -1,376 +1,481 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab0H0WTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 18:19:15 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:17038 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab0H0WTO (ORCPT
+	id S1753578Ab0H0WT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 18:19:28 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50390 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab0H0WT1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 18:19:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6087"; a="52378129"
-From: Neil Leeder <nleeder@codeaurora.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hsin.Wu@quantatw.com,
-        Neil Leeder <nleeder@codeaurora.org>,
-        Horace Fu <horace.fu@quantatw.com>
-Subject: [PATCH 1/1] input: keyboard: add qci keyboard driver
-Date: Fri, 27 Aug 2010 15:18:37 -0700
-Message-Id: <1282947517-32118-1-git-send-email-nleeder@codeaurora.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <4C7838DD.1020004@codeaurora.org>
-References: <4C7838DD.1020004@codeaurora.org>
+	Fri, 27 Aug 2010 18:19:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=g8eg8+Amh4aFVpy/nYlr8p7K53IEw6OFnkF4YN484RAHFWIoc4xJM9LBxEIGeQOwXj
+         qkz5rvtyl/Qn+el4NzdcMDkQJ1USTnrBHZYP5hj2c/5GsGQ5twfV052K9iOJSt+zB/8A
+         Zea5i+BZ8T0QSK+9/gPzsp4fXIaWSPmvuVdI8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinYiZ=AR02cAHHqpZemm8TxJm8YWVBJmj05Hzp8@mail.gmail.com>
+References: <AANLkTinq81V6afODRS26Nk1vi68_VUMAfs-tu-P8=dBP@mail.gmail.com>
+ <4C780888.9000301@zytor.com> <AANLkTikCssQSvRX1Gfq0V8B91Sp2gtTCJaPJ=_n9VJXZ@mail.gmail.com>
+ <4C7824F2.1050709@mandriva.org> <AANLkTinjHK-oTmt-6cmN16jWWv9ZjW44wA-A3VTLm+A_@mail.gmail.com>
+ <AANLkTinYiZ=AR02cAHHqpZemm8TxJm8YWVBJmj05Hzp8@mail.gmail.com>
+From: Matteo Croce <matteo@openwrt.org>
+Date: Sat, 28 Aug 2010 00:19:06 +0200
+X-Google-Sender-Auth: N8cQt2dojOXw4U4f_EJTe6CdfSw
+Message-ID: <AANLkTikP02PZiSdX1oFdd4S_uCWH7U6URA3pMY3iXkX=@mail.gmail.com>
+Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
+To: Thomas Backlund <tmb@mandriva.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Natale Vinto <ebballon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is for the QCI i2c keyboard used on Quanta smartbooks.
+On Sat, Aug 28, 2010 at 12:16 AM, Matteo Croce <matteo@openwrt.org> wrote:
+> On Fri, Aug 27, 2010 at 11:32 PM, Matteo Croce <matteo@openwrt.org> wrote:
+>> can I ignore the return value when I expect val to be non zero?
+>> the doc says: "On error, the variable @x is set to zero."
+>>
+>> On Fri, Aug 27, 2010 at 10:49 PM, Thomas Backlund <tmb@mandriva.org> wrote:
+>>> 27.08.2010 23:15, Matteo Croce skrev:
+>>>>
+>>>> On Fri, Aug 27, 2010 at 8:48 PM, H. Peter Anvin<hpa@zytor.com>  wrote:
+>>>>>
+>>>>> You're doing user-space references without get_user().
+>>>>>
+>>>>>        -hpa
+>>>>>
+>>>>> --
+>>>>> H. Peter Anvin, Intel Open Source Technology Center
+>>>>> I work for Intel.  I don't speak on their behalf.
+>>>>>
+>>>>>
+>>>>
+>>>> Here with get_user.
+>>>> I CC Natale which is my beta tester, he have some Alix boards running
+>>>> 24/24
+>>>> with my patch
+>>>>
+>>>> --- a/arch/x86/kernel/Makefile  2010-08-27 19:42:01.795858001 +0200
+>>>> +++ b/arch/x86/kernel/Makefile  2010-08-27 19:42:12.525858001 +0200
+>>>> @@ -88,6 +88,8 @@
+>>>>  obj-$(CONFIG_APB_TIMER)               += apb_timer.o
+>>>>
+>>>>  obj-$(CONFIG_K8_NB)           += k8.o
+>>>> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
+>>>> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
+>>>
+>>> Same line added twice...
+>>>
+>>> --
+>>> Thomas
+>>>
+>>
+>>
+>>
+>> --
+>> Matteo Croce
+>> OpenWrt developer
+>>   _______                     ________        __
+>>  |       |.-----.-----.-----.|  |  |  |.----.|  |_
+>>  |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
+>>  |_______||   __|_____|__|__||________||__|  |____|
+>>           |__| W I R E L E S S   F R E E D O M
+>>  KAMIKAZE (bleeding edge) ------------------
+>>   * 10 oz Vodka       Shake well with ice and strain
+>>   * 10 oz Triple sec  mixture into 10 shot glasses.
+>>   * 10 oz lime juice  Salute!
+>>  ---------------------------------------------------
+>>
+>
+> Here is with proper checks
+>
+> --- a/arch/x86/kernel/Makefile  2010-08-27 19:42:01.795858001 +0200
+> +++ b/arch/x86/kernel/Makefile  2010-08-27 19:42:12.525858001 +0200
+> @@ -88,6 +88,8 @@
+>  obj-$(CONFIG_APB_TIMER)                += apb_timer.o
+>
+>  obj-$(CONFIG_K8_NB)            += k8.o
+> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
+> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
+>  obj-$(CONFIG_DEBUG_RODATA_TEST)        += test_rodata.o
+>  obj-$(CONFIG_DEBUG_NX_TEST)    += test_nx.o
+>
+> --- a/arch/x86/kernel/cpu/amd.c 2010-08-27 19:42:01.855858001 +0200
+> +++ b/arch/x86/kernel/cpu/amd.c 2010-08-27 19:42:12.535858001 +0200
+> @@ -137,11 +137,15 @@
+>                return;
+>        }
+>
+> +#ifdef CONFIG_GEODE_NOPL
+>        if (c->x86_model == 10) {
+> -               /* AMD Geode LX is model 10 */
+> -               /* placeholder for any needed mods */
+> +               /* Geode only lacks the NOPL instruction to be i686,
+> +                  but we can promote it to a i686 class cpu
+> +                  and emulate NOPLs in the exception handler*/
+> +               boot_cpu_data.x86 = 6;
+>                return;
+>        }
+> +#endif
+>  }
+>
+>  static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+> --- a/arch/x86/kernel/entry_32.S        2010-08-27 19:42:01.735858001 +0200
+> +++ b/arch/x86/kernel/entry_32.S        2010-08-27 19:42:12.535858001 +0200
+> @@ -978,7 +978,11 @@
+>        RING0_INT_FRAME
+>        pushl $0
+>        CFI_ADJUST_CFA_OFFSET 4
+> +#ifdef CONFIG_GEODE_NOPL
+> +       pushl $do_nopl_emu
+> +#else
+>        pushl $do_invalid_op
+> +#endif
+>        CFI_ADJUST_CFA_OFFSET 4
+>        jmp error_code
+>        CFI_ENDPROC
+> --- /dev/null   1970-01-01 00:00:00.000000000 +0000
+> +++ b/arch/x86/kernel/nopl_emu.c        2010-08-28 00:11:52.627085002 +0200
+> @@ -0,0 +1,128 @@
+> +/*
+> + *  linux/arch/x86/kernel/nopl_emu.c
+> + *
+> + *  Copyright (C) 2002  Willy Tarreau
+> + *  Copyright (C) 2010  Matteo Croce
+> + */
+> +
+> +#include <asm/processor.h>
+> +#include <asm/traps.h>
+> +#include <asm/uaccess.h>
+> +
+> +/* This code can be used to allow the AMD Geode to hopefully correctly execute
+> + * some code which was originally compiled for an i686, by emulating NOPL,
+> + * the only missing i686 instruction in the CPU
+> + *
+> + * Willy Tarreau <willy@meta-x.org>
+> + * Matteo Croce <technoboy85@gmail.com>
+> + */
+> +
+> +static inline int do_1f(u8 *ip)
+> +{
+> +       u8 val1, val2;
+> +       int length = 3;
+> +       if (get_user(val1, ip))
+> +               return 0;
+> +       switch (val1) {
+> +       case 0x84:
+> +               get_user(val1, ip + 5);
+> +               if (!val1)
+> +                       length++;
+> +               else
+> +                       return 0;
+> +       case 0x80:
+> +               get_user(val1, ip + 4);
+> +               get_user(val2, ip + 3);
+> +               if (!val1 && !val2)
+> +                       length += 2;
+> +               else
+> +                       return 0;
+> +       case 0x44:
+> +               get_user(val1, ip + 2);
+> +               if (!val1)
+> +                       length++;
+> +               else
+> +                       return 0;
+> +       case 0x40:
+> +               get_user(val1, ip + 1);
+> +               if (!val1)
+> +                       length++;
+> +               else
+> +                       return 0;
+> +       case 0x00:
+> +               return length;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static inline int do_0f(u8 *ip)
+> +{
+> +       u8 val;
+> +       if (get_user(val, ip))
+> +               return 0;
+> +       if (val == 0x1f)
+> +               return do_1f(ip + 1);
+> +       return 0;
+> +}
+> +
+> +static inline int do_66(u8 *ip)
+> +{
+> +       u8 val;
+> +       if (get_user(val, ip))
+> +               return 0;
+> +       if (val == 0x90)
+> +               return 2;
+> +       if (val == 0x0f) {
+> +               int res = do_0f(ip + 1);
+> +               if (res)
+> +                       return res + 1;
+> +               else
+> +                       return 0;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static inline int do_start(u8 *ip)
+> +{
+> +       u8 val;
+> +       if (get_user(val, ip))
+> +               return 0;
+> +       if (val == 0x0f)
+> +               return do_0f(ip + 1);
+> +       if (val == 0x66)
+> +               return do_66(ip + 1);
+> +       return 0;
+> +}
+> +
+> +/* [do_nopl_emu] is called by exception 6 after an invalid opcode has been
+> + * encountered. It will try to emulate it by doing nothing,
+> + * and will send a SIGILL or SIGSEGV to the process if not possible.
+> + * the NOPL can have variable length opcodes:
+> +
+> +bytes number   opcode
+> +       2       66 90
+> +       3       0f 1f 00
+> +       4       0f 1f 40 00
+> +       5       0f 1f 44 00 00
+> +       6       66 0f 1f 44 00 00
+> +       7       0f 1f 80 00 00 00 00
+> +       8       0f 1f 84 00 00 00 00 00
+> +       9       66 0f 1f 84 00 00 00 00 00
+> +*/
+> +void do_nopl_emu(struct pt_regs *regs, long error_code)
+> +{
+> +       u8 *ip = (u8 *)instruction_pointer(regs);
+> +       int res = do_start(ip);
+> +
+> +       if (res) {
+> +               int i = 0;
+> +               do {
+> +                       ip += res;
+> +                       i++;
+> +                       res = do_start(ip);
+> +               } while(res);
+> +               printk(KERN_DEBUG "geode_nopl: emulated %d instructions\n", i);
+> +               regs->ip = (typeof(regs->ip))ip;
+> +       } else
+> +               do_invalid_op(regs, error_code);
+> +}
+>
+>
+> --
+> Matteo Croce
+> OpenWrt developer
+>   _______                     ________        __
+>  |       |.-----.-----.-----.|  |  |  |.----.|  |_
+>  |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
+>  |_______||   __|_____|__|__||________||__|  |____|
+>           |__| W I R E L E S S   F R E E D O M
+>  KAMIKAZE (bleeding edge) ------------------
+>   * 10 oz Vodka       Shake well with ice and strain
+>   * 10 oz Triple sec  mixture into 10 shot glasses.
+>   * 10 oz lime juice  Salute!
+>  ---------------------------------------------------
+>
 
-Signed-off-by: Horace Fu <horace.fu@quantatw.com>
-[nleeder@codeaurora.org: cleanup to latest kernel standards]
-Signed-off-by: Neil Leeder <nleeder@codeaurora.org>
----
- drivers/input/keyboard/Kconfig     |   12 ++
- drivers/input/keyboard/Makefile    |    1 +
- drivers/input/keyboard/qci_gkbd.c  |  258 ++++++++++++++++++++++++++++++++++++
- include/linux/input/qci_keyboard.h |   25 ++++
- 4 files changed, 296 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/keyboard/qci_gkbd.c
- create mode 100644 include/linux/input/qci_keyboard.h
+Sorry still left the duplicated line
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 1ba2514..e610755 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -342,6 +342,18 @@ config KEYBOARD_PXA930_ROTARY
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called pxa930_rotary.
- 
-+config KEYBOARD_QCIGKBD
-+	tristate "Quanta Computer Inc. keyboard"
-+	depends on I2C
-+	help
-+	  This driver supports the i2c keyboard on Quanta smartbook devices.
-+
-+	  Say Y here if you have a Quanta-based smartbook or notepad
-+	  device and want to use the Quanta i2c keyboard driver.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called qci_gkbd.
-+
- config KEYBOARD_STOWAWAY
- 	tristate "Stowaway keyboard"
- 	select SERIO
-diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-index 4596d0c..103adc2 100644
---- a/drivers/input/keyboard/Makefile
-+++ b/drivers/input/keyboard/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_KEYBOARD_OMAP)		+= omap-keypad.o
- obj-$(CONFIG_KEYBOARD_OPENCORES)	+= opencores-kbd.o
- obj-$(CONFIG_KEYBOARD_PXA27x)		+= pxa27x_keypad.o
- obj-$(CONFIG_KEYBOARD_PXA930_ROTARY)	+= pxa930_rotary.o
-+obj-$(CONFIG_KEYBOARD_QCIGKBD)		+= qci_gkbd.o
- obj-$(CONFIG_KEYBOARD_QT2160)		+= qt2160.o
- obj-$(CONFIG_KEYBOARD_SH_KEYSC)		+= sh_keysc.o
- obj-$(CONFIG_KEYBOARD_STOWAWAY)		+= stowaway.o
-diff --git a/drivers/input/keyboard/qci_gkbd.c b/drivers/input/keyboard/qci_gkbd.c
-new file mode 100644
-index 0000000..7c85462
---- /dev/null
-+++ b/drivers/input/keyboard/qci_gkbd.c
-@@ -0,0 +1,258 @@
-+/* Quanta I2C Keyboard Driver
-+ *
-+ * Copyright (C) 2009 Quanta Computer Inc.
-+ * Author: Hsin Wu <hsin.wu@quantatw.com>
-+ * Author: Austin Lai <austin.lai@quantatw.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
+--- a/arch/x86/kernel/Makefile	2010-08-27 19:42:01.795858001 +0200
++++ b/arch/x86/kernel/Makefile	2010-08-28 00:16:53.607507000 +0200
+@@ -88,6 +88,7 @@
+ obj-$(CONFIG_APB_TIMER)		+= apb_timer.o
+
+ obj-$(CONFIG_K8_NB)		+= k8.o
++obj-$(CONFIG_GEODE_NOPL)	+= nopl_emu.o
+ obj-$(CONFIG_DEBUG_RODATA_TEST)	+= test_rodata.o
+ obj-$(CONFIG_DEBUG_NX_TEST)	+= test_nx.o
+
+--- a/arch/x86/kernel/cpu/amd.c	2010-08-27 19:42:01.855858001 +0200
++++ b/arch/x86/kernel/cpu/amd.c	2010-08-27 19:42:12.535858001 +0200
+@@ -137,11 +137,15 @@
+ 		return;
+ 	}
+
++#ifdef CONFIG_GEODE_NOPL
+ 	if (c->x86_model == 10) {
+-		/* AMD Geode LX is model 10 */
+-		/* placeholder for any needed mods */
++		/* Geode only lacks the NOPL instruction to be i686,
++		   but we can promote it to a i686 class cpu
++		   and emulate NOPLs in the exception handler*/
++		boot_cpu_data.x86 = 6;
+ 		return;
+ 	}
++#endif
+ }
+
+ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+--- a/arch/x86/kernel/entry_32.S	2010-08-27 19:42:01.735858001 +0200
++++ b/arch/x86/kernel/entry_32.S	2010-08-27 19:42:12.535858001 +0200
+@@ -978,7 +978,11 @@
+ 	RING0_INT_FRAME
+ 	pushl $0
+ 	CFI_ADJUST_CFA_OFFSET 4
++#ifdef CONFIG_GEODE_NOPL
++	pushl $do_nopl_emu
++#else
+ 	pushl $do_invalid_op
++#endif
+ 	CFI_ADJUST_CFA_OFFSET 4
+ 	jmp error_code
+ 	CFI_ENDPROC
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ b/arch/x86/kernel/nopl_emu.c	2010-08-28 00:11:52.627085002 +0200
+@@ -0,0 +1,128 @@
 +/*
-+ *  This driver communicates via I2C to the nuvoTon WPCE775x Embedded
-+ *  Controller, which has the keyboard attached to it.
++ *  linux/arch/x86/kernel/nopl_emu.c
 + *
-+ */
-+#define pr_fmt(fmt) KBUILD_BASENAME ": " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/interrupt.h>
-+#include <linux/input.h>
-+#include <linux/keyboard.h>
-+#include <linux/gpio.h>
-+#include <linux/input/qci_keyboard.h>
-+
-+#define QCI_KEYBOARD_ID_NAME          "qci-gkbd"
-+#define QCI_KEYBOARD_NAME             "Quanta Keyboard"
-+#define QCI_KEYBOARD_DEVICE           "/qci-gkbd/input0"
-+#define QCI_KEYBOARD_CMD_ENABLE       0xF4
-+#define QCI_KEYBOARD_ACK              0xFA
-+#define QCI_KEYBOARD_MAX_KEY          127
-+
-+struct i2ckbd_drv_data {
-+	struct i2c_client *ki2c_client;
-+	struct input_dev *qcikbd_dev;
-+	unsigned int qcikbd_gpio;
-+	unsigned int qcikbd_irq;
-+	unsigned int key_down;
-+	unsigned int escape;
-+	unsigned int pause_seq;
-+};
-+
-+#ifdef CONFIG_PM
-+static int qcikbd_suspend(struct device *_dev)
-+{
-+	struct i2c_client *client =
-+		container_of(_dev, struct i2c_client, dev);
-+	struct i2ckbd_drv_data *context = i2c_get_clientdata(client);
-+
-+	disable_irq(context->qcikbd_irq);
-+	return 0;
-+}
-+
-+static int qcikbd_resume(struct device *_dev)
-+{
-+	struct i2c_client *client =
-+		container_of(_dev, struct i2c_client, dev);
-+	struct i2ckbd_drv_data *context = i2c_get_clientdata(client);
-+
-+	enable_irq(context->qcikbd_irq);
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops qcikbd_pm_ops = {
-+	.suspend  = qcikbd_suspend,
-+	.resume   = qcikbd_resume,
-+};
-+#endif
-+
-+static irqreturn_t qcikbd_interrupt(int irq, void *dev_id)
-+{
-+	struct i2ckbd_drv_data *context = dev_id;
-+	unsigned char scancode;
-+	unsigned int keycode;
-+	struct input_dev *ikbdev = context->qcikbd_dev;
-+	int rc;
-+
-+	rc = i2c_master_recv(context->ki2c_client, &scancode, 1);
-+	if (rc != 1)
-+		goto irq_exit;
-+
-+	if (scancode == QCI_KEYBOARD_ACK)
-+		goto irq_exit;
-+
-+	context->key_down = 1;
-+	/* MS bit of scancode indicates direction of keypress */
-+	if (scancode & 0x80)
-+		context->key_down = 0;
-+	keycode = scancode & 0x7F;
-+	if (keycode) {
-+		input_event(ikbdev, EV_MSC, MSC_SCAN, scancode);
-+		input_report_key(ikbdev, keycode, context->key_down);
-+		input_sync(ikbdev);
-+	}
-+irq_exit:
-+	return IRQ_HANDLED;
-+}
-+
-+static int qcikbd_open(struct input_dev *dev)
-+{
-+	struct i2ckbd_drv_data *context = input_get_drvdata(dev);
-+	u8 buf[1];
-+
-+	buf[0] = QCI_KEYBOARD_CMD_ENABLE;
-+	i2c_master_send(context->ki2c_client, buf, 1);
-+	return 0;
-+}
-+
-+static int __devinit qcikbd_probe(struct i2c_client *client,
-+				  const struct i2c_device_id *id)
-+{
-+	int err;
-+	int i;
-+	struct i2ckbd_drv_data *context;
-+	struct qci_keyboard_platform_data *pd;
-+	int irq_trigger_type;
-+
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		pr_err("i2c functionality failed\n");
-+		return -ENODEV;
-+	}
-+
-+	context = kzalloc(sizeof(struct i2ckbd_drv_data), GFP_KERNEL);
-+	if (!context)
-+		return -ENOMEM;
-+	i2c_set_clientdata(client, context);
-+	context->ki2c_client = client;
-+	context->qcikbd_gpio = client->irq;
-+
-+	pd = client->dev.platform_data;
-+	if (pd)
-+		irq_trigger_type = pd->irq_trigger_type;
-+	else
-+		irq_trigger_type = IRQF_TRIGGER_FALLING;
-+
-+	err = gpio_request(context->qcikbd_gpio, "qci-gkbd");
-+	if (err) {
-+		pr_err("gpio request failed\n");
-+		goto gpio_request_fail;
-+	}
-+	err = gpio_direction_input(context->qcikbd_gpio);
-+	if (err) {
-+		pr_err("gpio direction failed\n");
-+		goto request_irq_fail;
-+	}
-+
-+	context->qcikbd_irq = gpio_to_irq(context->qcikbd_gpio);
-+	err = request_threaded_irq(context->qcikbd_irq, NULL, qcikbd_interrupt,
-+				   irq_trigger_type, client->name, context);
-+	if (err) {
-+		pr_err("unable to get IRQ\n");
-+		goto request_irq_fail;
-+	}
-+
-+	context->qcikbd_dev = input_allocate_device();
-+	if (!context->qcikbd_dev) {
-+		pr_err("input allocate device failed\n");
-+		err = -ENOMEM;
-+		goto allocate_fail;
-+	}
-+
-+	context->qcikbd_dev->name       = QCI_KEYBOARD_NAME;
-+	context->qcikbd_dev->phys       = QCI_KEYBOARD_DEVICE;
-+	context->qcikbd_dev->id.bustype = BUS_I2C;
-+	context->qcikbd_dev->id.vendor  = 0x1050;
-+	context->qcikbd_dev->id.product = 0x0006;
-+	context->qcikbd_dev->id.version = 0x0004;
-+	context->qcikbd_dev->open       = qcikbd_open;
-+	__set_bit(EV_KEY, context->qcikbd_dev->evbit);
-+	__set_bit(EV_REP, context->qcikbd_dev->evbit);
-+	__set_bit(MSC_SCAN, context->qcikbd_dev->mscbit);
-+
-+	/* Enable all supported keys */
-+	for (i = 1; i <= QCI_KEYBOARD_MAX_KEY; i++)
-+		__set_bit(i, context->qcikbd_dev->keybit);
-+
-+	input_set_drvdata(context->qcikbd_dev, context);
-+	err = input_register_device(context->qcikbd_dev);
-+	if (err) {
-+		pr_err("input register device failed\n");
-+		goto register_fail;
-+	}
-+	return 0;
-+
-+register_fail:
-+	input_free_device(context->qcikbd_dev);
-+
-+allocate_fail:
-+	free_irq(context->qcikbd_irq, context);
-+
-+request_irq_fail:
-+	gpio_free(context->qcikbd_gpio);
-+
-+gpio_request_fail:
-+	kfree(context);
-+	return err;
-+}
-+
-+static int __devexit qcikbd_remove(struct i2c_client *dev)
-+{
-+	struct i2ckbd_drv_data *context = i2c_get_clientdata(dev);
-+
-+	input_free_device(context->qcikbd_dev);
-+	free_irq(context->qcikbd_irq, context);
-+	gpio_free(context->qcikbd_gpio);
-+	input_unregister_device(context->qcikbd_dev);
-+	kfree(context);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id qcikbd_idtable[] = {
-+	{ "wpce775-keyboard", 0 },
-+	{ }
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, qcikbd_idtable);
-+
-+static struct i2c_driver i2ckbd_driver = {
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name  = QCI_KEYBOARD_ID_NAME,
-+#ifdef CONFIG_PM
-+		.pm = &qcikbd_pm_ops,
-+#endif
-+	},
-+	.probe    = qcikbd_probe,
-+	.remove = __devexit_p(qcikbd_remove),
-+	.id_table = qcikbd_idtable,
-+};
-+
-+static int __init qcikbd_init(void)
-+{
-+	return i2c_add_driver(&i2ckbd_driver);
-+}
-+
-+static void __exit qcikbd_exit(void)
-+{
-+	i2c_del_driver(&i2ckbd_driver);
-+}
-+
-+module_init(qcikbd_init);
-+module_exit(qcikbd_exit);
-+
-+MODULE_AUTHOR("Quanta Computer Inc.");
-+MODULE_DESCRIPTION("Quanta Embedded Controller I2C Keyboard Driver");
-+MODULE_ALIAS("platform:qci-gkbd");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/input/qci_keyboard.h b/include/linux/input/qci_keyboard.h
-new file mode 100644
-index 0000000..b32b7fc
---- /dev/null
-+++ b/include/linux/input/qci_keyboard.h
-@@ -0,0 +1,25 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ *  Copyright (C) 2002  Willy Tarreau
++ *  Copyright (C) 2010  Matteo Croce
 + */
 +
-+#ifndef __QCI_KEYBOARD_H
-+#define __QCI_KEYBOARD_H
++#include <asm/processor.h>
++#include <asm/traps.h>
++#include <asm/uaccess.h>
 +
-+struct qci_keyboard_platform_data {
-+	unsigned long irq_trigger_type;
-+};
++/* This code can be used to allow the AMD Geode to hopefully correctly execute
++ * some code which was originally compiled for an i686, by emulating NOPL,
++ * the only missing i686 instruction in the CPU
++ *
++ * Willy Tarreau <willy@meta-x.org>
++ * Matteo Croce <technoboy85@gmail.com>
++ */
 +
-+#endif
--- 
-1.7.0
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
++static inline int do_1f(u8 *ip)
++{
++	u8 val1, val2;
++	int length = 3;
++	if (get_user(val1, ip))
++		return 0;
++	switch (val1) {
++	case 0x84:
++		get_user(val1, ip + 5);
++		if (!val1)
++			length++;
++		else
++			return 0;
++	case 0x80:
++		get_user(val1, ip + 4);
++		get_user(val2, ip + 3);
++		if (!val1 && !val2)
++			length += 2;
++		else
++			return 0;
++	case 0x44:
++		get_user(val1, ip + 2);
++		if (!val1)
++			length++;
++		else
++			return 0;
++	case 0x40:
++		get_user(val1, ip + 1);
++		if (!val1)
++			length++;
++		else
++			return 0;
++	case 0x00:
++		return length;
++	}
++	return 0;
++}
++
++static inline int do_0f(u8 *ip)
++{
++	u8 val;
++	if (get_user(val, ip))
++		return 0;
++	if (val == 0x1f)
++		return do_1f(ip + 1);
++	return 0;
++}
++
++static inline int do_66(u8 *ip)
++{
++	u8 val;
++	if (get_user(val, ip))
++		return 0;
++	if (val == 0x90)
++		return 2;
++	if (val == 0x0f) {
++		int res = do_0f(ip + 1);
++		if (res)
++			return res + 1;
++		else
++			return 0;
++	}
++	return 0;
++}
++
++static inline int do_start(u8 *ip)
++{
++	u8 val;
++	if (get_user(val, ip))
++		return 0;
++	if (val == 0x0f)
++		return do_0f(ip + 1);
++	if (val == 0x66)
++		return do_66(ip + 1);
++	return 0;
++}
++
++/* [do_nopl_emu] is called by exception 6 after an invalid opcode has been
++ * encountered. It will try to emulate it by doing nothing,
++ * and will send a SIGILL or SIGSEGV to the process if not possible.
++ * the NOPL can have variable length opcodes:
++
++bytes number	opcode
++	2	66 90
++	3	0f 1f 00
++	4	0f 1f 40 00
++	5	0f 1f 44 00 00
++	6	66 0f 1f 44 00 00
++	7	0f 1f 80 00 00 00 00
++	8	0f 1f 84 00 00 00 00 00
++	9	66 0f 1f 84 00 00 00 00 00
++*/
++void do_nopl_emu(struct pt_regs *regs, long error_code)
++{
++	u8 *ip = (u8 *)instruction_pointer(regs);
++	int res = do_start(ip);
++
++	if (res) {
++		int i = 0;
++		do {
++			ip += res;
++			i++;
++			res = do_start(ip);
++		} while(res);
++		printk(KERN_DEBUG "geode_nopl: emulated %d instructions\n", i);
++		regs->ip = (typeof(regs->ip))ip;
++	} else
++		do_invalid_op(regs, error_code);
++}
 
+
+-- 
+Matteo Croce
+OpenWrt developer
+  _______                     ________        __
+ |       |.-----.-----.-----.|  |  |  |.----.|  |_
+ |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
+ |_______||   __|_____|__|__||________||__|  |____|
+          |__| W I R E L E S S   F R E E D O M
+ KAMIKAZE (bleeding edge) ------------------
+  * 10 oz Vodka       Shake well with ice and strain
+  * 10 oz Triple sec  mixture into 10 shot glasses.
+  * 10 oz lime juice  Salute!
+ ---------------------------------------------------
