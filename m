@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab0H0K2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 06:28:05 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56281 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab0H0K2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 06:28:03 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>, Zhu Yi <yi.zhu@intel.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Subject: Re: [PATCH] bitops: Provide generic sign_extend function (moving it out from wireless code)
-References: <20100827101651.GC5348@loge.amd.com>
-Date: Fri, 27 Aug 2010 12:27:53 +0200
-In-Reply-To: <20100827101651.GC5348@loge.amd.com> (Andreas Herrmann's message
-	of "Fri, 27 Aug 2010 12:16:51 +0200")
-Message-ID: <87k4ncic46.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1752092Ab0H0Kfu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 06:35:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46005 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444Ab0H0Kft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 06:35:49 -0400
+Message-ID: <4C779394.2000003@kernel.org>
+Date: Fri, 27 Aug 2010 12:29:40 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jason Baron <jbaron@redhat.com>
+CC: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, fweisbec@gmail.com, rostedt@goodmis.org
+Subject: [PATCH] workqueue: Add a workqueue chapter to the tracepoint docbook
+References: <20100821131402.577c4d75@infradead.org> <20100826143542.GA2947@redhat.com>
+In-Reply-To: <20100826143542.GA2947@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 Aug 2010 10:35:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Herrmann <herrmann.der.user@googlemail.com> writes:
->  
-> +/**
-> + * sign_extend - Sign extend a value using specified bit as sign-bit
-> + * @value: value to sign extend
-> + * @index: 0 based bit index (0<=index<32) to sign bit
-> + */
-> +static inline __s32 sign_extend(__u32 value, int index)
-> +{
-> +	__u8 shift = 31 - index;
-> +	return (__s32)(value << shift) >> shift;
-> +}
+From: Jason Baron <jbaron@redhat.com>
 
-If it only handles 32bit please call it sign_extend32
+Add a workqueue chapter to the traceopint docbook.
 
--Andi
+Current book is at: http://www.kernel.org/doc/htmldocs/tracepoint/
 
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Applied w/ patch description update.  Thanks.
+
+ Documentation/DocBook/tracepoint.tmpl |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/DocBook/tracepoint.tmpl b/Documentation/DocBook/tracepoint.tmpl
+index e8473ea..b57a9ed 100644
+--- a/Documentation/DocBook/tracepoint.tmpl
++++ b/Documentation/DocBook/tracepoint.tmpl
+@@ -104,4 +104,9 @@
+    <title>Block IO</title>
+ !Iinclude/trace/events/block.h
+   </chapter>
++
++  <chapter id="workqueue">
++   <title>Workqueue</title>
++!Iinclude/trace/events/workqueue.h
++  </chapter>
+ </book>
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.1
+
