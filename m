@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab0H0U4R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 16:56:17 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:40889 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab0H0U4P (ORCPT
+	id S1752346Ab0H0U44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 16:56:56 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:44776 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751694Ab0H0U4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 16:56:15 -0400
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-From: John Stultz <johnstul@us.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>
-In-Reply-To: <201008271403.41949.arnd@arndb.de>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
-	 <1282594899.3111.358.camel@localhost.localdomain>
-	 <20100827110855.GA11657@riccoc20.at.omicron.at>
-	 <201008271403.41949.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Aug 2010 13:56:08 -0700
-Message-ID: <1282942568.2268.60.camel@jstultz-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Aug 2010 16:56:54 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: u3IDlH8VM1koOfGzNom8PLyIeK_K5Tx2Z8q0.oeulGldvPH
+ w8VmHq5aLk10V02k_jqoQcJhmodkDx5P9cdTBFO3UHubFn4C0z645gzuAaJJ
+ 6FwXU0bdukM.YIg9ptNxJ5HFBl.4v76zLdcXX8.ppoUgtoaDOwFA1Kv3qhpo
+ o771ddv0HTwh139kODE9LKL56XTMvrMExGH1_conla9jZkaLFE7gKFZ1_Dnm
+ _
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 27 Aug 2010 15:56:48 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Hugh Dickins <hughd@google.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+In-Reply-To: <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008271547200.22988@router.home>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils> <20100826235052.GZ6803@random.random> <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com> <20100827095546.GC6803@random.random> <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
+ <alpine.DEB.2.00.1008271159160.18495@router.home> <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com> <alpine.DEB.2.00.1008271420400.18495@router.home> <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 14:03 +0200, Arnd Bergmann wrote:
-> On Friday 27 August 2010, Richard Cochran wrote:
-> > On Mon, Aug 23, 2010 at 01:21:39PM -0700, john stultz wrote:
-> > > On Thu, 2010-08-19 at 17:38 +0200, Richard Cochran wrote:
-> > > > On Thu, Aug 19, 2010 at 02:28:04PM +0200, Arnd Bergmann wrote:
-> > > > > Have you considered passing a struct timex instead of ppb and ts?
-> > > > 
-> > > > Yes, but the timex is not suitable, IMHO.
-> > > 
-> > > Could you expand on this?
-> > 
-> > We need to able to specify that the call is for a PTP clock. We could
-> > add that to the modes flag, like this:
-> > 
-> > /*timex.h*/
-> > #define ADJ_PTP_0 0x10000
-> > #define ADJ_PTP_1 0x20000
-> > #define ADJ_PTP_2 0x30000
-> > #define ADJ_PTP_3 0x40000
-> >
-> > I can live with this, if everyone else can, too.
-> 
-> My suggestion was actually to have a new syscall with the existing
-> structure, and pass a clockid_t value to it, similar to your
-> sys_clock_adjtime(), not change the actual sys_adjtime syscall.
->   
-> > > Could we not add a adjustment mode ADJ_SETOFFSET or something that would
-> > > provide the instantaneous offset correction?
-> > 
-> > Yes, but we would also need to add a struct timespec to the struct
-> > timex, in order to get nanosecond resolution. I think it would be
-> > possible to do in the padding at the end?
-> 
-> Yes, that's exactly what the padding is for. Instead of timespec, you can
-> probably have a extra values for replacing the existing ppm values with
-> ppb values.
+On Fri, 27 Aug 2010, Hugh Dickins wrote:
 
-Right, although the ppm/ppb issue shouldn't be a problem as the timex
-allows for much finer then ppb resolution changes.
+> Nothing ensures that the root pointer was not changed after the
+> ACCESS_ONCE, that's exactly why we use ACCESS_ONCE there: once we've
+> got the lock and realize that what we've locked may not be what we
+> wanted (or may change from what we were wanting at any moment, the
+> page no longer being mapped there - but in that case we no longer want
+> it), we have to be sure to unlock the one we locked, rather than the
+> one which anon_vma->root might subsequently point to.
 
-The only adjustment to the adjtimex/timex interface that may be needed
-is the ability to set the time by an offset (ie: ADJ_SETOFFSET), rather
-then slewing the offset in (ADJ_OFFSET, or ADJ_OFFSET_SINGLESHOT).
+I do not see any check after we have taken the lock to verify that we
+locked the correct object. Was there a second version of the patch?
 
-This avoids the calc offset, gettime(&now), settime(now+offset) method
-where any latency between the gettime and settime adds to the error.
+> > Since there is no lock taken before the mapped check none of the
+> > earlier reads from the anon vma structure nor the page mapped check
+> > necessarily reflect a single state of the anon_vma.
+>
+> There's no lock (other than RCU's read "lock")  taken before the
+> original mapped check, and that's important, otherwise our attempt to
+> lock might actually spinon or corrupt something that was long ago an
+> anon_vma.  But we do take the anon_vma->root->lock before the second
+> mapped check which I added.  If the page is still mapped at the point
 
-thanks
--john
+You then are using an object from the anon_vma (the pointer) without a
+lock! This is unstable therefore unless there are other constraints. The
+anon_vma->lock must be taken before derefencing that pointer. The page may
+have been unmapped and mapped again between the two checks. Unlikely but
+possible.
 
+> of that second check, then we know that we got the right anon_vma,
 
-
-
-thanks
--john
-
+I do not see a second check (*after* taking the lock) in the patch and the
+way the lock is taken can be a problem in itself.
 
