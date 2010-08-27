@@ -1,101 +1,455 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab0H0GMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 02:12:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45596 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab0H0GL6 (ORCPT
+	id S1754289Ab0H0GNV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 02:13:21 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:26680 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab0H0GNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 02:11:58 -0400
-Date: Fri, 27 Aug 2010 08:11:39 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [REGRESSION PATCH] NFS: let NFS_V4 and NFSD_V4 enforce CRYPTO
-Message-ID: <20100827061139.GA27851@pengutronix.de>
-References: <20100825084912.GA10293@pengutronix.de> <1282727119-8295-1-git-send-email-u.kleine-koenig@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1282727119-8295-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 27 Aug 2010 02:13:18 -0400
+Date: Fri, 27 Aug 2010 09:12:24 +0300 (EEST)
+Message-Id: <20100827.091224.226795338.Hiroshi.DOYU@nokia.com>
+To: catalin.marinas@arm.com
+Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
+        linux-omap@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <20100810.184903.214240645.Hiroshi.DOYU@nokia.com>
+References: <1277736372.25271.102.camel@e102109-lin.cambridge.arm.com>
+	<20100629.074423.71111160.Hiroshi.DOYU@nokia.com>
+	<20100810.184903.214240645.Hiroshi.DOYU@nokia.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Aug 2010 06:12:31.0964 (UTC) FILETIME=[D58D89C0:01CB45AE]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 11:05:19AM +0200, Uwe Kleine-König wrote:
-> This is a follow up to
-> 
-> 	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
-> 
-> which broke (among others) arm/mx1_defconfig.
-> 
-> Moreover let NFS_V4 select RPCSEC_GSS_KRB5 again as it was before
-> df486a2.  This make the dependency more explicit than relying on the no
-> prompt + default y if !(NFS_V4 || NFSD_V4).
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-ping
+Hi Catalin,
 
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+Subject: Re: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
+Date: Tue, 10 Aug 2010 18:49:03 +0300 (EEST)
+
+<snip>
+>>> The performance impact is indeed pretty high, though some parts of the
+>>> code look over-engineered to me (the __scan_block function with a loop
+>>> going through an array of two function pointers - I think the compiler
+>>> cannot figure out what to inline). You could just extend the
+>>> find_and_get_object() to search both trees under a single spinlock
+>>> region (as locking also takes time).
+>> 
+>> Ok, a good point.
+> 
+> Now there's not much difference with the attached patch, a new version
+> of alias.
+> 
+> / # modprobe kmemleak-special-test use_alias=0
+> / # time echo scan > /sys/kernel/debug/kmemleak
+> real    0m 2.30s
+> user    0m 0.00s
+> sys     0m 2.30s
+> 
+> / # modprobe kmemleak-special-test use_alias=1
+> / # time echo scan > /sys/kernel/debug/kmemleak
+> real    0m 3.91s
+> user    0m 0.00s
+> sys     0m 3.91s
+
+It would be nice if you could have some time to take a look at this
+patch and give some comments.
+
+> From a5670d69b2cafe85f6f26f6951097210d3b9917f Mon Sep 17 00:00:00 2001
+> From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+> Date: Thu, 17 Jun 2010 13:36:45 +0300
+> Subject: [PATCH 1/1] kmemleak: Fix false positive with address alias
+> 
+> There is a false positive case that a pointer is calculated by other
+> methods than the usual container_of macro. "kmemleak_ignore" can cover
+> such a false positive, but it would loose the advantage of memory leak
+> detection. This patch allows kmemleak to work with such false
+> positives by aliasing of address. A client module can register an
+> alias address to an original pointer.
+> 
+> A typical use case could be the IOMMU pagetable allocation which
+> stores pointers to the second level of page tables with some
+> conversion, for example, a physical address with attribute bits. Right
+> now I don't have other use cases but I hope that there could be some
+> that this special scan works with.
+> 
+> Signed-off-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+> Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
 > ---
->  fs/nfs/Kconfig     |    2 ++
->  fs/nfsd/Kconfig    |    2 ++
->  net/sunrpc/Kconfig |    2 +-
->  3 files changed, 5 insertions(+), 1 deletions(-)
+>  include/linux/kmemleak.h |    8 ++
+>  mm/kmemleak.c            |  208 +++++++++++++++++++++++++++++++++++++++++++---
+>  2 files changed, 204 insertions(+), 12 deletions(-)
 > 
-> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-> index 6c2aad4..5b9f870 100644
-> --- a/fs/nfs/Kconfig
-> +++ b/fs/nfs/Kconfig
-> @@ -63,6 +63,8 @@ config NFS_V3_ACL
->  config NFS_V4
->  	bool "NFS client support for NFS version 4"
->  	depends on NFS_FS
-> +	select CRYPTO # recursive select: RPCSEC_GSS_KRB5 depends on CRYPTO
-> +	select RPCSEC_GSS_KRB5
->  	help
->  	  This option enables support for version 4 of the NFS protocol
->  	  (RFC 3530) in the kernel's NFS client.
-> diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
-> index 95932f5..3678a16 100644
-> --- a/fs/nfsd/Kconfig
-> +++ b/fs/nfsd/Kconfig
-> @@ -69,6 +69,8 @@ config NFSD_V4
->  	depends on NFSD && PROC_FS && EXPERIMENTAL
->  	select NFSD_V3
->  	select FS_POSIX_ACL
-> +	select CRYPTO # recursive select: RPCSEC_GSS_KRB5 depends on CRYPTO
-> +	select RPCSEC_GSS_KRB5
->  	help
->  	  This option enables support in your system's NFS server for
->  	  version 4 of the NFS protocol (RFC 3530).
-> diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
-> index 3376d76..6b661e3 100644
-> --- a/net/sunrpc/Kconfig
-> +++ b/net/sunrpc/Kconfig
-> @@ -20,7 +20,7 @@ config SUNRPC_XPRT_RDMA
->  config RPCSEC_GSS_KRB5
->  	tristate
->  	depends on SUNRPC && CRYPTO
-> -	prompt "Secure RPC: Kerberos V mechanism" if !(NFS_V4 || NFSD_V4)
-> +	prompt "Secure RPC: Kerberos V mechanism"
->  	default y
->  	select SUNRPC_GSS
->  	select CRYPTO_MD5
+> diff --git a/include/linux/kmemleak.h b/include/linux/kmemleak.h
+> index 99d9a67..9e2af3a 100644
+> --- a/include/linux/kmemleak.h
+> +++ b/include/linux/kmemleak.h
+> @@ -34,6 +34,8 @@ extern void kmemleak_not_leak(const void *ptr) __ref;
+>  extern void kmemleak_ignore(const void *ptr) __ref;
+>  extern void kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp) __ref;
+>  extern void kmemleak_no_scan(const void *ptr) __ref;
+> +extern void kmemleak_add_alias(const void *ptr, const void *new) __ref;
+> +extern void kmemleak_unalias(const void *alias) __ref;
+>  
+>  static inline void kmemleak_alloc_recursive(const void *ptr, size_t size,
+>  					    int min_count, unsigned long flags,
+> @@ -92,6 +94,12 @@ static inline void kmemleak_erase(void **ptr)
+>  static inline void kmemleak_no_scan(const void *ptr)
+>  {
+>  }
+> +static inline void kmemleak_add_alias(const void *ptr, const void *new)
+> +{
+> +}
+> +static inline void kmemleak_unalias(const void *alias)
+> +{
+> +}
+>  
+>  #endif	/* CONFIG_DEBUG_KMEMLEAK */
+>  
+> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+> index 2c0d032..3875cb7 100644
+> --- a/mm/kmemleak.c
+> +++ b/mm/kmemleak.c
+> @@ -157,6 +157,13 @@ struct kmemleak_object {
+>  	unsigned long jiffies;		/* creation timestamp */
+>  	pid_t pid;			/* pid of the current task */
+>  	char comm[TASK_COMM_LEN];	/* executable name */
+> +	struct kmemleak_alias *alias;	/* if a pointer is modified */
+> +};
+> +
+> +struct kmemleak_alias {
+> +	struct list_head alias_list;
+> +	struct prio_tree_node tree_node;
+> +	struct kmemleak_object *object;
+>  };
+>  
+>  /* flag representing the memory block allocation status */
+> @@ -179,13 +186,18 @@ struct kmemleak_object {
+>  static LIST_HEAD(object_list);
+>  /* the list of gray-colored objects (see color_gray comment below) */
+>  static LIST_HEAD(gray_list);
+> +/* the list of objects with alias (see alias comment below) */
+> +static LIST_HEAD(alias_list);
+>  /* prio search tree for object boundaries */
+>  static struct prio_tree_root object_tree_root;
+> +/* prio search tree for alias object boundaries */
+> +static struct prio_tree_root alias_tree_root;
+>  /* rw_lock protecting the access to object_list and prio_tree_root */
+>  static DEFINE_RWLOCK(kmemleak_lock);
+>  
+>  /* allocation caches for kmemleak internal data */
+>  static struct kmem_cache *object_cache;
+> +static struct kmem_cache *alias_cache;
+>  static struct kmem_cache *scan_area_cache;
+>  
+>  /* set if tracing memory operations is enabled */
+> @@ -269,6 +281,8 @@ static void kmemleak_disable(void);
+>  	kmemleak_disable();		\
+>  } while (0)
+>  
+> +#define to_address(obj) ((obj)->tree_node.start)
+> +
+>  /*
+>   * Printing of the objects hex dump to the seq file. The number of lines to be
+>   * printed is limited to HEX_MAX_LINES to prevent seq file spamming. The
+> @@ -369,7 +383,7 @@ static void dump_object_info(struct kmemleak_object *object)
+>  	trace.entries = object->trace;
+>  
+>  	pr_notice("Object 0x%08lx (size %zu):\n",
+> -		  object->tree_node.start, object->size);
+> +		  to_address(object), object->size);
+>  	pr_notice("  comm \"%s\", pid %d, jiffies %lu\n",
+>  		  object->comm, object->pid, object->jiffies);
+>  	pr_notice("  min_count = %d\n", object->min_count);
+> @@ -436,6 +450,8 @@ static void free_object_rcu(struct rcu_head *rcu)
+>  		hlist_del(elem);
+>  		kmem_cache_free(scan_area_cache, area);
+>  	}
+> +	if (object->alias)
+> +		kmem_cache_free(alias_cache, object->alias);
+>  	kmem_cache_free(object_cache, object);
+>  }
+>  
+> @@ -460,12 +476,11 @@ static void put_object(struct kmemleak_object *object)
+>  /*
+>   * Look up an object in the prio search tree and increase its use_count.
+>   */
+> -static struct kmemleak_object *find_and_get_object(unsigned long ptr, int alias)
+> +static struct kmemleak_object *__find_and_get_object(unsigned long ptr, int alias)
+>  {
+>  	unsigned long flags;
+>  	struct kmemleak_object *object = NULL;
+>  
+> -	rcu_read_lock();
+>  	read_lock_irqsave(&kmemleak_lock, flags);
+>  	if (ptr >= min_addr && ptr < max_addr)
+>  		object = lookup_object(ptr, alias);
+> @@ -474,6 +489,75 @@ static struct kmemleak_object *find_and_get_object(unsigned long ptr, int alias)
+>  	/* check whether the object is still available */
+>  	if (object && !get_object(object))
+>  		object = NULL;
+> +
+> +	return object;
+> +}
+> +
+> +static struct kmemleak_object *find_and_get_object(unsigned long ptr, int alias)
+> +{
+> +	struct kmemleak_object *object;
+> +
+> +	rcu_read_lock();
+> +	object = __find_and_get_object(ptr, alias);
+> +	rcu_read_unlock();
+> +
+> +	return object;
+> +}
+> +
+> +static struct kmemleak_object *__find_and_get_alias(unsigned long ptr, int alias)
+> +{
+> +	struct kmemleak_object *object = NULL;
+> +	struct kmemleak_alias *ao = NULL;
+> +	struct prio_tree_node *node;
+> +	struct prio_tree_iter iter;
+> +	unsigned long flags;
+> +
+> +	read_lock_irqsave(&kmemleak_lock, flags);
+> +
+> +	prio_tree_iter_init(&iter, &alias_tree_root, ptr, ptr);
+> +	node = prio_tree_next(&iter);
+> +	if (node) {
+> +		ao = prio_tree_entry(node, struct kmemleak_alias, tree_node);
+> +		if (!alias && to_address(ao) != ptr) {
+> +			kmemleak_warn("Found object by alias");
+> +			ao = NULL;
+> +		}
+> +	}
+> +
+> +	read_unlock_irqrestore(&kmemleak_lock, flags);
+> +
+> +	if (ao && get_object(ao->object))
+> +		object = ao->object;
+> +
+> +	return object;
+> +}
+> +
+> +static struct kmemleak_object *find_and_get_alias(unsigned long ptr, int alias)
+> +{
+> +	struct kmemleak_object *object = NULL;
+> +
+> +	rcu_read_lock();
+> +	object = __find_and_get_alias(ptr, alias);
+> +	rcu_read_unlock();
+> +
+> +	return object;
+> +}
+> +
+> +/*
+> + * Try to find object first, and then with alias address if not found.
+> + */
+> +static struct kmemleak_object *find_and_get_object_with_alias(unsigned long ptr,
+> +							      int alias)
+> +{
+> +	struct kmemleak_object *object = NULL;
+> +
+> +	rcu_read_lock();
+> +
+> +	object = __find_and_get_object(ptr, alias);
+> +	if (!object &&
+> +	    !prio_tree_empty(&alias_tree_root))
+> +		object = __find_and_get_alias(ptr, alias);
+> +
+>  	rcu_read_unlock();
+>  
+>  	return object;
+> @@ -524,6 +608,7 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
+>  	object->count = 0;			/* white color initially */
+>  	object->jiffies = jiffies;
+>  	object->checksum = 0;
+> +	object->alias = NULL;
+>  
+>  	/* task information */
+>  	if (in_irq()) {
+> @@ -547,7 +632,7 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
+>  	object->trace_len = __save_stack_trace(object->trace);
+>  
+>  	INIT_PRIO_TREE_NODE(&object->tree_node);
+> -	object->tree_node.start = ptr;
+> +	to_address(object) = ptr;
+>  	object->tree_node.last = ptr + size - 1;
+>  
+>  	write_lock_irqsave(&kmemleak_lock, flags);
+> @@ -577,6 +662,57 @@ out:
+>  	return object;
+>  }
+>  
+> +static void create_alias_object(struct kmemleak_object *object,
+> +				unsigned long ptr)
+> +{
+> +	struct kmemleak_alias *alias;
+> +	struct prio_tree_node *node;
+> +	unsigned long flags;
+> +
+> +	alias = kmem_cache_alloc(alias_cache, GFP_KERNEL);
+> +	if (!alias) {
+> +		kmemleak_stop("Cannot allocate a kmemleak_alias structure\n");
+> +		return;
+> +	}
+> +	INIT_LIST_HEAD(&alias->alias_list);
+> +	INIT_PRIO_TREE_NODE(&alias->tree_node);
+> +	to_address(alias) = ptr;
+> +
+> +	spin_lock_irqsave(&object->lock, flags);
+> +	alias->tree_node.last = ptr + object->size - 1;
+> +	alias->object = object;
+> +	object->alias = alias;
+> +	spin_unlock_irqrestore(&object->lock, flags);
+> +
+> +	write_lock_irqsave(&kmemleak_lock, flags);
+> +
+> +	node = prio_tree_insert(&alias_tree_root, &alias->tree_node);
+> +	if (!node) {
+> +		kmemleak_warn("Cannot allocate a kmemleak_alias structure\n");
+> +		kmem_cache_free(alias_cache, alias);
+> +	}
+> +	list_add_tail_rcu(&alias->alias_list, &alias_list);
+> +
+> +	write_unlock_irqrestore(&kmemleak_lock, flags);
+> +}
+> +
+> +static void __delete_alias_object(struct kmemleak_object *object)
+> +{
+> +	prio_tree_remove(&alias_tree_root, &object->alias->tree_node);
+> +	list_del_rcu(&object->alias->alias_list);
+> +	kmem_cache_free(alias_cache, object->alias);
+> +	object->alias = NULL;
+> +}
+> +
+> +static void delete_alias_object(struct kmemleak_object *object)
+> +{
+> +	unsigned long flags;
+> +
+> +	write_lock_irqsave(&kmemleak_lock, flags);
+> +	__delete_alias_object(object);
+> +	write_unlock_irqrestore(&kmemleak_lock, flags);
+> +}
+> +
+>  /*
+>   * Remove the metadata (struct kmemleak_object) for a memory block from the
+>   * object_list and object_tree_root and decrement its use_count.
+> @@ -588,6 +724,8 @@ static void __delete_object(struct kmemleak_object *object)
+>  	write_lock_irqsave(&kmemleak_lock, flags);
+>  	prio_tree_remove(&object_tree_root, &object->tree_node);
+>  	list_del_rcu(&object->object_list);
+> +	if (object->alias)
+> +		__delete_alias_object(object);
+>  	write_unlock_irqrestore(&kmemleak_lock, flags);
+>  
+>  	WARN_ON(!(object->flags & OBJECT_ALLOCATED));
+> @@ -630,7 +768,7 @@ static void delete_object_full(unsigned long ptr)
+>   */
+>  static void delete_object_part(unsigned long ptr, size_t size)
+>  {
+> -	struct kmemleak_object *object;
+> +	struct kmemleak_object *object, *new;
+>  	unsigned long start, end;
+>  
+>  	object = find_and_get_object(ptr, 1);
+> @@ -652,12 +790,24 @@ static void delete_object_part(unsigned long ptr, size_t size)
+>  	 */
+>  	start = object->pointer;
+>  	end = object->pointer + object->size;
+> -	if (ptr > start)
+> -		create_object(start, ptr - start, object->min_count,
+> -			      GFP_KERNEL);
+> -	if (ptr + size < end)
+> -		create_object(ptr + size, end - ptr - size, object->min_count,
+> -			      GFP_KERNEL);
+> +	if (ptr > start) {
+> +		new = create_object(start, ptr - start, object->min_count,
+> +				    GFP_KERNEL);
+> +		if (new && unlikely(object->alias))
+> +			create_alias_object(new, to_address(object->alias));
+> +	}
+> +	if (ptr + size < end) {
+> +		new = create_object(ptr + size, end - ptr - size,
+> +				    object->min_count, GFP_KERNEL);
+> +		if (new && unlikely(object->alias)) {
+> +			unsigned long alias_ptr;
+> +
+> +			alias_ptr = to_address(object->alias);
+> +			alias_ptr += ptr - start + size;
+> +
+> +			create_alias_object(new, alias_ptr);
+> +		}
+> +	}
+>  
+>  	put_object(object);
+>  }
+> @@ -944,6 +1094,38 @@ void __ref kmemleak_no_scan(const void *ptr)
+>  }
+>  EXPORT_SYMBOL(kmemleak_no_scan);
+>  
+> +void kmemleak_add_alias(const void *ptr, const void *alias)
+> +{
+> +	struct kmemleak_object *object;
+> +
+> +	pr_debug("%s(0x%p -> 0x%p)\n", __func__, ptr, alias);
+> +
+> +	object = find_and_get_object((unsigned long)ptr, 0);
+> +	if (!object) {
+> +		kmemleak_warn("Aliasing unknown object at 0x%p\n", ptr);
+> +		return;
+> +	}
+> +	create_alias_object(object, (unsigned long)alias);
+> +	put_object(object);
+> +}
+> +EXPORT_SYMBOL(kmemleak_add_alias);
+> +
+> +void kmemleak_unalias(const void *alias)
+> +{
+> +	struct kmemleak_object *object;
+> +
+> +	pr_debug("%s(0x%p)\n", __func__, alias);
+> +
+> +	object = find_and_get_alias((unsigned long)alias, 0);
+> +	if (!object) {
+> +		kmemleak_warn("Aliasing unknown object at 0x%p\n", alias);
+> +		return;
+> +	}
+> +	delete_alias_object(object);
+> +	put_object(object);
+> +}
+> +EXPORT_SYMBOL(kmemleak_unalias);
+> +
+>  /*
+>   * Update an object's checksum and return true if it was modified.
+>   */
+> @@ -1007,7 +1189,7 @@ static void scan_block(void *_start, void *_end,
+>  
+>  		pointer = *ptr;
+>  
+> -		object = find_and_get_object(pointer, 1);
+> +		object = find_and_get_object_with_alias(pointer, 1);
+>  		if (!object)
+>  			continue;
+>  		if (object == scanned) {
+> @@ -1620,8 +1802,10 @@ void __init kmemleak_init(void)
+>  	jiffies_scan_wait = msecs_to_jiffies(SECS_SCAN_WAIT * 1000);
+>  
+>  	object_cache = KMEM_CACHE(kmemleak_object, SLAB_NOLEAKTRACE);
+> +	alias_cache = KMEM_CACHE(kmemleak_alias, SLAB_NOLEAKTRACE);
+>  	scan_area_cache = KMEM_CACHE(kmemleak_scan_area, SLAB_NOLEAKTRACE);
+>  	INIT_PRIO_TREE_ROOT(&object_tree_root);
+> +	INIT_PRIO_TREE_ROOT(&alias_tree_root);
+>  
+>  	/* the kernel is still in UP mode, so disabling the IRQs is enough */
+>  	local_irq_save(flags);
 > -- 
-> 1.7.1
+> 1.7.1.rc2
 > 
-> 
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
