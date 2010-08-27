@@ -1,86 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab0H0Jms (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:42:48 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:42732 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab0H0Jmo (ORCPT
+	id S1754163Ab0H0JzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:55:16 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:33395 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab0H0JzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:42:44 -0400
+	Fri, 27 Aug 2010 05:55:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=P0PRwbonjjmEdFb2aIjVSumCndx46MAGiy83jg1S1YsfNCNwLUaifzyDUFraoC2q5/
-         O6xr9EjeIUdd1tLqRlbdO4jfAEinjSbnrFKIGpSeXjX6kpS7KtGzW7Hjl06H/I9ptF6V
-         xQK+Udrd0q536UAI9nUHFZjg9mqFTnP62IzOw=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 02/43] ptrace: cleanup ptrace_request()
-Date: Fri, 27 Aug 2010 18:41:48 +0900
-Message-Id: <1282902149-12991-3-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
-References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=HSRRY9eywjR2FyRFhyKVlrawcNO1iCDTVvsCOTfxu3tYb4MCQVLlcJD6rfRlvdkfkG
+         XwQNbnAE/xWieVoU0M6a+ZNB0xYMlBakpv/D9MtHSR4kqBfSnVZiNf9gfxj5fTJSAyhl
+         X/BKljLnyc1Sm4DCnUYDXQq9nnqvJCwy43QyQ=
+Date: Fri, 27 Aug 2010 12:16:51 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
+        Zhu Yi <yi.zhu@intel.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: [PATCH] bitops: Provide generic sign_extend function (moving it
+ out from wireless code)
+Message-ID: <20100827101651.GC5348@loge.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use new local variable to remove unnecesary casting, but it requires
-put_user() to be changed to copy_to_user().
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Provide a common function to sign extend a value.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 ---
- kernel/ptrace.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ath/ath5k/phy.c    |    6 ------
+ drivers/net/wireless/ath/ath9k/hw.h     |    6 ------
+ drivers/net/wireless/iwlwifi/iwl-4965.c |   16 ----------------
+ include/linux/bitops.h                  |   11 +++++++++++
+ 4 files changed, 11 insertions(+), 28 deletions(-)
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index f838afe..1084bef 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -563,6 +563,7 @@ int ptrace_request(struct task_struct *child, long request,
+Recently I needed to sign extend some register values for further
+computation. I also stumbled over two functions in wireless code
+which do the same (in different ways).
+
+Thus I wonder whether a generic function should be provided for this.
+
+Below patch (against tip/master) provides the iwl-4965-variant of that
+function in bitops.h I am not sure whether that's the right place to
+add this function.  What do you think? Or is it a dumb idea anyway?
+
+
+Thanks,
+Andreas
+
+diff --git a/drivers/net/wireless/ath/ath5k/phy.c b/drivers/net/wireless/ath/ath5k/phy.c
+index 6284c38..9e6f551 100644
+--- a/drivers/net/wireless/ath/ath5k/phy.c
++++ b/drivers/net/wireless/ath/ath5k/phy.c
+@@ -1101,12 +1101,6 @@ int ath5k_hw_channel(struct ath5k_hw *ah, struct ieee80211_channel *channel)
+   PHY calibration
+ \*****************/
+ 
+-static int sign_extend(int val, const int nbits)
+-{
+-	int order = BIT(nbits-1);
+-	return (val ^ order) - order;
+-}
+-
+ static s32 ath5k_hw_read_measured_noise_floor(struct ath5k_hw *ah)
  {
- 	int ret = -EIO;
- 	siginfo_t siginfo;
-+	void __user *datap = (void __user *) data;
+ 	s32 val;
+diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath/ath9k/hw.h
+index 399f7c1..5dad02f 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -858,12 +858,6 @@ static inline struct ath_hw_ops *ath9k_hw_ops(struct ath_hw *ah)
+ 	return &ah->ops;
+ }
  
- 	switch (request) {
- 	case PTRACE_PEEKTEXT:
-@@ -579,19 +580,19 @@ int ptrace_request(struct task_struct *child, long request,
- 		ret = ptrace_setoptions(child, data);
- 		break;
- 	case PTRACE_GETEVENTMSG:
--		ret = put_user(child->ptrace_message, (unsigned long __user *) data);
-+		ret = copy_to_user(datap, &child->ptrace_message,
-+				   sizeof (child->ptrace_message)) ?
-+			-EFAULT : 0;
- 		break;
+-static inline int sign_extend(int val, const int nbits)
+-{
+-	int order = BIT(nbits-1);
+-	return (val ^ order) - order;
+-}
+-
+ /* Initialization, Detach, Reset */
+ const char *ath9k_hw_probe(u16 vendorid, u16 devid);
+ void ath9k_hw_deinit(struct ath_hw *ah);
+diff --git a/drivers/net/wireless/iwlwifi/iwl-4965.c b/drivers/net/wireless/iwlwifi/iwl-4965.c
+index d92b729..9a53dee 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@ -1551,22 +1551,6 @@ static void iwl4965_txq_update_byte_cnt_tbl(struct iwl_priv *priv,
+ }
  
- 	case PTRACE_GETSIGINFO:
- 		ret = ptrace_getsiginfo(child, &siginfo);
- 		if (!ret)
--			ret = copy_siginfo_to_user((siginfo_t __user *) data,
--						   &siginfo);
-+			ret = copy_siginfo_to_user(datap, &siginfo);
- 		break;
+ /**
+- * sign_extend - Sign extend a value using specified bit as sign-bit
+- *
+- * Example: sign_extend(9, 3) would return -7 as bit3 of 1001b is 1
+- * and bit0..2 is 001b which when sign extended to 1111111111111001b is -7.
+- *
+- * @param oper value to sign extend
+- * @param index 0 based bit index (0<=index<32) to sign bit
+- */
+-static s32 sign_extend(u32 oper, int index)
+-{
+-	u8 shift = 31 - index;
+-
+-	return (s32)(oper << shift) >> shift;
+-}
+-
+-/**
+  * iwl4965_hw_get_temperature - return the calibrated temperature (in Kelvin)
+  * @statistics: Provides the temperature reading from the uCode
+  *
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index fc68053..618f69e 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -109,6 +109,17 @@ static inline __u8 ror8(__u8 word, unsigned int shift)
+ 	return (word >> shift) | (word << (8 - shift));
+ }
  
- 	case PTRACE_SETSIGINFO:
--		if (copy_from_user(&siginfo, (siginfo_t __user *) data,
--				   sizeof siginfo))
-+		if (copy_from_user(&siginfo, datap, sizeof siginfo))
- 			ret = -EFAULT;
- 		else
- 			ret = ptrace_setsiginfo(child, &siginfo);
-@@ -622,7 +623,7 @@ int ptrace_request(struct task_struct *child, long request,
- 		}
- 		mmput(mm);
- 
--		ret = put_user(tmp, (unsigned long __user *) data);
-+		ret = copy_to_user(datap, &tmp, sizeof tmp) ? -EFAULT : 0;
- 		break;
- 	}
- #endif
++/**
++ * sign_extend - Sign extend a value using specified bit as sign-bit
++ * @value: value to sign extend
++ * @index: 0 based bit index (0<=index<32) to sign bit
++ */
++static inline __s32 sign_extend(__u32 value, int index)
++{
++	__u8 shift = 31 - index;
++	return (__s32)(value << shift) >> shift;
++}
++
+ static inline unsigned fls_long(unsigned long l)
+ {
+ 	if (sizeof(l) == 4)
 -- 
-1.7.2.2
+1.6.4.4
 
