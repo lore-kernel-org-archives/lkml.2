@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab0H0Sid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:38:33 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:60529 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752363Ab0H0Sib (ORCPT
+	id S1755243Ab0H0Sjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:39:35 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:48443 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab0H0Sjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:38:31 -0400
-Date: Fri, 27 Aug 2010 14:38:30 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-Message-ID: <20100827183830.GD22679@Krystal>
-References: <20100826180908.648103531@efficios.com> <1282849045.1975.1587.camel@laptop> <20100826234910.GB4194@Krystal> <1282894960.1975.1666.camel@laptop> <1282897192.7185.28.camel@marge.simson.net> <20100827154334.GE14926@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100827154334.GE14926@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:37:55 up 216 days, 21:14,  4 users,  load average: 0.05, 0.05,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 27 Aug 2010 14:39:32 -0400
+Subject: Re: [PATCH 2/5] vfs: make i_op->permission take a dentry instead
+ of an inode
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: Neil Brown <neilb@suse.de>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vaurora@redhat.com,
+        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
+In-Reply-To: <20100827141100.45feae88@notabene>
+References: <20100826183340.027591901@szeredi.hu>
+	 <20100826183501.528625301@szeredi.hu>
+	 <1282854242.16993.6.camel@moss-terrapins.epoch.ncsc.mil>
+	 <20100827141100.45feae88@notabene>
+Content-Type: text/plain
+Date: Fri, 27 Aug 2010 14:31:20 -0400
+Message-Id: <1282933880.24418.16.camel@moss-terrapins.epoch.ncsc.mil>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> * Mike Galbraith (efault@gmx.de) wrote:
-> > On Fri, 2010-08-27 at 09:42 +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-08-26 at 19:49 -0400, Mathieu Desnoyers wrote:
-> > > > AFAIK, I don't think we would end up starving the system in any possible way.
-> > > 
-> > > Correct, it does maintain fairness.
-> > > 
-> > > > So far I cannot see a situation where selecting the next buddy would _not_ make
-> > > > sense in any kind of input-driven wakeups (interactive, timer, disk, network,
-> > > > etc). But maybe it's just a lack of imagination on my part. 
-> > > 
-> > > The risk is that you end up with always using next-buddy, and we tried
-> > > that a while back and that didn't work well for some, Mike might
-> > > remember.
-> > 
-> > I turned it off because it was ripping spread apart badly, and last
-> > buddy did a better job of improving scalability without it.
+It seems that your reply to [0/5] has the description that I was asking
+for in my last response.
+
+On Fri, 2010-08-27 at 14:11 +1000, Neil Brown wrote:
+> On Thu, 26 Aug 2010 16:24:02 -0400
+> "David P. Quigley" <dpquigl@tycho.nsa.gov> wrote:
 > 
-> Maybe with the dyn min_vruntime feature proposed in this patchset we should
-> reconsider this. Spread being ripped apart is exactly what it addresses.
+> > I may be missing something but I looked at your patch series and I see
+> > no good reason for this patch at all. You just churned a lot of code for
+> > something that you don't even have a need for in the patch set. Your
+> > only two new callers of this function could just as easily have used the
+> > inode since it isn't doing anything special with the dentry. It actually
+> > pulls the inode out of it and uses it in generic_permission and
+> > security_inode_permission. If you are going to change this you should
+> > also change generic_permission as well. Honestly I'd rather see the
+> > dentry requirement removed from inode operations instead but
+> > unfortunately this isn't possible as I found out with my attempts to
+> > remove the dentry requirement for get/setxattr
+> 
+> 
+> union_permission needs the dentry to get access to d_fsdata, which caches the
+> upperpath and lowerpath which were found at lookup time.
+> 
+> Is that what you missed?
+> 
+> NeilBrown
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I'm curious: which workload was showing this kind of problem exactly ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
