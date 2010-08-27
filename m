@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0H0TCi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:02:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34307 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793Ab0H0TCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:02:36 -0400
-Message-ID: <4C780B4E.9060800@kernel.org>
-Date: Fri, 27 Aug 2010 12:00:30 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1755321Ab0H0TDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:03:33 -0400
+Received: from void.printf.net ([89.145.121.20]:57198 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040Ab0H0TDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 15:03:32 -0400
+Date: Fri, 27 Aug 2010 20:03:06 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Pierre Ossman <pierre@ossman.eu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>,
+        Madhusudhan <madhu.cr@ti.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mmc: move regulator handling to core
+Message-ID: <20100827190306.GB20407@void.printf.net>
+References: <1259844390-10541-1-git-send-email-daniel@caiaq.de>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com> <20100820152510.GA4167@elte.hu> <20100823085339.GA26713@elte.hu> <20100826211424.GQ4879@redhat.com> <20100827081038.GF22783@erda.amd.com> <20100827185744.GV4879@redhat.com>
-In-Reply-To: <20100827185744.GV4879@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1259844390-10541-1-git-send-email-daniel@caiaq.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2010 11:57 AM, Don Zickus wrote:
-> On Fri, Aug 27, 2010 at 10:10:38AM +0200, Robert Richter wrote:
->>>  
->>>  	inc_irq_stat(apic_perf_irqs);
->>>  	ack = status;
->>> +	intel_pmu_ack_status(ack);
->>
->> I would slightly change the patch:
->>
->> There is no need for the ack variable anymore, you could directly work
->> with the status.
->>
->> I would call intel_pmu_ack_status() as close as possible after the
->> intel_pmu_get_status(), which is after 'again:'.
->>
+Hi Daniel,
+
+On Thu, Dec 03, 2009 at 01:46:30PM +0100, Daniel Mack wrote:
+> At the moment, regulator operations are done from individual mmc host
+> drivers. This is a problem because the regulators are not claimed
+> exclusively but the mmc core enables and disables them according to the
+> return value of regulator_is_enabled(). That can lead to a number of
+> problems and warnings when regulators are shared among multiple
+> consumers or if regulators are marked as 'always_on'.
 > 
-> Here is another version of the patch, which uses Robert's suggestion of
-> removing the ack variable
+> Fix this by moving the some logic to the core, and put the regulator
+> reference to the mmc_host struct and let it do its own supply state
+> tracking so that the reference counting in the regulator won't get
+> confused.
 
-Can you resend all three updated patches?
+Looks like this patch got dropped because of the missing modifications
+to arch/arm/mach-omap2/mmc-twl4030.c.  Are we still interested in the
+patch otherwise, and can anyone help with that?
 
-Thanks
-
-Yinghai
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
