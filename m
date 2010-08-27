@@ -1,127 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab0H0B4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 21:56:46 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48118 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab0H0B4o (ORCPT
+	id S1754041Ab0H0B6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 21:58:01 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51622 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab0H0B57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:56:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=HQlP0NcrV77HMm5C/hyb+bghqgI+pwSEX6UqTKTBRV/03PbuphPcaHCfXemyLCWaOq
-         vyPxNPdukEsU1MzBg7aBHt1QWt+5BJMGCJ2czgM2DuExSEHdUAQKr2WxchB0iiZUqTW+
-         eLQjw5T36HfTaqvuhAp+bnuFzc3OYXzcgpLCI=
-MIME-Version: 1.0
-Date: Thu, 26 Aug 2010 21:56:42 -0400
-Message-ID: <AANLkTinHbEW36D5R9NSrGgfbOC0Hri3Tg-fA0iR92Udi@mail.gmail.com>
-Subject: 2.6.36-rc2-git4 - INFO: possible circular locking dependency detected
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Aug 2010 21:57:59 -0400
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+From: john stultz <johnstul@us.ibm.com>
+To: Christian Riesch <christian.riesch@omicron.at>
+Cc: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <AANLkTi=nKrRHH6+9mvny718gov8Q+u7DHFikdgNY8YdX@mail.gmail.com>
+References: <cover.1281956490.git.richard.cochran@omicron.at>
+	 <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
+	 <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+	 <20100817085324.GB3330@riccoc20.at.omicron.at>
+	 <1282090963.1734.97.camel@localhost>
+	 <20100818071942.GA4096@riccoc20.at.omicron.at>
+	 <1282176776.2865.100.camel@localhost.localdomain>
+	 <20100819055518.GA4084@riccoc20.at.omicron.at>
+	 <1282594125.3111.344.camel@localhost.localdomain>
+	 <AANLkTi=nKrRHH6+9mvny718gov8Q+u7DHFikdgNY8YdX@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Aug 2010 18:57:49 -0700
+Message-ID: <1282874269.4371.74.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ INFO: possible circular locking dependency detected ]
-2.6.36-rc2-git4 #12
--------------------------------------------------------
-kworker/0:3/3630 is trying to acquire lock:
- (rtnl_mutex){+.+.+.}, at: [<ffffffff813396c7>] rtnl_lock+0x12/0x14
+On Wed, 2010-08-25 at 11:40 +0200, Christian Riesch wrote:
+> What you describe here is only one of the use cases. If the hardware
+> has a single network port and operates as a PTP slave, it timestamps
+> the PTP packets that are sent and received and subsequently uses these
+> timestamps and the information it received from the master in the
+> packets to steer its clock to align it with the master clock. In such
+> a case the timestamping hardware and the clock hardware work together
+> closely and it seems to be okay to use the same interface to control
+> both the timestamping and the PTP clock.
+> 
+> But we have to consider other use cases, e.g.,
+> 
+> 1) Boundary clocks:
+> We have more than one network port. One port operates as a slave
+> clock, our system gets time information via this port and steers its
+> PTP clock to align with the master clock. The other network ports of
+> our system operate as master clocks and redistribute the time
+> information we got from the master to other clocks on these networks.
+> In such a case we do timestamping on each of the network ports, but we
+> only have a single PTP clock. Each network port's timestamping
+> hardware uses the same hardware clock to generate time stamps.
+> 
+> 2) Master clock:
+> We have one or more network ports. Our system has a really good clock
+> (ovenized quartz crystal, an atomic clock, a GPS timing receiver...)
+> and it distributes this time on the network. In such a case we do not
+> steer our clock based on the (packet) timestamps we get from our
+> timestamping unit. Instead, we directly drive our clock hardware with
+> a very stable frequency that we get from the OCXO or the atomic
+> clock... 
 
-but task is already holding lock:
- (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa014b129>]
-rfkill_switch_all+0x24/0x49 [rfkill]
+Ok. Following you here...
 
-which lock already depends on the new lock.
+> or we use one of the ancillary features of the PTP clock that
+> Richard mentioned to timestamp not network packets but a 1pps signal
+> and use these timestamps to steer the clock. 
+
+Wait.. I thought we weren't using PTP to steer the clock? But now we're
+using the pps signal from it to do so? Do I misunderstand you? Or did
+you just not mean this?
+
+> Packet time stamping is
+> used to distribute the time to the slaves, but it is not part of the
+> control loop in this case.
+
+I assume here you mean PTPd is steering the PTP clock according to the
+system time (which is NTP/GPS/whatever sourced)? And then the PTP clock
+distributes that time through the network?
+
+> So in the first case we have one PTP clock but several network packet
+> timestamping units, whereas in the second case the packet timestamping
+> is done but it is not part of the control loop that steers the clock.
+> Of course in most hardware implementations both the PTP clock and the
+> timestamping unit sit on the same chip and often use the same means of
+> communication to the cpu, e.g., the MDIO bus, but I think we need some
+> logical separation here.
 
 
-the existing dependency chain (in reverse order) is:
+So first of all, thanks for the extra explanation and context here! I
+really appreciate it, as I'm not familiar with all the hardware details
+and possible use cases, but I'm trying to learn.
 
--> #2 (rfkill_global_mutex){+.+.+.}:
-       [<ffffffff81079ad7>] lock_acquire+0x120/0x15b
-       [<ffffffff813ae869>] __mutex_lock_common+0x54/0x52e
-       [<ffffffff813aede9>] mutex_lock_nested+0x34/0x39
-       [<ffffffffa014b4ab>] rfkill_register+0x2b/0x29c [rfkill]
-       [<ffffffffa0185ba0>] wiphy_register+0x1ae/0x270 [cfg80211]
-       [<ffffffffa0206f01>] ieee80211_register_hw+0x1b4/0x3cf [mac80211]
-       [<ffffffffa0292e98>] iwl_ucode_callback+0x9e9/0xae3 [iwlagn]
-       [<ffffffff812d3e9d>] request_firmware_work_func+0x54/0x6f
-       [<ffffffff81065d15>] kthread+0x8c/0x94
-       [<ffffffff8100ac24>] kernel_thread_helper+0x4/0x10
+So in the two cases you mention, the time "flow" is something like:
 
--> #1 (cfg80211_mutex){+.+.+.}:
-       [<ffffffff81079ad7>] lock_acquire+0x120/0x15b
-       [<ffffffff813ae869>] __mutex_lock_common+0x54/0x52e
-       [<ffffffff813aede9>] mutex_lock_nested+0x34/0x39
-       [<ffffffffa018605e>] cfg80211_get_dev_from_ifindex+0x1b/0x7c [cfg80211]
-       [<ffffffffa0189f36>] cfg80211_wext_giwscan+0x58/0x990 [cfg80211]
-       [<ffffffff8139a3ce>] ioctl_standard_iw_point+0x1a8/0x272
-       [<ffffffff8139a529>] ioctl_standard_call+0x91/0xa7
-       [<ffffffff8139a687>] T.723+0xbd/0x12c
-       [<ffffffff8139a727>] wext_handle_ioctl+0x31/0x6d
-       [<ffffffff8133014e>] dev_ioctl+0x63d/0x67a
-       [<ffffffff8131afd9>] sock_ioctl+0x48/0x21d
-       [<ffffffff81102abd>] do_vfs_ioctl+0x4ba/0x509
-       [<ffffffff81102b5d>] sys_ioctl+0x51/0x74
-       [<ffffffff81009e02>] system_call_fastpath+0x16/0x1b
+#1) [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
+	[PTP Clock] => [PTP Clients on Network2]
 
--> #0 (rtnl_mutex){+.+.+.}:
-       [<ffffffff810796b0>] __lock_acquire+0xa93/0xd9a
-       [<ffffffff81079ad7>] lock_acquire+0x120/0x15b
-       [<ffffffff813ae869>] __mutex_lock_common+0x54/0x52e
-       [<ffffffff813aede9>] mutex_lock_nested+0x34/0x39
-       [<ffffffff813396c7>] rtnl_lock+0x12/0x14
-       [<ffffffffa0185cb5>] cfg80211_rfkill_set_block+0x1a/0x7b [cfg80211]
-       [<ffffffffa014aed0>] rfkill_set_block+0x80/0xd5 [rfkill]
-       [<ffffffffa014b07e>] __rfkill_switch_all+0x3f/0x6f [rfkill]
-       [<ffffffffa014b13d>] rfkill_switch_all+0x38/0x49 [rfkill]
-       [<ffffffffa014b821>] rfkill_op_handler+0x105/0x136 [rfkill]
-       [<ffffffff81060708>] process_one_work+0x248/0x403
-       [<ffffffff81062620>] worker_thread+0x139/0x214
-       [<ffffffff81065d15>] kthread+0x8c/0x94
-       [<ffffffff8100ac24>] kernel_thread_helper+0x4/0x10
+#2) [GPS] => [NTPd] => [System Time] => [PTPd] => [PTP clock] =>
+	[PTP clients on Network]
 
-other info that might help us debug this:
+And the original case:
+#3) [Master Clock on Network] => [PTP clock] => [PTPd] => [PTP clock]
 
-3 locks held by kworker/0:3/3630:
- #0:  (events){+.+.+.}, at: [<ffffffff81060638>] process_one_work+0x178/0x403
- #1:  ((rfkill_op_work).work){+.+...}, at: [<ffffffff81060638>]
-process_one_work+0x178/0x403
- #2:  (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa014b129>]
-rfkill_switch_all+0x24/0x49 [rfkill]
+With a secondary control flow:
+	[PPS signal from PTP clock] => [NTPd] => [System Time]
 
-stack backtrace:
-Pid: 3630, comm: kworker/0:3 Not tainted 2.6.36-rc2-git4 #12
-Call Trace:
- [<ffffffff81078633>] print_circular_bug+0xa8/0xb7
- [<ffffffff810796b0>] __lock_acquire+0xa93/0xd9a
- [<ffffffff810767b3>] ? __bfs+0x23/0x1d8
- [<ffffffff813396c7>] ? rtnl_lock+0x12/0x14
- [<ffffffff81079ad7>] lock_acquire+0x120/0x15b
- [<ffffffff813396c7>] ? rtnl_lock+0x12/0x14
- [<ffffffff813396c7>] ? rtnl_lock+0x12/0x14
- [<ffffffff813ae869>] __mutex_lock_common+0x54/0x52e
- [<ffffffff813396c7>] ? rtnl_lock+0x12/0x14
- [<ffffffffa014b129>] ? rfkill_switch_all+0x24/0x49 [rfkill]
- [<ffffffff81077936>] ? mark_lock+0x2d/0x233
- [<ffffffffa014b71c>] ? rfkill_op_handler+0x0/0x136 [rfkill]
- [<ffffffff813aede9>] mutex_lock_nested+0x34/0x39
- [<ffffffff813396c7>] rtnl_lock+0x12/0x14
- [<ffffffffa0185cb5>] cfg80211_rfkill_set_block+0x1a/0x7b [cfg80211]
- [<ffffffffa014aed0>] rfkill_set_block+0x80/0xd5 [rfkill]
- [<ffffffffa014b07e>] __rfkill_switch_all+0x3f/0x6f [rfkill]
- [<ffffffffa014b13d>] rfkill_switch_all+0x38/0x49 [rfkill]
- [<ffffffffa014b821>] rfkill_op_handler+0x105/0x136 [rfkill]
- [<ffffffff81060708>] process_one_work+0x248/0x403
- [<ffffffff81060638>] ? process_one_work+0x178/0x403
- [<ffffffff81062620>] worker_thread+0x139/0x214
- [<ffffffff810624e7>] ? worker_thread+0x0/0x214
- [<ffffffff81065d15>] kthread+0x8c/0x94
- [<ffffffff8100ac24>] kernel_thread_helper+0x4/0x10
- [<ffffffff813b0b14>] ? restore_args+0x0/0x30
- [<ffffffff81065c89>] ? kthread+0x0/0x94
- [<ffffffff8100ac20>] ? kernel_thread_helper+0x0/0x10
-wlan0: deauthenticating from 00:1b:2f:0e:ed:ba by local choice (reason=3)
+
+Right?
+
+
+So, just brainstorming here, I guess the question I'm trying to figure
+out here, is can the "System Time" and "PTP clock" be merged/globbed
+into a single "Time" interface from the userspace point of view?
+
+In other words, if internal to the kernel, the PTP clock was always
+synced to the system time, couldn't the flow look something like:
+
+#3') [Master clock on network] => [PTP clock] => [PTPd] =>
+	 [System Time] => [in-kernel sync thread] => [PTP clock]
+
+So PTPd sees the offset adjustment from the PTP clock, and then feeds
+that offset correction right into (a possibly enhanced) adjtimex. The
+kernel would then immediately steer the PTP clock by the same amount to
+keep it in sync with system time (along with a periodic offset/freq
+correction step to deal with crystal drift).
+
+Similarly:
+
+#2') [GPS] => [NTPd] => [System Time] => [in-kernel sync thread] => 
+		[PTP clock] => [PTP clients on Network]
+
+and 
+
+#1') [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
+	[System Time] => [in-kernel sync thread] => [PTP Clock] => 
+	[PTP Clients on Network2]
+
+Now, I realize PTP purists probably won't like this, because it
+effectively makes the in-kernel sync thread similar to a PTP boundary
+clock (or worse, since the control loop isn't exactly direct).
+
+But considering that the kernel (internally) allows for *very*
+fine-grained adjustments (we keep our long-term offset error in
+(nanoseconds << 32)  ie: ~quarter-*billion*ths of a nanosecond - I think
+that's sub-attosecond, if I recall the unit). And even the existing
+external adjtimex interface allows for adjustments of 1ppm<<16 which is
+a granularity of ~15 parts-per-trillion (assuming i'm doing the math
+right).
+
+These are all much greater then the parts-per-billion adjustment
+granularity proposed for the direct PTP clock steering, so I suspect any
+error caused by the indirection in the control flow could be minimized
+significantly.
+
+Additionally my suggestion here has the benefit of:
+A: Avoiding the fragmented time domains (ie CLOCK_REALTIME vs CLOCK_PTP)
+caused by adding a new clock_id.
+
+B: Avoiding the indirect system time sync through the PPS interface,
+which isn't completely terrible, but just feels a little ugly
+configuration wise from a users-perspective.
+
+I'm sure I still have lots to learn about PTP, so please let me know
+where I'm off-base.
+
+thanks
+-john
+
