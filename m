@@ -1,335 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab0H0RRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 13:17:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41794 "EHLO hera.kernel.org"
+	id S1754952Ab0H0RRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 13:17:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41795 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754783Ab0H0RRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754781Ab0H0RRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Aug 2010 13:17:24 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, snitzer@redhat.com,
         j-nomura@ce.jp.nec.com, jamie@shareable.org,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-raid@vger.kernel.org, hch@lst.de
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/4] dm: relax ordering of bio-based flush implementation
-Date: Fri, 27 Aug 2010 19:10:59 +0200
-Message-Id: <1282929060-23663-4-git-send-email-tj@kernel.org>
+Subject: [PATCHSET 2.6.36-rc2] block, dm: finish REQ_FLUSH/FUA conversion
+Date: Fri, 27 Aug 2010 19:10:56 +0200
+Message-Id: <1282929060-23663-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282929060-23663-1-git-send-email-tj@kernel.org>
-References: <1282929060-23663-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 Aug 2010 17:16:58 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 Aug 2010 17:16:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike REQ_HARDBARRIER, REQ_FLUSH/FUA doesn't mandate any ordering
-against other bio's.  This patch relaxes ordering around flushes.
+Hello,
 
-* A flush bio is no longer deferred to workqueue directly.  It's
-  processed like other bio's but __split_and_process_bio() uses
-  md->flush_bio as the clone source.  md->flush_bio is initialized to
-  empty flush during md initialization and shared for all flushes.
+This patchset converts dm to REQ_FLUSH/FUA, which was the last
+remaining one.  I've put patches on top of the previous patches for
+easier review.  The series can be trivially reordered so that the
+order is more logical.  Jens, please let me know if you want it to be
+reordered.
 
-* When dec_pending() detects that a flush has completed, it checks
-  whether the original bio has data.  If so, the bio is queued to the
-  deferred list w/ REQ_FLUSH cleared; otherwise, it's completed.
+The dm conversion is _lightly_ tested.  Please proceed with caution.
+In particular, I haven't tested dm implementation at all.  So, it
+probably is best to hold off merging these bits until dm people can
+verify the conversion is correct.
 
-* As flush sequencing is handled in the usual issue/completion path,
-  dm_wq_work() no longer needs to handle flushes differently.  Now its
-  only responsibility is re-issuing deferred bio's the same way as
-  _dm_request() would.  REQ_FLUSH handling logic including
-  process_flush() is dropped.
+ 0001-block-make-__blk_rq_prep_clone-copy-most-command-fla.patch
+ 0002-dm-implement-REQ_FLUSH-FUA-support.patch
+ 0003-dm-relax-ordering-of-bio-based-flush-implementation.patch
+ 0004-block-remove-the-WRITE_BARRIER-flag.patch
 
-* There's no reason for queue_io() and dm_wq_work() write lock
-  dm->io_lock.  queue_io() now only uses md->deferred_lock and
-  dm_wq_work() read locks dm->io_lock.
+Differences from the previous attempt[1] are,
 
-* bio's no longer need to be queued on the deferred list while a flush
-  is in progress making DMF_QUEUE_IO_TO_THREAD unncessary.  Drop it.
+* I was wrong when I wrote that flush retry logic was dropped.  What
+  got dropped was -EOPNOTSUPP handling.  The retry behavior used by
+  multipath remains the same.  As blindly retrying flushes could be
+  dangerous, a FIXME comment is added.
 
-This avoids stalling the device during flushes and simplifies the
-implementation.
+* bio-based dm now also advertises REQ_FLUSH | REQ_FUA capability as
+  block layer now filters out REQ_FLUSH if not supported by the queue.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/md/dm.c |  152 ++++++++++++++++--------------------------------------
- 1 files changed, 45 insertions(+), 107 deletions(-)
+* 0002-dm-implement-REQ_FLUSH-FUA-support.patch added to update
+  __blk_rq_prep_clone() to copy most REQ_* flags including FLUSH and
+  FUA and request-based dm now advertises REQ_FLUSH | REQ_FUA support.
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 52f4033..308c35b 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -110,7 +110,6 @@ EXPORT_SYMBOL_GPL(dm_get_rq_mapinfo);
- #define DMF_FREEING 3
- #define DMF_DELETING 4
- #define DMF_NOFLUSH_SUSPENDING 5
--#define DMF_QUEUE_IO_TO_THREAD 6
- 
- /*
-  * Work processed by per-device workqueue.
-@@ -528,16 +527,10 @@ static void end_io_acct(struct dm_io *io)
-  */
- static void queue_io(struct mapped_device *md, struct bio *bio)
- {
--	down_write(&md->io_lock);
--
- 	spin_lock_irq(&md->deferred_lock);
- 	bio_list_add(&md->deferred, bio);
- 	spin_unlock_irq(&md->deferred_lock);
--
--	if (!test_and_set_bit(DMF_QUEUE_IO_TO_THREAD, &md->flags))
--		queue_work(md->wq, &md->work);
--
--	up_write(&md->io_lock);
-+	queue_work(md->wq, &md->work);
- }
- 
- /*
-@@ -625,11 +618,9 @@ static void dec_pending(struct dm_io *io, int error)
- 			 * Target requested pushing back the I/O.
- 			 */
- 			spin_lock_irqsave(&md->deferred_lock, flags);
--			if (__noflush_suspending(md)) {
--				if (!(io->bio->bi_rw & REQ_FLUSH))
--					bio_list_add_head(&md->deferred,
--							  io->bio);
--			} else
-+			if (__noflush_suspending(md))
-+				bio_list_add_head(&md->deferred, io->bio);
-+			else
- 				/* noflush suspend was interrupted. */
- 				io->error = -EIO;
- 			spin_unlock_irqrestore(&md->deferred_lock, flags);
-@@ -637,26 +628,22 @@ static void dec_pending(struct dm_io *io, int error)
- 
- 		io_error = io->error;
- 		bio = io->bio;
-+		end_io_acct(io);
-+		free_io(md, io);
- 
--		if (bio->bi_rw & REQ_FLUSH) {
-+		if (io_error == DM_ENDIO_REQUEUE)
-+			return;
-+
-+		if (!(bio->bi_rw & REQ_FLUSH) || !bio->bi_size) {
-+			trace_block_bio_complete(md->queue, bio);
-+			bio_endio(bio, io_error);
-+		} else {
- 			/*
--			 * There can be just one flush request so we use
--			 * a per-device variable for error reporting.
--			 * Note that you can't touch the bio after end_io_acct
-+			 * Preflush done for flush with data, reissue
-+			 * without REQ_FLUSH.
- 			 */
--			if (!md->flush_error)
--				md->flush_error = io_error;
--			end_io_acct(io);
--			free_io(md, io);
--		} else {
--			end_io_acct(io);
--			free_io(md, io);
--
--			if (io_error != DM_ENDIO_REQUEUE) {
--				trace_block_bio_complete(md->queue, bio);
--
--				bio_endio(bio, io_error);
--			}
-+			bio->bi_rw &= ~REQ_FLUSH;
-+			queue_io(md, bio);
- 		}
- 	}
- }
-@@ -1369,21 +1356,17 @@ static int __clone_and_map(struct clone_info *ci)
-  */
- static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
- {
-+	bool is_flush = bio->bi_rw & REQ_FLUSH;
- 	struct clone_info ci;
- 	int error = 0;
- 
- 	ci.map = dm_get_live_table(md);
- 	if (unlikely(!ci.map)) {
--		if (!(bio->bi_rw & REQ_FLUSH))
--			bio_io_error(bio);
--		else
--			if (!md->flush_error)
--				md->flush_error = -EIO;
-+		bio_io_error(bio);
- 		return;
- 	}
- 
- 	ci.md = md;
--	ci.bio = bio;
- 	ci.io = alloc_io(md);
- 	ci.io->error = 0;
- 	atomic_set(&ci.io->io_count, 1);
-@@ -1391,18 +1374,19 @@ static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
- 	ci.io->md = md;
- 	spin_lock_init(&ci.io->endio_lock);
- 	ci.sector = bio->bi_sector;
--	if (!(bio->bi_rw & REQ_FLUSH))
-+	ci.idx = bio->bi_idx;
-+
-+	if (!is_flush) {
-+		ci.bio = bio;
- 		ci.sector_count = bio_sectors(bio);
--	else {
--		/* all FLUSH bio's reaching here should be empty */
--		WARN_ON_ONCE(bio_has_data(bio));
-+	} else {
-+		ci.bio = &ci.md->flush_bio;
- 		ci.sector_count = 1;
- 	}
--	ci.idx = bio->bi_idx;
- 
- 	start_io_acct(ci.io);
- 	while (ci.sector_count && !error) {
--		if (!(bio->bi_rw & REQ_FLUSH))
-+		if (!is_flush)
- 			error = __clone_and_map(&ci);
- 		else
- 			error = __clone_and_map_flush(&ci);
-@@ -1490,22 +1474,14 @@ static int _dm_request(struct request_queue *q, struct bio *bio)
- 	part_stat_add(cpu, &dm_disk(md)->part0, sectors[rw], bio_sectors(bio));
- 	part_stat_unlock();
- 
--	/*
--	 * If we're suspended or the thread is processing flushes
--	 * we have to queue this io for later.
--	 */
--	if (unlikely(test_bit(DMF_QUEUE_IO_TO_THREAD, &md->flags)) ||
--	    (bio->bi_rw & REQ_FLUSH)) {
-+	/* if we're suspended, we have to queue this io for later */
-+	if (unlikely(test_bit(DMF_BLOCK_IO_FOR_SUSPEND, &md->flags))) {
- 		up_read(&md->io_lock);
- 
--		if (unlikely(test_bit(DMF_BLOCK_IO_FOR_SUSPEND, &md->flags)) &&
--		    bio_rw(bio) == READA) {
-+		if (bio_rw(bio) != READA)
-+			queue_io(md, bio);
-+		else
- 			bio_io_error(bio);
--			return 0;
--		}
--
--		queue_io(md, bio);
--
- 		return 0;
- 	}
- 
-@@ -2018,6 +1994,10 @@ static struct mapped_device *alloc_dev(int minor)
- 	if (!md->bdev)
- 		goto bad_bdev;
- 
-+	bio_init(&md->flush_bio);
-+	md->flush_bio.bi_bdev = md->bdev;
-+	md->flush_bio.bi_rw = WRITE_FLUSH;
-+
- 	/* Populate the mapping, nobody knows we exist yet */
- 	spin_lock(&_minor_lock);
- 	old_md = idr_replace(&_minor_idr, md, minor);
-@@ -2409,37 +2389,6 @@ static int dm_wait_for_completion(struct mapped_device *md, int interruptible)
- 	return r;
- }
- 
--static void process_flush(struct mapped_device *md, struct bio *bio)
--{
--	md->flush_error = 0;
--
--	/* handle REQ_FLUSH */
--	dm_wait_for_completion(md, TASK_UNINTERRUPTIBLE);
--
--	bio_init(&md->flush_bio);
--	md->flush_bio.bi_bdev = md->bdev;
--	md->flush_bio.bi_rw = WRITE_FLUSH;
--	__split_and_process_bio(md, &md->flush_bio);
--
--	dm_wait_for_completion(md, TASK_UNINTERRUPTIBLE);
--
--	/* if it's an empty flush or the preflush failed, we're done */
--	if (!bio_has_data(bio) || md->flush_error) {
--		if (md->flush_error != DM_ENDIO_REQUEUE)
--			bio_endio(bio, md->flush_error);
--		else {
--			spin_lock_irq(&md->deferred_lock);
--			bio_list_add_head(&md->deferred, bio);
--			spin_unlock_irq(&md->deferred_lock);
--		}
--		return;
--	}
--
--	/* issue data + REQ_FUA */
--	bio->bi_rw &= ~REQ_FLUSH;
--	__split_and_process_bio(md, bio);
--}
--
- /*
-  * Process the deferred bios
-  */
-@@ -2449,33 +2398,27 @@ static void dm_wq_work(struct work_struct *work)
- 						work);
- 	struct bio *c;
- 
--	down_write(&md->io_lock);
-+	down_read(&md->io_lock);
- 
- 	while (!test_bit(DMF_BLOCK_IO_FOR_SUSPEND, &md->flags)) {
- 		spin_lock_irq(&md->deferred_lock);
- 		c = bio_list_pop(&md->deferred);
- 		spin_unlock_irq(&md->deferred_lock);
- 
--		if (!c) {
--			clear_bit(DMF_QUEUE_IO_TO_THREAD, &md->flags);
-+		if (!c)
- 			break;
--		}
- 
--		up_write(&md->io_lock);
-+		up_read(&md->io_lock);
- 
- 		if (dm_request_based(md))
- 			generic_make_request(c);
--		else {
--			if (c->bi_rw & REQ_FLUSH)
--				process_flush(md, c);
--			else
--				__split_and_process_bio(md, c);
--		}
-+		else
-+			__split_and_process_bio(md, c);
- 
--		down_write(&md->io_lock);
-+		down_read(&md->io_lock);
- 	}
- 
--	up_write(&md->io_lock);
-+	up_read(&md->io_lock);
- }
- 
- static void dm_queue_flush(struct mapped_device *md)
-@@ -2674,17 +2617,12 @@ int dm_suspend(struct mapped_device *md, unsigned suspend_flags)
- 	 *
- 	 * To get all processes out of __split_and_process_bio in dm_request,
- 	 * we take the write lock. To prevent any process from reentering
--	 * __split_and_process_bio from dm_request, we set
--	 * DMF_QUEUE_IO_TO_THREAD.
--	 *
--	 * To quiesce the thread (dm_wq_work), we set DMF_BLOCK_IO_FOR_SUSPEND
--	 * and call flush_workqueue(md->wq). flush_workqueue will wait until
--	 * dm_wq_work exits and DMF_BLOCK_IO_FOR_SUSPEND will prevent any
--	 * further calls to __split_and_process_bio from dm_wq_work.
-+	 * __split_and_process_bio from dm_request and quiesce the thread
-+	 * (dm_wq_work), we set BMF_BLOCK_IO_FOR_SUSPEND and call
-+	 * flush_workqueue(md->wq).
- 	 */
- 	down_write(&md->io_lock);
- 	set_bit(DMF_BLOCK_IO_FOR_SUSPEND, &md->flags);
--	set_bit(DMF_QUEUE_IO_TO_THREAD, &md->flags);
- 	up_write(&md->io_lock);
- 
- 	/*
--- 
-1.7.1
+* dm_request_fn() now explicitly plugs other requests while a flush
+  request is in progress.  This is to avoid starving flush sequence
+  which uses device draining to check whether each step is complete.
 
+* 0003-block-remove-the-WRITE_BARRIER-flag.patch added to drop
+  needless ordering around flush handling.
+
+This patchset is on top of "block, fs: replace HARDBARRIER with
+FLUSH/FUA" patchset[2] and available in the following git tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua
+
+and contains the following changes.
+
+ block/blk-core.c                |    4 
+ drivers/md/dm-crypt.c           |    2 
+ drivers/md/dm-io.c              |   20 --
+ drivers/md/dm-log.c             |    2 
+ drivers/md/dm-raid1.c           |    8 -
+ drivers/md/dm-region-hash.c     |   16 +-
+ drivers/md/dm-snap-persistent.c |    2 
+ drivers/md/dm-snap.c            |    6 
+ drivers/md/dm-stripe.c          |    2 
+ drivers/md/dm.c                 |  277 +++++++++++++++-------------------------
+ include/linux/blk_types.h       |    1 
+ include/linux/fs.h              |    3 
+ 12 files changed, 131 insertions(+), 212 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.raid/29100/focus=29104
+[2] http://thread.gmane.org/gmane.linux.kernel/1022363
