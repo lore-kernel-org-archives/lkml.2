@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0H0K6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 06:58:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39209 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480Ab0H0K6q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 06:58:46 -0400
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-From: Peter Zijlstra <peterz@infradead.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <c065aaeb33752e7fce8958c8501a5a15.squirrel@webmail.greenhost.nl>
-References: <20100826180908.648103531@efficios.com>
-	 <c065aaeb33752e7fce8958c8501a5a15.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 27 Aug 2010 12:58:33 +0200
-Message-ID: <1282906713.1975.2187.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753069Ab0H0LB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 07:01:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532Ab0H0LBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 07:01:55 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1282902149-12991-15-git-send-email-namhyung@gmail.com>
+References: <1282902149-12991-15-git-send-email-namhyung@gmail.com> <1282902149-12991-1-git-send-email-namhyung@gmail.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: dhowells@redhat.com, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 14/43] ptrace, frv: change signature of arch_ptrace()
+Date: Fri, 27 Aug 2010 12:01:46 +0100
+Message-ID: <4072.1282906906@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 12:47 +0200, Indan Zupancic wrote:
-> 
-> Please don't hide scheduler improvements behind obscure CONFIG_SCHED_DEBUG
-> options. If it doesn't make the scheduler better just don't merge it. If it
-> does then it should be enabled by default. 
+Namhyung Kim <namhyung@gmail.com> wrote:
 
-It's RFC, features are nice to test things and see if/how they work.
-Features are not a user option, so you don't have to worry about them.
+> change type of @addr and @data into unsigned long according to commit
+> f76671df26ef06321480e702770f88f61272be29 [PATCH 03/43]
 
-Also, 'better' is a very hard thing to quantify. Some people like
-throughput, some like latency, and others like raw context switch
-performance.
+That description means nothing.  Commit
+f76671df26ef06321480e702770f88f61272be29 is not upstream.
 
-Hopefully we'll soon have a non privileged sporadic task scheduler for
-all our srt media needs.
+David
