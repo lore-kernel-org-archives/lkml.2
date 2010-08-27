@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab0H0TH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:07:28 -0400
-Received: from www.tglx.de ([62.245.132.106]:55544 "EHLO www.tglx.de"
+	id S1755318Ab0H0TJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:09:10 -0400
+Received: from smtp2b.orange.fr ([80.12.242.146]:15651 "EHLO smtp2b.orange.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040Ab0H0TH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:07:26 -0400
-Date: Fri, 27 Aug 2010 21:06:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arjan van de Ven <arjan@linux.intel.com>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        Masayuki Ohtak <masa-korg@dsn.okisemi.com>, meego-dev@meego.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-In-Reply-To: <4C7809ED.9070506@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1008272100400.2768@localhost.localdomain>
-References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <4C7809ED.9070506@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752750Ab0H0TJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 15:09:09 -0400
+X-ME-UUID: 20100827190907248.3C99D7000B6E@mwinf2b21.orange.fr
+X-ME-User-Auth: eric.valette6
+Message-ID: <4C780D52.4080108@free.fr>
+Date: Fri, 27 Aug 2010 21:09:06 +0200
+From: Eric Valette <eric.valette@free.fr>
+Reply-To: eric.valette@free.fr
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100821 Iceowl/1.0b2 Icedove/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Matthias Schniedermeyer <ms@citd.de>
+CC: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: Please add generic support for root=UUID= at kernel parameter
+ command line (LABEL, BYID maybe also)
+References: <4C728790.7050805@Free.fr> <4C72EE8F.3040708@turmel.org> <4C768919.30104@Free.fr> <4C76C641.30901@turmel.org> <4C77A89A.3070906@Free.fr> <20100827163753.GA13252@citd.de>
+In-Reply-To: <20100827163753.GA13252@citd.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010, Arjan van de Ven wrote:
+On 27/08/2010 18:37, Matthias Schniedermeyer wrote:
 
-> On 8/27/2010 11:53 AM, Thomas Gleixner wrote:
-> > B1;2401;0cOn Fri, 27 Aug 2010, Grant Likely wrote:
-> >    
-> > > [cc'ing Thomas Gleixner and David Woodhouse since this driver needs to
-> > > get some data about the platform (to know what spi_devices are
-> > > present) and I don't know how that is handled for x86 SoCs.]
-> > >      
-> > The best way to do all this platform specific configuration is to use
-> > device tree. I really don't want to have x86/mach-xyz/board[A-Z]
-> > horror, which is unavoidable when we don't get a sensible way to
-> > configure the boards. SFI was meant to provide a lightweight ACPI, but
-> > now that device tree is generic and more platforms are using it, I
-> > really want to standartize on that and forget SFI.
-> > 
-> > That makes even more sense, as all these AMBA peripherals which are
-> > duct-taped to a x86 core can be found in other SoCs with different
-> > cores as well.
-> >    
-> 
-> I tentatively agree, but this has to coexist with ACPI, which most of these
-> platforms will also have,
-> for power management if nothing else.
+> I don't really get what you mean.
+> But binary duplication isn't the issue, source-code duplication is.
+> I'd count an initramfs to the binary category. It is "compiled" more or
+> less literaly.
 
-power management and configuration of SoCs with a lot of configurable
-pins and peripherals are two different beasts. power management will
-probably not change much between two boards, but the peripherals and
-pin configuration makes the big difference and I don't wont to pull
-out that information from ACPI. Especially not when we talk about
-device drivers which can be shared with other architectures.
+binary duplication is a waste of space (SSD are'nt cheap) and time. 
+Plus, you have a real duplication for the fs-search in grub/lilo/add 
+your favorite evolved boot loader there.
 
-Also you dont want to burden BSP developers with getting those ACPI
-tables right.
+>> 	3) The tmpdevfs is also a dupplicate somehow
+>
+> No.
+>
+> devtmpfs uses tmpfs or ramfs as backing-store. And it doesn't really
+> duplicate udev either, as it only does the bare minimum needed to get
+> the computer to the point where udev can do the rest. Like when you have
+> a root filesystem with no /dev at all.
 
-Thanks,
+I know. But It could do just a bit more find creating the 
+/dev/disk/by-uuid/foo where foo is the one given ib root=UUID=foo
 
-	tglx
+
+--eric
+
+
+
 
