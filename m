@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab0H0XBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 19:01:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10161 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab0H0XBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 19:01:02 -0400
-Subject: selinux vs devtmpfs (vs udev)
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov
-Cc: kay.sievers@vrfy.org, greg@kroah.com, sds@tycho.nsa.gov
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Aug 2010 19:00:52 -0400
-Message-ID: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752515Ab0H0XGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 19:06:12 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:39318 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751819Ab0H0XGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 19:06:11 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: mKXUFPkVM1mSwv_l7Ul3fLSkc8OUcDbznIee6c_MjpCG7g5
+ _8GsyhgJjGBGQMZWTMfz6ycnq04Xd2jRQaqpcZVvnhP5xh37g9H4K4nG68Tv
+ iCpPXixoJact8UJLwmT61EDtpJEki30xAZcXJk9NLZkc4vzDtQdJza3C8UDv
+ l9kqpb6ieJLkZGJEsyYUMOyhLR7mM9X8TqSJHgqJhNABiDFL2vNH.c9MezCk
+ SsHfKUIcj8P4jOgeGfk.HbAW4j2R_
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 27 Aug 2010 18:06:07 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Hugh Dickins <hughd@google.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+In-Reply-To: <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008271801080.25115@router.home>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils> <20100826235052.GZ6803@random.random> <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com> <20100827095546.GC6803@random.random> <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
+ <alpine.DEB.2.00.1008271159160.18495@router.home> <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com> <alpine.DEB.2.00.1008271420400.18495@router.home> <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com> <alpine.DEB.2.00.1008271547200.22988@router.home>
+ <AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com> <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've got 2 bugs now:
+On Fri, 27 Aug 2010, Hugh Dickins wrote:
 
-https://bugzilla.redhat.com/show_bug.cgi?id=566332
-https://bugzilla.redhat.com/show_bug.cgi?id=627710
+> >> I do not see a second check (*after* taking the lock) in the patch
+>
+>         if (page_mapped(page))
+>                 return anon_vma;
 
-Where (I'm assuming) devtmpfs and SELinux are fighting.  In the old old
-days we used to have a script that would, after having created
-everything in /dev, set the proper SELinux labels on those files.  This
-was done so early in boot that races didn't exist yet.
+As far as I can tell you would have to recheck the mapping pointer and the
+pointer to the root too after taking the lock because only taking the lock
+stabilitzes the object. Any other data you may have obtained before
+acquiring the lock may have changed.
 
-In the new days udev would create nodes in there, but udev is SELinux
-aware.  udev will determine what the right SELinux context is, will tell
-the kernel what the next file it creates should be labeled, and will
-then call mknod, so the device file gets created with the right label.
-Again race free.
+> >> and the way the lock is taken can be a problem in itself.
+>
+> No, that's what we rely upon SLAB_DESTROY_BY_RCU for.
 
-In the new new days of devtmpfs things aren't as nice.  The kernel is
-magically creating files in /dev.  These are getting created with the
-'default' SELinux context.  So herein lies the problem.
+SLAB_DESTROY_BY_RCU does not guarantee that the object stays the same nor
+does it prevent any fields from changing. Going through a pointer with
+only SLAB_DESTROY_BY_RCU means that you can only rely on the atomicity
+guarantee for pointer updates. You get a valid pointer but pointer changes
+are not prevented by SLAB_DESTROY_BY_RCU.
 
-The first program that tries to access these files get denied by
-SELinux.  Now udev actually has logic in it to fix the label on any
-closed device file, so udev will at that point swoop in, fix the label,
-and the next program that tries to use the file will work just fine.  Oh
-fun!
-
-Obviously a good solution would be for devtmpfs to create nodes with the
-right label (and udev to not need to be SELinux aware), but that
-information isn't available in the kernel.  That information is a purely
-userspace construct.  I have a long term plan for how we might be able
-to do this long off in the future, but it isn't viable for right now.
-
-So my next best solution would be to ask if it would be possible for
-udev to disable devtmpfs automatic device file creation after it is
-running.  Once udev is running do we need devtmpfs?  Seems like this
-could be a pretty simple /proc/ or /sys/ tunable that udev could twiddle
-when/if it was ready to run the show.
-
-Anyone else have thoughts?
-
--Eric
-
+The only guarantee of that would be through other synchronization
+techniques. If you believe that the page lock provides sufficient
+synchronization that then this approach may be ok.
