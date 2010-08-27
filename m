@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0H0Njt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 09:39:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753301Ab0H0Njr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 09:39:47 -0400
-Date: Fri, 27 Aug 2010 09:39:24 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100827133924.GR4879@redhat.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
- <20100826211424.GQ4879@redhat.com>
- <20100827075132.GD22783@erda.amd.com>
+	id S1753492Ab0H0Nmb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 09:42:31 -0400
+Received: from eazy.amigager.de ([213.239.192.238]:50901 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753301Ab0H0Nm2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 09:42:28 -0400
+Date: Fri, 27 Aug 2010 15:42:26 +0200
+From: Tino Keitel <tino.keitel+xorg@tikei.de>
+To: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: 2.6.36-rc2 regression: Wrong screen resolution (1024x768
+	instead of 1680x1050)
+Message-ID: <20100827134226.GA371@eazy.amigager.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	intel-gfx@lists.freedesktop.org
+References: <20100826073039.GA4567@mac.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100827075132.GD22783@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100826073039.GA4567@mac.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 09:51:32AM +0200, Robert Richter wrote:
-> On 26.08.10 17:14:24, Don Zickus wrote:
-> > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> > index 4539b4b..d16ebd8 100644
-> > --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> > @@ -738,6 +738,7 @@ again:
-> >  
-> >  	inc_irq_stat(apic_perf_irqs);
-> >  	ack = status;
-> > +	intel_pmu_ack_status(ack);
+On Thu, Aug 26, 2010 at 09:30:39 +0200, Tino Keitel wrote:
+> Hi,
 > 
-> Yes, not immediately ack'ing the status was suspect to me too. Though
-> it must then be the same counter that retriggers. Or, it is a cpu
-> bug. You could add a debug print of the status register for the case
-> the loop is reentered, would be interesting...
+> booting 2.6.36-rc2-git4 (commit
+> d4348c678977c7093438bbbf2067c49396ae941b) results in a screen
+> resolution of 1024x768 instead of 1680x1050.  It works fine with
+> 2.6.35.2.
+> 
+> The framebuffer console uses the correct resolution, but only uses a
+> part of the screen for text output. Xorg output looks distorted.
+> 
+> Xorg log is attached.
+> 
+> $ xrandr 
+> Screen 0: minimum 320 x 200, current 1024 x 768, maximum 4096 x 4096
+> VGA1 disconnected (normal left inverted right x axis y axis)
+> DVI1 connected 1024x768+0+0 (normal left inverted right x axis y axis)
+> 454mm x 284mm
+>    1680x1050      59.9 +
+>    1280x1024      60.0  
+>    1280x960       60.0  
+>    1024x768       60.0* 
+>    800x600        60.3  
+>    640x480        60.0  
+>    720x400        70.1  
+> TV1 connected 1024x768+0+0 (normal left inverted right x axis y axis)
+> 0mm x 0mm
+>    848x480        30.0 +
+>    640x480        30.0 +
+>    1024x768       30.0* 
+>    800x600        30.0  
 
-It seems to be the same counter.  I wonder if the act of processing it
-'intel_save_and_restart' cleared the status bit on the perfselX bit but
-not in the global status register.  Thus it triggered again and we
-accidentally cleared it when we ack'd later in the code.
+There is no TV connected, and it was correctly reported as
+"disconnected" with 2.6.35.
 
-Cheers,
-Don
+The Mac mini has some special EDID handling, as the EDID data comes
+from the analog EDID channel IIRC, if that helps.
+
+Regards,
+Tino
