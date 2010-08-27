@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab0H0NqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 09:46:13 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:34010 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab0H0NqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 09:46:09 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(ze80izbb2cK1432N98dNzz1202hzz8275dhz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-SS: 0,
-X-WSS-ID: 0L7TCRN-01-1XC-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 15:43:01 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 2/4] sh: Accessor functions for the sh_pmu state
-Message-ID: <20100827134301.GL22783@erda.amd.com>
-References: <cover.1282848651.git.matt@console-pimps.org>
- <f259830dbccb084d27d127676b979d9cb502e36f.1282848651.git.matt@console-pimps.org>
+	id S1753568Ab0H0Nsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 09:48:45 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:59080 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753371Ab0H0Nsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 09:48:43 -0400
+Date: Fri, 27 Aug 2010 14:48:02 +0100
+From: Hedi Berriche <hedi@sgi.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Message-ID: <20100827134802.GX18967@zorg.emea.sgi.com>
+Mail-Followup-To: Petr Tesarik <ptesarik@suse.cz>,
+	linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Tony Luck <tony.luck@intel.com>
+References: <201008271537.35709.ptesarik@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f259830dbccb084d27d127676b979d9cb502e36f.1282848651.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <201008271537.35709.ptesarik@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.10 15:09:17, Matt Fleming wrote:
-> Introduce some accessor functions for getting at the name and number of
-> counters of the current sh_pmu instance.
-> 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> ---
->  arch/sh/include/asm/perf_event.h |    2 ++
->  arch/sh/kernel/perf_event.c      |   13 +++++++++++++
->  2 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/sh/include/asm/perf_event.h b/arch/sh/include/asm/perf_event.h
-> index 3d0c9f3..5b7fa84 100644
-> --- a/arch/sh/include/asm/perf_event.h
-> +++ b/arch/sh/include/asm/perf_event.h
-> @@ -25,6 +25,8 @@ struct sh_pmu {
->  extern int register_sh_pmu(struct sh_pmu *);
->  extern int reserve_pmc_hardware(void);
->  extern void release_pmc_hardware(void);
-> +extern int sh_pmu_num_events(void);
-> +extern const char *sh_pmu_name(void);
->  
->  static inline void set_perf_event_pending(void)
->  {
-> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
-> index 7a3dc35..086f788 100644
-> --- a/arch/sh/kernel/perf_event.c
-> +++ b/arch/sh/kernel/perf_event.c
-> @@ -60,6 +60,19 @@ static inline int sh_pmu_initialized(void)
->  }
->  
->  /*
-> + * Return the number of events for the current sh_pmu.
-> + */
-> +int sh_pmu_num_events(void)
-> +{
-> +	return sh_pmu->num_events;
-> +}
-> +
-> +const char *sh_pmu_name(void)
-> +{
-> +	return sh_pmu->name;
-> +}
-> +
-> +/*
+On Fri, Aug 27, 2010 at 14:38 Petr Tesarik wrote:
+| Hi everybody,
+| 
+| SGI has recently experienced failures with the new ticket spinlock
+| implementation. Hedi Berriche sent me a simple test case that can
+| trigger the failure on the siglock.
 
-This probably needs EXPORT_SYMBOLS*(), but not really sure. Have you
-compiled oprofile as module?
+One more fact, the problem was introduced by commit
 
-This accessor functions should be generic for all architectures.
+    commit 9d40ee200a527ce08ab8c793ba8ae3e242edbb0e
+    Author: Tony Luck <tony.luck@intel.com>
+    Date:   Wed Oct 7 10:54:19 2009 -0700
 
--Robert
+        [IA64] Squeeze ticket locks back into 4 bytes.
 
->   * Release the PMU if this is the last perf_event.
->   */
->  static void hw_perf_event_destroy(struct perf_event *event)
-> -- 
-> 1.7.1
-> 
-> 
+Reverting the patch makes the problem go away.
 
+IOW, and as far as testing shows, the first incarnation of the ticket locks
+implementation on IA64 (commit 2c8696), the one that used 8 bytes, does not
+exhibit this problem.
+
+Cheers,
+Hedi.
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Hedi Berriche
+Global Product Support
+http://www.sgi.com/support
