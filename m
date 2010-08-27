@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab0H0Gl7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 02:41:59 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36032 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab0H0Gl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 02:41:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Sg/vByP5M49RJRByoKAFTAokrU3parw1OQdGDfXYUbm2rI+fbvhrdRJExlD/1y9kMK
-         d/4Xgm78VL51B03a30r9fb4h4g5H9sg111k7zom60OwBhDCu9e1R6+LVGqLiZRic9of2
-         YmidbEWKbK5GtaDa7gqMigh5xhmMy0yFTH6kQ=
-Date: Thu, 26 Aug 2010 23:41:54 -0700
-From: mark gross <markgross@thegnar.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@suse.de>,
-        mark gross <markgross@thegnar.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>, khilman@deeprootsystems.com
-Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
-Message-ID: <20100827064153.GB3414@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
- <1282882403-29824-2-git-send-email-skannan@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282882403-29824-2-git-send-email-skannan@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752194Ab0H0Gzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 02:55:48 -0400
+Received: from sh.osrg.net ([192.16.179.4]:55527 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab0H0Gzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 02:55:45 -0400
+Date: Fri, 27 Aug 2010 15:54:54 +0900
+To: linux@arm.linux.org.uk
+Cc: fujita.tomonori@lab.ntt.co.jp, benh@kernel.crashing.org, khc@pm.waw.pl,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100826175719.GC13224@n2100.arm.linux.org.uk>
+References: <20100826205344E.fujita.tomonori@lab.ntt.co.jp>
+	<20100826225352S.fujita.tomonori@lab.ntt.co.jp>
+	<20100826175719.GC13224@n2100.arm.linux.org.uk>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100827155440T.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 27 Aug 2010 15:55:01 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 09:13:23PM -0700, Saravana Kannan wrote:
-> Some drivers/devices might need some minimum system bus performance to
-> provide acceptable service. Provide a PM QoS parameter to send these requests
-> to.
+On Thu, 26 Aug 2010 18:57:19 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+> On Thu, Aug 26, 2010 at 10:54:39PM +0900, FUJITA Tomonori wrote:
+> > On Thu, 26 Aug 2010 20:55:09 +0900
+> > FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+> > 
+> > > On Fri, 20 Aug 2010 07:51:52 +1000
+> > > Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+> > > 
+> > > > On Thu, 2010-08-19 at 23:50 +0900, FUJITA Tomonori wrote:
+> > > > > 
+> > > > > You mean that you like to permit architectures to modify
+> > > > > dev->coherent_dma_mask behind a device? If so, I'm against it because
+> > > > > it means dev->coherent_dma_mask has two meanings. That's confusing.
+> > > > 
+> > > > No it's not. It has one and only one meaning which is the mask defining
+> > > > where the coherent memory can come from for that device. Nobody cares if
+> > > > the device can do more and has been "clipped" at set_coherent_dma_mask()
+> > > > time by the bus. This is not useful information.
+> > > 
+> > > Ok.
+> > 
+> > btw, I'm still not sure, letting architectures to clip the dma mask
+> > (and coherent mask) behind a driver is correct by defintion of the DMA
+> > API (it's not a real problem).
+> > 
+> > DMA-API.txt defines dma_set_mask is "checks to see if the mask is
+> > possible and update the device parameters if it is". It means that
+> > architectures can't clip the mask behind a driver, I think.
+> > 
+> > Lots of drivers do something like:
+> > 
+> > if (dma_set_mask(dev, DMA_BIT_MASK(64)))
+> >         if (dma_set_mask(dev, DMA_BIT_MASK(32)))
+> > 
+> > What arm does is accepting whatever dma mask and setting the clipped
+> > mask behind a driver. If we use this sementics (archs are free to clip
+> > the mask), drivers don't need the second dma_set_mask call. And the
+> > driver wrongly assumes that it successfully set 64bit dma mask (and
+> > possibly set the hardware to 64bit dma mode needlessly).
 > 
-> The new parameter is named "system bus performance" since it is generic enough
-> for the unit of the request to be frequency, bandwidth or something else that
-> might be appropriate. It's up to each implementation of the QoS provider to
-> define what the unit of the request would be.
+> Ok, in that case lets disable all PCI drivers which do this on IXP4xx
+> then, because they obviously can't cope with the 64MB window that this
+> platform has.
 > 
-> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> ---
->  kernel/pm_qos_params.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index 996a4de..1a44a67 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -93,12 +93,21 @@ static struct pm_qos_object network_throughput_pm_qos = {
->  	.type = PM_QOS_MAX,
->  };
->  
-> +static BLOCKING_NOTIFIER_HEAD(system_bus_performance_notifier);
-> +static struct pm_qos_object system_bus_performance_pm_qos = {
-> +	.requests = PLIST_HEAD_INIT(system_bus_performance_pm_qos.requests, pm_qos_lock),
-> +	.notifiers = &system_bus_performance_notifier,
-> +	.name = "system_bus_performance",
-> +	.default_value = 0,
-> +	.type = PM_QOS_MAX,
-> +};
->  
->  static struct pm_qos_object *pm_qos_array[] = {
->  	&null_pm_qos,
->  	&cpu_dma_pm_qos,
->  	&network_lat_pm_qos,
->  	&network_throughput_pm_qos
-> +	&system_bus_performance_pm_qos
->  };
->  
->  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> -- 
-> 1.7.1.1
-> ---
+> Clearly they need to be rewritten such that they can cope with this,
+> irrespective of the fact that they've worked for ages with the current
+> solution.
 
-nack.
+I didn't insist such (I wrote, "it's not a real proble"). 
 
-Change the name to system_bus_throughput_pm_qos assuming KBS units and
-I'll ok it.  It needs to be portable and without units I think drivers
-will start using magic numbers that will break when you go from a
-devices with 16 to 32 bus with the same clock.
+As I wrote in another mail, we could make every architecutre have the own
+dma_set_coherent_mask(). It's fine by me.
 
-We had an email thread about this last year 
-http://lkml.org/lkml/2009/12/31/143
-I don't recall solution ever coming out of it.   I think you guys didn't
-like the idea of using units.  Further I did post a patch adding
-something like using units. Although I looks like I botch the post the
-linux-pm as I can't seem to find it in the linux-pm archives :(
-http://lkml.org/lkml/2010/4/22/213
+I simply wanted to know your opinions:
 
-Would you be ok with using throughput instead of a unit less performance
-magic number?
-
-
---mark
-
-
+Looks like that the DMA API doesn't expect architectures to clip the
+mask. It might be better to add the new API to set the dma mask in the
+long term? (i.e. calling dma_set_mask twice is the best interface?)
+It's better to forget it since it's only about one architecture (too
+much change provides little benefit).
