@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0H0NO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 09:14:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:52343 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249Ab0H0NOZ (ORCPT
+	id S1753288Ab0H0NUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 09:20:30 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:22627 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab0H0NU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 09:14:25 -0400
-Message-ID: <4C77BB6B.9090706@windriver.com>
-Date: Fri, 27 Aug 2010 21:19:39 +0800
-From: DDD <dongdong.deng@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, fweisbec@gmail.com
-CC: mingo@elte.hu, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: fix possible divide-by-zero in perf_swevent_overflow()
-References: <1282824438-13970-1-git-send-email-dongdong.deng@windriver.com>	 <1282824727.1975.747.camel@laptop>  <4C765FD3.9060904@windriver.com>	 <1282827486.1975.845.camel@laptop>  <4C77ADC1.5030502@windriver.com> <1282913445.1975.2414.camel@laptop>
-In-Reply-To: <1282913445.1975.2414.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 27 Aug 2010 09:20:28 -0400
+Date: Fri, 27 Aug 2010 15:20:07 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, "Brown, Len" <len.brown@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@linux.jf.intel.com>,
+        LKLM <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        mingo Redhat <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [lm-sensors] [Patch-next] therm_throt.c: fix missing { and }.
+Message-ID: <20100827152007.27636fa5@hyperion.delvare>
+In-Reply-To: <4C7625D1.4060201@np.css.fujitsu.com>
+References: <4C75D3C4.6040802@np.css.fujitsu.com>
+	<20100826060822.GA15021@fenghua-desk.sc.intel.com>
+	<4C7625D1.4060201@np.css.fujitsu.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Aug 2010 13:14:07.0891 (UTC) FILETIME=[BB19AE30:01CB45E9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Fri, 2010-08-27 at 20:21 +0800, DDD wrote:
+On Thu, 26 Aug 2010 17:29:05 +0900, Jin Dongming wrote:
+> When the feature PTS is not supported by CPU, the sysfile
+> package_power_limit_count for package should not be generated.
 > 
->>>> Maybe the root cause was from kgdb/hw_breakpoint_layer,
->>> Yeah, I think there's a bug in the hw_breakpoint stuff, does something
->>> like the below fix it?
+> This patch is used for fixing missing { and }. But I have not confirmed
+> this patch because I don't have such machine.
 > 
->> Thanks for your patch, but I still could reproduce the problem with your 
->> patch.
+> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> Frederic, any clue as to what makes hw breakpoints go funny and have
-> last_period == 0?
+> diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> index d9368ee..169d880 100644
+> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> @@ -216,7 +216,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
+>  		err = sysfs_add_file_to_group(&sys_dev->kobj,
+>  					      &attr_core_power_limit_count.attr,
+>  					      thermal_attr_group.name);
+> -	if (cpu_has(c, X86_FEATURE_PTS))
+> +	if (cpu_has(c, X86_FEATURE_PTS)) {
+>  		err = sysfs_add_file_to_group(&sys_dev->kobj,
+>  					      &attr_package_throttle_count.attr,
+>  					      thermal_attr_group.name);
+> @@ -224,6 +224,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
+>  			err = sysfs_add_file_to_group(&sys_dev->kobj,
+>  					&attr_package_power_limit_count.attr,
+>  					thermal_attr_group.name);
+> +	}
+>  
+>  	return err;
+>  }
 
-Hi Peter,
+This is incomplete. Error handling in this function is totally broken.
 
-Thanks for you take care of it, I have got the root cause of it now.
 
-It is the kgdb using hw_breakpoint_layer's API problem, and I have a RFC 
-patch for it.(maybe it is not correctly), I will contact with Jason to 
-fix this problem.
-
-Thank you very much,
-Dongdong
-
-> 
->>> ---
->>>  kernel/hw_breakpoint.c |   13 ++++++++++++-
->>>  1 files changed, 12 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
->>> index d71a987..f57ebee 100644
->>> --- a/kernel/hw_breakpoint.c
->>> +++ b/kernel/hw_breakpoint.c
->>> @@ -600,9 +600,20 @@ static int __init init_hw_breakpoint(void)
->>>  }
->>>  core_initcall(init_hw_breakpoint);
->>>  
->>> +static int hw_breakpoint_enable(struct perf_event *event)
->>> +{
->>> +     struct hw_perf_event *hwc = &event->hw;
->>> +
->>> +     if (hwc->sample_period) {
->>> +             hwc->last_period = hwc->sample_period;
->>> +             perf_swevent_set_period(event);
->>> +     }
->>> +
->>> +     return arch_install_hw_breakpoint(event);
->>> +}
->>>  
->>>  struct pmu perf_ops_bp = {
->>> -     .enable         = arch_install_hw_breakpoint,
->>> +     .enable         = hw_breakpoint_enable,
->>>       .disable        = arch_uninstall_hw_breakpoint,
->>>       .read           = hw_breakpoint_pmu_read,
->>>  };
->>>
->>>
-> 
-
+-- 
+Jean Delvare
