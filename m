@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab0H0JiN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:38:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58043 "EHLO hera.kernel.org"
+	id S1754079Ab0H0Jil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:38:41 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:42304 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754006Ab0H0JiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:38:11 -0400
-Message-ID: <4C778623.6000303@kernel.org>
-Date: Fri, 27 Aug 2010 11:32:19 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753472Ab0H0Jij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 05:38:39 -0400
+Date: Fri, 27 Aug 2010 10:38:25 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Li Shaohua <shaohua.li@intel.com>
+Subject: Re: [RFC PATCH 0/3] Do not wait the full timeout on
+	congestion_wait when there is no congestion
+Message-ID: <20100827093825.GF19556@csn.ul.ie>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie> <20100826172038.GA6873@barrios-desktop> <20100827012147.GC7353@localhost>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Huang Shijie <shijie8@gmail.com>, linux-mm@kvack.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] percpu: fix a memory leak in pcpu_extend_area_map()
-References: <1281261197-8816-1-git-send-email-shijie8@gmail.com>	<4C5EA651.7080009@kernel.org> <20100826151017.63b20d2e.akpm@linux-foundation.org>
-In-Reply-To: <20100826151017.63b20d2e.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 Aug 2010 09:38:08 +0000 (UTC)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100827012147.GC7353@localhost>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 08/27/2010 12:10 AM, Andrew Morton wrote:
->> Patch applied to percpu#for-linus w/ some updates.  Thanks a lot for
->> catching this.
+On Fri, Aug 27, 2010 at 09:21:47AM +0800, Wu Fengguang wrote:
+> Minchan,
 > 
-> This patch appears to have been lost?
+> It's much cleaner to keep the unchanged congestion_wait() and add a
+> congestion_wait_check() for converting problematic wait sites. The
+> too_many_isolated() wait is merely a protective mechanism, I won't
+> bother to improve it at the cost of more code.
+> 
 
-It has been in percpu#for-linus.  Given the way percpu allocator is
-currently used, the bug isn't likely to cause any real leakage, so I
-was waiting a bit before pushing it out.  I'll push it today.
-
-Thanks.
+This is what I've done. I dropped the patch again and am using
+wait_iff_congested(). I left the too_many_isolated() callers as
+congestion_wait().
 
 -- 
-tejun
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
