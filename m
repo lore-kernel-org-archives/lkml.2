@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab0LaFcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 00:32:14 -0500
+	id S1752774Ab0LaFcz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 00:32:55 -0500
 Received: from mail-ey0-f174.google.com ([209.85.215.174]:62492 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab0LaFcM (ORCPT
+	with ESMTP id S1751050Ab0LaFcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 00:32:12 -0500
-Message-ID: <4d1d6ada.857a0e0a.45e5.ffffd91d@mx.google.com>
-From: Abylay Ospan <liplianin@me.by>
-Date: Sat, 28 Aug 2010 15:45:14 +0300
-Subject: [PATCH 11/18] stv0367: change default value for AGC register.
+	Fri, 31 Dec 2010 00:32:08 -0500
+Message-ID: <4d1d6ad7.857a0e0a.45e5.ffffd91b@mx.google.com>
+From: "Igor M. Liplianin" <liplianin@me.by>
+Date: Fri, 27 Aug 2010 14:43:07 +0400
+Subject: [PATCH 09/18] stv0367: Fix potential divide error
 To: <mchehab@infradead.org>, linux-media@vger.kernel.org,
         <linux-kernel@vger.kernel.org>, <aospan@netup.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Abylay Ospan <aospan@netup.ru>
+Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
 ---
- drivers/media/dvb/frontends/stv0367.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/dvb/frontends/stv0367.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/media/dvb/frontends/stv0367.c b/drivers/media/dvb/frontends/stv0367.c
-index e6bee7f..9439388 100644
+index 0575741..e6bee7f 100644
 --- a/drivers/media/dvb/frontends/stv0367.c
 +++ b/drivers/media/dvb/frontends/stv0367.c
-@@ -286,7 +286,7 @@ static struct st_register def0367ter[STV0367TER_NBREGS] = {
- 	{R367TER_PLLMDIV,	0x01},/* for xc5000; was 0x0c */
- 	{R367TER_PLLNDIV,	0x06},/* for xc5000; was 0x55 */
- 	{R367TER_PLLSETUP,	0x18},
--	{R367TER_DUAL_AD12,	0x04},/* for xc5000; was 0x00 */
-+	{R367TER_DUAL_AD12,	0x0C},/* for xc5000 AGC voltage 1.6V */
- 	{R367TER_TSTBIST,	0x00},
- 	{R367TER_PAD_COMP_CTRL,	0x00},
- 	{R367TER_PAD_COMP_WR,	0x00},
-@@ -599,7 +599,7 @@ static struct st_register def0367cab[STV0367CAB_NBREGS] = {
- 	{R367CAB_PLLMDIV,	0x01},
- 	{R367CAB_PLLNDIV,	0x08},
- 	{R367CAB_PLLSETUP,	0x18},
--	{R367CAB_DUAL_AD12,	0x04},
-+	{R367CAB_DUAL_AD12,	0x0C}, /* for xc5000 AGC voltage 1.6V */
- 	{R367CAB_TSTBIST,	0x00},
- 	{R367CAB_CTRL_1,	0x00},
- 	{R367CAB_CTRL_2,	0x03},
+@@ -3275,12 +3275,14 @@ static int stv0367cab_read_snr(struct dvb_frontend *fe, u16 *snr)
+ 		power = 1;
+ 		break;
+ 	}
++
+ 	for (i = 0; i < 10; i++) {
+ 		regval += (stv0367_readbits(state, F367CAB_SNR_LO)
+ 			+ 256 * stv0367_readbits(state, F367CAB_SNR_HI));
+ 	}
++
++	regval /= 10; /*for average over 10 times in for loop above*/
+ 	if (regval != 0) {
+-		regval /= 10; /*for average over 10 times in for loop above*/
+ 		temp = power
+ 			* (1 << (3 + stv0367_readbits(state, F367CAB_SNR_PER)));
+ 		temp /= regval;
 -- 
 1.7.1
 
