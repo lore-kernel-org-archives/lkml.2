@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab0H0Frl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 01:47:41 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55516 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab0H0Frj (ORCPT
+	id S1753678Ab0H0FvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 01:51:12 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:12401 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753094Ab0H0FvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 01:47:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 27 Aug 2010 14:42:25 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Mark Hills <mark@pogo.org.uk>, linux-kernel@vger.kernel.org,
-        balbir@linux.vnet.ibm.com
-Subject: Re: cgroup: rmdir() does not complete
-Message-Id: <20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
-References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
-	<20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Aug 2010 01:51:10 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMrsdkx5Ld90/2dsb2JhbACgU3K8aIU3BA
+Date: Fri, 27 Aug 2010 15:51:05 +1000
+From: Nick Piggin <npiggin@kernel.dk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
+Message-ID: <20100827055105.GA3857@amd>
+References: <20100825132815.108d8217@bike.lwn.net>
+ <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
+ <4C762BF9.5010305@kernel.org>
+ <20100826094613.GA6411@amd>
+ <4C7638B7.9060306@kernel.org>
+ <1282817329.1975.486.camel@laptop>
+ <20100826113858.GA6856@amd>
+ <1282823139.1975.689.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282823139.1975.689.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010 12:39:48 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-
-> On Fri, 27 Aug 2010 11:35:06 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Thu, Aug 26, 2010 at 01:45:39PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-08-26 at 21:38 +1000, Nick Piggin wrote:
+> > I think for CPU plug, stop_machine is reasonable (especially
+> > considering it is required in unload, which means any frequent
+> > amount of cpu plug activity already will require stop_machine to
+> > run anyway). 
 > 
-> > On Fri, 27 Aug 2010 09:56:39 +0900
-> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > 
-> > > > Or is it likely to be some other cause, and how best to find it?
-> > > > 
-> > > What cgroup subsystem did you mount where the directory existed you tried
-> > > to rmdir() first ?
-> > > If you mounted several subsystems on the same hierarchy, can you mount them
-> > > separately to narrow down the cause ?
-> > > 
-> > 
-> > It seems I can reproduce the issue on mmotm-0811, too.
-> > 
-> > try this.
-> > 
-> > Here, memory cgroup is mounted at /cgroups.
-> > ==
-> > #!/bin/bash -x
-> > 
-> > while sleep 1; do
-> >         date
-> >         mkdir /cgroups/test
-> >         echo 0 > /cgroups/test/tasks
-> >         echo 300M > /cgroups/test/memory.limit_in_bytes
-> >         cat /proc/self/cgroup
-> >         dd if=/dev/zero of=./tmpfile bs=4096 count=100000
-> >         echo 0 > /cgroups/tasks
-> >         cat /proc/self/cgroup
-> >         rmdir /cgroups/test
-> >         rm ./tmpfile
-> > done
-> > ==
-> > 
-> > hangs at rmdir. I'm no investigating force_empty.
-> > 
-> Thank you very much for your information.
-> 
-> Some questions.
-> 
-> Is "tmpfile" created on a normal filesystem(e.g. ext3) or tmpfs ?
-on ext4.
+> How is it required? 
 
-> And, how long does it likely to take to cause this problem ?
+Well, as is implemented.
 
-very soon. 10-20 loop.
+ 
+> Its currently implemented as such, and its sure a lot easier to do that
+> way, but I could imagine that unplugging a CPU could be done without it.
+ 
+I would much prefer the rules to be simpler and easier for all
+other kernel code, and keep complexity and overheads in cpu
+plug/unplug.
 
-> I've run it on RHEL6-based kernel/ext3 for about one hour, but
-> I cannot reproduce it yet.
-> 
-
-Hmm...I'll dig more. Maybe I need to use stock kernel rather than -mm...
-
-
-Thanks,
--Kame
+I don't see what is so nice about stop_machine()less cpu plug/unplug
+or module unload. Module load definitely is nice because you can
+have a lot of modules and on demand loading from non-privileged
+operations.
 
