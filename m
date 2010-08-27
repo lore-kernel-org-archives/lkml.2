@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab0H0CkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 22:40:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41985 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab0H0CkE (ORCPT
+	id S1752359Ab0H0CmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 22:42:14 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:65508 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab0H0CmL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 22:40:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 27 Aug 2010 11:35:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Mark Hills <mark@pogo.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: cgroup: rmdir() does not complete
-Message-Id: <20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
-References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Aug 2010 22:42:11 -0400
+Date: Fri, 27 Aug 2010 04:41:36 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+In-reply-to: <1282810627.1975.237.camel@laptop>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <p.osciak@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        Hans Verkuil <hverkuil@xs4all.nl>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Message-id: <op.vh2sfmqt7p4s8u@localhost>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.61 (Linux)
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+ <1282310110.2605.976.camel@laptop> <op.vh0ud3rg7p4s8u@localhost>
+ <1282810627.1975.237.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010 09:56:39 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Thu, 26 Aug 2010 10:17:07 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+> So why not work on the page allocator to improve its contiguous
+> allocation behaviour. If you look at the thing you'll find pageblocks
+> and migration types. If you change it so that you pin the migration type
+> of one or a number of contiguous pageblocks to say MIGRATE_MOVABLE, so
+> that they cannot be used for anything but movable pages you're pretty
+> much there.
 
-> > Or is it likely to be some other cause, and how best to find it?
-> > 
-> What cgroup subsystem did you mount where the directory existed you tried
-> to rmdir() first ?
-> If you mounted several subsystems on the same hierarchy, can you mount them
-> separately to narrow down the cause ?
-> 
+And that's exactly where I'm headed.  I've created API that seems to be
+usable and meat mine and others requirements (not that I'm not saying it
+cannot be improved -- I'm always happy to hear comments) and now I'm
+starting to concentrate on the reusing of the grabbed memory.  At first
+I wasn't sure how this can be managed but thanks to many comments
+(including yours, thanks!) I have an idea of how the thing should work
+and what I should do from now.
 
-It seems I can reproduce the issue on mmotm-0811, too.
-
-try this.
-
-Here, memory cgroup is mounted at /cgroups.
-==
-#!/bin/bash -x
-
-while sleep 1; do
-        date
-        mkdir /cgroups/test
-        echo 0 > /cgroups/test/tasks
-        echo 300M > /cgroups/test/memory.limit_in_bytes
-        cat /proc/self/cgroup
-        dd if=/dev/zero of=./tmpfile bs=4096 count=100000
-        echo 0 > /cgroups/tasks
-        cat /proc/self/cgroup
-        rmdir /cgroups/test
-        rm ./tmpfile
-done
-==
-
-hangs at rmdir. I'm no investigating force_empty.
-
-Thanks,
--Kame
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
 
