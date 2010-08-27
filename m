@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab0H0Jnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:43:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52511 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317Ab0H0Jng (ORCPT
+	id S1754798Ab0H0Joh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:44:37 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42423 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658Ab0H0Jo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:43:36 -0400
+	Fri, 27 Aug 2010 05:44:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=nVhU5/ND1i5vSXu6DCvzW1FFXaMHpxibAuWBzSeNGfQrfgIWluR/o+s7TjIkTO9KAN
-         Cg4L33auRsfLCGI8iocJrg9MG5fQmuBIeEMOA2pLpmk88AZNAxOye3pFoTlQs+ZVGAEm
-         SwKrQjEt9nAuByJHxy6pveZ/N1Q+YQF/FnIng=
+        b=s4AVJFmQhSUKKXDnIi+joX/h55o68ZQZecXwb/prwwWfkev60kivlwbIKfF1QbgBSP
+         khBXpmFTH4wwOtOS5M1Wr7NUUi2JMDJ0CbIIA1SyTJfOpHFLIkrTc0uOGpurZlpiriI8
+         QtV4GvsIsVdGY4AWCPDDSNtEJpHnREssC1EM8=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: [RFC PATCH 14/43] ptrace, frv: change signature of arch_ptrace()
-Date: Fri, 27 Aug 2010 18:42:00 +0900
-Message-Id: <1282902149-12991-15-git-send-email-namhyung@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>,
+        Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: [RFC PATCH 30/43] ptrace, parisc: change signature of arch_ptrace()
+Date: Fri, 27 Aug 2010 18:42:16 +0900
+Message-Id: <1282902149-12991-31-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
 References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
@@ -31,17 +33,19 @@ change type of @addr and @data into unsigned long according to commit
 f76671df26ef06321480e702770f88f61272be29 [PATCH 03/43]
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Helge Deller <deller@gmx.de>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
 ---
- arch/frv/kernel/ptrace.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/parisc/kernel/ptrace.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/frv/kernel/ptrace.c b/arch/frv/kernel/ptrace.c
-index fac0289..3d87d1c 100644
---- a/arch/frv/kernel/ptrace.c
-+++ b/arch/frv/kernel/ptrace.c
-@@ -254,7 +254,8 @@ void ptrace_disable(struct task_struct *child)
- 	user_disable_single_step(child);
+diff --git a/arch/parisc/kernel/ptrace.c b/arch/parisc/kernel/ptrace.c
+index c4f49e4..2905b1f 100644
+--- a/arch/parisc/kernel/ptrace.c
++++ b/arch/parisc/kernel/ptrace.c
+@@ -110,7 +110,8 @@ void user_enable_block_step(struct task_struct *task)
+ 	pa_psw(task)->l = 0;
  }
  
 -long arch_ptrace(struct task_struct *child, long request, long addr, long data)
@@ -49,25 +53,33 @@ index fac0289..3d87d1c 100644
 +		 unsigned long addr, unsigned long data)
  {
  	unsigned long tmp;
- 	int ret;
-@@ -264,7 +265,7 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
- 	case PTRACE_PEEKUSR: {
- 		tmp = 0;
- 		ret = -EIO;
--		if ((addr & 3) || addr < 0)
-+		if (addr & 3)
+ 	long ret = -EIO;
+@@ -120,11 +121,11 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
+ 	/* Read the word at location addr in the USER area.  For ptraced
+ 	   processes, the kernel saves all regs on a syscall. */
+ 	case PTRACE_PEEKUSR:
+-		if ((addr & (sizeof(long)-1)) ||
+-		    (unsigned long) addr >= sizeof(struct pt_regs))
++		if ((addr & (sizeof(unsigned long)-1)) ||
++		     addr >= sizeof(struct pt_regs))
  			break;
+ 		tmp = *(unsigned long *) ((char *) task_regs(child) + addr);
+-		ret = put_user(tmp, (unsigned long *) data);
++		ret = put_user(tmp, (unsigned long __user *) data);
+ 		break;
  
- 		ret = 0;
-@@ -305,7 +306,7 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
- 
- 	case PTRACE_POKEUSR: /* write the word at location addr in the USER area */
- 		ret = -EIO;
--		if ((addr & 3) || addr < 0)
-+		if (addr & 3)
+ 	/* Write the word at location addr in the USER area.  This will need
+@@ -151,8 +152,8 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
  			break;
+ 		}
  
- 		ret = 0;
+-		if ((addr & (sizeof(long)-1)) ||
+-		    (unsigned long) addr >= sizeof(struct pt_regs))
++		if ((addr & (sizeof(unsigned long)-1)) ||
++		     addr >= sizeof(struct pt_regs))
+ 			break;
+ 		if ((addr >= PT_GR1 && addr <= PT_GR31) ||
+ 				addr == PT_IAOQ0 || addr == PT_IAOQ1 ||
 -- 
 1.7.2.2
 
