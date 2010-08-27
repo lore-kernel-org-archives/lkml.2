@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab0H0VHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 17:07:52 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:41947 "EHLO smtp.outflux.net"
+	id S1752905Ab0H0VIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 17:08:43 -0400
+Received: from void.printf.net ([89.145.121.20]:49565 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab0H0VHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 17:07:50 -0400
-Date: Fri, 27 Aug 2010 14:07:19 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dave Airlie <airlied@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org
-Subject: [PATCH] drm, video: fix use-before-NULL-check
-Message-ID: <20100827210719.GD4703@outflux.net>
+	id S1752685Ab0H0VIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 17:08:40 -0400
+Date: Fri, 27 Aug 2010 22:08:26 +0100
+From: Chris Ball <cjb@laptop.org>
+To: akpm@linux-foundation.org
+Cc: Julia Lawall <julia@diku.dk>, Pavel Pisa <ppisa@pikron.com>,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH RESEND] drivers/mmc/host: Adjust confusing if indentation
+Message-ID: <20100827210826.GB27804@void.printf.net>
+References: <Pine.LNX.4.64.1008052219360.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <Pine.LNX.4.64.1008052219360.31692@ask.diku.dk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix potential crashes due to use-before-NULL situations.
+Hi Andrew, doesn't look like anyone else has taken this yet.
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
+From: Julia Lawall <julia@diku.dk>
+Date: Thu, 5 Aug 2010 22:19:52 +0200 (CEST)
+
+Move the second if (reg & ...) test into the branch indicated by its
+indentation.  The test was previously always executed after the if
+containing that branch, but it was always false unless the if branch was
+taken.
+
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r disable braces4@
+position p1,p2;
+statement S1,S2;
+@@
+
+(
+if (...) { ... }
+|
+if (...) S1@p1 S2@p2
+)
+
+@script:python@
+p1 << r.p1;
+p2 << r.p2;
+@@
+
+if (p1[0].column == p2[0].column):
+  cocci.print_main("branch",p1)
+  cocci.print_secs("after",p2)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 ---
- drivers/gpu/drm/drm_fb_helper.c           |    3 ++-
- drivers/media/video/em28xx/em28xx-video.c |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/mmc/host/imxmmc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index de82e20..8dd7e6f 100644
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -94,10 +94,11 @@ static bool drm_fb_helper_connector_parse_command_line(struct drm_fb_helper_conn
- 	int i;
- 	enum drm_connector_force force = DRM_FORCE_UNSPECIFIED;
- 	struct drm_fb_helper_cmdline_mode *cmdline_mode;
--	struct drm_connector *connector = fb_helper_conn->connector;
-+	struct drm_connector *connector;
+diff --git a/drivers/mmc/host/imxmmc.c b/drivers/mmc/host/imxmmc.c
+index 9a68ff4..5a950b1 100644
+--- a/drivers/mmc/host/imxmmc.c
++++ b/drivers/mmc/host/imxmmc.c
+@@ -148,11 +148,12 @@ static int imxmci_start_clock(struct imxmci_host *host)
  
- 	if (!fb_helper_conn)
- 		return false;
-+	connector = fb_helper_conn->connector;
+ 		while (delay--) {
+ 			reg = readw(host->base + MMC_REG_STATUS);
+-			if (reg & STATUS_CARD_BUS_CLK_RUN)
++			if (reg & STATUS_CARD_BUS_CLK_RUN) {
+ 				/* Check twice before cut */
+ 				reg = readw(host->base + MMC_REG_STATUS);
+ 				if (reg & STATUS_CARD_BUS_CLK_RUN)
+ 					return 0;
++			}
  
- 	cmdline_mode = &fb_helper_conn->cmdline_mode;
- 	if (!mode_option)
-diff --git a/drivers/media/video/em28xx/em28xx-video.c b/drivers/media/video/em28xx/em28xx-video.c
-index 7b9ec6e..95a4b60 100644
---- a/drivers/media/video/em28xx/em28xx-video.c
-+++ b/drivers/media/video/em28xx/em28xx-video.c
-@@ -277,12 +277,13 @@ static void em28xx_copy_vbi(struct em28xx *dev,
- {
- 	void *startwrite, *startread;
- 	int  offset;
--	int bytesperline = dev->vbi_width;
-+	int bytesperline;
- 
- 	if (dev == NULL) {
- 		em28xx_isocdbg("dev is null\n");
- 		return;
- 	}
-+	bytesperline = dev->vbi_width;
- 
- 	if (dma_q == NULL) {
- 		em28xx_isocdbg("dma_q is null\n");
--- 
-1.7.1
+ 			if (test_bit(IMXMCI_PEND_STARTED_b, &host->pending_events))
+ 				return 0;
 
 
 -- 
-Kees Cook
-Ubuntu Security Team
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
