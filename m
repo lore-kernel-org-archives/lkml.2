@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab0H0MDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 08:03:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:54770 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab0H0MDs (ORCPT
+	id S1752098Ab0H0MHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 08:07:05 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:43580 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751617Ab0H0MHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 08:03:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Date: Fri, 27 Aug 2010 14:03:41 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: john stultz <johnstul@us.ibm.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>
-References: <cover.1281956490.git.richard.cochran@omicron.at> <1282594899.3111.358.camel@localhost.localdomain> <20100827110855.GA11657@riccoc20.at.omicron.at>
-In-Reply-To: <20100827110855.GA11657@riccoc20.at.omicron.at>
+	Fri, 27 Aug 2010 08:07:03 -0400
+Message-ID: <4C77AA45.4030805@euromail.se>
+Date: Fri, 27 Aug 2010 14:06:29 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Rafi Rubin <rafi@seas.upenn.edu>
+CC: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, chatty@enac.fr, micki@n-trig.com
+Subject: Re: [PATCH 1/4] Adding documention
+References: <1282798497-19791-1-git-send-email-rafi@seas.upenn.edu> <1282798497-19791-2-git-send-email-rafi@seas.upenn.edu>
+In-Reply-To: <1282798497-19791-2-git-send-email-rafi@seas.upenn.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008271403.41949.arnd@arndb.de>
-X-Provags-ID: V02:K0:EoDe23WKM4Uv+p6WFHBFGL7sCqtzzmcmAdOIg7tisyF
- bJ7gSfkChPqlDImADRypaFOuod/BdSwS+f4x3yOY6IDTaKaZPa
- YmMtYSdNNx9FKDfLMjPNl7ViEFPnBwgP5wWk0VcgFW85XuIrhA
- kncVy3oy2vYaWr401ZR3xrFtj92Kpbu2ybIjKMyqNX00uxZ0Pg
- RGFke2fKekVqBpyaZacgg==
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OoxhX-0002Sd-4a.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OoxhX-0002Sd-4a 02b6f66e4f430659dc02919855d21a94
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 August 2010, Richard Cochran wrote:
-> On Mon, Aug 23, 2010 at 01:21:39PM -0700, john stultz wrote:
-> > On Thu, 2010-08-19 at 17:38 +0200, Richard Cochran wrote:
-> > > On Thu, Aug 19, 2010 at 02:28:04PM +0200, Arnd Bergmann wrote:
-> > > > Have you considered passing a struct timex instead of ppb and ts?
-> > > 
-> > > Yes, but the timex is not suitable, IMHO.
-> > 
-> > Could you expand on this?
-> 
-> We need to able to specify that the call is for a PTP clock. We could
-> add that to the modes flag, like this:
-> 
-> /*timex.h*/
-> #define ADJ_PTP_0 0x10000
-> #define ADJ_PTP_1 0x20000
-> #define ADJ_PTP_2 0x30000
-> #define ADJ_PTP_3 0x40000
->
-> I can live with this, if everyone else can, too.
+On 08/26/2010 06:54 AM, Rafi Rubin wrote:
 
-My suggestion was actually to have a new syscall with the existing
-structure, and pass a clockid_t value to it, similar to your
-sys_clock_adjtime(), not change the actual sys_adjtime syscall.
-  
-> > Could we not add a adjustment mode ADJ_SETOFFSET or something that would
-> > provide the instantaneous offset correction?
-> 
-> Yes, but we would also need to add a struct timespec to the struct
-> timex, in order to get nanosecond resolution. I think it would be
-> possible to do in the padding at the end?
+[...]
 
-Yes, that's exactly what the padding is for. Instead of timespec, you can
-probably have a extra values for replacing the existing ppm values with
-ppb values.
+> +Parameters
 
-	Arnd
+> +----------
+> +
+> +Note: values set at load time are global and will apply to all applicable
+> +devices.  Adjusting parameters with sysfs will override the load time values,
+> +but only for that one device.
+> +
+> +The following parameters are used to configure filters to reduce noise:
+> +
+> +activate_slack		number of fingers to ignore before processing events
+> +
+> +activation_height	size threshold to activate immediately
+> +activation_width
+> +
+> +min_height		size threshold bellow which fingers are ignored
+> +min_width		both to decide activation and during activity
+> +
+> +deactivate_slack	the number of "no contact" frames to ignore before
+> +			propagating the end of activity events
+> +
+> +When the last finger is removed from the device, it sends a number of empty
+> +frames.  By holding off on deactivation for a few frames we can tolerate false
+> +erroneous disconnects, where the sensor may mistakenly not detect a finger that
+> +is still present.  Thus deactivate_slack addresses problems where a users might
+> +see breaks in lines during drawing, or drop an object during a long drag.
+
+
+Without contact tracking, it is hard to imagine activation filtering to work
+properly. I would advocate to remove this functionality from the driver, and add
+it in userspace instead.
+
+Henrik
