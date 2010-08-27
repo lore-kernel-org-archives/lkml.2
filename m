@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0H0SIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:08:47 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64509 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab0H0SIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:08:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=x7H61Mu+9pPoeoaZ6u211nNyfKuLAir3QvhHeBys20c8aBvQQQkfbz0a4lOuGfMNjc
-         cbOSMuWQaLynhzd3em8P58W7fcebXL4L9Qqzo+Q2d5bFkinKA8dYDIAifV4OdJwjxwFj
-         HjLdGxiCjsyVhswEFFnA4boi7pHMMV1fubUVQ=
-Date: Fri, 27 Aug 2010 11:08:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Onkalo Samu <samu.p.onkalo@nokia.com>
-Cc: ext Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 1/3] drivers: misc: ak8974 / ami305 magnetometer driver
-Message-ID: <20100827180837.GB13154@core.coreip.homeip.net>
-References: <1282910083-8629-1-git-send-email-samu.p.onkalo@nokia.com>
- <1282910083-8629-2-git-send-email-samu.p.onkalo@nokia.com>
- <20100827133109.1eb974ed@lxorguk.ukuu.org.uk>
- <1282928353.2194.27.camel@noppispoppis.nmp.nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282928353.2194.27.camel@noppispoppis.nmp.nokia.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755166Ab0H0SL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:11:57 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52720 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab0H0SLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 14:11:55 -0400
+Subject: Re: System time drifts when processor idle.
+From: john stultz <johnstul@us.ibm.com>
+To: jean-philippe francois <jp.francois@cynove.com>
+Cc: Lin Ming <lin@ming.vg>, venki@google.com, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz
+In-Reply-To: <AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
+References: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
+	 <AANLkTik0ZGs3i_mHtB0s6iT6X0cLgxMjRN7Hi9FK_ZLF@mail.gmail.com>
+	 <AANLkTikTF9uvKw+48_jJKLAwqp7MJnypvvUsHN3qQ58+@mail.gmail.com>
+	 <AANLkTin80q4tGPZ1FefWCUMmhpNKj3_-KZZB12gZvwSA@mail.gmail.com>
+	 <AANLkTin5cLQG9ApxhCs92Twm958MP0J+u4GdBysJ3aNk@mail.gmail.com>
+	 <AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Aug 2010 11:11:48 -0700
+Message-ID: <1282932708.1946.8.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 07:59:13PM +0300, Onkalo Samu wrote:
-> > 
-> > > +static ssize_t ak8974_misc_read(struct file *file, char __user *buf,
-> > > +			size_t count, loff_t *offset)
-> > > +{
-> > > +	struct ak8974_chip *chip = container_of(file->private_data,
-> > > +						struct ak8974_chip,
-> > > +						miscdev);
-> > > +	struct ak8974_data data;
-> > 
-> > So we have a different API to the ak8975 just posted and to the other
-> > existing devices. This needs sorting out across the devices before there
-> > is a complete disaster. Right now we have a mix of submissions pending
-> > which variously use
-> > 
-> > 	misc + sysfs
-> > 	sysfs
-> > 	input (reporting X Y Z etc axes)
-> > 
-> 
-> About year ago I send driver for the same chip with input-device
-> interface. During that time I asked from Dmitry Torokhov that is that a
-> correct interface for this kind of driver. I understood that input
-> should not be used for this kind of sensors.
-> 
-> sysfs is quite handy interface for small sensors. However, one problem
-> is that the driver doesn't know when the interface is in use.
-> I ended up to misc device to get information about the usercount for PM
-> purposes.
-> 
-> Dmitry, what is your opinion about using input device interface for this
-> kind of sensors?
-> 
+On Fri, 2010-08-27 at 16:12 +0200, jean-philippe francois wrote:
+> My Timekeeping bug is still present, here is an updated script and log.
+> I am willing to make test, but I don't know what kind of debugging
+> info is needed.
+>
+> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
+> hpet acpi_pm 
+> cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+> hpet
 
-This is really hard question and I am going back and forth myself.
+Huh. hpet was not what I would have expected.
 
-When considering using input subsystem try answering the following
-question - is the device's main purpose is indeed to be a human
-interface device or do you want to use input subystem because evdev
-interface is convenient? If the answer is former- then it should be in
-input (or available through input - let's say IIO-to-input bridge
-module). If the answer is latter then input is not the right place for
-the device.
 
-Lately I was persuaded that 3-axis accelerometers are mainly used as
-input devices so I took adxl driver in and I need to get back and review
-cma3000 patch...
+So first, two experiments: 
 
-> > Someone needs to decide on a single API before it's too late.
-> > 
-> 
-> That is definitely true. Could it be IIO?
-> 
+1) Does booting with "clock=acpi_pm" cause the issue to disappear?
 
-I was hpoing that IIO would take care of "unnamed" sensors. Here I mean
-sensors that measure something and only user/application know exactly
-what it is; the same device might measure different things depending on
-setup. Take a temperature sensor - ambient temperature, temperature of
-some technological process, patient temperature - it is hard for the
-kernel to know which one it would be.
+2) Does booting with "nohz=off" cause the issue to disappear?
 
-This is in contrast with input system that tries to classify
-events so that the event has the same meaning regarless of which device
-emitted it - KEY_A means the same regardless of keybord; we may route
-them differently (multiseat for example), but the meaning is the same.
 
--- 
-Dmitry
+Venkatesh: You have any experience with HPETs that halt in idle?
+
+thanks
+-john
+
+
