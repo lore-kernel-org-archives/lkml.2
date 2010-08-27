@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab0H0Jt3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:49:29 -0400
+	id S1754608Ab0H0Juc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:50:32 -0400
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:52511 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600Ab0H0Jnj (ORCPT
+	with ESMTP id S1754448Ab0H0JnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:43:39 -0400
+	Fri, 27 Aug 2010 05:43:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=vFrCt6mvdTlWOfjiv9YvWul4hjYif2PWKQDaCNITmEba31xyErehgkFW35i0IVq141
-         2OVpB5PkDn/Ii8juKZKO3jolaSopllaJzBX0j1ry+vW3+8IeXYquKTIG+glF0Oo/KBe8
-         n1xdz+/9sDZJnTEPz5r8cSwIwA0Rf5Vhe3H1U=
+        b=DXQZ+AE8cAeDbjGL3yOKHfAdMr6PzRg3t4Ir7o2xTbNc4dgvt/POa64I/VI7ebjXDp
+         pX3y6Q3aOxLtttrsBQ1TYiljpJNiIyafjIduxlOmSbtBuPd19x8ThD3HiaTSxWth0YW6
+         cb7r80RyNVPucypuR5uajKVWC3UBOhUJeS5jI=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: [RFC PATCH 15/43] ptrace, frv: cleanup arch_ptrace()
-Date: Fri, 27 Aug 2010 18:42:01 +0900
-Message-Id: <1282902149-12991-16-git-send-email-namhyung@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Subject: [RFC PATCH 08/43] ptrace, arm: cleanup arch_ptrace()
+Date: Fri, 27 Aug 2010 18:41:54 +0900
+Message-Id: <1282902149-12991-9-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
 References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
@@ -27,96 +27,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use new regno, datap variables in order to remove duplicated expressions and
-unnecessary castings.
+use new 'datap' variable type of void pointer in order to remove unnecessary
+castings.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 ---
- arch/frv/kernel/ptrace.c |   25 +++++++++++--------------
- 1 files changed, 11 insertions(+), 14 deletions(-)
+ arch/arm/kernel/ptrace.c |   33 +++++++++++++++++++--------------
+ 1 files changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/arch/frv/kernel/ptrace.c b/arch/frv/kernel/ptrace.c
-index 3d87d1c..9d68f7f 100644
---- a/arch/frv/kernel/ptrace.c
-+++ b/arch/frv/kernel/ptrace.c
-@@ -259,6 +259,8 @@ long arch_ptrace(struct task_struct *child, long request,
+diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+index 87ca2c7..4be8a58 100644
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -851,10 +851,11 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
  {
- 	unsigned long tmp;
  	int ret;
-+	int regno = addr >> 2;
-+	unsigned long __user *datap = (unsigned long __user *) data;
++	void __user *datap = (void __user *) data;
  
  	switch (request) {
- 		/* read the word at location addr in the USER area. */
-@@ -269,9 +271,9 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		case PTRACE_PEEKUSR:
+-			ret = ptrace_read_user(child, addr, (unsigned long __user *)data);
++			ret = ptrace_read_user(child, addr, datap);
  			break;
  
- 		ret = 0;
--		switch (addr >> 2) {
-+		switch (regno) {
- 		case 0 ... PT__END - 1:
--			tmp = get_reg(child, addr >> 2);
-+			tmp = get_reg(child, regno);
+ 		case PTRACE_POKEUSR:
+@@ -862,35 +863,39 @@ long arch_ptrace(struct task_struct *child, long request,
  			break;
  
- 		case PT__END + 0:
-@@ -300,7 +302,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 		}
- 
- 		if (ret == 0)
--			ret = put_user(tmp, (unsigned long *) data);
-+			ret = put_user(tmp, datap);
- 		break;
- 	}
- 
-@@ -309,14 +311,9 @@ long arch_ptrace(struct task_struct *child, long request,
- 		if (addr & 3)
+ 		case PTRACE_GETREGS:
+-			ret = ptrace_getregs(child, (void __user *)data);
++			ret = ptrace_getregs(child, datap);
  			break;
  
--		ret = 0;
--		switch (addr >> 2) {
-+		switch (regno) {
- 		case 0 ... PT__END - 1:
--			ret = put_reg(child, addr >> 2, data);
--			break;
--
--		default:
--			ret = -EIO;
-+			ret = put_reg(child, regno, data);
+ 		case PTRACE_SETREGS:
+-			ret = ptrace_setregs(child, (void __user *)data);
++			ret = ptrace_setregs(child, datap);
  			break;
- 		}
- 		break;
-@@ -325,25 +322,25 @@ long arch_ptrace(struct task_struct *child, long request,
- 		return copy_regset_to_user(child, &user_frv_native_view,
- 					   REGSET_GENERAL,
- 					   0, sizeof(child->thread.user->i),
--					   (void __user *)data);
-+					   datap);
  
- 	case PTRACE_SETREGS:	/* Set all integer regs in the child. */
- 		return copy_regset_from_user(child, &user_frv_native_view,
- 					     REGSET_GENERAL,
- 					     0, sizeof(child->thread.user->i),
--					     (const void __user *)data);
-+					     datap);
+ 		case PTRACE_GETFPREGS:
+-			ret = ptrace_getfpregs(child, (void __user *)data);
++			ret = ptrace_getfpregs(child, datap);
+ 			break;
+ 		
+ 		case PTRACE_SETFPREGS:
+-			ret = ptrace_setfpregs(child, (void __user *)data);
++			ret = ptrace_setfpregs(child, datap);
+ 			break;
  
- 	case PTRACE_GETFPREGS:	/* Get the child FP/Media state. */
- 		return copy_regset_to_user(child, &user_frv_native_view,
- 					   REGSET_FPMEDIA,
- 					   0, sizeof(child->thread.user->f),
--					   (void __user *)data);
-+					   datap);
+ #ifdef CONFIG_IWMMXT
+ 		case PTRACE_GETWMMXREGS:
+-			ret = ptrace_getwmmxregs(child, (void __user *)data);
++			ret = ptrace_getwmmxregs(child, datap);
+ 			break;
  
- 	case PTRACE_SETFPREGS:	/* Set the child FP/Media state. */
- 		return copy_regset_from_user(child, &user_frv_native_view,
- 					     REGSET_FPMEDIA,
- 					     0, sizeof(child->thread.user->f),
--					     (const void __user *)data);
-+					     datap);
+ 		case PTRACE_SETWMMXREGS:
+-			ret = ptrace_setwmmxregs(child, (void __user *)data);
++			ret = ptrace_setwmmxregs(child, datap);
+ 			break;
+ #endif
  
- 	default:
- 		ret = ptrace_request(child, request, addr, data);
+-		case PTRACE_GET_THREAD_AREA:
+-			ret = put_user(task_thread_info(child)->tp_value,
+-				       (unsigned long __user *) data);
++		case PTRACE_GET_THREAD_AREA: {
++			unsigned long tpval;
++			tpval = task_thread_info(child)->tp_value;
++			
++			ret = copy_to_user(datap, &tpval, sizeof(tpval)) ?
++				-EFAULT : 0;
+ 			break;
++		}
+ 
+ 		case PTRACE_SET_SYSCALL:
+ 			task_thread_info(child)->syscall = data;
+@@ -899,21 +904,21 @@ long arch_ptrace(struct task_struct *child, long request,
+ 
+ #ifdef CONFIG_CRUNCH
+ 		case PTRACE_GETCRUNCHREGS:
+-			ret = ptrace_getcrunchregs(child, (void __user *)data);
++			ret = ptrace_getcrunchregs(child, datap);
+ 			break;
+ 
+ 		case PTRACE_SETCRUNCHREGS:
+-			ret = ptrace_setcrunchregs(child, (void __user *)data);
++			ret = ptrace_setcrunchregs(child, datap);
+ 			break;
+ #endif
+ 
+ #ifdef CONFIG_VFP
+ 		case PTRACE_GETVFPREGS:
+-			ret = ptrace_getvfpregs(child, (void __user *)data);
++			ret = ptrace_getvfpregs(child, datap);
+ 			break;
+ 
+ 		case PTRACE_SETVFPREGS:
+-			ret = ptrace_setvfpregs(child, (void __user *)data);
++			ret = ptrace_setvfpregs(child, datap);
+ 			break;
+ #endif
+ 
 -- 
 1.7.2.2
 
