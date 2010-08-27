@@ -1,124 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab0H0GNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 02:13:42 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:11562 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754082Ab0H0GNk (ORCPT
+	id S1754342Ab0H0GOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 02:14:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45623 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab0H0GOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 02:13:40 -0400
-Message-ID: <4C775675.4090700@snapgear.com>
-Date: Fri, 27 Aug 2010 16:08:53 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Fri, 27 Aug 2010 02:14:21 -0400
+Date: Fri, 27 Aug 2010 08:13:55 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: g.liakhovetski@gmx.de, mitov@issp.bas.bg, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, akpm@linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        philippe.retornaz@epfl.ch, gregkh@suse.de, jkrzyszt@tis.icnet.pl
+Subject: Re: [RFC][PATCH] add
+	dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+Message-ID: <20100827061355.GA938@pengutronix.de>
+References: <20100827044142.GB31863@pengutronix.de> <20100827140005Y.fujita.tomonori@lab.ntt.co.jp> <20100827051907.GA17521@pengutronix.de> <20100827145712Z.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-To: uClinux development list <uclinux-dev@uclinux.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [uClinux-dev] [PATCH] m68k{nommu} : Remove unused DEFINE's from
- asm-offsets.c
-References: <1282148854-17103-1-git-send-email-phdm@macqel.be>
-In-Reply-To: <1282148854-17103-1-git-send-email-phdm@macqel.be>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Aug 2010 06:13:37.0861 (UTC) FILETIME=[FCD49F50:01CB45AE]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100827145712Z.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Hi Philippe,
-
-Philippe De Muyter wrote:
-> m68k{nommu}/asm-offsets.c define many constants which are not used
-> anymore anywhere; remove IRQ_DEVID, IRQ_HANDLER, IRQ_NEXT, STAT_IRQ,
-> TASK_ACTIVE_MM, TASK_BLOCKED, TASK_FLAGS, TASK_PTRACE, TASK_STATE,
-> TASK_THREAD_INFO, TI_CPU, TI_EXECDOMAIN and TI_TASK.
+On Fri, Aug 27, 2010 at 02:57:59PM +0900, FUJITA Tomonori wrote:
+> On Fri, 27 Aug 2010 07:19:07 +0200
+> Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
 > 
-> Signed-off-by: Philippe De Muyter <phdm@macqel.be>
-
-I have no problem with the m68knommu part. I can push that into
-the m68knommu git tree. Or if the m68k guys are happy I can put
-the whole thing there?
-
-Regards
-Greg
-
-
-
-> ---
->  arch/m68k/kernel/asm-offsets.c      |   12 ------------
->  arch/m68knommu/kernel/asm-offsets.c |    9 ---------
->  2 files changed, 0 insertions(+), 21 deletions(-)
+> > Hey,
+> > 
+> > On Fri, Aug 27, 2010 at 02:00:17PM +0900, FUJITA Tomonori wrote:
+> > > On Fri, 27 Aug 2010 06:41:42 +0200
+> > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > > On Thu, Aug 26, 2010 at 07:00:24PM +0900, FUJITA Tomonori wrote:
+> > > > > On Thu, 26 Aug 2010 11:53:11 +0200
+> > > > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > > > 
+> > > > > > > > We have currently a number of boards broken in the mainline. They must be 
+> > > > > > > > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
+> > > > > > > > as I suggested earlier, we need either this or my patch series
+> > > > > > > > 
+> > > > > > > > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
+> > > > > > > > 
+> > > > > > > > for 2.6.36.
+> > > > > > > 
+> > > > > > > Why can't you revert a commit that causes the regression?
+> > > > > > > 
+> > > > > > > The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
+> > > > > > > responsible for the regression. And the patchset even exnteds the
+> > > > > > > definition of the DMA API (dma_declare_coherent_memory). Such change
+> > > > > > > shouldn't applied after rc1. I think that DMA-API.txt says that
+> > > > > > > dma_declare_coherent_memory() handles coherent memory for a particular
+> > > > > > > device. It's not for the API that reserves coherent memory that can be
+> > > > > > > used for any device for a single device.
+> > > > > > The patch that made the problem obvious for ARM is
+> > > > > > 309caa9cc6ff39d261264ec4ff10e29489afc8f8 aka v2.6.36-rc1~591^2~2^4~12.
+> > > > > > So this went in before v2.6.36-rc1.  One of the "architectures which
+> > > > > > similar restrictions" is x86 BTW.
+> > > > > > 
+> > > > > > And no, we won't revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 as it
+> > > > > > addresses a hardware restriction.
+> > > > > 
+> > > > > How these drivers were able to work without hitting the hardware restriction?
+> > > > In my case the machine in question is an ARMv5, the hardware restriction
+> > > > is on ARMv6+ only.  You could argue that so the breaking patch for arm
+> > > > should only break ARMv6, but I don't think this is sensible from a
+> > > > maintainers POV.  We need an API that works independant of the machine
+> > > > that runs the code.
+> > > 
+> > > Agreed. But insisting that the DMA API needs to be extended wrongly
+> > > after rc2 to fix the regression is not sensible too. The related DMA
+> > > API wasn't changed in 2.6.36-rc1. The API isn't responsible for the
+> > > regression at all.
+> > I think this isn't about "responsiblity".  Someone in arm-land found
+> > that the way dma memory allocation worked for some time doesn't work
+> > anymore on new generation chips.  As pointing out this problem was
+> > expected to find some matches it was merged in the merge window.  One
+> > such match is the current usage of the DMA API that doesn't currently
+> > offer a way to do it right, so it needs a patch, no?
 > 
-> diff --git a/arch/m68k/kernel/asm-offsets.c b/arch/m68k/kernel/asm-offsets.c
-> index 73e5e58..78e59b8 100644
-> --- a/arch/m68k/kernel/asm-offsets.c
-> +++ b/arch/m68k/kernel/asm-offsets.c
-> @@ -22,13 +22,9 @@
->  int main(void)
->  {
->  	/* offsets into the task struct */
-> -	DEFINE(TASK_STATE, offsetof(struct task_struct, state));
-> -	DEFINE(TASK_FLAGS, offsetof(struct task_struct, flags));
-> -	DEFINE(TASK_PTRACE, offsetof(struct task_struct, ptrace));
->  	DEFINE(TASK_THREAD, offsetof(struct task_struct, thread));
->  	DEFINE(TASK_INFO, offsetof(struct task_struct, thread.info));
->  	DEFINE(TASK_MM, offsetof(struct task_struct, mm));
-> -	DEFINE(TASK_ACTIVE_MM, offsetof(struct task_struct, active_mm));
->  #ifdef CONFIG_MMU
->  	DEFINE(TASK_TINFO, offsetof(struct task_struct, thread.info));
->  #endif
-> @@ -64,14 +60,6 @@ int main(void)
->  	/* bitfields are a bit difficult */
->  	DEFINE(PT_OFF_FORMATVEC, offsetof(struct pt_regs, pc) + 4);
->  
-> -	/* offsets into the irq_handler struct */
-> -	DEFINE(IRQ_HANDLER, offsetof(struct irq_node, handler));
-> -	DEFINE(IRQ_DEVID, offsetof(struct irq_node, dev_id));
-> -	DEFINE(IRQ_NEXT, offsetof(struct irq_node, next));
-> -
-> -	/* offsets into the kernel_stat struct */
-> -	DEFINE(STAT_IRQ, offsetof(struct kernel_stat, irqs));
-> -
->  	/* offsets into the irq_cpustat_t struct */
->  	DEFINE(CPUSTAT_SOFTIRQ_PENDING, offsetof(irq_cpustat_t, __softirq_pending));
->  
-> diff --git a/arch/m68knommu/kernel/asm-offsets.c b/arch/m68knommu/kernel/asm-offsets.c
-> index 9a8876f..eca508c 100644
-> --- a/arch/m68knommu/kernel/asm-offsets.c
-> +++ b/arch/m68knommu/kernel/asm-offsets.c
-> @@ -21,14 +21,8 @@
->  int main(void)
->  {
->  	/* offsets into the task struct */
-> -	DEFINE(TASK_STATE, offsetof(struct task_struct, state));
-> -	DEFINE(TASK_FLAGS, offsetof(struct task_struct, flags));
-> -	DEFINE(TASK_PTRACE, offsetof(struct task_struct, ptrace));
-> -	DEFINE(TASK_BLOCKED, offsetof(struct task_struct, blocked));
->  	DEFINE(TASK_THREAD, offsetof(struct task_struct, thread));
-> -	DEFINE(TASK_THREAD_INFO, offsetof(struct task_struct, stack));
->  	DEFINE(TASK_MM, offsetof(struct task_struct, mm));
-> -	DEFINE(TASK_ACTIVE_MM, offsetof(struct task_struct, active_mm));
->  
->  	/* offsets into the irq_cpustat_t struct */
->  	DEFINE(CPUSTAT_SOFTIRQ_PENDING, offsetof(irq_cpustat_t, __softirq_pending));
-> @@ -77,11 +71,8 @@ int main(void)
->  	DEFINE(THREAD_SIZE, THREAD_SIZE);
->  
->  	/* Offsets in thread_info structure */
-> -	DEFINE(TI_TASK, offsetof(struct thread_info, task));
-> -	DEFINE(TI_EXECDOMAIN, offsetof(struct thread_info, exec_domain));
->  	DEFINE(TI_FLAGS, offsetof(struct thread_info, flags));
->  	DEFINE(TI_PREEMPTCOUNT, offsetof(struct thread_info, preempt_count));
-> -	DEFINE(TI_CPU, offsetof(struct thread_info, cpu));
->  
->  	return 0;
->  }
+> No, I don't think so. We are talking about a regression, right?
+> 
+> On new generation chips, something often doesn't work (which have
+> worked on old chips for some time). It's not a regresiion. I don't
+> think that it's sensible to make large change (especially after rc1)
+> to fix such issue. If you say that the DMA API doesn't work on new
+> chips and proposes a patch for the next merge window, it's sensible, I
+> suppose.
+> 
+> Btw, the patch isn't a fix for the DMA API. It tries to extend the DMA
+> API (and IMO in the wrong way). In addition, the patch might break the
+> current code. I really don't think that applying such patch after rc1
+> is senseble.
+So you suggest to revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 or at
+least restrict it to ARMv6+ and fix the problem during the next merge
+window?  Russell?
 
+Best regards
+Uwe
 
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
