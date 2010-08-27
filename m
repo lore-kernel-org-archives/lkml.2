@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab0H0CDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 22:03:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754802Ab0H0B7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:59:55 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 09/22] h8300: Fix die()
-To: linux-arch@vger.kernel.org
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Date: Fri, 27 Aug 2010 02:59:52 +0100
-Message-ID: <20100827015952.27277.25309.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100827015905.27277.39167.stgit@warthog.procyon.org.uk>
-References: <20100827015905.27277.39167.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1755217Ab0H0CC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 22:02:57 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57100 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669Ab0H0CCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 22:02:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=isCyB3kzKHJiD6L1iXkgvijTULTFxHBI/Jnh2rkK5xtyxAt8F1+qbrd1noJ2BshVPa
+         g8yOtckfQ0+7ANHlLxmF5BNNlgDgMEvskmVEj99YqYfAj1glHApQJq/uvYAjmTmOiyTR
+         v1yR0Xr26NA7UXWkpHbXbqIceOFeBYhB7YKQI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100827015041.GF7353@localhost>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie>
+	<20100826172038.GA6873@barrios-desktop>
+	<20100827012147.GC7353@localhost>
+	<AANLkTimLhZcP=eqB9TFfO_rgb-dhXUJh8iNTXuceuCq0@mail.gmail.com>
+	<20100827015041.GF7353@localhost>
+Date: Fri, 27 Aug 2010 11:02:52 +0900
+Message-ID: <AANLkTin0PZu=ceoeyYa6qSv_piHL1yrfyEgTw35=gnex@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Do not wait the full timeout on congestion_wait
+ when there is no congestion
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix h8300's die() to take care of a number of problems:
+On Fri, Aug 27, 2010 at 10:50 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Fri, Aug 27, 2010 at 09:41:48AM +0800, Minchan Kim wrote:
+>> Hi, Wu.
+>>
+>> On Fri, Aug 27, 2010 at 10:21 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > Minchan,
+>> >
+>> > It's much cleaner to keep the unchanged congestion_wait() and add a
+>> > congestion_wait_check() for converting problematic wait sites. The
+>> > too_many_isolated() wait is merely a protective mechanism, I won't
+>> > bother to improve it at the cost of more code.
+>>
+>> You means following as?
+>
+> No, I mean do not change the too_many_isolated() related code at all :)
+> And to use congestion_wait_check() in other places that we can prove
+> there is a problem that can be rightly fixed by changing to
+> congestion_wait_check().
 
-  CC      arch/h8300/kernel/traps.o
-In file included from /warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/bitops.h:10,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:17,
-                 from include/linux/sched.h:54,
-                 from arch/h8300/kernel/traps.c:18:
-/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/system.h:136: warning: 'struct pt_regs' declared inside parameter list
-/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/system.h:136: warning: its scope is only this definition or declaration, which is probably not what you want
-arch/h8300/kernel/traps.c:100: error: conflicting types for 'die'
-/warthog/nfs/linux-2.6-fscache/arch/h8300/include/asm/system.h:136: error: previous declaration of 'die' was here
-make[2]: *** [arch/h8300/kernel/traps.o] Error 1
+I always suffer from understanding your comment.
+Apparently, my eyes have a problem. ;(
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+This patch is dependent of Mel's series.
+With changing congestion_wait with just return when no congestion, it
+would have CPU hogging in too_many_isolated. I think it would apply in
+Li's congestion_wait_check, too.
+If no change is current congestion_wait, we doesn't need this patch.
 
- arch/h8300/include/asm/system.h |    4 +++-
- arch/h8300/kernel/traps.c       |    2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/h8300/include/asm/system.h b/arch/h8300/include/asm/system.h
-index d98d976..16bf156 100644
---- a/arch/h8300/include/asm/system.h
-+++ b/arch/h8300/include/asm/system.h
-@@ -3,6 +3,8 @@
- 
- #include <linux/linkage.h>
- 
-+struct pt_regs;
-+
- /*
-  * switch_to(n) should switch tasks to task ptr, first checking that
-  * ptr isn't the current task, in which case it does nothing.  This
-@@ -155,6 +157,6 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
- 
- #define arch_align_stack(x) (x)
- 
--void die(char *str, struct pt_regs *fp, unsigned long err);
-+extern void die(const char *str, struct pt_regs *fp, unsigned long err);
- 
- #endif /* _H8300_SYSTEM_H */
-diff --git a/arch/h8300/kernel/traps.c b/arch/h8300/kernel/traps.c
-index 3c0b66b..dfa05bd 100644
---- a/arch/h8300/kernel/traps.c
-+++ b/arch/h8300/kernel/traps.c
-@@ -96,7 +96,7 @@ static void dump(struct pt_regs *fp)
- 	printk("\n\n");
- }
- 
--void die(char *str, struct pt_regs *fp, unsigned long err)
-+void die(const char *str, struct pt_regs *fp, unsigned long err)
- {
- 	static int diecount;
- 
-
+Still, maybe I can't understand your comment. Sorry.
+-- 
+Kind regards,
+Minchan Kim
