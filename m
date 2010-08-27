@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab0H0VIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 17:08:43 -0400
-Received: from void.printf.net ([89.145.121.20]:49565 "EHLO void.printf.net"
+	id S1752894Ab0H0VMO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 17:12:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7511 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab0H0VIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 17:08:40 -0400
-Date: Fri, 27 Aug 2010 22:08:26 +0100
-From: Chris Ball <cjb@laptop.org>
-To: akpm@linux-foundation.org
-Cc: Julia Lawall <julia@diku.dk>, Pavel Pisa <ppisa@pikron.com>,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH RESEND] drivers/mmc/host: Adjust confusing if indentation
-Message-ID: <20100827210826.GB27804@void.printf.net>
-References: <Pine.LNX.4.64.1008052219360.31692@ask.diku.dk>
+	id S1751034Ab0H0VMM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 17:12:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,280,1280732400"; 
+   d="scan'208";a="652006932"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+CC: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hedi Berriche <hedi@sgi.com>
+Date: Fri, 27 Aug 2010 14:11:55 -0700
+Subject: RE: Serious problem with ticket spinlocks on ia64
+Thread-Topic: Serious problem with ticket spinlocks on ia64
+Thread-Index: ActGK0PzUhFgckTtQg2dPIrcwTwA8wAANvww
+Message-ID: <987664A83D2D224EAE907B061CE93D53015D91D45F@orsmsx505.amr.corp.intel.com>
+References: <201008271537.35709.ptesarik@suse.cz>
+ <987664A83D2D224EAE907B061CE93D53015D91D029@orsmsx505.amr.corp.intel.com>
+ <987664A83D2D224EAE907B061CE93D53015D91D3B7@orsmsx505.amr.corp.intel.com>
+ <201008272303.34228.ptesarik@suse.cz>
+In-Reply-To: <201008272303.34228.ptesarik@suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1008052219360.31692@ask.diku.dk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew, doesn't look like anyone else has taken this yet.
+> One more idea. The wrap-around case is the only one when the high word is 
+> modified. This is in fact the only case when the fetchadd.acq competes with 
+> the st2.rel about the actual contents of that location. I don't know if it 
+> matters...
 
-From: Julia Lawall <julia@diku.dk>
-Date: Thu, 5 Aug 2010 22:19:52 +0200 (CEST)
+I pondered that for a while - but I have difficulty believing that
+fetchadd looks at which bits changed and only writes back the bytes
+that did.
 
-Move the second if (reg & ...) test into the branch indicated by its
-indentation.  The test was previously always executed after the if
-containing that branch, but it was always false unless the if branch was
-taken.
-
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r disable braces4@
-position p1,p2;
-statement S1,S2;
-@@
-
-(
-if (...) { ... }
-|
-if (...) S1@p1 S2@p2
-)
-
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-if (p1[0].column == p2[0].column):
-  cocci.print_main("branch",p1)
-  cocci.print_secs("after",p2)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/host/imxmmc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/imxmmc.c b/drivers/mmc/host/imxmmc.c
-index 9a68ff4..5a950b1 100644
---- a/drivers/mmc/host/imxmmc.c
-+++ b/drivers/mmc/host/imxmmc.c
-@@ -148,11 +148,12 @@ static int imxmci_start_clock(struct imxmci_host *host)
- 
- 		while (delay--) {
- 			reg = readw(host->base + MMC_REG_STATUS);
--			if (reg & STATUS_CARD_BUS_CLK_RUN)
-+			if (reg & STATUS_CARD_BUS_CLK_RUN) {
- 				/* Check twice before cut */
- 				reg = readw(host->base + MMC_REG_STATUS);
- 				if (reg & STATUS_CARD_BUS_CLK_RUN)
- 					return 0;
-+			}
- 
- 			if (test_bit(IMXMCI_PEND_STARTED_b, &host->pending_events))
- 				return 0;
-
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+-Tony
