@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab0H0FmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 01:42:15 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:40938 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751235Ab0H0FmM (ORCPT
+	id S1752722Ab0H0Frl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 01:47:41 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55516 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab0H0Frj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 01:42:12 -0400
-Date: Fri, 27 Aug 2010 07:41:55 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] msm: add gpiomux api for gpio multiplex &
- configuration.
-Message-ID: <20100827054155.GA1677@ucw.cz>
-References: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282594368-5791-1-git-send-email-gbean@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 27 Aug 2010 01:47:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 27 Aug 2010 14:42:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Mark Hills <mark@pogo.org.uk>, linux-kernel@vger.kernel.org,
+        balbir@linux.vnet.ibm.com
+Subject: Re: cgroup: rmdir() does not complete
+Message-Id: <20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
+	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
+	<20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, 27 Aug 2010 12:39:48 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+
+> On Fri, 27 Aug 2010 11:35:06 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Fri, 27 Aug 2010 09:56:39 +0900
+> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > 
+> > > > Or is it likely to be some other cause, and how best to find it?
+> > > > 
+> > > What cgroup subsystem did you mount where the directory existed you tried
+> > > to rmdir() first ?
+> > > If you mounted several subsystems on the same hierarchy, can you mount them
+> > > separately to narrow down the cause ?
+> > > 
+> > 
+> > It seems I can reproduce the issue on mmotm-0811, too.
+> > 
+> > try this.
+> > 
+> > Here, memory cgroup is mounted at /cgroups.
+> > ==
+> > #!/bin/bash -x
+> > 
+> > while sleep 1; do
+> >         date
+> >         mkdir /cgroups/test
+> >         echo 0 > /cgroups/test/tasks
+> >         echo 300M > /cgroups/test/memory.limit_in_bytes
+> >         cat /proc/self/cgroup
+> >         dd if=/dev/zero of=./tmpfile bs=4096 count=100000
+> >         echo 0 > /cgroups/tasks
+> >         cat /proc/self/cgroup
+> >         rmdir /cgroups/test
+> >         rm ./tmpfile
+> > done
+> > ==
+> > 
+> > hangs at rmdir. I'm no investigating force_empty.
+> > 
+> Thank you very much for your information.
+> 
+> Some questions.
+> 
+> Is "tmpfile" created on a normal filesystem(e.g. ext3) or tmpfs ?
+on ext4.
+
+> And, how long does it likely to take to cause this problem ?
+
+very soon. 10-20 loop.
+
+> I've run it on RHEL6-based kernel/ext3 for about one hour, but
+> I cannot reproduce it yet.
+> 
+
+Hmm...I'll dig more. Maybe I need to use stock kernel rather than -mm...
 
 
-> +++ b/arch/arm/mach-msm/gpiomux-7x00.h
-> @@ -0,0 +1,79 @@
-> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> + *
-> + * Redistribution and use in source and binary forms, with or without
-> + * modification, are permitted provided that the following conditions are
-> + * met:
-> + *     * Redistributions of source code must retain the above copyright
-> + *       notice, this list of conditions and the following disclaimer.
-> + *     * Redistributions in binary form must reproduce the above
-> + *       copyright notice, this list of conditions and the following
-> + *       disclaimer in the documentation and/or other materials provided
-> + *       with the distribution.
+Thanks,
+-Kame
 
-GPL, please... and spread the news to the codeaurora people so we
-don't get this over and over and over again.
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
