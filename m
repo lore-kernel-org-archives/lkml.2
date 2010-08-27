@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0H0Qnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:43:49 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:23102 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab0H0Qnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:43:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=JgrAulCabrIck6zvFNEP6z0yXX+k+Umj0yZnWhwXT0GCLgFgKGm7TgwiApB4EVssyi
-         VkHm1cfj/spFJfczy6WA==
+	id S1754190Ab0H0Qpj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:45:39 -0400
+Received: from enyo.dsw2k3.info ([195.71.86.239]:54919 "EHLO enyo.dsw2k3.info"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754070Ab0H0Qph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 12:45:37 -0400
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Aug 2010 12:45:37 EDT
+Date: Fri, 27 Aug 2010 18:37:53 +0200
+From: Matthias Schniedermeyer <ms@citd.de>
+To: Eric Valette <Eric.Valette@Free.fr>
+Cc: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: Please add generic support for root=UUID= at kernel parameter
+	command line (LABEL, BYID maybe also)
+Message-ID: <20100827163753.GA13252@citd.de>
+References: <4C728790.7050805@Free.fr> <4C72EE8F.3040708@turmel.org> <4C768919.30104@Free.fr> <4C76C641.30901@turmel.org> <4C77A89A.3070906@Free.fr>
 MIME-Version: 1.0
-In-Reply-To: <20100827095546.GC6803@random.random>
-References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
-	<20100826235052.GZ6803@random.random>
-	<AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com>
-	<20100827095546.GC6803@random.random>
-Date: Fri, 27 Aug 2010 09:43:43 -0700
-Message-ID: <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
-From: Hugh Dickins <hughd@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C77A89A.3070906@Free.fr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 2:55 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Thu, Aug 26, 2010 at 06:43:31PM -0700, Hugh Dickins wrote:
->> some light., I think you're mistaking the role that RCU plays here.
+On 27.08.2010 13:59, Eric Valette wrote:
+> On 08/26/2010 09:53 PM, Phil Turmel wrote:
 >
-> That's exactly correct, I thought it prevented reuse of the slab
-> entry, not only of the whole slab... SLAB_DESTROY_BY_RCU is a lot more
-> tricky to use than I though...
+>>
+>>> Now I'm really puzzled grub2 as a "search by fs uuid" command that linux is unable to deliver for the root device!
+>>
+>> The key word here is "unable".  The maintainers aren't *unable* to do this.  They are *unwilling* to do this.  I don't recall the precise discussion, but basically it boils down to the fact that early userspace (aka initramfs) can do this efficiently, and it needs to be supported in initramfs for other reasons, so it is pointless to duplicate this code in the kernel.  I'm sure block folk will chime in if this isn't a fair representation (my apologies in advance if so).
+>>
+>> Try dracut.  Seriously.  It's lean and mean just for this use-case, and you'll be protecting yourself against future changes in the block layer.  And you can put root=LABEL=foo on your kernel command line to match your fstab.
 >
-> However at the light of this, I think page_lock_anon_vma could have
-> returned a freed and reused anon_vma well before the anon-vma changes.
 >
-> The anon_vma could have been freed after the first page_mapped check
-> succeed but before taking the spinlock. I think, it worked fine
-> because the rmap walks are robust enough just not to fall apart on a
-> reused anon_vma while the lock is hold. It become a visible problem
-> now because we were unlocking the wrong lock leading to a
-> deadlock. But I guess it wasn't too intentional to return a reused
-> anon_vma out of page_lock_anon_vma.
+> This is a rather bizarre argument as because of this situation
+> 	1) the code is duplicated between the initramfs and the real disk
 
-What you say there is all exactly right, except for "I guess it wasn't
-too intentional": it was intentional, and known that it all worked out
-okay in the rare case when a reused anon_vma got fed into the loops -
-the anon_vma, after all, is nothing more than a list of places where
-you may find the page mapped, it has never asserted that a page will
-be found everywhere that the anon_vma lists.
+I don't really get what you mean.
+But binary duplication isn't the issue, source-code duplication is.
+I'd count an initramfs to the binary category. It is "compiled" more or 
+less literaly.
 
-I would have liked to say "well known" above, but perhaps well known
-only to me: you're certainly not the first to be surprised by this.
-IIRC both Christoph and Peter have at different times proposed patches
-to tighten up page_lock_anon_vma() to avoid returning a stale/reused
-anon_vma, probably both were dropped because neither was actually
-necessary, until now: I guess it's a good thing for understandability
-that anon_vma->root->lock now requires that we weed out that case.
+> 	2) the initramfs has to be rebuild each time a new kernel is done
 
-Hugh
+Only when you use kernel-modules, otherwise you should be fine for "some 
+time".
+
+> 	3) The tmpdevfs is also a dupplicate somehow
+
+No.
+
+devtmpfs uses tmpfs or ramfs as backing-store. And it doesn't really 
+duplicate udev either, as it only does the bare minimum needed to get 
+the computer to the point where udev can do the rest. Like when you have 
+a root filesystem with no /dev at all.
+(Which was kind of an chicken & egg-problem before.)
+
+
+
+
+
+Bis denn
+
+-- 
+Real Programmers consider "what you see is what you get" to be just as 
+bad a concept in Text Editors as it is in women. No, the Real Programmer
+wants a "you asked for it, you got it" text editor -- complicated, 
+cryptic, powerful, unforgiving, dangerous.
+
