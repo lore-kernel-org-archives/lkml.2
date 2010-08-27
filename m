@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab0H0K5L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 06:57:11 -0400
-Received: from mail.redflag-linux.com ([219.237.229.196]:47046 "EHLO
-	mail.redflag-linux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480Ab0H0K5J (ORCPT
+	id S1752941Ab0H0K6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 06:58:49 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39209 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab0H0K6q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 06:57:09 -0400
-Message-ID: <4C7799FA.5050403@redflag-linux.com>
-Date: Fri, 27 Aug 2010 18:56:58 +0800
-From: =?UTF-8?B?Iua9mOWNq+W5syhQZXRlciBQYW4pIg==?= 
-	<wppan@redflag-linux.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100324 RedFlag/3.0.1-1rf2.dt8 Thunderbird/3.0.1
-MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/28] daily commit
-References: <1282894186-29199-1-git-send-email-wppan@redflag-linux.com>
-In-Reply-To: <1282894186-29199-1-git-send-email-wppan@redflag-linux.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 27 Aug 2010 06:58:46 -0400
+Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
+From: Peter Zijlstra <peterz@infradead.org>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <c065aaeb33752e7fce8958c8501a5a15.squirrel@webmail.greenhost.nl>
+References: <20100826180908.648103531@efficios.com>
+	 <c065aaeb33752e7fce8958c8501a5a15.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 27 Aug 2010 12:58:33 +0200
+Message-ID: <1282906713.1975.2187.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010年08月27日 15:29, Peter Pan(潘卫平) wrote:
-> From: Peter Pan<wppan@redflag-linux.com>
->
-> Signed-off-by: Peter Pan<wppan@redflag-linux.com>
-> ---
->   include/linux/fs.h |    7 ++++---
->   1 files changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 44f35ae..8382a33 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1335,7 +1335,7 @@ struct super_block {
->   	struct mutex		s_lock;
->   	int			s_count;
->   	int			s_need_sync;
-> -	atomic_t		s_active;
-> +	atomic_t		s_active; // æ´»åŠ¨å¼•ç”¨è®¡æ•°
->   #ifdef CONFIG_SECURITY
->   	void                    *s_security;
->   #endif
-> @@ -1343,7 +1343,7 @@ struct super_block {
->
->   	struct list_head	s_inodes;	/* all inodes */
->   	struct hlist_head	s_anon;		/* anonymous dentries for (nfs) exporting */
-> -	struct list_head	s_files;
-> +	struct list_head	s_files; // ????????è¢«åˆ†åŒºçš„æ–‡ä»¶é“¾è¡¨????????
->   	/* s_dentry_lru and s_nr_dentry_unused are protected by dcache_lock */
->   	struct list_head	s_dentry_lru;	/* unused dentry lru */
->   	int			s_nr_dentry_unused;	/* # of dentry on lru */
-> @@ -1358,7 +1358,8 @@ struct super_block {
->   	wait_queue_head_t	s_wait_unfrozen;
->
->   	char s_id[32];				/* Informational name */
-> -
-> +	
-> +	// æŒ‡å‘å…·ä½“çš„æ–‡ä»¶ç³»ç»Ÿã€‚å¦‚ext2æŒ‡å‘ext2_sb_infoï¼ˆå³å†…å­˜ä¸­çš„ext2_super_blockï¼‰
->   	void 			*s_fs_info;	/* Filesystem private info */
->   	fmode_t			s_mode;
->
+On Fri, 2010-08-27 at 12:47 +0200, Indan Zupancic wrote:
+> 
+> Please don't hide scheduler improvements behind obscure CONFIG_SCHED_DEBUG
+> options. If it doesn't make the scheduler better just don't merge it. If it
+> does then it should be enabled by default. 
 
-?????????????
--- 
-潘卫平
-Peter Pan
-Red Flag Software Co.,Ltd
+It's RFC, features are nice to test things and see if/how they work.
+Features are not a user option, so you don't have to worry about them.
+
+Also, 'better' is a very hard thing to quantify. Some people like
+throughput, some like latency, and others like raw context switch
+performance.
+
+Hopefully we'll soon have a non privileged sporadic task scheduler for
+all our srt media needs.
