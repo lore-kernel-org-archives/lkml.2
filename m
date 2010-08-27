@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab0H0PaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:30:21 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:2805 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650Ab0H0PaR (ORCPT
+	id S1754662Ab0H0PgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:36:24 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:22640 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754631Ab0H0PgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:30:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6086"; a="52334635"
-Subject: Re: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-In-Reply-To: <1282917280.26355.33.camel@e102109-lin.cambridge.arm.com>
-References: <1282712273-344-4-git-send-email-johlstei@codeaurora.org>
-	 <1282917280.26355.33.camel@e102109-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Aug 2010 08:29:38 -0700
-Message-ID: <1282922978.5075.13.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Aug 2010 11:36:22 -0400
+From: Yuri Ershov <ext-yuri.ershov@nokia.com>
+To: eric.piel@tremplin-utc.net, samu.p.onkalo@nokia.com,
+        akpm@linux-foundation.org, daniel@caiaq.de
+Cc: ext-yuri.kululin@nokia.com, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, ext-yuri.ershov@nokia.com
+Subject: [PATCH 2/2] lis3: Set device owner
+Date: Fri, 27 Aug 2010 18:33:21 +0400
+Message-Id: <f7f75208147a0655eda1ac402f07e98d745fc178.1282647258.git.ext-yuri.kululin@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <ee6b20c71d49b8438ced798a9e561dbbd2991cf6.1282647258.git.ext-yuri.kululin@nokia.com>
+References: <1282919601-21821-1-git-send-email-ext-yuri.ershov@nokia.com>
+ <ee6b20c71d49b8438ced798a9e561dbbd2991cf6.1282647258.git.ext-yuri.kululin@nokia.com>
+In-Reply-To: <ee6b20c71d49b8438ced798a9e561dbbd2991cf6.1282647258.git.ext-yuri.kululin@nokia.com>
+References: <ee6b20c71d49b8438ced798a9e561dbbd2991cf6.1282647258.git.ext-yuri.kululin@nokia.com>
+X-OriginalArrivalTime: 27 Aug 2010 15:35:13.0657 (UTC) FILETIME=[71170E90:01CB45FD]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 14:54 +0100, Catalin Marinas wrote:
-> On Wed, 2010-08-25 at 05:57 +0100, Jeff Ohlstein wrote:
-> > From: Daniel Walker <dwalker@codeaurora.org>
-> > 
-> > ScorpionMP does not have the SMP/nAMP and TLB ops broadcasting bits in
-> > ACTLR.
-> > 
-> > Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
-> > Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
-> > ---
-> >  arch/arm/mm/proc-v7.S |   24 ++++++++++++++++++++++++
-> >  1 files changed, 24 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-> > index 7aaf88a..98fd7e5 100644
-> > --- a/arch/arm/mm/proc-v7.S
-> > +++ b/arch/arm/mm/proc-v7.S
-> > @@ -196,6 +196,7 @@ __v7_setup:
-> >         orreq   r0, r0, #(1 << 6) | (1 << 0)    @ Enable SMP/nAMP mode and
-> >         mcreq   p15, 0, r0, c1, c0, 1           @ TLB ops broadcasting
-> >  #endif
-> > +__v7_msm_setup:
-> >         adr     r12, __v7_setup_stack           @ the local stack
-> >         stmia   r12, {r0-r5, r7, r9, r11, lr}
-> >         bl      v7_flush_dcache_all
-> 
-> It may be better to move the generic __v7_setup here and have a specific
-> entry for ARM Ltd cores (mask 0xff0f0000 and value 0x410f0000).
+Set device owner for i2c part.
 
-I'm not sure I follow you.. Are you saying there are other cpu's that
-don't need the SMP stuff at the top of __v7_setup ?
+Signed-off-by: Yuri Kululin <ext-yuri.kululin@nokia.com>
+---
+ drivers/hwmon/lis3lv02d_i2c.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> In general, I would have liked a different way (still ID-based) of
-> handling such issues without duplicating the whole structure. But I see
-> this becoming the standard as proc-v6.S follows it as well.
-
-This whole thing was something Russell specifically asked for (and
-practically wrote for me).
-
-Daniel
-
+diff --git a/drivers/hwmon/lis3lv02d_i2c.c b/drivers/hwmon/lis3lv02d_i2c.c
+index b2f8bae..1a55bb3 100644
+--- a/drivers/hwmon/lis3lv02d_i2c.c
++++ b/drivers/hwmon/lis3lv02d_i2c.c
+@@ -129,6 +129,7 @@ static int __devinit lis3lv02d_i2c_probe(struct i2c_client *client,
+ 	lis3_dev.reg_ctrl = lis3_reg_ctrl;
+ 	lis3_dev.irq	  = client->irq;
+ 	lis3_dev.ac	  = lis3lv02d_axis_map;
++	lis3_dev.owner	  = THIS_MODULE;
+ 
+ 	i2c_set_clientdata(client, &lis3_dev);
+ 
+@@ -149,6 +150,7 @@ static int __devexit lis3lv02d_i2c_remove(struct i2c_client *client)
+ 
+ 	lis3lv02d_joystick_disable();
+ 	lis3lv02d_remove_fs(&lis3_dev);
++	lis3_dev.owner = NULL;
+ 
+ 	regulator_bulk_free(ARRAY_SIZE(lis3_dev.regulators),
+ 			lis3_dev.regulators);
 -- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
+1.7.1.1
 
