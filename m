@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab0H0XGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 19:06:12 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:39318 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751819Ab0H0XGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 19:06:11 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: mKXUFPkVM1mSwv_l7Ul3fLSkc8OUcDbznIee6c_MjpCG7g5
- _8GsyhgJjGBGQMZWTMfz6ycnq04Xd2jRQaqpcZVvnhP5xh37g9H4K4nG68Tv
- iCpPXixoJact8UJLwmT61EDtpJEki30xAZcXJk9NLZkc4vzDtQdJza3C8UDv
- l9kqpb6ieJLkZGJEsyYUMOyhLR7mM9X8TqSJHgqJhNABiDFL2vNH.c9MezCk
- SsHfKUIcj8P4jOgeGfk.HbAW4j2R_
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 27 Aug 2010 18:06:07 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Hugh Dickins <hughd@google.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
-In-Reply-To: <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1008271801080.25115@router.home>
-References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils> <20100826235052.GZ6803@random.random> <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com> <20100827095546.GC6803@random.random> <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
- <alpine.DEB.2.00.1008271159160.18495@router.home> <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com> <alpine.DEB.2.00.1008271420400.18495@router.home> <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com> <alpine.DEB.2.00.1008271547200.22988@router.home>
- <AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com> <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752411Ab0H0XIF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 19:08:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47495 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141Ab0H0XIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 19:08:04 -0400
+Message-ID: <4C784544.2010305@zytor.com>
+Date: Fri, 27 Aug 2010 16:07:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Matteo Croce <matteo@openwrt.org>
+CC: Thomas Backlund <tmb@mandriva.org>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Natale Vinto <ebballon@gmail.com>
+Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
+References: <AANLkTinq81V6afODRS26Nk1vi68_VUMAfs-tu-P8=dBP@mail.gmail.com> <4C780888.9000301@zytor.com> <AANLkTikCssQSvRX1Gfq0V8B91Sp2gtTCJaPJ=_n9VJXZ@mail.gmail.com> <4C7824F2.1050709@mandriva.org> <AANLkTinjHK-oTmt-6cmN16jWWv9ZjW44wA-A3VTLm+A_@mail.gmail.com>
+In-Reply-To: <AANLkTinjHK-oTmt-6cmN16jWWv9ZjW44wA-A3VTLm+A_@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010, Hugh Dickins wrote:
+On 08/27/2010 02:32 PM, Matteo Croce wrote:
+> can I ignore the return value when I expect val to be non zero?
+> the doc says: "On error, the variable @x is set to zero."
 
-> >> I do not see a second check (*after* taking the lock) in the patch
->
->         if (page_mapped(page))
->                 return anon_vma;
+No.  You need to deliver a page fault to the application in this case.
 
-As far as I can tell you would have to recheck the mapping pointer and the
-pointer to the root too after taking the lock because only taking the lock
-stabilitzes the object. Any other data you may have obtained before
-acquiring the lock may have changed.
+The *real* test for this kind of crap is correct page fault behavior,
+and so forth.
 
-> >> and the way the lock is taken can be a problem in itself.
->
-> No, that's what we rely upon SLAB_DESTROY_BY_RCU for.
+Also, at the very least you need to check for:
 
-SLAB_DESTROY_BY_RCU does not guarantee that the object stays the same nor
-does it prevent any fields from changing. Going through a pointer with
-only SLAB_DESTROY_BY_RCU means that you can only rely on the atomicity
-guarantee for pointer updates. You get a valid pointer but pointer changes
-are not prevented by SLAB_DESTROY_BY_RCU.
+- CS == USER_CS
+- IP in the proper range for user space
 
-The only guarantee of that would be through other synchronization
-techniques. If you believe that the page lock provides sufficient
-synchronization that then this approach may be ok.
+Your patch in its current form is one big security hole.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
