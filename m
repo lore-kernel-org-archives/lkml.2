@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab0H0Jfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:35:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55240 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab0H0Jfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:35:38 -0400
-Message-ID: <4C778779.1090808@cn.fujitsu.com>
-Date: Fri, 27 Aug 2010 17:38:01 +0800
-From: liubo <liubo2009@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1753996Ab0H0Jgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:36:42 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46485 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab0H0Jgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 05:36:39 -0400
+Date: Fri, 27 Aug 2010 15:01:35 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 10/15] 10: tracing: config option to
+ enable both kprobe-tracer and uprobe-tracer.
+Message-ID: <20100827093135.GI14431@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+ <20100825134315.5447.96501.sendpatchset@localhost6.localdomain6>
+ <4C76038A.40400@hitachi.com>
 MIME-Version: 1.0
-To: "Carlos R. Mafra" <crmafra2@gmail.com>
-CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [2.6.35.3] BUG: unable to handle kernel NULL pointer dereference
- at (null)
-References: <20100826095357.GA7202@Pilar.aei.mpg.de>
-In-Reply-To: <20100826095357.GA7202@Pilar.aei.mpg.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4C76038A.40400@hitachi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 05:53 PM, Carlos R. Mafra wrote:
-> Hi,
->
-> I've just got this BUG: message in dmesg which I think is btrfs related.
->   
-[...]
+> 
+> Why are lots of end-of-line 's' character missing? :)
+> 
 
-> [  148.152107] Call Trace:
-> [  148.152113]  [<ffffffff8104e730>] ? process_timeout+0x0/0x10
-> [  148.152118]  [<ffffffff8118a42d>] end_workqueue_fn+0x10d/0x130
-> [  148.152122]  [<ffffffff811b98f0>] worker_loop+0xb0/0x5a0
-> [  148.152126]  [<ffffffff811b9840>] ? worker_loop+0x0/0x5a0
-> [  148.152130]  [<ffffffff8105b60e>] kthread+0x8e/0xa0
-> [  148.152135]  [<ffffffff81003a54>] kernel_thread_helper+0x4/0x10
-> [  148.152138]  [<ffffffff8105b580>] ? kthread+0x0/0xa0
-> [  148.152142]  [<ffffffff81003a50>] ? kernel_thread_helper+0x0/0x10
-> [  148.152144] Code: d3 ff ff 89 c2 b8 01 00 00 00 85 d2 75 56 4c 39 eb 77 51 0f 1f 80 00 00 00 00 48 89 de 49 8b 7c 24 10 48 c1 ee 0c e8 3f 21 ef ff <f6> 00 08 74 2a 48 89 c7 48 81 c3 00 10 00 00 e8 4b af ef ff 49 
-> [  148.152176] RIP  [<ffffffff811b1301>] extent_range_uptodate+0x51/0xa0
-> [  148.152180]  RSP <ffff880079acddd0>
-> [  148.152182] CR2: 0000000000000000
-> [  148.152185] ---[ end trace c11a5009b12451d7 ]---
->
->   
+Okay will correct them.
 
-Hi, Carlos,
-Did you hit this bug under heavy memory stress?
+<snipped>
 
-And, could you reproduce the bug? or show some reproduce steps for us?
+> >  
+> >  config PROBE_EVENTS
+> > -	def_bool n
+> > +	bool "Enable kprobes and uprobe based dynamic events"
+> > +	select TRACING
+> > +	default n
+> 
+> Hmm, without this series, KPROBE_EVENT is set "y" by default.
+> (PROBE_EVENTS is introduced by 8/15)
+> I'd like to set this "y" by default, because it doesn't
+> affect other parts.
+> 
+> Thank you,
+> 
 
-After digging into extent_range_uptodate(), IMO, this NULL pointer bug that issued page 
-can barely be hit. 
+This is based on what we discussed here
+http://lkml.org/lkml/2010/8/2/86.
 
-Maybe, due to heavy memory stress, a page of the extent_buffer has been freed before, 
-which leads that it is missing in page_cache and return NULL.
+To recollect, 
+Frederic wanted that there should be one option to select both
+UPROBE_EVENT and KPROBE_EVENT. 
 
+However if we make PROBE_EVENTS (which is the option to enable both
+events) default "Y", then both UPROBE_EVENT and KPROBE_EVENT will be
+selected.
 
-thanks,
-liubo
+Also if we look at http://lkml.org/lkml/2010/6/21/160, Steven
+Rostedt didnt want UPROBE_EVENT to selected by default.
 
+I agree that we should keep UPROBE_EVENT to be 'default n' till it gets
+tested. Hence we have two choices. Either set the common knob to be
+'default n' or dont have the common knob for now (i.e drop this
+patch for now).
 
-> Full dmesg is here
->
-> http://www.aei.mpg.de/~crmafra/dmesg-2.6.35.3.txt
->
-> Is there something else I should provide to help debug this?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->   
+I think we should go with the first one, i.e have a common knob thats
+by default unselected.
 
+-- 
+Thanks and Regards
+Sriakr
