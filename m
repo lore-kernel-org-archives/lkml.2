@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab0H0AWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 20:22:48 -0400
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:52165 "EHLO
-	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab0H0AWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 20:22:45 -0400
-Message-ID: <4C77054F.8030104@cesarb.net>
-Date: Thu, 26 Aug 2010 21:22:39 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
- messages
-References: <4C74686D.8090707@cesarb.net>	<1282865341-17607-1-git-send-email-cesarb@cesarb.net> <20100827011853.3faef5e7@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100827011853.3faef5e7@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754403Ab0H0A0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 20:26:47 -0400
+Received: from sh.osrg.net ([192.16.179.4]:46965 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752690Ab0H0A0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 20:26:44 -0400
+Date: Fri, 27 Aug 2010 09:26:17 +0900
+To: khc@pm.waw.pl
+Cc: fujita.tomonori@lab.ntt.co.jp, benh@kernel.crashing.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <m3iq2x2wgp.fsf@intrepid.localdomain>
+References: <1282254713.22370.368.camel@pasglop>
+	<20100826205344E.fujita.tomonori@lab.ntt.co.jp>
+	<m3iq2x2wgp.fsf@intrepid.localdomain>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100827092453A.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 27 Aug 2010 09:26:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-08-2010 21:18, Alan Cox escreveu:
-> On Thu, 26 Aug 2010 20:29:01 -0300
-> Cesar Eduardo Barros<cesarb@cesarb.net>  wrote:
->
->> On my Dell Inspiron N4010, one of these messages is printed every five
->> seconds. Change both to dev_dbg to quieten them even more.
->
-> It's not the kind of thing you want to quieten since in most cases it is
-> stuff you want to know about.
+On Thu, 26 Aug 2010 18:02:46 +0200
+Krzysztof Halasa <khc@pm.waw.pl> wrote:
 
-Isn't it a normal thing, however? If I understand it correctly, this 
-driver allows you to use a bit more power but throttles back if you are 
-using too much or it gets too hot. Thus, there should be nothing wrong 
-or even unusual with the situations where these messages appear.
+> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> writes:
+> 
+> > Lots of drivers call dma_set_coherent_mask with 64bit mask and then
+> > call it with 32bit mask if 64bit mask fails.
+> 
+> Which seems strange to me. If the driver asks for 64-bit mask and the
+> system can only give it 32-bits, why return an error? Every 32-bit
+> address is also 64-bit, with the most significant bits simply cleared.
 
->>   	if (ret)
->> -		dev_info(&ips->dev->dev,
->> +		dev_dbg(&ips->dev->dev,
->>   			 "MCP power or thermal limit exceeded\n");
->
-> Probably better to ratelimit it. Being told it occurs is important, being
-> told every five seconds is indeed excessive.
+As I wrote, the DMA API simply wasn't designed in that way (let
+architectures to clip the mask), I guess.
 
-Agreed. Even if it does not happen when idle, it should happen a lot 
-while playing a CPU-heavy and GPU-heavy 3D game.
-
--- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+If it was, dma_set_coherent_mask might return the actual mask.
