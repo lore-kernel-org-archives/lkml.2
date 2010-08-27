@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab0H0T55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:57:57 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:56312 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752040Ab0H0T5y (ORCPT
+	id S1754421Ab0H0UCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 16:02:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54999 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752758Ab0H0UCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:57:54 -0400
-Date: Fri, 27 Aug 2010 15:57:51 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH 00/11] sched: CFS low-latency features
-Message-ID: <20100827195751.GA1030@Krystal>
-References: <alpine.LFD.2.00.1008262306140.2768@localhost.localdomain> <alpine.LFD.2.00.1008270013390.2768@localhost.localdomain> <20100826230934.GA4194@Krystal> <1282894655.1975.1650.camel@laptop> <20100827152125.GB14926@Krystal> <1282923686.1975.2780.camel@laptop> <20100827160946.GG14926@Krystal> <1282930072.1975.2962.camel@laptop> <20100827183240.GC22679@Krystal> <1282936994.1975.3119.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282936994.1975.3119.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 15:56:51 up 216 days, 22:33,  4 users,  load average: 0.13, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 27 Aug 2010 16:02:43 -0400
+Date: Fri, 27 Aug 2010 13:02:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH RESEND] initialise DMA engine before MMC
+Message-Id: <20100827130233.893e7151.akpm@linux-foundation.org>
+In-Reply-To: <20100827194939.GJ23079@void.printf.net>
+References: <Pine.LNX.4.64.1006071312060.12965@axis700.grange>
+	<20100827194939.GJ23079@void.printf.net>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Fri, 2010-08-27 at 14:32 -0400, Mathieu Desnoyers wrote:
-> > 
-> > These are problems you get only when you allow spawning any number of threads.
-> > If, instead, you create a thread pool at timer creation, then you can allow
-> > concurrency without problems with spawner context and error proparation.
+On Fri, 27 Aug 2010 20:49:39 +0100
+Chris Ball <cjb@laptop.org> wrote:
+
+> Hi,
 > 
-> That would be a massive resource waste for the normal case where the
-> interval > handler runtime.
+> Andrew, mind taking this one?
+> 
+> From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Date: Mon, 7 Jun 2010 13:16:36 +0200 (CEST)
+> 
+> To use DMA engine based DMA with MMC in a non-modular build, the DMA 
+> engine has to initialise before MMC.
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Acked-by: Dan Williams <dan.j.williams@intel.com>
+> ---
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 91874e0..b713e75 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -92,6 +92,7 @@ obj-$(CONFIG_EISA)		+= eisa/
+>  obj-y				+= lguest/
+>  obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
+>  obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
+> +obj-$(CONFIG_DMA_ENGINE)	+= dma/
+>  obj-$(CONFIG_MMC)		+= mmc/
+>  obj-$(CONFIG_MEMSTICK)		+= memstick/
+>  obj-$(CONFIG_NEW_LEDS)		+= leds/
+> @@ -102,7 +103,6 @@ obj-$(CONFIG_CRYPTO)		+= crypto/
+>  obj-$(CONFIG_SUPERH)		+= sh/
+>  obj-$(CONFIG_ARCH_SHMOBILE)	+= sh/
+>  obj-$(CONFIG_GENERIC_TIME)	+= clocksource/
+> -obj-$(CONFIG_DMA_ENGINE)	+= dma/
+>  obj-$(CONFIG_DCA)		+= dca/
+>  obj-$(CONFIG_HID)		+= hid/
+>  obj-$(CONFIG_PPC_PS3)		+= ps3/
 
-Not if the application can configure this value. So the "normal" case could be
-set to 1 single thread. Only resource-intensive apps would set this differently,
-e.g. to the detected number of cpus.
+erk, doing this via link ordering isn't nice.
 
-Mathieu
+It would be better to express this dependency via initcall levels -
+core_initcall() or something.
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
