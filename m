@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab0H0Ibw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 04:31:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48788 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab0H0Ibu convert rfc822-to-8bit (ORCPT
+	id S1752810Ab0H0Idt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 04:33:49 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:51325
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752251Ab0H0Idq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 04:31:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mmqxq49CcY67pOo2xUIsCdbenQR9tTlIxNFbkUV3wj9C2DprIBfLw3d3IYXeEuQApU
-         cyQBY+sTxDK0PbcPFLbXI4EZbyJ8PQaqozBoGt7WCaSoxlUrkBhZr62g2MT332kJVVgv
-         Mif/mlkW8P9ovygt4aj6JNYhdAptoFuY0Vv8I=
+	Fri, 27 Aug 2010 04:33:46 -0400
+X-SpamScore: 3
+X-BigFish: VPS3(z3cfcs329eqzbb2cK936eK1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7SYC8-02-08B-02
+X-M-MSG: 
+Date: Fri, 27 Aug 2010 10:31:20 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100827083120.GH22783@erda.amd.com>
+References: <20100825110006.GB27891@elte.hu>
+ <20100825201106.GH4879@redhat.com>
+ <20100826090008.GA22783@erda.amd.com>
+ <AANLkTim3+u-fV-RAC=Odede6BfGdYoXsN55Tqw6iSfVT@mail.gmail.com>
+ <20100826152246.GN4879@redhat.com>
+ <20100826153404.GA6306@lenovo>
+ <20100826164031.GO4879@redhat.com>
+ <20100826180250.GB6306@lenovo>
+ <20100827075737.GE22783@erda.amd.com>
+ <1282896681.1975.1760.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <01b901cb45ab$39165480$3c64a8c0@newtouch.nt>
-References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
-	<01b901cb45ab$39165480$3c64a8c0@newtouch.nt>
-Date: Fri, 27 Aug 2010 16:31:49 +0800
-Message-ID: <AANLkTi=hkgGBfGHnDAx0Sdb6YuJwF4wJyMdt=mnqefzx@mail.gmail.com>
-Subject: Re: msgrcv() errno 514 ERESTARTNOHAND
-From: Pei Lin <telent997@gmail.com>
-To: =?GB2312?B?1uzOxLzR?= <wenjia.zhu@newtouch.cn>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1282896681.1975.1760.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/27 ÖìÎÄ¼Ñ <wenjia.zhu@newtouch.cn>:
-> Hello List£º
->
-> ¡¡I have a problem with msgrcv().
->
->  I have used msgrcv() in my source to receive messages in a while(1).
->
->  But it returned an error in errno 514(ERESTARTNOHAND).
->
->  I search this error in net, and it seems to be should not happen in user
-> program.
->
->  But it happened in my program, and once only. I didn't see it happens after
-> that once.
->
->
->
->  My question is how can I make this error happen again?
->
-> And how can I fix it?
->
->
->
-> I saw RedHat has fixed the problem, but no details on their website.
->
-http://rhn.redhat.com/errata/RHSA-2008-0612.html
-the website had list the src rpm name. kernel-2.6.18-92.1.10.el5.src.rpm
-you can use google to search the kernel src rpm and check the code changes.
+On 27.08.10 04:11:21, Peter Zijlstra wrote:
+> On Fri, 2010-08-27 at 09:57 +0200, Robert Richter wrote:
+> > On 26.08.10 14:02:50, Cyrill Gorcunov wrote:
+> > > > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> > > > index 4539b4b..9e65a7b 100644
+> > > > --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> > > > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> > > > @@ -777,7 +777,9 @@ again:
+> > > >  
+> > > >  done:
+> > > >  	intel_pmu_enable_all(0);
+> > > > -	return handled;
+> > > > +	if (!handled)
+> > > > +		return handled;
+> > > > +	return ++handled;
+> > > >  }
+> > > >  
+> > > >  static struct event_constraint *
+> > > > 
+> > > 
+> > > ok, it seems it just treat any unknown nmi as being came from PMU, no?
+> > 
+> > Yes, this just throws away all unknown nmis after a perf nmi. It
+> > disables unknown nmi detection on this cpu type.
+> 
+> Wouldn't returning 2 be more sensible, then it would only eat a few
+> unknowns after each pmi? (Still assuming you return 0 when there really
+> was nothing to do)
 
->
->
-> My OS is Montavista 5.0(Kernel2.6.18).
->
->
->
-> Thanks
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Yes, this would be the best workaround for cpus where the detection
+logic does not work properly. But I think Don found a solution
+already.
 
-
+-Robert
 
 -- 
-Best Regards
-Lin
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
