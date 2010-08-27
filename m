@@ -1,125 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab0H0JYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:24:33 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36743 "EHLO gir.skynet.ie"
+	id S1753609Ab0H0JYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:24:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42015 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab0H0JYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:24:30 -0400
-Date: Fri, 27 Aug 2010 10:24:16 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] writeback: Record if the congestion was unnecessary
-Message-ID: <20100827092415.GB19556@csn.ul.ie>
-References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie> <1282835656-5638-3-git-send-email-mel@csn.ul.ie> <20100826182904.GC6805@cmpxchg.org> <20100826203130.GL20944@csn.ul.ie> <20100827081648.GD6805@cmpxchg.org>
+	id S1753456Ab0H0JYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 05:24:32 -0400
+Message-ID: <4C7782D1.5040501@kernel.org>
+Date: Fri, 27 Aug 2010 11:18:09 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100827081648.GD6805@cmpxchg.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Christoph Hellwig <hch@lst.de>
+CC: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
+        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
+Subject: Re: [PATCH] block: update documentation for REQ_FLUSH / REQ_FUA
+References: <1282751267-3530-1-git-send-email-tj@kernel.org> <20100826095413.GA9750@lst.de>
+In-Reply-To: <20100826095413.GA9750@lst.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 Aug 2010 09:24:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 10:16:48AM +0200, Johannes Weiner wrote:
-> On Thu, Aug 26, 2010 at 09:31:30PM +0100, Mel Gorman wrote:
-> > On Thu, Aug 26, 2010 at 08:29:04PM +0200, Johannes Weiner wrote:
-> > > On Thu, Aug 26, 2010 at 04:14:15PM +0100, Mel Gorman wrote:
-> > > > If congestion_wait() is called when there is no congestion, the caller
-> > > > will wait for the full timeout. This can cause unreasonable and
-> > > > unnecessary stalls. There are a number of potential modifications that
-> > > > could be made to wake sleepers but this patch measures how serious the
-> > > > problem is. It keeps count of how many congested BDIs there are. If
-> > > > congestion_wait() is called with no BDIs congested, the tracepoint will
-> > > > record that the wait was unnecessary.
-> > > 
-> > > I am not convinced that unnecessary is the right word.  On a workload
-> > > without any IO (i.e. no congestion_wait() necessary, ever), I noticed
-> > > the VM regressing both in time and in reclaiming the right pages when
-> > > simply removing congestion_wait() from the direct reclaim paths (the
-> > > one in __alloc_pages_slowpath and the other one in
-> > > do_try_to_free_pages).
-> > > 
-> > > So just being stupid and waiting for the timeout in direct reclaim
-> > > while kswapd can make progress seemed to do a better job for that
-> > > load.
-> > > 
-> > > I can not exactly pinpoint the reason for that behaviour, it would be
-> > > nice if somebody had an idea.
-> > > 
-> > 
-> > There is a possibility that the behaviour in that case was due to flusher
-> > threads doing the writes rather than direct reclaim queueing pages for IO
-> > in an inefficient manner. So the stall is stupid but happens to work out
-> > well because flusher threads get the chance to do work.
+On 08/26/2010 11:54 AM, Christoph Hellwig wrote:
 > 
-> The workload was accessing a large sparse-file through mmap, so there
-> wasn't much IO in the first place.
-> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Then waiting on congestion was the totally wrong thing to do. We were
-effectively calling sleep(HZ/10) and magically this was helping in some
-undefined manner. Do you know *which* called of congestion_wait() was
-the most important to you?
+applied to misc#flush-fua.
 
-> And I experimented on the latest -mmotm where direct reclaim wouldn't
-> do writeback by itself anymore, but kick the flushers.
-> 
-
-What were the results? I'm preparing a full series incorporating a
-number of patches in this area to see how they behave in aggregate.
-
-> > > So personally I think it's a good idea to get an insight on the use of
-> > > congestion_wait() [patch 1] but I don't agree with changing its
-> > > behaviour just yet, or judging its usefulness solely on whether it
-> > > correctly waits for bdi congestion.
-> > > 
-> > 
-> > Unfortunately, I strongly suspect that some of the desktop stalls seen during
-> > IO (one of which involved no writes) were due to calling congestion_wait
-> > and waiting the full timeout where no writes are going on.
-> 
-> Oh, I am in full agreement here!  Removing those congestion_wait() as
-> described above showed a reduction in peak latency.  The dilemma is
-> only that it increased the overall walltime of the load.
-> 
-
-Do you know why because leaving in random sleeps() hardly seems to be
-the right approach?
-
-> And the scanning behaviour deteriorated, as in having increased
-> scanning pressure on other zones than the unpatched kernel did.
-> 
-
-Probably because it was scanning more but not finding what it needed.
-There is a condition other than congestion it is having trouble with. In
-some respects, I think if we change congestion_wait() as I propose,
-we may see a case where CPU usage is higher because it's now
-encountering the unspecified reclaim problem we have.
-
-> So I think very much that we need a fix.  congestion_wait() causes
-> stalls and relying on random sleeps for the current reclaim behaviour
-> can not be the solution, at all.
-> 
-> I just don't think we can remove it based on the argument that it
-> doesn't do what it is supposed to do, when it does other things right
-> that it is not supposed to do ;-)
-> 
-
-We are not removing it, we are just stopping it going to sleep for
-stupid reasons. If we find that wall time is increasing as a result, we
-have a path to figuring out what the real underlying problem is instead
-of sweeping it under the rug.
-
-congestion_wait() is causing other problems such as Christian's bug of
-massive IO regressions because it was sleeping when it shouldn't.
+Thanks.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+tejun
