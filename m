@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab0H0KZW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 06:25:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35625 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752296Ab0H0KZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 06:25:21 -0400
-Message-ID: <4C779111.8000803@kernel.org>
-Date: Fri, 27 Aug 2010 12:18:57 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1751748Ab0H0K2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 06:28:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56281 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab0H0K2D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 06:28:03 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>, Zhu Yi <yi.zhu@intel.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: Re: [PATCH] bitops: Provide generic sign_extend function (moving it out from wireless code)
+References: <20100827101651.GC5348@loge.amd.com>
+Date: Fri, 27 Aug 2010 12:27:53 +0200
+In-Reply-To: <20100827101651.GC5348@loge.amd.com> (Andreas Herrmann's message
+	of "Fri, 27 Aug 2010 12:16:51 +0200")
+Message-ID: <87k4ncic46.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jeffrey Carlyle <jeff.carlyle@motorola.com>
-CC: torvalds@osdl.org, linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        OLUSANYA SOYANNWO <c23746@motorola.com>, Hu Tao <taohu@motorola.com>
-Subject: Re: [PATCH] scatterlist: prevent invalid free when alloc fails
-References: <AANLkTimoCn9uWQ1NTJAhRu7cq1MA+oo6E5p30zeXA3f1@mail.gmail.com>
-In-Reply-To: <AANLkTimoCn9uWQ1NTJAhRu7cq1MA+oo6E5p30zeXA3f1@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 Aug 2010 10:24:48 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Andreas Herrmann <herrmann.der.user@googlemail.com> writes:
+>  
+> +/**
+> + * sign_extend - Sign extend a value using specified bit as sign-bit
+> + * @value: value to sign extend
+> + * @index: 0 based bit index (0<=index<32) to sign bit
+> + */
+> +static inline __s32 sign_extend(__u32 value, int index)
+> +{
+> +	__u8 shift = 31 - index;
+> +	return (__s32)(value << shift) >> shift;
+> +}
 
-First of all, the patch is line-wrapped.  Please check your email
-settings.
+If it only handles 32bit please call it sign_extend32
 
-On 08/26/2010 06:04 PM, Jeffrey Carlyle wrote:
-> When alloc fails, free_table is being called. Depending on the number of
-> bytes requested, we determine if we are going to call _get_free_page()
-> or kmalloc(). When alloc fails, our math is wrong (due to sg_size - 1),
-> and the last buffer is wrongfully assumed to have been allocated by
-> kmalloc. Hence, kfree gets called and a panic occurs.
-> 
-> This fix sets the end marker and allows the proper freeing of the
-> buffers.
-> 
-> Signed-off-by: Olusanya Soyannwo <c23746@motorola.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Jens Axboe <jaxboe@fusionio.com>
-> Signed-off-by: Jeffrey Carlyle <jeff.carlyle@motorola.com>
-> ---
->  lib/scatterlist.c |   11 +++++++++--
->  1 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-> index a5ec428..acf2c6e 100644
-> --- a/lib/scatterlist.c
-> +++ b/lib/scatterlist.c
-> @@ -163,7 +163,7 @@ void __sg_free_table(struct sg_table *table,
-> unsigned int max_ents,
->  		return;
-> 
->  	sgl = table->sgl;
-> -	while (table->orig_nents) {
-> +	while (table->orig_nents && sgl) {
->  		unsigned int alloc_size = table->orig_nents;
->  		unsigned int sg_size;
-
-Why is this change necessary?
-
-> @@ -227,6 +227,7 @@ int __sg_alloc_table(struct sg_table *table,
-> unsigned int nents,
->  {
->  	struct scatterlist *sg, *prv;
->  	unsigned int left;
-> +	unsigned int total_alloc = 0;
-> 
->  #ifndef ARCH_HAS_SG_CHAIN
->  	BUG_ON(nents > max_ents);
-> @@ -248,8 +249,14 @@ int __sg_alloc_table(struct sg_table *table,
-> unsigned int nents,
->  		left -= sg_size;
-> 
->  		sg = alloc_fn(alloc_size, gfp_mask);
-> -		if (unlikely(!sg))
-> +		if (unlikely(!sg)) {
-> +			table->orig_nents = total_alloc;
-> +			/* mark the end of previous entry */
-> +			sg_mark_end(&prv[alloc_size - 1]);
-
-prv[alloc_size - 1] is already marked as end by sg_init_table() during
-the previous iteration.  Also, prv can be NULL at this point.  AFAICS,
-the only thing necessary would be "if (prv) table->nents++", no?
-
-Thanks.
+-Andi
 
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only.
