@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab0H0T3e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:29:34 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:23081 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750781Ab0H0T3d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:29:33 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: LbBDJRUVM1nr1FdTU4oE8KvBSCFhlFnyPw2lARfnwTyPwn2
- pYIhajPBRGtsxeB.GcNR_FG_2cGNJmimEN0gbQrLiQio9eOUPVRkyDo14p6b
- QNTI2iUhY7adVqLdv7pV1fjF7G_mUZb.rRinlSeW3jo5Dcs4qJB1iIWzhawl
- aRdyBT0hlQmFiEZSJw6sCoS84pmSnIzULCmJSQm9R_F5aQGvXbztwknbFe6A
- 28PW_8wr4XzJz4DwfQ_ibHkKfcjXN
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 27 Aug 2010 14:29:28 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Hugh Dickins <hughd@google.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
-In-Reply-To: <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1008271420400.18495@router.home>
-References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils> <20100826235052.GZ6803@random.random> <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com> <20100827095546.GC6803@random.random> <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
- <alpine.DEB.2.00.1008271159160.18495@router.home> <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753608Ab0H0TdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:33:12 -0400
+Received: from void.printf.net ([89.145.121.20]:49133 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389Ab0H0TdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 15:33:09 -0400
+Date: Fri, 27 Aug 2010 20:33:03 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: akpm@linux-foundation.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        wolfgang.mues@auerswald.de, avictor.za@gmail.com
+Subject: Re: [PATCH 1/7] mmc: at91_mci: fix pointer errors
+Message-ID: <20100827193303.GB23079@void.printf.net>
+References: <9535dc8dfe4476a0314b9513fb9d37862faa731d.1267209149.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9535dc8dfe4476a0314b9513fb9d37862faa731d.1267209149.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010, Hugh Dickins wrote:
+Hi Andrew, Nicolas,
 
-> Eh?  My solution was a second page_mapped(page) test i.e. testing an atomic.
+On Fri, Feb 26, 2010 at 07:39:29PM +0100, Nicolas Ferre wrote:
+> From: Wolfgang Muees <wolfgang.mues@auerswald.de>
+> 
+> Fixes two pointer errors, one which leads to memory overwrites if used with
+> large chunks of data.
+> 
+> Signed-off-by: Wolfgang Muees <wolfgang.mues@auerswald.de>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/mmc/host/at91_mci.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/at91_mci.c b/drivers/mmc/host/at91_mci.c
+> index 63924e0..6835104 100644
+> --- a/drivers/mmc/host/at91_mci.c
+> +++ b/drivers/mmc/host/at91_mci.c
+> @@ -227,11 +227,13 @@ static inline void at91_mci_sg_to_dma(struct at91mci_host *host, struct mmc_data
+>  			for (index = 0; index < (amount / 4); index++)
+>  				*dmabuf++ = swab32(sgbuffer[index]);
+>  		} else {
+> -			memcpy(dmabuf, sgbuffer, amount);
+> -			dmabuf += amount;
+> +			char *tmpv = (char *)dmabuf;
+> +			memcpy(tmpv, sgbuffer, amount);
+> +			tmpv += amount;
+> +			dmabuf = (unsigned *)tmpv;
+>  		}
+>  
+> -		kunmap_atomic(sgbuffer, KM_BIO_SRC_IRQ);
+> +		kunmap_atomic(((void *)sgbuffer)-sg->offset, KM_BIO_SRC_IRQ);
+>  
+>  		if (size == 0)
+>  			break;
+> -- 
+> 1.5.6.5
 
-Argh. Right. Looked like a global to me. Did not see the earlier local
-def.
+Looks like only the first half of this patch was applied?  The
+kunmap_atomic() line is still present as before in Linus' tree. 
 
-If you still use a pointer then what does insure that the root
-pointer was not changed after the ACCESS_ONCE? The free semantics
-of an anon_vma?
-
-Since there is no lock taken before the mapped check none of the
-earlier reads from the anon vma structure nor the page mapped check
-necessarily reflect a single state of the anon_vma.
-
-
-
-
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
