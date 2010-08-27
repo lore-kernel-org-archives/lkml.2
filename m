@@ -1,96 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab0H0Qt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:49:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40087 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752891Ab0H0QtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:49:24 -0400
-Subject: Re: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-In-Reply-To: <1282926826.5075.21.camel@m0nster>
-References: <1282926826.5075.21.camel@m0nster>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Fri, 27 Aug 2010 17:49:06 +0100
-Message-ID: <1282927746.26355.74.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Aug 2010 16:49:06.0810 (UTC) FILETIME=[C37485A0:01CB4607]
+	id S1754302Ab0H0Qty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:49:54 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:36653 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752891Ab0H0Qtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 12:49:53 -0400
+Date: Fri, 27 Aug 2010 09:48:33 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: Fix checkpatch errors in lm90 driver
+Message-ID: <20100827164833.GB22316@ericsson.com>
+References: <1282838076-7175-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100827134523.6bcc70aa@hyperion.delvare>
+ <20100827134926.GA21827@ericsson.com>
+ <20100827172403.4c22bbce@hyperion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100827172403.4c22bbce@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 17:33 +0100, Daniel Walker wrote:
-> On Fri, 2010-08-27 at 17:04 +0100, Catalin Marinas wrote:
-> > On Fri, 2010-08-27 at 16:29 +0100, Daniel Walker wrote:
-> > > On Fri, 2010-08-27 at 14:54 +0100, Catalin Marinas wrote:
-> > > > On Wed, 2010-08-25 at 05:57 +0100, Jeff Ohlstein wrote:
-> > > > > From: Daniel Walker <dwalker@codeaurora.org>
-> > > > >
-> > > > > ScorpionMP does not have the SMP/nAMP and TLB ops broadcasting bits in
-> > > > > ACTLR.
-> > > > >
-> > > > > Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
-> > > > > Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
-> > > > > ---
-> > > > >  arch/arm/mm/proc-v7.S |   24 ++++++++++++++++++++++++
-> > > > >  1 files changed, 24 insertions(+), 0 deletions(-)
-> > > > >
-> > > > > diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-> > > > > index 7aaf88a..98fd7e5 100644
-> > > > > --- a/arch/arm/mm/proc-v7.S
-> > > > > +++ b/arch/arm/mm/proc-v7.S
-> > > > > @@ -196,6 +196,7 @@ __v7_setup:
-> > > > >         orreq   r0, r0, #(1 << 6) | (1 << 0)    @ Enable SMP/nAMP mode and
-> > > > >         mcreq   p15, 0, r0, c1, c0, 1           @ TLB ops broadcasting
-> > > > >  #endif
-> > > > > +__v7_msm_setup:
-> > > > >         adr     r12, __v7_setup_stack           @ the local stack
-> > > > >         stmia   r12, {r0-r5, r7, r9, r11, lr}
-> > > > >         bl      v7_flush_dcache_all
-> > > >
-> > > > It may be better to move the generic __v7_setup here and have a specific
-> > > > entry for ARM Ltd cores (mask 0xff0f0000 and value 0x410f0000).
-> > >
-> > > I'm not sure I follow you.. Are you saying there are other cpu's that
-> > > don't need the SMP stuff at the top of __v7_setup ?
-> >
-> > The SMP/nAMP bit is something specific to the ARM11MPCore and Cortex-A9
-> > processors produced by ARM. If you core doesn't need this, it should use
-> > a default __v7_setup without any additional bits being set.
-> >
-> > I'm not aware of other MP ARM processors produced by other companies
-> > that would require exactly the same bit being set.
+On Fri, Aug 27, 2010 at 11:24:03AM -0400, Jean Delvare wrote:
+Hi Jean,
+
+> Hi Guenter,
 > 
-> So your saying it makes more sense to change the msm entry into the
-> default entry, and make the current default into the
-> ARM11MPCore/Cortex-A9 entry?
+> On Fri, 27 Aug 2010 06:49:26 -0700, Guenter Roeck wrote:
+> > Next question: lm90_update_device() currently does not return any errors.
+> > In recent drivers, we pass i2c read errors up to userland. Before I introduce
+> > the max6696 changes, does it make sense to add error checking/return
+> > into the driver, similar to what I have done in the smm665 and jc42 drivers ?
+> 
+> So far, most hwmon driver authors decided to ignore such errors, or
+> limited their handling to logging the issue, mainly because the caching
+> mechanism makes handling of such errors tough. Now I admit that the
+> approach you took in the jc42 driver is interesting. I never considered
+> having a single error value being returned by the update function the
+> way you did.
+> 
+> This has the obvious drawback that transient I/O errors cause _all_
+> sensor values to be unavailable, which is discussable, especially for a
+> device with many features. It's hard to justify that all values of a
+> full-featured hardware monitoring chip could be unavailable because,
+> for example, one of the temperature sensors is unreliable. So this
+> approach is fine for your small jc42 driver, but I don't think it can be
+> generalized.
+> 
+On the plus side, though, a transient failure only causes a single read
+operation to fail, since I don't update the timestamp nor the valid flag
+in the error case. As a result, the next read will again try to update
+all values. So it isn't really that bad. Only real drawback of my approach
+is that a transient read failure on one sensor register will likely be
+reported while trying to read data for another sensor.
 
-So my opinion is to not add any specific msm code but make the
-__v7_setup skip the ACTLR bit setting. Then add an entry for Cortex-A9
-to set those bits.
+Of course, you are right that a permanent error on a single register will
+cause all sensor read operations to fail, which isn't really desirable.
+I have no idea if that can happen in the real world, though. Seems to be
+unlikely that a failing sensor would cause an I2C operation failure.
+But who knows - maybe it does happen with some chips.
 
-> There's 4 or 5 other cpu's that have SMP but none have had to jump over
-> those bits AFAIK ..
+> In the general case, I think I am fine with pretty much anything which
+> doesn't plain ignore error codes (as many drivers still do...) and
+> doesn't block all readings on transient errors. This can mean returning
+> 0 on error, or returning the previous last known value (definitely
+> acceptable for transient errors, but not so for long-standing ones),
 
-Maybe they don't do anything with those bits and writing to them is
-harmless. They'll complain if their code stops working but it is usually
-unlikely that people implementing their own v7MP would use the same bits
-in ACTLR as Cortex-A9.
+Basic reason for returning errors in the first place was that I was asked
+to do so in review feedback for one of my drivers - specifically, that I
+should not drop errors. So we would need some clear(er) guidelines
+for new drivers if we want to go along that path.
 
-I'm not sure whether someone licensing and manufacturing a Cortex-A9
-would use the same manufacturer id (TI folks would know better). If not
-we could check against 0x000fc090.
+> with or without logging. Or if you really want to pass error codes down
+> to user-space, I think you have to rework the update() function and the
+> per-device data structure altogether, to be able to store error codes
+> in the data structure.
+> 
+Seems to be a bit excessive, and it doesn't seem to be worth the effort
+and added complexity.
 
--- 
-Catalin
+> A different (and complementary) approach is to repeat the failing
+> command and see if it helps. The w83l785ts driver does exactly this. If
+> we want to generalize this, it would probably make sense to implement
+> it at the the i2c-core level (i.e. add a "retries" i2c_client
+> attribute.)
+> 
+Still doesn't solve the permanent error case, though. Question remains, then,
+if it is likely that a single i2c register would return a permanent error
+while others still work.
 
+> I admit I have been ignoring the issue mainly so far, because it's not
+> a big problem in practice (except on one board with the w83l785ts
+> driver, thus the extra code in that driver), so adding complex or
+> invasive code to deal with it isn't too appealing.
+> 
+I'll take that as a hint and won't make any changes to lm90 driver error 
+handling.
+
+Guenter
