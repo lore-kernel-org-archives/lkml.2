@@ -1,355 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab0H0BPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 21:15:50 -0400
-Received: from ozlabs.org ([203.10.76.45]:41222 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab0H0BPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:15:47 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: divya <dipraksh@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: Power machines fail to boot after build being successful
-In-reply-to: <4C764F52.5050707@linux.vnet.ibm.com>
-References: <4C764F52.5050707@linux.vnet.ibm.com>
-Comments: In-reply-to divya <dipraksh@linux.vnet.ibm.com>
-   message dated "Thu, 26 Aug 2010 16:56:10 +0530."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Fri, 27 Aug 2010 11:15:46 +1000
-Message-ID: <2311.1282871746@neuling.org>
+	id S1752785Ab0H0BUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 21:20:50 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48443 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab0H0BUr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 21:20:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=v00Tgv6XK8knZ00x7vZnZC+mtchw/aEm1spViljnHaFxMcdq875lAIK+8KxyMnx1lM
+         mMdIN+e8lTYRp9V309qlIgEgQXr4sUBT5jdCB7yjUNokUk1Tq4J2rvnFWPg2y1MGpDLz
+         XPxeEoUeeOQEpTbgZfgm5vietHfH+NyaiBu94=
+MIME-Version: 1.0
+In-Reply-To: <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
+	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
+Date: Fri, 27 Aug 2010 06:50:44 +0530
+X-Google-Sender-Auth: 98zM79fGVVqq_QUqaznb0p0k3_c
+Message-ID: <AANLkTi=YaUTVWQ23SVE250hd+qMgdTGvk0fZ4J5zPmkh@mail.gmail.com>
+Subject: Re: cgroup: rmdir() does not complete
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Mark Hills <mark@pogo.org.uk>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> After successfully building the kernel version
-> 2.6.36-rc2-git4(commitid d4348c678977c) with the config file
-> attached(used make oldconfig), P5 and P6 power machines fails to
-> reboot with the following logs
-> 
-> Logs collected while rebooting into today next, same occurs with the
-> upstream kernel too.
+On Fri, Aug 27, 2010 at 6:26 AM, Daisuke Nishimura
+<nishimura@mxp.nes.nec.co.jp> wrote:
+> Hi.
+>
+> On Thu, 26 Aug 2010 16:51:55 +0100 (BST)
+> Mark Hills <mark@pogo.org.uk> wrote:
+>
+>> I am experiencing hung tasks when trying to rmdir() on a cgroup. One task
+>> spins, others queue up behind it with the following:
+>>
+>>   INFO: task soaked-cgroup:27257 blocked for more than 120 seconds.
+>>   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>>   soaked-cgrou D ffff8800058157c0     0 27257  29411 0x00000000
+>>   ffff88004ffffdd8 0000000000000086 ffff88004ffffda8 ffff88004ffffeb8
+>>   0000000000000010 ffff880119813780 ffff88004ffffd48 ffff88004fffffd8
+>>   ffff88004fffffd8 000000000000f9b0 00000000000157c0 ffff880137693268
+>>   Call Trace:
+>>   [<ffffffff81115edb>] ? mntput_no_expire+0x24/0xe7
+>>   [<ffffffff81427acd>] __mutex_lock_common+0x14d/0x1b4
+>>   [<ffffffff81108a7c>] ? path_put+0x1d/0x22
+>>   [<ffffffff81427b48>] __mutex_lock_slowpath+0x14/0x16
+>>   [<ffffffff81427c4f>] mutex_lock+0x31/0x4b
+>>   [<ffffffff8110bdf8>] do_rmdir+0x74/0x102
+>>   [<ffffffff8110bebd>] sys_rmdir+0x11/0x13
+>>   [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
+>>
+>> Kernel is from Fedora, 2.6.33.6. In all cases the cgroup contains no
+>> tasks.
+>>
+>> Commit ec64f5 ("fix frequent -EBUSY at rmdir") adds a busy wait loop to
+>> the rmdir. It looks like what I am seeing here and indicates that some
+>> cgroup subsystem is busy, indefinitely.
+>>
+> The commit had caused a bug about rmdir, but it was fixed by the commit 88703267.
+> The fix was merged in 2.6.31, so it seems that you hit a new one...
+>
+>> I have not worked out how to reproduce it quickly. My only way is to
+>> complete a 'dd' command in the cgroup, but then the problem is so rare it
+>> is slow progress.
+>>
+>> Documentation/cgroup.memory.txt describes how force_empty can be required
+>> in some cases. Does this mean that with the patch above, these cases will
+>> now spin on rmdir(), instead of returning -EBUSY? How can produce a
+>> reliable test case requiring memory.force_empty to be used, to test this?
+>>
+> You don't need to touch "force_empty". rmdir() does what "force_empty" does.
+>
+>> Or is it likely to be some other cause, and how best to find it?
+>>
+> What cgroup subsystem did you mount where the directory existed you tried
+> to rmdir() first ?
+> If you mounted several subsystems on the same hierarchy, can you mount them
+> separately to narrow down the cause ?
+>
 
-This will fix your problem:
-http://patchwork.ozlabs.org/patch/62757/ 
+It would also be nice to see what your mounted cgroup (filesystem
+perspective) looks like and what /proc/cgroups looks like when the
+problem occurs.
 
-Please CC linuxppc-dev@ozlabs.org for pwoerpc bug reports.
-
-Mikey
-
-
-> Please wait, loading kernel...
-> Allocated 01a00000 bytes for kernel @ 03500000
->     Elf64 kernel loaded...
-> Loading ramdisk...
-> ramdisk loaded 00841ae7 @ 04f00000
-> OF stdout device is: /vdevice/vty@30000000
-> Preparing to boot Linux version 2.6.36-rc2-autotest-next-20100826 (root@llm62
-) (gcc version 4.3.2 [gcc-4_3-branch revision 141291] (SUSE Linux) ) #1 SMP Thu
- Aug 26 10:55:01 IST 2010
-> Max number of cores passed to firmware: 512 (NR_CPUS = 1024)
-> Calling ibm,client-architecture-support... done
-> command line: root=/dev/sda5 IDENT=1282801372 xmon=early
-> memory layout at init:
->    memory_limit : 0000000000000000 (16 MB aligned)
->    alloc_bottom : 0000000005750000
->    alloc_top    : 0000000008000000
->    alloc_top_hi : 0000000008000000
->    rmo_top      : 0000000008000000
->    ram_top      : 0000000008000000
-> instantiating rtas at 0x00000000074e0000... done
-> boot cpu hw idx 0
-> starting cpu hw idx 2... done
-> copying OF device tree...
-> Building dt strings...
-> Building dt structure...
-> Device tree strings 0x0000000005760000 ->  0x00000000057615fa
-> Device tree struct  0x0000000005770000 ->  0x0000000005790000
-> Calling quiesce...
-> returning from prom_init
-> Using pSeries machine description
-> Using 1TB segments
-> Found initrd at 0xc000000004f00000:0xc000000005741ae7
-> Partition configured for 4 cpus.
-> CPU maps initialized for 2 threads per core
-> Starting Linux PPC64 #1 SMP Thu Aug 26 10:55:01 IST 2010
-> -----------------------------------------------------
-> ppc64_pft_size                = 0x1a
-> physicalMemorySize            = 0x100000000
-> htab_hash_mask                = 0x7ffff
-> -----------------------------------------------------
-> Initializing cgroup subsys cpuset
-> Initializing cgroup subsys cpu
-> Linux version 2.6.36-rc2-autotest-next-20100826 (root@llm62) (gcc version 4.3
-.2 [gcc-4_3-branch revision 141291] (SUSE Linux) ) #1 SMP Thu Aug 26 10:55:01 I
-ST 2010
-> [boot]0012 Setup Arch
-> EEH: No capable adapters found
-> PPC64 nvram contains 15360 bytes
-> Zone PFN ranges:
->    DMA      0x00000000 ->  0x00010000
->    Normal   empty
-> Movable zone start PFN for each node
-> early_node_map[1] active PFN ranges
->      1: 0x00000000 ->  0x00010000
-> Could not find start_pfn for node 0
-> [boot]0015 Setup Done
-> PERCPU: Embedded 29 pages/cpu @c000000002100000 s1859840 r0 d40704 u2097152
-> pcpu-alloc: s1859840 r0 d40704 u2097152 alloc=2*1048576
-> pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3
-> Built 2 zonelists in Node order, mobility grouping on.  Total pages: 65480
-> Policy zone: DMA
-> Kernel command line: root=/dev/sda5 IDENT=1282801372 xmon=early
-> PID hash table entries: 4096 (order: -1, 32768 bytes)
-> freeing bootmem node 1
-> Memory: 4124352k/4194304k available (10880k kernel code, 69952k reserved, 288
-0k data, 10947k bss, 2432k init)
-> Hierarchical RCU implementation.
->          Verbose stalled-CPUs detection is disabled.
-> NR_IRQS:512
-> [boot]0020 XICS Init
-> [boot]0021 XICS Done
-> clocksource: timebase mult[7d0000] shift[22] registered
-> Console: colour dummy device 80x25
-> console [hvc0] enabled, bootconsole disabled
-> console [hvc0] enabled, bootconsole disabled
-> Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
-> ... MAX_LOCKDEP_SUBCLASSES:  8
-> ... MAX_LOCK_DEPTH:          48
-> ... MAX_LOCKDEP_KEYS:        8191
-> ... CLASSHASH_SIZE:          4096
-> ... MAX_LOCKDEP_ENTRIES:     16384
-> ... MAX_LOCKDEP_CHAINS:      32768
-> ... CHAINHASH_SIZE:          16384
->   memory used by lock dependency info: 6335 kB
->   per task-struct memory footprint: 2688 bytes
-> allocated 2621440 bytes of page_cgroup
-> please try 'cgroup_disable=memory' option if you don't want memory cgroups
-> pid_max: default: 32768 minimum: 301
-> Security Framework initialized
-> SELinux:  Disabled at boot.
-> AppArmor: AppArmor disabled by boot time parameter
-> Dentry cache hash table entries: 524288 (order: 6, 4194304 bytes)
-> Inode-cache hash table entries: 262144 (order: 5, 2097152 bytes)
-> Mount-cache hash table entries: 4096
-> Initializing cgroup subsys ns
-> Initializing cgroup subsys cpuacct
-> Initializing cgroup subsys memory
-> Initializing cgroup subsys devices
-> Initializing cgroup subsys freezer
-> cpu 0x1: Vector: 300 (Data Access) at [c0000000fedcbd10]
->      pc: 0000000000017f00
->      lr: 0000000000008290
->      sp: c0000000fedcbf90
->     msr: 8000000000001000
->     dar: c0000000fedcbfa0
->   dsisr: 42000000
->    current = 0xc0000000fedb4e70
->    paca    = 0xc000000007440280
->      pid   = 0, comm = swapper
-> WARNING: exception is not recoverable, can't continue
-> enter ? for help
-> 1:mon>  Unable to handle kernel paging request for data at address 0xc0000000
-fedcbfa0
-> Faulting instruction address: 0x00017f00
-> Processor 1 is stuck.
-> cpu 0x2: Vector: 300 (Data Access) at [c0000000fedcfd10]
->      pc: 0000000000017f00
->      lr: 0000000000008290
->      sp: c0000000fedcff90
->     msr: 8000000000001002
->     dar: c0000000fedcffa0
->   dsisr: 42000000
->    current = 0xc0000000fedb7580
->    paca    = 0xc000000007440500
->      pid   = 0, comm = swapper
-> Unable to handle kernel paging request for data at address 0xc0000000fedcffa0
-> Faulting instruction address: 0x00017f00
-> Processor 2 is stuck.
-> cpu 0x3: Vector: 300 (Data Access) at [c0000000fee33d10]
->      pc: 0000000000017f00
->      lr: 0000000000008290
->      sp: c0000000fee33f90
->     msr: 8000000000001000
->     dar: c0000000fee33fa0
->   dsisr: 42000000
->    current = 0xc0000000fedb9c90
->    paca    = 0xc000000007440780
->      pid   = 0, comm = swapper
-> WARNING: exception is not recoverable, can't continue
-> 
-> Thanks
-> Divya
-> 
-> 
-> --------------060402090502050601040804
-> Content-Type: text/plain;
->  name="config_ppc_slub"
-> Content-Transfer-Encoding: 7bit
-> Content-Disposition: attachment;
->  filename="config_ppc_slub"
-> 
-> CONFIG_ALTIVEC=y
-> # CONFIG_WIRELESS is not set
-> CONFIG_VSX=y
-> CONFIG_TASKSTATS=y
-> CONFIG_TASK_DELAY_ACCT=y
-> CONFIG_TASK_XACCT=y
-> CONFIG_TASK_IO_ACCOUNTING=y
-> CONFIG_HAVE_KPROBES=y
-> CONFIG_HAVE_KRETPROBES=y
-> CONFIG_TREE_RCU=y
-> CONFIG_RCU_FANOUT=64
-> CONFIG_CGROUP_SCHED=y
-> CONFIG_CGROUPS=y
-> CONFIG_CGROUP_NS=y
-> CONFIG_CGROUP_FREEZER=y
-> CONFIG_CGROUP_DEVICE=y
-> CONFIG_CPUSETS=y
-> CONFIG_PROC_PID_CPUSET=y
-> CONFIG_CGROUP_CPUACCT=y
-> CONFIG_RESOURCE_COUNTERS=y
-> CONFIG_CGROUP_MEM_RES_CTLR=y
-> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
-> CONFIG_NAMESPACES=y
-> CONFIG_UTS_NS=y
-> CONFIG_IPC_NS=y
-> CONFIG_USER_NS=y
-> CONFIG_PID_NS=y
-> CONFIG_NET_NS=y
-> CONFIG_KALLSYMS=y
-> CONFIG_KALLSYMS_ALL=y
-> CONFIG_KPROBES=y
-> CONFIG_CMM=y
-> CONFIG_PPC_HAS_HASH_64K=y
-> CONFIG_PPC_64K_PAGES=y
-> CONFIG_FORCE_MAX_ZONEORDER=9
-> CONFIG_PPC_SUBPAGE_PROT=y
-> CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
-> CONFIG_ARCH_HAS_WALK_MEMORY=y
-> CONFIG_ARCH_ENABLE_MEMORY_HOTREMOVE=y
-> CONFIG_KEXEC=y
-> CONFIG_MEMORY_HOTPLUG=y
-> CONFIG_MEMORY_HOTPLUG_SPARSE=y
-> CONFIG_MEMORY_HOTREMOVE=y
-> CONFIG_IBMEBUS=y
-> CONFIG_EHEA=y
-> CONFIG_SCSI_IBMVSCSI=y
-> CONFIG_SCSI_IBMVFC=m
-> CONFIG_SCSI_IPR=y
-> CONFIG_DEBUG_KERNEL=y
-> CONFIG_DETECT_SOFTLOCKUP=y
-> CONFIG_DETECT_HUNG_TASK=y
-> CONFIG_DEBUG_SPINLOCK=y
-> CONFIG_DEBUG_SPINLOCK_SLEEP=y
-> CONFIG_DEBUG_BUGVERBOSE=y
-> CONFIG_DEBUG_INFO=y
-> CONFIG_KPROBES_SANITY_TEST=y
-> CONFIG_LATENCYTOP=y
-> CONFIG_SYSCTL_SYSCALL_CHECK=y
-> CONFIG_DEBUG_PAGEALLOC=y
-> CONFIG_NOP_TRACER=y
-> CONFIG_HAVE_FUNCTION_TRACER=y
-> CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-> CONFIG_HAVE_DYNAMIC_FTRACE=y
-> CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-> CONFIG_RING_BUFFER=y
-> CONFIG_TRACING=y
-> CONFIG_TRACING_SUPPORT=y
-> ONFIG_BLK_DEV_IO_TRACE=y
-> CONFIG_FTRACE_SELFTEST=y
-> CONFIG_FTRACE_STARTUP_TEST=y
-> CONFIG_KEYS=y
-> CONFIG_KEYS_DEBUG_PROC_KEYS=y
-> CONFIG_SECURITY=y
-> CONFIG_SECURITYFS=y
-> CONFIG_SECURITY_NETWORK=y
-> CONFIG_RCU_CPU_STALL_DETECTOR=y
-> CONFIG_EXT2_FS=y
-> CONFIG_EXT2_FS_XATTR=y
-> CONFIG_EXT2_FS_POSIX_ACL=y
-> CONFIG_EXT2_FS_SECURITY=y
-> CONFIG_EXT3_FS=y
-> CONFIG_EXT3_FS_XATTR=y
-> CONFIG_EXT3_FS_POSIX_ACL=y
-> CONFIG_EXT3_FS_SECURITY=y
-> CONFIG_EXT4_FS=y
-> CONFIG_EXT4DEV_COMPAT=y
-> CONFIG_EXT4_FS_XATTR=y
-> CONFIG_EXT4_FS_POSIX_ACL=y
-> CONFIG_EXT4_FS_SECURITY=y
-> CONFIG_JBD=y
-> CONFIG_JBD2=y
-> CONFIG_REISERFS_PROC_INFO=y
-> CONFIG_REISERFS_FS_XATTR=y
-> CONFIG_REISERFS_FS_POSIX_ACL=y
-> CONFIG_REISERFS_FS_SECURITY=y
-> CONFIG_JFS_FS=m
-> CONFIG_JFS_POSIX_ACL=y
-> CONFIG_JFS_SECURITY=y
-> CONFIG_JFS_STATISTICS=y
-> CONFIG_FS_POSIX_ACL=y
-> CONFIG_FILE_LOCKING=y
-> CONFIG_XFS_FS=m
-> CONFIG_XFS_QUOTA=y
-> CONFIG_XFS_POSIX_ACL=y
-> CONFIG_XFS_RT=y
-> CONFIG_GFS2_FS=m
-> CONFIG_GFS2_FS_LOCKING_DLM=m
-> CONFIG_OCFS2_FS=m
-> CONFIG_OCFS2_FS_O2CB=m
-> CONFIG_OCFS2_FS_USERSPACE_CLUSTER=m
-> CONFIG_OCFS2_FS_STATS=y
-> CONFIG_BTRFS_FS=y
-> CONFIG_BTRFS_FS_POSIX_ACL=y
-> CONFIG_LOCALVERSION_AUTO=n
-> CONFIG_LOCALVERSION=""
-> CONFIG_SLUB_DEBUG=y
-> CONFIG_SLUB=y
-> CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
-> CONFIG_HAVE_PERF_COUNTERS=y
-> CONFIG_PERF_COUNTERS=y
-> CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
-> CONFIG_FSNOTIFY=y
-> CONFIG_RCU_TORTURE_TEST=y
-> CONFIG_RCU_TORTURE_TEST_RUNNABLE=y
-> CONFIG_RCU_CPU_STALL_DETECTOR=y
-> CONFIG_PERF_EVENTS=y
-> CONFIG_PPC_OF_BOOT_TRAMPOLINE=y
-> CONFIG_BLOCK=y
-> CONFIG_BLK_DEV_BSG=y
-> CONFIG_BLK_DEV_INTEGRITY=y
-> CONFIG_BLK_CGROUP=y
-> CONFIG_DEBUG_BLK_CGROUP=y
-> CONFIG_BLOCK_COMPAT=y
-> CONFIG_IOSCHED_NOOP=y
-> CONFIG_IOSCHED_CFQ=y
-> CONFIG_CFQ_GROUP_IOSCHED=y
-> CONFIG_DEBUG_CFQ_IOSCHED=y
-> CONFIG_DEFAULT_CFQ=y
-> CONFIG_DEFAULT_IOSCHED="cfq"
-> CONFIG_VIRTUALIZATION=y
-> CONFIG_VIRTIO_PCI=y
-> CONFIG_VIRTIO_BALLOON=y
-> CONFIG_NR_IRQS=512
-> CONFIG_MIGRATION=y
-> CONFIG_KSM=y
-> CONFIG_PM=y
-> CONFIG_SUSPEND=y
-> CONFIG_SUSPEND_FREEZER=y
-> CONFIG_HIBERNATION=y
-> CONFIG_SYSFS_DEPRECATED_V2=y
-> CONFIG_LOCK_STAT=y
-> CONFIG_LOCKDEP_SUPPORT=y
-> CONFIG_LOCKDEP=y
-> CONFIG_IXGBE_DCB=y
-> CONFIG_DCB=y
-> 
-> 
-> --------------060402090502050601040804--
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Balbir
