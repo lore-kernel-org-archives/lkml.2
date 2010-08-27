@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab0H0Pz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 11:55:26 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62336 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab0H0PzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 11:55:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=rRqCfPvdAW2u7Y+qzrCEZ7KuGMz4u4QGZKuJHyxfF7DDJrEKfZIqgGcfdCfYfnNucx
-         11xWEUDrKFAVmnuOkF8V2vLk4Sb/QA2+i5CfQyTGbcoVOVSHNmrdE1oioEi05VLYUGUr
-         zP/ey/M5EPuvV/C95Nh0a7iPmchkM9fdL2SrM=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 01/43] ptrace: change signature of sys_ptrace() and friends
-References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
-	<1282902149-12991-2-git-send-email-namhyung@gmail.com>
-	<201008271521.35995.arnd@arndb.de>
-Date: Sat, 28 Aug 2010 00:55:12 +0900
-In-Reply-To: <201008271521.35995.arnd@arndb.de> (Arnd Bergmann's message of
-	"Fri, 27 Aug 2010 15:21:35 +0200")
-Message-ID: <87wrrcf3tr.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752489Ab0H0P4o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 11:56:44 -0400
+Received: from bsdimp.com ([199.45.160.85]:59996 "EHLO harmony.bsdimp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751597Ab0H0P4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 11:56:43 -0400
+X-Greylist: delayed 982 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Aug 2010 11:56:42 EDT
+Date: Fri, 27 Aug 2010 09:35:21 -0600 (MDT)
+Message-Id: <20100827.093521.467748298504420477.imp@bsdimp.com>
+To: richardcochran@gmail.com
+Cc: alan@lxorguk.ukuu.org.uk, giometti@linux.it, johnstul@us.ibm.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        christian.riesch@omicron.at, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        khc@pm.waw.pl
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+From: "M. Warner Losh" <imp@bsdimp.com>
+In-Reply-To: <20100827140205.GA3293@riccoc20.at.omicron.at>
+References: <20100827075727.GA3818@riccoc20.at.omicron.at>
+	<20100827134154.50eef56c@lxorguk.ukuu.org.uk>
+	<20100827140205.GA3293@riccoc20.at.omicron.at>
+X-Mailer: Mew version 6.3 on Emacs 22.3 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
-> Looks good to me. It may be worth mentioning in the changelog that
-> 'unsigned long' is typically used in other places in the kernel
-> as an opaque data type and that using this helps cleaning up a lot
-> of warnings from sparse.
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+In message: <20100827140205.GA3293@riccoc20.at.omicron.at>
+            Richard Cochran <richardcochran@gmail.com> writes:
+: On Fri, Aug 27, 2010 at 01:41:54PM +0100, Alan Cox wrote:
+: > > The master node in a PTP network probably takes its time from a
+: > > precise external time source, like GPS. The GPS provides a 1 PPS
+: > > directly to the PTP clock hardware, which latches the PTP hardware
+: > > clock time on the PPS edge. This provides one sample as input to a
+: > > clock servo (in the PTPd) that, in turn, regulates the PTP clock
+: > > hardware.
+: > 
+: > A PTP clock is TAI, Unix time is UTC.
+: 
+: But TAI and UTC progress at the same rate, and UTC differs from TAI by
+: a constant offset. In fact, the needed conversion is provided by the
+: protocol, so it is not hard to take a 1 PPS from GPS and set the PTP
+: clock to TAI.
 
-Thank you. Will add it.
+Except for leap seconds, this is true.   However, Unix time isn't UTC
+either.  Unix time is UTC that pretends leap seconds just don't
+exist.  POSIX enshrined this long ago, and nobody is going to change
+that any time soon.
 
--- 
-Regards,
-Namhyung Kim
+I don't believe IEEEv2 propagates leap seconds, does it?
+
+Warner
