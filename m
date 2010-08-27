@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab0H0H7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 03:59:49 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:51975 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab0H0H7q (ORCPT
+	id S1753692Ab0H0H74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 03:59:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37470 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab0H0H7v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 03:59:46 -0400
-X-SpamScore: 6
-X-BigFish: VPS6(z3cfcs329eqzbb2cK1432N98dNzz1202hzzz32i2a8h)
-X-WSS-ID: 0L7SWS1-01-8BA-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 09:57:37 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100827075737.GE22783@erda.amd.com>
-References: <20100825094819.GB3198@erda.amd.com>
- <20100825104130.GA27891@elte.hu>
- <20100825110006.GB27891@elte.hu>
- <20100825201106.GH4879@redhat.com>
- <20100826090008.GA22783@erda.amd.com>
- <AANLkTim3+u-fV-RAC=Odede6BfGdYoXsN55Tqw6iSfVT@mail.gmail.com>
- <20100826152246.GN4879@redhat.com>
- <20100826153404.GA6306@lenovo>
- <20100826164031.GO4879@redhat.com>
- <20100826180250.GB6306@lenovo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100826180250.GB6306@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Fri, 27 Aug 2010 03:59:51 -0400
+Subject: Re: [PATCH] lglock: make lg_lock_global() actually lock globally
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1282895856.1975.1711.camel@laptop>
+References: <20100825132815.108d8217@bike.lwn.net>
+	 <AANLkTimbiEMM+uyYtU41qdCuK7uRavtPYdQyx4d_g3xw@mail.gmail.com>
+	 <4C762BF9.5010305@kernel.org> <20100826094613.GA6411@amd>
+	 <4C7638B7.9060306@kernel.org> <1282817329.1975.486.camel@laptop>
+	 <20100826113858.GA6856@amd> <1282823139.1975.689.camel@laptop>
+	 <20100827055105.GA3857@amd>  <1282895856.1975.1711.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 27 Aug 2010 09:59:45 +0200
+Message-ID: <1282895985.1975.1717.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.10 14:02:50, Cyrill Gorcunov wrote:
-> > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> > index 4539b4b..9e65a7b 100644
-> > --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> > @@ -777,7 +777,9 @@ again:
-> >  
-> >  done:
-> >  	intel_pmu_enable_all(0);
-> > -	return handled;
-> > +	if (!handled)
-> > +		return handled;
-> > +	return ++handled;
-> >  }
-> >  
-> >  static struct event_constraint *
-> > 
+On Fri, 2010-08-27 at 09:57 +0200, Peter Zijlstra wrote:
 > 
-> ok, it seems it just treat any unknown nmi as being came from PMU, no?
+> 
+> There's a large three lettered company that's promoting cpu hotplug use
+> for power management, they hotplug at an astonishing rate.
+> 
+> I've been saying hotplug isn't for that, and its a terrible slow path
+> and disrupts your whole machine etc.. they don't seem to care much. 
 
-Yes, this just throws away all unknown nmis after a perf nmi. It
-disables unknown nmi detection on this cpu type.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Oh, and the virt community seems to want (or is) doing the same silly
+thing.
