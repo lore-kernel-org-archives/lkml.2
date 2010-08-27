@@ -1,176 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab0H0B6B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Aug 2010 21:58:01 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51622 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab0H0B57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Aug 2010 21:57:59 -0400
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-From: john stultz <johnstul@us.ibm.com>
-To: Christian Riesch <christian.riesch@omicron.at>
-Cc: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <AANLkTi=nKrRHH6+9mvny718gov8Q+u7DHFikdgNY8YdX@mail.gmail.com>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
-	 <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
-	 <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
-	 <20100817085324.GB3330@riccoc20.at.omicron.at>
-	 <1282090963.1734.97.camel@localhost>
-	 <20100818071942.GA4096@riccoc20.at.omicron.at>
-	 <1282176776.2865.100.camel@localhost.localdomain>
-	 <20100819055518.GA4084@riccoc20.at.omicron.at>
-	 <1282594125.3111.344.camel@localhost.localdomain>
-	 <AANLkTi=nKrRHH6+9mvny718gov8Q+u7DHFikdgNY8YdX@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Aug 2010 18:57:49 -0700
-Message-ID: <1282874269.4371.74.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754144Ab0H0B7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Aug 2010 21:59:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753489Ab0H0B7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Aug 2010 21:59:09 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 00/22] Name the irq flag handling functions sanely
+To: linux-arch@vger.kernel.org
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 27 Aug 2010 02:59:05 +0100
+Message-ID: <20100827015905.27277.39167.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 11:40 +0200, Christian Riesch wrote:
-> What you describe here is only one of the use cases. If the hardware
-> has a single network port and operates as a PTP slave, it timestamps
-> the PTP packets that are sent and received and subsequently uses these
-> timestamps and the information it received from the master in the
-> packets to steer its clock to align it with the master clock. In such
-> a case the timestamping hardware and the clock hardware work together
-> closely and it seems to be okay to use the same interface to control
-> both the timestamping and the PTP clock.
-> 
-> But we have to consider other use cases, e.g.,
-> 
-> 1) Boundary clocks:
-> We have more than one network port. One port operates as a slave
-> clock, our system gets time information via this port and steers its
-> PTP clock to align with the master clock. The other network ports of
-> our system operate as master clocks and redistribute the time
-> information we got from the master to other clocks on these networks.
-> In such a case we do timestamping on each of the network ports, but we
-> only have a single PTP clock. Each network port's timestamping
-> hardware uses the same hardware clock to generate time stamps.
-> 
-> 2) Master clock:
-> We have one or more network ports. Our system has a really good clock
-> (ovenized quartz crystal, an atomic clock, a GPS timing receiver...)
-> and it distributes this time on the network. In such a case we do not
-> steer our clock based on the (packet) timestamps we get from our
-> timestamping unit. Instead, we directly drive our clock hardware with
-> a very stable frequency that we get from the OCXO or the atomic
-> clock... 
+[Note that this patch alters all arches except AVR32, Cris, Microblaze, Score,
+ Tile and Xtensa as I don't have usable compilers for those.  Not all the other
+ arches compiled successfully, but as far as I can tell, those problems are not
+ due to my patches].
 
-Ok. Following you here...
-
-> or we use one of the ancillary features of the PTP clock that
-> Richard mentioned to timestamp not network packets but a 1pps signal
-> and use these timestamps to steer the clock. 
-
-Wait.. I thought we weren't using PTP to steer the clock? But now we're
-using the pps signal from it to do so? Do I misunderstand you? Or did
-you just not mean this?
-
-> Packet time stamping is
-> used to distribute the time to the slaves, but it is not part of the
-> control loop in this case.
-
-I assume here you mean PTPd is steering the PTP clock according to the
-system time (which is NTP/GPS/whatever sourced)? And then the PTP clock
-distributes that time through the network?
-
-> So in the first case we have one PTP clock but several network packet
-> timestamping units, whereas in the second case the packet timestamping
-> is done but it is not part of the control loop that steers the clock.
-> Of course in most hardware implementations both the PTP clock and the
-> timestamping unit sit on the same chip and often use the same means of
-> communication to the cpu, e.g., the MDIO bus, but I think we need some
-> logical separation here.
+A patch ("Fix IRQ flag handling naming") in the middle of the series makes the
+naming of the general irq flag functions sane.  That is followed by a bunch of
+patches for individual arches that aren't included yet in the main patch, but
+will need rolling in before final submission.
 
 
-So first of all, thanks for the extra explanation and context here! I
-really appreciate it, as I'm not familiar with all the hardware details
-and possible use cases, but I'm trying to learn.
+Currently, under one configuration, linux/irqflags.h maps:
 
-So in the two cases you mention, the time "flow" is something like:
+	local_irq_enable() -> raw_local_irq_enable()
+	local_irq_disable() -> raw_local_irq_disable()
+	local_irq_save() -> raw_local_irq_save()
+	...
 
-#1) [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
-	[PTP Clock] => [PTP Clients on Network2]
+and under the other configuration, it maps:
 
-#2) [GPS] => [NTPd] => [System Time] => [PTPd] => [PTP clock] =>
-	[PTP clients on Network]
+	raw_local_irq_enable() -> local_irq_enable()
+	raw_local_irq_disable() -> local_irq_disable()
+	raw_local_irq_save() -> local_irq_save()
+	...
 
-And the original case:
-#3) [Master Clock on Network] => [PTP clock] => [PTPd] => [PTP clock]
+This is quite confusing.  There should be one set of names expected of the
+arch, and this should be wrapped to give another set of names that are expected
+by users of this facility.
 
-With a secondary control flow:
-	[PPS signal from PTP clock] => [NTPd] => [System Time]
+The main patch changes the asm/irqflags.h headers to provide:
+
+	flags = arch_local_save_flags()
+	flags = arch_local_irq_save()
+	arch_local_irq_restore(flags)
+	arch_local_irq_disable()
+	arch_local_irq_enable()
+	arch_irqs_disabled_flags(flags)
+	arch_irqs_disabled()
+	arch_safe_halt()
+
+Then linux/irqflags.h wraps these to provide:
+
+	raw_local_save_flags(flags)
+	raw_local_irq_save(flags)
+	raw_local_irq_restore(flags)
+	raw_local_irq_disable()
+	raw_local_irq_enable()
+	raw_irqs_disabled_flags(flags)
+	raw_irqs_disabled()
+	raw_safe_halt()
+
+with type checking on the flags 'arguments', and then wraps those to provide:
+
+	local_save_flags(flags)
+	local_irq_save(flags)
+	local_irq_restore(flags)
+	local_irq_disable()
+	local_irq_enable()
+	irqs_disabled_flags(flags)
+	irqs_disabled()
+	safe_halt()
+
+with tracing included if enabled.
+
+The arch functions can now all be inline functions rather than some of them
+having to be macros.
 
 
-Right?
+===========
+ARCH FIXUPS
+===========
+
+To make this work, some of the arches need fixing up to some extent or other
+beyond the irqflags stuff:
+
+ (1) Alpha.
+
+     A missing comma prevented compilation of one of the upstream files.
+
+ (2) Blackfin.
+
+     A number of circular dependencies and other problems needed sorting out in
+     the Blackfin arch.  The first few patches deal with this.  With this, most
+     of the Blackfin defconfigs compile, and none of the breakage is obviously
+     to do with the irqflags patches.
+
+     This also requires a name collision between the DES crypto module and the
+     Blackfin arch code to be fixed.
+
+ (3) H8300.
+
+     A number of general problems needed sorting.
+
+ (4) SH.
+
+     Some consts were missing from the sys_execve() declaration.
+
+David
+---
+
+David Howells (22):
+      Fix Sparc irqflags
+      Fix SH irqflags
+      Fix powerpc irqflags
+      Fix PA-RISC irqflags
+      Fix M68K irqflags
+      Fix m32r irqflags
+      Fix IA64 irqflags
+      Fix H8300 arch
+      Fix Alpha irqflags
+      MIPS: Fix IRQ flags handling
+      Fix IRQ flag handling naming
+      SH: Add missing consts to sys_execve() declaration
+      h8300: Fix missing consts in kernel_execve()
+      h8300: Fix die()
+      h8300: IRQ flags should be stored in an unsigned long
+      Blackfin: Rename IRQ flags handling functions
+      Blackfin: Add missing dep to asm/irqflags.h
+      Blackfin: Rename DES PC2() symbol to avoid collision
+      Blackfin: Split the BF532 BFIN_*_FIO_FLAG() functions to their own header
+      Blackfin: Don't redefine blackfin serial port symbols
+      Blackfin: Split PLL code from mach-specific cdef headers
+      Alpha: Fix a missing comma in sys_osf_statfs()
 
 
-So, just brainstorming here, I guess the question I'm trying to figure
-out here, is can the "System Time" and "PTP clock" be merged/globbed
-into a single "Time" interface from the userspace point of view?
-
-In other words, if internal to the kernel, the PTP clock was always
-synced to the system time, couldn't the flow look something like:
-
-#3') [Master clock on network] => [PTP clock] => [PTPd] =>
-	 [System Time] => [in-kernel sync thread] => [PTP clock]
-
-So PTPd sees the offset adjustment from the PTP clock, and then feeds
-that offset correction right into (a possibly enhanced) adjtimex. The
-kernel would then immediately steer the PTP clock by the same amount to
-keep it in sync with system time (along with a periodic offset/freq
-correction step to deal with crystal drift).
-
-Similarly:
-
-#2') [GPS] => [NTPd] => [System Time] => [in-kernel sync thread] => 
-		[PTP clock] => [PTP clients on Network]
-
-and 
-
-#1') [Master Clock on Network1] => [PTP Clock] => [PTPd] =>
-	[System Time] => [in-kernel sync thread] => [PTP Clock] => 
-	[PTP Clients on Network2]
-
-Now, I realize PTP purists probably won't like this, because it
-effectively makes the in-kernel sync thread similar to a PTP boundary
-clock (or worse, since the control loop isn't exactly direct).
-
-But considering that the kernel (internally) allows for *very*
-fine-grained adjustments (we keep our long-term offset error in
-(nanoseconds << 32)  ie: ~quarter-*billion*ths of a nanosecond - I think
-that's sub-attosecond, if I recall the unit). And even the existing
-external adjtimex interface allows for adjustments of 1ppm<<16 which is
-a granularity of ~15 parts-per-trillion (assuming i'm doing the math
-right).
-
-These are all much greater then the parts-per-billion adjustment
-granularity proposed for the direct PTP clock steering, so I suspect any
-error caused by the indirection in the control flow could be minimized
-significantly.
-
-Additionally my suggestion here has the benefit of:
-A: Avoiding the fragmented time domains (ie CLOCK_REALTIME vs CLOCK_PTP)
-caused by adding a new clock_id.
-
-B: Avoiding the indirect system time sync through the PPS interface,
-which isn't completely terrible, but just feels a little ugly
-configuration wise from a users-perspective.
-
-I'm sure I still have lots to learn about PTP, so please let me know
-where I'm off-base.
-
-thanks
--john
+ arch/alpha/include/asm/irqflags.h                  |   65 +++++
+ arch/alpha/include/asm/system.h                    |   28 --
+ arch/alpha/kernel/osf_sys.c                        |    2 
+ arch/arm/include/asm/irqflags.h                    |  143 ++++++----
+ arch/blackfin/include/asm/bfin_sport.h             |   16 +
+ arch/blackfin/include/asm/ipipe.h                  |    8 -
+ arch/blackfin/include/asm/irqflags.h               |  273 ++++++++++----------
+ arch/blackfin/include/asm/mmu_context.h            |    8 -
+ arch/blackfin/include/asm/system.h                 |    4 
+ arch/blackfin/kernel/bfin_gpio.c                   |  102 ++++---
+ arch/blackfin/kernel/cplb-mpu/cplbmgr.c            |    8 -
+ arch/blackfin/kernel/ipipe.c                       |   38 +--
+ arch/blackfin/kernel/process.c                     |    4 
+ .../mach-bf518/include/mach/cdefBF51x_base.h       |   50 ----
+ arch/blackfin/mach-bf518/include/mach/pll.h        |   63 +++++
+ .../mach-bf527/include/mach/cdefBF52x_base.h       |   50 ----
+ arch/blackfin/mach-bf527/include/mach/pll.h        |   63 +++++
+ arch/blackfin/mach-bf533/boards/blackstamp.c       |    1 
+ arch/blackfin/mach-bf533/boards/ip0x.c             |    1 
+ arch/blackfin/mach-bf533/boards/stamp.c            |    1 
+ arch/blackfin/mach-bf533/include/mach/cdefBF532.h  |   91 -------
+ arch/blackfin/mach-bf533/include/mach/defBF532.h   |   27 --
+ arch/blackfin/mach-bf533/include/mach/fio_flag.h   |   55 ++++
+ arch/blackfin/mach-bf533/include/mach/pll.h        |   57 ++++
+ arch/blackfin/mach-bf537/include/mach/cdefBF534.h  |   44 ---
+ arch/blackfin/mach-bf537/include/mach/pll.h        |   57 ++++
+ arch/blackfin/mach-bf538/include/mach/cdefBF538.h  |   50 ----
+ arch/blackfin/mach-bf538/include/mach/pll.h        |   63 +++++
+ .../mach-bf548/include/mach/cdefBF54x_base.h       |   56 ----
+ .../mach-bf548/include/mach/defBF54x_base.h        |   59 ----
+ arch/blackfin/mach-bf548/include/mach/pll.h        |   69 +++++
+ arch/blackfin/mach-bf561/include/mach/cdefBF561.h  |   50 ----
+ arch/blackfin/mach-bf561/include/mach/defBF561.h   |   58 ----
+ arch/blackfin/mach-bf561/include/mach/pll.h        |   63 +++++
+ arch/blackfin/mach-common/cpufreq.c                |    4 
+ arch/blackfin/mach-common/ints-priority.c          |   24 +-
+ arch/blackfin/mach-common/pm.c                     |   10 -
+ arch/frv/include/asm/irqflags.h                    |  158 ++++++++++++
+ arch/frv/include/asm/system.h                      |  136 ----------
+ arch/h8300/include/asm/atomic.h                    |   15 +
+ arch/h8300/include/asm/irqflags.h                  |   43 +++
+ arch/h8300/include/asm/system.h                    |   28 --
+ arch/h8300/kernel/sys_h8300.c                      |    4 
+ arch/h8300/kernel/traps.c                          |    2 
+ arch/ia64/include/asm/irqflags.h                   |   94 +++++++
+ arch/ia64/include/asm/system.h                     |   76 ------
+ arch/m32r/include/asm/irqflags.h                   |  105 ++++++++
+ arch/m32r/include/asm/system.h                     |   66 -----
+ arch/m68k/include/asm/irqflags.h                   |    5 
+ arch/m68k/include/asm/irqflags_mm.h                |   57 ++++
+ arch/m68k/include/asm/irqflags_no.h                |   86 ++++++
+ arch/m68k/include/asm/system_mm.h                  |   25 --
+ arch/m68k/include/asm/system_no.h                  |   49 ----
+ arch/mips/include/asm/irqflags.h                   |   53 ++--
+ arch/mn10300/include/asm/irqflags.h                |  119 +++++++++
+ arch/mn10300/include/asm/system.h                  |  109 --------
+ arch/mn10300/kernel/entry.S                        |    1 
+ arch/parisc/include/asm/irqflags.h                 |   46 +++
+ arch/parisc/include/asm/system.h                   |   19 -
+ arch/powerpc/include/asm/hw_irq.h                  |  115 +++++---
+ arch/powerpc/include/asm/irqflags.h                |    2 
+ arch/powerpc/kernel/exceptions-64s.S               |    4 
+ arch/powerpc/kernel/irq.c                          |    4 
+ arch/sh/include/asm/syscalls_32.h                  |    6 
+ arch/sh/kernel/irq_32.c                            |    8 -
+ arch/sparc/include/asm/irqflags_32.h               |   35 ++-
+ arch/sparc/include/asm/irqflags_64.h               |   29 +-
+ arch/sparc/kernel/irq_32.c                         |   12 -
+ arch/x86/include/asm/irqflags.h                    |   32 +-
+ arch/x86/include/asm/paravirt.h                    |   16 +
+ crypto/des_generic.c                               |  130 +++++-----
+ drivers/net/bfin_mac.c                             |    1 
+ include/asm-generic/atomic.h                       |    3 
+ include/asm-generic/irqflags.h                     |   52 ++--
+ include/linux/irqflags.h                           |  107 +++++---
+ include/linux/spinlock.h                           |    1 
+ 76 files changed, 1958 insertions(+), 1660 deletions(-)
+ create mode 100644 arch/alpha/include/asm/irqflags.h
+ create mode 100644 arch/blackfin/mach-bf518/include/mach/pll.h
+ create mode 100644 arch/blackfin/mach-bf527/include/mach/pll.h
+ create mode 100644 arch/blackfin/mach-bf533/include/mach/fio_flag.h
+ create mode 100644 arch/blackfin/mach-bf533/include/mach/pll.h
+ create mode 100644 arch/blackfin/mach-bf537/include/mach/pll.h
+ create mode 100644 arch/blackfin/mach-bf538/include/mach/pll.h
+ create mode 100644 arch/blackfin/mach-bf548/include/mach/pll.h
+ create mode 100644 arch/blackfin/mach-bf561/include/mach/pll.h
+ create mode 100644 arch/frv/include/asm/irqflags.h
+ create mode 100644 arch/h8300/include/asm/irqflags.h
+ create mode 100644 arch/ia64/include/asm/irqflags.h
+ create mode 100644 arch/m32r/include/asm/irqflags.h
+ create mode 100644 arch/m68k/include/asm/irqflags.h
+ create mode 100644 arch/m68k/include/asm/irqflags_mm.h
+ create mode 100644 arch/m68k/include/asm/irqflags_no.h
+ create mode 100644 arch/mn10300/include/asm/irqflags.h
+ create mode 100644 arch/parisc/include/asm/irqflags.h
 
