@@ -1,236 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab0H0UP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 16:15:57 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37737 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab0H0UPy convert rfc822-to-8bit (ORCPT
+	id S1752837Ab0H0UTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 16:19:53 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:37372 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751141Ab0H0UTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 16:15:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=lFfEmTsnm1Ozq6tsVjaQapDLqu3bBYD/wPmgjloUCI8yiqFlcGo5KOF5HZ+LPxhW2i
-         a8J/5J/xeWATXGSVn2MKJho28W3M1oV8rV56B9oQori2yvGiG43FhhQrbhU3HXL+0LbM
-         +MRva4KSkblxz9fQQakW470VeIftf/34GxmRU=
+	Fri, 27 Aug 2010 16:19:48 -0400
+Date: Fri, 27 Aug 2010 21:19:46 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org
+Subject: Re: [PATCH V2 4/4] sh: Use the perf-events backend for oprofile
+Message-ID: <20100827201946.GB18829@console-pimps.org>
+References: <cover.1282848651.git.matt@console-pimps.org>
+ <c741813aa911f0048cfab1a1a30534e8d7bb6765.1282848651.git.matt@console-pimps.org>
+ <20100827145901.GO22783@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <4C780888.9000301@zytor.com>
-References: <AANLkTinq81V6afODRS26Nk1vi68_VUMAfs-tu-P8=dBP@mail.gmail.com> <4C780888.9000301@zytor.com>
-From: Matteo Croce <matteo@openwrt.org>
-Date: Fri, 27 Aug 2010 22:15:33 +0200
-X-Google-Sender-Auth: 5jdJ7amArOFxpDifamOYMKcZc_Y
-Message-ID: <AANLkTikCssQSvRX1Gfq0V8B91Sp2gtTCJaPJ=_n9VJXZ@mail.gmail.com>
-Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Natale Vinto <ebballon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100827145901.GO22783@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 8:48 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> You're doing user-space references without get_user().
->
->        -hpa
->
-> --
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
->
->
+On Fri, Aug 27, 2010 at 04:59:01PM +0200, Robert Richter wrote:
+> On 26.08.10 15:09:19, Matt Fleming wrote:
+> > Use the perf-events based wrapper for oprofile available in
+> > drivers/oprofile. This allows us to centralise the code to control
+> > performance counters.
+> > 
+> > Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> > ---
+> > 
+> > Paul,
+> > 
+> > I dropped the CONFIG_PERF_EVENTS dependency from the Makefile in this
+> > version because to do anything useful we need perf events anyway.
+> 
+> Initialization should simply fail with a printk message for this case,
+> implement function stubs for the !CONFIG_PERF_EVENTS case instead in
+> the oprofile.h header file.
 
-Here with get_user.
-I CC Natale which is my beta tester, he have some Alix boards running 24/24
-with my patch
+I didn't do this because I was hoping that eventually we'd make
+CONFIG_OPROFILE select PERF_EVENTS. Would you be OK making that change
+instead? Runtime failure is best avoided where possible, especially when
+we can sort this out at compile time.
 
---- a/arch/x86/kernel/Makefile	2010-08-27 19:42:01.795858001 +0200
-+++ b/arch/x86/kernel/Makefile	2010-08-27 19:42:12.525858001 +0200
-@@ -88,6 +88,8 @@
- obj-$(CONFIG_APB_TIMER)		+= apb_timer.o
+> > 
+> >  arch/sh/oprofile/Makefile  |    2 +-
+> >  arch/sh/oprofile/common.c  |   96 ++++++++-----------------------------------
+> >  arch/sh/oprofile/op_impl.h |   33 ---------------
+> >  3 files changed, 19 insertions(+), 112 deletions(-)
+> >  delete mode 100644 arch/sh/oprofile/op_impl.h
+> > 
+> > diff --git a/arch/sh/oprofile/Makefile b/arch/sh/oprofile/Makefile
+> > index 4886c5c..e1015ae 100644
+> > --- a/arch/sh/oprofile/Makefile
+> > +++ b/arch/sh/oprofile/Makefile
+> > @@ -4,6 +4,6 @@ DRIVER_OBJS = $(addprefix ../../../drivers/oprofile/, \
+> >  		oprof.o cpu_buffer.o buffer_sync.o \
+> >  		event_buffer.o oprofile_files.o \
+> >  		oprofilefs.o oprofile_stats.o \
+> > -		timer_int.o )
+> > +		timer_int.o oprofile_perf.o )
+> >  
+> >  oprofile-y	:= $(DRIVER_OBJS) common.o backtrace.o
+> > diff --git a/arch/sh/oprofile/common.c b/arch/sh/oprofile/common.c
+> > index ac60493..f8d4a84 100644
+> > --- a/arch/sh/oprofile/common.c
+> > +++ b/arch/sh/oprofile/common.c
+> > @@ -17,71 +17,23 @@
+> >  #include <linux/init.h>
+> >  #include <linux/errno.h>
+> >  #include <linux/smp.h>
+> > +#include <linux/perf_event.h>
+> 
+> I don't see a reason why this must be included here.
+> 
+> It's only for sh_pmu_name() and sh_pmu_num_events(), so the interface
+> looks wrong here. It should be in oprofile_perf.c. The functions
+> should be generic non-arch perf code. See below.
 
- obj-$(CONFIG_K8_NB)		+= k8.o
-+obj-$(CONFIG_GEODE_NOPL)	+= nopl_emu.o
-+obj-$(CONFIG_GEODE_NOPL)	+= nopl_emu.o
- obj-$(CONFIG_DEBUG_RODATA_TEST)	+= test_rodata.o
- obj-$(CONFIG_DEBUG_NX_TEST)	+= test_nx.o
+These functions are inherently architecture-specific. See my reply to
+your response to patch 2/4.
 
---- a/arch/x86/kernel/cpu/amd.c	2010-08-27 19:42:01.855858001 +0200
-+++ b/arch/x86/kernel/cpu/amd.c	2010-08-27 19:42:12.535858001 +0200
-@@ -137,11 +137,15 @@
- 		return;
- 	}
+> >  #include <asm/processor.h>
+> > -#include "op_impl.h"
+> > -
+> > -static struct op_sh_model *model;
+> > -
+> > -static struct op_counter_config ctr[20];
+> >  
+> >  extern void sh_backtrace(struct pt_regs * const regs, unsigned int depth);
+> >  
+> > -static int op_sh_setup(void)
+> > -{
+> > -	/* Pre-compute the values to stuff in the hardware registers.  */
+> > -	model->reg_setup(ctr);
+> > -
+> > -	/* Configure the registers on all cpus.  */
+> > -	on_each_cpu(model->cpu_setup, NULL, 1);
+> > -
+> > -        return 0;
+> > -}
+> > -
+> > -static int op_sh_create_files(struct super_block *sb, struct dentry *root)
+> > -{
+> > -	int i, ret = 0;
+> > -
+> > -	for (i = 0; i < model->num_counters; i++) {
+> > -		struct dentry *dir;
+> > -		char buf[4];
+> > -
+> > -		snprintf(buf, sizeof(buf), "%d", i);
+> > -		dir = oprofilefs_mkdir(sb, root, buf);
+> > -
+> > -		ret |= oprofilefs_create_ulong(sb, dir, "enabled", &ctr[i].enabled);
+> > -		ret |= oprofilefs_create_ulong(sb, dir, "event", &ctr[i].event);
+> > -		ret |= oprofilefs_create_ulong(sb, dir, "kernel", &ctr[i].kernel);
+> > -		ret |= oprofilefs_create_ulong(sb, dir, "user", &ctr[i].user);
+> > -
+> > -		if (model->create_files)
+> > -			ret |= model->create_files(sb, dir);
+> > -		else
+> > -			ret |= oprofilefs_create_ulong(sb, dir, "count", &ctr[i].count);
+> > -
+> > -		/* Dummy entries */
+> > -		ret |= oprofilefs_create_ulong(sb, dir, "unit_mask", &ctr[i].unit_mask);
+> > -	}
+> > -
+> > -	return ret;
+> > -}
+> > -
+> > -static int op_sh_start(void)
+> > +static char *op_name_from_perf_name(const char *name)
+> >  {
+> > -	/* Enable performance monitoring for all counters.  */
+> > -	on_each_cpu(model->cpu_start, NULL, 1);
+> > +	if (!strcmp(name, "SH-4A"))
+> > +		return "sh/sh4a";
+> > +	if (!strcmp(name, "SH7750"))
+> > +		return "sh/sh7750";
+> 
+> With that implementation we always have to touch the code for new
+> cpus. Maybe we derive it from the perf name, e.g. making all lowercase
+> and removing dashes?
 
-+#ifdef CONFIG_GEODE_NOPL
- 	if (c->x86_model == 10) {
--		/* AMD Geode LX is model 10 */
--		/* placeholder for any needed mods */
-+		/* Geode only lacks the NOPL instruction to be i686,
-+		   but we can promote it to a i686 class cpu
-+		   and emulate NOPLs in the exception handler*/
-+		boot_cpu_data.x86 = 6;
- 		return;
- 	}
-+#endif
- }
+Is this code really that bad that we need to start playing string
+manipulation games?
 
- static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
---- a/arch/x86/kernel/entry_32.S	2010-08-27 19:42:01.735858001 +0200
-+++ b/arch/x86/kernel/entry_32.S	2010-08-27 19:42:12.535858001 +0200
-@@ -978,7 +978,11 @@
- 	RING0_INT_FRAME
- 	pushl $0
- 	CFI_ADJUST_CFA_OFFSET 4
-+#ifdef CONFIG_GEODE_NOPL
-+	pushl $do_nopl_emu
-+#else
- 	pushl $do_invalid_op
-+#endif
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ b/arch/x86/kernel/nopl_emu.c	2010-08-27 22:09:58.005858001 +0200
-@@ -0,0 +1,124 @@
-+/*
-+ *  linux/arch/x86/kernel/nopl_emu.c
-+ *
-+ *  Copyright (C) 2002  Willy Tarreau
-+ *  Copyright (C) 2010  Matteo Croce
-+ */
-+
-+#include <asm/processor.h>
-+#include <asm/traps.h>
-+#include <asm/uaccess.h>
-+
-+/* This code can be used to allow the AMD Geode to hopefully correctly execute
-+ * some code which was originally compiled for an i686, by emulating NOPL,
-+ * the only missing i686 instruction in the CPU
-+ *
-+ * Willy Tarreau <willy@meta-x.org>
-+ * Matteo Croce <technoboy85@gmail.com>
-+ */
-+
-+static inline int do_1f(u8 *ip)
-+{
-+	u8 val1, val2;
-+	int length = 3;
-+	get_user(val1, ip);
-+	switch (val1) {
-+	case 0x84:
-+		get_user(val1, ip + 5);
-+		if (!val1)
-+			length++;
-+		else
-+			return 0;
-+	case 0x80:
-+		get_user(val1, ip + 4);
-+		get_user(val2, ip + 3);
-+		if (!val1 && !val2)
-+			length += 2;
-+		else
-+			return 0;
-+	case 0x44:
-+		get_user(val1, ip + 2);
-+		if (!val1)
-+			length++;
-+		else
-+			return 0;
-+	case 0x40:
-+		get_user(val1, ip + 1);
-+		if (!val1)
-+			length++;
-+		else
-+			return 0;
-+	case 0x00:
-+		return length;
-+	}
-+	return 0;
-+}
-+
-+static inline int do_0f(u8 *ip)
-+{
-+	u8 val;
-+	get_user(val, ip);
-+	if (val == 0x1f)
-+		return do_1f(ip + 1);
-+	return 0;
-+}
-+
-+static inline int do_66(u8 *ip)
-+{
-+	u8 val;
-+	get_user(val, ip);
-+	if (val == 0x90)
-+		return 2;
-+	if (val == 0x0f) {
-+		int res = do_0f(ip + 1);
-+		if (res)
-+			return res + 1;
-+		else
-+			return 0;
-+	}
-+	return 0;
-+}
-+
-+static inline int do_start(u8 *ip)
-+{
-+	u8 val;
-+	get_user(val, ip);
-+	if (val == 0x0f)
-+		return do_0f(ip + 1);
-+	if (val == 0x66)
-+		return do_66(ip + 1);
-+	return 0;
-+}
-+
-+/* [do_nopl_emu] is called by exception 6 after an invalid opcode has been
-+ * encountered. It will try to emulate it by doing nothing,
-+ * and will send a SIGILL or SIGSEGV to the process if not possible.
-+ * the NOPL can have variable length opcodes:
-+
-+bytes number	opcode
-+	2	66 90
-+	3	0f 1f 00
-+	4	0f 1f 40 00
-+	5	0f 1f 44 00 00
-+	6	66 0f 1f 44 00 00
-+	7	0f 1f 80 00 00 00 00
-+	8	0f 1f 84 00 00 00 00 00
-+	9	66 0f 1f 84 00 00 00 00 00
-+*/
-+void do_nopl_emu(struct pt_regs *regs, long error_code)
-+{
-+	u8 *ip = (u8 *)instruction_pointer(regs);
-+	int res = do_start(ip);
-+
-+	if (res) {
-+		int i = 0;
-+		do {
-+			ip += res;
-+			i++;
-+			res = do_start(ip);
-+		} while(res);
-+		printk(KERN_DEBUG "geode_nopl: emulated %d instructions\n", i);
-+		regs->ip = (typeof(regs->ip))ip;
-+	} else
-+		do_invalid_op(regs, error_code);
-+}
+> >  
+> > -	return 0;
+> > -}
+> > -
+> > -static void op_sh_stop(void)
+> > -{
+> > -	/* Disable performance monitoring for all counters.  */
+> > -	on_each_cpu(model->cpu_stop, NULL, 1);
+> > +	return NULL;
+> >  }
+> >  
+> >  int __init oprofile_arch_init(struct oprofile_operations *ops)
+> >  {
+> > -	struct op_sh_model *lmodel = NULL;
+> >  	int ret;
+> >  
+> >  	/*
+> > @@ -91,40 +43,28 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+> >  	 */
+> >  	ops->backtrace = sh_backtrace;
+> >  
+> > -	/*
+> > -	 * XXX
+> > -	 *
+> > -	 * All of the SH7750/SH-4A counters have been converted to perf,
+> > -	 * this infrastructure hook is left for other users until they've
+> > -	 * had a chance to convert over, at which point all of this
+> > -	 * will be deleted.
+> > -	 */
+> > -
+> > -	if (!lmodel)
+> > -		return -ENODEV;
+> >  	if (!(current_cpu_data.flags & CPU_HAS_PERF_COUNTER))
+> >  		return -ENODEV;
+> >  
+> > -	ret = lmodel->init();
+> > -	if (unlikely(ret != 0))
+> > -		return ret;
+> > +	ops->setup		= oprofile_perf_setup;
+> > +	ops->create_files	= oprofile_perf_create_files;
+> > +	ops->start		= oprofile_perf_start;
+> > +	ops->stop		= oprofile_perf_stop;
+> > +	ops->cpu_type		= op_name_from_perf_name(sh_pmu_name());
+> >  
+> > -	model = lmodel;
+> > +	oprofile_perf_set_num_counters(sh_pmu_num_events());
+> >  
+> > -	ops->setup		= op_sh_setup;
+> > -	ops->create_files	= op_sh_create_files;
+> > -	ops->start		= op_sh_start;
+> > -	ops->stop		= op_sh_stop;
+> > -	ops->cpu_type		= lmodel->cpu_type;
+> > +	ret = oprofile_perf_init();
+> 
+> Instead of exporting all the functions above implement something like:
+> 
+> 	name = op_name_from_perf_name(sh_pmu_name());
+> 	num_events = sh_pmu_num_events();
+> 	ret = oprofile_perf_init(ops, name, num_events);
+> 
+> We will then have only oprofile_perf_init() and oprofile_perf_exit()
+> as interface which is much cleaner.
 
-
--- 
-Matteo Croce
-OpenWrt developer
-  _______                     ________        __
- |       |.-----.-----.-----.|  |  |  |.----.|  |_
- |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
- |_______||   __|_____|__|__||________||__|  |____|
-          |__| W I R E L E S S   F R E E D O M
- KAMIKAZE (bleeding edge) ------------------
-  * 10 oz Vodka       Shake well with ice and strain
-  * 10 oz Triple sec  mixture into 10 shot glasses.
-  * 10 oz lime juice  Salute!
- ---------------------------------------------------
+Well, the reason that I left it this way is so that architectures can
+choose to implement wrappers around the oprofile_perf_* functions. I
+don't think ARM or SH actually need wrappers (the only extra thing that
+ARM does is locking which SH should probably do too) but I assumed there
+was a reason that these functions pointers were exposed originally. I
+haven't look at what other architectures would do. I'll take a look at
+that.
