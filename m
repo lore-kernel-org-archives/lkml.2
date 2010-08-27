@@ -1,43 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab0H0JYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:24:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42015 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456Ab0H0JYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:24:32 -0400
-Message-ID: <4C7782D1.5040501@kernel.org>
-Date: Fri, 27 Aug 2010 11:18:09 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        jeremy@goop.org, snitzer@redhat.com, k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH] block: update documentation for REQ_FLUSH / REQ_FUA
-References: <1282751267-3530-1-git-send-email-tj@kernel.org> <20100826095413.GA9750@lst.de>
-In-Reply-To: <20100826095413.GA9750@lst.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 Aug 2010 09:24:01 +0000 (UTC)
+	id S1753587Ab0H0JaJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:30:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54621 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab0H0JaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 05:30:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=PvcNEdmhCu4lEkDHwy6d/NXIp27vcTkgHojlYvWqKHqbgUQH7Uy53cEIH5w9rYSJQY
+         PMegxt8NdOZ+A9w4geG18eVQtSSGnnTRI1JSejdnaKuaRrzzaVSQXdhQthPERTKkapH6
+         Cw+7sNrYgm6U6casRLMRFMALPwVG2hAyJh+Uw=
+From: jiang.adam@gmail.com
+To: ralf@linux-mips.org
+Cc: dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
+        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
+        tj@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Adam Jiang <jiang.adam@gmail.com>
+Subject: [[PATCH V2]] mips: irq: add stackoverflow detection
+Date: Fri, 27 Aug 2010 18:29:25 +0900
+Message-Id: <1282901365-28364-1-git-send-email-jiang.adam@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <linux-mips@linux-mips.org>
+References: <linux-mips@linux-mips.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 11:54 AM, Christoph Hellwig wrote:
-> 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+From: Adam Jiang <jiang.adam@gmail.com>
 
-applied to misc#flush-fua.
+Add stackoverflow detection to mips arch
 
-Thanks.
+Signed-off-by: Adam Jiang <jiang.adam@gmail.com>
+---
+ arch/mips/Kconfig.debug |    9 +++++++++
+ arch/mips/kernel/irq.c  |   21 +++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
+diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
+index 43dc279..f437cd1 100644
+--- a/arch/mips/Kconfig.debug
++++ b/arch/mips/Kconfig.debug
+@@ -67,6 +67,15 @@ config CMDLINE_OVERRIDE
+ 
+ 	  Normally, you will choose 'N' here.
+ 
++config DEBUG_STACKOVERFLOW
++	bool "Check for stack overflows"
++	depends on DEBUG_KERNEL
++	help
++	  This option will cause messages to be printed if free stack space
++	  drops below a certain limit(2GB on MIPS). The debugging option
++	  provides another way to check stack overflow happened on kernel mode
++	  stack usually caused by nested interruption.
++
+ config DEBUG_STACK_USAGE
+ 	bool "Enable stack utilization instrumentation"
+ 	depends on DEBUG_KERNEL
+diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
+index c6345f5..d0b924d 100644
+--- a/arch/mips/kernel/irq.c
++++ b/arch/mips/kernel/irq.c
+@@ -151,6 +151,26 @@ void __init init_IRQ(void)
+ #endif
+ }
+ 
++#ifdef DEBUG_STACKOVERFLOW
++static inline void check_stack_overflow(void)
++{
++	long sp;
++
++	__asm__ __volatile__("move %0, $sp" : "=r" (sp));
++	sp = sp & (THREAD_SIZE-1);
++
++	/* check for stack overflow: is there less than 2KB free? */
++	if (unlikely(sp < (sizeof(struct thread_info) + 2048))) {
++		printk("do_IRQ: stack overflow: %ld\n",
++		       sp - sizeof(struct thread_info));
++		dump_stack();
++	}
++}
++#else
++static inline void check_stack_overflow(void) {}
++#endif
++
++
+ /*
+  * do_IRQ handles all normal device IRQ's (the special
+  * SMP cross-CPU interrupts have their own specific
+@@ -159,6 +179,7 @@ void __init init_IRQ(void)
+ void __irq_entry do_IRQ(unsigned int irq)
+ {
+ 	irq_enter();
++	check_stack_overflow();
+ 	__DO_IRQ_SMTC_HOOK(irq);
+ 	generic_handle_irq(irq);
+ 	irq_exit();
 -- 
-tejun
+1.7.2.2
+
