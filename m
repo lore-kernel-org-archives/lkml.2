@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab0H0Uii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 16:38:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54150 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754530Ab0H0Uig (ORCPT
+	id S1752198Ab0H0Ukr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 16:40:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40579 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab0H0Uko convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 16:38:36 -0400
-Date: Fri, 27 Aug 2010 13:38:25 -0700
-From: Stephen Hemminger <shemminger@linux-foundation.org>
-To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-Cc: linux-kernel@vger.kernel.org, Kyle Moffett <kyle@moffetthome.net>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] sky2: Add unidirectional fiber link support
-Message-ID: <20100827133825.494b8098@nehalam>
-In-Reply-To: <1282938138-17844-3-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1282938138-17844-1-git-send-email-Kyle.D.Moffett@boeing.com>
-	<1282938138-17844-3-git-send-email-Kyle.D.Moffett@boeing.com>
-Organization: Linux Foundation
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Fri, 27 Aug 2010 16:40:44 -0400
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Date: Fri, 27 Aug 2010 22:41:14 +0200
+User-Agent: KMail/1.9.10
+Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hedi Berriche <hedi@sgi.com>
+References: <201008271537.35709.ptesarik@suse.cz> <987664A83D2D224EAE907B061CE93D53015D91D029@orsmsx505.amr.corp.intel.com> <987664A83D2D224EAE907B061CE93D53015D91D3B7@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D53015D91D3B7@orsmsx505.amr.corp.intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Content-Disposition: inline
+Message-Id: <201008272241.15735.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010 15:42:18 -0400
-Kyle Moffett <Kyle.D.Moffett@boeing.com> wrote:
+On Friday 27 of August 2010 22:29:41 Luck, Tony wrote:
+> > If this is a memory ordering problem (and that seems quite plausible)
+> > then a liberal sprinkling of "ia64_mf()" calls throughout the spinlock
+> > routines would probably make it go away.
+>
+> I think I take this back ... if it were a memory ordering problem, then
+> it could show up any time - not just at wrap-around.
 
-> +	/* 
-> +	 * Once interrupts are reenabled, reset the PHY again to make sure
-> +	 * that we didn't miss a link-up interrupt.  This is especially
-> +	 * likely to occur if we're in fiber-txonly mode, as a link-up
-> +	 * interrupt is generated almost immediately after we finish
-> +	 * programming the PHY.
-> +	 */
-> +	sky2_phy_reinit(sky2);
+Well, I wasn't originally sure if it only happens at wrap-around. OTOH I've 
+now modified my tests, so that they would also catch any other badness, and I 
+still only got another two failures after wrap-around.
 
-Won't this cause a renegotiation causing up to 2 second delay?
+>From looking at the traces, I'm afraid this smells like another Itanium 
+erratum. I'm now trying to write a minimal test case...
 
--- 
+Petr Tesarik
