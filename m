@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab0H0Vc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 17:32:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42982 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab0H0VcZ convert rfc822-to-8bit (ORCPT
+	id S1753161Ab0H0Vdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 17:33:40 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:30984 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab0H0Vdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 17:32:25 -0400
+	Fri, 27 Aug 2010 17:33:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=SpL1sZ7HdXKAU2KzOfutn2TvnZuMkhBgPEy9dNwszug1KwEkgXudmSv82vmip33WZu
-         GzmoTbiv3OuPUMl034olI+x04wofigz14IZW025aIHyWNmCLSdJdjhDMwVofMqaxJiDj
-         fda8l3tpKdeBjc40yFpl9SEGMz3UOj6NuwmsA=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=lvJEw3CJb8xYlM/XQBgjOiqIYvwMzKMLrz8dueHAdI/9flU3C0d2n9oTXXU1ljR8qF
+         J+4RhNRqWudIC9cx7oag==
 MIME-Version: 1.0
-In-Reply-To: <4C7824F2.1050709@mandriva.org>
-References: <AANLkTinq81V6afODRS26Nk1vi68_VUMAfs-tu-P8=dBP@mail.gmail.com>
- <4C780888.9000301@zytor.com> <AANLkTikCssQSvRX1Gfq0V8B91Sp2gtTCJaPJ=_n9VJXZ@mail.gmail.com>
- <4C7824F2.1050709@mandriva.org>
-From: Matteo Croce <matteo@openwrt.org>
-Date: Fri, 27 Aug 2010 23:32:04 +0200
-X-Google-Sender-Auth: 0MM1yS6inhWdyv3xiYBXgILezVI
-Message-ID: <AANLkTinjHK-oTmt-6cmN16jWWv9ZjW44wA-A3VTLm+A_@mail.gmail.com>
-Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-To: Thomas Backlund <tmb@mandriva.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Natale Vinto <ebballon@gmail.com>
+In-Reply-To: <AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
+	<20100826235052.GZ6803@random.random>
+	<AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com>
+	<20100827095546.GC6803@random.random>
+	<AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
+	<alpine.DEB.2.00.1008271159160.18495@router.home>
+	<AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com>
+	<alpine.DEB.2.00.1008271420400.18495@router.home>
+	<AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com>
+	<alpine.DEB.2.00.1008271547200.22988@router.home>
+	<AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com>
+Date: Fri, 27 Aug 2010 14:33:35 -0700
+Message-ID: <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+From: Hugh Dickins <hughd@google.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-can I ignore the return value when I expect val to be non zero?
-the doc says: "On error, the variable @x is set to zero."
+Sorry, I seem to have hit some key which sent the mail off too soon, a
+tab perhaps: finishing up...
 
-On Fri, Aug 27, 2010 at 10:49 PM, Thomas Backlund <tmb@mandriva.org> wrote:
-> 27.08.2010 23:15, Matteo Croce skrev:
+On Fri, Aug 27, 2010 at 2:28 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Fri, Aug 27, 2010 at 1:56 PM, Christoph Lameter <cl@linux.com> wrote:
 >>
->> On Fri, Aug 27, 2010 at 8:48 PM, H. Peter Anvin<hpa@zytor.com>  wrote:
->>>
->>> You're doing user-space references without get_user().
->>>
->>>        -hpa
->>>
->>> --
->>> H. Peter Anvin, Intel Open Source Technology Center
->>> I work for Intel.  I don't speak on their behalf.
->>>
->>>
+>>> of that second check, then we know that we got the right anon_vma,
 >>
->> Here with get_user.
->> I CC Natale which is my beta tester, he have some Alix boards running
->> 24/24
->> with my patch
->>
->> --- a/arch/x86/kernel/Makefile  2010-08-27 19:42:01.795858001 +0200
->> +++ b/arch/x86/kernel/Makefile  2010-08-27 19:42:12.525858001 +0200
->> @@ -88,6 +88,8 @@
->>  obj-$(CONFIG_APB_TIMER)               += apb_timer.o
->>
->>  obj-$(CONFIG_K8_NB)           += k8.o
->> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
->> +obj-$(CONFIG_GEODE_NOPL)       += nopl_emu.o
->
-> Same line added twice...
->
-> --
-> Thomas
->
+>> I do not see a second check (*after* taking the lock) in the patch
 
+        if (page_mapped(page))
+                return anon_vma;
 
+>> and the way the lock is taken can be a problem in itself.
 
--- 
-Matteo Croce
-OpenWrt developer
-  _______                     ________        __
- |       |.-----.-----.-----.|  |  |  |.----.|  |_
- |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
- |_______||   __|_____|__|__||________||__|  |____|
-          |__| W I R E L E S S   F R E E D O M
- KAMIKAZE (bleeding edge) ------------------
-  * 10 oz Vodka       Shake well with ice and strain
-  * 10 oz Triple sec  mixture into 10 shot glasses.
-  * 10 oz lime juice  Salute!
- ---------------------------------------------------
+No, that's what we rely upon SLAB_DESTROY_BY_RCU for.
+
+Hugh
