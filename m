@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab0H0QUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 12:20:25 -0400
-Received: from sj-iport-2.cisco.com ([171.71.176.71]:7763 "EHLO
-	sj-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab0H0QUT (ORCPT
+	id S1753471Ab0H0Q3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 12:29:46 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49561 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab0H0Q3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 12:20:19 -0400
-Authentication-Results: sj-iport-2.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEABaCd0yrR7Hu/2dsb2JhbACgWXGgUJt9hTcEhDuFTg
-X-IronPort-AV: E=Sophos;i="4.56,279,1280707200"; 
-   d="scan'208";a="274974259"
-From: Roland Dreier <rdreier@cisco.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Marc Aurele La France <tsi@ualberta.ca>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola \(ipv6\)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: RFC: MTU for serving NFS on Infiniband
-References: <alpine.LNX.2.00.1008230842290.9325@abcyxhiz.aict.ualberta.ca>
-	<20100823080543.319143e3@nehalam>
-	<alpine.WNT.2.00.1008240856170.2000@cluij.ucs.ualberta.ca>
-	<1282672647.2302.15.camel@achroite.uk.solarflarecom.com>
-	<alpine.WNT.2.00.1008241338470.1132@cluij.ucs.ualberta.ca>
-	<1282688441.22839.34.camel@localhost> <20100824153920.63360072@s6510>
-	<alpine.WNT.2.00.1008251408520.632@cluij.ucs.ualberta.ca>
-	<1282823827.2476.663.camel@edumazet-laptop>
-	<alpine.WNT.2.00.1008260835020.2008@cluij.ucs.ualberta.ca>
-	<20100826165359.3b79b27d@nehalam>
-X-Message-Flag: Warning: May contain useful information
-Date: Fri, 27 Aug 2010 09:20:15 -0700
-In-Reply-To: <20100826165359.3b79b27d@nehalam> (Stephen Hemminger's message of
-	"Thu, 26 Aug 2010 16:53:59 -0700")
-Message-ID: <adaiq2w2fk0.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 27 Aug 2010 12:29:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bnsdICmG6Wi0phq9eVEVCG4zSKX5vCeL448WtsX1WP97fvw53pig4XEV8N3ZhmVJlH
+         XpqH5P7HVsfdLLsaEteApFbzPkxUB7dkQyHwciLOGLLXAoD51m22CosMbWT/pxRCqd1w
+         hiiCf2DQCnt0mqxv4MJK34rrfI84DepMqpjSM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan>
+References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan>
+Date: Fri, 27 Aug 2010 09:29:42 -0700
+Message-ID: <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com>
+Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+ timed out, resetting card.
+From: adam radford <aradford@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > Infiniband device driver needs to be fixed to do SG and checksum offload.
- > Otherwise it is insane to try and run large MTU over it. I even wonder if
- > the dev_change_mtu() function should reject > PAGESIZE mtu for devices
- > that don't do scatter/gather or at least a raise a warning.
+On Fri, Aug 27, 2010 at 6:12 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
 
-It's not possible to "fix" the driver to do checksum offload, since the
-underlying hardware does not support it.  Theoretically we could handle
-SG but of course there's no point in that without checksum offload.
+> Aug 24 09:14:04 p34 kernel: [247295.662461] 3w-9xxx: scsi0: WARNING:
+> (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
 
-I think there is some confusion about what IPoIB is in this thread, so
-let me try to give some basic background to help the discussion.  There
-are two "modes" that an IPoIB interface can operate in: datagram mode
-and connected mode.
+Justin,
 
-In datagram mode, packets given to the IPoIB driver are sent as IB
-unreliable datagram messages, which means each skb turns into one packet
-on the wire -- very much like the ethernet case.  In this mode, the MTU
-is limited by the MTU on the IB side, which is typically either 2K or 4K
-depending on the adapter and the switches involved.  Modern IB adapters
-do support checksum offload and large send offload for datagrams, so we
-can and do enable SG and IP_CSUM.
+This just means the firmware didn't complete an ioctl in 60 seconds.
 
-In connected mode, the IPoIB driver actually makes a reliable connection
-to each peer.  For reliable connections, IB adapters can actually send
-messages up to 4GB, with the adapter handling all the segmentation and
-transport level acks etc. -- the host system simply queues one work
-request for each message of any size.  These work requests do support
-gather/scatter, but no existing adapter supports checksum offload for
-messages on reliable connections.
+Can try changing this define in 3w-9xxx.h:
 
-However, since reliable connections support arbitrary sized messages, in
-connected mode the IPoIB driver allows an MTU up to roughly the maximum
-64K IP message size.  (I don't think anyone has tried it with bigger
-IPv6 jumbograms ;)
+#define TW_IOCTL_CHRDEV_TIMEOUT               60 /* 60 seconds */
 
-It does seem even with all the horrible memory allocation problems
-caused by requiring huge linear skbs, connected mode does offer very
-good performance for at least some real-world uses (although apparently
-NFS is not one such use).  In fact as far as I know, connected mode with
-a huge MTU continues to outperform datagram mode even with LSO and LRO
-(although I don't have any particularly recent numbers).  So I don't
-think we want to completely disallow such uses.
+to 90 or 120 seconds to see if that fixes your issue?
 
- - R.
+Thanks,
+
+-Adam
