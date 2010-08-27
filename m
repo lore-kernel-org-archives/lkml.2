@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab0H0XoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 19:44:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27566 "EHLO mx1.redhat.com"
+	id S1752392Ab0H0Xs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 19:48:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29910 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab0H0XoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 19:44:07 -0400
-Message-ID: <4C784DB8.5090105@redhat.com>
-Date: Fri, 27 Aug 2010 13:43:52 -1000
+	id S1751735Ab0H0XsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 19:48:25 -0400
+Message-ID: <4C784EBF.2010908@redhat.com>
+Date: Fri, 27 Aug 2010 13:48:15 -1000
 From: Zachary Amsden <zamsden@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
@@ -17,43 +17,112 @@ CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
         Glauber Costa <glommer@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 13/35] Perform hardware_enable in CPU_STARTING
- callback
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-14-git-send-email-zamsden@redhat.com> <4C77E89E.3040106@siemens.com>
-In-Reply-To: <4C77E89E.3040106@siemens.com>
+Subject: Re: [KVM timekeeping 17/35] Implement getnsboottime kernel API
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-18-git-send-email-zamsden@redhat.com> <4C77FE57.7050105@siemens.com>
+In-Reply-To: <4C77FE57.7050105@siemens.com>
 Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2010 06:32 AM, Jan Kiszka wrote:
+On 08/27/2010 08:05 AM, Jan Kiszka wrote:
 > Zachary Amsden wrote:
 >    
->> The CPU_STARTING callback was added upstream with the intention
->> of being used for KVM, specifically for the hardware enablement
->> that must be done before we can run in hardware virt.  It had
->> bugs on the x86_64 architecture at the time, where it was called
->> after CPU_ONLINE.  The arches have since merged and the bug is
->> gone.
+>> Add a kernel call to get the number of nanoseconds since boot.  This
+>> is generally useful enough to make it a generic call.
+>>
+>> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+>> ---
+>>   include/linux/time.h      |    1 +
+>>   kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
+>>   2 files changed, 28 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/time.h b/include/linux/time.h
+>> index ea3559f..5d04108 100644
+>> --- a/include/linux/time.h
+>> +++ b/include/linux/time.h
+>> @@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
+>>   extern void getrawmonotonic(struct timespec *ts);
+>>   extern void getboottime(struct timespec *ts);
+>>   extern void monotonic_to_bootbased(struct timespec *ts);
+>> +extern s64 getnsboottime(void);
+>>
+>>   extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+>>   extern int timekeeping_valid_for_hres(void);
+>> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+>> index caf8d4d..d250f0a 100644
+>> --- a/kernel/time/timekeeping.c
+>> +++ b/kernel/time/timekeeping.c
+>> @@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
+>>   }
+>>   EXPORT_SYMBOL_GPL(ktime_get_ts);
+>>
+>> +
+>> +/**
+>> + * getnsboottime - get the bootbased clock in nsec format
+>> + *
+>> + * The function calculates the bootbased clock from the realtime
+>> + * clock and the wall_to_monotonic offset and stores the result
+>> + * in normalized timespec format in the variable pointed to by @ts.
+>> + */
 >>      
-> What bugs are you referring to, or since which kernel version is
-> CPU_STARTING usable for KVM? I need to encode this into kvm-kmod.
+> This thing is not returning anything in some ts variable. And I also had
+> a hard time spotting the key difference to getboottime - the name is
+> really confusing.
+>
+> Besides this, if you have good suggestion how to provide a compat
+> version for older kernels, I'm all ears. Please also have a careful look
+> at kvm-kmod's kvm_getboottime again, right now I'm a bit confused about
+> what it is supposed to return and what it actually does (note that
+> kvm-kmod cannot account for time spent in suspend state).
+>
+> Thanks!
+> Jan
+>
+>    
+>> +s64 getnsboottime(void)
+>> +{
+>> +	unsigned int seq;
+>> +	s64 secs, nsecs;
+>> +
+>> +	WARN_ON(timekeeping_suspended);
+>> +
+>> +	do {
+>> +		seq = read_seqbegin(&xtime_lock);
+>> +		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
+>> +		secs += total_sleep_time.tv_sec;
+>> +		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
+>> +		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
+>> +
+>> +	} while (read_seqretry(&xtime_lock, seq));
+>> +	return nsecs + (secs * NSEC_PER_SEC);
+>> +}
+>> +EXPORT_SYMBOL_GPL(getnsboottime);
+>> +
+>>   /**
+>>    * do_gettimeofday - Returns the time of day in a timeval
+>>    * @tv:		pointer to the timeval to be set
+>>      
 >    
 
-Prior to the x86_64 / i386 merge, CPU_STARTING didn't work the same way 
-/ exist in the x86_64 code... most of this is historical guesswork.  At 
-some point, the 32/64 versions of the code in smpboot.c got merged and 
-now it does.
+Yes, we should probably change the name before making this an actual 
+kernel API, John made some better suggestions.
 
-Binary searching around my tree shows this timeframe:
+For kvm-kmod, the following conversion should work:
 
-2.6.11? - 2.6.23 : silver age ; i386 and x86_64 merge underway
-    |
-2.6.24 : bronze age ; i386 and x86_64 deprecated
-    |
-2.6.26 : iron age; smpboot_32.c / smpboot_64.c merge
-      \
-      2.6.28 : CPU_STARTING exists and first used
+static inline u64 get_kernel_ns(void)
+{
+     struct timespec ts;
 
-/me scratches head wondering how this affects operation on older kernels....
+     WARN_ON(preemptible());
+     ktime_get_ts(&ts);
+     monotonic_to_bootbased(&ts);
+     return timespec_to_ns(&ts);
+}
+
+The only real point to getnsboottime is to stop the unnecessary 
+conversions, but looking at it now, it doesn't appear to actually save 
+any, does it?  Maybe it is better to just drop the thing all-together.
+
+Zach
