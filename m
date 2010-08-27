@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab0H0Jcq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:32:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43350 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394Ab0H0Jco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:32:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eUx3hpTjZVXrkokisCnvN3WQR8GVX3j6aGR+YaTPaRBRfbiFniPHSRbqoI5j/6I4th
-         tA5yFHsPSh4Qke8Vm6t6PxjRf3TB7vHW3uTjLksuBVpxgRWX/9Binzpg70XKnHIbDlKG
-         gDHJQn3/Bltme448IxfA+oVjCFaAZO+UkkHZA=
-From: jiang.adam@gmail.com
-To: ralf@linux-mips.org
-Cc: dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
-        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
-        tj@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Adam Jiang <jiang.adam@gmail.com>
-Subject: [PATCH V2] mips: irq: add stackoverflow detection
-Date: Fri, 27 Aug 2010 18:32:06 +0900
-Message-Id: <1282901526-28405-1-git-send-email-jiang.adam@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <linux-mips@linux-mips.org>
-References: <linux-mips@linux-mips.org>
+	id S1753815Ab0H0JeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:34:12 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:41869 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752007Ab0H0JeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 05:34:10 -0400
+Date: Fri, 27 Aug 2010 10:33:55 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] writeback: Do not congestion sleep when there are
+	no congested BDIs
+Message-ID: <20100827093355.GC19556@csn.ul.ie>
+References: <1282835656-5638-1-git-send-email-mel@csn.ul.ie> <1282835656-5638-4-git-send-email-mel@csn.ul.ie> <20100827051316.GH705@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100827051316.GH705@dastard>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adam Jiang <jiang.adam@gmail.com>
+On Fri, Aug 27, 2010 at 03:13:16PM +1000, Dave Chinner wrote:
+> On Thu, Aug 26, 2010 at 04:14:16PM +0100, Mel Gorman wrote:
+> > If congestion_wait() is called with no BDIs congested, the caller will
+> > sleep for the full timeout and this is an unnecessary sleep.
+> 
+> That, I think, is an invalid assumption. congestion_wait is used in
+> some places as a backoff mechanism that waits for some IO work to be
+> done, with congestion disappearing being a indication that progress
+> has been made and so we can retry sooner than the entire timeout.
+> 
 
-Add stackoverflow detection to mips arch
+As it's write IO rather than some IO, I wonder if that's really the
+right thing to do. However, I accept your (and others) point that
+converting all congestion_wait() callers may be too much of a change.
 
-Signed-off-by: Adam Jiang <jiang.adam@gmail.com>
----
- arch/mips/Kconfig.debug |    9 +++++++++
- arch/mips/kernel/irq.c  |   21 +++++++++++++++++++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+> For example, if _xfs_buf_lookup_pages() fails to allocate page cache
+> pages for a buffer, it will kick the xfsbufd to writeback dirty
+> buffers (so they can be freed) and immediately enter
+> congestion_wait(). If there isn't congestion when we enter
+> congestion_wait(), we still want to give the xfsbufds a chance to
+> clean some pages before we retry the allocation for the new buffer.
+> Removing the congestion_wait() sleep behaviour will effectively
+> _increase_ memory pressure with XFS on fast disk subsystems because
+> it now won't backoff between failed allocation attempts...
+> 
+> Perhaps a congestion_wait_iff_congested() variant is needed for the
+> VM? I can certainly see how it benefits the VM from a latency
+> perspective, but it is the opposite behaviour that is expected in
+> other places...
+> 
 
-diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
-index 43dc279..f437cd1 100644
---- a/arch/mips/Kconfig.debug
-+++ b/arch/mips/Kconfig.debug
-@@ -67,6 +67,15 @@ config CMDLINE_OVERRIDE
- 
- 	  Normally, you will choose 'N' here.
- 
-+config DEBUG_STACKOVERFLOW
-+	bool "Check for stack overflows"
-+	depends on DEBUG_KERNEL
-+	help
-+	  This option will cause messages to be printed if free stack space
-+	  drops below a certain limit(2GB on MIPS). The debugging option
-+	  provides another way to check stack overflow happened on kernel mode
-+	  stack usually caused by nested interruption.
-+
- config DEBUG_STACK_USAGE
- 	bool "Enable stack utilization instrumentation"
- 	depends on DEBUG_KERNEL
-diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
-index c6345f5..d0b924d 100644
---- a/arch/mips/kernel/irq.c
-+++ b/arch/mips/kernel/irq.c
-@@ -151,6 +151,26 @@ void __init init_IRQ(void)
- #endif
- }
- 
-+#ifdef DEBUG_STACKOVERFLOW
-+static inline void check_stack_overflow(void)
-+{
-+	long sp;
-+
-+	__asm__ __volatile__("move %0, $sp" : "=r" (sp));
-+	sp = sp & (THREAD_SIZE-1);
-+
-+	/* check for stack overflow: is there less than 2KB free? */
-+	if (unlikely(sp < (sizeof(struct thread_info) + 2048))) {
-+		printk("do_IRQ: stack overflow: %ld\n",
-+		       sp - sizeof(struct thread_info));
-+		dump_stack();
-+	}
-+}
-+#else
-+static inline void check_stack_overflow(void) {}
-+#endif
-+
-+
- /*
-  * do_IRQ handles all normal device IRQ's (the special
-  * SMP cross-CPU interrupts have their own specific
-@@ -159,6 +179,7 @@ void __init init_IRQ(void)
- void __irq_entry do_IRQ(unsigned int irq)
- {
- 	irq_enter();
-+	check_stack_overflow();
- 	__DO_IRQ_SMTC_HOOK(irq);
- 	generic_handle_irq(irq);
- 	irq_exit();
+I'm added a wait_iff_congested() and updated a few of the VM callers. I changed
+a fairly minimum number of what appeared to be the obvious ones to change.
+
+Thanks
+
 -- 
-1.7.2.2
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
