@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab0H0JsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 05:48:24 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57960 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab0H0Jny (ORCPT
+	id S1754986Ab0H0Jsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 05:48:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44869 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab0H0Jsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 05:43:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=JWuUhpbAHdcy9MdQkLw1JUjRdxHNAwUc6SeekYSRnY/K66MU/zN3n2Pr8JAoBqRBjd
-         GrmJQvNIWuXrl65GQ6eLv+Yl1+0uPGe/6g2f4ke/BCaiR4cRC9HdJt0ac7+NMQkPH2vp
-         fFzjSI+El0tWe8T7likq/PJKLFZp/dB7nf2dQ=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Hirokazu Takata <takata@linux-m32r.org>
-Subject: [RFC PATCH 20/43] ptrace, m32r: cleanup arch_ptrace()
-Date: Fri, 27 Aug 2010 18:42:06 +0900
-Message-Id: <1282902149-12991-21-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
-References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
+	Fri, 27 Aug 2010 05:48:37 -0400
+Date: Fri, 27 Aug 2010 18:48:48 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: [GIT PULL] Samsung fixes for 2.6.36-rc3
+To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
+Message-id: <006d01cb45cd$0e4e3610$2aeaa230$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActFzQvThlij3bJiSs6b7kylJHKAgQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use new 'datap' variable in order to remove duplicated castings.
+Hi Linus,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
----
- arch/m32r/kernel/ptrace.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Please pull Samsung fixes from:
 
-diff --git a/arch/m32r/kernel/ptrace.c b/arch/m32r/kernel/ptrace.c
-index 69bbf7a..fc93e8d 100644
---- a/arch/m32r/kernel/ptrace.c
-+++ b/arch/m32r/kernel/ptrace.c
-@@ -625,6 +625,7 @@ arch_ptrace(struct task_struct *child, long request,
- 	    unsigned long addr, unsigned long data)
- {
- 	int ret;
-+	unsigned long __user *datap = (unsigned long __user *) data;
- 
- 	switch (request) {
- 	/*
-@@ -639,8 +640,7 @@ arch_ptrace(struct task_struct *child, long request,
- 	 * read the word at location addr in the USER area.
- 	 */
- 	case PTRACE_PEEKUSR:
--		ret = ptrace_read_user(child, addr,
--				       (unsigned long __user *)data);
-+		ret = ptrace_read_user(child, addr, datap);
- 		break;
- 
- 	/*
-@@ -661,11 +661,11 @@ arch_ptrace(struct task_struct *child, long request,
- 		break;
- 
- 	case PTRACE_GETREGS:
--		ret = ptrace_getregs(child, (void __user *)data);
-+		ret = ptrace_getregs(child, datap);
- 		break;
- 
- 	case PTRACE_SETREGS:
--		ret = ptrace_setregs(child, (void __user *)data);
-+		ret = ptrace_setregs(child, datap);
- 		break;
- 
- 	default:
--- 
-1.7.2.2
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
+
+These things are for bug fix on 2.6.36-rc3.
+If any problems, please let me know.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+
+The following changes since commit 76be97c1fc945db08aae1f1b746012662d643e97:
+
+  Linux 2.6.36-rc2 (2010-08-22 17:43:29 -0700)
+
+are available in the git repository at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
+
+Changhwan Youn (1):
+      ARM: S5PV310: Fix on Secondary CPU startup
+
+Jongpill Lee (4):
+      ARM: S5PV310: Fix on PLL setting for S5PV310
+      ARM: S5PV310: Should be clk_sclk_apll not clk_mout_apll
+      ARM: S5PV310: Fix missed uart clocks
+      ARM: S5PV310: Bug fix on uclk1 and sclk_pwm
+
+Kukjin Kim (4):
+      ARM: SAMSUNG: Fix on build warning regarding VMALLOC_END type
+      ARM: S5PV310: Fix on default ZRELADDR of ARCH_S5PV310
+      ARM: S5PV310: Fix on typo irqs.h of S5PV310
+      ARM: S5PV310: Add CMU block for S5PV310 Clock
+
+Kyungmin Park (2):
+      ARM: S5P: VMALLOC_END should be unsigned long
+      ARM: S5PV310: Fix on GPIO base addresses
+
+ arch/arm/Kconfig                                |    3 +-
+ arch/arm/mach-s3c2410/include/mach/vmalloc.h    |    2 +-
+ arch/arm/mach-s3c64xx/include/mach/vmalloc.h    |    2 +-
+ arch/arm/mach-s5p6440/include/mach/vmalloc.h    |    2 +-
+ arch/arm/mach-s5p6442/include/mach/vmalloc.h    |    2 +-
+ arch/arm/mach-s5pv210/include/mach/vmalloc.h    |    2 +-
+ arch/arm/mach-s5pv310/clock.c                   |   82
++++++++++++++++++-----
+ arch/arm/mach-s5pv310/cpu.c                     |   10 +++
+ arch/arm/mach-s5pv310/include/mach/irqs.h       |   11 ++-
+ arch/arm/mach-s5pv310/include/mach/map.h        |   16 ++++-
+ arch/arm/mach-s5pv310/include/mach/regs-clock.h |   59 ++++++++--------
+ arch/arm/mach-s5pv310/include/mach/vmalloc.h    |    2 +-
+ arch/arm/mach-s5pv310/platsmp.c                 |    2 +-
+ arch/arm/plat-s5p/include/plat/map-s5p.h        |    2 +
+ 14 files changed, 135 insertions(+), 62 deletions(-)
 
