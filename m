@@ -1,210 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab0H0SH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 14:07:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53283 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097Ab0H0SHY convert rfc822-to-8bit (ORCPT
+	id S1755200Ab0H0SHf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 14:07:35 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45850 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755191Ab0H0SHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 14:07:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=ZBFqssQBogK7AbWMMGNG5k/39NVrcyuNLiC3rudfeakMH6zDxy7eOBKaybUgSWJIYU
-         XwjdqopISamUeiEU1jESQ2VvrtYKyGtDdN8DPINSkXr+Xn3//OkIAhMbzoMHKduBQlDh
-         ZjiFAIJbhJep+K91jkznwDW0QgpH/A32O2m/Q=
-MIME-Version: 1.0
-From: Matteo Croce <matteo@openwrt.org>
-Date: Fri, 27 Aug 2010 20:07:03 +0200
-X-Google-Sender-Auth: M12vFwP9F-WsqfSEBZk7Bdo_pYA
-Message-ID: <AANLkTinq81V6afODRS26Nk1vi68_VUMAfs-tu-P8=dBP@mail.gmail.com>
-Subject: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 27 Aug 2010 14:07:32 -0400
+Subject: Re: [PATCH 1/4] oprofile: Handle initialisation failure more
+ gracefully
+From: Will Deacon <will.deacon@arm.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org
+In-Reply-To: <20100827163839.GR22783@erda.amd.com>
+References: <cover.1282848651.git.matt@console-pimps.org>
+	 <442a16796990290ca3ebaaa3d0ab317e7b0a30a5.1282848651.git.matt@console-pimps.org>
+	 <20100827124344.GJ22783@erda.amd.com>
+	 <1282922125.22128.5.camel@e102144-lin.cambridge.arm.com>
+	 <20100827163839.GR22783@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Aug 2010 19:06:45 +0100
+Message-ID: <1282932405.2899.22.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Aug 2010 18:06:48.0785 (UTC) FILETIME=[9E357410:01CB4612]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I have received many mails asking to refresh the patch so I decided to
-post them on the public mailing list
-In this version such feature is configurable via a kernel config option
+Hi Robert,
 
-Signed-off-by: Matteo Croce <matteo@openwrt.org>
+Thanks for taking the time to look at this.
 
---- a/arch/x86/kernel/Makefile	2010-08-27 00:27:50.101261000 +0200
-+++ b/arch/x86/kernel/Makefile	2010-08-27 00:31:11.391261002 +0200
-@@ -88,6 +88,8 @@
- obj-$(CONFIG_APB_TIMER)		+= apb_timer.o
+On Fri, 2010-08-27 at 17:38 +0100, Robert Richter wrote:
+> On 27.08.10 11:15:25, Will Deacon wrote:
 
- obj-$(CONFIG_K8_NB)		+= k8.o
-+obj-$(CONFIG_GEODE_NOPL)	+= nopl_emu.o
-+obj-$(CONFIG_GEODE_NOPL)	+= nopl_emu.o
- obj-$(CONFIG_DEBUG_RODATA_TEST)	+= test_rodata.o
- obj-$(CONFIG_DEBUG_NX_TEST)	+= test_nx.o
+> > How about something like this? This removes the exit call
+> > from the init code and sets pointers to NULL after they have been
+> > freed. We still have to do some checking so that we don't try to
+> > release a NULL perf event:
+> >
+> > diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> > index 0691176..12253eb 100644
+> > --- a/arch/arm/oprofile/common.c
+> > +++ b/arch/arm/oprofile/common.c
+> > @@ -275,10 +275,12 @@ out:
+> >       return ret;
+> >  }
+> > 
+> > -static void  exit_driverfs(void)
+> > +static void __exit exit_driverfs(void)
+> >  {
+> > -     platform_device_unregister(oprofile_pdev);
+> > -     platform_driver_unregister(&oprofile_driver);
+> > +     if (!IS_ERR_OR_NULL(oprofile_pdev)) {
+> 
+> This check is obsolete here as we do not call oprofile_arch_exit() on
+> failure.
+> 
+Sorry, I was being braindead and thought oprofile_arch_exit might be
+called via oprofile_exit. As it happens, this is only called because of
+module_exit so we know that initialisation will have completed.
 
---- a/arch/x86/kernel/cpu/amd.c	2010-08-27 00:27:50.161261000 +0200
-+++ b/arch/x86/kernel/cpu/amd.c	2010-08-27 00:34:13.371261000 +0200
-@@ -137,11 +137,15 @@
- 		return;
- 	}
+In light of this and your comments, I've simplified the code. Once
+people are happy with it, I'll post it as a couple of patches:
 
-+#ifdef CONFIG_GEODE_NOPL
- 	if (c->x86_model == 10) {
--		/* AMD Geode LX is model 10 */
--		/* placeholder for any needed mods */
-+		/* Geode only lacks the NOPL instruction to be i686,
-+		   but we can promote it to a i686 class cpu
-+		   and emulate NOPLs in the exception handler*/
-+		boot_cpu_data.x86 = 6;
- 		return;
- 	}
-+#endif
+diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+index 0691176..c2c4a2e 100644
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@ -275,7 +275,7 @@ out:
+        return ret;
+ }
+ 
+-static void  exit_driverfs(void)
++static void __exit exit_driverfs(void)
+ {
+        platform_device_unregister(oprofile_pdev);
+        platform_driver_unregister(&oprofile_driver);
+@@ -359,14 +359,13 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+        if (!counter_config) {
+                pr_info("oprofile: failed to allocate %d "
+                                "counters\n", perf_num_counters);
+-               return -ENOMEM;
++               ret = -ENOMEM;
++               goto out;
+        }
+ 
+        ret = init_driverfs();
+-       if (ret) {
+-               kfree(counter_config);
+-               return ret;
+-       }
++       if (ret)
++               goto out;
+ 
+        for_each_possible_cpu(cpu) {
+                perf_events[cpu] = kcalloc(perf_num_counters,
+@@ -374,9 +373,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+                if (!perf_events[cpu]) {
+                        pr_info("oprofile: failed to allocate %d perf events "
+                                        "for cpu %d\n", perf_num_counters, cpu);
+-                       while (--cpu >= 0)
+-                               kfree(perf_events[cpu]);
+-                       return -ENOMEM;
++                       ret = -ENOMEM;
++                       goto out;
+                }
+        }
+ 
+@@ -393,28 +391,33 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+        else
+                pr_info("oprofile: using %s\n", ops->cpu_type);
+ 
++out:
++       if (ret) {
++               kfree(counter_config);
++               for_each_possible_cpu(cpu)
++                       kfree(perf_events[cpu]);
++       }
++
+        return ret;
+ }
+ 
+-void oprofile_arch_exit(void)
++void __exit oprofile_arch_exit(void)
+ {
+        int cpu, id;
+        struct perf_event *event;
+ 
+-       if (*perf_events) {
+-               exit_driverfs();
+-               for_each_possible_cpu(cpu) {
+-                       for (id = 0; id < perf_num_counters; ++id) {
+-                               event = perf_events[cpu][id];
+-                               if (event != NULL)
+-                                       perf_event_release_kernel(event);
+-                       }
+-                       kfree(perf_events[cpu]);
++       for_each_possible_cpu(cpu) {
++               for (id = 0; id < perf_num_counters; ++id) {
++                       event = perf_events[cpu][id];
++                       if (event)
++                               perf_event_release_kernel(event);
+                }
++
++               kfree(perf_events[cpu]);
+        }
+ 
+-       if (counter_config)
+-               kfree(counter_config);
++       kfree(counter_config);
++       exit_driverfs();
+ }
+ #else
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
+@@ -422,5 +425,5 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+        pr_info("oprofile: hardware counters not available\n");
+        return -ENODEV;
+ }
+-void oprofile_arch_exit(void) {}
++void __exit oprofile_arch_exit(void) {}
+ #endif /* CONFIG_HW_PERF_EVENTS */
+diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+index b336cd9..b4a6857 100644
+--- a/drivers/oprofile/oprof.c
++++ b/drivers/oprofile/oprof.c
+@@ -257,16 +257,9 @@ static int __init oprofile_init(void)
+                printk(KERN_INFO "oprofile: using timer interrupt.\n");
+                err = oprofile_timer_init(&oprofile_ops);
+                if (err)
+-                       goto out_arch;
++                       return err;
+        }
+-       err = oprofilefs_register();
+-       if (err)
+-               goto out_arch;
+-       return 0;
+-
+-out_arch:
+-       oprofile_arch_exit();
+-       return err;
++       return oprofilefs_register();
  }
 
- static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
---- a/arch/x86/kernel/entry_32.S	2010-08-27 00:27:50.051261000 +0200
-+++ b/arch/x86/kernel/entry_32.S	2010-08-27 00:57:35.531261000 +0200
-@@ -978,7 +978,11 @@
- 	RING0_INT_FRAME
- 	pushl $0
- 	CFI_ADJUST_CFA_OFFSET 4
-+#ifdef CONFIG_GEODE_NOPL
-+	pushl $do_nopl_emu
-+#else
- 	pushl $do_invalid_op
-+#endif
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ b/arch/x86/kernel/nopl_emu.c	2010-08-27 00:27:57.881261002 +0200
-@@ -0,0 +1,110 @@
-+/*
-+ *  linux/arch/x86/kernel/nopl_emu.c
-+ *
-+ *  Copyright (C) 2002  Willy Tarreau
-+ *  Copyright (C) 2010  Matteo Croce
-+ */
-+
-+#include <asm/processor.h>
-+#include <asm/traps.h>
-+
-+/* This code can be used to allow the AMD Geode to hopefully correctly execute
-+ * some code which was originally compiled for an i686, by emulating NOPL,
-+ * the only missing i686 instruction in the CPU
-+ *
-+ * Willy Tarreau <willy@meta-x.org>
-+ * Matteo Croce <technoboy85@gmail.com>
-+ */
-+
-+static inline int do_1f(u8 *ip)
-+{
-+	int length = 3;
-+	switch (*ip) {
-+	case 0x84:
-+		if (!ip[5])
-+			length++;
-+		else
-+			return 0;
-+	case 0x80:
-+		if (!ip[4] && !ip[3])
-+			length += 2;
-+		else
-+			return 0;
-+	case 0x44:
-+		if (!ip[2])
-+			length++;
-+		else
-+			return 0;
-+	case 0x40:
-+		if (!ip[1])
-+			length++;
-+		else
-+			return 0;
-+	case 0x00:
-+		return length;
-+	}
-+	return 0;
-+}
-+
-+static inline int do_0f(u8 *ip)
-+{
-+	if (*ip == 0x1f)
-+		return do_1f(ip + 1);
-+	return 0;
-+}
-+
-+static inline int do_66(u8 *ip)
-+{
-+	if (*ip == 0x90)
-+		return 2;
-+	if (*ip == 0x0f) {
-+		int res = do_0f(ip + 1);
-+		if (res)
-+			return res + 1;
-+		else
-+			return 0;
-+	}
-+	return 0;
-+}
-+
-+static inline int do_start(u8 *ip)
-+{
-+	if (*ip == 0x0f)
-+		return do_0f(ip + 1);
-+	if (*ip == 0x66)
-+		return do_66(ip + 1);
-+	return 0;
-+}
-+
-+/* [do_nopl_emu] is called by exception 6 after an invalid opcode has been
-+ * encountered. It will try to emulate it by doing nothing,
-+ * and will send a SIGILL or SIGSEGV to the process if not possible.
-+ * the NOPL can have variable length opcodes:
-+
-+bytes number	opcode
-+	2	66 90
-+	3	0f 1f 00
-+	4	0f 1f 40 00
-+	5	0f 1f 44 00 00
-+	6	66 0f 1f 44 00 00
-+	7	0f 1f 80 00 00 00 00
-+	8	0f 1f 84 00 00 00 00 00
-+	9	66 0f 1f 84 00 00 00 00 00
-+*/
-+void do_nopl_emu(struct pt_regs *regs, long error_code)
-+{
-+	u8 *ip = (u8 *)instruction_pointer(regs);
-+	int res = do_start(ip);
-+
-+	if (res) {
-+		int i = 0;
-+		do {
-+			ip += res;
-+			i++;
-+			res = do_start(ip);
-+		} while(res);
-+		printk(KERN_DEBUG "geode_nopl: emulated %d instructions\n", i);
-+		regs->ip = (typeof(regs->ip))ip;
-+	} else
-+		do_invalid_op(regs, error_code);
-+}
+ 
+Once again, thanks for looking at this and have a good weekend,
+
+Will
 
 
--- 
-Matteo Croce
-OpenWrt developer
-  _______                     ________        __
- |       |.-----.-----.-----.|  |  |  |.----.|  |_
- |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
- |_______||   __|_____|__|__||________||__|  |____|
-          |__| W I R E L E S S   F R E E D O M
- KAMIKAZE (bleeding edge) ------------------
-  * 10 oz Vodka       Shake well with ice and strain
-  * 10 oz Triple sec  mixture into 10 shot glasses.
-  * 10 oz lime juice  Salute!
- ---------------------------------------------------
