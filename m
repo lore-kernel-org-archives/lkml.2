@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab0H0Tfa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 15:35:30 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:18821 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab0H0Tf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 15:35:26 -0400
-X-SpamScore: 6
-X-BigFish: VPS6(z3cfcs329eqzbb2cK1432N98dNzz1202hzz8275bhz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7TT0E-02-BIV-02
-X-M-MSG: 
-Date: Fri, 27 Aug 2010 21:33:49 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+	id S1752297Ab0H0TkL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 15:40:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39132 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751709Ab0H0TkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 15:40:06 -0400
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Date: Fri, 27 Aug 2010 21:40:36 +0200
+User-Agent: KMail/1.9.10
+Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v3] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100827193349.GS22783@erda.amd.com>
-References: <9g472epksbkxhgmw6a3qh8r5.1282316687153@email.android.com>
- <20100820152510.GA4167@elte.hu>
- <20100823085339.GA26713@elte.hu>
- <20100826211424.GQ4879@redhat.com>
- <20100827081038.GF22783@erda.amd.com>
- <20100827185744.GV4879@redhat.com>
+        Hedi Berriche <hedi@sgi.com>
+References: <201008271537.35709.ptesarik@suse.cz> <987664A83D2D224EAE907B061CE93D53015D91D029@orsmsx505.amr.corp.intel.com> <201008271916.30369.ptesarik@suse.cz>
+In-Reply-To: <201008271916.30369.ptesarik@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100827185744.GV4879@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Message-Id: <201008272140.37453.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.08.10 14:57:44, Don Zickus wrote:
-> From: Don Zickus <dzickus@redhat.com>
-> Date: Fri, 27 Aug 2010 14:43:03 -0400
-> Subject: [PATCH] [x86] perf: fix accidentally ack'ing a second event on intel perf counter
-> 
-> During testing of a patch to stop having the perf subsytem swallow nmis,
-> it was uncovered that Nehalem boxes were randomly getting unknown nmis
-> when using the perf tool.
-> 
-> Moving the ack'ing of the PMI closer to when we get the status allows
-> the hardware to properly re-set the PMU bit signaling another PMI was
-> triggered during the processing of the first PMI.  This allows the new
-> logic for dealing with the shortcomings of multiple PMIs to handle the
-> extra NMI by 'eat'ing it later.
-> 
-> Now one can wonder why are we getting a second PMI when we disable all
-> the PMUs in the begining of the NMI handler to prevent such a case, for
-> that I do not know.  But I know the fix below helps deal with this quirk.
-> 
-> Tested on multiple Nehalems where the problem was occuring.  With the
-> patch, the code now loops a second time to handle the second PMI (whereas
-> before it was not).
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
+On Friday 27 of August 2010 19:16:29 Petr Tesarik wrote:
+> On Friday 27 of August 2010 18:08:03 Luck, Tony wrote:
+> > > Hedi Berriche sent me a simple test case that can
+> > > trigger the failure on the siglock.
+> >
+> > Can you post the test case please. How long does it typically take
+> > to reproduce the problem?
+>
+> I let Hedi send it. It's really easy to reproduce. In fact, I can reproduce
+> it within 5 minutes on an 8-CPU system.
+>
+> > > Next, CPU 5 releases the spinlock with st2.rel, changing the lock
+> > > value to 0x0 (correct).
+> > >
+> > > SO FAR SO GOOD.
+> > >
+> > > Now, CPU 4, CPU 5 and CPU 7 all want to acquire the lock again.
+> > > Interestingly, CPU 5 and CPU 7 are both granted the same ticket,
+> >
+> > What is the duplicate ticket number that CPUs 5 & 7 get at this point?
+> > Presumably 0x0, yes? Or do they see a stale 0x7fff?
+>
+> They get a zero, yes.
+>
+> > > and the spinlock value (as seen from the debug fault handler) is
+> > > 0x0 after single-stepping over the fetchadd4.acq, in both cases.
+> > > CPU 4 correctly sets the spinlock value to 0x1.
+> >
+> > Is the fault handler using "ld.acq" to look at the spinlock value?
+> > If not, then this might be a red herring. [Though clearly something
+> > bad is going on here].
+>
+> Right. I also realized I was reading the spinlock value with a plain "ld4".
+> When I changed it to "ld4.acq", this is what happens:
+>
+> 1. We're in _spin_lock_irq, which starts like this:
+>
+> 0xa0000001008ea000 <_spin_lock_irq>:    [MMI]       rsm 0x4000;;
+> 0xa0000001008ea001 <_spin_lock_irq+1>:              fetchadd4.acq
+> r15=[r32],1 0xa0000001008ea002 <_spin_lock_irq+2>:              nop.i 0x0;;
+>
+> AFAICS the spinlock value should be 0x0 (after having wrapped around from
+> 0xffff0000 at release on the same CPU).
+>
+> 2. fetchadd4.acq generates a debug exception (because it writes to the
+> watched location)
+> 3. ld4.acq inside the debug fault handler reads 0x0 from the location
+> 4. the handler sets PSR.ss on return
+> 5. fetchadd4.acq puts 0x1 (why?) in r15 and generates a Single step fault
+> 6. the fault handler now reads 0x0 (sic!) from the spinlock location
+> (again, using ld4.acq)
+> 7. the resulting kernel crash dump contains ZERO in the spinlock location
 
-Looks good to me. Thanks Don.
+I have another crash dump which recorded the same values in the debug fault 
+handler, but the resulting crash dump contains 0x1 (not 0x0) in the spinlock. 
+R15 was still 0x1 (even though it should contain the original value, not the 
+incremented one, shouldn't it?).
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Petr Tesarik
