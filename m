@@ -1,143 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab0H1CmB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 22:42:01 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10261 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab0H1ClM (ORCPT
+	id S1753249Ab0H1CrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 22:47:23 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:45250 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752378Ab0H1CrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 22:41:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=sU2L7v2hybHswkJczvLe/m/SzbQnEoUvSY1LCwgikK83J95LO3LS3ilH6iTN2vj8v
-	eyAvCmYEMKRTe9d8kgdiw==
-From: Michael Rubin <mrubin@google.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: fengguang.wu@intel.com, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com,
-        kosaki.motohiro@jp.fujitsu.com, npiggin@kernel.dk, hch@lst.de,
-        axboe@kernel.dk, Michael Rubin <mrubin@google.com>
-Subject: [PATCH 3/4] writeback: nr_dirtied and nr_cleaned in /proc/vmstat
-Date: Fri, 27 Aug 2010 19:40:26 -0700
-Message-Id: <1282963227-31867-4-git-send-email-mrubin@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282963227-31867-1-git-send-email-mrubin@google.com>
-References: <1282963227-31867-1-git-send-email-mrubin@google.com>
+	Fri, 27 Aug 2010 22:47:22 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: E7SH31IVM1mePbiBa.6soPIC8_RBKPoLDAe8O_qOCCbDE0f
+ aifLwL5Q4w.wrAad2bb.yPoUFHozdXm.QPmpYu820NE1JvCJ6RF9ZWQOrTP5
+ y7a7pkvvVGpyVwhwvAhphZn5sS224IBeyjlgC5rwCdTMaxM0JeToGXiQk47J
+ L.22vJDbJK0BtzGL15JqTmPMkNGQptcJ6WNatM29lqKvGS7PH9CKou1l89mi
+ TfOzAjj7l0FMVO9I3akpkOyOo_.tK
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 27 Aug 2010 21:47:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Hugh Dickins <hughd@google.com>
+cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+In-Reply-To: <AANLkTindjNiJXbfsWbFexXBQVB174aprhSbBLFosBvC=@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008272136220.28501@router.home>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils> <20100826235052.GZ6803@random.random> <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com> <20100827095546.GC6803@random.random> <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
+ <alpine.DEB.2.00.1008271159160.18495@router.home> <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com> <alpine.DEB.2.00.1008271420400.18495@router.home> <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com> <alpine.DEB.2.00.1008271547200.22988@router.home>
+ <AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com> <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com> <alpine.DEB.2.00.1008271801080.25115@router.home> <AANLkTindjNiJXbfsWbFexXBQVB174aprhSbBLFosBvC=@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help developers and applications gain visibility into writeback
-behaviour adding two entries to /proc/vmstat.
+On Fri, 27 Aug 2010, Hugh Dickins wrote:
 
-   # grep nr_dirtied /proc/vmstat
-   nr_dirtied 3747
-   # grep nr_cleaned /proc/vmstat
-   nr_cleaned 3618
+> >> No, that's what we rely upon SLAB_DESTROY_BY_RCU for.
+> >
+> > SLAB_DESTROY_BY_RCU does not guarantee that the object stays the same nor
+> > does it prevent any fields from changing. Going through a pointer with
+> > only SLAB_DESTROY_BY_RCU means that you can only rely on the atomicity
+> > guarantee for pointer updates. You get a valid pointer but pointer changes
+> > are not prevented by SLAB_DESTROY_BY_RCU.
+>
+> You're speaking too generally there for me to understand its
+> relevance!  What specific problem do you see?
 
-In order to track the "cleaned" and "dirtied" counts we added two
-vm_stat_items. Per memory node stats have been added also. So we can
-see per node granularity:
+I had the impression that you rely on SLAB_DESTROY_BY_RCU for more than
+what it gives you. If the lock taken is not directly in the structure that
+is managed by slab but only reachable by a pointer then potential pointer
+changes are also danger to consider.
 
-   # cat /sys/devices/system/node/node20/vmstat
-   Node 20 pages_cleaned: 0 times
-   Node 20 pages_dirtied: 0 times
+I'd be much more comfortable if the following would be done
 
-Signed-off-by: Michael Rubin <mrubin@google.com>
----
- drivers/base/node.c    |   14 ++++++++++++++
- include/linux/mmzone.h |    2 ++
- mm/page-writeback.c    |    2 ++
- mm/vmstat.c            |    3 +++
- 4 files changed, 21 insertions(+), 0 deletions(-)
+A. Pin the anon_vma by either
+	I. Take a refcount on the anon vma
+	II. Take a lock in the anon vma (something that is not pointed to)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 2872e86..facd920 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -160,6 +160,18 @@ static ssize_t node_read_numastat(struct sys_device * dev,
- }
- static SYSDEV_ATTR(numastat, S_IRUGO, node_read_numastat, NULL);
- 
-+static ssize_t node_read_vmstat(struct sys_device *dev,
-+				struct sysdev_attribute *attr, char *buf)
-+{
-+	int nid = dev->id;
-+	return sprintf(buf,
-+		"Node %d pages_cleaned: %lu times\n"
-+		"Node %d pages_dirtied: %lu times\n",
-+		nid, node_page_state(nid, NR_PAGES_CLEANED),
-+		nid, node_page_state(nid, NR_FILE_PAGES_DIRTIED));
-+}
-+static SYSDEV_ATTR(vmstat, S_IRUGO, node_read_vmstat, NULL);
-+
- static ssize_t node_read_distance(struct sys_device * dev,
- 			struct sysdev_attribute *attr, char * buf)
- {
-@@ -243,6 +255,7 @@ int register_node(struct node *node, int num, struct node *parent)
- 		sysdev_create_file(&node->sysdev, &attr_meminfo);
- 		sysdev_create_file(&node->sysdev, &attr_numastat);
- 		sysdev_create_file(&node->sysdev, &attr_distance);
-+		sysdev_create_file(&node->sysdev, &attr_vmstat);
- 
- 		scan_unevictable_register_node(node);
- 
-@@ -267,6 +280,7 @@ void unregister_node(struct node *node)
- 	sysdev_remove_file(&node->sysdev, &attr_meminfo);
- 	sysdev_remove_file(&node->sysdev, &attr_numastat);
- 	sysdev_remove_file(&node->sysdev, &attr_distance);
-+	sysdev_remove_file(&node->sysdev, &attr_vmstat);
- 
- 	scan_unevictable_unregister_node(node);
- 	hugetlb_unregister_node(node);		/* no-op, if memoryless node */
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 6e6e626..d42f179 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -104,6 +104,8 @@ enum zone_stat_item {
- 	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
- 	NR_ISOLATED_FILE,	/* Temporary isolated pages from file lru */
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
-+	NR_FILE_PAGES_DIRTIED,	/* number of times pages get dirtied */
-+	NR_PAGES_CLEANED,	/* number of times pages enter writeback */
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index ae5f5d5..19bb8c0 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1126,6 +1126,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
- {
- 	if (mapping_cap_account_dirty(mapping)) {
- 		__inc_zone_page_state(page, NR_FILE_DIRTY);
-+		__inc_zone_page_state(page, NR_FILE_PAGES_DIRTIED);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
- 		task_dirty_inc(current);
- 		task_io_account_write(PAGE_CACHE_SIZE);
-@@ -1141,6 +1142,7 @@ EXPORT_SYMBOL(account_page_dirtied);
- void account_page_writeback(struct page *page)
- {
- 	inc_zone_page_state(page, NR_WRITEBACK);
-+	inc_zone_page_state(page, NR_PAGES_CLEANED);
- }
- EXPORT_SYMBOL(account_page_writeback);
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index f389168..8521475 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -732,6 +732,9 @@ static const char * const vmstat_text[] = {
- 	"nr_isolated_anon",
- 	"nr_isolated_file",
- 	"nr_shmem",
-+	"nr_dirtied",
-+	"nr_cleaned",
-+
- #ifdef CONFIG_NUMA
- 	"numa_hit",
- 	"numa_miss",
--- 
-1.7.1
+B. Either
+	I. All values that have been used before the pinning are
+	   verified after the pinning (and the lock is reacquired
+           if verification fails).
+
+	II. Or all functions using page_lock_anon_vma() must securely
+	    work in the case that the anon_vma was reused for
+	    something else before the vma lock was acquired.
 
