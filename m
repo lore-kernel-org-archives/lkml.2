@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab0H1GAc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 02:00:32 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49199 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab0H1GAc (ORCPT
+	id S1751833Ab0H1GGt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 02:06:49 -0400
+Received: from liberdade2.minaslivre.org ([74.50.53.203]:34542 "EHLO
+	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab0H1GGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 02:00:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=RLYkEBS4Kuli//o7dUOqqqoG5Vt2I3n9OUqeNxUSH7Wbs4Cv/QE/rB+jWzy46U8kaZ
-         gvFagltxXO4xcmEd5tW76MzfFNWZwt/uKot1wZ0o4z2rKMvPqieNOm5m2SwUxjukGEDJ
-         ue7KXM47TXajM03uxWKYjghr/5veMoZZiCT1c=
-MIME-Version: 1.0
-In-Reply-To: <20100804204002.GA22147@merkur.ravnborg.org>
-References: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com>
- <20100804115658.GA21357@merkur.ravnborg.org> <AANLkTikz7pvirg7VUxrm-6v=yrLwHy4UeaJTS0wz3BLc@mail.gmail.com>
- <20100804202806.GA22134@merkur.ravnborg.org> <20100804204002.GA22147@merkur.ravnborg.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sat, 28 Aug 2010 02:00:11 -0400
-Message-ID: <AANLkTik4MEU92rzbKdjb9k=L+5zoQZpHXszx_zOLmRu0@mail.gmail.com>
-Subject: Re: missing .data.shared_align placement in vmlinux
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 28 Aug 2010 02:06:48 -0400
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] usb: allow drivers to use allocated bandwidth until unbound
+Date: Sat, 28 Aug 2010 03:06:29 -0300
+Message-Id: <1282975589-22324-1-git-send-email-cascardo@holoscopio.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 16:40, Sam Ravnborg wrote:
-> [Resend - this time with Jeremy included in To: ]
->
-> Jeremy - you introduced this in ("x86/i386: Put aligned
-> stack-canary in percpu shared_aligned section")
-> 53f824520b6d84ca5b4a8fd71addc91dbf64357e
+When using the remove sysfs file, the device configuration is set to -1
+(unconfigured). This eventually unbind drivers with the bandwidth_mutex
+held. Some drivers may call functions that hold said mutex, like
+usb_reset_device. This is the case for rtl8187, for example. This will
+lead to the same process holding the mutex twice, which deadlocks.
 
-can we get this merged for 2.6.36 ?
--mike
+Besides, according to Alan Stern:
+"The deadlock problem probably could be handled somehow, but there's a
+separate issue: Until the usb_disable_device call finishes unbinding
+the drivers, the drivers are free to continue using their allocated
+bandwidth.  We musn't change the bandwidth allocations until after the
+unbinding is done.  So this patch is indeed necessary."
+
+Unbinding the driver before holding the bandwidth_mutex solves the
+problem. If any operation after that fails, drivers are not bound again.
+But that would be a problem anyway that the user may solve resetting the
+device configuration to one that works, just like he would need to do in
+most other failure cases.
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/usb/core/message.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index fd4c36e..844683e 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1724,6 +1724,15 @@ free_interfaces:
+ 	if (ret)
+ 		goto free_interfaces;
+ 
++	/* if it's already configured, clear out old state first.
++	 * getting rid of old interfaces means unbinding their drivers.
++	 */
++	if (dev->state != USB_STATE_ADDRESS)
++		usb_disable_device(dev, 1);	/* Skip ep0 */
++
++	/* Get rid of pending async Set-Config requests for this device */
++	cancel_async_set_config(dev);
++
+ 	/* Make sure we have bandwidth (and available HCD resources) for this
+ 	 * configuration.  Remove endpoints from the schedule if we're dropping
+ 	 * this configuration to set configuration 0.  After this point, the
+@@ -1733,20 +1742,11 @@ free_interfaces:
+ 	mutex_lock(&hcd->bandwidth_mutex);
+ 	ret = usb_hcd_alloc_bandwidth(dev, cp, NULL, NULL);
+ 	if (ret < 0) {
+-		usb_autosuspend_device(dev);
+ 		mutex_unlock(&hcd->bandwidth_mutex);
++		usb_autosuspend_device(dev);
+ 		goto free_interfaces;
+ 	}
+ 
+-	/* if it's already configured, clear out old state first.
+-	 * getting rid of old interfaces means unbinding their drivers.
+-	 */
+-	if (dev->state != USB_STATE_ADDRESS)
+-		usb_disable_device(dev, 1);	/* Skip ep0 */
+-
+-	/* Get rid of pending async Set-Config requests for this device */
+-	cancel_async_set_config(dev);
+-
+ 	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+ 			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+ 			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+@@ -1761,8 +1761,8 @@ free_interfaces:
+ 	if (!cp) {
+ 		usb_set_device_state(dev, USB_STATE_ADDRESS);
+ 		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
+-		usb_autosuspend_device(dev);
+ 		mutex_unlock(&hcd->bandwidth_mutex);
++		usb_autosuspend_device(dev);
+ 		goto free_interfaces;
+ 	}
+ 	mutex_unlock(&hcd->bandwidth_mutex);
+-- 
+1.7.1
+
