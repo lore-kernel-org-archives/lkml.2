@@ -1,63 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0H1LHU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 07:07:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34000 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab0H1LHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 07:07:18 -0400
-Date: Sat, 28 Aug 2010 13:07:12 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Andres Salomon <dilinger@collabora.co.uk>,
-        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] misc devices: Do not enable by default
-Message-ID: <20100828110712.GA25785@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mike Frysinger <vapier@gentoo.org>,
-	Michael Hennerich <michael.hennerich@analog.com>,
-	Andres Salomon <dilinger@collabora.co.uk>,
-	Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
+	id S1752852Ab0H1LOV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 07:14:21 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63298 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751566Ab0H1LOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 07:14:19 -0400
+Message-ID: <4C78F07E.1040709@cn.fujitsu.com>
+Date: Sat, 28 Aug 2010 19:18:22 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 0/5] KVM: MMU: some bugfix for mmu audit code
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not enable this Kconfig menu by default since it contains devices not
-present on the majority of systems.
+There are some bugfix patches for mmu audit code:
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
-
-This is becoming a pain and a waste of time especially when doing a
-bunch of kernel builds on different systems daily and have to answer
-"make oldconfig" prompts for strange devices.
-
- drivers/misc/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 0b591b6..08909f6 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -4,7 +4,6 @@
- 
- menuconfig MISC_DEVICES
- 	bool "Misc devices"
--	default y
- 	---help---
- 	  Say Y here to get to see options for device drivers from various
- 	  different categories. This option alone does not add any kernel code.
--- 
-1.7.1
-
-
--- 
-Regards/Gruss,
-    Boris.
+[PATCH 1/5] KVM: MMU: fix compile warning in audit code
+[PATCH 2/5] KVM: MMU: check rmap for every spte
+[PATCH 3/5] KVM: MMU: fix wrong not write protected sp report
+[PATCH 4/5] KVM: MMU: rewrite audit_mappings_page() function
+[PATCH 5/5] KVM: MMU: remove count_rmaps()
