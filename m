@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab0H1RNR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 13:13:17 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54877 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab0H1RNP (ORCPT
+	id S1753327Ab0H1RQD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 13:16:03 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5953 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab0H1RQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 13:13:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=vld0pMqCSkeTFYxiyUPjdSqcp8SS4FlnF2+i6Ti3RgaPVSHv3swF3b4oTXcfHNjWU1
-         9aZpWBUTgfR2247dds1S0+0xRcH6eVr8wcLLgrn8lK95ijR5p3wOO8aAR0bE3a8C1HL7
-         bBcrtFnP8OJqsd4nUQiOLlFYZRw+EwzwrEpXY=
-From: Brian Gerst <brgerst@gmail.com>
-To: hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86-64: Remove system_64.h
-Date: Sat, 28 Aug 2010 13:11:48 -0400
-Message-Id: <1283015508-17547-1-git-send-email-brgerst@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Sat, 28 Aug 2010 13:16:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6088"; a="52580597"
+From: Gregory Bean <gbean@codeaurora.org>
+To: akpm@linux-foundation.org
+Cc: david-b@pacbell.net, khali@linux-fr.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH] gpio: sx150x: correct and refine reset-on-probe behavior.
+Date: Sat, 28 Aug 2010 10:15:52 -0700
+Message-Id: <1283015752-11141-1-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This header is no longer used.  The %cr8 funtions are now in system.h.
+Replace the arbitrary software-reset call from the device-probe
+method, because:
+- It is defective.  To work correctly, it should be two byte writes,
+  not a single word write.  As it stands, it does nothing.
+- Some devices with sx150x expanders installed have their NRESET pins
+  ganged on the same line, so resetting one causes the others to reset -
+  not a nice thing to do arbitrarily!
+- The probe, usually taking place at boot, implies a recent hard-reset,
+  so a software reset at this point is just a waste of energy anyway.
 
-Signed-off-by: Brian Gerst <brgerst@gmail.com>
+Therefore, make it optional, defaulting to off, as this will match the
+common case of probing at powerup and also matches the current
+broken no-op behavior.
+
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
 ---
- arch/x86/include/asm/system_64.h |   22 ----------------------
- 1 files changed, 0 insertions(+), 22 deletions(-)
- delete mode 100644 arch/x86/include/asm/system_64.h
+ drivers/gpio/sx150x.c      |   29 ++++++++++++++++++++++++-----
+ include/linux/i2c/sx150x.h |    4 ++++
+ 2 files changed, 28 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/system_64.h b/arch/x86/include/asm/system_64.h
-deleted file mode 100644
-index 1159e09..0000000
---- a/arch/x86/include/asm/system_64.h
-+++ /dev/null
-@@ -1,22 +0,0 @@
--#ifndef _ASM_X86_SYSTEM_64_H
--#define _ASM_X86_SYSTEM_64_H
--
--#include <asm/segment.h>
--#include <asm/cmpxchg.h>
--
--
--static inline unsigned long read_cr8(void)
--{
--	unsigned long cr8;
--	asm volatile("movq %%cr8,%0" : "=r" (cr8));
--	return cr8;
--}
--
--static inline void write_cr8(unsigned long val)
--{
--	asm volatile("movq %0,%%cr8" :: "r" (val) : "memory");
--}
--
--#include <linux/irqflags.h>
--
--#endif /* _ASM_X86_SYSTEM_64_H */
+diff --git a/drivers/gpio/sx150x.c b/drivers/gpio/sx150x.c
+index b42f42c..6d68018 100644
+--- a/drivers/gpio/sx150x.c
++++ b/drivers/gpio/sx150x.c
+@@ -459,17 +459,36 @@ static int sx150x_init_io(struct sx150x_chip *chip, u8 base, u16 cfg)
+ 	return err;
+ }
+ 
+-static int sx150x_init_hw(struct sx150x_chip *chip,
+-			struct sx150x_platform_data *pdata)
++static int sx150x_reset(struct sx150x_chip *chip)
+ {
+-	int err = 0;
++	int err;
++
++	err = i2c_smbus_write_byte_data(chip->client,
++					chip->dev_cfg->reg_reset,
++					0x12);
++	if (err < 0)
++		return err;
+ 
+-	err = i2c_smbus_write_word_data(chip->client,
++	err = i2c_smbus_write_byte_data(chip->client,
+ 					chip->dev_cfg->reg_reset,
+-					0x3412);
++					0x34);
+ 	if (err < 0)
+ 		return err;
+ 
++	return 0;
++}
++
++static int sx150x_init_hw(struct sx150x_chip *chip,
++			struct sx150x_platform_data *pdata)
++{
++	int err = 0;
++
++	if (pdata->reset_during_probe) {
++		err = sx150x_reset(chip);
++		if (err < 0)
++			return err;
++	}
++
+ 	err = sx150x_i2c_write(chip->client,
+ 			chip->dev_cfg->reg_misc,
+ 			0x01);
+diff --git a/include/linux/i2c/sx150x.h b/include/linux/i2c/sx150x.h
+index ee3049c..52baa79 100644
+--- a/include/linux/i2c/sx150x.h
++++ b/include/linux/i2c/sx150x.h
+@@ -63,6 +63,9 @@
+  *            IRQ lines will appear.  Similarly to gpio_base, the expander
+  *            will create a block of irqs beginning at this number.
+  *            This value is ignored if irq_summary is < 0.
++ * @reset_during_probe: If set to true, the driver will trigger a full
++ *                      reset of the chip at the beginning of the probe
++ *                      in order to place it in a known state.
+  */
+ struct sx150x_platform_data {
+ 	unsigned gpio_base;
+@@ -73,6 +76,7 @@ struct sx150x_platform_data {
+ 	u16      io_polarity;
+ 	int      irq_summary;
+ 	unsigned irq_base;
++	bool     reset_during_probe;
+ };
+ 
+ #endif /* __LINUX_I2C_SX150X_H */
 -- 
-1.7.2.2
+1.7.0.4
 
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
