@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0H1SY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 14:24:27 -0400
-Received: from n10.bullet.mail.ac4.yahoo.com ([76.13.13.238]:26254 "HELO
-	n10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753335Ab0H1SYZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 14:24:25 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 739676.74022.bm@omp130.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=tkCBqLlprzWVVI4uIKbSTc+PDsvdjpfT74R1Bcqo3dPHHeMDof34uE2PSjOBukKznCaZ8DA17o7djZfDxKV/sB48TfysnazIbJWXSfZ14SNs7IaDRqWdG1nLnjmziKWT58gSy7jVT3A4eARsck9xcIN6krLYmLyY5f5cCO8RmQs=;
-Message-ID: <634098.18332.qm@web180309.mail.gq1.yahoo.com>
-X-YMail-OSG: skSmxLoVM1lPT.QQ8zi5BGdvipddzJfV5k.CyFFwlKaD9n.
- nfE5fAZMqMxbtm7DtRkQblxt5A43ynMRNUF5MT61_bYvjKO6YxXMST2kmSGp
- a2xhPLcUuBoF7BygnvozE3Tps473OAx4XvLz8MzDJo1gXV_tyFAifPUdQf3X
- EiOJiwYri.igC9UzrxWSe3DNIYuPylH3ep.KSMgvtrBg7vJmw2ccYdzsiS.3
- LDJ74grl37yd0EBhf.QnvfpNQUgtLyfNgFS8K53PZ0vz0QVn95Bh.SUxZC2t
- tW.txHdo6vGmKJhh95OKk2M.9VBsC4XDM_fErje0chzgy9X2qYe9vAG5o935
- glVqsom.IYS0-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Sat, 28 Aug 2010 11:24:24 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH 2/7] drivers/usb/gadget/amd5536udc.c: Remove double test
-To: Dan Carpenter <error27@gmail.com>, Julia Lawall <julia@diku.dk>
-Cc: Thomas Dahlmann <dahlmann.thomas@arcor.de>,
-        kernel-janitors@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-geode@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1008281846170.13508@ask.diku.dk>
+	id S1753526Ab0H1SYe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 14:24:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51577 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab0H1SYa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 14:24:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=sEZr0G/hTqPrTpJbDNeyKAwTL1w43IPyOthLU08m2UHfX2XLyzps0p0adzTrF/hUom
+         mtNVkbD4Y7cvJbjUZOhFOaYGnBBHg63nnPnvDky7A9PN8NyCqSSzWiOjnb0pMkk0KX9b
+         4kqSwNlLlH4HsToqKk5Z5EuNZPRFgkvd9KDIk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20100828192538.666c34c4.frank@61924.nl>
+References: <20100828192538.666c34c4.frank@61924.nl>
+Date: Sat, 28 Aug 2010 11:24:28 -0700
+X-Google-Sender-Auth: HEZ-c8RDACegLCWNwKNl-UvbdFo
+Message-ID: <AANLkTimaCQP61iDSHCAqBRZcEr3QQnfg1UdrHXzZ9xF4@mail.gmail.com>
+Subject: Re: Toshiba Satellite L650D-10J only boots with acpi=off
+From: Yinghai Lu <yinghai@kernel.org>
+To: Frank <frank@61924.nl>
+Cc: linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Barnes, Jesse" <jesse.barnes@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 28, 2010 at 10:25 AM, Frank <frank@61924.nl> wrote:
+> Hello,
+>
+> I purchased a Toshiba Satellite L650D-10J a few days ago and when I
+> wanted to install Archlinux I was only able to boot the installer with
+> acpi=off. The same goes for the installed OS.
+>
+> I asked on ##kernel on freenode and one guy said I should mail this
+> issue to this mailing list. And include all the information I have.
+>
+> This is what I get when I boot without acpi=off:
+> http://i.imagehost.org/view/0872/DSC00071
+> http://a.imagehost.org/view/0172/DSC00069
+>
+> The system boots normally when I use acpi=off, but the dual-core CPU is
+> seen as a CPU with one core. And X is slow with starting up and doesn't
+> shutdown when I close Openbox, but I'm not sure if that's even related.
+>
+> Here's the dmesg:
+> http://codepad.org/W7EzULKf
+>
+> And the lspci:
+> http://codepad.org/ce1boP3r
+>
+> I'm using the stock Archlinux x86_64 kernel (the latest is 2.6.35.3-1
+> at this moment) and the config files can be found here:
+> http://repos.archlinux.org/wsvn/packages/kernel26/repos/core-x86_64/
+>
+> If more information is needed, I'll glady provide it.
+>
 
+Can you try to boot with "pci=nocrs" instead of "acpi=off"?
 
---- On Sat, 8/28/10, Julia Lawall <julia@diku.dk> wrote:
-
-> From: Julia Lawall <julia@diku.dk>
-> Subject: Re: [PATCH 2/7] drivers/usb/gadget/amd5536udc.c: Remove double test
-> To: "Dan Carpenter" <error27@gmail.com>
-> Cc: "Thomas Dahlmann" <dahlmann.thomas@arcor.de>, kernel-janitors@vger.kernel.org, "David Brownell" <dbrownell@users.sourceforge.net>, "Greg Kroah-Hartman" <gregkh@suse.de>, linux-geode@lists.infradead.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-> Date: Saturday, August 28, 2010, 9:48 AM
-> The same expression is tested twice
-> and the result is the same each time.
-> Instead test for use_dma_ppb as in the test above.
-> 
-> The sematic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @expression@
-> expression E;
-> @@
-> 
-> (
-> * E
->   || ... || E
-> |
-> * E
->   && ... && E
-> )
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-
-
-OK by me unless the maintainer/author objects.
-
-Thank you!
-
-- Dave
-
-
-
-> 
-> ---
->  drivers/usb/gadget/amd5536udc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/gadget/amd5536udc.c
-> b/drivers/usb/gadget/amd5536udc.c
-> index 731150d..6c40c99 100644
-> --- a/drivers/usb/gadget/amd5536udc.c
-> +++ b/drivers/usb/gadget/amd5536udc.c
-> @@ -203,7 +203,7 @@ static void print_regs(struct udc
-> *dev)
->          DBG(dev, "DMA
-> mode       = PPBNDU (packet per
-> buffer "
->             
-> "WITHOUT desc. update)\n");
->         
-> dev_info(&dev->pdev->dev, "DMA mode (%s)\n",
-> "PPBNDU");
-> -    } else if (use_dma &&
-> use_dma_ppb_du && use_dma_ppb_du) {
-> +    } else if (use_dma &&
-> use_dma_ppb && use_dma_ppb_du) {
->          DBG(dev, "DMA
-> mode       = PPBDU (packet per
-> buffer "
->             
-> "WITH desc. update)\n");
->         
-> dev_info(&dev->pdev->dev, "DMA mode (%s)\n",
-> "PPBDU");
-> 
-> 
-
+Yinghai
