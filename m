@@ -1,103 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab0H1RGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 13:06:23 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:48093 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab0H1RFw (ORCPT
+	id S1753287Ab0H1RHO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 13:07:14 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:44404 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab0H1RHL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 13:05:52 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6088"; a="52447554"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 4/5 v4] msm: convert 7x30 to gpiomux.
-Date: Sat, 28 Aug 2010 10:05:47 -0700
-Message-Id: <1283015148-10747-4-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1283015148-10747-1-git-send-email-gbean@codeaurora.org>
-References: <1283015148-10747-1-git-send-email-gbean@codeaurora.org>
+	Sat, 28 Aug 2010 13:07:11 -0400
+In-Reply-To: <4C79346F.4050409@euromail.se>
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>  <1283005748-3293-3-git-send-email-rydberg@euromail.se>  <2A410207-8AAA-4D5A-846A-B69F007E6800@enac.fr> <4C79346F.4050409@euromail.se>
+Mime-Version: 1.0 (Apple Message framework v752.3)
+Content-Type: text/plain; charset=ISO-8859-1; delsp=yes; format=flowed
+Message-Id: <75AEF6DA-F09E-4B90-8E89-6F5B668724C9@enac.fr>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+From: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: [PATCH 3/3] hid: 3m: Correct touchscreen emulation
+Date: Sat, 28 Aug 2010 19:07:05 +0200
+To: Henrik Rydberg <rydberg@euromail.se>
+X-Mailer: Apple Mail (2.752.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change deprecated gpio_tlmm_config calls to gpiomux calls.
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/board-msm7x30.c |   20 --------------------
- arch/arm/mach-msm/gpiomux-7x30.c  |   21 ++++++++++++++++++++-
- 2 files changed, 20 insertions(+), 21 deletions(-)
+Le 28 août 10 à 18:08, Henrik Rydberg a écrit :
 
-diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-index e329819..74abb74 100644
---- a/arch/arm/mach-msm/board-msm7x30.c
-+++ b/arch/arm/mach-msm/board-msm7x30.c
-@@ -39,22 +39,6 @@
- 
- extern struct sys_timer msm_timer;
- 
--#ifdef CONFIG_SERIAL_MSM_CONSOLE
--static struct msm_gpio uart2_config_data[] = {
--	{ GPIO_CFG(49, 2, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_RFR"},
--	{ GPIO_CFG(50, 2, GPIO_INPUT,   GPIO_PULL_DOWN, GPIO_2MA), "UART2_CTS"},
--	{ GPIO_CFG(51, 2, GPIO_INPUT,   GPIO_PULL_DOWN, GPIO_2MA), "UART2_Rx"},
--	{ GPIO_CFG(52, 2, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_Tx"},
--};
--
--static void msm7x30_init_uart2(void)
--{
--	msm_gpios_request_enable(uart2_config_data,
--			ARRAY_SIZE(uart2_config_data));
--
--}
--#endif
--
- static struct platform_device *devices[] __initdata = {
- #if defined(CONFIG_SERIAL_MSM) || defined(CONFIG_MSM_SERIAL_DEBUGGER)
-         &msm_device_uart2,
-@@ -70,10 +54,6 @@ static void __init msm7x30_init_irq(void)
- static void __init msm7x30_init(void)
- {
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
--#ifdef CONFIG_SERIAL_MSM_CONSOLE
--	msm7x30_init_uart2();
--#endif
--
- }
- 
- static void __init msm7x30_map_io(void)
-diff --git a/arch/arm/mach-msm/gpiomux-7x30.c b/arch/arm/mach-msm/gpiomux-7x30.c
-index 7b380b3..6ce41c5 100644
---- a/arch/arm/mach-msm/gpiomux-7x30.c
-+++ b/arch/arm/mach-msm/gpiomux-7x30.c
-@@ -16,4 +16,23 @@
-  */
- #include "gpiomux.h"
- 
--struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {};
-+struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
-+#ifdef CONFIG_SERIAL_MSM_CONSOLE
-+	[49] = { /* UART2 RFR */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+	[50] = { /* UART2 CTS */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+	[51] = { /* UART2 RX */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+	[52] = { /* UART2 TX */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+#endif
-+};
--- 
-1.7.0.4
+>
+> I think we use the term tracking id differently here. The  
+> HID_DG_CONTACTID is
+> actually the slot id, and the tracking id is a sequential number,  
+> increased
+> whenever the touch is new. I believe the patchset works correctly  
+> as long as
+> there is less than 32768 new touches before releasing the oldest  
+> one. :-)
 
-/usr2/gbean/.signature.codeaurora.org
+Oh, right. I definitely need to catch up with Protocol B.
+
+Cheers,
+
+St.
+
