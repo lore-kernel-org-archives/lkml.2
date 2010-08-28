@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab0LaFcz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 00:32:55 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62492 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab0LaFcI (ORCPT
+	id S1752675Ab0LaFch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 00:32:37 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62090 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab0LaFcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 00:32:08 -0500
-Message-ID: <4d1d6ad7.857a0e0a.45e5.ffffd91b@mx.google.com>
-From: "Igor M. Liplianin" <liplianin@me.by>
-Date: Fri, 27 Aug 2010 14:43:07 +0400
-Subject: [PATCH 09/18] stv0367: Fix potential divide error
+	Fri, 31 Dec 2010 00:32:14 -0500
+Message-ID: <4d1d6adc.857a0e0a.45e5.ffffd91e@mx.google.com>
+From: Abylay Ospan <liplianin@me.by>
+Date: Sat, 28 Aug 2010 16:06:25 +0300
+Subject: [PATCH 12/18] stv0367: implement uncorrected blocks counter.
 To: <mchehab@infradead.org>, linux-media@vger.kernel.org,
         <linux-kernel@vger.kernel.org>, <aospan@netup.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
+Signed-off-by: Abylay Ospan <aospan@netup.ru>
 ---
- drivers/media/dvb/frontends/stv0367.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/media/dvb/frontends/stv0367.c |   20 +++++++++++++++++++-
+ 1 files changed, 19 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/media/dvb/frontends/stv0367.c b/drivers/media/dvb/frontends/stv0367.c
-index 0575741..e6bee7f 100644
+index 9439388..aaa2b44 100644
 --- a/drivers/media/dvb/frontends/stv0367.c
 +++ b/drivers/media/dvb/frontends/stv0367.c
-@@ -3275,12 +3275,14 @@ static int stv0367cab_read_snr(struct dvb_frontend *fe, u16 *snr)
- 		power = 1;
- 		break;
- 	}
+@@ -3327,6 +3327,24 @@ static int stv0367cab_read_snr(struct dvb_frontend *fe, u16 *snr)
+ 	return 0;
+ }
+ 
++static int stv0367cab_read_ucblcks(struct dvb_frontend *fe, u32 *ucblocks)
++{
++	struct stv0367_state *state = fe->demodulator_priv;
++	int corrected, tscount;
 +
- 	for (i = 0; i < 10; i++) {
- 		regval += (stv0367_readbits(state, F367CAB_SNR_LO)
- 			+ 256 * stv0367_readbits(state, F367CAB_SNR_HI));
- 	}
++	*ucblocks = (stv0367_readreg(state, R367CAB_RS_COUNTER_5) << 8)
++			| stv0367_readreg(state, R367CAB_RS_COUNTER_4);
++	corrected = (stv0367_readreg(state, R367CAB_RS_COUNTER_3) << 8)
++			| stv0367_readreg(state, R367CAB_RS_COUNTER_2);
++	tscount = (stv0367_readreg(state, R367CAB_RS_COUNTER_2) << 8)
++			| stv0367_readreg(state, R367CAB_RS_COUNTER_1);
 +
-+	regval /= 10; /*for average over 10 times in for loop above*/
- 	if (regval != 0) {
--		regval /= 10; /*for average over 10 times in for loop above*/
- 		temp = power
- 			* (1 << (3 + stv0367_readbits(state, F367CAB_SNR_PER)));
- 		temp /= regval;
++	dprintk("%s: uncorrected blocks=%d corrected blocks=%d tscount=%d\n",
++				__func__, *ucblocks, corrected, tscount);
++
++	return 0;
++};
++
+ static struct dvb_frontend_ops stv0367cab_ops = {
+ 	.info = {
+ 		.name = "ST STV0367 DVB-C",
+@@ -3351,7 +3369,7 @@ static struct dvb_frontend_ops stv0367cab_ops = {
+ /* 	.read_ber				= stv0367cab_read_ber,*/
+ 	.read_signal_strength			= stv0367cab_read_strength,
+ 	.read_snr				= stv0367cab_read_snr,
+-/* 	.read_ucblocks				= stv0367cab_read_ucblcks,*/
++	.read_ucblocks				= stv0367cab_read_ucblcks,
+ 	.get_tune_settings			= stv0367_get_tune_settings,
+ };
+ 
 -- 
 1.7.1
 
