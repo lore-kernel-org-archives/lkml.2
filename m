@@ -1,162 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab0H1NKO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 09:10:14 -0400
-Received: from smtp-vbr11.xs4all.nl ([194.109.24.31]:4810 "EHLO
-	smtp-vbr11.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab0H1NKN (ORCPT
+	id S1753428Ab0H1NXf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 09:23:35 -0400
+Received: from mail.deathmatch.net ([72.66.92.28]:4849 "EHLO
+	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab0H1NXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 09:10:13 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-Date: Sat, 28 Aug 2010 15:08:19 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-23-generic; KDE/4.4.5; x86_64; ; )
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com> <1282310110.2605.976.camel@laptop> <20100825155814.25c783c7.akpm@linux-foundation.org>
-In-Reply-To: <20100825155814.25c783c7.akpm@linux-foundation.org>
+	Sat, 28 Aug 2010 09:23:33 -0400
+Date: Sat, 28 Aug 2010 09:15:16 -0400
+From: Bob Copeland <me@bobcopeland.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Valerie Aurora <vaurora@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Karel Zak <kzak@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: Sanity check mount flags passed to
+	change_mnt_propagation()
+Message-ID: <20100828131516.GA5053@hash.localnet>
+References: <20100826200318.GA13636@shell> <20100827011436.GB3521@parisc-linux.org> <20100827174313.GA26872@shell> <AANLkTik-uXDtvA9G7sr1becN235PMzFWmuD5t9Xu4yZX@mail.gmail.com> <20100828105707.GD3521@parisc-linux.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008281508.19756.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100828105707.GD3521@parisc-linux.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 26, 2010 00:58:14 Andrew Morton wrote:
-> On Fri, 20 Aug 2010 15:15:10 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Fri, 2010-08-20 at 11:50 +0200, Michal Nazarewicz wrote:
-> > > Hello everyone,
-> > > 
-> > > The following patchset implements a Contiguous Memory Allocator.  For
-> > > those who have not yet stumbled across CMA an excerpt from
-> > > documentation:
-> > > 
-> > >    The Contiguous Memory Allocator (CMA) is a framework, which allows
-> > >    setting up a machine-specific configuration for physically-contiguous
-> > >    memory management. Memory for devices is then allocated according
-> > >    to that configuration.
-> > > 
-> > >    The main role of the framework is not to allocate memory, but to
-> > >    parse and manage memory configurations, as well as to act as an
-> > >    in-between between device drivers and pluggable allocators. It is
-> > >    thus not tied to any memory allocation method or strategy.
-> > > 
-> > > For more information please refer to the second patch from the
-> > > patchset which contains the documentation.
+On Sat, Aug 28, 2010 at 04:57:07AM -0600, Matthew Wilcox wrote:
+> > Didn't read surrounding code, but is that supposed to be '||'?
 > > 
-> > So the idea is to grab a large chunk of memory at boot time and then
-> > later allow some device to use it?
-> > 
-> > I'd much rather we'd improve the regular page allocator to be smarter
-> > about this. We recently added a lot of smarts to it like memory
-> > compaction, which allows large gobs of contiguous memory to be freed for
-> > things like huge pages.
-> > 
-> > If you want guarantees you can free stuff, why not add constraints to
-> > the page allocation type and only allow MIGRATE_MOVABLE pages inside a
-> > certain region, those pages are easily freed/moved aside to satisfy
-> > large contiguous allocations.
+> > Otherwise the case where only a single non-propagation flag is
+> > set no longer returns 0...
 > 
-> That would be good.  Although I expect that the allocation would need
-> to be 100% rock-solid reliable, otherwise the end user has a
-> non-functioning device.
+> Val's original code returned 0 as failure.  So a single non-propagation
+> flag set shouldn't return 0.
 
-Yes, indeed. And you have to be careful as well how you move pages around.
-Say that you have a capture and an output v4l device: the first one needs
-64 MB contiguous memory and so it allocates that amount, moving pages around
-as needed. Once allocated that memory is pinned in place since it is needed
-for DMA. So if the output device also needs 64 MB, then you must have a
-guarantee that the first allocation didn't fragment the available contiguous
-memory.
+Not to belabor the point -- but her original code did return zero in
+that case (2nd assertion fails):
 
-I also wonder how expensive it is to move all the pages around. E.g. if you
-have a digital camera and want to make a hires picture, then it wouldn't
-do if it takes a second to move all the pages around making room for the
-captured picture. The CPUs in many SoCs are not very powerful compared to
-your average desktop.
+#include <linux/fs.h>
+#include <stdio.h>
+#include <assert.h>
 
-And how would memory allocations in specific memory ranges (e.g. memory
-banks) work?
+#define hweight32 dumb_hweight32
 
-Note also that these issues are not limited to embedded systems, also PCI(e)
-boards can sometimes require massive amounts of DMA-able memory. I have had
-this happen in the past with the ivtv driver with customers that had 15 or so
-capture cards in one box. And I'm sure it will happen in the future as well,
-esp. with upcoming 4k video formats.
+int dumb_hweight32(int a)
+{
+	int i;
+	int weight = 0;
 
-Video is a major memory consumer, particularly in embedded systems. And there
-usually is no room for failure.
+	for (i=0; i < 32; i++)
+		weight += !!(a & (1 << i));
 
-> Could generic core VM provide the required level
-> of service?
-> 
-> Anyway, these patches are going to be hard to merge but not impossible.
-> Keep going.  Part of the problem is cultural, really: the consumers of
-> this interface are weird dinky little devices which the core MM guys
-> tend not to work with a lot, and it adds code which they wouldn't use.
+	return weight;
+}
 
-It's not really that weird. The same problems can actually occur as well
-with the more 'mainstream' consumer level video boards, although you need
-more extreme environments for these problems to surface.
+static int flags_to_propagation_type(int flags) {
+	int type = flags & ~MS_REC;
 
-> I agree that having two "contiguous memory allocators" floating about
-> on the list is distressing.  Are we really all 100% diligently certain
-> that there is no commonality here with Zach's work?
-> 
-> I agree that Peter's above suggestion would be the best thing to do. 
-> Please let's take a look at that without getting into sunk cost
-> fallacies with existing code!
-> 
-> It would help (a lot) if we could get more attention and buyin and
-> fedback from the potential clients of this code.  rmk's feedback is
-> valuable.  Have we heard from the linux-media people?
+	/* Fail if any non-propagation flags are set */
+ 	if (type & ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+		return 0;
+	/* Only one propagation flag should be set */
+	if (((type & (MS_SHARED)) && (type & ~MS_SHARED)) ||
+	   ((type & (MS_PRIVATE)) && (type & ~MS_PRIVATE)) ||
+	   ((type & (MS_SLAVE)) && (type & ~MS_SLAVE)) ||
+	   ((type & (MS_UNBINDABLE)) && (type & ~MS_UNBINDABLE)))
+	       return 0;
+	return type;
+}
 
-I'm doing the reviewing for linux-media. It would be really nice to have a
-good system for this in place. For example, the current TI davinci capture
-driver will only work reliably (memory-wise) if you also use the out-of-tree
-TI cmem module. Hardly a desirable situation. Basically a fair amount of
-custom hacks is required at the memory to have reliable video streaming on
-embedded systems due to the lack of a cma-type framework.
+static int flags_to_propagation_type_2(int flags) {
+ 	int type = flags & ~MS_REC;
 
-> What other
-> subsystems might use it?  ieee1394 perhaps?  Please help identify
-> specific subsystems and I can perhaps help to wake people up.
+	/* Only one propagation flag should be set, and no others */
+	if (hweight32(type) != 1 &&
+	    (type & ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE)))
+		return 0;
 
-The video subsystem is the other candidate. Probably not for the current generation
-of GPUs (these all have hardware IOMMUs I suspect), but definitely for the framebuffer
-based devices that are often present on SoCs.
+	return type;
+}
 
-Regards,
+int main(int argc, char *argv[])
+{
+	int mytype = MS_RDONLY;
 
-	Hans
- 
-> And I agree that this code (or one of its alternatives!) would benefit
-> from having a core MM person take a close interest.  Any volunteers?
-> 
-> Please cc me on future emails on this topic?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+	assert(flags_to_propagation_type(mytype) == 0);
+	assert(flags_to_propagation_type_2(mytype) == 0);
+}
 
 -- 
-Hans Verkuil - video4linux developer - sponsored by TANDBERG, part of Cisco
+Bob Copeland %% www.bobcopeland.com
+
