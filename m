@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab0H1Glf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 02:41:35 -0400
-Received: from mta01.intercable.net.ve ([200.8.126.226]:51027 "EHLO
-	mta01.intercable.net.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab0H1Gle (ORCPT
+	id S1752043Ab0H1GnE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 02:43:04 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57129 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750907Ab0H1GnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 02:41:34 -0400
-From: "FONDAZIONE Di VITTORIO & ECOWAS" <dr.razaq@hotmail.com>
-Subject: Financial aid from FDV,Contact Dr.Razaq Immediately.
-X-Mailer: CommuniGate Pro WebUser Interface v.4.1.8
-Date: Sat, 28 Aug 2010 02:11:36 -0430
-Message-ID: <web-237882916@mailccs.icnet.com.ve>
+	Sat, 28 Aug 2010 02:43:02 -0400
+Date: Sat, 28 Aug 2010 08:42:54 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-pm@lists.linux-foundation.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: BUG: scheduling while atomic
+Message-ID: <20100828064254.GA2128@elf.ucw.cz>
+References: <20100827075911.GA5966@swordfish.minsk.epam.com>
+ <201008272102.52041.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008272102.52041.rjw@sisk.pl>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FONDAZIONE Di VITTORIO & ECOWAS
-http://www.fondazionedivittorio.it
-Worldwide Donation Program "helping one to help 
-others...."
-==========================================
-I have been directed to inform you that you have been 
-chosen for a cash grant 
-of 1,000,000.00usd (1million) by the board of trustees of 
-the above stated non-
-governmental aid organisation.
-Your grant number is B01-0147. Contact Rev.dr seun razaq 
-via telephone
-   +2348051809752 email dr.razaq@hotmail.com, and provide 
-these
-details: 1).Full name. 2).Address 3).Telephone number. 
-[Cell preferably] 
-(4).Occupation.
+On Fri 2010-08-27 21:02:51, Rafael J. Wysocki wrote:
+> On Friday, August 27, 2010, Sergey Senozhatsky wrote:
+> > Hello,
+> > 
+> > .36-rc2-git4
+> 
+> Well, that looks like an ACPI battery driver issue.
+> 
+> What was the last know good kernel?
 
-Regards.
-Adolfo Pepe
+Also you might want to see if unloading battery driver before hibernation
+allows you do proceed...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
