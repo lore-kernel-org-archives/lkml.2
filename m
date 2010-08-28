@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab0H1Bdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 21:33:39 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46578 "EHLO
+	id S1752947Ab0H1Bdt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 21:33:49 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46647 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab0H1Bdi (ORCPT
+	with ESMTP id S1752801Ab0H1Bdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 21:33:38 -0400
+	Fri, 27 Aug 2010 21:33:43 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 1/4] AppArmor: Drop hack to remove appended " (deleted)" string
-Date: Fri, 27 Aug 2010 18:33:26 -0700
-Message-Id: <1282959209-5431-2-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 3/4] AppArmor: Fix splitting an fqname into separate namespace and profile names
+Date: Fri, 27 Aug 2010 18:33:28 -0700
+Message-Id: <1282959209-5431-4-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282959209-5431-1-git-send-email-john.johansen@canonical.com>
 References: <1282959209-5431-1-git-send-email-john.johansen@canonical.com>
@@ -20,81 +20,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 2.6.36 kernel has refactored __d_path() so that it no longer appends
-" (deleted)" to unlinked paths.  So drop the hack that was used to detect
-and remove the appended string.
+As per Dan Carpenter <error27@gmail.com>
+  If we have a ns name without a following profile then in the original
+  code it did "*ns_name = &name[1];".  "name" is NULL so "*ns_name" is
+  0x1.  That isn't useful and could cause an oops when this function is
+  called from aa_remove_profiles().
+
+Beyond this the assignment of the namespace name was wrong in the case
+where the profile name was provided as it was being set to &name[1]
+after name  = skip_spaces(split + 1);
+
+Move the ns_name assignment before updating name for the split and
+also add skip_spaces, making the interface more robust.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/path.c |   38 +++++++++++---------------------------
- 1 files changed, 11 insertions(+), 27 deletions(-)
+ security/apparmor/lib.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/security/apparmor/path.c b/security/apparmor/path.c
-index 19358dc..8239605 100644
---- a/security/apparmor/path.c
-+++ b/security/apparmor/path.c
-@@ -59,8 +59,7 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
- {
- 	struct path root, tmp;
- 	char *res;
--	int deleted, connected;
--	int error = 0;
-+	int connected, error = 0;
- 
- 	/* Get the root we want to resolve too, released below */
- 	if (flags & PATH_CHROOT_REL) {
-@@ -74,19 +73,8 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+diff --git a/security/apparmor/lib.c b/security/apparmor/lib.c
+index 6e85cdb..506d2ba 100644
+--- a/security/apparmor/lib.c
++++ b/security/apparmor/lib.c
+@@ -40,6 +40,7 @@ char *aa_split_fqname(char *fqname, char **ns_name)
+ 	*ns_name = NULL;
+ 	if (name[0] == ':') {
+ 		char *split = strchr(&name[1], ':');
++		*ns_name = skip_spaces(&name[1]);
+ 		if (split) {
+ 			/* overwrite ':' with \0 */
+ 			*split = 0;
+@@ -47,7 +48,6 @@ char *aa_split_fqname(char *fqname, char **ns_name)
+ 		} else
+ 			/* a ns name without a following profile is allowed */
+ 			name = NULL;
+-		*ns_name = &name[1];
  	}
- 
- 	spin_lock(&dcache_lock);
--	/* There is a race window between path lookup here and the
--	 * need to strip the " (deleted) string that __d_path applies
--	 * Detect the race and relookup the path
--	 *
--	 * The stripping of (deleted) is a hack that could be removed
--	 * with an updated __d_path
--	 */
--	do {
--		tmp = root;
--		deleted = d_unlinked(path->dentry);
--		res = __d_path(path, &tmp, buf, buflen);
--
--	} while (deleted != d_unlinked(path->dentry));
-+	tmp = root;
-+	res = __d_path(path, &tmp, buf, buflen);
- 	spin_unlock(&dcache_lock);
- 
- 	*name = res;
-@@ -98,21 +86,17 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
- 		*name = buf;
- 		goto out;
- 	}
--	if (deleted) {
--		/* On some filesystems, newly allocated dentries appear to the
--		 * security_path hooks as a deleted dentry except without an
--		 * inode allocated.
--		 *
--		 * Remove the appended deleted text and return as string for
--		 * normal mediation, or auditing.  The (deleted) string is
--		 * guaranteed to be added in this case, so just strip it.
--		 */
--		buf[buflen - 11] = 0;	/* - (len(" (deleted)") +\0) */
- 
--		if (path->dentry->d_inode && !(flags & PATH_MEDIATE_DELETED)) {
-+	/* Handle two cases:
-+	 * 1. A deleted dentry && profile is not allowing mediation of deleted
-+	 * 2. On some filesystems, newly allocated dentries appear to the
-+	 *    security_path hooks as a deleted dentry except without an inode
-+	 *    allocated.
-+	 */
-+	if (d_unlinked(path->dentry) && path->dentry->d_inode &&
-+	    !(flags & PATH_MEDIATE_DELETED)) {
- 			error = -ENOENT;
- 			goto out;
--		}
- 	}
- 
- 	/* Determine if the path is connected to the expected root */
+ 	if (name && *name == 0)
+ 		name = NULL;
 -- 
 1.7.0.4
 
