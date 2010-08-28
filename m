@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab0H1OQi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 10:16:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33037 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab0H1OQh convert rfc822-to-8bit (ORCPT
+	id S1753515Ab0H1OSl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 10:18:41 -0400
+Received: from smtp-02.mandic.com.br ([200.225.81.133]:46513 "EHLO
+	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396Ab0H1OSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 10:16:37 -0400
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <201008281558.23501.hverkuil@xs4all.nl>
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
-	 <201008281508.19756.hverkuil@xs4all.nl> <1283002486.1975.3479.camel@laptop>
-	 <201008281558.23501.hverkuil@xs4all.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 28 Aug 2010 16:16:09 +0200
-Message-ID: <1283004969.1975.3530.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 28 Aug 2010 10:18:40 -0400
+Message-ID: <4C791ABA.9070005@cesarb.net>
+Date: Sat, 28 Aug 2010 11:18:34 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
+ messages
+References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>	 <4C770299.6000708@cesarb.net> <1282869660.1836.5.camel@Joe-Laptop>	 <4C77171E.6060008@cesarb.net> <1282894751.1836.41.camel@Joe-Laptop>	 <4C784650.2030200@cesarb.net> <1282962104.1946.179.camel@Joe-Laptop>	 <4C78E8EF.1000009@cesarb.net> <1282994116.1946.226.camel@Joe-Laptop>	 <4C790693.1060908@cesarb.net> <1283002154.1946.268.camel@Joe-Laptop>
+In-Reply-To: <1283002154.1946.268.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-28 at 15:58 +0200, Hans Verkuil wrote:
-> > Isn't the proposed CMA thing vulnerable to the exact same problem? If
-> > you allow sharing of regions and plug some allocator in there you get
-> > the same problem. If you can solve it there, you can solve it for any
-> > kind of reservation scheme.
-> 
-> Since with cma you can assign a region exclusively to a driver you can ensure
-> that this problem does not occur. Of course, if you allow sharing then you will
-> end up with the same type of problem unless you know that there is only one
-> driver at a time that will use that memory.
+Em 28-08-2010 10:29, Joe Perches escreveu:
+> On Sat, 2010-08-28 at 09:52 -0300, Cesar Eduardo Barros wrote:
+>> Em 28-08-2010 08:15, Joe Perches escreveu:
+>>>> I will try to enable dev_dbg() later and see what it prints.
+>>> or add:
+> []
+>> Here it is:
+>>
+>> intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match expected value
+>> (found 25, expected 35)
+>> intel ips 0000:00:1f.6: PCI INT C ->  GSI 18 (level, low) ->  IRQ 18
+>> intel ips 0000:00:1f.6: show_turbo_limits:ips_probe cte:1 gte:1 cpt:0
+>> mpl:65535 mtl:65535 mpl:65535
+>
+> So ips->core_power_limit is still 0.
+>
+> Is it bad bios or driver?
+>
+> I expect the bios/hw is faulty but fingers are easy to point.
+>
+> Your choice on how to minimize your current logging problem.
+>
+> Changing the message level to dev_dbg probably isn't the
+> right thing to do overall, but it may suit you right now.
 
-I think you could do the same thing, the proposed page allocator
-solutions still needs to manage pageblock state, you can manage those
-the same as you would your cma regions -- the difference is that you get
-the option of letting the rest of the system use the memory in a
-transparent manner if you don't need it.
+The solution here probably is not less logging. The best solution IMO 
+would be to do some sanity checking when loading the module, and if the 
+values do not make sense, print something to the log and return -ENODEV.
 
+I expect that, when it works as it should, the first read while loading 
+the module already returns sane values, so a sanity check there should 
+not have many false positives. OTOH, it is best to not load the module 
+when you think things are strange.
 
-> There is obviously a trade-off. I was just wondering how costly it is.
-> E.g. would it be a noticeable delay making 64 MB memory available in this
-> way on a, say, 600 MHz ARM. 
-
-Right, dunno really, rather depends on the memory bandwidth of your arm
-device I suspect. It is something you'd have to test. 
-
-In case the machine isn't fast enough, there really isn't anything you
-can do but keep the memory empty at all times; unless of course the
-device in question needs it.
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
