@@ -1,237 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab0H1O2a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 10:28:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47781 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab0H1O1x (ORCPT
+	id S1754086Ab0H1O3o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 10:29:44 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:56395 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753536Ab0H1O3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 10:27:53 -0400
-Message-Id: <20100828142455.742059699@chello.nl>
-User-Agent: quilt/0.47-1
-Date: Sat, 28 Aug 2010 16:16:42 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 05/20] mm: Simplify anon_vma refcounts
-References: <20100828141637.421594670@chello.nl>
-Content-Disposition: inline; filename=mm-use-anon_vma-ref.patch
+	Sat, 28 Aug 2010 10:29:42 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 2/3] hid: 3m: Convert to MT slots
+Date: Sat, 28 Aug 2010 16:29:07 +0200
+Message-Id: <1283005748-3293-2-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283005748-3293-1-git-send-email-rydberg@euromail.se>
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OpMPX-0000kn-9F.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OpMPX-0000kn-9F f9b574a4851b561eec3a95a5613e8b0f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the anon_vma refcount to be 0 when the object is
-free. It does this by adding 1 ref to being in use in the anon_vma
-structure (iow. the anon_vma->head list is not empty).
+The Microtouch controller is capable of doing finger tracking on
+up to 60 fingers. To reduce bandwidth and cpu usage, convert the
+driver to use the MT slots protocol.
 
-This allows a simpler release scheme without having to check both the
-refcount and the list as well as avoids taking a ref for each entry
-on the list.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- include/linux/rmap.h |   11 +++++--
- mm/ksm.c             |    4 --
- mm/rmap.c            |   79 ++++++++++++++++++---------------------------------
- 3 files changed, 38 insertions(+), 56 deletions(-)
+ drivers/hid/hid-3m-pct.c |   50 +++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 39 insertions(+), 11 deletions(-)
 
-Index: linux-2.6/include/linux/rmap.h
-===================================================================
---- linux-2.6.orig/include/linux/rmap.h
-+++ linux-2.6/include/linux/rmap.h
-@@ -73,7 +73,13 @@ static inline void get_anon_vma(struct a
- 	atomic_inc(&anon_vma->refcount);
- }
+diff --git a/drivers/hid/hid-3m-pct.c b/drivers/hid/hid-3m-pct.c
+index 1057430..9a3b047 100644
+--- a/drivers/hid/hid-3m-pct.c
++++ b/drivers/hid/hid-3m-pct.c
+@@ -25,16 +25,22 @@ MODULE_LICENSE("GPL");
+ #include "hid-ids.h"
  
--void put_anon_vma(struct anon_vma *);
-+void __put_anon_vma(struct anon_vma *anon_vma);
-+
-+static inline void put_anon_vma(struct anon_vma *anon_vma)
-+{
-+	if (atomic_dec_and_test(&anon_vma->refcount))
-+		__put_anon_vma(anon_vma);
-+}
+ #define MAX_SLOTS		60
+-#define MAX_TRKID		59
++#define MAX_TRKID		USHRT_MAX
++#define MAX_EVENTS		360
++#define SN_MOVE			2048
++#define SN_WIDTH		128
  
- static inline struct anon_vma *page_anon_vma(struct page *page)
+ struct mmm_finger {
+ 	__s32 x, y, w, h;
++	__u16 id;
+ 	__u8 rank;
++	bool prev_touch;
+ 	bool touch, valid;
+ };
+ 
+ struct mmm_data {
+ 	struct mmm_finger f[MAX_SLOTS];
++	__u16 id;
+ 	__u8 curid, num;
+ 	__u8 nexp, nreal;
+ 	bool touch, valid;
+@@ -44,6 +50,10 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 		struct hid_field *field, struct hid_usage *usage,
+ 		unsigned long **bit, int *max)
  {
-@@ -116,7 +122,6 @@ void unlink_anon_vmas(struct vm_area_str
- int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
- int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
- void __anon_vma_link(struct vm_area_struct *);
--void anon_vma_free(struct anon_vma *);
- 
- static inline void anon_vma_merge(struct vm_area_struct *vma,
- 				  struct vm_area_struct *next)
-@@ -125,6 +130,8 @@ static inline void anon_vma_merge(struct
- 	unlink_anon_vmas(next);
- }
- 
-+struct anon_vma *page_get_anon_vma(struct page *page);
++	int f1 = field->logical_minimum;
++	int f2 = field->logical_maximum;
++	int df = f2 - f1;
 +
- /*
-  * rmap interfaces called when adding or removing pte of page
-  */
-Index: linux-2.6/mm/ksm.c
-===================================================================
---- linux-2.6.orig/mm/ksm.c
-+++ linux-2.6/mm/ksm.c
-@@ -309,9 +309,7 @@ static void hold_anon_vma(struct rmap_it
+ 	switch (usage->hid & HID_USAGE_PAGE) {
  
- static void ksm_put_anon_vma(struct rmap_item *rmap_item)
- {
--	struct anon_vma *anon_vma = rmap_item->anon_vma;
--
--	put_anon_vma(anon_vma);
-+	put_anon_vma(rmap_item->anon_vma);
- }
- 
- /*
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -67,11 +67,24 @@ static struct kmem_cache *anon_vma_chain
- 
- static inline struct anon_vma *anon_vma_alloc(void)
- {
--	return kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-+	struct anon_vma *anon_vma;
-+
-+	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-+	if (anon_vma) {
-+		atomic_set(&anon_vma->refcount, 1);
-+		/*
-+		 * Initialise the anon_vma root to point to itself. If called from
-+		 * fork, the root will be reset to the parents anon_vma.
-+		 */
-+		anon_vma->root = anon_vma;
-+	}
-+
-+	return anon_vma;
- }
- 
--void anon_vma_free(struct anon_vma *anon_vma)
-+static inline void anon_vma_free(struct anon_vma *anon_vma)
- {
-+	VM_BUG_ON(atomic_read(&anon_vma->refcount));
- 	kmem_cache_free(anon_vma_cachep, anon_vma);
- }
- 
-@@ -133,11 +146,6 @@ int anon_vma_prepare(struct vm_area_stru
- 			if (unlikely(!anon_vma))
- 				goto out_enomem_free_avc;
- 			allocated = anon_vma;
--			/*
--			 * This VMA had no anon_vma yet.  This anon_vma is
--			 * the root of any anon_vma tree that might form.
--			 */
--			anon_vma->root = anon_vma;
+ 	case HID_UP_BUTTON:
+@@ -54,18 +64,20 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 		case HID_GD_X:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_POSITION_X);
++			input_set_abs_params(hi->input, ABS_MT_POSITION_X,
++					     f1, f2, df / SN_MOVE, 0);
+ 			/* touchscreen emulation */
+ 			input_set_abs_params(hi->input, ABS_X,
+-						field->logical_minimum,
+-						field->logical_maximum, 0, 0);
++					     f1, f2, df / SN_MOVE, 0);
+ 			return 1;
+ 		case HID_GD_Y:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_POSITION_Y);
++			input_set_abs_params(hi->input, ABS_MT_POSITION_Y,
++					     f1, f2, df / SN_MOVE, 0);
+ 			/* touchscreen emulation */
+ 			input_set_abs_params(hi->input, ABS_Y,
+-						field->logical_minimum,
+-						field->logical_maximum, 0, 0);
++					     f1, f2, df / SN_MOVE, 0);
+ 			return 1;
  		}
+ 		return 0;
+@@ -85,14 +97,19 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 		case HID_DG_TIPSWITCH:
+ 			/* touchscreen emulation */
+ 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
++			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
+ 			return 1;
+ 		case HID_DG_WIDTH:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_TOUCH_MAJOR);
++			input_set_abs_params(hi->input, ABS_MT_TOUCH_MAJOR,
++					     f1, f2, df / SN_WIDTH, 0);
+ 			return 1;
+ 		case HID_DG_HEIGHT:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_TOUCH_MINOR);
++			input_set_abs_params(hi->input, ABS_MT_TOUCH_MINOR,
++					     f1, f2, df / SN_WIDTH, 0);
+ 			input_set_abs_params(hi->input, ABS_MT_ORIENTATION,
+ 					1, 1, 0, 0);
+ 			return 1;
+@@ -100,6 +117,11 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 			field->logical_maximum = MAX_TRKID;
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_TRACKING_ID);
++			input_set_abs_params(hi->input, ABS_MT_TRACKING_ID,
++					     0, MAX_TRKID, 0, 0);
++			if (!hi->input->mt)
++				input_mt_create_slots(hi->input, MAX_SLOTS);
++			input_set_events_per_packet(hi->input, MAX_EVENTS);
+ 			return 1;
+ 		}
+ 		/* let hid-input decide for the others */
+@@ -117,10 +139,10 @@ static int mmm_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+ 		struct hid_field *field, struct hid_usage *usage,
+ 		unsigned long **bit, int *max)
+ {
++	/* tell hid-input to skip setup of these event types */
+ 	if (usage->type == EV_KEY || usage->type == EV_ABS)
+-		clear_bit(usage->code, *bit);
+-
+-	return 0;
++		set_bit(usage->type, hi->input->evbit);
++	return -1;
+ }
  
- 		anon_vma_lock(anon_vma);
-@@ -156,7 +164,7 @@ int anon_vma_prepare(struct vm_area_stru
- 		anon_vma_unlock(anon_vma);
- 
- 		if (unlikely(allocated))
--			anon_vma_free(allocated);
-+			put_anon_vma(allocated);
- 		if (unlikely(avc))
- 			anon_vma_chain_free(avc);
+ /*
+@@ -141,10 +163,15 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
+ 		struct mmm_finger *f = &md->f[i];
+ 		if (!f->valid) {
+ 			/* this finger is just placeholder data, ignore */
+-		} else if (f->touch) {
++			continue;
++		}
++		input_mt_slot(input, i);
++		if (f->touch) {
+ 			/* this finger is on the screen */
+ 			int wide = (f->w > f->h);
+-			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, i);
++			if (!f->prev_touch)
++				f->id = md->id++;
++			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, f->id);
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_X, f->x);
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, f->y);
+ 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
+@@ -152,7 +179,6 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
+ 						wide ? f->w : f->h);
+ 			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR,
+ 						wide ? f->h : f->w);
+-			input_mt_sync(input);
+ 			/*
+ 			 * touchscreen emulation: maintain the age rank
+ 			 * of this finger, decide if we have a press
+@@ -181,7 +207,9 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
+ 			--(md->num);
+ 			if (md->num == 0)
+ 				released = true;
++			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, -1);
+ 		}
++		f->prev_touch = f->touch;
+ 		f->valid = 0;
  	}
-@@ -237,9 +245,9 @@ int anon_vma_fork(struct vm_area_struct 
- 	 */
- 	anon_vma->root = pvma->anon_vma->root;
- 	/*
--	 * With KSM refcounts, an anon_vma can stay around longer than the
--	 * process it belongs to.  The root anon_vma needs to be pinned
--	 * until this anon_vma is freed, because the lock lives in the root.
-+	 * With refcounts, an anon_vma can stay around longer than the
-+	 * process it belongs to. The root anon_vma needs to be pinned until
-+	 * this anon_vma is freed, because the lock lives in the root.
- 	 */
- 	get_anon_vma(anon_vma->root);
- 	/* Mark this anon_vma as the one where our new (COWed) pages go. */
-@@ -249,7 +257,7 @@ int anon_vma_fork(struct vm_area_struct 
- 	return 0;
  
-  out_error_free_anon_vma:
--	anon_vma_free(anon_vma);
-+	put_anon_vma(anon_vma);
-  out_error:
- 	unlink_anon_vmas(vma);
- 	return -ENOMEM;
-@@ -268,15 +276,11 @@ static void anon_vma_unlink(struct anon_
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->refcount);
-+	empty = list_empty(&anon_vma->head);
- 	anon_vma_unlock(anon_vma);
- 
--	if (empty) {
--		/* We no longer need the root anon_vma */
--		if (anon_vma->root != anon_vma)
--			put_anon_vma(anon_vma->root);
--		anon_vma_free(anon_vma);
--	}
-+	if (empty)
-+		put_anon_vma(anon_vma);
- }
- 
- void unlink_anon_vmas(struct vm_area_struct *vma)
-@@ -1441,38 +1445,11 @@ int try_to_munlock(struct page *page)
- 		return try_to_unmap_file(page, TTU_MUNLOCK);
- }
- 
--/*
-- * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
-- * if necessary.  Be careful to do all the tests under the lock.  Once
-- * we know we are the last user, nobody else can get a reference and we
-- * can do the freeing without the lock.
-- */
--void put_anon_vma(struct anon_vma *anon_vma)
--{
--	BUG_ON(atomic_read(&anon_vma->refcount) <= 0);
--	if (atomic_dec_and_lock(&anon_vma->refcount, &anon_vma->root->lock)) {
--		struct anon_vma *root = anon_vma->root;
--		int empty = list_empty(&anon_vma->head);
--		int last_root_user = 0;
--		int root_empty = 0;
--
--		/*
--		 * The refcount on a non-root anon_vma got dropped.  Drop
--		 * the refcount on the root and check if we need to free it.
--		 */
--		if (empty && anon_vma != root) {
--			BUG_ON(atomic_read(&root->refcount) <= 0);
--			last_root_user = atomic_dec_and_test(&root->refcount);
--			root_empty = list_empty(&root->head);
--		}
--		anon_vma_unlock(anon_vma);
--
--		if (empty) {
--			anon_vma_free(anon_vma);
--			if (root_empty && last_root_user)
--				anon_vma_free(root);
--		}
--	}
-+void __put_anon_vma(struct anon_vma *anon_vma)
-+{
-+	if (anon_vma->root != anon_vma)
-+		put_anon_vma(anon_vma->root);
-+	anon_vma_free(anon_vma);
- }
- 
- #ifdef CONFIG_MIGRATION
-
+-- 
+1.7.1
 
