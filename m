@@ -1,126 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab0H1OaI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 10:30:08 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:38226 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754042Ab0H1OaC (ORCPT
+	id S1754009Ab0H1O20 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 10:28:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42782 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab0H1O1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 10:30:02 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 1/3] hid: 3m: Adjust to sequential MT HID protocol
-Date: Sat, 28 Aug 2010 16:29:06 +0200
-Message-Id: <1283005748-3293-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OpMPL-0004sj-CV.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OpMPL-0004sj-CV 61cb2362eaaf565db8aba357850652b1
+	Sat, 28 Aug 2010 10:27:50 -0400
+Message-Id: <20100828142455.673925982@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Sat, 28 Aug 2010 16:16:41 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH 04/20] mm: Move anon_vma ref out from under CONFIG_KSM
+References: <20100828141637.421594670@chello.nl>
+Content-Disposition: inline; filename=mm-anon_vma-ref.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The multitouch extensions to the HID protocol allows for contact
-data to be sent over several reports, which is also the case for
-the 3M M2256PW touchscreen. This patch modifies the logic to only
-synchronize the input layer when all contacts have been received.
-Consequentially, the full 60-finger capacity of the device is enabled.
+We need an anon_vma refcount for preemptible anon_vma->lock.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
- drivers/hid/hid-3m-pct.c |   22 ++++++++++++++++++----
- 1 files changed, 18 insertions(+), 4 deletions(-)
+ include/linux/rmap.h |   40 ++++------------------------------------
+ mm/rmap.c            |   14 ++++++--------
+ 2 files changed, 10 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/hid/hid-3m-pct.c b/drivers/hid/hid-3m-pct.c
-index 2a0d56b..1057430 100644
---- a/drivers/hid/hid-3m-pct.c
-+++ b/drivers/hid/hid-3m-pct.c
-@@ -24,6 +24,9 @@ MODULE_LICENSE("GPL");
- 
- #include "hid-ids.h"
- 
-+#define MAX_SLOTS		60
-+#define MAX_TRKID		59
-+
- struct mmm_finger {
- 	__s32 x, y, w, h;
- 	__u8 rank;
-@@ -31,8 +34,9 @@ struct mmm_finger {
- };
- 
- struct mmm_data {
--	struct mmm_finger f[10];
-+	struct mmm_finger f[MAX_SLOTS];
- 	__u8 curid, num;
-+	__u8 nexp, nreal;
- 	bool touch, valid;
- };
- 
-@@ -93,7 +97,7 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 					1, 1, 0, 0);
- 			return 1;
- 		case HID_DG_CONTACTID:
--			field->logical_maximum = 59;
-+			field->logical_maximum = MAX_TRKID;
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_TRACKING_ID);
- 			return 1;
-@@ -133,7 +137,7 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
- 	 * we need to iterate on all fingers to decide if we have a press
- 	 * or a release event in our touchscreen emulation.
+Index: linux-2.6/include/linux/rmap.h
+===================================================================
+--- linux-2.6.orig/include/linux/rmap.h
++++ linux-2.6/include/linux/rmap.h
+@@ -27,18 +27,15 @@
+ struct anon_vma {
+ 	spinlock_t lock;	/* Serialize access to vma list */
+ 	struct anon_vma *root;	/* Root of this anon_vma tree */
+-#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
+-
+ 	/*
+-	 * The external_refcount is taken by either KSM or page migration
+-	 * to take a reference to an anon_vma when there is no
++	 * The refcount is taken on an anon_vma when there is no
+ 	 * guarantee that the vma of page tables will exist for
+ 	 * the duration of the operation. A caller that takes
+ 	 * the reference is responsible for clearing up the
+ 	 * anon_vma if they are the last user on release
  	 */
--	for (i = 0; i < 10; ++i) {
-+	for (i = 0; i < MAX_SLOTS; ++i) {
- 		struct mmm_finger *f = &md->f[i];
- 		if (!f->valid) {
- 			/* this finger is just placeholder data, ignore */
-@@ -190,6 +194,7 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
- 	} else if (released) {
- 		input_event(input, EV_KEY, BTN_TOUCH, 0);
- 	}
-+	input_sync(input);
+-	atomic_t external_refcount;
+-#endif
++	atomic_t refcount;
++
+ 	/*
+ 	 * NOTE: the LSB of the head.next is set by
+ 	 * mm_take_all_locks() _after_ taking the above lock. So the
+@@ -71,41 +68,12 @@ struct anon_vma_chain {
+ };
+ 
+ #ifdef CONFIG_MMU
+-#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
+-static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
+-{
+-	atomic_set(&anon_vma->external_refcount, 0);
+-}
+-
+-static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
+-{
+-	return atomic_read(&anon_vma->external_refcount);
+-}
+-
+ static inline void get_anon_vma(struct anon_vma *anon_vma)
+ {
+-	atomic_inc(&anon_vma->external_refcount);
++	atomic_inc(&anon_vma->refcount);
  }
  
+ void put_anon_vma(struct anon_vma *);
+-#else
+-static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
+-{
+-}
+-
+-static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
+-{
+-	return 0;
+-}
+-
+-static inline void get_anon_vma(struct anon_vma *anon_vma)
+-{
+-}
+-
+-static inline void put_anon_vma(struct anon_vma *anon_vma)
+-{
+-}
+-#endif /* CONFIG_KSM */
+ 
+ static inline struct anon_vma *page_anon_vma(struct page *page)
+ {
+Index: linux-2.6/mm/rmap.c
+===================================================================
+--- linux-2.6.orig/mm/rmap.c
++++ linux-2.6/mm/rmap.c
+@@ -268,7 +268,7 @@ static void anon_vma_unlink(struct anon_
+ 	list_del(&anon_vma_chain->same_anon_vma);
+ 
+ 	/* We must garbage collect the anon_vma if it's empty */
+-	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
++	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->refcount);
+ 	anon_vma_unlock(anon_vma);
+ 
+ 	if (empty) {
+@@ -299,7 +299,7 @@ static void anon_vma_ctor(void *data)
+ 	struct anon_vma *anon_vma = data;
+ 
+ 	spin_lock_init(&anon_vma->lock);
+-	anonvma_external_refcount_init(anon_vma);
++	atomic_set(&anon_vma->refcount, 0);
+ 	INIT_LIST_HEAD(&anon_vma->head);
+ }
+ 
+@@ -1441,7 +1441,6 @@ int try_to_munlock(struct page *page)
+ 		return try_to_unmap_file(page, TTU_MUNLOCK);
+ }
+ 
+-#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
  /*
-@@ -223,10 +228,12 @@ static int mmm_event(struct hid_device *hid, struct hid_field *field,
- 				md->f[md->curid].h = value;
- 			break;
- 		case HID_DG_CONTACTID:
-+			value = clamp_val(value, 0, MAX_SLOTS - 1);
- 			if (md->valid) {
- 				md->curid = value;
- 				md->f[value].touch = md->touch;
- 				md->f[value].valid = 1;
-+				md->nreal++;
- 			}
- 			break;
- 		case HID_GD_X:
-@@ -238,7 +245,12 @@ static int mmm_event(struct hid_device *hid, struct hid_field *field,
- 				md->f[md->curid].y = value;
- 			break;
- 		case HID_DG_CONTACTCOUNT:
--			mmm_filter_event(md, input);
-+			if (value)
-+				md->nexp = value;
-+			if (md->nreal >= md->nexp) {
-+				mmm_filter_event(md, input);
-+				md->nreal = 0;
-+			}
- 			break;
+  * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
+  * if necessary.  Be careful to do all the tests under the lock.  Once
+@@ -1450,8 +1449,8 @@ int try_to_munlock(struct page *page)
+  */
+ void put_anon_vma(struct anon_vma *anon_vma)
+ {
+-	BUG_ON(atomic_read(&anon_vma->external_refcount) <= 0);
+-	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
++	BUG_ON(atomic_read(&anon_vma->refcount) <= 0);
++	if (atomic_dec_and_lock(&anon_vma->refcount, &anon_vma->root->lock)) {
+ 		struct anon_vma *root = anon_vma->root;
+ 		int empty = list_empty(&anon_vma->head);
+ 		int last_root_user = 0;
+@@ -1462,8 +1461,8 @@ void put_anon_vma(struct anon_vma *anon_
+ 		 * the refcount on the root and check if we need to free it.
+ 		 */
+ 		if (empty && anon_vma != root) {
+-			BUG_ON(atomic_read(&root->external_refcount) <= 0);
+-			last_root_user = atomic_dec_and_test(&root->external_refcount);
++			BUG_ON(atomic_read(&root->refcount) <= 0);
++			last_root_user = atomic_dec_and_test(&root->refcount);
+ 			root_empty = list_empty(&root->head);
+ 		}
+ 		anon_vma_unlock(anon_vma);
+@@ -1475,7 +1474,6 @@ void put_anon_vma(struct anon_vma *anon_
  		}
  	}
-@@ -255,6 +267,8 @@ static int mmm_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	int ret;
- 	struct mmm_data *md;
+ }
+-#endif
  
-+	hdev->quirks |= HID_QUIRK_NO_INPUT_SYNC;
-+
- 	md = kzalloc(sizeof(struct mmm_data), GFP_KERNEL);
- 	if (!md) {
- 		dev_err(&hdev->dev, "cannot allocate 3M data\n");
--- 
-1.7.1
+ #ifdef CONFIG_MIGRATION
+ /*
+
 
