@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab0H1J5J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 05:57:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64738 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab0H1J5H (ORCPT
+	id S1752702Ab0H1J5n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 05:57:43 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48611 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab0H1J5l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 05:57:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH v2] ARM: uaccess: Implement strict user copy checks
-Date: Sat, 28 Aug 2010 11:56:56 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.5.0; x86_64; ; )
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <4C61EE55.5030506@codeaurora.org> <4C7867D4.10404@codeaurora.org> <20100828074304.GA2183@osiris.boeblingen.de.ibm.com>
-In-Reply-To: <20100828074304.GA2183@osiris.boeblingen.de.ibm.com>
+	Sat, 28 Aug 2010 05:57:41 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008281156.56958.arnd@arndb.de>
-X-Provags-ID: V02:K0:USVWTCf0GeAlJVV89kqHN8z/g2n5navIXgavaEmam0V
- NRdrNv2Vn7PO9mkfISgp+3p6WwgkjqzxidPVjD0c7dJiL+xDdD
- lXylpgir9VZNk2KnUXjceQeWRLymvoDfofWbc3jH+xvPzQ6K3/
- WlKvH8RbtHZ3LHTM1Gb/4Vpr0UPbtdW660o/3hn9WP8Jx1usBS
- E2QUXVLnojSJWwQMgIPAQ==
+In-Reply-To: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>
+References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Sat, 28 Aug 2010 11:57:26 +0200
+Message-ID: <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com>
+Subject: Re: selinux vs devtmpfs (vs udev)
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, greg@kroah.com,
+        sds@tycho.nsa.gov
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 28 August 2010 09:43:04 Heiko Carstens wrote:
-> In function 'copy_from_user',
->     inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1200:
-> /linux-2.6/arch/s390/include/asm/uaccess.h:297: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct
+On Sat, Aug 28, 2010 at 01:00, Eric Paris <eparis@redhat.com> wrote:
+> I've got 2 bugs now:
+>
+> https://bugzilla.redhat.com/show_bug.cgi?id=566332
+> https://bugzilla.redhat.com/show_bug.cgi?id=627710
+>
+> Where (I'm assuming) devtmpfs and SELinux are fighting.  In the old old
+> days we used to have a script that would, after having created
+> everything in /dev, set the proper SELinux labels on those files.  This
+> was done so early in boot that races didn't exist yet.
+>
+> In the new days udev would create nodes in there, but udev is SELinux
+> aware.  udev will determine what the right SELinux context is, will tell
+> the kernel what the next file it creates should be labeled, and will
+> then call mknod, so the device file gets created with the right label.
+> Again race free.
+>
+> In the new new days of devtmpfs things aren't as nice.  The kernel is
+> magically creating files in /dev.  These are getting created with the
+> 'default' SELinux context.  So herein lies the problem.
+>
+> The first program that tries to access these files get denied by
+> SELinux.  Now udev actually has logic in it to fix the label on any
+> closed device file, so udev will at that point swoop in, fix the label,
+> and the next program that tries to use the file will work just fine.  Oh
+> fun!
+>
+> Obviously a good solution would be for devtmpfs to create nodes with the
+> right label (and udev to not need to be SELinux aware), but that
+> information isn't available in the kernel.  That information is a purely
+> userspace construct.  I have a long term plan for how we might be able
+> to do this long off in the future, but it isn't viable for right now.
+>
+> So my next best solution would be to ask if it would be possible for
+> udev to disable devtmpfs automatic device file creation after it is
+> running.  Once udev is running do we need devtmpfs?  Seems like this
+> could be a pretty simple /proc/ or /sys/ tunable that udev could twiddle
+> when/if it was ready to run the show.
 
-I wrote this one, and I can't think of an easy way to do fix
-it without increasing the code complexity or size.
+Udev should still label all device nodes, even when they are created
+by the kernel. Devtmpfs or not should not make a difference here.
 
-> In function 'copy_from_user',
->     inlined from 'write_file_bool' at fs/debugfs/file.c:434:
-> /linux-2.6/arch/s390/include/asm/uaccess.h:297: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct
-> In function 'copy_from_user',
->     inlined from 'packet_getsockopt' at net/packet/af_packet.c:2123:
-> /linux-2.6/arch/s390/include/asm/uaccess.h:297: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct
+I guess it's a udev bug introduced with:
+  http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=578cc8a8085a47c963b5940459e475ac5f07219c
 
-These look like the compiler is not smart enough. Both make sure
-that we copy at most the size of the object, or less if the user
-didn't pass all of it.
+and we just need to fix that.
 
-> In function 'copy_from_user',
->     inlined from 'compat_sys_socketcall' at net/compat.c:783:
-> /linux-2.6/arch/s390/include/asm/uaccess.h:297: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct
-
-I don't think the compiler has a chance to figure this one out.
-However, I don't see the warning on x86. Maybe x86-gcc has
-a bug.
-
-	Arnd
+Kay
