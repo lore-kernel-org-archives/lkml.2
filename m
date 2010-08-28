@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab0H1UdD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 16:33:03 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:45093 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752422Ab0H1Ucs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 16:32:48 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mtd: Blackfin NFC: fix invalid free in remove()
-Date: Sat, 28 Aug 2010 16:42:05 -0400
-Message-Id: <1283028125-6027-2-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1283028125-6027-1-git-send-email-vapier@gentoo.org>
-References: <1283028125-6027-1-git-send-email-vapier@gentoo.org>
+	id S1752953Ab0H1UdB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 16:33:01 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:44617 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857Ab0H1Uc4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 16:32:56 -0400
+Message-ID: <4C797273.2030601@canonical.com>
+Date: Sat, 28 Aug 2010 13:32:51 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: James Morris <jmorris@namei.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Comments to apparmor Makefile (and security/Makefile)
+References: <20100828070305.GA8842@merkur.ravnborg.org> <4C795F6F.40202@canonical.com> <20100828192155.GA9287@merkur.ravnborg.org>
+In-Reply-To: <20100828192155.GA9287@merkur.ravnborg.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since info->mtd isn't dynamically allocated, we shouldn't attempt to
-kfree() it.  Otherwise we get random fun corruption when unloading
-the driver built as a module.
+On 08/28/2010 12:21 PM, Sam Ravnborg wrote:
+>>
+>>> 8) From security/Makefile:
+>>>
+>>>     obj-$(CONFIG_SECURITY_APPARMOR)         += apparmor/built-in.o
+>>> This is _not_ how we do it.
+>>>
+>>> We say just:
+>>>
+>>>     obj-$(CONFIG_SECURITY_APPARMOR)         += apparmor/
+>>>
+>>> [security/Makefile has this issue in several places]
+>>>
+>> okay, I set it up this way to conform to other entries in the file
+>> If we are going to fix apparmor's entry we should fix them all
+> 
+> Agreed - its better to fix them all in one go.
+> I assume you do this in a follow-up patch - it is straightforward.
+> 
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- drivers/mtd/nand/bf5xx_nand.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+Yes, I was planning to submit as a separate patch.
 
-diff --git a/drivers/mtd/nand/bf5xx_nand.c b/drivers/mtd/nand/bf5xx_nand.c
-index 162c5ea..6fbeefa 100644
---- a/drivers/mtd/nand/bf5xx_nand.c
-+++ b/drivers/mtd/nand/bf5xx_nand.c
-@@ -682,7 +682,6 @@ static int __devinit bf5xx_nand_add_partition(struct bf5xx_nand_info *info)
- static int __devexit bf5xx_nand_remove(struct platform_device *pdev)
- {
- 	struct bf5xx_nand_info *info = to_nand_info(pdev);
--	struct mtd_info *mtd = NULL;
- 
- 	platform_set_drvdata(pdev, NULL);
- 
-@@ -690,11 +689,7 @@ static int __devexit bf5xx_nand_remove(struct platform_device *pdev)
- 	 * and their partitions, then go through freeing the
- 	 * resources used
- 	 */
--	mtd = &info->mtd;
--	if (mtd) {
--		nand_release(mtd);
--		kfree(mtd);
--	}
-+	nand_release(&info->mtd);
- 
- 	peripheral_free_list(bfin_nfc_pin_req);
- 	bf5xx_nand_dma_remove(info);
--- 
-1.7.2.2
-
+thanks
+john
