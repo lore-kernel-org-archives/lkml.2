@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab0H1UHb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 16:07:31 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:41040 "EHLO smtp.gentoo.org"
+	id S1752759Ab0H1UKG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 16:10:06 -0400
+Received: from mail.atheros.com ([12.19.149.2]:32950 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409Ab0H1UHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 16:07:30 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-Subject: Pull request blackfin.git (for-linus branch)
-Date: Sat, 28 Aug 2010 16:16:48 -0400
-Message-Id: <1283026608-19665-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1282950518-7094-1-git-send-email-vapier@gentoo.org>
-References: <1282950518-7094-1-git-send-email-vapier@gentoo.org>
+	id S1752058Ab0H1UKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 16:10:05 -0400
+Date: Sat, 28 Aug 2010 13:10:01 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Dan Carpenter <error27@gmail.com>, Julia Lawall <julia@diku.dk>,
+        <netdev@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Jie.Yang@atheros.com>
+Subject: Re: [PATCH 3/7] drivers/net/atl1c: Remove double test
+Message-ID: <20100828201001.GA9287@tux>
+References: <1283010066-20935-1-git-send-email-julia@diku.dk>
+ <1283010066-20935-4-git-send-email-julia@diku.dk>
+ <20100828165014.GJ9832@bicker>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100828165014.GJ9832@bicker>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d4348c678977c7093438bbbf2067c49396ae941b:
+On Sat, Aug 28, 2010 at 09:50:14AM -0700, Dan Carpenter wrote:
+> I added the Atheros people to the CC list.  Jie Yang should know.
+> 
+> regards,
+> dan carpenter
+> 
+> On Sat, Aug 28, 2010 at 05:41:02PM +0200, Julia Lawall wrote:
+> > The nic_type field is compared to athr_l2c twice.
+> > 
+> > The sematic match that finds this problem is as follows:
+> > (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @expression@
+> > expression E;
+> > @@
+> > 
+> > (
+> > * E
+> >   || ... || E
+> > |
+> > * E
+> >   && ... && E
+> > )
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> > This is a guess as to what the code should be.  Perhaps something else
+> > should have been tested instead.
+> > 
+> >  drivers/net/atl1c/atl1c_hw.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/net/atl1c/atl1c_hw.c b/drivers/net/atl1c/atl1c_hw.c
+> > index d8501f0..919080b 100644
+> > --- a/drivers/net/atl1c/atl1c_hw.c
+> > +++ b/drivers/net/atl1c/atl1c_hw.c
+> > @@ -480,7 +480,7 @@ int atl1c_phy_reset(struct atl1c_hw *hw)
+> >  		atl1c_write_phy_reg(hw, MII_DBG_DATA, 0x929D);
+> >  	}
+> >  	if (hw->nic_type == athr_l1c || hw->nic_type == athr_l2c_b2
+> > -		|| hw->nic_type == athr_l2c || hw->nic_type == athr_l2c) {
+> > +		|| hw->nic_type == athr_l2c) {
+> >  		atl1c_write_phy_reg(hw, MII_DBG_ADDR, 0x29);
+> >  		atl1c_write_phy_reg(hw, MII_DBG_DATA, 0xB6DD);
+> >  	}
 
-  Merge branch 'perf-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-08-25 10:50:07 -0700)
+The patch is pretty obvious. Looks good.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
-
-Barry Song (1):
-      Blackfin: bf52x/bf54x boards: drop unused nand page size
-
-Mike Frysinger (1):
-      Blackfin: punt duplicate SPORT MMR defines
-
- arch/blackfin/include/asm/bfin_sport.h             |    6 -
- .../mach-bf518/include/mach/defBF51x_base.h        |   82 ---------------
- arch/blackfin/mach-bf527/boards/cm_bf527.c         |    1 -
- arch/blackfin/mach-bf527/boards/ezbrd.c            |    1 -
- arch/blackfin/mach-bf527/boards/ezkit.c            |    1 -
- .../mach-bf527/include/mach/defBF52x_base.h        |   82 ---------------
- arch/blackfin/mach-bf533/include/mach/defBF532.h   |   92 -----------------
- arch/blackfin/mach-bf537/include/mach/defBF534.h   |   80 ---------------
- arch/blackfin/mach-bf538/include/mach/defBF539.h   |  107 --------------------
- arch/blackfin/mach-bf548/boards/cm_bf548.c         |    1 -
- arch/blackfin/mach-bf548/boards/ezkit.c            |    1 -
- .../mach-bf548/include/mach/defBF54x_base.h        |   67 ------------
- arch/blackfin/mach-bf561/include/mach/defBF561.h   |   60 -----------
- 13 files changed, 0 insertions(+), 581 deletions(-)
+  Luis
