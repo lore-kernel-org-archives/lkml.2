@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab0H1WLD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 18:11:03 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:56972 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab0H1WLB (ORCPT
+	id S1753242Ab0H1WLx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 18:11:53 -0400
+Received: from mail-in-14.arcor-online.net ([151.189.21.54]:55044 "EHLO
+	mail-in-14.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752907Ab0H1WLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 18:11:01 -0400
-Date: Sat, 28 Aug 2010 15:11:51 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Michael Rubin <mrubin@google.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, fengguang.wu@intel.com, jack@suse.cz,
-        riel@redhat.com, akpm@linux-foundation.org, david@fromorbit.com,
-        kosaki.motohiro@jp.fujitsu.com, npiggin@kernel.dk, hch@lst.de,
-        axboe@kernel.dk
-Subject: Re: [PATCH 1/4] mm: exporting account_page_dirty
-In-Reply-To: <1282963227-31867-2-git-send-email-mrubin@google.com>
-Message-ID: <Pine.LNX.4.64.1008281511130.22399@cobra.newdream.net>
-References: <1282963227-31867-1-git-send-email-mrubin@google.com>
- <1282963227-31867-2-git-send-email-mrubin@google.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 28 Aug 2010 18:11:52 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-08.arcor-online.net AF23A2053B1
+Subject: Re: [PATCH] HID: roccat: Fixing race condition on initialization
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-input@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4C7952E9.5030608@gmail.com>
+References: <1283000268.4789.1.camel@neuromancer>
+	 <4C7952E9.5030608@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 29 Aug 2010 00:11:47 +0200
+Message-ID: <1283033507.8037.14.camel@neuromancer>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one was just merged with the other Ceph stuff.
+Am Samstag, den 28.08.2010, 20:18 +0200 schrieb Jiri Slaby:
+> On 08/28/2010 02:57 PM, Stefan Achatz wrote:
+> > Fixed raced condition where event occurs before drvdata is set.
+> > 
+> > Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> > ---
+> >  drivers/hid/hid-roccat-kone.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
+> > index f776957..cfeab56 100644
+> > --- a/drivers/hid/hid-roccat-kone.c
+> > +++ b/drivers/hid/hid-roccat-kone.c
+> > @@ -966,6 +966,10 @@ static int kone_raw_event(struct hid_device *hdev, struct hid_report *report,
+> >  	struct kone_device *kone = hid_get_drvdata(hdev);
+> >  	struct kone_mouse_event *event = (struct kone_mouse_event *)data;
+> >  
+> > +	/* possible race condition on initialization */
+> > +	if (!kone)
+> > +		return 0;
+> 
+> This kind of "protection" caused much headache in the tty layer in the
+> past. If there is such a problem, please fix the initialization code
+> instead.
+> 
+> What sort of problems you are seeing?
+> 
+> thanks,
 
-Thanks!
-sage
+After investigating and now fully understanding the issue I want to draw
+back this patch.
+The issue was no race condition in the first place, but an erroneous
+code I wrote for another mouse. This is a injudicious crossport of a
+half baked fix for code that didn't suffer from the problem because the
+next 3 lines already do the right thing for this case.
+Sorry.
 
-
-On Fri, 27 Aug 2010, Michael Rubin wrote:
-
-> This allows code outside of the mm core to safely manipulate page state
-> and not worry about the other accounting. Not using these routines means
-> that some code will lose track of the accounting and we get bugs. This
-> has happened once already.
-> 
-> Modified cephs to use the interface.
-> 
-> Signed-off-by: Michael Rubin <mrubin@google.com>
-> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-> 
-> ---
->  fs/ceph/addr.c      |    8 +-------
->  mm/page-writeback.c |    1 +
->  2 files changed, 2 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> index 5598a0d..420d469 100644
-> --- a/fs/ceph/addr.c
-> +++ b/fs/ceph/addr.c
-> @@ -105,13 +105,7 @@ static int ceph_set_page_dirty(struct page *page)
->  	spin_lock_irq(&mapping->tree_lock);
->  	if (page->mapping) {	/* Race with truncate? */
->  		WARN_ON_ONCE(!PageUptodate(page));
-> -
-> -		if (mapping_cap_account_dirty(mapping)) {
-> -			__inc_zone_page_state(page, NR_FILE_DIRTY);
-> -			__inc_bdi_stat(mapping->backing_dev_info,
-> -					BDI_RECLAIMABLE);
-> -			task_io_account_write(PAGE_CACHE_SIZE);
-> -		}
-> +		account_page_dirtied(page, page->mapping);
->  		radix_tree_tag_set(&mapping->page_tree,
->  				page_index(page), PAGECACHE_TAG_DIRTY);
->  
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 7262aac..9d07a8d 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1131,6 +1131,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
->  		task_io_account_write(PAGE_CACHE_SIZE);
->  	}
->  }
-> +EXPORT_SYMBOL(account_page_dirtied);
->  
->  /*
->   * For address_spaces which do not use buffers.  Just tag the page as dirty in
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
