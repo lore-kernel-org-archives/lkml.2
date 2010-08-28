@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab0H1QK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 12:10:58 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34634 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab0H1QK4 convert rfc822-to-8bit (ORCPT
+	id S1752887Ab0H1QTH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 12:19:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41564 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab0H1QTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 12:10:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cPM3cpOsnoQrg62knosnXuMCcM3azF2dpfF8FtiMpmrp4qBVYj0NnX+BfvRm0LDU2F
-         DEjguGVZlshj9ew21w7wROEqxNLEq87ngB3Gl+y8sKQl9dS2Q0KO/rg4DsgwxJNmb8XO
-         NFmcWUaNKLh6Fwv9cCGT75DjZlS9o48/LJiOk=
+	Sat, 28 Aug 2010 12:19:05 -0400
+Date: Sat, 28 Aug 2010 18:18:58 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 3/3 v2] dmaengine: Add Freescale i.MX SDMA support
+Message-ID: <20100828161858.GI1473@pengutronix.de>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de> <20100823174852.GB26928@pengutronix.de> <AANLkTimmEKfErV17RWNBO-pVCfFtFw=yJL2v92UBN0=2@mail.gmail.com> <201008281727.10913.marek.vasut@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1282910083-8629-2-git-send-email-samu.p.onkalo@nokia.com>
-References: <1282910083-8629-1-git-send-email-samu.p.onkalo@nokia.com>
-	<1282910083-8629-2-git-send-email-samu.p.onkalo@nokia.com>
-Date: Sat, 28 Aug 2010 21:40:55 +0530
-Message-ID: <AANLkTim=Zq7Pxixdwe_H-659cLZ2yybediDURGwvoO3=@mail.gmail.com>
-Subject: Re: [PATCH 1/3] drivers: misc: ak8974 / ami305 magnetometer driver
-From: Sundar <sunder.svit@gmail.com>
-To: Samu Onkalo <samu.p.onkalo@nokia.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201008281727.10913.marek.vasut@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:45:16 up 56 days,  6:56,  6 users,  load average: 0.48, 0.35,
+	0.23
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samu,
+On Sat, Aug 28, 2010 at 05:27:10PM +0200, Marek Vasut wrote:
+> Dne So 28. srpna 2010 17:18:17 Linus Walleij napsal(a):
+> > 2010/8/23 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> > >> +     evt = readl(SDMA_H_EVTOVR);
+> > >> +     mcu = readl(SDMA_H_HOSTOVR);
+> > >> +     dsp = readl(SDMA_H_DSPOVR);
+> > > 
+> > > __raw_readl?
+> > 
+> > Sorry I never understood this __raw_[read|write][b|w|l] vs.
+> > plain read[b|w|l] proliferation in some drivers and code.
+> > 
+> > What's the reason for?
+> 
+> Hey,
+> 
+> this trick is, if you create the VA<->PA mapping at the kernel start (eg. see 
+> how pxa_map_io() is replacedon some devices for instance), you then use the VA 
+> address you specified and use __raw_{read,write}[b,w,l](). So use 
+> __raw_{read,write}[b,w,l]() on drivers specific for certain device and use 
+> {read,write}[b,w,l]() on ioremap()ed memory areas, aka. in common drivers.
 
-few minor comments,
+Nope, this has nothing to do with static mappings vs. ioremap. The
+difference is that read[b,w,l] do little endian accesses suitable for
+PCI whereas the __raw_* functions do accesses in CPU endianess.
+Peripherals integrated into a SoC like the SDMA engine here are
+normally accessible in native endianess and thus need the __raw_*
+functions. An external network controller (for example a LAN9117) will
+probably need the non raw functions. Note that 99% of the arm users use
+little endian only and thus cpu_to_le* is a noop, so both types will work
+for most people.
 
-On Fri, Aug 27, 2010 at 5:24 PM, Samu Onkalo <samu.p.onkalo@nokia.com> wrote:
-> +
-> +struct ak8974_chip {
-> +       struct miscdevice       miscdev;
-> +       struct mutex            lock;   /* Serialize access to chip */
-> +       struct mutex            users_lock;
-> +       struct i2c_client       *client;
-> +       struct regulator_bulk_data regs[2];
-> +       struct work_struct      work;
-> +       wait_queue_head_t       misc_wait;
-> +       loff_t                  offset;
-> +
-> +       int                     max_range;
-> +       int                     users;
-> +
-> +       const char              *id;
-> +       u8                      info[2];
-> +
-> +       s16                     x, y, z; /* Latest measurements */
-> +       s8                      axis_x;
-> +       s8                      axis_y;
-> +       s8                      axis_z;
-> +       bool                    valid;
-> +
-> +       char                    name[20];
-> +};
+Sascha
 
-This can be static ?
-
-> +
-> +       ak8974_regulators_off(chip);
-> +
-
-[..]
-
-> +       if (err < 0) {
-> +               dev_err(&chip->client->dev, "Device registration failed\n");
-> +               goto fail3;
-> +       }
-
-[..]
-
-> +       return 0;
-> +fail4:
-> +       misc_deregister(&chip->miscdev);
-> +fail3:
-> +       ak8974_regulators_off(chip);
-
-in case of fail3, regulators get disabled twice. i think we will have
-unbalanced calls to the supplies then.
-
-> +
-> +
-> +#ifdef CONFIG_PM
-> +static int ak8974_suspend(struct i2c_client *client, pm_message_t mesg)
-> +{
-> +       struct ak8974_chip *chip = i2c_get_clientdata(client);
-> +       mutex_lock(&chip->users_lock);
-> +       if (chip->users > 0)
-> +               ak8974_enable(chip, AK8974_PWR_OFF);
-> +       mutex_unlock(&chip->users_lock);
-> +       return 0;
-> +}
-
-Can we disable the regulators here too?
-
-Regards,
-Sundar
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
