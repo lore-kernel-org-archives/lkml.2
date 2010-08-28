@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab0H1GGt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 02:06:49 -0400
-Received: from liberdade2.minaslivre.org ([74.50.53.203]:34542 "EHLO
-	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab0H1GGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 02:06:48 -0400
-From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] usb: allow drivers to use allocated bandwidth until unbound
-Date: Sat, 28 Aug 2010 03:06:29 -0300
-Message-Id: <1282975589-22324-1-git-send-email-cascardo@holoscopio.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751881Ab0H1GR4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 02:17:56 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:34022 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774Ab0H1GRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 02:17:55 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+Date: Sat, 28 Aug 2010 09:14:25 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.36-rc2; KDE/4.4.3; x86_64; ; )
+Cc: u.kleine-koenig@pengutronix.de, g.liakhovetski@gmx.de,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, philippe.retornaz@epfl.ch, gregkh@suse.de,
+        jkrzyszt@tis.icnet.pl
+References: <20100827051907.GA17521@pengutronix.de> <201008270923.30297.mitov@issp.bas.bg> <20100827153204A.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100827153204A.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008280914.34233.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the remove sysfs file, the device configuration is set to -1
-(unconfigured). This eventually unbind drivers with the bandwidth_mutex
-held. Some drivers may call functions that hold said mutex, like
-usb_reset_device. This is the case for rtl8187, for example. This will
-lead to the same process holding the mutex twice, which deadlocks.
+On Friday, August 27, 2010 09:32:14 am FUJITA Tomonori wrote:
+> On Fri, 27 Aug 2010 09:23:21 +0300
+> Marin Mitov <mitov@issp.bas.bg> wrote:
+> 
+> > On Friday, August 27, 2010 08:57:59 am FUJITA Tomonori wrote:
+> > > On Fri, 27 Aug 2010 07:19:07 +0200
+> > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > 
+> > > > Hey,
+> > > > 
+> > > > On Fri, Aug 27, 2010 at 02:00:17PM +0900, FUJITA Tomonori wrote:
+> > > > > On Fri, 27 Aug 2010 06:41:42 +0200
+> > > > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > > > > On Thu, Aug 26, 2010 at 07:00:24PM +0900, FUJITA Tomonori wrote:
+> > > > > > > On Thu, 26 Aug 2010 11:53:11 +0200
+> > > > > > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > > > > > 
+> > > > > > > > > > We have currently a number of boards broken in the mainline. They must be 
+> > > > > > > > > > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
+> > > > > > > > > > as I suggested earlier, we need either this or my patch series
+> > > > > > > > > > 
+> > > > > > > > > > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
+> > > > > > > > > > 
+> > > > > > > > > > for 2.6.36.
+> > > > > > > > > 
+> > > > > > > > > Why can't you revert a commit that causes the regression?
+> > > > > > > > > 
+> > > > > > > > > The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
+> > > > > > > > > responsible for the regression. And the patchset even exnteds the
+> > > > > > > > > definition of the DMA API (dma_declare_coherent_memory). Such change
+> > > > > > > > > shouldn't applied after rc1. I think that DMA-API.txt says that
+> > > > > > > > > dma_declare_coherent_memory() handles coherent memory for a particular
+> > > > > > > > > device. It's not for the API that reserves coherent memory that can be
+> > > > > > > > > used for any device for a single device.
+> > > > > > > > The patch that made the problem obvious for ARM is
+> > > > > > > > 309caa9cc6ff39d261264ec4ff10e29489afc8f8 aka v2.6.36-rc1~591^2~2^4~12.
+> > > > > > > > So this went in before v2.6.36-rc1.  One of the "architectures which
+> > > > > > > > similar restrictions" is x86 BTW.
+> > > > > > > > 
+> > > > > > > > And no, we won't revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 as it
+> > > > > > > > addresses a hardware restriction.
+> > > > > > > 
+> > > > > > > How these drivers were able to work without hitting the hardware restriction?
+> > > > > > In my case the machine in question is an ARMv5, the hardware restriction
+> > > > > > is on ARMv6+ only.  You could argue that so the breaking patch for arm
+> > > > > > should only break ARMv6, but I don't think this is sensible from a
+> > > > > > maintainers POV.  We need an API that works independant of the machine
+> > > > > > that runs the code.
+> > > > > 
+> > > > > Agreed. But insisting that the DMA API needs to be extended wrongly
+> > > > > after rc2 to fix the regression is not sensible too. The related DMA
+> > > > > API wasn't changed in 2.6.36-rc1. The API isn't responsible for the
+> > > > > regression at all.
+> > > > I think this isn't about "responsiblity".  Someone in arm-land found
+> > > > that the way dma memory allocation worked for some time doesn't work
+> > > > anymore on new generation chips.  As pointing out this problem was
+> > > > expected to find some matches it was merged in the merge window.  One
+> > > > such match is the current usage of the DMA API that doesn't currently
+> > > > offer a way to do it right, so it needs a patch, no?
+> > > 
+> > > No, I don't think so. We are talking about a regression, right?
+> > > 
+> > > On new generation chips, something often doesn't work (which have
+> > > worked on old chips for some time). It's not a regresiion. I don't
+> > > think that it's sensible to make large change (especially after rc1)
+> > > to fix such issue. If you say that the DMA API doesn't work on new
+> > > chips and proposes a patch for the next merge window, it's sensible, I
+> > > suppose.
+> > > 
+> > > Btw, the patch isn't a fix for the DMA API. It tries to extend the DMA
+> > > API (and IMO in the wrong way). 
+> > > In addition, the patch might break the
+> > > current code. 
+> > 
+> > To "break the current code" is simply not possible. Sorry to oppose. As you have written it 
+> > "extend the DMA API", so if you do not use the new API (and no current code is using it)
+> > you cannot "break the current code". 
+> 
+> Looks like that the patch adds the new API that touches the exisitng
+> code. It means the existing code could break. So the exsising API
+> could break too.
+> 
+> http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
 
-Besides, according to Alan Stern:
-"The deadlock problem probably could be handled somehow, but there's a
-separate issue: Until the usb_disable_device call finishes unbinding
-the drivers, the drivers are free to continue using their allocated
-bandwidth.  We musn't change the bandwidth allocations until after the
-unbinding is done.  So this patch is indeed necessary."
+The above reference is not my patch. I am speaking for my patch:
 
-Unbinding the driver before holding the bandwidth_mutex solves the
-problem. If any operation after that fails, drivers are not bound again.
-But that would be a problem anyway that the user may solve resetting the
-device configuration to one that works, just like he would need to do in
-most other failure cases.
+http://lkml.org/lkml/2010/8/19/200
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/usb/core/message.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
+The only point my patch touches the existing code is struct device's member dma_mem
+and that is in condition you __use__ the new API, so you could decide yourself if it 
+could break the current code. As far as one does not use the new API - nothing is touched,
+nothing can break. If one uses the new API, only the user can suffer if the new API have
+bugs.
 
-diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
-index fd4c36e..844683e 100644
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1724,6 +1724,15 @@ free_interfaces:
- 	if (ret)
- 		goto free_interfaces;
- 
-+	/* if it's already configured, clear out old state first.
-+	 * getting rid of old interfaces means unbinding their drivers.
-+	 */
-+	if (dev->state != USB_STATE_ADDRESS)
-+		usb_disable_device(dev, 1);	/* Skip ep0 */
-+
-+	/* Get rid of pending async Set-Config requests for this device */
-+	cancel_async_set_config(dev);
-+
- 	/* Make sure we have bandwidth (and available HCD resources) for this
- 	 * configuration.  Remove endpoints from the schedule if we're dropping
- 	 * this configuration to set configuration 0.  After this point, the
-@@ -1733,20 +1742,11 @@ free_interfaces:
- 	mutex_lock(&hcd->bandwidth_mutex);
- 	ret = usb_hcd_alloc_bandwidth(dev, cp, NULL, NULL);
- 	if (ret < 0) {
--		usb_autosuspend_device(dev);
- 		mutex_unlock(&hcd->bandwidth_mutex);
-+		usb_autosuspend_device(dev);
- 		goto free_interfaces;
- 	}
- 
--	/* if it's already configured, clear out old state first.
--	 * getting rid of old interfaces means unbinding their drivers.
--	 */
--	if (dev->state != USB_STATE_ADDRESS)
--		usb_disable_device(dev, 1);	/* Skip ep0 */
--
--	/* Get rid of pending async Set-Config requests for this device */
--	cancel_async_set_config(dev);
--
- 	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
- 			      NULL, 0, USB_CTRL_SET_TIMEOUT);
-@@ -1761,8 +1761,8 @@ free_interfaces:
- 	if (!cp) {
- 		usb_set_device_state(dev, USB_STATE_ADDRESS);
- 		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
--		usb_autosuspend_device(dev);
- 		mutex_unlock(&hcd->bandwidth_mutex);
-+		usb_autosuspend_device(dev);
- 		goto free_interfaces;
- 	}
- 	mutex_unlock(&hcd->bandwidth_mutex);
--- 
-1.7.1
+Thanks,
 
+Marin Mitov
