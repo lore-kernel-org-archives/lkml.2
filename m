@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab0H1QFz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 12:05:55 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60829 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab0H1QFv (ORCPT
+	id S1753264Ab0H1QGA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 12:06:00 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:52850 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab0H1QF6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 12:05:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=xjoou+YmnBmS3irwKJ2Sn2sLRwaaRoltn7pfkikd/0A494Y2WnhKgDQV+6A/96iJYR
-         JGBCpFCQwmQNussTw2mbsxHQjz03UdG/n462R7A608vF68+9KxAY+4HweC+0fbwaC/tx
-         Fx/8dGpHsZU41So8K9KHtCG1uONVwf44zbjkI=
-From: Brian Gerst <brgerst@gmail.com>
-To: hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/11] x86: Use correct type for %cr4
-Date: Sat, 28 Aug 2010 12:04:28 -0400
-Message-Id: <1283011478-27237-2-git-send-email-brgerst@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
-References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
+	Sat, 28 Aug 2010 12:05:58 -0400
+X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Aug 2010 12:05:58 EDT
+In-Reply-To: <1283005748-3293-3-git-send-email-rydberg@euromail.se>
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se> <1283005748-3293-3-git-send-email-rydberg@euromail.se>
+Mime-Version: 1.0 (Apple Message framework v752.3)
+Content-Type: text/plain; charset=ISO-8859-1; delsp=yes; format=flowed
+Message-Id: <2A410207-8AAA-4D5A-846A-B69F007E6800@enac.fr>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+From: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: [PATCH 3/3] hid: 3m: Correct touchscreen emulation
+Date: Sat, 28 Aug 2010 17:56:52 +0200
+To: "Henrik Rydberg" <rydberg@euromail.se>
+X-Mailer: Apple Mail (2.752.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-%cr4 is 64-bit in 64-bit mode (although the upper 32-bits are currently reserved).
-Use unsigned long for the temporary variable to get the right size.
 
-Signed-off-by: Brian Gerst <brgerst@gmail.com>
----
- arch/x86/include/asm/processor.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 325b7bd..396b80f 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -602,7 +602,7 @@ extern unsigned long		mmu_cr4_features;
- 
- static inline void set_in_cr4(unsigned long mask)
- {
--	unsigned cr4;
-+	unsigned long cr4;
- 
- 	mmu_cr4_features |= mask;
- 	cr4 = read_cr4();
-@@ -612,7 +612,7 @@ static inline void set_in_cr4(unsigned long mask)
- 
- static inline void clear_in_cr4(unsigned long mask)
- {
--	unsigned cr4;
-+	unsigned long cr4;
- 
- 	mmu_cr4_features &= ~mask;
- 	cr4 = read_cr4();
--- 
-1.7.2.2
+> The current code sometimes misses to report the last BTN_TOUCH event
+> when multiple fingers are lifted simultaneously.  With the
+> introduction of MT slots, the tracking id is available to determine
+> the oldest active contact.
+
+Hi Henrik,
+
+good job on exploiting the sync quirk!
+
+About the oldest active contact, I'm not so sure though. I don't have  
+the device with me but I remember that 3M recycle IDs, giving the  
+lowest available ID to any new finger; this means that the lowest ID  
+is not always the oldest finger.
+
+Cheers,
+
+St.
 
