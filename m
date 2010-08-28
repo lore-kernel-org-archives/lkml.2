@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab0H1QGA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 12:06:00 -0400
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:52850 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab0H1QF6 convert rfc822-to-8bit (ORCPT
+	id S1753288Ab0H1QGK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 12:06:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:60829 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab0H1QGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 12:05:58 -0400
-X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Aug 2010 12:05:58 EDT
-In-Reply-To: <1283005748-3293-3-git-send-email-rydberg@euromail.se>
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se> <1283005748-3293-3-git-send-email-rydberg@euromail.se>
-Mime-Version: 1.0 (Apple Message framework v752.3)
-Content-Type: text/plain; charset=ISO-8859-1; delsp=yes; format=flowed
-Message-Id: <2A410207-8AAA-4D5A-846A-B69F007E6800@enac.fr>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-From: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Subject: Re: [PATCH 3/3] hid: 3m: Correct touchscreen emulation
-Date: Sat, 28 Aug 2010 17:56:52 +0200
-To: "Henrik Rydberg" <rydberg@euromail.se>
-X-Mailer: Apple Mail (2.752.3)
+	Sat, 28 Aug 2010 12:06:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=vYE4+nE03SWY3epJZeSda0C3Zw6D/CFh17DSJzhuNKVXgvz6uciapY9VixApHx7M03
+         b9+83wP8JE426VUReT/sXe39S/ySBzl+Jnz1x352OxnhRuTg1+n3Sd6sERqgNrpzDwl3
+         5l+zvKXXPpyULVRxheM61VX6oWB9qKdCpnZ1E=
+From: Brian Gerst <brgerst@gmail.com>
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 04/11] x86: Merge __save_init_fpu()
+Date: Sat, 28 Aug 2010 12:04:31 -0400
+Message-Id: <1283011478-27237-5-git-send-email-brgerst@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
+References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+__save_init_fpu() is identical for 32-bit and 64-bit.
 
-Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+---
+ arch/x86/include/asm/i387.h |   11 ++---------
+ 1 files changed, 2 insertions(+), 9 deletions(-)
 
-> The current code sometimes misses to report the last BTN_TOUCH event
-> when multiple fingers are lifted simultaneously.  With the
-> introduction of MT slots, the tracking id is available to determine
-> the oldest active contact.
-
-Hi Henrik,
-
-good job on exploiting the sync quirk!
-
-About the oldest active contact, I'm not so sure though. I don't have  
-the device with me but I remember that 3M recycle IDs, giving the  
-lowest available ID to any new finger; this means that the lowest ID  
-is not always the oldest finger.
-
-Cheers,
-
-St.
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 5d8f9a7..88065e3 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -197,12 +197,6 @@ static inline void fpu_save_init(struct fpu *fpu)
+ 	fpu_clear(fpu);
+ }
+ 
+-static inline void __save_init_fpu(struct task_struct *tsk)
+-{
+-	fpu_save_init(&tsk->thread.fpu);
+-	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-}
+-
+ #else  /* CONFIG_X86_32 */
+ 
+ #ifdef CONFIG_MATH_EMULATION
+@@ -285,15 +279,14 @@ end:
+ 	;
+ }
+ 
++#endif	/* CONFIG_X86_64 */
++
+ static inline void __save_init_fpu(struct task_struct *tsk)
+ {
+ 	fpu_save_init(&tsk->thread.fpu);
+ 	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+ }
+ 
+-
+-#endif	/* CONFIG_X86_64 */
+-
+ static inline int fpu_fxrstor_checking(struct fpu *fpu)
+ {
+ 	return fxrstor_checking(&fpu->state->fxsave);
+-- 
+1.7.2.2
 
