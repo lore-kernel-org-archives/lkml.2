@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab0H1MVp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 08:21:45 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:37737 "EHLO
+	id S1753265Ab0H1MWr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 08:22:47 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37743 "EHLO
 	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab0H1MVo (ORCPT
+	with ESMTP id S1753031Ab0H1MWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 08:21:44 -0400
+	Sat, 28 Aug 2010 08:22:46 -0400
 X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 28 Aug 2010 14:21:26 +0200 (CEST)
+Date: Sat, 28 Aug 2010 14:22:27 +0200 (CEST)
 From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH] firewire: ohci: work around VIA and NEC PHY packet reception
- bug
+Subject: [PATCH] firewire: ohci: add some "unlikely" hints
 To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>
-In-Reply-To: <4C6909DD.3070002@ladisch.de>
-Message-ID: <tkrat.8705132a95f3f284@s5r6.in-berlin.de>
+cc: linux-kernel@vger.kernel.org
+In-Reply-To: <tkrat.8705132a95f3f284@s5r6.in-berlin.de>
+Message-ID: <tkrat.3fd9444150751f66@s5r6.in-berlin.de>
 References: <4C6909DD.3070002@ladisch.de>
+ <tkrat.8705132a95f3f284@s5r6.in-berlin.de>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; CHARSET=us-ascii
 Content-Disposition: INLINE
@@ -24,49 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VIA VT6306, VIA VT6308, and NEC OrangeLink controllers do not write
-packet event codes for received PHY packets (or perhaps write
-evt_no_status, hard to tell).  Work around it by overwriting the
-packet's ACK by ack_complete, so that upper layers that listen to PHY
-packet reception get to see these packets.
+Mark evt_no_status and evt_bus_reset packet reception events as ones
+that occur rarely.
 
-(Also tested:  TI TSB82AA2, TI TSB43AB22/A, TI XIO2213A, Agere FW643,
-JMicron JMB381 --- these do not exhibit this bug.)
+Also, inline the debug flag check of log_ar_at_event().  [The same is
+hopefully not necessary for log_irqs() which is only called at a single
+site and hence auto-inlined by the compiler.]
 
-Clemens proposed a quirks flag for that, IOW whitelist known misbehaving
-controllers for this workaround.  Though to me it seems harmless enough
-to enable for all controllers.
-
-The log_ar_at_event() debug log will continue to show the original
-status from the DMA unit.
-
-Reported-by: Clemens Ladisch <clemens@ladisch.de> (VT6308)
 Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 ---
- drivers/firewire/ohci.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/firewire/ohci.c |   28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
 Index: b/drivers/firewire/ohci.c
 ===================================================================
 --- a/drivers/firewire/ohci.c
 +++ b/drivers/firewire/ohci.c
-@@ -694,7 +694,15 @@ static __le32 *handle_ar_packet(struct a
- 	log_ar_at_event('R', p.speed, p.header, evt);
+@@ -398,14 +401,11 @@ static const char *phys[] = {
+ 	[0x2] = "self-id packet",	[0x3] = "-reserved-",
+ };
  
- 	/*
--	 * The OHCI bus reset handler synthesizes a phy packet with
-+	 * Several controllers, notably from NEC and VIA, forget to
-+	 * write ack_complete status at PHY packet reception.
-+	 */
-+	if (evt == OHCI1394_evt_no_status &&
-+	    (p.header[0] & 0xff) == (OHCI1394_phy_tcode << 4))
-+		p.ack = ACK_COMPLETE;
+-static void log_ar_at_event(char dir, int speed, u32 *header, int evt)
++static void _ar_at_event(char dir, int speed, u32 *header, int evt)
+ {
+ 	int tcode = header[0] >> 4 & 0xf;
+ 	char specific[12];
+ 
+-	if (likely(!(param_debug & OHCI_PARAM_DEBUG_AT_AR)))
+-		return;
+-
+ 	if (unlikely(evt >= ARRAY_SIZE(evts)))
+ 			evt = 0x1f;
+ 
+@@ -456,6 +456,12 @@ static void log_ar_at_event(char dir, in
+ 	}
+ }
+ 
++static inline void log_ar_at_event(char dir, int speed, u32 *header, int evt)
++{
++	if (unlikely(param_debug & OHCI_PARAM_DEBUG_AT_AR))
++		_ar_at_event(dir, speed, header, evt);
++}
 +
-+	/*
-+	 * The OHCI bus reset handler synthesizes a PHY packet with
- 	 * the new generation number when a bus reset happens (see
- 	 * section 8.4.2.3).  This helps us determine when a request
- 	 * was received and make sure we send the response in the same
+ #else
+ 
+ #define param_debug 0
+@@ -697,7 +703,7 @@ static __le32 *handle_ar_packet(struct a
+ 	 * Several controllers, notably from NEC and VIA, forget to
+ 	 * write ack_complete status at PHY packet reception.
+ 	 */
+-	if (evt == OHCI1394_evt_no_status &&
++	if (unlikely(evt == OHCI1394_evt_no_status) &&
+ 	    (p.header[0] & 0xff) == (OHCI1394_phy_tcode << 4))
+ 		p.ack = ACK_COMPLETE;
+ 
+@@ -714,7 +720,7 @@ static __le32 *handle_ar_packet(struct a
+ 	 * wrong generation.  We set the correct generation for these
+ 	 * at a slightly incorrect time (in bus_reset_tasklet).
+ 	 */
+-	if (evt == OHCI1394_evt_bus_reset) {
++	if (unlikely(evt == OHCI1394_evt_bus_reset)) {
+ 		if (!(ohci->quirks & QUIRK_RESET_PACKET))
+ 			ohci->request_generation = (p.header[2] >> 16) & 0xff;
+ 	} else if (ctx == &ohci->ar_request_ctx) {
 
 -- 
 Stefan Richter
