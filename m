@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab0H1KR3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 06:17:29 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51101 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab0H1KR1 convert rfc822-to-8bit (ORCPT
+	id S1752807Ab0H1KqO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 06:46:14 -0400
+Received: from smtp-04.mandic.com.br ([200.225.81.151]:38308 "EHLO
+	smtp-04.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab0H1KqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 06:17:27 -0400
-Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1008272136220.28501@router.home>
-References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
-	 <20100826235052.GZ6803@random.random>
-	 <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com>
-	 <20100827095546.GC6803@random.random>
-	 <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
-	 <alpine.DEB.2.00.1008271159160.18495@router.home>
-	 <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com>
-	 <alpine.DEB.2.00.1008271420400.18495@router.home>
-	 <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com>
-	 <alpine.DEB.2.00.1008271547200.22988@router.home>
-	 <AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com>
-	 <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com>
-	 <alpine.DEB.2.00.1008271801080.25115@router.home>
-	 <AANLkTindjNiJXbfsWbFexXBQVB174aprhSbBLFosBvC=@mail.gmail.com>
-	 <alpine.DEB.2.00.1008272136220.28501@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 28 Aug 2010 12:17:06 +0200
-Message-ID: <1282990626.1975.3270.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 28 Aug 2010 06:46:13 -0400
+Message-ID: <4C78E8EF.1000009@cesarb.net>
+Date: Sat, 28 Aug 2010 07:46:07 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
+ messages
+References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>	 <4C770299.6000708@cesarb.net> <1282869660.1836.5.camel@Joe-Laptop>	 <4C77171E.6060008@cesarb.net> <1282894751.1836.41.camel@Joe-Laptop>	 <4C784650.2030200@cesarb.net> <1282962104.1946.179.camel@Joe-Laptop>
+In-Reply-To: <1282962104.1946.179.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 21:47 -0500, Christoph Lameter wrote:
-> 
-> I'd be much more comfortable if the following would be done
-> 
-> A. Pin the anon_vma by either
->         I. Take a refcount on the anon vma
+Em 27-08-2010 23:21, Joe Perches escreveu:
+> On Fri, 2010-08-27 at 20:12 -0300, Cesar Eduardo Barros wrote:
+>> Em 27-08-2010 04:39, Joe Perches escreveu:
+>>> On Thu, 2010-08-26 at 22:38 -0300, Cesar Eduardo Barros wrote:
+>>>> - The first "MCP power limit exceeded" seems very bogus.
+>>>> - What do you mean, core_power_limit is zero?
+>>> I added a logging message whenever the turbo limits change
+>>> and logging messages for power/temp on MCH for completeness.
+>>> Maybe this will show something useful like when/how
+>>> CPU power limit gets set to 0.
+>
+>> Running with it right now, did not help much:
+>>
+>> $ dmesg | fgrep 'intel ips'
+>> intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match expected value
+>> (found 25, expected 35)
+>> intel ips 0000:00:1f.6: PCI INT C ->  GSI 18 (level, low) ->  IRQ 18
+>> intel ips 0000:00:1f.6: IPS driver initialized, MCP temp limit 65535
+>> intel ips 0000:00:1f.6: MCP power limit 65535 exceeded: cpu:8058 +
+>> mch:23392829
+>> intel ips 0000:00:1f.6: CPU power limit 0 exceeded: 5675
+>> intel ips 0000:00:1f.6: CPU power limit 0 exceeded: 6369
+>
+> I believe all these limits should always have non-zero values.
+> So I still think you've hardware problems, but I suppose it
+> could be the driver not reading the right registers or some
+> such.  It seems odd that the driver never printed a logging
+> message for either of the polling or irq methods to read the
+> device cpu and thermal limits.
 
-My preemptible mmu patches do that..
+Come on, no blaming the BIOS? ;-)
 
->         II. Take a lock in the anon vma (something that is not pointed to)
-> 
-> B. Either
->         I. All values that have been used before the pinning are
->            verified after the pinning (and the lock is reacquired
->            if verification fails).
-> 
->         II. Or all functions using page_lock_anon_vma() must securely
->             work in the case that the anon_vma was reused for
->             something else before the vma lock was acquired.
+If I read the code with your previous patch correctly, show_turbo_limits 
+will never be called if poll_turbo_status is false but no interrupt 
+happens. And we know no interrupt happened (at least not with nonzero 
+register values), because the interrupt handler does two dev_info() 
+right at the beginning. So the limits could still be the ones initially 
+set at ips_probe().
 
-Last time I looked they all work like that, they all use something akin
-to vma_address() which validates that the page we're interested in is
-indeed part of the vma we obtained from the rmap chain.
+I will try to enable dev_dbg() later and see what it prints.
 
-Anyway, I'll try and refresh my preemptible mmu patch-set now that the
-merge window dust settled and post if again, hopefully we can stick it
-in -next.
+>
+> Jesse or any Intel folk, can you verify or suggest anything
+> better?
+>
+> If cpu_power_limit, or any _limit, is not set perhaps changing
+> the test style to verify limit and adding a printed_once alert
+> for each 0 value limit.  At least that'd shut up the continuous
+> logging but at least give a notification message.
+>
+> if (limit) {
+> 	if (measured_val>  limit)
+> 		dev_info(foo)
+> } else
+> 	dev_alert_once()
+
+Wouldn't it make more sense to do the alert when the limit is set, 
+instead of when it is used? Also, it should still treat it as limit 
+exceeded (better safe than sorry). Something like:
+
+if (measured_val > limit) {
+     if (limit)
+         dev_info(...);
+     ret = true;
+}
+
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
