@@ -1,185 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0H1O3o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 10:29:44 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:56395 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753536Ab0H1O3m (ORCPT
+	id S1754038Ab0H1O21 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 10:28:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42786 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538Ab0H1O1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 10:29:42 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 2/3] hid: 3m: Convert to MT slots
-Date: Sat, 28 Aug 2010 16:29:07 +0200
-Message-Id: <1283005748-3293-2-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283005748-3293-1-git-send-email-rydberg@euromail.se>
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OpMPX-0000kn-9F.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OpMPX-0000kn-9F f9b574a4851b561eec3a95a5613e8b0f
+	Sat, 28 Aug 2010 10:27:51 -0400
+Message-Id: <20100828142456.520616206@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Sat, 28 Aug 2010 16:16:53 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH 16/20] lockdep, mutex: Provide mutex_lock_nest_lock
+References: <20100828141637.421594670@chello.nl>
+Content-Disposition: inline; filename=mutex_lock_nest_lock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Microtouch controller is capable of doing finger tracking on
-up to 60 fingers. To reduce bandwidth and cpu usage, convert the
-driver to use the MT slots protocol.
+Provide the mutex_lock_nest_lock() annotation.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- drivers/hid/hid-3m-pct.c |   50 +++++++++++++++++++++++++++++++++++----------
- 1 files changed, 39 insertions(+), 11 deletions(-)
+ include/linux/lockdep.h |    3 +++
+ include/linux/mutex.h   |    9 +++++++++
+ kernel/mutex.c          |   25 +++++++++++++++++--------
+ 3 files changed, 29 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hid/hid-3m-pct.c b/drivers/hid/hid-3m-pct.c
-index 1057430..9a3b047 100644
---- a/drivers/hid/hid-3m-pct.c
-+++ b/drivers/hid/hid-3m-pct.c
-@@ -25,16 +25,22 @@ MODULE_LICENSE("GPL");
- #include "hid-ids.h"
+Index: linux-2.6/include/linux/lockdep.h
+===================================================================
+--- linux-2.6.orig/include/linux/lockdep.h
++++ linux-2.6/include/linux/lockdep.h
+@@ -492,12 +492,15 @@ static inline void print_irqtrace_events
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+ #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
++#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
+ # else
+ #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
++#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, n, i)
+ # endif
+ # define mutex_release(l, n, i)			lock_release(l, n, i)
+ #else
+ # define mutex_acquire(l, s, t, i)		do { } while (0)
++# define mutex_acquire_nest(l, s, t, n, i)	do { } while (0)
+ # define mutex_release(l, n, i)			do { } while (0)
+ #endif
  
- #define MAX_SLOTS		60
--#define MAX_TRKID		59
-+#define MAX_TRKID		USHRT_MAX
-+#define MAX_EVENTS		360
-+#define SN_MOVE			2048
-+#define SN_WIDTH		128
- 
- struct mmm_finger {
- 	__s32 x, y, w, h;
-+	__u16 id;
- 	__u8 rank;
-+	bool prev_touch;
- 	bool touch, valid;
- };
- 
- struct mmm_data {
- 	struct mmm_finger f[MAX_SLOTS];
-+	__u16 id;
- 	__u8 curid, num;
- 	__u8 nexp, nreal;
- 	bool touch, valid;
-@@ -44,6 +50,10 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
-+	int f1 = field->logical_minimum;
-+	int f2 = field->logical_maximum;
-+	int df = f2 - f1;
+Index: linux-2.6/include/linux/mutex.h
+===================================================================
+--- linux-2.6.orig/include/linux/mutex.h
++++ linux-2.6/include/linux/mutex.h
+@@ -124,6 +124,7 @@ static inline int mutex_is_locked(struct
+  */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ extern void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
++extern void _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest_lock);
+ extern int __must_check mutex_lock_interruptible_nested(struct mutex *lock,
+ 					unsigned int subclass);
+ extern int __must_check mutex_lock_killable_nested(struct mutex *lock,
+@@ -132,6 +133,13 @@ extern int __must_check mutex_lock_killa
+ #define mutex_lock(lock) mutex_lock_nested(lock, 0)
+ #define mutex_lock_interruptible(lock) mutex_lock_interruptible_nested(lock, 0)
+ #define mutex_lock_killable(lock) mutex_lock_killable_nested(lock, 0)
 +
- 	switch (usage->hid & HID_USAGE_PAGE) {
- 
- 	case HID_UP_BUTTON:
-@@ -54,18 +64,20 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		case HID_GD_X:
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_POSITION_X);
-+			input_set_abs_params(hi->input, ABS_MT_POSITION_X,
-+					     f1, f2, df / SN_MOVE, 0);
- 			/* touchscreen emulation */
- 			input_set_abs_params(hi->input, ABS_X,
--						field->logical_minimum,
--						field->logical_maximum, 0, 0);
-+					     f1, f2, df / SN_MOVE, 0);
- 			return 1;
- 		case HID_GD_Y:
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_POSITION_Y);
-+			input_set_abs_params(hi->input, ABS_MT_POSITION_Y,
-+					     f1, f2, df / SN_MOVE, 0);
- 			/* touchscreen emulation */
- 			input_set_abs_params(hi->input, ABS_Y,
--						field->logical_minimum,
--						field->logical_maximum, 0, 0);
-+					     f1, f2, df / SN_MOVE, 0);
- 			return 1;
- 		}
- 		return 0;
-@@ -85,14 +97,19 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		case HID_DG_TIPSWITCH:
- 			/* touchscreen emulation */
- 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
-+			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
- 			return 1;
- 		case HID_DG_WIDTH:
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_TOUCH_MAJOR);
-+			input_set_abs_params(hi->input, ABS_MT_TOUCH_MAJOR,
-+					     f1, f2, df / SN_WIDTH, 0);
- 			return 1;
- 		case HID_DG_HEIGHT:
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_TOUCH_MINOR);
-+			input_set_abs_params(hi->input, ABS_MT_TOUCH_MINOR,
-+					     f1, f2, df / SN_WIDTH, 0);
- 			input_set_abs_params(hi->input, ABS_MT_ORIENTATION,
- 					1, 1, 0, 0);
- 			return 1;
-@@ -100,6 +117,11 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			field->logical_maximum = MAX_TRKID;
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_TRACKING_ID);
-+			input_set_abs_params(hi->input, ABS_MT_TRACKING_ID,
-+					     0, MAX_TRKID, 0, 0);
-+			if (!hi->input->mt)
-+				input_mt_create_slots(hi->input, MAX_SLOTS);
-+			input_set_events_per_packet(hi->input, MAX_EVENTS);
- 			return 1;
- 		}
- 		/* let hid-input decide for the others */
-@@ -117,10 +139,10 @@ static int mmm_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
-+	/* tell hid-input to skip setup of these event types */
- 	if (usage->type == EV_KEY || usage->type == EV_ABS)
--		clear_bit(usage->code, *bit);
--
--	return 0;
-+		set_bit(usage->type, hi->input->evbit);
-+	return -1;
- }
++#define mutex_lock_nest_lock(lock, nest_lock)				\
++do {									\
++	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);		\
++	_mutex_lock_nest_lock(lock, &(nest_lock)->dep_map);		\
++} while (0)
++
+ #else
+ extern void mutex_lock(struct mutex *lock);
+ extern int __must_check mutex_lock_interruptible(struct mutex *lock);
+@@ -140,6 +148,7 @@ extern int __must_check mutex_lock_killa
+ # define mutex_lock_nested(lock, subclass) mutex_lock(lock)
+ # define mutex_lock_interruptible_nested(lock, subclass) mutex_lock_interruptible(lock)
+ # define mutex_lock_killable_nested(lock, subclass) mutex_lock_killable(lock)
++# define mutex_lock_nest_lock(lock, nest_lock) mutex_lock(lock)
+ #endif
  
  /*
-@@ -141,10 +163,15 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
- 		struct mmm_finger *f = &md->f[i];
- 		if (!f->valid) {
- 			/* this finger is just placeholder data, ignore */
--		} else if (f->touch) {
-+			continue;
-+		}
-+		input_mt_slot(input, i);
-+		if (f->touch) {
- 			/* this finger is on the screen */
- 			int wide = (f->w > f->h);
--			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, i);
-+			if (!f->prev_touch)
-+				f->id = md->id++;
-+			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, f->id);
- 			input_event(input, EV_ABS, ABS_MT_POSITION_X, f->x);
- 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, f->y);
- 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
-@@ -152,7 +179,6 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
- 						wide ? f->w : f->h);
- 			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR,
- 						wide ? f->h : f->w);
--			input_mt_sync(input);
- 			/*
- 			 * touchscreen emulation: maintain the age rank
- 			 * of this finger, decide if we have a press
-@@ -181,7 +207,9 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
- 			--(md->num);
- 			if (md->num == 0)
- 				released = true;
-+			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, -1);
- 		}
-+		f->prev_touch = f->touch;
- 		f->valid = 0;
- 	}
+Index: linux-2.6/kernel/mutex.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex.c
++++ linux-2.6/kernel/mutex.c
+@@ -140,14 +140,14 @@ EXPORT_SYMBOL(mutex_unlock);
+  */
+ static inline int __sched
+ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+-	       	unsigned long ip)
++		    struct lockdep_map *nest_lock, unsigned long ip)
+ {
+ 	struct task_struct *task = current;
+ 	struct mutex_waiter waiter;
+ 	unsigned long flags;
  
--- 
-1.7.1
+ 	preempt_disable();
+-	mutex_acquire(&lock->dep_map, subclass, 0, ip);
++	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+ 
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+ 	/*
+@@ -285,16 +285,25 @@ void __sched
+ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
+ {
+ 	might_sleep();
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, _RET_IP_);
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, NULL, _RET_IP_);
+ }
+ 
+ EXPORT_SYMBOL_GPL(mutex_lock_nested);
+ 
++void __sched
++_mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
++{
++	might_sleep();
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, nest, _RET_IP_);
++}
++
++EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
++
+ int __sched
+ mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
+ {
+ 	might_sleep();
+-	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, NULL, _RET_IP_);
+ }
+ EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
+ 
+@@ -303,7 +312,7 @@ mutex_lock_interruptible_nested(struct m
+ {
+ 	might_sleep();
+ 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
+-				   subclass, _RET_IP_);
++				   subclass, NULL, _RET_IP_);
+ }
+ 
+ EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
+@@ -409,7 +418,7 @@ __mutex_lock_slowpath(atomic_t *lock_cou
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, _RET_IP_);
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
+ }
+ 
+ static noinline int __sched
+@@ -417,7 +426,7 @@ __mutex_lock_killable_slowpath(atomic_t 
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	return __mutex_lock_common(lock, TASK_KILLABLE, 0, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
+ }
+ 
+ static noinline int __sched
+@@ -425,7 +434,7 @@ __mutex_lock_interruptible_slowpath(atom
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, NULL, _RET_IP_);
+ }
+ #endif
+ 
+
 
