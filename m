@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751096Ab0H1Eok (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 00:44:40 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:60448 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab0H1Eoj (ORCPT
+	id S1751203Ab0H1FBW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 01:01:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24429 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750695Ab0H1FBU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 00:44:39 -0400
-Message-ID: <4C789432.5060402@canonical.com>
-Date: Fri, 27 Aug 2010 21:44:34 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	Sat, 28 Aug 2010 01:01:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,282,1280732400"; 
+   d="scan'208";a="549550027"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Hedi Berriche <hedi@sgi.com>
+CC: Petr Tesarik <ptesarik@suse.cz>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Aug 2010 22:01:18 -0700
+Subject: RE: Serious problem with ticket spinlocks on ia64
+Thread-Topic: Serious problem with ticket spinlocks on ia64
+Thread-Index: ActGSAkqvQ6PUp1nT9SemA+ns7S8DAAI/QoQ
+Message-ID: <987664A83D2D224EAE907B061CE93D53015D91D6F5@orsmsx505.amr.corp.intel.com>
+References: <201008271537.35709.ptesarik@suse.cz>
+ <201008272303.34228.ptesarik@suse.cz>
+ <987664A83D2D224EAE907B061CE93D53015D91D45F@orsmsx505.amr.corp.intel.com>
+ <201008280013.19941.ptesarik@suse.cz>
+ <987664A83D2D224EAE907B061CE93D53015D91D604@orsmsx505.amr.corp.intel.com>
+ <987664A83D2D224EAE907B061CE93D53015D91D645@orsmsx505.amr.corp.intel.com>
+ <20100828002855.GI18967@zorg.emea.sgi.com>
+In-Reply-To: <20100828002855.GI18967@zorg.emea.sgi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] .gitignore: ignore apparmor/rlim_names.h
-References: <1282962309-3331-1-git-send-email-yong.zhang0@gmail.com>
-In-Reply-To: <1282962309-3331-1-git-send-email-yong.zhang0@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2010 07:25 PM, Yong Zhang wrote:
-> From: Yong Zhang <yong.zhang@windriver.com>
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+>*Hasty* look seems to suggest that keeping the fancy asm bits but compiling >with
+>-O2 -frename-registers makes it work equally well.
+>
+>Don't take my word for it though, double check it, it's been a long week and
+>brain is anything but alert at this time of the night.
 
-Ah, yes thanks Yong, I did miss adding rlim_names.h to the git ignore file
-when I switched it to be auto generated.
+Yup - that makes the usermode version run just fine (no problems
+in the first billion lock/unlock operations ... which is
+quite a lot of wrap-arounds of the 15-bit ticket lock).
 
-Signed-off-by: John Johansen <john.johansen@canonical.com>
+And since we already use -frename-registers when building the
+kernel, no immediate help for the kernel problem. :-(
 
-> ---
->  security/apparmor/.gitignore |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/security/apparmor/.gitignore b/security/apparmor/.gitignore
-> index 0a0a99f..4d995ae 100644
-> --- a/security/apparmor/.gitignore
-> +++ b/security/apparmor/.gitignore
-> @@ -3,3 +3,4 @@
->  #
->  af_names.h
->  capability_names.h
-> +rlim_names.h
+I may tinker with this test a bit to include some short random
+amounts of hold-time for the lock, and delays between attempts
+to acquire it (to make it look more like a contended kernel lock
+and less like a continuous queue of processes trading around a
+lock that is never free ... Petr's debug information definitely
+showed the lock becoming free at the wraparound (lock == 0x0).
 
+-Tony
