@@ -1,28 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0H1Whh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 18:37:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47558 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab0H1Whg (ORCPT
+	id S1753400Ab0H1Who (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 18:37:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36650 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab0H1Whl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 18:37:36 -0400
-Message-Id: <20100828223025.054328145@chello.nl>
+	Sat, 28 Aug 2010 18:37:41 -0400
+Message-Id: <20100828223547.082406153@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Sun, 29 Aug 2010 00:30:25 +0200
+Date: Sun, 29 Aug 2010 00:30:28 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
         Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Chris Friesen <cfriesen@nortel.com>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>
-Subject: [RFC][PATCH 0/3] Try and make cpu-cgroup suck less
+        Pierre Bourdon <pbourdon@excellency.fr>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 3/3] sched: On-demand tg_shares_up()
+References: <20100828223025.054328145@chello.nl>
+Content-Disposition: inline; filename=sched-tg-more-ondemand.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches try and make cpu-cgroup suck less.. 
+Make tg_shares_up() use the active cgroup list, this means we cannot
+do a strict bottom-up walk of the hierarchy, but assuming its a very
+wide tree with a small number of active groups it should be a win.
 
-Didn't test the RT changes much at all, did poke a little at the FAIR bits.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched.c      |   67 ----------------------------------------------------
+ kernel/sched_fair.c |   59 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 67 deletions(-)
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -281,13 +281,6 @@ static DEFINE_SPINLOCK(task_group_lock);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 
+-#ifdef CONFIG_SMP
+-static int root_task_group_empty(void)
+-{
+-	return list_empty(&root_task_group.children);
+-}
+-#endif
+-
+ # define INIT_TASK_GROUP_LOAD	NICE_0_LOAD
+ 
+ /*
+@@ -1530,48 +1523,6 @@ static unsigned long cpu_avg_load_per_ta
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 
+-static void update_cfs_load(struct cfs_rq *cfs_rq, int lb);
+-static void update_cfs_shares(struct cfs_rq *cfs_rq);
+-
+-/*
+- * update tg->load_weight by folding this cpu's load_avg
+- */
+-static int tg_shares_up(struct task_group *tg, void *data)
+-{
+-	unsigned long load_avg;
+-	struct cfs_rq *cfs_rq;
+-	unsigned long flags;
+-	int cpu = (long)data;
+-	struct rq *rq;
+-
+-	if (!tg->se[cpu])
+-		return 0;
+-
+-	rq = cpu_rq(cpu);
+-	cfs_rq = tg->cfs_rq[cpu];
+-
+-	raw_spin_lock_irqsave(&rq->lock, flags);
+-
+-	update_rq_clock(rq);
+-	update_cfs_load(cfs_rq, 1);
+-
+-	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
+-	load_avg -= cfs_rq->load_contribution;
+-
+-	atomic_add(load_avg, &tg->load_weight);
+-	cfs_rq->load_contribution += load_avg;
+-
+-	/*
+-	 * We need to update shares after updating tg->load_weight in
+-	 * order to adjust the weight of groups with long running tasks.
+-	 */
+-	update_cfs_shares(cfs_rq);
+-
+-	raw_spin_unlock_irqrestore(&rq->lock, flags);
+-
+-	return 0;
+-}
+-
+ /*
+  * Compute the cpu's hierarchical load factor for each task group.
+  * This needs to be done in a top-down fashion because the load of a child
+@@ -1595,29 +1546,11 @@ static int tg_load_down(struct task_grou
+ 	return 0;
+ }
+ 
+-static void update_shares(long cpu)
+-{
+-	if (root_task_group_empty())
+-		return;
+-
+-	/*
+-	 * XXX: replace with an on-demand list
+-	 */
+-
+-	walk_tg_tree(tg_nop, tg_shares_up, (void *)cpu);
+-}
+-
+ static void update_h_load(long cpu)
+ {
+ 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
+ }
+ 
+-#else
+-
+-static inline void update_shares(int cpu)
+-{
+-}
+-
+ #endif
+ 
+ #ifdef CONFIG_PREEMPT
+Index: linux-2.6/kernel/sched_fair.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_fair.c
++++ linux-2.6/kernel/sched_fair.c
+@@ -2002,6 +2002,61 @@ out:
+ }
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
++/*
++ * update tg->load_weight by folding this cpu's load_avg
++ */
++static int tg_shares_up(struct task_group *tg, int cpu)
++{
++	unsigned long load_avg;
++	struct cfs_rq *cfs_rq;
++	unsigned long flags;
++	struct rq *rq;
++
++	if (!tg->se[cpu])
++		return 0;
++
++	rq = cpu_rq(cpu);
++	cfs_rq = tg->cfs_rq[cpu];
++
++	raw_spin_lock_irqsave(&rq->lock, flags);
++
++	update_rq_clock(rq);
++	update_cfs_load(cfs_rq, 1);
++
++	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
++	load_avg -= cfs_rq->load_contribution;
++
++	atomic_add(load_avg, &tg->load_weight);
++	cfs_rq->load_contribution += load_avg;
++
++	/*
++	 * We need to update shares after updating tg->load_weight in
++	 * order to adjust the weight of groups with long running tasks.
++	 */
++	update_cfs_shares(cfs_rq);
++
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
++
++	return 0;
++}
++
++static void update_shares(int cpu)
++{
++	struct cfs_rq *cfs_rq;
++	struct rq *rq = cpu_rq(cpu);
++
++	rcu_read_lock();
++	for_each_leaf_cfs_rq(rq, cfs_rq) {
++		struct task_group *tg = cfs_rq->tg;
++
++		do {
++			tg_shares_up(tg, cpu);
++			tg = tg->parent;
++		} while (tg);
++	}
++	rcu_read_unlock();
++}
++
+ static unsigned long
+ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  unsigned long max_load_move,
+@@ -2049,6 +2104,10 @@ load_balance_fair(struct rq *this_rq, in
+ 	return max_load_move - rem_load_move;
+ }
+ #else
++static inline void update_shares(int cpu)
++{
++}
++
+ static unsigned long
+ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  unsigned long max_load_move,
+
 
