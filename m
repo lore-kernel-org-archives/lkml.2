@@ -1,106 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab0H1Bzs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 21:55:48 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55275 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752658Ab0H1Bzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 21:55:47 -0400
-Date: Sat, 28 Aug 2010 01:54:53 GMT
-From: tip-bot for Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        konrad.wilk@oracle.com, sam@ravnborg.org,
-        fujita.tomonori@lab.ntt.co.jp, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, sam@ravnborg.org,
-        fujita.tomonori@lab.ntt.co.jp, tglx@linutronix.de
-In-Reply-To: <1282933173-19960-1-git-send-email-konrad.wilk@oracle.com>
-References: <1282933173-19960-1-git-send-email-konrad.wilk@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/iommu] x86, doc: Adding comments about .iommu_table and its neighbors.
-Message-ID: <tip-6f44d0337cc54a46e83b4c8a6195607e78fff71d@git.kernel.org>
-Git-Commit-ID: 6f44d0337cc54a46e83b4c8a6195607e78fff71d
-X-Mailer: tip-git-log-daemon
+	id S1752900Ab0H1CFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 22:05:45 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49457 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab0H1CFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Aug 2010 22:05:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=EWudX9VGlLN/BjpET0QJLGEtqCUG6HKwBvGn/HiEH9FupymAqmi2k4fFCOgqrdSyov
+         Y4ZzsY3p/XsMLSzr0kf+3V69nmX0tTIki+ZlrtUdMKoSe96Pbqyjo/RbDdpT0c8hj6v8
+         xgueIA5pV03KPcR+wRn0R6ixsgv5RzYQT7Xic=
+Date: Fri, 27 Aug 2010 19:05:40 -0700
+From: mark gross <markgross@thegnar.org>
+To: skannan@codeaurora.org
+Cc: markgross@thegnar.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <james.bottomley@suse.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>, khilman@deeprootsystems.com
+Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
+Message-ID: <20100828020540.GB8341@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
+ <1282882403-29824-2-git-send-email-skannan@codeaurora.org>
+ <20100827064153.GB3414@gvim.org>
+ <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 Aug 2010 01:54:55 +0000 (UTC)
+In-Reply-To: <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6f44d0337cc54a46e83b4c8a6195607e78fff71d
-Gitweb:     http://git.kernel.org/tip/6f44d0337cc54a46e83b4c8a6195607e78fff71d
-Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-AuthorDate: Fri, 27 Aug 2010 14:19:33 -0400
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 27 Aug 2010 18:14:31 -0700
+On Fri, Aug 27, 2010 at 01:10:55AM -0700, skannan@codeaurora.org wrote:
+> 
+> > nack.
+> >
+> > Change the name to system_bus_throughput_pm_qos assuming KBS units and
+> > I'll ok it.  It needs to be portable and without units I think drivers
+> > will start using magic numbers that will break when you go from a
+> > devices with 16 to 32 bus with the same clock.
+> >
+> > We had an email thread about this last year
+> > http://lkml.org/lkml/2009/12/31/143
+> > I don't recall solution ever coming out of it.   I think you guys didn't
+> > like the idea of using units.  Further I did post a patch adding
+> > something like using units. Although I looks like I botch the post the
+> > linux-pm as I can't seem to find it in the linux-pm archives :(
+> > http://lkml.org/lkml/2010/4/22/213
+> >
+> > Would you be ok with using throughput instead of a unit less performance
+> > magic number?
+> >
+> >
+> > --mark
+> 
+> Ignoring other details for now, the biggest problem with throughput/KBps
+> units is that PM QoS can't handle it well in its current state. For KBps
+> the requests should be added together before it's "enforced". Just picking
+> the maximum won't work optimally.
 
-x86, doc: Adding comments about .iommu_table and its neighbors.
+well then current pm_qos code for network throughput takes the max.
 
-Updating the linker section with comments about .iommu_table and
-some other ones that I know of.
+> Another problem with using KBps is that the available throughput is going
+> to vary depending on the CPU frequency since the CPU running at a higher
+> freq is going to use more bandwidth/throughput than the same CPU running
+> at a lower freq.
 
-CC: Sam Ravnborg <sam@ravnborg.org>
-CC: H. Peter Anvin <hpa@zytor.com>
-CC: Fujita Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-LKML-Reference: <1282933173-19960-1-git-send-email-konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/vmlinux.lds.S |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+um, if your modem SPI needs a min freq its really saying it needs a min
+throughput (throughput is just a scaler times freq, and 8KBS is a 13 bit
+shift away from HZ for SPI)
 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index b92e040..3f07c37 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -242,6 +242,12 @@ SECTIONS
- 		__x86_cpu_dev_end = .;
- 	}
- 
-+	/*
-+	 * start address and size of operations which during runtime
-+	 * can be patched with virtualization friendly instructions or
-+	 * baremetal native ones. Think page table operations.
-+	 * Details in paravirt_types.h
-+	 */
- 	. = ALIGN(8);
- 	.parainstructions : AT(ADDR(.parainstructions) - LOAD_OFFSET) {
- 		__parainstructions = .;
-@@ -249,6 +255,11 @@ SECTIONS
- 		__parainstructions_end = .;
- 	}
- 
-+	/*
-+	 * struct alt_inst entries. From the header (alternative.h):
-+	 * "Alternative instructions for different CPU types or capabilities"
-+	 * Think locking instructions on spinlocks.
-+	 */
- 	. = ALIGN(8);
- 	.altinstructions : AT(ADDR(.altinstructions) - LOAD_OFFSET) {
- 		__alt_instructions = .;
-@@ -256,10 +267,21 @@ SECTIONS
- 		__alt_instructions_end = .;
- 	}
- 
-+	/*
-+	 * And here are the replacement instructions. The linker sticks
-+	 * them as binary blobs. The .altinstructions has enough data to
-+	 * get the address and the length of them to patch the kernel safely.
-+	 */
- 	.altinstr_replacement : AT(ADDR(.altinstr_replacement) - LOAD_OFFSET) {
- 		*(.altinstr_replacement)
- 	}
- 
-+	/*
-+	 * struct iommu_table_entry entries are injected in this section.
-+	 * It is an array of IOMMUs which during run time gets sorted depending
-+	 * on its dependency order. After rootfs_initcall is complete
-+	 * this section can be safely removed.
-+	 */
- 	.iommu_table : AT(ADDR(.iommu_table) - LOAD_OFFSET) {
- 		__iommu_table = .;
- 		*(.iommu_table)
+> A KHz unit will side step both problems. It's not the most ideal in theory
+> but it's simple and gets the job done since, in our case, there aren't
+> very many fine grained levels of system bus frequencies (and corresponding
+> throughputs).
+
+I think your getting too wrapped up with this Hz thing and need write a
+couple of shift macros to convert between Kbs and Hz and be happy.
+
+> 
+> I understand that other architectures might have different practical
+> constraints and abilities and I didn't want to impose the KHz limitation
+> on them. That's the reason I proposed a parameter whose units is defined
+> by the "enforcer".
+
+The problem is that doing this will result in too many one-off drivers
+that don't port nicely to my architecture when I use the same
+peripheral as you.
+
+> Thoughts?
+>
+not really anything additional, other than I wonder why kbs isn't
+working for you.  Perhaps I'm missing something subtle.
+
+--mark
+
