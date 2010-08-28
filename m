@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab0H1LQs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 07:16:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62525 "EHLO song.cn.fujitsu.com"
+	id S1752973Ab0H1LSm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 07:18:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52109 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab0H1LQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 07:16:47 -0400
-Message-ID: <4C78F10F.5010603@cn.fujitsu.com>
-Date: Sat, 28 Aug 2010 19:20:47 +0800
+	id S1752849Ab0H1LSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 07:18:41 -0400
+Message-ID: <4C78F186.9000109@cn.fujitsu.com>
+Date: Sat, 28 Aug 2010 19:22:46 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH 2/5] KVM: MMU: check rmap for every spte
+Subject: [PATCH 3/5] KVM: MMU: fix wrong not write protected sp report
 References: <4C78F07E.1040709@cn.fujitsu.com>
 In-Reply-To: <4C78F07E.1040709@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -23,114 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The read-only spte also has reverse mapping, so fix the code to check them,
-also modify the function name to fit its doing
+The audit code reports some sp not write protected in current code, it's just the
+bug in audit_write_protection(), since:
+
+- the invalid sp not need write protected
+- using uninitialize local variable('gfn')
+- call kvm_mmu_audit() out of mmu_lock's protection
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |   57 +++++++++++++++++++++++----------------------------
- 1 files changed, 26 insertions(+), 31 deletions(-)
+ arch/x86/kvm/mmu.c         |    5 +++--
+ arch/x86/kvm/paging_tmpl.h |    3 ++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 59bf1d9..1c784b9 100644
+index 1c784b9..68575dc 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -3644,40 +3644,38 @@ void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
- 	struct kvm_mmu_page *rev_sp;
- 	gfn_t gfn;
+@@ -3708,16 +3708,17 @@ static void audit_write_protection(struct kvm_vcpu *vcpu)
+ 	struct kvm_memory_slot *slot;
+ 	unsigned long *rmapp;
+ 	u64 *spte;
+-	gfn_t gfn;
  
--	if (is_writable_pte(*sptep)) {
--		rev_sp = page_header(__pa(sptep));
--		gfn = kvm_mmu_page_get_gfn(rev_sp, sptep - rev_sp->spt);
- 
--		if (!gfn_to_memslot(kvm, gfn)) {
--			if (!printk_ratelimit())
--				return;
--			printk(KERN_ERR "%s: no memslot for gfn %llx\n",
--					 audit_msg, gfn);
--			printk(KERN_ERR "%s: index %ld of sp (gfn=%llx)\n",
--			       audit_msg, (long int)(sptep - rev_sp->spt),
--					rev_sp->gfn);
--			dump_stack();
--			return;
--		}
-+	rev_sp = page_header(__pa(sptep));
-+	gfn = kvm_mmu_page_get_gfn(rev_sp, sptep - rev_sp->spt);
- 
--		rmapp = gfn_to_rmap(kvm, gfn, rev_sp->role.level);
--		if (!*rmapp) {
--			if (!printk_ratelimit())
--				return;
--			printk(KERN_ERR "%s: no rmap for writable spte %llx\n",
--					 audit_msg, *sptep);
--			dump_stack();
--		}
-+	if (!gfn_to_memslot(kvm, gfn)) {
-+		if (!printk_ratelimit())
-+			return;
-+		printk(KERN_ERR "%s: no memslot for gfn %llx\n",
-+				 audit_msg, gfn);
-+		printk(KERN_ERR "%s: index %ld of sp (gfn=%llx)\n",
-+		       audit_msg, (long int)(sptep - rev_sp->spt),
-+				rev_sp->gfn);
-+		dump_stack();
-+		return;
- 	}
- 
-+	rmapp = gfn_to_rmap(kvm, gfn, rev_sp->role.level);
-+	if (!*rmapp) {
-+		if (!printk_ratelimit())
-+			return;
-+		printk(KERN_ERR "%s: no rmap for writable spte %llx\n",
-+				 audit_msg, *sptep);
-+		dump_stack();
-+	}
- }
- 
--void audit_writable_sptes_have_rmaps(struct kvm_vcpu *vcpu)
-+void audit_sptes_have_rmaps(struct kvm_vcpu *vcpu)
- {
- 	mmu_spte_walk(vcpu, inspect_spte_has_rmap);
- }
- 
--static void check_writable_mappings_rmap(struct kvm_vcpu *vcpu)
-+static void check_mappings_rmap(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_mmu_page *sp;
- 	int i;
-@@ -3689,12 +3687,9 @@ static void check_writable_mappings_rmap(struct kvm_vcpu *vcpu)
+ 	list_for_each_entry(sp, &vcpu->kvm->arch.active_mmu_pages, link) {
+ 		if (sp->role.direct)
  			continue;
+ 		if (sp->unsync)
+ 			continue;
++		if (sp->role.invalid)
++			continue;
  
- 		for (i = 0; i < PT64_ENT_PER_PAGE; ++i) {
--			u64 ent = pt[i];
--
--			if (!(ent & PT_PRESENT_MASK))
--				continue;
--			if (!is_writable_pte(ent))
-+			if (!is_rmap_spte(pt[i]))
- 				continue;
+ 		slot = gfn_to_memslot(vcpu->kvm, sp->gfn);
+-		rmapp = &slot->rmap[gfn - slot->base_gfn];
++		rmapp = &slot->rmap[sp->gfn - slot->base_gfn];
+ 
+ 		spte = rmap_next(vcpu->kvm, rmapp, NULL);
+ 		while (spte) {
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index a4e8389..a0f2feb 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -504,7 +504,6 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+ 	unsigned long mmu_seq;
+ 
+ 	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
+-	kvm_mmu_audit(vcpu, "pre page fault");
+ 
+ 	r = mmu_topup_memory_caches(vcpu);
+ 	if (r)
+@@ -542,6 +541,8 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (mmu_notifier_retry(vcpu, mmu_seq))
+ 		goto out_unlock;
 +
- 			inspect_spte_has_rmap(vcpu->kvm, &pt[i]);
- 		}
- 	}
-@@ -3703,7 +3698,7 @@ static void check_writable_mappings_rmap(struct kvm_vcpu *vcpu)
- 
- static void audit_rmap(struct kvm_vcpu *vcpu)
- {
--	check_writable_mappings_rmap(vcpu);
-+	check_mappings_rmap(vcpu);
- 	count_rmaps(vcpu);
- }
- 
-@@ -3746,7 +3741,7 @@ static void kvm_mmu_audit(struct kvm_vcpu *vcpu, const char *msg)
- 	audit_write_protection(vcpu);
- 	if (strcmp("pre pte write", audit_msg) != 0)
- 		audit_mappings(vcpu);
--	audit_writable_sptes_have_rmaps(vcpu);
-+	audit_sptes_have_rmaps(vcpu);
- 	dbg = olddbg;
- }
- 
++	kvm_mmu_audit(vcpu, "pre page fault");
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
+ 			     level, &write_pt, pfn);
 -- 
 1.7.0.4
 
