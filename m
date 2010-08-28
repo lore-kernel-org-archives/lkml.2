@@ -1,74 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0H1Oci (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 10:32:38 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56590 "EHLO
+	id S1753593Ab0H1O2G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 10:28:06 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47738 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab0H1Ocf convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753396Ab0H1O1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 10:32:35 -0400
-Subject: Re: [PATCH 00/20] mm: Preemptibility -v4
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+	Sat, 28 Aug 2010 10:27:42 -0400
+Message-Id: <20100828142455.601189436@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Sat, 28 Aug 2010 16:16:40 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         David Miller <davem@davemloft.net>,
         Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <20100828141637.421594670@chello.nl>
+Subject: [PATCH 03/20] mm: Rename drop_anon_vma to put_anon_vma
 References: <20100828141637.421594670@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 28 Aug 2010 16:32:08 +0200
-Message-ID: <1283005928.1975.3548.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Disposition: inline; filename=put_anon_vma.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry folks, got Nick's old email in there (changed for this reply).
+The normal code pattern used in the kernel is: get/put.
 
-On Sat, 2010-08-28 at 16:16 +0200, Peter Zijlstra wrote:
-> This patch-set makes part of the mm a lot more preemptible. It converts
-> i_mmap_lock and anon_vma->lock to mutexes and makes mmu_gather fully
-> preemptible.
-> 
-> The main motivation was making mm_take_all_locks() preemptible, since it
-> appears people are nesting hundreds of spinlocks there.
-> 
-> The side-effects are that can finally make mmu_gather preemptible,
-> something which lots of people have wanted to do for a long time.
-> 
-> It also gets us anon_vma refcounting, which seems to result in a nice
-> cleanup of the anon_vma lifetime rules wrt KSM and compaction.
-> 
-> This patch-set it build and boot-tested on x86_64 (a previous version was
-> also tested on Dave's Niagra2 machines, and I suppose s390 did too when
-> Martin provided the conversion patch for his arch).
-> 
-> There are no known architectures left unconverted, although some arch code
-> never did see a compiler (superh and ia64 come to mind, I'll try and 
-> update my toolchains next week).
-> 
-> Yanmin ran the last posting through the comprehensive Intel test farm
-> and didn't find any regressions.
-> 
-> ( Not included in this posting are the 4 Sparc64 patches that implement
->   gup_fast, those can be applied separately after this series gets 
->   anywhere. )
-> 
-> Full series (including the Sparc64 gup_fast bits) also available in -git
-> form from (against Linus' tree as of about an hour ago):
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git mmu_preempt
-> 
-> Do people feel its ready to get added to -next?
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/rmap.h |    4 ++--
+ mm/ksm.c             |   10 +++++-----
+ mm/migrate.c         |    2 +-
+ mm/rmap.c            |    4 ++--
+ 4 files changed, 10 insertions(+), 10 deletions(-)
+
+Index: linux-2.6/include/linux/rmap.h
+===================================================================
+--- linux-2.6.orig/include/linux/rmap.h
++++ linux-2.6/include/linux/rmap.h
+@@ -87,7 +87,7 @@ static inline void get_anon_vma(struct a
+ 	atomic_inc(&anon_vma->external_refcount);
+ }
+ 
+-void drop_anon_vma(struct anon_vma *);
++void put_anon_vma(struct anon_vma *);
+ #else
+ static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
+ {
+@@ -102,7 +102,7 @@ static inline void get_anon_vma(struct a
+ {
+ }
+ 
+-static inline void drop_anon_vma(struct anon_vma *anon_vma)
++static inline void put_anon_vma(struct anon_vma *anon_vma)
+ {
+ }
+ #endif /* CONFIG_KSM */
+Index: linux-2.6/mm/ksm.c
+===================================================================
+--- linux-2.6.orig/mm/ksm.c
++++ linux-2.6/mm/ksm.c
+@@ -307,11 +307,11 @@ static void hold_anon_vma(struct rmap_it
+ 	get_anon_vma(anon_vma);
+ }
+ 
+-static void ksm_drop_anon_vma(struct rmap_item *rmap_item)
++static void ksm_put_anon_vma(struct rmap_item *rmap_item)
+ {
+ 	struct anon_vma *anon_vma = rmap_item->anon_vma;
+ 
+-	drop_anon_vma(anon_vma);
++	put_anon_vma(anon_vma);
+ }
+ 
+ /*
+@@ -396,7 +396,7 @@ static void break_cow(struct rmap_item *
+ 	 * It is not an accident that whenever we want to break COW
+ 	 * to undo, we also need to drop a reference to the anon_vma.
+ 	 */
+-	ksm_drop_anon_vma(rmap_item);
++	ksm_put_anon_vma(rmap_item);
+ 
+ 	down_read(&mm->mmap_sem);
+ 	if (ksm_test_exit(mm))
+@@ -451,7 +451,7 @@ static void remove_node_from_stable_tree
+ 			ksm_pages_sharing--;
+ 		else
+ 			ksm_pages_shared--;
+-		ksm_drop_anon_vma(rmap_item);
++		ksm_put_anon_vma(rmap_item);
+ 		rmap_item->address &= PAGE_MASK;
+ 		cond_resched();
+ 	}
+@@ -539,7 +539,7 @@ static void remove_rmap_item_from_tree(s
+ 		else
+ 			ksm_pages_shared--;
+ 
+-		ksm_drop_anon_vma(rmap_item);
++		ksm_put_anon_vma(rmap_item);
+ 		rmap_item->address &= PAGE_MASK;
+ 
+ 	} else if (rmap_item->address & UNSTABLE_FLAG) {
+Index: linux-2.6/mm/migrate.c
+===================================================================
+--- linux-2.6.orig/mm/migrate.c
++++ linux-2.6/mm/migrate.c
+@@ -683,7 +683,7 @@ rcu_unlock:
+ 
+ 	/* Drop an anon_vma reference if we took one */
+ 	if (anon_vma)
+-		drop_anon_vma(anon_vma);
++		put_anon_vma(anon_vma);
+ 
+ 	if (rcu_locked)
+ 		rcu_read_unlock();
+Index: linux-2.6/mm/rmap.c
+===================================================================
+--- linux-2.6.orig/mm/rmap.c
++++ linux-2.6/mm/rmap.c
+@@ -274,7 +274,7 @@ static void anon_vma_unlink(struct anon_
+ 	if (empty) {
+ 		/* We no longer need the root anon_vma */
+ 		if (anon_vma->root != anon_vma)
+-			drop_anon_vma(anon_vma->root);
++			put_anon_vma(anon_vma->root);
+ 		anon_vma_free(anon_vma);
+ 	}
+ }
+@@ -1448,7 +1448,7 @@ int try_to_munlock(struct page *page)
+  * we know we are the last user, nobody else can get a reference and we
+  * can do the freeing without the lock.
+  */
+-void drop_anon_vma(struct anon_vma *anon_vma)
++void put_anon_vma(struct anon_vma *anon_vma)
+ {
+ 	BUG_ON(atomic_read(&anon_vma->external_refcount) <= 0);
+ 	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
+
 
