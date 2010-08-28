@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab0H1J5n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 05:57:43 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48611 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab0H1J5l convert rfc822-to-8bit (ORCPT
+	id S1752658Ab0H1KR3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 06:17:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51101 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab0H1KR1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 05:57:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>
-References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sat, 28 Aug 2010 11:57:26 +0200
-Message-ID: <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com>
-Subject: Re: selinux vs devtmpfs (vs udev)
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, greg@kroah.com,
-        sds@tycho.nsa.gov
-Content-Type: text/plain; charset=UTF-8
+	Sat, 28 Aug 2010 06:17:27 -0400
+Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <alpine.DEB.2.00.1008272136220.28501@router.home>
+References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils>
+	 <20100826235052.GZ6803@random.random>
+	 <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com>
+	 <20100827095546.GC6803@random.random>
+	 <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
+	 <alpine.DEB.2.00.1008271159160.18495@router.home>
+	 <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com>
+	 <alpine.DEB.2.00.1008271420400.18495@router.home>
+	 <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com>
+	 <alpine.DEB.2.00.1008271547200.22988@router.home>
+	 <AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com>
+	 <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com>
+	 <alpine.DEB.2.00.1008271801080.25115@router.home>
+	 <AANLkTindjNiJXbfsWbFexXBQVB174aprhSbBLFosBvC=@mail.gmail.com>
+	 <alpine.DEB.2.00.1008272136220.28501@router.home>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Sat, 28 Aug 2010 12:17:06 +0200
+Message-ID: <1282990626.1975.3270.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 28, 2010 at 01:00, Eric Paris <eparis@redhat.com> wrote:
-> I've got 2 bugs now:
->
-> https://bugzilla.redhat.com/show_bug.cgi?id=566332
-> https://bugzilla.redhat.com/show_bug.cgi?id=627710
->
-> Where (I'm assuming) devtmpfs and SELinux are fighting.  In the old old
-> days we used to have a script that would, after having created
-> everything in /dev, set the proper SELinux labels on those files.  This
-> was done so early in boot that races didn't exist yet.
->
-> In the new days udev would create nodes in there, but udev is SELinux
-> aware.  udev will determine what the right SELinux context is, will tell
-> the kernel what the next file it creates should be labeled, and will
-> then call mknod, so the device file gets created with the right label.
-> Again race free.
->
-> In the new new days of devtmpfs things aren't as nice.  The kernel is
-> magically creating files in /dev.  These are getting created with the
-> 'default' SELinux context.  So herein lies the problem.
->
-> The first program that tries to access these files get denied by
-> SELinux.  Now udev actually has logic in it to fix the label on any
-> closed device file, so udev will at that point swoop in, fix the label,
-> and the next program that tries to use the file will work just fine.  Oh
-> fun!
->
-> Obviously a good solution would be for devtmpfs to create nodes with the
-> right label (and udev to not need to be SELinux aware), but that
-> information isn't available in the kernel.  That information is a purely
-> userspace construct.  I have a long term plan for how we might be able
-> to do this long off in the future, but it isn't viable for right now.
->
-> So my next best solution would be to ask if it would be possible for
-> udev to disable devtmpfs automatic device file creation after it is
-> running.  Once udev is running do we need devtmpfs?  Seems like this
-> could be a pretty simple /proc/ or /sys/ tunable that udev could twiddle
-> when/if it was ready to run the show.
+On Fri, 2010-08-27 at 21:47 -0500, Christoph Lameter wrote:
+> 
+> I'd be much more comfortable if the following would be done
+> 
+> A. Pin the anon_vma by either
+>         I. Take a refcount on the anon vma
 
-Udev should still label all device nodes, even when they are created
-by the kernel. Devtmpfs or not should not make a difference here.
+My preemptible mmu patches do that..
 
-I guess it's a udev bug introduced with:
-  http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=578cc8a8085a47c963b5940459e475ac5f07219c
+>         II. Take a lock in the anon vma (something that is not pointed to)
+> 
+> B. Either
+>         I. All values that have been used before the pinning are
+>            verified after the pinning (and the lock is reacquired
+>            if verification fails).
+> 
+>         II. Or all functions using page_lock_anon_vma() must securely
+>             work in the case that the anon_vma was reused for
+>             something else before the vma lock was acquired.
 
-and we just need to fix that.
+Last time I looked they all work like that, they all use something akin
+to vma_address() which validates that the page we're interested in is
+indeed part of the vma we obtained from the rmap chain.
 
-Kay
+Anyway, I'll try and refresh my preemptible mmu patch-set now that the
+merge window dust settled and post if again, hopefully we can stick it
+in -next.
