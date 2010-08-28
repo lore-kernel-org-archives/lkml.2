@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab0H1CZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 22:25:20 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:48214 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab0H1CZR (ORCPT
+	id S1753233Ab0H1CcA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 22:32:00 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52425
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753016Ab0H1Cb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 22:25:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=hlj+qHQB6RjHZcQQGhn4qzaoYKgWwqFqfTxl6DopZ3JxqZRBuixge0j3U+cFkoBkqY
-         Yz+aYCw9yXnqpNqWKsha9I2H31zJ40zTLd2mgR2DTA6VriRO+skOJ2VTUjeEY6S13k0r
-         eu9UYW20G+/ZqE4rju7pw+EGPq/+YF8/o3/b8=
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: john.johansen@canonical.com, jmorris@namei.org
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH] .gitignore: ignore apparmor/rlim_names.h
-Date: Sat, 28 Aug 2010 10:25:09 +0800
-Message-Id: <1282962309-3331-1-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 27 Aug 2010 22:31:58 -0400
+Date: Fri, 27 Aug 2010 19:32:14 -0700 (PDT)
+Message-Id: <20100827.193214.71098473.davem@davemloft.net>
+To: julia@diku.dk
+Cc: kernel-janitors@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/ipv4: Eliminate kstrdup memory leak
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1282938463-26450-1-git-send-email-julia@diku.dk>
+References: <1282938463-26450-1-git-send-email-julia@diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang@windriver.com>
+From: Julia Lawall <julia@diku.dk>
+Date: Fri, 27 Aug 2010 21:47:43 +0200
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- security/apparmor/.gitignore |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> The string clone is only used as a temporary copy of the argument val
+> within the while loop, and so it should be freed before leaving the
+> function.  The call to strsep, however, modifies clone, so a pointer to the
+> front of the string is kept in saved_clone, to make it possible to free it.
+> 
+> The sematic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+ ...
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-diff --git a/security/apparmor/.gitignore b/security/apparmor/.gitignore
-index 0a0a99f..4d995ae 100644
---- a/security/apparmor/.gitignore
-+++ b/security/apparmor/.gitignore
-@@ -3,3 +3,4 @@
- #
- af_names.h
- capability_names.h
-+rlim_names.h
--- 
-1.7.0.4
-
+Applied, thanks!
