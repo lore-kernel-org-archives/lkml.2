@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab0H1Plo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 11:41:44 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:42057 "EHLO mgw2.diku.dk"
+	id S1752871Ab0H1Plp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 11:41:45 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42072 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752298Ab0H1PlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 11:41:19 -0400
+	id S1752371Ab0H1PlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 11:41:20 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Thomas Dahlmann <dahlmann.thomas@arcor.de>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
 Cc: kernel-janitors@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-geode@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] drivers/usb/gadget: Remove double test
-Date: Sat, 28 Aug 2010 17:41:01 +0200
-Message-Id: <1283010066-20935-3-git-send-email-julia@diku.dk>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] drivers/regulator: Remove double test
+Date: Sat, 28 Aug 2010 17:41:04 +0200
+Message-Id: <1283010066-20935-6-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283010066-20935-1-git-send-email-julia@diku.dk>
 References: <1283010066-20935-1-git-send-email-julia@diku.dk>
@@ -22,7 +21,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same expression is tested twice and the result is the same each time.
+The current code tests the gpio_vid0 field twice.  Test the gpio_vid1
+fields in place of the second gpio_vid0 test.
 
 The sematic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -44,23 +44,22 @@ expression E;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-This is a guess as to what the code should be.  Perhaps something else
-should have been tested instead.
+This is a guess as to what the code should be.
 
- drivers/usb/gadget/amd5536udc.c |    2 +-
+ drivers/regulator/max8952.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
-index 731150d..6c40c99 100644
---- a/drivers/usb/gadget/amd5536udc.c
-+++ b/drivers/usb/gadget/amd5536udc.c
-@@ -203,7 +203,7 @@ static void print_regs(struct udc *dev)
- 		DBG(dev, "DMA mode       = PPBNDU (packet per buffer "
- 			"WITHOUT desc. update)\n");
- 		dev_info(&dev->pdev->dev, "DMA mode (%s)\n", "PPBNDU");
--	} else if (use_dma && use_dma_ppb_du && use_dma_ppb_du) {
-+	} else if (use_dma && use_dma_ppb_du) {
- 		DBG(dev, "DMA mode       = PPBDU (packet per buffer "
- 			"WITH desc. update)\n");
- 		dev_info(&dev->pdev->dev, "DMA mode (%s)\n", "PPBDU");
+diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+index f2af0b1..7bf63f4 100644
+--- a/drivers/regulator/max8952.c
++++ b/drivers/regulator/max8952.c
+@@ -139,7 +139,7 @@ static int max8952_set_voltage(struct regulator_dev *rdev,
+ 	u8 vid = -1, i;
+ 
+ 	if (!gpio_is_valid(max8952->pdata->gpio_vid0) ||
+-			!gpio_is_valid(max8952->pdata->gpio_vid0)) {
++			!gpio_is_valid(max8952->pdata->gpio_vid1)) {
+ 		/* DVS not supported */
+ 		return -EPERM;
+ 	}
 
