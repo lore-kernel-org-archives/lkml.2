@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab0H1CrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Aug 2010 22:47:23 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:45250 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752378Ab0H1CrW (ORCPT
+	id S1752892Ab0H1Czj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Aug 2010 22:55:39 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38674 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab0H1Czi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Aug 2010 22:47:22 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: E7SH31IVM1mePbiBa.6soPIC8_RBKPoLDAe8O_qOCCbDE0f
- aifLwL5Q4w.wrAad2bb.yPoUFHozdXm.QPmpYu820NE1JvCJ6RF9ZWQOrTP5
- y7a7pkvvVGpyVwhwvAhphZn5sS224IBeyjlgC5rwCdTMaxM0JeToGXiQk47J
- L.22vJDbJK0BtzGL15JqTmPMkNGQptcJ6WNatM29lqKvGS7PH9CKou1l89mi
- TfOzAjj7l0FMVO9I3akpkOyOo_.tK
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 27 Aug 2010 21:47:16 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Hugh Dickins <hughd@google.com>
-cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix hang on anon_vma->root->lock
-In-Reply-To: <AANLkTindjNiJXbfsWbFexXBQVB174aprhSbBLFosBvC=@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1008272136220.28501@router.home>
-References: <alpine.LSU.2.00.1008252305540.19107@sister.anvils> <20100826235052.GZ6803@random.random> <AANLkTimgKcP78CNakDf34NrVrd5apfXrtptNw+G6G5DK@mail.gmail.com> <20100827095546.GC6803@random.random> <AANLkTikvB1fN42A91ZdEHyEXnz2bGw9Q21dJcfa3PBP0@mail.gmail.com>
- <alpine.DEB.2.00.1008271159160.18495@router.home> <AANLkTi=FeHnLu4_6M5N6yUL==4YyxVXXxsccsE2kNUbm@mail.gmail.com> <alpine.DEB.2.00.1008271420400.18495@router.home> <AANLkTinLpDnpwr40dtU5UFq53avODSKxTA4=xnZwmJFX@mail.gmail.com> <alpine.DEB.2.00.1008271547200.22988@router.home>
- <AANLkTim16oT13keYK_oz=7kmDmdG=ADfkGXMKp3_dEw_@mail.gmail.com> <AANLkTikML=HghpOVK0WZ0t6CRaNOKvu=57ebojZ+YCNS@mail.gmail.com> <alpine.DEB.2.00.1008271801080.25115@router.home> <AANLkTindjNiJXbfsWbFexXBQVB174aprhSbBLFosBvC=@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 27 Aug 2010 22:55:38 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6087"; a="52534556"
+Message-ID: <4C787AA9.4090906@codeaurora.org>
+Date: Fri, 27 Aug 2010 19:55:37 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: markgross@thegnar.org
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <james.bottomley@suse.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>, khilman@deeprootsystems.com
+Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
+References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org> <1282882403-29824-2-git-send-email-skannan@codeaurora.org> <20100827064153.GB3414@gvim.org> <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org> <20100828020540.GB8341@gvim.org>
+In-Reply-To: <20100828020540.GB8341@gvim.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Aug 2010, Hugh Dickins wrote:
+mark gross wrote:
+> On Fri, Aug 27, 2010 at 01:10:55AM -0700, skannan@codeaurora.org wrote:
+>> Ignoring other details for now, the biggest problem with throughput/KBps
+>> units is that PM QoS can't handle it well in its current state. For KBps
+>> the requests should be added together before it's "enforced". Just picking
+>> the maximum won't work optimally.
+> 
+> well then current pm_qos code for network throughput takes the max.
 
-> >> No, that's what we rely upon SLAB_DESTROY_BY_RCU for.
-> >
-> > SLAB_DESTROY_BY_RCU does not guarantee that the object stays the same nor
-> > does it prevent any fields from changing. Going through a pointer with
-> > only SLAB_DESTROY_BY_RCU means that you can only rely on the atomicity
-> > guarantee for pointer updates. You get a valid pointer but pointer changes
-> > are not prevented by SLAB_DESTROY_BY_RCU.
->
-> You're speaking too generally there for me to understand its
-> relevance!  What specific problem do you see?
+I don't know how the network throughput is enforced, but if the unit is 
+KBps and it's just doing a Max, then I think it's broken. If two clients 
+request 50 KBps and your network can go till 200 KBps, you would still 
+be requesting 50 KBps when you could have requested 100 KBps.
 
-I had the impression that you rely on SLAB_DESTROY_BY_RCU for more than
-what it gives you. If the lock taken is not directly in the structure that
-is managed by slab but only reachable by a pointer then potential pointer
-changes are also danger to consider.
+Any specific reason PM QoS doesn't support a "summation" "comparitor"?
 
-I'd be much more comfortable if the following would be done
+>> Another problem with using KBps is that the available throughput is going
+>> to vary depending on the CPU frequency since the CPU running at a higher
+>> freq is going to use more bandwidth/throughput than the same CPU running
+>> at a lower freq.
+> 
+> um, if your modem SPI needs a min freq its really saying it needs a min
+> throughput (throughput is just a scaler times freq, and 8KBS is a 13 bit
+> shift away from HZ for SPI)
 
-A. Pin the anon_vma by either
-	I. Take a refcount on the anon vma
-	II. Take a lock in the anon vma (something that is not pointed to)
+I think my point wasn't clear. Say the driver is doing mem read/write 
+and it needs 10 MBps and the system bus maxes out at 20 MBps.
 
-B. Either
-	I. All values that have been used before the pinning are
-	   verified after the pinning (and the lock is reacquired
-           if verification fails).
+When the CPU is idling, and isn't using the system bus, it would be 
+sufficient for the system bus to run at 10MBps speeds. But when CPU 
+starts executing at full speed, it's going to eat up some bandwidth and 
+the system bus will have to operate at 15 or 20 MBps speeds.
 
-	II. Or all functions using page_lock_anon_vma() must securely
-	    work in the case that the anon_vma was reused for
-	    something else before the vma lock was acquired.
+>> A KHz unit will side step both problems. It's not the most ideal in theory
+>> but it's simple and gets the job done since, in our case, there aren't
+>> very many fine grained levels of system bus frequencies (and corresponding
+>> throughputs).
+> 
+> I think your getting too wrapped up with this Hz thing and need write a
+> couple of shift macros to convert between Kbs and Hz and be happy.
 
+Yes, I could just do this and call it a day. Although, in my opinon, 
+it's a misrepresentation of the parameter since we aren't doing a 
+summation of the requests.
+
+>> I understand that other architectures might have different practical
+>> constraints and abilities and I didn't want to impose the KHz limitation
+>> on them. That's the reason I proposed a parameter whose units is defined
+>> by the "enforcer".
+> 
+> The problem is that doing this will result in too many one-off drivers
+> that don't port nicely to my architecture when I use the same
+> peripheral as you.
+
+Most of the drivers/devices that really need PM QoS and don't degrade 
+gracefully are internal to SoCs. I can't think of too many external or 
+loosely coupled devices that don't degrade gracefully. Anyway, 
+theoritically, your point is valid.
+
+>> Thoughts?
+>>
+> not really anything additional, other than I wonder why kbs isn't
+> working for you.  Perhaps I'm missing something subtle.
+
+I don't think that PM QoS in it's current state can meet all the real 
+requirements of bus bandwidth configuration or management. Which is fine 
+-- we need to start somewhere. Something like what Kevin mentions or a 
+different method would be needed to get this right for the complex 
+cases. I too would be very eager to join this discussion in one of the 
+conferences (Linux Plumbers?).
+
+My thought was that till that's ready (this has been in discussion for 
+_at least_ 8 months) we could go with a PM QoS parameter (preferably 
+without units) and switch to the new design when it's available. I would 
+be more than glad to switch to the new/future design when it's available.
+
+Did I convince you to allow a unit less parameter? :-)
+
+-Saravana
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
