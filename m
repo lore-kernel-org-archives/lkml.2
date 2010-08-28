@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab0H1QIx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 12:08:53 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:52973 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752737Ab0H1QIv (ORCPT
+	id S1752997Ab0H1QKQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 12:10:16 -0400
+Received: from n63.bullet.mail.sp1.yahoo.com ([98.136.44.33]:37393 "HELO
+	n63.bullet.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752806Ab0H1QKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 12:08:51 -0400
-Message-ID: <4C79346F.4050409@euromail.se>
-Date: Sat, 28 Aug 2010 18:08:15 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+	Sat, 28 Aug 2010 12:10:14 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 830813.39420.bm@omp123.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=f3S+qeISoXCNSGuWbl+fyKyFNrjAvDo87ed7y3vK8Rbg2eciYpcU8tjiXyVFcQRgCyNDmo5V/UfrMjsi7EXcx3PyFVM2MjmWJ3uhyrX2MoXhVCPasvyN1VJ79clhJtzdWXcF//K1KsvSmoOYMw70HO8GAE7zJWjxNuo0J8JAc2M=;
+Message-ID: <581556.29157.qm@web180314.mail.gq1.yahoo.com>
+X-YMail-OSG: faeJnaYVM1n0rtTKzJ5cf65HkhjDPE7Z6n.myMiwWcHto3Z
+ 56vLlROxPaQnVJdjkbD1ltpkE46bOvM9uZlwZDoKCnZMc5egawlJUwxVfTDx
+ 1.iWNeMl6vlrIrEcjA.PRMhPgUcSGYKGRv8Qn6sNN2QPCFh0.F1DNOuTcKJO
+ .zTjpfjg5W7ocb_1Gg4ACg24b7WKAC6KHRVo9x3oSA9BZKbJi66z5uCBj0JT
+ ojuNutR8gW_NwQj5ObVbH.tOMlrONQVQ.k7R3WEGRbto8ubNDmqLaAQVSgeu
+ yxVDEeF8UswwjzSYGXwRx4yIi9cIJNqADwNYGsvijtV4-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Sat, 28 Aug 2010 09:10:12 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH 2/7] drivers/usb/gadget: Remove double test
+To: Thomas Dahlmann <dahlmann.thomas@arcor.de>, Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-geode@lists.infradead.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1283010066-20935-3-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-CC: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] hid: 3m: Correct touchscreen emulation
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se> <1283005748-3293-3-git-send-email-rydberg@euromail.se> <2A410207-8AAA-4D5A-846A-B69F007E6800@enac.fr>
-In-Reply-To: <2A410207-8AAA-4D5A-846A-B69F007E6800@enac.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OpNx2-0007fx-4d.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OpNx2-0007fx-4d 2913d83f0bc2a983713a8354c0f09b95
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2010 05:56 PM, Stéphane Chatty wrote:
-
-> 
-> Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
-> 
->> The current code sometimes misses to report the last BTN_TOUCH event
->> when multiple fingers are lifted simultaneously.  With the
->> introduction of MT slots, the tracking id is available to determine
->> the oldest active contact.
-> 
-> Hi Henrik,
-> 
-> good job on exploiting the sync quirk!
-> 
-> About the oldest active contact, I'm not so sure though. I don't have the device
-> with me but I remember that 3M recycle IDs, giving the lowest available ID to
-> any new finger; this means that the lowest ID is not always the oldest finger.
+Please update $SUBJECT to say which driver is
+affected; it's not everything in that directory,
+and accurate GIT summaries help a lot.
 
 
-Hi Stéphane,
 
-I think we use the term tracking id differently here. The HID_DG_CONTACTID is
-actually the slot id, and the tracking id is a sequential number, increased
-whenever the touch is new. I believe the patchset works correctly as long as
-there is less than 32768 new touches before releasing the oldest one. :-)
-
-Cheers,
-Henrik
