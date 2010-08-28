@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab0H1Gxr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 02:53:47 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:48732 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751748Ab0H1Gxq (ORCPT
+	id S1752227Ab0H1GyD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 02:54:03 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:32699 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751748Ab0H1Gxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 02:53:46 -0400
+	Sat, 28 Aug 2010 02:53:53 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 50tz3H0VM1l6UNnJghrpxrmI2a3a9m3sXre_3gl1kUVjUq_
- AxrIdZfPDtqprQ8NlIa74sR2VD1KRURqSds7qnIZRoJoKCV_9Sx8DUbfs1Y1
- MutJpM.MS9NzLy.VUpc79jKpl8k2WfGG5QBBTROsQHXK_gTzu6QpiMIalSlM
- URNMo42tIZgnFDQ79P1lta.06wPnWLLOTNWzYxwuKC5pTYlna8.bmpkiTYDa
- uqCDrdiVJ3RWEueB8.RoXtcEcufsm9VojEnfGJQRX_xfZFLADt3Kkc_QJ_rU
- eyh7DZsTBPsiV_ylbYu7bbFyW9UlQ4zrKZBXIn1smYkwU6DvP.rRr8A4-
+X-YMail-OSG: uUVg_ucVM1mzoMopWxUR6TXf_.OGbj2LkTnH.GdiEhlMD_v
+ Gp9J5ugUUDlWqLkwRtYgD9DfOXDv9T9YEwJjGmNBzEYA9CGd8bDlZClZdkH9
+ C9PplqU4OaB8SVWD3bbRyKM_OBnzxm1h5mIpv2xgDeDbvHzG.qxk9iMsOBji
+ fP7XcDB4otacdx3a.G1hjP0DFusJujRkTIu3EGdYEbwHGZQTeQ7dT2gVClgO
+ pIR_xzNMs4D..PwjTP_kwDStTY0p6odC_YAvOZsaMAukd.zXBS3sXtT_GnCh
+ 1rFpTJzhv4BE0owdTZ8hSmOt0jil1bQdXyR2I8K1L4pr9CuSN._2TShG.5uQ
+ FwRqCXizyon_ijmiyJA--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -23,9 +24,9 @@ Cc: Christoph Hellwig <hch@lst.de>, Tejun Heo <teheo@suse.de>,
         Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
         James Bottomley <James.Bottomley@suse.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/3] tcm: SYNCHRONIZE_CACHE emulation fixes and IBLOCK support
-Date: Fri, 27 Aug 2010 23:53:42 -0700
-Message-Id: <1282978422-16905-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 1/3] tcm/fileio: Remove struct se_subsystem_api->do_sync_cache() usage
+Date: Fri, 27 Aug 2010 23:53:51 -0700
+Message-Id: <1282978431-16926-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,40 +34,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Greetings hch, tejun and Co,
+This patch converts the new TCM/FILEIO SYNCHRONIZE_CACHE emulation to
+remove struct se_subsystem_api->do_sync_cache() usage following hch's
+recommendation.  It makes __fd_do_sync_cache_range() do an explict check
+for a received LBA=0 + DataLength=0, and call fd_do_sync_cache():vfs_fsync()
+if necessary to flush the entire device.
 
-These patches are a follow up to the series posted recently for lio-core-2.6.git/lio-4.0
-here:
-
-[PATCH 0/4] tcm: Add WriteCache + FUA Write support to TCM/FILEIO
-http://marc.info/?l=linux-scsi&m=128288359913333&w=2
-
-The first and second patch follows hch's recommendation and remove the extra
-'flush entire cache of device' struct se_subsystem_api->do_sync_cache() caller
-from TCM Core in the original commit, and converts transport_generic_synchronize_cache()
-and FILEIO dependent code to use struct se_subsystem_api->do_sync_cache_range()
-for *both* the SYNCHRONIZE_CACHE emulation cases of 'per LBA + Number of Blocks Range'
-flush and 'flush entrire cache of device' op.
-
-The third patch in the series adds new support for WriteCache and FUA WRITE emulation
-into the TCM/IBLOCK subsystem plugin using block/blk-barrier.c:blkdev_issue_flush()
-w/ BLKDEV_IFL_WAIT flag.  Note that since blkdev_issue_flush() does not support a
-LBA + Range flush, all TCM/IBLOCK SYNCHRONIZE_CACHE and FUA WRITE ops involving a
-LBA + Range are converted into a global device cache flush op w/ blkdev_issue_flush().
-
-Many thanks again to hch for his guidence in this area,
+This patch also fixes a small bug with the initial commit 0a61c6550da5, where
+transport_complete_sync_cache() was being called an unnecessary second time at
+the end of __fd_do_sync_cache_range() for the IMMED=0 bit case.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_file.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
 
-Nicholas Bellinger (3):
-  tcm/fileio: Remove struct se_subsystem_api->do_sync_cache() usage
-  tcm: Remove struct se_subsystem_api->do_sync_cache()
-  tcm/iblock: Add WriteCache and Forced Unit Access WRITE emulation
-
- drivers/target/target_core_file.c      |   31 ++++----
- drivers/target/target_core_iblock.c    |  119 ++++++++++++++++++++++++++++++-
- drivers/target/target_core_iblock.h    |    1 +
- drivers/target/target_core_transport.c |   21 +-----
- include/target/target_core_transport.h |    7 --
- 5 files changed, 135 insertions(+), 44 deletions(-)
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index a7a65f7..b8e242b 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -612,28 +612,19 @@ static int fd_do_writev(struct fd_request *req, struct se_task *task)
+  * Called from transport_generic_synchronize_cache() to flush the entire
+  * struct file (and possibly backing struct block_device) using vfs_fsync().
+  */
+-void fd_do_sync_cache(struct se_cmd *cmd)
++static int fd_do_sync_cache(struct se_cmd *cmd, int immed)
+ {
+ 	struct fd_dev *fd_dev = (struct fd_dev *)cmd->se_dev->dev_ptr;
+ 	struct file *fd = fd_dev->fd_file;
+-	int ret, immed = (T_TASK(cmd)->t_task_cdb[1] & 0x2);
+-	/*
+-	 * If the Immediate bit is set, queue up the GOOD response
+-	 * for this SYNCHRONIZE_CACHE op
+-	 */
+-	if (immed)
+-		transport_complete_sync_cache(cmd, 1);
++	int ret;
+ 
+ 	ret = vfs_fsync(fd, 0);
+ 	if (ret != 0) {
+ 		printk(KERN_ERR "FILEIO: vfs_fsync(fd, 0) returned: %d\n", ret);
+-		if (!(immed))
+-			transport_complete_sync_cache(cmd, 0);
+-		return;
++		return ret;
+ 	}
+ 	DEBUG_FD_CACHE("FILEIO: vfs_fsync(fd, 0) called, immed: %d\n", immed);
+-
+-	transport_complete_sync_cache(cmd, 1);
++	return ret;
+ }
+ 
+ /*
+@@ -657,6 +648,15 @@ int __fd_do_sync_cache_range(
+ 	if (immed)
+ 		transport_complete_sync_cache(cmd, 1);
+ 	/*
++	 * Determine if we will be flushing the entire device.
++	 */
++	if ((T_TASK(cmd)->t_task_lba == 0) && (cmd->data_length == 0)) {
++		ret = fd_do_sync_cache(cmd, immed);		
++		if (!(immed))
++			transport_complete_sync_cache(cmd, (ret == 0) ? 1 : 0);
++		return 0;
++	}
++	/*
+ 	 * If a explict number of bytes fo flush has been provied by
+ 	 * the initiator, use this value with vfs_sync_range().  Otherwise
+ 	 * bytes = LLONG_MAX (matching fs/sync.c:vfs_fsync().
+@@ -673,7 +673,9 @@ int __fd_do_sync_cache_range(
+ 		" %llu, bytes: %llu, immed: %d\n", lba, (unsigned long long)start,
+ 		(unsigned long long)bytes, immed);
+ 
+-	transport_complete_sync_cache(cmd, 1);
++	if (!(immed))
++		transport_complete_sync_cache(cmd, 1);
++
+ 	return 0;
+ }
+ 
+@@ -1129,7 +1131,6 @@ static struct se_subsystem_api fileio_template = {
+ 	.activate_device	= fd_activate_device,
+ 	.deactivate_device	= fd_deactivate_device,
+ 	.free_device		= fd_free_device,
+-	.do_sync_cache		= fd_do_sync_cache,
+ 	.do_sync_cache_range	= fd_do_sync_cache_range,
+ 	.dpo_emulated		= fd_emulated_dpo,
+ 	.fua_write_emulated	= fd_emulated_fua_write,
+-- 
+1.5.6.5
 
