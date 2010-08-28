@@ -1,90 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab0H1RUO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 13:20:14 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45760 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029Ab0H1RUM (ORCPT
+	id S1753373Ab0H1Rdn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 13:33:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58282 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab0H1Rdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 13:20:12 -0400
-Date: Sat, 28 Aug 2010 19:20:10 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 3/3 v2] dmaengine: Add Freescale i.MX SDMA support
-Message-ID: <20100828172010.GJ1473@pengutronix.de>
-References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de> <201008281727.10913.marek.vasut@gmail.com> <20100828161858.GI1473@pengutronix.de> <201008281830.05208.marek.vasut@gmail.com>
+	Sat, 28 Aug 2010 13:33:42 -0400
+Message-ID: <4C79484B.3090607@vlnb.net>
+Date: Sat, 28 Aug 2010 21:32:59 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201008281830.05208.marek.vasut@gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 19:09:08 up 56 days,  8:19,  6 users,  load average: 1.49, 2.38,
-	1.43
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: James Bottomley <James.Bottomley@suse.de>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>	 <4C73DA15.2010207@vlnb.net> <1282661876.2993.20.camel@mulgrave.site>	 <4C7421FB.2060007@vlnb.net>	 <1282685014.32007.51.camel@haakon2.linux-iscsi.org>	 <4C76CA57.3050405@vlnb.net> <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:Ks/lNViSyT1P7j25NOrTCb1NVxNiS9NtXXaMIeEv6Mt
+ tv0T2coWqDk43xCfXbAe496q/UQntTfhwBmS7GGnEaYErzo5M7
+ jkm92D4P46eOVZ/6jo1EFCX88E2B2svu+leAUEzzLJc9Qchvdb
+ qbP8w95TQHX0GhZgr43MsABxxyAvv3aJheaxIjw88ur5oTzn4n
+ P7FtOwGCm9c3vUjcsYdnA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 28, 2010 at 06:30:05PM +0200, Marek Vasut wrote:
-> Dne So 28. srpna 2010 18:18:58 Sascha Hauer napsal(a):
-> > On Sat, Aug 28, 2010 at 05:27:10PM +0200, Marek Vasut wrote:
-> > > Dne So 28. srpna 2010 17:18:17 Linus Walleij napsal(a):
-> > > > 2010/8/23 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> > > > >> +     evt = readl(SDMA_H_EVTOVR);
-> > > > >> +     mcu = readl(SDMA_H_HOSTOVR);
-> > > > >> +     dsp = readl(SDMA_H_DSPOVR);
-> > > > > 
-> > > > > __raw_readl?
-> > > > 
-> > > > Sorry I never understood this __raw_[read|write][b|w|l] vs.
-> > > > plain read[b|w|l] proliferation in some drivers and code.
-> > > > 
-> > > > What's the reason for?
-> > > 
-> > > Hey,
-> > > 
-> > > this trick is, if you create the VA<->PA mapping at the kernel start (eg.
-> > > see how pxa_map_io() is replacedon some devices for instance), you then
-> > > use the VA address you specified and use __raw_{read,write}[b,w,l](). So
-> > > use __raw_{read,write}[b,w,l]() on drivers specific for certain device
-> > > and use {read,write}[b,w,l]() on ioremap()ed memory areas, aka. in
-> > > common drivers.
-> > 
-> > Nope, this has nothing to do with static mappings vs. ioremap. The
-> > difference is that read[b,w,l] do little endian accesses suitable for
-> > PCI whereas the __raw_* functions do accesses in CPU endianess.
-> > Peripherals integrated into a SoC like the SDMA engine here are
-> > normally accessible in native endianess and thus need the __raw_*
-> > functions. An external network controller (for example a LAN9117) will
-> > probably need the non raw functions. Note that 99% of the arm users use
-> > little endian only and thus cpu_to_le* is a noop, so both types will work
-> > for most people.
-> 
-> Sorry, you got me here. Why do we have io{read,write} then btw. ? That's for 
-> x86's io space, right ?
+Nicholas A. Bellinger, on 08/27/2010 01:23 AM wrote:
+>> Nicholas A. Bellinger, on 08/25/2010 01:23 AM wrote:
+>>> As mentioned explictly earlier in this thread, my WIP code for the
+>>> kernel level subsystem backstore using STGT kernel<->   user CDB
+>>> passthrough logic in drivers/target/target_core_stgt.c is a item on
+>>> my TODO list, but I will repeat, is NOT being tagged as a mainline
+>>> .37 item.
+>>
+>> Hmm, I can't understand, if target_core_stgt.c is "NOT being tagged as a
+>> mainline .37 item", then the STGT ABI compatibility for being a drop in
+>> replacement for STGT isn't a requirement? Or am I missing something?
+>
+> Sorry, but I have no idea what you are trying to conjour up here.
+>
+> To spell out (again) the TCM/LIO<->STGT compatibility stages that have
+> been persued pubically over the last months:
+>
+> I) Create proper userspace tgt.git SG_IO and BSG passthrough into
+>     TCM_Loop v4 using high-level multi-fabric WWPN emulation so that TCM
+>     Core SPC-4 kernel emulation is exposed to STGT user fabrics, eg:
+>     userspace fabric module ->  kernel backstore passthrough.  (DONE
+>     for .37, and STGT passthrough + BSG backstore support merged into
+>     tgt.git by Tomo-san)
+>
+> II) Complete target_core_stgt.c TCM subsystem plugin for kernel ->  user
+>      CDB ->  LUN passthrough building upon existing
+>      drivers/scsi/scsi_tgt_*.c code.  (WIP for .38, made available
+>      initially as a seperate standalone .ko module in lio-core-2.6.git)
 
-Looking at the implementation in lib/iomap.c it seems that
-io{read,write} can do both PIO and MMIO accesses depending on the
-address given to them.
+That would mean that if LIO merged in .37:
 
-Sascha
+1. It would be merged _without_ STGT ABI compatibility, i.e. one of the 
+requirements for a new SCSI target infrastructure merge is violated.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+2. It would _not_ be a drop in replacement for STGT, because STGT's 
+drivers/scsi/scsi_tgt_*.c code would stay in the kernel. Those would 
+effectively mean that another requirement for a new SCSI target 
+infrastructure merge would be violated: there would be 2 SCSI target 
+infrastructures in the kernel and any STGT in-kernel driver (for 
+instance, built as an outside module) would continue working. My 
+understanding of "drop in replacement" is "one out, another in at once".
+
+Please tell me where I'm wrong? I would appreciate if you be precise and 
+answer the above 2 my concerns. There is no point to again repeat what 
+you have already written without adding any new information.
+
+>>> Tomo-san, mnc, and other storage folks have been briefed on the
+>>> remaining issues that would be involved to get a prototype
+>>> functioning with drivers/target/target_core_stgt.c, and rough idea of
+>>> what it would take in existing mainline drivers/scsi/scsi_tgt_*.c
+>>> code.  With the current WIP code this will allow the userspace CDB ->
+>>> LUN passthrough to function transparently with all TCM SPC-4
+>>> compliant logic as a standalone struct se_subsystem_api
+>>> tcm_core_stgt.ko backstore.
+>>
+>> This is exactly what we are discussing.
+>
+> Then I suggest you start working on a patch for drivers/scsi/scsi_tgt_*
+> in order to address what you believe are the preceived shortcomings of
+> the original design.
+>
+> Until you can do that, and actually take an impartial look at the
+> existing drivers/scsi/scsi_tgt_*.c,  it would be a bit difficult to
+> beleive you genuinely want to steer our current level of interaction
+> away from continued hand-waving noise into a real rational technical
+> discourse between yourself and the LIO/STGT development community.
+
+My look is completely impartial. With all my respect, I'm just quite 
+ahead of you and can see what you are unable (or don't want?) to see. I 
+did what you are currently doing almost 4 years ago. I have already 
+written all the necessary code and addressed all _rose on practice_ 
+concerns. But all my attempts to explain my view are just blindly 
+ignored without any considerations, so I have no idea how more I can 
+explain it.
+
+Thanks,
+Vlad
