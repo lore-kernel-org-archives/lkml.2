@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab0H1KqO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 06:46:14 -0400
-Received: from smtp-04.mandic.com.br ([200.225.81.151]:38308 "EHLO
-	smtp-04.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab0H1KqN (ORCPT
+	id S1752817Ab0H1K5K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 06:57:10 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:33483 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab0H1K5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 06:46:13 -0400
-Message-ID: <4C78E8EF.1000009@cesarb.net>
-Date: Sat, 28 Aug 2010 07:46:07 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	Sat, 28 Aug 2010 06:57:09 -0400
+Date: Sat, 28 Aug 2010 04:57:07 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Bob Copeland <me@bobcopeland.com>
+Cc: Valerie Aurora <vaurora@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Karel Zak <kzak@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: Sanity check mount flags passed to
+	change_mnt_propagation()
+Message-ID: <20100828105707.GD3521@parisc-linux.org>
+References: <20100826200318.GA13636@shell> <20100827011436.GB3521@parisc-linux.org> <20100827174313.GA26872@shell> <AANLkTik-uXDtvA9G7sr1becN235PMzFWmuD5t9Xu4yZX@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
- messages
-References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>	 <4C770299.6000708@cesarb.net> <1282869660.1836.5.camel@Joe-Laptop>	 <4C77171E.6060008@cesarb.net> <1282894751.1836.41.camel@Joe-Laptop>	 <4C784650.2030200@cesarb.net> <1282962104.1946.179.camel@Joe-Laptop>
-In-Reply-To: <1282962104.1946.179.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik-uXDtvA9G7sr1becN235PMzFWmuD5t9Xu4yZX@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-08-2010 23:21, Joe Perches escreveu:
-> On Fri, 2010-08-27 at 20:12 -0300, Cesar Eduardo Barros wrote:
->> Em 27-08-2010 04:39, Joe Perches escreveu:
->>> On Thu, 2010-08-26 at 22:38 -0300, Cesar Eduardo Barros wrote:
->>>> - The first "MCP power limit exceeded" seems very bogus.
->>>> - What do you mean, core_power_limit is zero?
->>> I added a logging message whenever the turbo limits change
->>> and logging messages for power/temp on MCH for completeness.
->>> Maybe this will show something useful like when/how
->>> CPU power limit gets set to 0.
->
->> Running with it right now, did not help much:
->>
->> $ dmesg | fgrep 'intel ips'
->> intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match expected value
->> (found 25, expected 35)
->> intel ips 0000:00:1f.6: PCI INT C ->  GSI 18 (level, low) ->  IRQ 18
->> intel ips 0000:00:1f.6: IPS driver initialized, MCP temp limit 65535
->> intel ips 0000:00:1f.6: MCP power limit 65535 exceeded: cpu:8058 +
->> mch:23392829
->> intel ips 0000:00:1f.6: CPU power limit 0 exceeded: 5675
->> intel ips 0000:00:1f.6: CPU power limit 0 exceeded: 6369
->
-> I believe all these limits should always have non-zero values.
-> So I still think you've hardware problems, but I suppose it
-> could be the driver not reading the right registers or some
-> such.  It seems odd that the driver never printed a logging
-> message for either of the polling or irq methods to read the
-> device cpu and thermal limits.
+On Fri, Aug 27, 2010 at 01:51:06PM -0400, Bob Copeland wrote:
+> On Fri, Aug 27, 2010 at 1:43 PM, Valerie Aurora <vaurora@redhat.com> wrote:
+> > On Thu, Aug 26, 2010 at 07:14:36PM -0600, Matthew Wilcox wrote:
+> >> Hrm. ?I think we can do this a bit more pithily.
+> >>
+> >> ? ? ? /* Only one propagation flag should be set, and no others */
+> >> ? ? ? if (hweight32(type) != 1 &&
+> >> ? ? ? ? ? (type & ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+> >> ? ? ? ? ? ? ? return 0;
+> >>
+> >> Too clever?
+> >
+> > I was hoping someone would go find the best bitop for me, thanks. :)
+> > hweight32() is an awkward name but the comment makes it clear. ?I'm
+> > happy with either.
+> >
+> > Thanks for the help,
+> 
+> Didn't read surrounding code, but is that supposed to be '||'?
+> 
+> Otherwise the case where only a single non-propagation flag is
+> set no longer returns 0...
 
-Come on, no blaming the BIOS? ;-)
-
-If I read the code with your previous patch correctly, show_turbo_limits 
-will never be called if poll_turbo_status is false but no interrupt 
-happens. And we know no interrupt happened (at least not with nonzero 
-register values), because the interrupt handler does two dev_info() 
-right at the beginning. So the limits could still be the ones initially 
-set at ips_probe().
-
-I will try to enable dev_dbg() later and see what it prints.
-
->
-> Jesse or any Intel folk, can you verify or suggest anything
-> better?
->
-> If cpu_power_limit, or any _limit, is not set perhaps changing
-> the test style to verify limit and adding a printed_once alert
-> for each 0 value limit.  At least that'd shut up the continuous
-> logging but at least give a notification message.
->
-> if (limit) {
-> 	if (measured_val>  limit)
-> 		dev_info(foo)
-> } else
-> 	dev_alert_once()
-
-Wouldn't it make more sense to do the alert when the limit is set, 
-instead of when it is used? Also, it should still treat it as limit 
-exceeded (better safe than sorry). Something like:
-
-if (measured_val > limit) {
-     if (limit)
-         dev_info(...);
-     ret = true;
-}
+Val's original code returned 0 as failure.  So a single non-propagation
+flag set shouldn't return 0.
 
 -- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
