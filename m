@@ -1,67 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab0H1WLx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 18:11:53 -0400
-Received: from mail-in-14.arcor-online.net ([151.189.21.54]:55044 "EHLO
-	mail-in-14.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752907Ab0H1WLw (ORCPT
+	id S1752317Ab0H1WXe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 18:23:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36345
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750831Ab0H1WXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 18:11:52 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-08.arcor-online.net AF23A2053B1
-Subject: Re: [PATCH] HID: roccat: Fixing race condition on initialization
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-input@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+	Sat, 28 Aug 2010 18:23:33 -0400
+Date: Sat, 28 Aug 2010 15:23:49 -0700 (PDT)
+Message-Id: <20100828.152349.112606342.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <4C7952E9.5030608@gmail.com>
-References: <1283000268.4789.1.camel@neuromancer>
-	 <4C7952E9.5030608@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 29 Aug 2010 00:11:47 +0200
-Message-ID: <1283033507.8037.14.camel@neuromancer>
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, den 28.08.2010, 20:18 +0200 schrieb Jiri Slaby:
-> On 08/28/2010 02:57 PM, Stefan Achatz wrote:
-> > Fixed raced condition where event occurs before drvdata is set.
-> > 
-> > Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> > ---
-> >  drivers/hid/hid-roccat-kone.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-> > index f776957..cfeab56 100644
-> > --- a/drivers/hid/hid-roccat-kone.c
-> > +++ b/drivers/hid/hid-roccat-kone.c
-> > @@ -966,6 +966,10 @@ static int kone_raw_event(struct hid_device *hdev, struct hid_report *report,
-> >  	struct kone_device *kone = hid_get_drvdata(hdev);
-> >  	struct kone_mouse_event *event = (struct kone_mouse_event *)data;
-> >  
-> > +	/* possible race condition on initialization */
-> > +	if (!kone)
-> > +		return 0;
-> 
-> This kind of "protection" caused much headache in the tty layer in the
-> past. If there is such a problem, please fix the initialization code
-> instead.
-> 
-> What sort of problems you are seeing?
-> 
-> thanks,
 
-After investigating and now fully understanding the issue I want to draw
-back this patch.
-The issue was no race condition in the first place, but an erroneous
-code I wrote for another mouse. This is a injudicious crossport of a
-half baked fix for code that didn't suffer from the problem because the
-next 3 lines already do the right thing for this case.
-Sorry.
+1) Anton Blanchard discovered two flaws in how we handle TCP orphan
+   overflows.
 
+   First, since the orphan overflow check uses the weak percpu_counter
+   read percpu_counter_read_positive(), it can be off by as much as
+   the percpu batch factor (default of 32) and the number of online
+   cpus (128 in his case).  This total is 4096 which as it turns out
+   is also the default orphan limit for his memory configuration :-)
+
+   Fix this by doing the accurate, but more expensive
+   percpu_counter_sum_positive(), check if the weak and potentially
+   inaccurate one triggers.
+
+   Next, he and Eric Dumazet noticed that the orphan and two other
+   sysctl limits were bogusly calculated.  It had a 4096 constant in
+   there (meant to be PAGE_SIZE) and furthermore it used the total
+   size of a hash table (which is variable based upon lock debugging
+   options etc.) instead of something more meaningful and consistent
+   such as the number of hash slots.  Fix written by Eric Dumazet
+   based work by Anton and myself.
+
+2) AX25 drops socket reference too early, from Bernard Pidoux.
+
+3) pxa168_eth fixes from Dan Carpenter.  First, phy_mii_ioctl() args
+   changed, but pxa168 was not updated.  Also error handling in driver
+   probe was busted.
+
+4) Memory leak fix in bridge netfilter from Changli Gao.
+
+5) qlge needs to reset chip before we free up the buffers which the
+   chip is potentially still DMA'ing to/from.  Fix from Breno Leitao.
+
+6) If the send side of a socket is shutdown, TCP's poll should indicate
+   all the write conditions since the next sendmsg() is going to
+   return -EPIPE and the application is not always able to discern this
+   case completely on it's own.
+
+   This matches the behavior of BSD (see so_writable() macro definition)
+   as well as pretty much every other system checked.
+
+   Fix from KOSAKI Motohiro.
+
+7) 3c59x using netpoll deadlocks, fix from Neil Horman.
+
+8) TCP congestion control core has a kstrdup memory leak, fix from
+   Julia Lawall.
+
+9) CAIF protocol needs to use correct unaligned.h header, from Jeff
+   Mahoney.
+
+10) l2tp input needs to scrutinize available of ethernet header more
+    strictly, since the 'data_len' passed into it comes from potentially
+    untrusted sources.  Fix from Eric Dumazet.
+
+Please pull, thanks a lot!
+
+The following changes since commit 303fd2c2ce5addef1aacac962a5b099cc0af71ea:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin (2010-08-28 14:24:49 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Anton Vorontsov (1):
+      phylib: Fix race between returning phydev and calling adjust_link
+
+Bernard Pidoux F6BVP (1):
+      ax25: missplaced sock_put(sk)
+
+Breno Leitao (1):
+      qlge: reset the chip before freeing the buffers
+
+Changli Gao (1):
+      bridge: netfilter: fix a memory leak
+
+Dan Carpenter (4):
+      pxa168_eth: remove unneeded null check
+      pxa168_eth: fix error handling in prope
+      pxa168_eth: update call to phy_mii_ioctl()
+      pxa168_eth: silence gcc warnings
+
+David S. Miller (1):
+      tcp: Combat per-cpu skew in orphan tests.
+
+Eric Dumazet (2):
+      tcp: fix three tcp sysctls tuning
+      l2tp: test for ethernet header in l2tp_eth_dev_recv()
+
+Heiko Carstens (1):
+      caif-driver: add HAS_DMA dependency
+
+Jeff Mahoney (1):
+      net/caif/cfrfml.c: use asm/unaligned.h
+
+Julia Lawall (1):
+      net/ipv4: Eliminate kstrdup memory leak
+
+KOSAKI Motohiro (1):
+      tcp: select(writefds) don't hang up when a peer close connection
+
+Neil Horman (1):
+      3c59x: Fix deadlock between boomerang_interrupt and boomerang_start_tx
+
+Yinglin Luan (2):
+      netxen: fix poll implementation
+      qlcnic: fix poll implementation
+
+ drivers/net/3c59x.c                  |   15 ++++++++-
+ drivers/net/caif/Kconfig             |    2 +-
+ drivers/net/netxen/netxen_nic_main.c |    9 +++++-
+ drivers/net/phy/phy_device.c         |    2 +
+ drivers/net/pxa168_eth.c             |   58 ++++++++++++++++-----------------
+ drivers/net/qlcnic/qlcnic_main.c     |    9 +++++-
+ drivers/net/qlge/qlge_main.c         |    4 +-
+ include/net/tcp.h                    |   18 ++++++++--
+ net/ax25/ax25_ds_timer.c             |    2 +-
+ net/bridge/br_netfilter.c            |    2 +-
+ net/caif/cfrfml.c                    |    2 +-
+ net/ipv4/tcp.c                       |   32 ++++++-------------
+ net/ipv4/tcp_cong.c                  |    5 ++-
+ net/ipv4/tcp_timer.c                 |    8 ++--
+ net/l2tp/l2tp_eth.c                  |    2 +-
+ 15 files changed, 98 insertions(+), 72 deletions(-)
