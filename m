@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab0H1TV6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 15:21:58 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:42199 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab0H1TV5 (ORCPT
+	id S1752705Ab0H1TZz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 15:25:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42778 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab0H1TZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 15:21:57 -0400
-Date: Sat, 28 Aug 2010 21:21:55 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: John Johansen <john.johansen@canonical.com>
-Cc: James Morris <jmorris@namei.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Comments to apparmor Makefile (and security/Makefile)
-Message-ID: <20100828192155.GA9287@merkur.ravnborg.org>
-References: <20100828070305.GA8842@merkur.ravnborg.org> <4C795F6F.40202@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C795F6F.40202@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 28 Aug 2010 15:25:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=CjY3KEomzyx2P6nfKxgmuudnSNtMtN5Dtiw9kdNANVu0HfMrF5YXDVhs1sZ43U2OL3
+         VhA1ZmYp7xVZIMAuKC9tIJBbuS1eI8a0B12k+MrZNm8lwyl84ECUjTGYPOV7AtOoMt/e
+         2BITGFF1a4DXgyiDZjxKhtDQzkmR2qF4KaZT0=
+From: Csaba Henk <csaba@gluster.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Paris <eparis@redhat.com>, Csaba Henk <csaba@gluster.com>
+Subject: [PATCH 1/2] fsnotify: fix NULL dereference in send_to_group()
+Date: Sun, 29 Aug 2010 00:55:41 +0530
+Message-Id: <1283023542-1251-1-git-send-email-csaba@gluster.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> > 8) From security/Makefile:
-> > 
-> >     obj-$(CONFIG_SECURITY_APPARMOR)         += apparmor/built-in.o
-> > This is _not_ how we do it.
-> > 
-> > We say just:
-> > 
-> >     obj-$(CONFIG_SECURITY_APPARMOR)         += apparmor/
-> > 
-> > [security/Makefile has this issue in several places]
-> > 
-> okay, I set it up this way to conform to other entries in the file
-> If we are going to fix apparmor's entry we should fix them all
+If fanotify is triggered via a vfsmount mark (so that there is
+no inode mark, group in send_to_group() is set from a structure
+member where the struct pointer is NULL.
 
-Agreed - its better to fix them all in one go.
-I assume you do this in a follow-up patch - it is straightforward.
+This can be tested with the fanotify utility available from
+http://people.redhat.com/eparis/fanotify/:
 
-> 
-> > There was a few tings that made me unsafe just providing a patch,
-> > so for now you got a list of comments.
-> > 
-> > 	Sam
-> 
-> np, thanks for the comments, patch attached
-Looks much better - and thanks for the quick response!
+ # fanotify -m / & touch /x
 
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Csaba Henk <csaba@gluster.com>
+---
+ fs/notify/fsnotify.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
-	Sam
+diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
+index 3970392..6657315 100644
+--- a/fs/notify/fsnotify.c
++++ b/fs/notify/fsnotify.c
+@@ -148,13 +148,21 @@ static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
+ 			 const unsigned char *file_name,
+ 			 struct fsnotify_event **event)
+ {
+-	struct fsnotify_group *group = inode_mark->group;
++	struct fsnotify_group *group;
+ 	__u32 inode_test_mask = (mask & ~FS_EVENT_ON_CHILD);
+ 	__u32 vfsmount_test_mask = (mask & ~FS_EVENT_ON_CHILD);
+ 
+-	pr_debug("%s: group=%p to_tell=%p mnt=%p mark=%p mask=%x data=%p"
+-		 " data_is=%d cookie=%d event=%p\n", __func__, group, to_tell,
+-		 mnt, inode_mark, mask, data, data_is, cookie, *event);
++	if (inode_mark)
++		group = inode_mark->group;
++	else if (vfsmount_mark)
++		group = vfsmount_mark->group;
++	else
++		BUG();
++
++	pr_debug("%s: group=%p to_tell=%p mnt=%p inode_mark=%p vfsmount_mark=%p"
++		 " mask=%x data=%p data_is=%d cookie=%d event=%p\n",
++		 __func__, group, to_tell, mnt, inode_mark, vfsmount_mark, mask,
++		 data, data_is, cookie, *event);
+ 
+ 	/* clear ignored on inode modification */
+ 	if (mask & FS_MODIFY) {
+-- 
+1.7.2.2
+
