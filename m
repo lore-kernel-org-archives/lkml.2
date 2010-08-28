@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab0H1IZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 04:25:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54488 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab0H1IZ4 (ORCPT
+	id S1752490Ab0H1Ivq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 04:51:46 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:54721 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752095Ab0H1Ivo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 04:25:56 -0400
-Subject: Re: [PATCH] regulator: Update e-mail address for Liam Girdwood
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1282944818-7629-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1282944818-7629-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 Aug 2010 09:25:51 +0100
-Message-ID: <1282983951.3041.3.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 28 Aug 2010 04:51:44 -0400
+Date: Sat, 28 Aug 2010 10:51:35 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Brian Swetland <swetland@google.com>, Theodore Tso <tytso@mit.edu>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100828085135.GA2711@ucw.cz>
+References: <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+ <20100812034435.GA7403@linux.vnet.ibm.com>
+ <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+ <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+ <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+ <20100812174303.GD2524@linux.vnet.ibm.com>
+ <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+ <AANLkTinNxZoMab=tG9KXJ9n_nxB1dXHkfk-7xUMWXACW@mail.gmail.com>
+ <AANLkTin3H0o+WQocUYjUcPGRpkRqK9H2LJ0OwHXFNBdj@mail.gmail.com>
+ <20100813144236.GB2511@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100813144236.GB2511@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 22:33 +0100, Mark Brown wrote:
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  Documentation/power/regulator/overview.txt |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+Hi!
+
+> > You are *one* user of the kernel. Let's suppose Android wasn't using
+> > suspend-blockers, and there was another equally successful linux
+> > mobile platform, Foobingo, and they were using them, and they were the
+> > only ones interested on implementing them.
+> > 
+> > What does that change? Nothing. They still need to convince the
+> > community that what they are proposing to be merged is actually
+> > useful, and somebody will use it. If not, they can just keep the patch
+> > for themselves until they do. I don't see the big deal.
 > 
-> diff --git a/Documentation/power/regulator/overview.txt b/Documentation/power/regulator/overview.txt
-> index 9363e05..8ed1758 100644
-> --- a/Documentation/power/regulator/overview.txt
-> +++ b/Documentation/power/regulator/overview.txt
-> @@ -13,7 +13,7 @@ regulators (where voltage output is controllable) and current sinks (where
->  current limit is controllable).
->  
->  (C) 2008  Wolfson Microelectronics PLC.
-> -Author: Liam Girdwood <lg@opensource.wolfsonmicro.com>
-> +Author: Liam Girdwood <lrg@slimlogic.co.uk>
->  
+> So the current users of the Linux kernel are the following?
 > 
->  Nomenclature
+> o	GNU/Linux
+> o	Android
+> 
+> Do any other distributions or devices with unusual user-space layouts
+> qualify?
 
-Applied, forgot about that one ;)
+QTembedded distros are somehow similar to android (one big binary).
 
-Thanks
-
-Liam
-
+Then there's minor stuff, like webOS and Motorola A1200...
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
