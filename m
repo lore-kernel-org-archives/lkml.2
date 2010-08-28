@@ -1,99 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab0H1XDm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 19:03:42 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34047
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751244Ab0H1XDl (ORCPT
+	id S1752642Ab0H1XFZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 19:05:25 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53047 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab0H1XFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 19:03:41 -0400
-Date: Sat, 28 Aug 2010 16:03:57 -0700 (PDT)
-Message-Id: <20100828.160357.102557054.davem@davemloft.net>
-To: Kyle.D.Moffett@boeing.com
-Cc: linux-kernel@vger.kernel.org, kyle@moffetthome.net,
-        shemminger@linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/2] ethtool.h: Add #defines for unidirectional
- ethernet duplex
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1282938138-17844-2-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1282938138-17844-1-git-send-email-Kyle.D.Moffett@boeing.com>
-	<1282938138-17844-2-git-send-email-Kyle.D.Moffett@boeing.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 28 Aug 2010 19:05:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=syxRhiHFsQAjgbalwaPTJT+WK+TQcdGiNTEpjHOh8hLDn69JQzN+yVbxnmrmgbApkW
+         sv6TdwAid+i7vyoo9gWVgGrmj5Z/kA6GrbR3EuNOe2YyDwmXZcMvxNoDRaaJ/YfXVvwm
+         d3m4STTVK5aw+JY6AUyyU7+G6ak910mRjQP68=
+Date: Sat, 28 Aug 2010 16:05:20 -0700
+From: mark gross <markgross@thegnar.org>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@suse.de>,
+        mark gross <markgross@thegnar.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
+Message-ID: <20100828230520.GB12402@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
+ <1282882403-29824-2-git-send-email-skannan@codeaurora.org>
+ <87hbigqg8d.fsf@deeprootsystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hbigqg8d.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-Date: Fri, 27 Aug 2010 15:42:17 -0400
-
-> A large variety of fiber ethernet PHYs and some copper ethernet PHYs
-> support forced "unidirectional link" modes.  Some signalling modes are
-> designed for last-mile ethernet plants while others are designed for
-> strict security isolation (fiber with no return-path).
+On Fri, Aug 27, 2010 at 07:31:46AM -0700, Kevin Hilman wrote:
+> Saravana Kannan <skannan@codeaurora.org> writes:
 > 
-> In order to configure those kinds of forced modes from userspace, we
-> need to add additional options to the "ethtool" interface.  As such
-> "unidirectional" ethernet modes most closely resemble ethernet "duplex",
-> we add two additional DUPLEX_* defines to the ethtool interface:
+> > Some drivers/devices might need some minimum system bus performance to
+> > provide acceptable service. Provide a PM QoS parameter to send these requests
+> > to.
+> >
+> > The new parameter is named "system bus performance" since it is generic enough
+> > for the unit of the request to be frequency, bandwidth or something else that
+> > might be appropriate. It's up to each implementation of the QoS provider to
+> > define what the unit of the request would be.
+> >
+> > Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
 > 
->   #define DUPLEX_TXONLY 0x02
->   #define DUPLEX_RXONLY 0x03
+> With this current design, only one system-wide bus would be managed.
+> What if a platform has more than one independently scalable bus?
 > 
-> Most ethernet PHYs will still need to be configured internally in a mode
-> with autoneg off and duplex full, except for a few model-specific PHY
-> register adjustments.
+> I think the only scalable way to handle this kind of thing is to have
+> per-device QoS constraints that can then be combined/aggregated by parent
+> devices/busses.
+
+
+I'm just realizing that Saravana may not be talking about a power
+management problem.  I think she is talking about QoS, not constraining
+the throttling of some platform bus or device. (i.e. not pm_qos)
+
+I think its important to keep requirements clear. Are your ideas around
+doing proper throttling constraints or are they about QoS proper?
+
+I see a need for both but, as a QoS facility will likely call into
+pm_qos to help grantee a qos it will be fundamentally different form
+pm_qos.  
+
+PM_QoS is a best effort API to constrain power state throttling.
+
+So, what are you thinking about?  QoS or constraining power state
+throttling?
+
+--mark
+
+> At LPC this year, I've proposed per-device QoS constraints[1] as a topic
+> for the PM mini-conf.  I hope some folks from the MSM camp can be there
+> for these discussions.
 > 
-> Most PHYs can simply use a regular forced-mode for rx-only configuration,
-> but it may be useful in the ethernet driver to completely disable the TX
-> queues or similar.
+> Kevin
 > 
-> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-
-A fine idea, but you're really going to have to audit all of the networking
-drivers to clean up the existing uses that assume this thing is a bitmap
-and that there are only essentially two values ('0' and '1').  For example:
-
-drivers/net/e1000/e1000_main.c:	case SPEED_10 + DUPLEX_HALF:
-drivers/net/e1000/e1000_main.c:	case SPEED_100 + DUPLEX_HALF:
-drivers/net/e1000/e1000_main.c:	case SPEED_1000 + DUPLEX_HALF: /* not supported */
-drivers/net/e1000e/ethtool.c:	case SPEED_10 + DUPLEX_HALF:
-drivers/net/e1000e/ethtool.c:	case SPEED_100 + DUPLEX_HALF:
-drivers/net/e1000e/ethtool.c:	case SPEED_1000 + DUPLEX_HALF: /* not supported */
-drivers/net/igb/igb_main.c:	case SPEED_10 + DUPLEX_HALF:
-drivers/net/igb/igb_main.c:	case SPEED_100 + DUPLEX_HALF:
-drivers/net/igb/igb_main.c:	case SPEED_1000 + DUPLEX_HALF: /* not supported */
-drivers/net/sungem_phy.c:		phy->duplex |=  DUPLEX_HALF;
-drivers/net/sungem_phy.c:		phy->duplex |=  DUPLEX_HALF;
-
-Also, drivers/net/mii.c does stuff like:
-
-			ecmd->duplex = !!(nego & ADVERTISED_1000baseT_Full);
-
-It also (probably correctly, I don't know, you'll have to decide)
-rejects anything other than the existing values.
-
-	if (ecmd->duplex != DUPLEX_HALF && ecmd->duplex != DUPLEX_FULL)
-		return -EINVAL;
-
-Finally, phy_ethtool_sset() does this too, so with your patch applied even
-phylib would reject the new settings:
-
-	if (cmd->autoneg == AUTONEG_DISABLE &&
-	    ((cmd->speed != SPEED_1000 &&
-	      cmd->speed != SPEED_100 &&
-	      cmd->speed != SPEED_10) ||
-	     (cmd->duplex != DUPLEX_HALF &&
-	      cmd->duplex != DUPLEX_FULL)))
-		return -EINVAL;
-
-making it impossible to add support for TX-only or RX-only in a phylib
-using driver.
-
-There are probably other similar dragons hiding in various drivers, you'll
-really have to do a full audit of how every driver stores and makes use of
-duplex settings before we can seriously apply this patch.
-
-Thanks!
+> [1] http://www.linuxplumbersconf.org/2010/ocw/proposals/819
+> 
+> > ---
+> >  kernel/pm_qos_params.c |    9 +++++++++
+> >  1 files changed, 9 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> > index 996a4de..1a44a67 100644
+> > --- a/kernel/pm_qos_params.c
+> > +++ b/kernel/pm_qos_params.c
+> > @@ -93,12 +93,21 @@ static struct pm_qos_object network_throughput_pm_qos = {
+> >  	.type = PM_QOS_MAX,
+> >  };
+> >  
+> > +static BLOCKING_NOTIFIER_HEAD(system_bus_performance_notifier);
+> > +static struct pm_qos_object system_bus_performance_pm_qos = {
+> > +	.requests = PLIST_HEAD_INIT(system_bus_performance_pm_qos.requests, pm_qos_lock),
+> > +	.notifiers = &system_bus_performance_notifier,
+> > +	.name = "system_bus_performance",
+> > +	.default_value = 0,
+> > +	.type = PM_QOS_MAX,
+> > +};
+> >  
+> >  static struct pm_qos_object *pm_qos_array[] = {
+> >  	&null_pm_qos,
+> >  	&cpu_dma_pm_qos,
+> >  	&network_lat_pm_qos,
+> >  	&network_throughput_pm_qos
+> > +	&system_bus_performance_pm_qos
+> >  };
+> >  
+> >  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
