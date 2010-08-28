@@ -1,42 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab0H1HKm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 03:10:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2764 "EHLO mx1.redhat.com"
+	id S1752149Ab0H1HMM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 03:12:12 -0400
+Received: from sh.osrg.net ([192.16.179.4]:48963 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341Ab0H1HKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 03:10:41 -0400
-Date: Sat, 28 Aug 2010 10:09:05 +0300
-From: Shahar Havivi <shaharh@redhat.com>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: [PATCH] zram: free device memory when init fails
-Message-ID: <20100828070901.GA31943@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751341Ab0H1HML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 03:12:11 -0400
+Date: Sat, 28 Aug 2010 16:10:28 +0900
+To: mitov@issp.bas.bg
+Cc: fujita.tomonori@lab.ntt.co.jp, u.kleine-koenig@pengutronix.de,
+        g.liakhovetski@gmx.de, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, akpm@linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        philippe.retornaz@epfl.ch, gregkh@suse.de, jkrzyszt@tis.icnet.pl
+Subject: Re: [RFC][PATCH] add
+ dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <201008280914.34233.mitov@issp.bas.bg>
+References: <201008270923.30297.mitov@issp.bas.bg>
+	<20100827153204A.fujita.tomonori@lab.ntt.co.jp>
+	<201008280914.34233.mitov@issp.bas.bg>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100828160921U.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 28 Aug 2010 16:10:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Shahar Havivi <shaharh@redhat.com>
----
- drivers/staging/zram/zram_drv.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Sat, 28 Aug 2010 09:14:25 +0300
+Marin Mitov <mitov@issp.bas.bg> wrote:
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 77d4d71..e8d2319 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -769,6 +769,7 @@ static int __init zram_init(void)
- free_devices:
- 	while (dev_id)
- 		destroy_device(&devices[--dev_id]);
-+    kfree(devices);
- unregister:
- 	unregister_blkdev(zram_major, "zram");
- out:
--- 
-1.7.2.1
+> On Friday, August 27, 2010 09:32:14 am FUJITA Tomonori wrote:
+> > On Fri, 27 Aug 2010 09:23:21 +0300
+> > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > 
+> > > On Friday, August 27, 2010 08:57:59 am FUJITA Tomonori wrote:
+> > > > On Fri, 27 Aug 2010 07:19:07 +0200
+> > > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > > 
+> > > > > Hey,
+> > > > > 
+> > > > > On Fri, Aug 27, 2010 at 02:00:17PM +0900, FUJITA Tomonori wrote:
+> > > > > > On Fri, 27 Aug 2010 06:41:42 +0200
+> > > > > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > > > > > On Thu, Aug 26, 2010 at 07:00:24PM +0900, FUJITA Tomonori wrote:
+> > > > > > > > On Thu, 26 Aug 2010 11:53:11 +0200
+> > > > > > > > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > > > > > > > 
+> > > > > > > > > > > We have currently a number of boards broken in the mainline. They must be 
+> > > > > > > > > > > fixed for 2.6.36. I don't think the mentioned API will do this for us. So, 
+> > > > > > > > > > > as I suggested earlier, we need either this or my patch series
+> > > > > > > > > > > 
+> > > > > > > > > > > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
+> > > > > > > > > > > 
+> > > > > > > > > > > for 2.6.36.
+> > > > > > > > > > 
+> > > > > > > > > > Why can't you revert a commit that causes the regression?
+> > > > > > > > > > 
+> > > > > > > > > > The related DMA API wasn't changed in 2.6.36-rc1. The DMA API is not
+> > > > > > > > > > responsible for the regression. And the patchset even exnteds the
+> > > > > > > > > > definition of the DMA API (dma_declare_coherent_memory). Such change
+> > > > > > > > > > shouldn't applied after rc1. I think that DMA-API.txt says that
+> > > > > > > > > > dma_declare_coherent_memory() handles coherent memory for a particular
+> > > > > > > > > > device. It's not for the API that reserves coherent memory that can be
+> > > > > > > > > > used for any device for a single device.
+> > > > > > > > > The patch that made the problem obvious for ARM is
+> > > > > > > > > 309caa9cc6ff39d261264ec4ff10e29489afc8f8 aka v2.6.36-rc1~591^2~2^4~12.
+> > > > > > > > > So this went in before v2.6.36-rc1.  One of the "architectures which
+> > > > > > > > > similar restrictions" is x86 BTW.
+> > > > > > > > > 
+> > > > > > > > > And no, we won't revert 309caa9cc6ff39d261264ec4ff10e29489afc8f8 as it
+> > > > > > > > > addresses a hardware restriction.
+> > > > > > > > 
+> > > > > > > > How these drivers were able to work without hitting the hardware restriction?
+> > > > > > > In my case the machine in question is an ARMv5, the hardware restriction
+> > > > > > > is on ARMv6+ only.  You could argue that so the breaking patch for arm
+> > > > > > > should only break ARMv6, but I don't think this is sensible from a
+> > > > > > > maintainers POV.  We need an API that works independant of the machine
+> > > > > > > that runs the code.
+> > > > > > 
+> > > > > > Agreed. But insisting that the DMA API needs to be extended wrongly
+> > > > > > after rc2 to fix the regression is not sensible too. The related DMA
+> > > > > > API wasn't changed in 2.6.36-rc1. The API isn't responsible for the
+> > > > > > regression at all.
+> > > > > I think this isn't about "responsiblity".  Someone in arm-land found
+> > > > > that the way dma memory allocation worked for some time doesn't work
+> > > > > anymore on new generation chips.  As pointing out this problem was
+> > > > > expected to find some matches it was merged in the merge window.  One
+> > > > > such match is the current usage of the DMA API that doesn't currently
+> > > > > offer a way to do it right, so it needs a patch, no?
+> > > > 
+> > > > No, I don't think so. We are talking about a regression, right?
+> > > > 
+> > > > On new generation chips, something often doesn't work (which have
+> > > > worked on old chips for some time). It's not a regresiion. I don't
+> > > > think that it's sensible to make large change (especially after rc1)
+> > > > to fix such issue. If you say that the DMA API doesn't work on new
+> > > > chips and proposes a patch for the next merge window, it's sensible, I
+> > > > suppose.
+> > > > 
+> > > > Btw, the patch isn't a fix for the DMA API. It tries to extend the DMA
+> > > > API (and IMO in the wrong way). 
+> > > > In addition, the patch might break the
+> > > > current code. 
+> > > 
+> > > To "break the current code" is simply not possible. Sorry to oppose. As you have written it 
+> > > "extend the DMA API", so if you do not use the new API (and no current code is using it)
+> > > you cannot "break the current code". 
+> > 
+> > Looks like that the patch adds the new API that touches the exisitng
+> > code. It means the existing code could break. So the exsising API
+> > could break too.
+> > 
+> > http://thread.gmane.org/gmane.linux.ports.sh.devel/8595
+> 
+> The above reference is not my patch. I am speaking for my patch:
+> 
+> http://lkml.org/lkml/2010/8/19/200
 
+I think that I already NACK'ed the patch.
+
+1) drivers/media/videobuf-dma-contig.c should not use
+dma_alloc_coherent. We shouldn't support the proposed API.
+
+2) I don't think that the DMA API (drivers/base/dma-mapping.c) is not
+for creating "cache". Generally, the kernel uses "pool" concept for
+something like that.
+
+IMHO, reverting the commit 309caa9cc6ff39d261264ec4ff10e29489afc8f8
+temporary (or temporary disabling it for systems that had worked) is
+the most reasonable approach. I don't think that breaking systems that
+had worked is a good idea even if the patch does the right thing. I
+believe that we need to fix the broken solution
+(videobuf-dma-contig.c) before the commit.
