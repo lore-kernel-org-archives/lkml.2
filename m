@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab0H1LVI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 07:21:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57664 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752898Ab0H1LVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 07:21:05 -0400
-Message-ID: <4C78F215.2040205@cn.fujitsu.com>
-Date: Sat, 28 Aug 2010 19:25:09 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1753072Ab0H1L1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 07:27:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35265 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961Ab0H1L1c convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Aug 2010 07:27:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=eeV71g9FrDKSuLU+x73UofCi8L7RW7vEwk1U5YUIfX4K2Kap1x7QaO6ejPBKio/HLY
+         sSotOGbb0KIisH9enW3JO9YzGJ1DRlY42zRaPzK3LhPmAg6RFOr1baOG19VJpxDBU0GA
+         kZ5sJabapVVJ6O4MMIGf7oxKN8FbcNd8RqntU=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 5/5] KVM: MMU: remove count_rmaps()
-References: <4C78F07E.1040709@cn.fujitsu.com>
-In-Reply-To: <4C78F07E.1040709@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Sat, 28 Aug 2010 16:57:31 +0530
+Message-ID: <AANLkTinYuck4yEGpFDKZp-R3N2dtoQ68cLHQY6EW6sr-@mail.gmail.com>
+Subject: [Question] How to test (DRAM) memory location.
+From: santosh <santosh.iitg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing is checked in count_rmaps(), so remove it
+Hi,
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |   38 --------------------------------------
- 1 files changed, 0 insertions(+), 38 deletions(-)
+I need to write a memory diagnosis  program which will test each and
+every location of SDRAM
+to know whether its working properly or a bad location
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 0d91f60..0bff4d5 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3606,43 +3606,6 @@ static void audit_mappings(struct kvm_vcpu *vcpu)
- 						    2);
- }
- 
--static int count_rmaps(struct kvm_vcpu *vcpu)
--{
--	struct kvm *kvm = vcpu->kvm;
--	struct kvm_memslots *slots;
--	int nmaps = 0;
--	int i, j, k, idx;
--
--	idx = srcu_read_lock(&kvm->srcu);
--	slots = kvm_memslots(kvm);
--	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
--		struct kvm_memory_slot *m = &slots->memslots[i];
--		struct kvm_rmap_desc *d;
--
--		for (j = 0; j < m->npages; ++j) {
--			unsigned long *rmapp = &m->rmap[j];
--
--			if (!*rmapp)
--				continue;
--			if (!(*rmapp & 1)) {
--				++nmaps;
--				continue;
--			}
--			d = (struct kvm_rmap_desc *)(*rmapp & ~1ul);
--			while (d) {
--				for (k = 0; k < RMAP_EXT; ++k)
--					if (d->sptes[k])
--						++nmaps;
--					else
--						break;
--				d = d->more;
--			}
--		}
--	}
--	srcu_read_unlock(&kvm->srcu, idx);
--	return nmaps;
--}
--
- void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
- {
- 	unsigned long *rmapp;
-@@ -3704,7 +3667,6 @@ static void check_mappings_rmap(struct kvm_vcpu *vcpu)
- static void audit_rmap(struct kvm_vcpu *vcpu)
- {
- 	check_mappings_rmap(vcpu);
--	count_rmaps(vcpu);
- }
- 
- static void audit_write_protection(struct kvm_vcpu *vcpu)
--- 
-1.7.0.4
+What would be the best approach ??
 
+If I want to test each location sequentially then How can I do it ? If
+Base address is required then how to find it in my system??
+
+regards
+Santosh
