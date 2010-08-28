@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab0H1RMn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 13:12:43 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:39421 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab0H1RMm (ORCPT
+	id S1753457Ab0H1RNR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 13:13:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54877 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab0H1RNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 13:12:42 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C79435B.2030303@s5r6.in-berlin.de>
-Date: Sat, 28 Aug 2010 19:11:55 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: David Brownell <david-b@pacbell.net>,
-        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
-        kernel-janitors@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-geode@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] drivers/usb/gadget: Remove double test
-References: <581556.29157.qm@web180314.mail.gq1.yahoo.com> <Pine.LNX.4.64.1008281852450.13508@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1008281852450.13508@ask.diku.dk>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 28 Aug 2010 13:13:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vld0pMqCSkeTFYxiyUPjdSqcp8SS4FlnF2+i6Ti3RgaPVSHv3swF3b4oTXcfHNjWU1
+         9aZpWBUTgfR2247dds1S0+0xRcH6eVr8wcLLgrn8lK95ijR5p3wOO8aAR0bE3a8C1HL7
+         bBcrtFnP8OJqsd4nUQiOLlFYZRw+EwzwrEpXY=
+From: Brian Gerst <brgerst@gmail.com>
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86-64: Remove system_64.h
+Date: Sat, 28 Aug 2010 13:11:48 -0400
+Message-Id: <1283015508-17547-1-git-send-email-brgerst@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall wrote:
-> On Sat, 28 Aug 2010, David Brownell wrote:
-> 
->> Please update $SUBJECT to say which driver is
->> affected;
-> 
-> Done.
-> 
->> it's not everything in that directory,
->> and accurate GIT summaries help a lot.
-> 
-> Is there some sort of rule that can be followed?  For example, if the 
-> patch affects only one, file, should that file be named?  What if the 
-> patch affects only two files?
+This header is no longer used.  The %cr8 funtions are now in system.h.
 
-gitk $path or git shortlog $path, with $path being the file or directory, give
-a quick impression how the resident developers call their driver or subsystem
-updates.  E.g. ^USB: instead of ^drivers/usb/.
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+---
+ arch/x86/include/asm/system_64.h |   22 ----------------------
+ 1 files changed, 0 insertions(+), 22 deletions(-)
+ delete mode 100644 arch/x86/include/asm/system_64.h
 
-However, the committer could still adjust the title, so no drama if the patch
-subject as written by a cross-tree developer looks different from those of the
-usual subsystem patches.  IMO this is one of the tasks of a subsystem
-maintainer.  And it is quickly enough done with a git commit --amend.
-
-There is only a drawbackif the subject is too broad /and/ if the Cc list is
-too short;  a driver developer may miss to see the submission.  The danger of
-that is low though when get_maintainer.pl is used to good effect.
+diff --git a/arch/x86/include/asm/system_64.h b/arch/x86/include/asm/system_64.h
+deleted file mode 100644
+index 1159e09..0000000
+--- a/arch/x86/include/asm/system_64.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-#ifndef _ASM_X86_SYSTEM_64_H
+-#define _ASM_X86_SYSTEM_64_H
+-
+-#include <asm/segment.h>
+-#include <asm/cmpxchg.h>
+-
+-
+-static inline unsigned long read_cr8(void)
+-{
+-	unsigned long cr8;
+-	asm volatile("movq %%cr8,%0" : "=r" (cr8));
+-	return cr8;
+-}
+-
+-static inline void write_cr8(unsigned long val)
+-{
+-	asm volatile("movq %0,%%cr8" :: "r" (val) : "memory");
+-}
+-
+-#include <linux/irqflags.h>
+-
+-#endif /* _ASM_X86_SYSTEM_64_H */
 -- 
-Stefan Richter
--=====-==-=- =--- ===--
-http://arcgraph.de/sr/
+1.7.2.2
+
