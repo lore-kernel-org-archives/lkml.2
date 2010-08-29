@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab0H2JyV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 05:54:21 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:43904 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab0H2JyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 05:54:17 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 29 Aug 2010 11:54:01 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [git pull] FireWire fixes
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Message-ID: <tkrat.d6b3e8e7fd9a72dc@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+	id S1753491Ab0H2JyF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 05:54:05 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50994 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752922Ab0H2Jwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 05:52:53 -0400
+From: Julia Lawall <julia@diku.dk>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/7] drivers/serial/mpc52xx_uart.c: Add of_node_put to avoid memory leak
+Date: Sun, 29 Aug 2010 11:52:41 +0200
+Message-Id: <1283075566-27441-3-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283075566-27441-1-git-send-email-julia@diku.dk>
+References: <1283075566-27441-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the for-linus branch at
+Add a call to of_node_put in the error handling code following a call to
+of_find_compatible_node.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-to receive fixes for
-  - three older issues in firewire-sbp2 and -net,
-  - a timer misuse added in 2.6.35 in firewire-core,
-  - a hardware quirk that obstructed a 2.6.36-rc1 feature in firewire-ohci.
-Thanks.
+// <smpl>
+@r exists@
+local idexpression x;
+expression E,E1;
+statement S;
+@@
 
-Clemens Ladisch (1):
-      firewire: core: do not use del_timer_sync() in interrupt context
+*x = 
+(of_find_node_by_path
+|of_find_node_by_name
+|of_find_node_by_phandle
+|of_get_parent
+|of_get_next_parent
+|of_get_next_child
+|of_find_compatible_node
+|of_match_node
+)(...);
+...
+if (x == NULL) S
+<... when != x = E
+*if (...) {
+  ... when != of_node_put(x)
+      when != if (...) { ... of_node_put(x); ... }
+(
+  return <+...x...+>;
+|
+*  return ...;
+)
+}
+...>
+of_node_put(x);
+// </smpl>
 
-Julia Lawall (1):
-      ieee1394: Adjust confusing if indentation
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Stefan Richter (4):
-      firewire: sbp2: fix memory leak in sbp2_cancel_orbs or at send error
-      firewire: sbp2: fix stall with "Unsolicited response"
-      firewire: net: fix unicast reception RCODE in failure paths
-      firewire: ohci: work around VIA and NEC PHY packet reception bug
+---
+ drivers/serial/mpc52xx_uart.c |    1 +
+ 1 file changed, 1 insertion(+)
 
- drivers/firewire/core-transaction.c |   13 ++++++++++---
- drivers/firewire/net.c              |   28 +++++++++++++++-------------
- drivers/firewire/ohci.c             |   10 +++++++++-
- drivers/firewire/sbp2.c             |   23 +++++++++++++++--------
- drivers/ieee1394/ohci1394.c         |    2 +-
- 5 files changed, 50 insertions(+), 26 deletions(-)
--- 
-Stefan Richter
--=====-==-=- =--- ===-=
-http://arcgraph.de/sr/
+diff --git a/drivers/serial/mpc52xx_uart.c b/drivers/serial/mpc52xx_uart.c
+index 8dedb26..c4399e2 100644
+--- a/drivers/serial/mpc52xx_uart.c
++++ b/drivers/serial/mpc52xx_uart.c
+@@ -500,6 +500,7 @@ static int __init mpc512x_psc_fifoc_init(void)
+ 	psc_fifoc = of_iomap(np, 0);
+ 	if (!psc_fifoc) {
+ 		pr_err("%s: Can't map FIFOC\n", __func__);
++		of_node_put(np);
+ 		return -ENODEV;
+ 	}
+ 
 
