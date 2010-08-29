@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab0H2NIO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 09:08:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54712 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab0H2NIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 09:08:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=qykt0fWn5ZWuM9VfTuLmQk5VxzXVfDEBYAECt+oQcw8BozyP0S8uSj3F4iqUYefDCQ
-         mSAWJFJ/lC9ee/fCBN+WQtYxA1jOBXGdeU0DWQjNVYFuC60QgZfk/TzNMhNrSjSipgJU
-         GACEwJsgcXMbz3ZIFVruZK0PYo5uMMRYRhxQY=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [REGRESSION] [2.6.36-rc2] hp-wmi: probe of hp-wmi failed with error -22
-Date: Sun, 29 Aug 2010 15:08:08 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201008261949.12608.maciej.rutecki@gmail.com> <20100826175442.GA16305@srcf.ucam.org>
-In-Reply-To: <20100826175442.GA16305@srcf.ucam.org>
+	id S1753419Ab0H2NRg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 09:17:36 -0400
+Received: from freeflow.nu ([178.79.134.28]:51847 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752374Ab0H2NRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 09:17:35 -0400
+Message-ID: <4C7A5DDE.8030106@kernel.org>
+Date: Sun, 29 Aug 2010 16:17:18 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Mikael Abrahamsson <swmike@swm.pp.se>
+CC: Stan Hoeppner <stan@hardwarefreak.com>, Christoph Lameter <cl@linux.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Mel Gorman <mel@csn.ul.ie>, Linux Netdev List <netdev@vger.kernel.org>
+Subject: Re: 2.6.34.1 page allocation failure
+References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home> <4C724141.8060000@kernel.org> <4C72F7C6.3020109@hardwarefreak.com> <4C74097A.5020504@kernel.org> <alpine.DEB.1.10.1008242114120.8562@uplift.swm.pp.se> <4C7A3B1D.7050500@kernel.org> <alpine.DEB.1.10.1008291433420.8562@uplift.swm.pp.se>
+In-Reply-To: <alpine.DEB.1.10.1008291433420.8562@uplift.swm.pp.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008291508.08474.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 26 sierpnia 2010 o 19:54:42 Matthew Garrett wrote:
-> On Thu, Aug 26, 2010 at 07:49:12PM +0200, Maciej Rutecki wrote:
-> > Last known good kernel: 2.6.35
-> > Failing kernel: 2.6.36-rc1, 2.6.36-rc2
-> > 
-> > Dmesg says:
-> > root@gumis:/home/maciek# dmesg | grep -i hp-wmi
-> > [    5.489731] hp-wmi: probe of hp-wmi failed with error -22
-> 
-> Should be fixed by a8ec105c0764c848d59f18a31f91fa00c99b2e7f
+  On Sun, 29 Aug 2010, Pekka Enberg wrote:
+>> Do you see these out-of-memory problems with 2.6.35?
+On 29.8.2010 15.38, Mikael Abrahamsson wrote:
+> Haven't tried it.
+>
+> Has there been substantial work done there that changes things so that 
+> if I reproduce it on 2.6.35, someone will look into the issue in 
+> earnest? Since I'll most likely have to compile a new kernel, are 
+> there any debug options I should enable to give more information to 
+> aid fault finding?
+There aren't any debug options that need to be enabled. The reason I'm 
+asking is because we had a bunch of similar issues being reported 
+earlier that got fixed and it's been calm for a while. That's why it 
+would be interesting to know if 2.6.35 or 2.6.36-rc2 (if it's not too 
+unstable to test) fixes things.
 
-Thanks for the information.
-
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+             Pekka
