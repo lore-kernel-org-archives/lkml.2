@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab0H2XdF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 19:33:05 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55423 "EHLO ogre.sisk.pl"
+	id S1754586Ab0H2XdH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 19:33:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55420 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754369Ab0H2X3u convert rfc822-to-8bit (ORCPT
+	id S1754364Ab0H2X3u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 29 Aug 2010 19:29:50 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Luca Barbieri" <luca@luca-barbieri.com>,
-        "" <software+linux-kernel@kd6lvw.ampr.org>
+        "archman" <spermmail001@yahoo.com>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
 References: <c1_O4wHrlB.A.63.mbueMB@chimera>
 In-Reply-To: <c1_O4wHrlB.A.63.mbueMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <ByD_7B96czP.A.Y3B.AdueMB@chimera>
-Subject: [Bug #16506] 2.6.35.0 compilation errors and excessive warnings.
+Message-ID: <ByD_7B96czP.A.h7B.DdueMB@chimera>
+Subject: [Bug #16505] 2.6.34.2 breaks b43
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Aug 2010 01:13:33 +0200 (CEST)
+Date: Mon, 30 Aug 2010 01:13:32 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,9 +34,11 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16506
-Subject		: 2.6.35.0 compilation errors and excessive warnings.
-Submitter	:  <software+linux-kernel@kd6lvw.ampr.org>
-Date		: 2010-08-04 01:06 (26 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16505
+Subject		: 2.6.34.2 breaks b43
+Submitter	: archman <spermmail001@yahoo.com>
+Date		: 2010-08-03 23:53 (27 days old)
+Handled-By	: Larry Finger <Larry.Finger@lwfinger.net>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=27335
 
 
