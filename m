@@ -1,151 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab0H2Prw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 11:47:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46072 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab0H2Prv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 11:47:51 -0400
-Date: Sun, 29 Aug 2010 17:47:44 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Julia Lawall <julia@diku.dk>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 3/7] drivers/mtd/nand/mpc5121_nfc.c: Add of_node_put to
-	avoid memory leak
-Message-ID: <20100829154744.GB4647@pengutronix.de>
-References: <1283075566-27441-1-git-send-email-julia@diku.dk> <1283075566-27441-4-git-send-email-julia@diku.dk>
+	id S1753768Ab0H2PtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 11:49:12 -0400
+Received: from lucidpixels.com ([75.144.35.66]:41828 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753555Ab0H2PtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 11:49:09 -0400
+Date: Sun, 29 Aug 2010 11:49:06 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: adam radford <aradford@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+ timed out, resetting card.
+In-Reply-To: <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
+References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p4qYPpj5QlsIQJ0K"
-Content-Disposition: inline
-In-Reply-To: <1283075566-27441-4-git-send-email-julia@diku.dk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---p4qYPpj5QlsIQJ0K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Sun, Aug 29, 2010 at 11:52:42AM +0200, Julia Lawall wrote:
-> Add a call to of_node_put in the error handling code following a call to
-> of_find_compatible_node.
->=20
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
->=20
-> // <smpl>
-> @r exists@
-> local idexpression x;
-> expression E,E1;
-> statement S;
-> @@
->=20
-> *x =3D=20
-> (of_find_node_by_path
-> |of_find_node_by_name
-> |of_find_node_by_phandle
-> |of_get_parent
-> |of_get_next_parent
-> |of_get_next_child
-> |of_find_compatible_node
-> |of_match_node
-> )(...);
-> ...
-> if (x =3D=3D NULL) S
-> <... when !=3D x =3D E
-> *if (...) {
->   ... when !=3D of_node_put(x)
->       when !=3D if (...) { ... of_node_put(x); ... }
-> (
->   return <+...x...+>;
-> |
-> *  return ...;
-> )
-> }
-> ...>
-> of_node_put(x);
-> // </smpl>
->=20
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+On Fri, 27 Aug 2010, Justin Piszcz wrote:
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Hi,
 
-adding ppc-list to cc.
+Current theory:
 
->=20
-> ---
->  drivers/mtd/nand/mpc5121_nfc.c |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/mtd/nand/mpc5121_nfc.c b/drivers/mtd/nand/mpc5121_nf=
-c.c
-> index df0c1da..f4610bc 100644
-> --- a/drivers/mtd/nand/mpc5121_nfc.c
-> +++ b/drivers/mtd/nand/mpc5121_nfc.c
-> @@ -568,6 +568,7 @@ static int mpc5121_nfc_read_hw_config(struct mtd_info=
- *mtd)
->  	uint rcw_width;
->  	uint rcwh;
->  	uint romloc, ps;
-> +	int ret =3D 0;
-> =20
->  	rmnode =3D of_find_compatible_node(NULL, NULL, "fsl,mpc5121-reset");
->  	if (!rmnode) {
-> @@ -579,7 +580,8 @@ static int mpc5121_nfc_read_hw_config(struct mtd_info=
- *mtd)
->  	rm =3D of_iomap(rmnode, 0);
->  	if (!rm) {
->  		dev_err(prv->dev, "Error mapping reset module node!\n");
-> -		return -EBUSY;
-> +		ret =3D -EBUSY;
-> +		goto out;
->  	}
-> =20
->  	rcwh =3D in_be32(&rm->rcwhr);
-> @@ -628,8 +630,9 @@ static int mpc5121_nfc_read_hw_config(struct mtd_info=
- *mtd)
->  				rcw_width * 8, rcw_pagesize,
->  				rcw_sparesize);
->  	iounmap(rm);
-> +out:
->  	of_node_put(rmnode);
-> -	return 0;
-> +	return ret;
->  }
-> =20
->  /* Free driver resources */
->=20
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+Mobo: Intel DP55KG
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I had this:
+#append="3w-9xxx.use_msi=1 reboot=a snd_hda_intel.enable_msi=1"
 
---p4qYPpj5QlsIQJ0K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Now I am no longer using MSI for the 3ware driver, so far, the 'lag' /
+controller reset problem has not occurred yet:
+append="reboot=a snd_hda_intel.enable_msi=1"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+I wish both cards did not use the same IRQ, however, if this solves the problem
+then I'll be happy.
 
-iEYEARECAAYFAkx6gSAACgkQD27XaX1/VRu0AgCgtucFBgSniN12c8AQGNzYv0jp
-B0AAnRHH0tAw2XCxIB4aR3p+Gk3D0luH
-=0rXz
------END PGP SIGNATURE-----
+>From /proc/interrupts:
 
---p4qYPpj5QlsIQJ0K--
+16:      44899          0          0          0          0          0      12418          0   IO-APIC-fasteoi   3w-9xxx, 3w-9xxx, ehci_hcd:usb1
+
+So far I'm typing this e-mail on the client and I do not see any lag at this
+time, it appears this has fixed my problem, I'll give it a few more hours/days
+before I consider it 'fixed' but after changing all of the settings in 3dm2
+and replacing/removing the BBUs, noticing no change, it appears to be an
+interrupt problem when the 3ware cards are used with MSI on my motherboard.
+
+Are there cases in which MSI should/should not be used?  Generally I have it on
+for all of my devices but perhaps the 3ware cards don't play well with it
+on the Intel motherboard?
+
+I am guessing the 'lag' issue causes the controller to reset when there is
+too much I/O launched via cron (backups and such)..
+
+We'll see if it happens again, I did briefly try the newest Beta firmware
+as LSI recommended made no difference in terms of the lag issue.
+
+I am still running with 'nobarrier' removed and have not gotten any controller
+resets yet, but I had the lag issue as mentioned above until I removed the
+MSI option from the 3w-9xxx driver.
+
+Before removal of MSI option:
+
+Drive Performance Monitor Configuration for /c1 ...
+Performance Monitor: ON
+Version: 1
+Max commands for averaging: 100
+Max latency commands to save: 10
+Requested data: Instantaneous Drive Statistics
+
+                                Queue           Xfer         Resp
+Port   Status           Unit   Depth   IOPs    Rate(MB/s)   Time(ms)
+------------------------------------------------------------------------
+p0     OK               u0     1       123     1.202        730148 
+p1     OK               u0     1       123     1.203        644249 
+p2     OK               u1     1       7       0.000        132 
+p3     NOT-PRESENT      -      -       -       -            -
+
+After removal:
+
+Drive Performance Monitor Configuration for /c1 ...
+Performance Monitor: ON
+Version: 1
+Max commands for averaging: 100
+Max latency commands to save: 10
+Requested data: Instantaneous Drive Statistics
+
+                                Queue           Xfer         Resp
+Port   Status           Unit   Depth   IOPs    Rate(MB/s)   Time(ms)
+------------------------------------------------------------------------
+p0     OK               u0     1       53      3.124        85900 
+p1     OK               u0     1       53      3.124        85900 
+p2     OK               u1     0       0       0.000        0 
+p3     NOT-PRESENT      -      -       -       -            -
+
+..
+
+This is what the problem looks like (sdb=root) as it happened twice (before
+removal of the MSI option, I've not been able to reproduce it with the MSI
+option disabled).
+
+$ (output form dstat)
+-dsk/total----dsk/sda-----dsk/sdb--
+  read  writ: read  writ: read  writ
+    0  6884k:   0     0 :   0  6884k
+    0  4580k:   0     0 :   0  4580k
+    0  4728k:   0     0 :   0  4728k
+    0  3936k:   0     0 :   0  3936k
+    0  5764k:   0     0 :   0  5764k
+    0  1292k:   0     0 :   0  1292k
+    0  7760k:   0     0 :   0  7760k
+    0  5480k:   0     0 :   0  5480k
+    0  7408k:   0     0 :   0  7408k
+    0  5040k:   0     0 :   0  5040k
+    0  6236k:   0     0 :   0  6236k
+    0   788k:   0     0 :   0   788k
+    0     0 :   0     0 :   0     0
+    0  2900k:   0     0 :   0  2900k
+    0  8160k:   0     0 :   0  8160k
+4096B 7916k:   0     0 :4096B 7916k
+    0  7812k:   0     0 :   0  7812k
+    0  4804k:   0     0 :   0  4804k
+  148k 7268k:   0     0 : 148k 7268k
+    0   888k:   0     0 :   0   888k
+    0  7688k:   0     0 :   0  7688k
+    0  7644k:   0     0 :   0  7644k
+    0  6352k:   0     0 :   0  6352k
+-dsk/total----dsk/sda-----dsk/sdb--
+  read  writ: read  writ: read  writ
+    0  5324k:   0     0 :   0  5324k
+    0  1432k:   0     0 :   0  1432k
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+-dsk/total----dsk/sda-----dsk/sdb--
+  read  writ: read  writ: read  writ
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0 dddddddddd
+    0  8700k:   0     0 :   0  8700k
+    0  2076k:   0     0 :   0  2076k
+    0  5428k:   0     0 :   0  5428k
+    0  7984k:   0     0 :   0  7984k
+    0  8236k:   0     0 :   0  8236k
+    0  2536k:   0     0 :   0  2536k
+    0   232k:   0     0 :   0   232k
+    0   268k:   0     0 :   0   268k
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0   508k:   0     0 :   0   508k
+    0    72k:   0     0 :   0    72k
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+4096B  232k:   0     0 :4096B  232k
+  344k 2380k:   0     0 : 344k 2380k
+    0  1172k:   0     0 :   0  1172k
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0
+    0     0 :   0     0 :   0     0 ^C^C^C
+$
+
+
+Justin.
+
+
