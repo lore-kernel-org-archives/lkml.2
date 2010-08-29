@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab0H2NRg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 09:17:36 -0400
-Received: from freeflow.nu ([178.79.134.28]:51847 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab0H2NRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 09:17:35 -0400
-Message-ID: <4C7A5DDE.8030106@kernel.org>
-Date: Sun, 29 Aug 2010 16:17:18 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753430Ab0H2NT1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 09:19:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39752 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab0H2NT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 09:19:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=Q2+qm9pj6VVEfkf9xZuuqFHjZs/zN2aoskCW2IeurkDDT7wEu+1C0+ljWvHnQwwuRb
+         AKQaIGc4WVFuGlgPZoToS/n7eCizh4uz/YYdId57PoA0w7Mt3+g5uVKFmxlR/640/baS
+         UfokUFM+fnBmnjk1TInoDxNG4IUq2O0gpcwyI=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Tino Keitel <tino.keitel+xorg@tikei.de>
+Subject: Re: 2.6.36-rc2 regression: Wrong screen resolution (1024x768 instead of 1680x1050)
+Date: Sun, 29 Aug 2010 15:19:20 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+References: <20100826073039.GA4567@mac.home>
+In-Reply-To: <20100826073039.GA4567@mac.home>
 MIME-Version: 1.0
-To: Mikael Abrahamsson <swmike@swm.pp.se>
-CC: Stan Hoeppner <stan@hardwarefreak.com>, Christoph Lameter <cl@linux.com>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, Linux Netdev List <netdev@vger.kernel.org>
-Subject: Re: 2.6.34.1 page allocation failure
-References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home> <4C724141.8060000@kernel.org> <4C72F7C6.3020109@hardwarefreak.com> <4C74097A.5020504@kernel.org> <alpine.DEB.1.10.1008242114120.8562@uplift.swm.pp.se> <4C7A3B1D.7050500@kernel.org> <alpine.DEB.1.10.1008291433420.8562@uplift.swm.pp.se>
-In-Reply-To: <alpine.DEB.1.10.1008291433420.8562@uplift.swm.pp.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008291519.20734.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On Sun, 29 Aug 2010, Pekka Enberg wrote:
->> Do you see these out-of-memory problems with 2.6.35?
-On 29.8.2010 15.38, Mikael Abrahamsson wrote:
-> Haven't tried it.
->
-> Has there been substantial work done there that changes things so that 
-> if I reproduce it on 2.6.35, someone will look into the issue in 
-> earnest? Since I'll most likely have to compile a new kernel, are 
-> there any debug options I should enable to give more information to 
-> aid fault finding?
-There aren't any debug options that need to be enabled. The reason I'm 
-asking is because we had a bunch of similar issues being reported 
-earlier that got fixed and it's been calm for a while. That's why it 
-would be interesting to know if 2.6.35 or 2.6.36-rc2 (if it's not too 
-unstable to test) fixes things.
+On czwartek, 26 sierpnia 2010 o 09:30:39 Tino Keitel wrote:
+> Hi,
+> 
+> booting 2.6.36-rc2-git4 (commit
+> d4348c678977c7093438bbbf2067c49396ae941b) results in a screen
+> resolution of 1024x768 instead of 1680x1050.  It works fine with
+> 2.6.35.2.
+> 
+> The framebuffer console uses the correct resolution, but only uses a
+> part of the screen for text output. Xorg output looks distorted.
+> 
+> Xorg log is attached.
+> 
+> $ xrandr
+> Screen 0: minimum 320 x 200, current 1024 x 768, maximum 4096 x 4096
+> VGA1 disconnected (normal left inverted right x axis y axis)
+> DVI1 connected 1024x768+0+0 (normal left inverted right x axis y axis)
+> 454mm x 284mm
+>    1680x1050      59.9 +
+>    1280x1024      60.0
+>    1280x960       60.0
+>    1024x768       60.0*
+>    800x600        60.3
+>    640x480        60.0
+>    720x400        70.1
+> TV1 connected 1024x768+0+0 (normal left inverted right x axis y axis)
+> 0mm x 0mm
+>    848x480        30.0 +
+>    640x480        30.0 +
+>    1024x768       30.0*
+>    800x600        30.0
+> 
+> This is a Mac mini Core 2 Duo with Intel i945 graphics.
+> 
 
-             Pekka
+Seems be similar to:
+https://bugzilla.kernel.org/show_bug.cgi?id=17301
+
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
