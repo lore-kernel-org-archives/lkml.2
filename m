@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab0H2W0X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 18:26:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960Ab0H2W0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 18:26:22 -0400
-Message-ID: <4C7ADE7A.2040909@redhat.com>
-Date: Sun, 29 Aug 2010 18:26:02 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1754072Ab0H2W1r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 18:27:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19426 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960Ab0H2W1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 18:27:46 -0400
+Message-ID: <4C7ADEBD.3070906@kernel.org>
+Date: Sun, 29 Aug 2010 15:27:09 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Ying Han <yinghan@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap
- system
-References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>	<AANLkTinCKJw2oaNgAvfm0RawbW4zuJMtMb2pUROeY2ij@mail.gmail.com>	<4C7ABD14.9050207@redhat.com> <AANLkTimjVHp1=Fc35xLnyPb2aa+ew7w1P9DC_0GfhZgY@mail.gmail.com>
-In-Reply-To: <AANLkTimjVHp1=Fc35xLnyPb2aa+ew7w1P9DC_0GfhZgY@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.36-rc3
+References: <AANLkTinRRiW1VUzS+3T82=q8PsoRn78Cgn_X8gSduM0U@mail.gmail.com> <AANLkTi=652CHVZz8TAqCOiOLO2XyUHd6_i3vWNgbVzKA@mail.gmail.com>
+In-Reply-To: <AANLkTi=652CHVZz8TAqCOiOLO2XyUHd6_i3vWNgbVzKA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2010 05:23 PM, Ying Han wrote:
-> On Sun, Aug 29, 2010 at 1:03 PM, Rik van Riel<riel@redhat.com>  wrote:
->> On 08/29/2010 01:45 PM, Ying Han wrote:
->>
->>> There are few other places in vmscan where we check nr_swap_pages and
->>> inactive_anon_is_low. Are we planning to change them to use
->>> total_swap_pages
->>> to be consistent ?
->>
->> If that makes sense, maybe the check can just be moved into
->> inactive_anon_is_low itself?
->
-> That was the initial patch posted, instead we changed to use
-> total_swap_pages instead. How this patch looks:
+On 08/29/2010 12:24 PM, Torsten Kaiser wrote:
+> On Sun, Aug 29, 2010 at 7:25 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> You all know the drill by now: another week, another -rc.
+> 
+> I'm still seeing the regression from -rc1 that the start of the early
+> serial output only contains garbage.
+> 
+> I'm blaming commit 8fee13a48e4879fba57725f6d9513df4bfa8e9f3 (x86,
+> setup: enable early console output from the decompressor), because if
+> I'm disabling the new serial_putchar() in
+> arch/x86/boot/compressed/misc.c by putting "return;" in its first
+> line, the output returns to normal.
+> 
+> Here the different outputs from the serial console:
+> Start of output from 2.6.35:
+> [    0.000000] Linux version 2.6.35 (root@treogen) (gcc version 4.4.4
+> (Gentoo 4.4.4-r1 p1.0, pie-0.4.5) ) #1 SMP Mon Aug 2 19:54:57 CEST
+> 2010
+> [    0.000000] Command line: fastboot earlyprintk=serial,ttyS0,115200
+> console=ttyS0,115200 console=tty1 crypt_root=/dev/md3 radeon.modeset=1
+> video=1280x1024
+> [    0.000000] BIOS-provided physical RAM map:
+> [    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
+> [    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
+> 
+> Start of output from 2.6.36-rc1..3:
+> {binary garbage}00000000 - 000000000009fc00 (usable)
+> [    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
+> 
+> Start of output with disabled serial_putchar():
+> [    0.000000] Linux version 2.6.36-rc3 (root@treogen) (gcc version
+> 4.4.4 (Gentoo 4.4.4-r1 p1.0, pie-0.4.5) ) #1 SMP Sun Aug 29 19:03:00
+> CEST 2010
+> [    0.000000] Command line: fastboot earlyprintk=serial,ttyS0,115200
+> console=ttyS0,115200 console=tty1 crypt_root=/dev/md3 radeon.modeset=1
+> video=1280x1024
+> [    0.000000] BIOS-provided physical RAM map:
+> [    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
+> [    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
+> 
+> I can't see anything wrong with this commit, but it looks to me, as if
+> the newly added decompressor output gets corrupted somewhere. Could it
+> be my nondefault baud rate at 115200?
+> 
 
-Looks good to me.  It could use a comment along the lines of:
+please check if following work...
+debug fastboot console=uart8250,io,0x3f8,115200 console=tty1 crypt_root=/dev/md3 radeon.modeset=1 video=1280x1024 
 
-	/*
-	 * No sense scanning the anon lists if we have no swap space.
-	 */
+and
 
-... and, of course, your signed-off-by :)
+fastboot console=uart8250,io,0x3f8,115200 console=tty1 crypt_root=/dev/md3 radeon.modeset=1 video=1280x1024 
 
--- 
-All rights reversed
+Thanks
+
+Yinghai
+
