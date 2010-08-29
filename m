@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab0H2Wwz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 18:52:55 -0400
+	id S1754348Ab0H2Wwy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 18:52:54 -0400
 Received: from ogre.sisk.pl ([217.79.144.158]:55207 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753928Ab0H2WwT convert rfc822-to-8bit (ORCPT
+	id S1754113Ab0H2WwY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 18:52:19 -0400
+	Sun, 29 Aug 2010 18:52:24 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Maciej Rutecki" <maciej.rutecki@gmail.com>
+        "Arno Schuring" <aelschuring@hotmail.com>
 References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
 In-Reply-To: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <4AUWBNzTkbD.A.MO._FueMB@chimera>
-Subject: [Bug #17021] [REGRESSION] [2.6.36-rc1] [DRM INTEL] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, expect flickering: entries required = 36, available = 28.
+Message-ID: <4AUWBNzTkbD.A.GQH.qFueMB@chimera>
+Subject: [Bug #17321] i386 WARNING: at kernel/softirq.c:143 _local_bh_enable_ip+0x2f/0x7e
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Aug 2010 00:36:35 +0200 (CEST)
+Date: Mon, 30 Aug 2010 00:36:37 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,11 @@ from 2.6.35.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17021
-Subject		: [REGRESSION] [2.6.36-rc1] [DRM INTEL] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, expect flickering: entries required = 36, available = 28.
-Submitter	: Maciej Rutecki <maciej.rutecki@gmail.com>
-Date		: 2010-08-18 18:46 (12 days old)
-Message-ID	: <201008182046.37732.maciej.rutecki@gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=128215721507666&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17321
+Subject		: i386 WARNING: at kernel/softirq.c:143 _local_bh_enable_ip+0x2f/0x7e
+Submitter	: Arno Schuring <aelschuring@hotmail.com>
+Date		: 2010-08-27 20:04 (3 days old)
+Message-ID	: <4C781A3A.4010707@hotmail.com>
+References	: http://marc.info/?l=linux-kernel&m=128294076822387&w=2
 
 
