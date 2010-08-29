@@ -1,219 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab0H2AkT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 20:40:19 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:17388 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab0H2AkR convert rfc822-to-8bit (ORCPT
+	id S1752949Ab0H2BtZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Aug 2010 21:49:25 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:63863 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525Ab0H2BtY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 20:40:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=copDX43N7JKgIkDNamdOZqFLt6RrmsBALjv9PkGOIElg14CWPsgaauByn+N30r8eSS
-         ZXE8cSDWMyUUlRbk2PXA==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTim9daA5eoQDbtJSnMuoBOEkDV4Y_Z3GbcDxL7Rk@mail.gmail.com>
-References: <4C702070.5020809@jungers.net>
-	<4C71808B.7070704@garzik.org>
-	<4C718115.8070103@garzik.org>
-	<AANLkTi=fQsHVpNu2TZeDNdcofoorFFfsASU=XDqUB9b4@mail.gmail.com>
-	<AANLkTi=deJbndavPJmFzEoy6kZQX8LdoAdE+QQN5if0=@mail.gmail.com>
-	<AANLkTim9daA5eoQDbtJSnMuoBOEkDV4Y_Z3GbcDxL7Rk@mail.gmail.com>
-Date: Sat, 28 Aug 2010 17:40:03 -0700
-Message-ID: <AANLkTikBQATmDFsdqfc3hVA6QyDfpGfzetzVMJkxg5-Y@mail.gmail.com>
-Subject: Re: possible esata regression in 2.6.35
-From: Gwendal Grignou <gwendal@google.com>
-To: Jeff Garzik <jeff@garzik.org>, kernel@teksavvy.com
-Cc: Nicolas Jungers <nicolas@jungers.net>, linux-kernel@vger.kernel.org,
-        Linux IDE mailing list <linux-ide@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Sat, 28 Aug 2010 21:49:24 -0400
+Date: Sun, 29 Aug 2010 03:48:16 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH/RFCv4 2/6] mm: cma: Contiguous Memory Allocator added
+In-reply-to: <201008281437.11830.hverkuil@xs4all.nl>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-mm@kvack.org, Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Message-id: <op.vh6faqnl7p4s8u@localhost>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.61 (Linux)
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+ <0b02e05fc21e70a3af39e65e628d117cd89d70a1.1282286941.git.m.nazarewicz@samsung.com>
+ <343f4b0edf9b5eef598831700cb459cd428d3f2e.1282286941.git.m.nazarewicz@samsung.com>
+ <201008281437.11830.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I submit a patch, but messed up with the --in-reply-to argument. Check
-"libata-sff: Reenable Port Multiplier after libata-sff remodeling."
-thread.
+> On Friday, August 20, 2010 11:50:42 Michal Nazarewicz wrote:
+>> +**** Regions
+>> +
+>> +     Regions is a list of regions terminated by a region with size
+>> +     equal zero.  The following fields may be set:
+>> +
+>> +     - size       -- size of the region (required, must not be zero)
+>> +     - alignment  -- alignment of the region; must be power of two or
+>> +                     zero (optional)
 
-I can now see my drive:
-Aug 27 17:42:36 halab-59 kernel: [  103.631293] ata_sff_exec_command:
-ata5: cmd 0xEC
-Aug 27 17:42:36 halab-59 kernel: [  103.634050] ata_sff_hsm_move:
-ata5: protocol 2 task_state 2 (dev_stat 0x58)
-Aug 27 17:42:36 halab-59 kernel: [  103.634053] ata_pio_sector: data read
-Aug 27 17:42:36 halab-59 kernel: [  103.634228] ata_sff_hsm_move:
-ata5: protocol 2 task_state 3 (dev_stat 0x50)
-Aug 27 17:42:36 halab-59 kernel: [  103.634231] ata_sff_hsm_move:
-ata5: dev 0 command complete, drv_stat 0x50
+On Sat, 28 Aug 2010 14:37:11 +0200, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> Just wondering: is alignment really needed since we already align to the
+> PAGE_SIZE? Do you know of hardware with alignment requirements > PAGE_SIZE?
 
-In general BMDMA does not support PMP, it assumes all qc are on ap->host.
-sata_mv does it sometimes, I will submit a patch for that, after I
-test the error path through-fully.
+Our video coder needs its firmware aligned to 128K plus it has to be located
+before any other buffers allocated for the chip.  Because of those, we have
+defined a separate region just for the coder's firmware which is small (256K
+IIRC) and aligned to 128K.
 
-Gwendal.
+>> +     - start      -- where the region has to start (optional)
+>> +     - alloc_name -- the name of allocator to use (optional)
+>> +     - alloc      -- allocator to use (optional; and besides
+>> +                     alloc_name is probably is what you want)
 
+> I would make this field internal only. At least for now.
 
-On Fri, Aug 27, 2010 at 3:56 PM, Gwendal Grignou <gwendal@google.com> wrote:
-> I found the problem: in ata_sff_pio_stack:
+OK.
+
+>> +*** The device and types of memory
+>> +
+>> +    The name of the device is taken from the device structure.  It is
+>> +    not possible to use CMA if driver does not register a device
+>> +    (actually this can be overcome if a fake device structure is
+>> +    provided with at least the name set).
+>> +
+>> +    The type of memory is an optional argument provided by the device
+>> +    whenever it requests memory chunk.  In many cases this can be
+>> +    ignored but sometimes it may be required for some devices.
 >
-> struct ata_queued_cmd *qc = ap->port_task_data;
+> This really should not be optional but compulsory. 'type' has the same function
+> as the GFP flags with kmalloc. They tell the kernel where the memory should be
+> allocated. Only if you do not care at all can you pass in NULL. But in almost
+> all cases the memory should be at least DMA-able (and yes, for a lot of SoCs that
+> is the same as any memory -- for now).
+
+At this moment, if type is NULL "common" is assumed.
+
+> Memory types should be defined in the platform code. Some can be generic
+> like 'dma' (i.e. any DMAable memory), 'dma32' (32-bit DMA) and 'common' (any
+> memory). Others are platform specific like 'banka' and 'bankb'.
+
+Yes, that's the idea.
+
+> A memory type definition can either be a start address/size pair but it can
+> perhaps also be a GFP type (e.g. .name = "dma32", .gfp = GFP_DMA32).
 >
-> has been replaced by:
+> Regions should be of a single memory type. So when you define the region it
+> should have a memory type field.
 >
-> /* qc can be NULL if timeout occurred */
-> qc = ata_qc_from_tag(ap, ap->link.active_tag);
-> if (!qc)
-> † † † †return;
+> Drivers request memory of whatever type they require. The mapping just maps
+> one or more regions to the driver and the cma allocator will pick only those
+> regions with the required type and ignore those that do not match.
 >
-> That does not work in case of port multipler, because the link to look
-> at is not ap->link. ap->link.active_tag is ATA_POISON.
+>> +    For instance, let's say that there are two memory banks and for
+>> +    performance reasons a device uses buffers in both of them.
+>> +    Platform defines a memory types "a" and "b" for regions in both
+>> +    banks.  The device driver would use those two types then to
+>> +    request memory chunks from different banks.  CMA attributes could
+>> +    look as follows:
+>> +
+>> +         static struct cma_region regions[] = {
+>> +                 { .name = "a", .size = 32 << 20 },
+>> +                 { .name = "b", .size = 32 << 20, .start = 512 << 20 },
+>> +                 { }
+>> +         }
+>> +         static const char map[] __initconst = "foo/a=a;foo/b=b;*=a,b";
 >
-> I will submit a patch where I re-introduce port_task_data, this time
-> containing the link to to look at.
+> So this would become something like this:
 >
-> Gwendal.
+>          static struct cma_memtype types[] = {
+>                  { .name = "a", .size = 32 << 20 },
+>                  { .name = "b", .size = 32 << 20, .start = 512 << 20 },
+>                  // For example:
+>                  { .name = "dma", .gfp = GFP_DMA },
+>                  { }
+>          }
+>          static struct cma_region regions[] = {
+>                  // size may of course be smaller than the memtype size.
+>                  { .name = "a", type = "a", .size = 32 << 20 },
+>                  { .name = "b", type = "b", .size = 32 << 20 },
+>                  { }
+>          }
+>          static const char map[] __initconst = "*=a,b";
 >
+> No need to do anything special for driver foo here: cma_alloc will pick the
+> correct region based on the memory type requested by the driver.
 >
->
-> On Fri, Aug 27, 2010 at 12:29 PM, Gwendal Grignou <gwendal@google.com> wrote:
->> I include the trace. You need windows and a lecroy satasuite to look
->> at the trace.
->>
->> Looking at extended traces, the identify never move in HSM:
->>
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613529] ata_sff_flush_pio_task: ENTER
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613561] ata_sff_exec_command:
->> ata13: cmd 0xE4
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613577] ata_sff_hsm_move:
->> ata13: protocol 1 task_state 3 (dev_stat 0x50)
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613580] ata_sff_hsm_move:
->> ata13: dev 0 command complete, drv_stat 0x50
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613605] ata_sff_flush_pio_task: ENTER
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613637] ata_sff_exec_command:
->> ata13: cmd 0xE4
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613654] ata_sff_hsm_move:
->> ata13: protocol 1 task_state 3 (dev_stat 0x50)
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613656] ata_sff_hsm_move:
->> ata13: dev 0 command complete, drv_stat 0x50
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613681] ata_sff_flush_pio_task: ENTER
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613688]
->> ata_eh_revalidate_and_attach: ENTER
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613691]
->> ata_eh_revalidate_and_attach: ENTER
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613693]
->> ata_eh_revalidate_and_attach: ENTER
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613694]
->> ata_eh_revalidate_and_attach: ENTER
->> Aug 27 12:07:53 halab-59 kernel: [ †548.613725] ata_sff_exec_command:
->> ata13: cmd 0xEC
->> ...
->> Aug 27 12:08:23 halab-59 kernel: [ †578.613048] __ata_port_freeze:
->> ata13 port frozen
->> Aug 27 12:08:23 halab-59 kernel: [ †578.613058] ata13.03: qc timeout (cmd 0xec)
->> Aug 27 12:08:23 halab-59 kernel: [ †578.613062] ata13.03: failed to
->> IDENTIFY (I/O error, err_mask=0x4)
->>
->>
->> On Fri, Aug 27, 2010 at 1:19 AM, Gwendal Grignou <gwendal@google.com> wrote:
->>> I can reproduce the problem on uptsream-linux using a PC with Marvell
->>> 7042 controller and Sil3726 PMP. Without the SIl3726, it works fine.
->>>
->>> What I can see on the SATA analyzer [I will send clean trace tomorrow]
->>> is the disk send the DATA FIS back to the PMP, but the PMP does not
->>> manage to have the data accepted by the host.
->>>
->>> Non data commands work fine.
->>>
->>> In dmesg:
->>> [10058.404047] ata29: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->>> [10058.404742] ata29.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6
->>> ports, feat 0x1/0x9
->>> [10058.405250] ata29.00: hard resetting link
->>> [10058.809151] ata29.00: link resume succeeded after 1 retries
->>> [10058.911613] ata29.01: hard resetting link
->>> [10059.217572] ata29.02: hard resetting link
->>> [10059.523572] ata29.03: hard resetting link
->>> [10059.829505] ata29.04: hard resetting link
->>> [10060.134572] ata29.05: hard resetting link
->>> [10065.440079] ata29.03: qc timeout (cmd 0xec)
->>> [10065.440085] ata29.03: failed to IDENTIFY (I/O error, err_mask=0x4)
->>> [10065.440092] ata29.15: hard resetting link
->>> [10065.947049] ata29.15: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->>> [10065.947737] ata29.00: hard resetting link
->>> [10066.352106] ata29.00: link resume succeeded after 1 retries
->>> [10066.454616] ata29.01: hard resetting link
->>> [10066.760591] ata29.02: hard resetting link
->>> [10067.066570] ata29.03: hard resetting link
->>> [10067.372505] ata29.05: hard resetting link
->>> [10077.677071] ata29.03: qc timeout (cmd 0xec)
->>> [10077.677076] ata29.03: failed to IDENTIFY (I/O error, err_mask=0x4)
->>> [10077.677081] ata29.15: hard resetting link
->>> [10078.184073] ata29.15: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->>> [10078.184783] ata29.00: hard resetting link
->>> [10078.589185] ata29.00: link resume succeeded after 1 retries
->>> [10078.691593] ata29.01: hard resetting link
->>> [10078.997592] ata29.02: hard resetting link
->>> [10079.303571] ata29.03: hard resetting link
->>> [10079.609505] ata29.04: hard resetting link
->>> [10079.914572] ata29.05: hard resetting link
->>> [10110.220078] ata29.03: qc timeout (cmd 0xec)
->>> [10110.220083] ata29.03: failed to IDENTIFY (I/O error, err_mask=0x4)
->>> [10110.220087] ata29.03: failed to recover link after 3 tries, disabling
->>> [10110.220094] ata29.15: hard resetting link
->>> [10110.727044] ata29.15: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->>> [10111.033375] ata29.00: hard resetting link
->>> [10111.338571] ata29.01: hard resetting link
->>> [10111.644591] ata29.02: hard resetting link
->>> [10111.950594] ata29.05: hard resetting link
->>> [10112.256643] ata29: EH complete
->>>
->>>
->>> Gwendal.
->>>
->>>
->>>
->>>
->>> On Sun, Aug 22, 2010 at 12:57 PM, Jeff Garzik <jeff@garzik.org> wrote:
->>>> On 08/22/2010 03:54 PM, Jeff Garzik wrote:
->>>>>
->>>>> On 08/21/2010 02:52 PM, Nicolas Jungers wrote:
->>>>>>
->>>>>> My arm box doesn't succeed to use my esata port multiplier (addonics
->>>>>> sil3726 based). It was working well with 2.6.34.1 and 2.6.34.4 but not
->>>>>> with both 2.6.35.2 and 2.6.35.3. I haven't test other kernels.
->>>>>>
->>>>>> The kernels are from http://sheeva.with-linux.com/sheeva/ with for
->>>>>> example the following config
->>>>>> http://sheeva.with-linux.com/sheeva/2.6.35.3/sheeva-2.6.35.3.config
->>>>>>
->>>>>> The symptoms are in the console a loop on the esata links. Here is the
->>>>>> start of it:
->>>>>>
->>>>>> ata2: exception Emask 0x10 SAct 0x0 SErr 0x4010000 action 0xe frozen
->>>>>> ata2: edma_err_cause=00000010 pp_flags=00000000, dev connect
->>>>>> ata2: SError: { PHYRdyChg DevExch }
->>>>>> ata2: hard resetting link
->>>>>> ata2: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
->>>>>> ata2.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
->>>>>
->>>>> Can you post or link to the entire dmesg?
->>>>>
->>>>> Notably, we need to see the probe messages to determine what SATA chip
->>>>> you are using... From the edma_err_cause config I'd guess sata_mv, but
->>>>> more info would be useful.
->>>>
->>>> Nevermind, I see the reply (it got auto-sorted into the wrong folder
->>>> locally).
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at †http://vger.kernel.org/majordomo-info.html
->>>>
->>>
->>
->
+> It is probably no longer needed to specify the memory type in the mapping when
+> this is in place.
+
+I'm not entirely happy with such scheme.
+
+For one, types may overlap: ie. the whole "banka" may be "dma" as well.
+This means that a single region could be of several different types.
+
+Moreover, as I've mentioned the video coder needs to allocate buffers from
+different banks.  However, on never platform there's only one bank (actually
+two but they are interlaced) so allocations from different banks no longer
+make sense.  Instead of changing the driver though I'd prefer to only change
+the mapping in the platform.
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Micha≈Ç "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+
