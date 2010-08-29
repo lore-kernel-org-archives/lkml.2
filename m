@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0H2NeM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 09:34:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38007 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab0H2NeL (ORCPT
+	id S1753451Ab0H2NiA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 09:38:00 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:36847 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab0H2Nh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 09:34:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IcsPV0MgmV1H/ihkCmJMa8rW/prVGp/ptF6It/A/fN8O0G2uFqB7cpsBoSTf72g4RT
-         pShiOaW7bNpkEaGerh3r8G22GMz8rLvS/KnpETaszbjKVI3wJ01LpsAwiDuTbGP2JrhP
-         CVFXj+X6Db6RS7KcEqj4ya89JnlkjOGrS7BeM=
+	Sun, 29 Aug 2010 09:37:59 -0400
+Date: Sun, 29 Aug 2010 14:37:53 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Ivan Bulatovic <combuster@gmx.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, jbarnes@virtuousgeek.org,
+        eric@anholt.net, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: i915: 2.6.36-rc2 wrong resolution on gdm start
+Message-ID: <20100829133753.GB19049@sucs.org>
+References: <1282611655.2177.19.camel@localhost.localdomain> <8u3s8d$jcftu0@orsmga001.jf.intel.com> <1282638912.2191.17.camel@localhost.localdomain> <89kc63$hrqmar@fmsmga002.fm.intel.com> <1282641126.2259.15.camel@localhost.localdomain> <AANLkTikGRnF8jZLmwA8Ey203K1rMbY1jw6Gb_cAMYmyo@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100818124755.GE4944@suse.de>
-References: <AANLkTin5K=ii_ZhQ1hFm7wfcqfhdQhrUh-mXS7ZAy=h-@mail.gmail.com>
-	<20100818124755.GE4944@suse.de>
-Date: Sun, 29 Aug 2010 16:34:10 +0300
-Message-ID: <AANLkTikCYn_i_UuPWOtFsdMghk_8H-myMZmfmdhaAFHN@mail.gmail.com>
-Subject: Re: Staging drivers das08_cs.c compile error
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikGRnF8jZLmwA8Ey203K1rMbY1jw6Gb_cAMYmyo@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 3:47 PM, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Aug 18, 2010 at 02:07:05PM +0300, Anca Emanuel wrote:
->> Linux 2.6.36-rc1 compile error:
->>
->> drivers/staging/comedi/drivers/das08_cs.c: In function
->> ?das08_pcmcia_config_loop?:
->> drivers/staging/comedi/drivers/das08_cs.c:225: error: ?struct
->> pcmcia_device? has no member named ?io?
->
-> Yeah, thanks, a patch has already been sent to me for this, I'll get it
-> to Linus soon.
->
-> thanks,
->
-> greg k-h
->
+On Sun, Aug 29, 2010 at 02:29:32PM +0300, Pekka Enberg wrote:
+> 
+> I'm still seeing wrong resolution with my i915 Macbook with latest
+> Linus' git. Is there a fix in the pipeline or should we start looking
+> for a commit to revert? As a slab maintainer, I'm supposed to be able
+> to work with -rc kernels and this particular bug is pretty damn
+> annoying.
 
-ping
+I've been seeing a variety of strange behaviour since
+9d0498a2bf7455159b317f19531a3e5db2ecc9c4 too (I found I could narrow it
+down in http://lkml.org/lkml/2010/8/24/280 but the change mentioned
+there doesn't seem to help others). I've filed
+https://bugs.freedesktop.org/show_bug.cgi?id=29857 which summarises the
+different strange behaviour that I've seen generated and the steps I've
+used to reproduce them. Unfortunately this week I'm not going to have
+much time for the tests I was able to do last week.
+
+-- 
+Sitsofe | http://sucs.org/~sits/
