@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab0H2L1z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 07:27:55 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51503 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab0H2L1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 07:27:54 -0400
-Message-ID: <4C7A42AA.1000806@kernel.org>
-Date: Sun, 29 Aug 2010 13:21:14 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753209Ab0H2L3e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 07:29:34 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:32803 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab0H2L3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 07:29:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=oytotryy2DVqahRemCMf5x1tXwNmzxRP+fSHnWSQm/Urw3dEanY8r0+ebovodY2rew
+         dsWUBq6WVQ8i4PokVZ1LXID7FzlD/NZ8XjlmqqugWNhrU9WU6/XUGlDt5fBsY4RG2hGd
+         A3B+NAfZD2ofTcDd3W/XmMC45S7LsGBoafxYE=
 MIME-Version: 1.0
-To: CAI Qian <caiqian@redhat.com>
-CC: kexec <kexec@lists.infradead.org>, linux-next@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kdump regression compared to v2.6.35
-References: <633505726.1479321283081093502.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <633505726.1479321283081093502.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 29 Aug 2010 11:27:37 +0000 (UTC)
+In-Reply-To: <1282641126.2259.15.camel@localhost.localdomain>
+References: <1282611655.2177.19.camel@localhost.localdomain>
+	<8u3s8d$jcftu0@orsmga001.jf.intel.com>
+	<1282638912.2191.17.camel@localhost.localdomain>
+	<89kc63$hrqmar@fmsmga002.fm.intel.com>
+	<1282641126.2259.15.camel@localhost.localdomain>
+Date: Sun, 29 Aug 2010 14:29:32 +0300
+X-Google-Sender-Auth: pft62hWnj21YFVRRcPRcoiTMm-s
+Message-ID: <AANLkTikGRnF8jZLmwA8Ey203K1rMbY1jw6Gb_cAMYmyo@mail.gmail.com>
+Subject: Re: i915: 2.6.36-rc2 wrong resolution on gdm start
+From: Pekka Enberg <penberg@kernel.org>
+To: Ivan Bulatovic <combuster@gmx.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, jbarnes@virtuousgeek.org,
+        eric@anholt.net, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi all,
 
-On 08/29/2010 01:24 PM, CAI Qian wrote:
->> On 08/29/2010 09:01 AM, caiqian@redhat.com wrote:
->>> Further bisect indicated this bad commit from the merge. Given kdump
->>> kernel was running with maxcpus=1, I guess this work caused fs/bio.c
->>> hung in the workqueue on UP. Reverted the whole merge let kdump work
->>> again.
->>
->> Can you please pull from the following git tree and see whether it
->> fixes the problem?  There was a bug in nr_active accounting.
->
-> It had the same problem.
+On Tue, Aug 24, 2010 at 12:12 PM, Ivan Bulatovic <combuster@gmx.com> wrote:
+> Thanks for the confirmation Pekka. I've managed to change the resolution
+> but gdm always starts with 1024x768 and upon login it gets 1280x1024,
+> and sometimes the mouse pointer go out of bounds to the right edge of
+> the screen but when I maximize windows it sticks to 1280x1024. When I
+> start gnome-display-properties that invisible right portion of the
+> screen dissapears.
 
-I see.  Hmm... a different issue then.  Can you please tell me how to
-reproduce the problem?
+I'm still seeing wrong resolution with my i915 Macbook with latest
+Linus' git. Is there a fix in the pipeline or should we start looking
+for a commit to revert? As a slab maintainer, I'm supposed to be able
+to work with -rc kernels and this particular bug is pretty damn
+annoying.
 
-Thanks.
-
--- 
-tejun
+                           Pekka
