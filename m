@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab0H2VwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 17:52:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51567 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab0H2VwQ (ORCPT
+	id S1753990Ab0H2WS1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 18:18:27 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22656 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab0H2WS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 17:52:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=gD2MP0EvJ+7SqPDOMAZmhv3E41I1S072P3ZThqtOXsiU8wgmOJgh3/MZuvlOdZGIeb
-         pL9a2fMGS9O5+dukUDaYNm0DAi/Lv45RUjj8J3NRxSU1yRu/33IgRUZ/1KWigfvZElgY
-         nVZgDnB9Peum8fjfgFKIrejwYyKbKwKVtRbHY=
-MIME-Version: 1.0
-In-Reply-To: <1283115995-4734-5-git-send-email-arnd@arndb.de>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <1283115995-4734-5-git-send-email-arnd@arndb.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sun, 29 Aug 2010 17:51:55 -0400
-Message-ID: <AANLkTinE6E47=NbdWo28i6Z6i-6QqHUmF1+Tr7u_v8o3@mail.gmail.com>
-Subject: Re: [PATCH 4/5] tty/hw: move hardware drivers to drivers/tty/hw
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 29 Aug 2010 18:18:26 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6089"; a="52521701"
+From: Gregory Bean <gbean@codeaurora.org>
+To: akpm@linux-foundation.org
+Cc: david-b@pacbell.net, khali@linux-fr.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH v2] gpio: sx150x: correct and refine reset-on-probe behavior.
+Date: Sun, 29 Aug 2010 15:18:22 -0700
+Message-Id: <1283120302-6259-1-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7TLqO70023838
 
-On Sun, Aug 29, 2010 at 17:06, Arnd Bergmann wrote:
-> Random obsolete tty drivers are mixed with random
-> other stuff in drivers/char, this moves all the
-> tty drivers into one place.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> Â MAINTAINERS Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â | Â  22 +-
-> Â drivers/char/Kconfig Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  | Â 287 +------------------
-> Â drivers/char/Makefile Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â | Â  28 +--
-> Â drivers/char/pcmcia/Kconfig Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â | Â  22 --
-> Â drivers/char/pcmcia/Makefile Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  | Â  Â 3 -
-> Â drivers/tty/Makefile Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  | Â  Â 1 +
-> Â drivers/tty/hw/Kconfig Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  | Â 308 ++++++++++++++++++++
-> Â drivers/tty/hw/Makefile Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â | Â  27 ++
-> Â drivers/{char => tty/hw}/amiserial.c Â  Â  Â  Â  Â  Â  Â  | Â  Â 0
+Replace the arbitrary software-reset call from the device-probe
+method, because:
+- It is defective.  To work correctly, it should be two byte writes,
+  not a single word write.  As it stands, it does nothing.
+- Some devices with sx150x expanders installed have their NRESET pins
+  ganged on the same line, so resetting one causes the others to reset -
+  not a nice thing to do arbitrarily!
+- The probe, usually taking place at boot, implies a recent hard-reset,
+  so a software reset at this point is just a waste of energy anyway.
 
-does it need to be in tty/hw/ ?  seems like there's so little in tty/
-to not bother with a further hw/ ...
--mike
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Therefore, make it optional, defaulting to off, as this will match the
+common case of probing at powerup and also matches the current
+broken no-op behavior.
+
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ drivers/gpio/sx150x.c      |   26 +++++++++++++++++++++-----
+ include/linux/i2c/sx150x.h |    4 ++++
+ 2 files changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpio/sx150x.c b/drivers/gpio/sx150x.c
+index b42f42c..823559a 100644
+--- a/drivers/gpio/sx150x.c
++++ b/drivers/gpio/sx150x.c
+@@ -459,17 +459,33 @@ static int sx150x_init_io(struct sx150x_chip *chip, u8 base, u16 cfg)
+ 	return err;
+ }
+ 
+-static int sx150x_init_hw(struct sx150x_chip *chip,
+-			struct sx150x_platform_data *pdata)
++static int sx150x_reset(struct sx150x_chip *chip)
+ {
+-	int err = 0;
++	int err;
+ 
+-	err = i2c_smbus_write_word_data(chip->client,
++	err = i2c_smbus_write_byte_data(chip->client,
+ 					chip->dev_cfg->reg_reset,
+-					0x3412);
++					0x12);
+ 	if (err < 0)
+ 		return err;
+ 
++	err = i2c_smbus_write_byte_data(chip->client,
++					chip->dev_cfg->reg_reset,
++					0x34);
++	return err;
++}
++
++static int sx150x_init_hw(struct sx150x_chip *chip,
++			struct sx150x_platform_data *pdata)
++{
++	int err = 0;
++
++	if (pdata->reset_during_probe) {
++		err = sx150x_reset(chip);
++		if (err < 0)
++			return err;
++	}
++
+ 	err = sx150x_i2c_write(chip->client,
+ 			chip->dev_cfg->reg_misc,
+ 			0x01);
+diff --git a/include/linux/i2c/sx150x.h b/include/linux/i2c/sx150x.h
+index ee3049c..52baa79 100644
+--- a/include/linux/i2c/sx150x.h
++++ b/include/linux/i2c/sx150x.h
+@@ -63,6 +63,9 @@
+  *            IRQ lines will appear.  Similarly to gpio_base, the expander
+  *            will create a block of irqs beginning at this number.
+  *            This value is ignored if irq_summary is < 0.
++ * @reset_during_probe: If set to true, the driver will trigger a full
++ *                      reset of the chip at the beginning of the probe
++ *                      in order to place it in a known state.
+  */
+ struct sx150x_platform_data {
+ 	unsigned gpio_base;
+@@ -73,6 +76,7 @@ struct sx150x_platform_data {
+ 	u16      io_polarity;
+ 	int      irq_summary;
+ 	unsigned irq_base;
++	bool     reset_during_probe;
+ };
+ 
+ #endif /* __LINUX_I2C_SX150X_H */
+-- 
+1.7.0.4
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
