@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab0H2Tel (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 15:34:41 -0400
-Received: from mail.virtall.com ([178.63.195.102]:47898 "EHLO mail.virtall.com"
+	id S1753995Ab0H2TrW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 15:47:22 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:34970 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753720Ab0H2Tek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 15:34:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=wpkg.org; h=message-id:date
-	:from:mime-version:to:cc:subject:content-type
-	:content-transfer-encoding; q=dns; s=default; b=ZNQEX1hoJBkzWR6i
-	QWs21PQazI5szKg4g+zmqk+vJ0DR2asmMAdWdH5kmC6bBGkuJIiAco7fV9E4Bj81
-	ylyOGVHnDmK0LLzlfxFDLuKkWOc+bDdodw88JCtMmuVoLCIvjbQ/rQObJZWiyy62
-	QZSAdnlGEGafS0aQX2c5/tOlenI=
-Message-ID: <4C7AB645.5090804@wpkg.org>
-Date: Sun, 29 Aug 2010 21:34:29 +0200
-From: Tomasz Chmielewski <mangoo@wpkg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100809 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-CC: hch@infradead.org, gg.mariotti@gmail.com,
-        "Justin P. Mattock" <justinmattock@gmail.com>, mjt@tls.msk.ru,
-        josef@redhat.com, tytso@mit.edu
-Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753591Ab0H2TrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 15:47:21 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: kernel-janitors@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] arch/powerpc/platforms/83xx/mpc837x_mds.c: Add missing iounmap
+Date: Sun, 29 Aug 2010 21:47:18 +0200
+Message-Id: <1283111238-3129-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig wrote:
+The function of_iomap returns the result of calling ioremap, so iounmap
+should be called on the result in the error handling code, as done in the
+normal exit of the function.
 
-> There are a lot of variables when using qemu.
->
-> The most important one are:
->
->  - the cache mode on the device.  The default is cache=writethrough,
->    which is not quite optimal.  You generally do want to use cache=none
->    which uses O_DIRECT in qemu.
->  - if the backing image is sparse or not.
->  - if you use barrier - both in the host and the guest.
+The sematic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-I noticed that when btrfs is mounted with default options, when writing 
-i.e. 10 GB on the KVM guest using qcow2 image, 20 GB are written on the 
-host (as measured with "iostat -m -p").
+// <smpl>
+@r exists@
+local idexpression x;
+expression E,E1;
+identifier l;
+statement S;
+@@
 
+*x = of_iomap(...);
+...  when != iounmap(x)
+     when != if (...) { ... iounmap(x); ... }
+     when != E = x
+     when any
+(
+if (x == NULL) S
+|
+if (...) {
+  ... when != iounmap(x)
+      when != if (...) { ... iounmap(x); ... }
+(
+  return <+...x...+>;
+|
+*  return ...;
+)
+}
+)
+... when != x = E1
+    when any
+iounmap(x);
+// </smpl>
 
-With ext4 (or btrfs mounted with nodatacow), 10 GB write on a guest 
-produces 10 GB write on the host.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
+---
+ arch/powerpc/platforms/83xx/mpc837x_mds.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
--- 
-Tomasz Chmielewski
-http://wpkg.org
+diff --git a/arch/powerpc/platforms/83xx/mpc837x_mds.c b/arch/powerpc/platforms/83xx/mpc837x_mds.c
+index f9751c8..8306832 100644
+--- a/arch/powerpc/platforms/83xx/mpc837x_mds.c
++++ b/arch/powerpc/platforms/83xx/mpc837x_mds.c
+@@ -48,8 +48,10 @@ static int mpc837xmds_usb_cfg(void)
+ 		return -1;
+ 
+ 	np = of_find_node_by_name(NULL, "usb");
+-	if (!np)
+-		return -ENODEV;
++	if (!np) {
++		ret = -ENODEV;
++		goto out;
++	}
+ 	phy_type = of_get_property(np, "phy_type", NULL);
+ 	if (phy_type && !strcmp(phy_type, "ulpi")) {
+ 		clrbits8(bcsr_regs + 12, BCSR12_USB_SER_PIN);
+@@ -65,8 +67,9 @@ static int mpc837xmds_usb_cfg(void)
+ 	}
+ 
+ 	of_node_put(np);
++out:
+ 	iounmap(bcsr_regs);
+-	return 0;
++	return ret;
+ }
+ 
+ /* ************************************************************************
 
