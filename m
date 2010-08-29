@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab0H2Njq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 09:39:46 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.28]:35776 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab0H2Njo (ORCPT
+	id S1753519Ab0H2NlQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 09:41:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:49929 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab0H2NlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 09:39:44 -0400
-X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Aug 2010 09:39:44 EDT
-Message-ID: <4C7A6164.60208@riesch.at>
-Date: Sun, 29 Aug 2010 15:32:20 +0200
-From: Christian Riesch <christian@riesch.at>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Sun, 29 Aug 2010 09:41:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [RFC PATCH 03/43] ptrace: change signature of arch_ptrace()
+Date: Sun, 29 Aug 2010 15:40:55 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.5.0; x86_64; ; )
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org
+References: <1282902149-12991-1-git-send-email-namhyung@gmail.com> <201008271628.40023.arnd@arndb.de> <87occof2mw.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+In-Reply-To: <87occof2mw.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        john stultz <johnstul@us.ibm.com>,
-        Christian Riesch <christian.riesch@omicron.at>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>	<AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>	<20100817085324.GB3330@riccoc20.at.omicron.at>	<1282090963.1734.97.camel@localhost>	<20100818071942.GA4096@riccoc20.at.omicron.at>	<1282176776.2865.100.camel@localhost.localdomain>	<20100819055518.GA4084@riccoc20.at.omicron.at>	<1282594125.3111.344.camel@localhost.localdomain>	<AANLkTi=nKrRHH6+9mvny718gov8Q+u7DHFikdgNY8YdX@mail.gmail.com>	<1282874269.4371.74.camel@localhost.localdomain>	<20100827075727.GA3818@riccoc20.at.omicron.at> <20100827134154.50eef56c@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100827134154.50eef56c@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: christian@riesch.at
+Message-Id: <201008291540.55414.arnd@arndb.de>
+X-Provags-ID: V02:K0:CQJ/dUstJmru3CU1K5a0MnyaBDcGdXOZgwmoZwaAX17
+ rTWNNiWDopDW/MR9XUniwLTNX6cs7gEsNZgZFo4scYxLIpAtbR
+ JFxoeux4fJLzMtHlEhEiulUUwjz9Rab4sNmBTVwOPSkelC7gan
+ Vckn0iMD0AAu1zJEY5e9CvMhKILOwS0jP+OHyLcrxePE/rfXx4
+ fIZgaYxtkfeG9umi4tt8A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
->> The master node in a PTP network probably takes its time from a
->> precise external time source, like GPS. The GPS provides a 1 PPS
->> directly to the PTP clock hardware, which latches the PTP hardware
->> clock time on the PPS edge. This provides one sample as input to a
->> clock servo (in the PTPd) that, in turn, regulates the PTP clock
->> hardware.
+On Friday 27 August 2010 18:20:55 Namhyung Kim wrote:
+> Arnd Bergmann <arnd@arndb.de> writes:
+> > Would it be possible to rearrange your patches so that you don't break
+> > anything in the middle? I think merging all the trivial 'change signature'
+> > patches into one would also make reviewing easier. Nobody in their
+> > right mind is looking through a full series of 43 patches, especially
+> > if they do not make sense on their own, but one patch that changes a
+> > function signature tree-wide would be looked at by many people and can
+> > be applied standalone.
+> >
 > 
-> A PTP clock is TAI, Unix time is UTC.
+> OK. Will combine those.
+> BTW, one thing I wonder is it will have huge CC list of arch maintainers
+> in commit message, so is it usual? or is there other way?
 
-Not necessarily. AFAIK, the time distributed by IEEE1588v2 can either be 
-based on the "PTP epoch" (timePropertiesDS.ptpTimescale=TRUE) and thus 
-represent TAI or be based on an implementation specific arbitrary epoch 
-(timePropertiesDS.ptpTimescale=FALSE) and represent time on some 
-arbitrary time scale.
+I'd say you don't have to for a trivial patch such at this, as long as
+you keep linux-arch@vger.kernel.org on Cc, since that has all the arch
+maintainers. It also doesn't hurt to keep them all on Cc, since it would
+only be a single mail then.
 
-Christian
-
-
+	Arnd
