@@ -1,55 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab0H2L3e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 07:29:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:32803 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab0H2L3c (ORCPT
+	id S1753244Ab0H2Lan (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 07:30:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63580 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab0H2Lal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 07:29:32 -0400
+	Sun, 29 Aug 2010 07:30:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=oytotryy2DVqahRemCMf5x1tXwNmzxRP+fSHnWSQm/Urw3dEanY8r0+ebovodY2rew
-         dsWUBq6WVQ8i4PokVZ1LXID7FzlD/NZ8XjlmqqugWNhrU9WU6/XUGlDt5fBsY4RG2hGd
-         A3B+NAfZD2ofTcDd3W/XmMC45S7LsGBoafxYE=
-MIME-Version: 1.0
-In-Reply-To: <1282641126.2259.15.camel@localhost.localdomain>
-References: <1282611655.2177.19.camel@localhost.localdomain>
-	<8u3s8d$jcftu0@orsmga001.jf.intel.com>
-	<1282638912.2191.17.camel@localhost.localdomain>
-	<89kc63$hrqmar@fmsmga002.fm.intel.com>
-	<1282641126.2259.15.camel@localhost.localdomain>
-Date: Sun, 29 Aug 2010 14:29:32 +0300
-X-Google-Sender-Auth: pft62hWnj21YFVRRcPRcoiTMm-s
-Message-ID: <AANLkTikGRnF8jZLmwA8Ey203K1rMbY1jw6Gb_cAMYmyo@mail.gmail.com>
-Subject: Re: i915: 2.6.36-rc2 wrong resolution on gdm start
-From: Pekka Enberg <penberg@kernel.org>
-To: Ivan Bulatovic <combuster@gmx.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, jbarnes@virtuousgeek.org,
-        eric@anholt.net, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HKYmLEx3qGFQNx3NtOOGLKRhW+KjSXbXIL42vTQrbMO4T1OfuWYDO/yIyIquDm1xeP
+         lcfyxi5YvKzvjJdzJYfZamSfpmI1hBJWa9oD04Lb7FNy9I8oX7LPOIfNXJTNaQcSqT/o
+         Zv3/ijYef4VNAMnohziqc+RrVuBuILAjViAdI=
+Subject: Re: [PATCH] Add quick erase format option
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Stefani Seibold <stefani@seibold.net>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Enzinger, Robert (EXT-Other - DE/Munich)" 
+	<robert.enzinger.ext@nsn.com>
+In-Reply-To: <1281362069.20181.16.camel@wall-e.seibold.net>
+References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
+	 <1281343038.12908.25.camel@localhost>
+	 <1281343974.18398.13.camel@wall-e.seibold.net>
+	 <1281353344.2332.8.camel@brekeke>
+	 <1281362069.20181.16.camel@wall-e.seibold.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 29 Aug 2010 14:30:35 +0300
+Message-ID: <1283081435.2131.24.camel@brekeke>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, 2010-08-09 at 15:54 +0200, Stefani Seibold wrote:
+> > Not sure what you do, but both UBI and UBIFS auto-format flash if it is
+> > empty, and attaching empty flash should be very fast.
+> > 
+> 
+> I was never able to mount a UBIFS without a previous ubimkvol, despite
+> the flash is already erased.
+> 
+> Here are my timing results mounting an already erased flash as UBIFS:
+> 
+> ubiattach /dev/ubi_ctrl -m 5 -d 1              -->   2.023s
 
-On Tue, Aug 24, 2010 at 12:12 PM, Ivan Bulatovic <combuster@gmx.com> wrote:
-> Thanks for the confirmation Pekka. I've managed to change the resolution
-> but gdm always starts with 1024x768 and upon login it gets 1280x1024,
-> and sometimes the mouse pointer go out of bounds to the right edge of
-> the screen but when I maximize windows it sticks to 1280x1024. When I
-> start gnome-display-properties that invisible right portion of the
-> screen dissapears.
+UBI scans the flash and schedules all PEBs for erasure. They will be
+erased by the back ground thread.
 
-I'm still seeing wrong resolution with my i915 Macbook with latest
-Linus' git. Is there a fix in the pipeline or should we start looking
-for a commit to revert? As a slab maintainer, I'm supposed to be able
-to work with -rc kernels and this particular bug is pretty damn
-annoying.
+So after this command returns, UBI is still erasing your flash.
 
-                           Pekka
+> ubimkvol /dev/ubi1 -m -N flash                 --> 294.574s
+
+this calls the mkvol ioctl, which will first flush the erase queue, and
+only after it is flushed (all PEBs scheduled for erasure are erased), it
+will create the volume.
+
+The reason why this flushing is needed is that we want to make sure that
+there are no PEBs which belonged to a volume with the same ID. Indeed,
+imaging you have volume 5 with many used LEBs. Then you remove this
+volume, so that all its LEBs are scheduled for erasure. Then you create
+a new volume with the same ID = 5. If we do not flush the queue, we may
+end up with rubbish from the older volume 5 in the new one.
+
+However, we can optimize UBI and make ubimkvol to not flush empty PEBs,
+because they anyway do not contain any data. In this case your ubimkvol
+will be very fast. This should not be too difficult to do.
+
+> mount -t ubifs -o sync ubi1:flash /mnt         -->   0.221s
+> 
+> And this are the timing results when i do an ubiformat first:
+> 
+> ubiformat /dev/mtd5                            --> 299.111s
+
+Right, ubiformat will erase all PEBs, and this is slow.
+
+> ubiattach /dev/ubi_ctrl -m 5 -d 1              -->   0.129s
+> ubimkvol /dev/ubi1 -m -N flash                 -->   1.784s
+> mount -t ubifs -o sync ubi1:flash /mnt         -->   0.220s
+> 
+> And this are the results with my patched version of the ubiformat tool
+> using an already erased flash:
+> 
+> ubiformat /dev/mtd5 -E                         -->   5.475s
+> ubiattach /dev/ubi_ctrl -m 5 -d                -->   0.130s
+> ubimkvol /dev/ubi1 -m -N flash                 -->   1.699s
+> mount -t ubifs -o sync ubi1:flash /mnt         -->   0.220s
+
+Right, with your patch you do not erase.
+
+> As you can see this is 296.818s vs. 7.524 or 40 times faster.
+> 
+> Maybe i do something wrong, but i have no idea. Can u explain it to me?
+
+No, it is ok. The only thing I do not really like is the name of the
+option and the fact that you still read the beginning of PEBs and check
+for 0xFFs. And if you hit a PEB with non-0xFF, you erase it, for other
+PEBs you skip the erasure - this is error prone, because if you have one
+PEB with non-FF data, then you may have PEBs with 0xFFs at the beginning
+and garbage at the end, and you will not catch these.
+
+I would like to change the option name so that it would reflect the
+exact use-case we are creating it for: wiped out flash. So I'd be
+happier with something like --pristine-flash.
+
+Also, I think you should not read the beginning of the flash and check
+for 0xFFs. If the user gave us this option, he knows what he is doing
+and we can trust him, so no need to read and check, assume all PEBs are
+pristine (contain 0xFFs).
+
+> No, we only initialize the flash, mount it as UBIFS and copy files.
+
+OK. But did you consider to pre-create the image with ubinize and
+mkfs.ubifs tools and just flash the raw image in production? This is the
+fastest possible way.
+
+> > So I think it is better to add an --pristine-flash option, or something
+> > like this. In this case ubiformat won't erase anything, and will assume
+> > everything is 0xFFed without reading. This should be faster and I think
+> > is better to do.
+> > 
+> 
+> This patch assumes nothing, it will skip the erase of the PEB if all
+> bytes in the EC header are 0xff. I think this is safer than your
+> suggestion.
+
+It does assume that if the beginning of the flash contains 0xFFs then it
+is safe to treat it as erased. Instead, I think you should just trust
+the user and not even check the beginning of the flash. And this will be
+also faster.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
+
