@@ -1,500 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0H2UcP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 16:32:15 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51695 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab0H2UcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 16:32:13 -0400
-Date: Sun, 29 Aug 2010 22:32:05 +0200
-From: Borislav Petkov <bp@alien8.de>
+	id S1754079Ab0H2U76 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 16:59:58 -0400
+Received: from toccata.ens-lyon.org ([140.77.166.68]:55479 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab0H2U75 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 16:59:57 -0400
+Date: Sun, 29 Aug 2010 22:59:29 +0200
+From: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Joerg Roedel <joro@8bytes.org>,
-        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-32, mm: Add an initial page table for core
- bootstrapping
-Message-ID: <20100829203205.GA6888@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
-	Joerg Roedel <joro@8bytes.org>,
-	"Roedel, Joerg" <Joerg.Roedel@amd.com>,
-	"mingo@elte.hu" <mingo@elte.hu>,
-	"tglx@linutronix.de" <tglx@linutronix.de>,
-	"Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-	"Seidel, Conny" <Conny.Seidel@amd.com>,
-	"Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-	"greg@kroah.com" <greg@kroah.com>,
-	"x86@kernel.org" <x86@kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1280940316-7966-1-git-send-email-bp@amd64.org>
- <1280940316-7966-2-git-send-email-bp@amd64.org>
- <4C59F24B.1010702@zytor.com>
- <20100805074503.GI18307@amd.com>
- <4C5AC736.20903@zytor.com>
- <20100812144142.GY23755@8bytes.org>
- <4C64148D.5080305@zytor.com>
- <20100812154756.GD2070@aftab>
- <4C6417AB.1050105@zytor.com>
- <20100824073344.GA4793@liondog.tnic>
+Cc: Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+Message-ID: <20100829205929.GA3309@pema>
+References: <20100825094925.GA3632@pema>
+ <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain>
+ <20100826210815.GA18131@pema>
+ <4C76D9A0.2010907@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/mixed; boundary="GvXjxJ+pjyke8COw"
 Content-Disposition: inline
-In-Reply-To: <20100824073344.GA4793@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C76D9A0.2010907@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an initial page table with low mappings used exclusively
-for booting APs/resuming after ACPI suspend/machine restart. After this,
-there's no need to add low mappings to swapper_pg_dir and zap them later
-or create own swsusp PGD page solely for ACPI sleep needs.
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 
-Ok, here's the initial version. This patch has survived a whole weekend
-of randconfig builds and has been boot/reboot/suspend/resume tested on
-32-bit kvm guests and bare metal in all possible configurations of PAE
-and !PAE kernels with all possible VMSPLIT_* config options.
+Hi,
 
-Patch is against tip/x86/urgent ontop of Hugh's CONFIG_VMSPLIT_1G and
-2G_OPT fix.
+H. Peter Anvin (2010/08/26 14:16 -0700):
+> What about APM?
 
- arch/x86/include/asm/pgtable_32.h |    2 +-
- arch/x86/include/asm/tlbflush.h   |    2 -
- arch/x86/include/asm/trampoline.h |    3 --
- arch/x86/kernel/acpi/sleep.c      |    7 ++++-
- arch/x86/kernel/head32.c          |    1 +
- arch/x86/kernel/head_32.S         |   55 +++++++++++++++++--------------------
- arch/x86/kernel/reboot.c          |   10 +-----
- arch/x86/kernel/setup.c           |   18 +++++++++++-
- arch/x86/kernel/smpboot.c         |   19 ++++---------
- arch/x86/kernel/trampoline.c      |   16 -----------
- arch/x86/mm/init_32.c             |   45 ------------------------------
- 11 files changed, 58 insertions(+), 120 deletions(-)
+Not either, I think.
+See attached dmesg output.
+Shérab.
 
-diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
-index f686f49..8abde9e 100644
---- a/arch/x86/include/asm/pgtable_32.h
-+++ b/arch/x86/include/asm/pgtable_32.h
-@@ -26,7 +26,7 @@ struct mm_struct;
- struct vm_area_struct;
- 
- extern pgd_t swapper_pg_dir[1024];
--extern pgd_t trampoline_pg_dir[1024];
-+extern pgd_t initial_page_table[1024];
- 
- static inline void pgtable_cache_init(void) { }
- static inline void check_pgt_cache(void) { }
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 7f3eba0..169be89 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -172,6 +172,4 @@ static inline void flush_tlb_kernel_range(unsigned long start,
- 	flush_tlb_all();
- }
- 
--extern void zap_low_mappings(bool early);
--
- #endif /* _ASM_X86_TLBFLUSH_H */
-diff --git a/arch/x86/include/asm/trampoline.h b/arch/x86/include/asm/trampoline.h
-index 4dde797..f4500fb 100644
---- a/arch/x86/include/asm/trampoline.h
-+++ b/arch/x86/include/asm/trampoline.h
-@@ -13,16 +13,13 @@ extern unsigned char *trampoline_base;
- 
- extern unsigned long init_rsp;
- extern unsigned long initial_code;
--extern unsigned long initial_page_table;
- extern unsigned long initial_gs;
- 
- #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data, PAGE_SIZE)
- 
- extern unsigned long setup_trampoline(void);
--extern void __init setup_trampoline_page_table(void);
- extern void __init reserve_trampoline_memory(void);
- #else
--static inline void setup_trampoline_page_table(void) {}
- static inline void reserve_trampoline_memory(void) {}
- #endif /* CONFIG_X86_TRAMPOLINE */
- 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 33cec15..d04500e 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -12,6 +12,11 @@
- #include <asm/segment.h>
- #include <asm/desc.h>
- 
-+#ifdef CONFIG_X86_32
-+#include <asm/pgtable.h>
-+#include <asm/pgtable_32.h>
-+#endif
-+
- #include "realmode/wakeup.h"
- #include "sleep.h"
- 
-@@ -90,7 +95,7 @@ int acpi_save_state_mem(void)
- 
- #ifndef CONFIG_64BIT
- 	header->pmode_entry = (u32)&wakeup_pmode_return;
--	header->pmode_cr3 = (u32)(swsusp_pg_dir - __PAGE_OFFSET);
-+	header->pmode_cr3 = (u32)(initial_page_table - __PAGE_OFFSET);
- 	saved_magic = 0x12345678;
- #else /* CONFIG_64BIT */
- 	header->trampoline_segment = setup_trampoline() >> 4;
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index 784360c..8b9c201 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -17,6 +17,7 @@
- #include <asm/apic.h>
- #include <asm/io_apic.h>
- #include <asm/bios_ebda.h>
-+#include <asm/tlbflush.h>
- 
- static void __init i386_default_early_setup(void)
- {
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index fa8c1b8..bcece91 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -183,13 +183,12 @@ default_entry:
- #ifdef CONFIG_X86_PAE
- 
- 	/*
--	 * In PAE mode swapper_pg_dir is statically defined to contain enough
--	 * entries to cover the VMSPLIT option (that is the top 1, 2 or 3
--	 * entries). The identity mapping is handled by pointing two PGD
--	 * entries to the first kernel PMD.
-+	 * In PAE mode initial_page_table is statically defined to contain
-+	 * enough entries to cover the VMSPLIT option (that is the top 1, 2 or 3
-+	 * entries). The identity mapping is handled by pointing two PGD entries
-+	 * to the first kernel PMD.
- 	 *
--	 * Note the upper half of each PMD or PTE are always zero at
--	 * this stage.
-+	 * Note the upper half of each PMD or PTE are always zero at this stage.
- 	 */
- 
- #define KPMDS (((-__PAGE_OFFSET) >> 30) & 3) /* Number of kernel PMDs */
-@@ -197,7 +196,7 @@ default_entry:
- 	xorl %ebx,%ebx				/* %ebx is kept at zero */
- 
- 	movl $pa(__brk_base), %edi
--	movl $pa(swapper_pg_pmd), %edx
-+	movl $pa(initial_pg_pmd), %edx
- 	movl $PTE_IDENT_ATTR, %eax
- 10:
- 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PMD entry */
-@@ -226,14 +225,14 @@ default_entry:
- 	movl %eax, pa(max_pfn_mapped)
- 
- 	/* Do early initialization of the fixmap area */
--	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
--	movl %eax,pa(swapper_pg_pmd+0x1000*KPMDS-8)
-+	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
-+	movl %eax,pa(initial_pg_pmd+0x1000*KPMDS-8)
- #else	/* Not PAE */
- 
- page_pde_offset = (__PAGE_OFFSET >> 20);
- 
- 	movl $pa(__brk_base), %edi
--	movl $pa(swapper_pg_dir), %edx
-+	movl $pa(initial_page_table), %edx
- 	movl $PTE_IDENT_ATTR, %eax
- 10:
- 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PDE entry */
-@@ -257,8 +256,8 @@ page_pde_offset = (__PAGE_OFFSET >> 20);
- 	movl %eax, pa(max_pfn_mapped)
- 
- 	/* Do early initialization of the fixmap area */
--	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
--	movl %eax,pa(swapper_pg_dir+0xffc)
-+	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
-+	movl %eax,pa(initial_page_table+0xffc)
- #endif
- 	jmp 3f
- /*
-@@ -334,7 +333,7 @@ ENTRY(startup_32_smp)
- /*
-  * Enable paging
-  */
--	movl pa(initial_page_table), %eax
-+	movl $pa(initial_page_table), %eax
- 	movl %eax,%cr3		/* set the page table pointer.. */
- 	movl %cr0,%eax
- 	orl  $X86_CR0_PG,%eax
-@@ -614,8 +613,6 @@ ignore_int:
- .align 4
- ENTRY(initial_code)
- 	.long i386_start_kernel
--ENTRY(initial_page_table)
--	.long pa(swapper_pg_dir)
- 
- /*
-  * BSS section
-@@ -623,20 +620,18 @@ ENTRY(initial_page_table)
- __PAGE_ALIGNED_BSS
- 	.align PAGE_SIZE_asm
- #ifdef CONFIG_X86_PAE
--swapper_pg_pmd:
-+initial_pg_pmd:
- 	.fill 1024*KPMDS,4,0
- #else
--ENTRY(swapper_pg_dir)
-+ENTRY(initial_page_table)
- 	.fill 1024,4,0
- #endif
--swapper_pg_fixmap:
-+initial_pg_fixmap:
- 	.fill 1024,4,0
--#ifdef CONFIG_X86_TRAMPOLINE
--ENTRY(trampoline_pg_dir)
--	.fill 1024,4,0
--#endif
- ENTRY(empty_zero_page)
- 	.fill 4096,1,0
-+ENTRY(swapper_pg_dir)
-+	.fill 1024,4,0
- 
- /*
-  * This starts the data section.
-@@ -645,20 +640,20 @@ ENTRY(empty_zero_page)
- __PAGE_ALIGNED_DATA
- 	/* Page-aligned for the benefit of paravirt? */
- 	.align PAGE_SIZE_asm
--ENTRY(swapper_pg_dir)
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
-+ENTRY(initial_page_table)
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
- # if KPMDS == 3
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x2000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x2000),0
- # elif KPMDS == 2
- 	.long	0,0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
- # elif KPMDS == 1
- 	.long	0,0
- 	.long	0,0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
- # else
- #  error "Kernel PMDs should be 1, 2 or 3"
- # endif
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index e3af342..ce5566e 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -371,16 +371,10 @@ void machine_real_restart(const unsigned char *code, int length)
- 	CMOS_WRITE(0x00, 0x8f);
- 	spin_unlock(&rtc_lock);
- 
--	/* Remap the kernel at virtual address zero, as well as offset zero
--	   from the kernel segment.  This assumes the kernel segment starts at
--	   virtual address PAGE_OFFSET. */
--	memcpy(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--		sizeof(swapper_pg_dir [0]) * KERNEL_PGD_PTRS);
--
- 	/*
--	 * Use `swapper_pg_dir' as our page directory.
-+	 * Switch back to the initial page table.
- 	 */
--	load_cr3(swapper_pg_dir);
-+	load_cr3(initial_page_table);
- 
- 	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
- 	   this on booting to tell it to "Bypass memory test (also warm
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c3a4fbb..b315b37 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -730,6 +730,17 @@ void __init setup_arch(char **cmdline_p)
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
- 	visws_early_detect();
-+
-+	/*
-+	 * copy kernel address range established so far and switch
-+	 * to the proper swapper page table
-+	 */
-+	clone_pgd_range(swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
-+			initial_page_table + KERNEL_PGD_BOUNDARY,
-+			KERNEL_PGD_PTRS);
-+
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
- #else
- 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
- #endif
-@@ -1014,7 +1025,12 @@ void __init setup_arch(char **cmdline_p)
- 	paging_init();
- 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
- 
--	setup_trampoline_page_table();
-+#ifdef CONFIG_X86_32
-+	/* sync back kernel address range */
-+	clone_pgd_range(initial_page_table + KERNEL_PGD_BOUNDARY,
-+			swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
-+			KERNEL_PGD_PTRS);
-+#endif
- 
- 	tboot_probe();
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 8b3bfc4..0d86d0b 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -300,22 +300,17 @@ notrace static void __cpuinit start_secondary(void *unused)
- 	 * most necessary things.
- 	 */
- 
--#ifdef CONFIG_X86_32
--	/*
--	 * Switch away from the trampoline page-table
--	 *
--	 * Do this before cpu_init() because it needs to access per-cpu
--	 * data which may not be mapped in the trampoline page-table.
--	 */
--	load_cr3(swapper_pg_dir);
--	__flush_tlb_all();
--#endif
--
- 	vmi_bringup();
- 	cpu_init();
- 	preempt_disable();
- 	smp_callin();
- 
-+#ifdef CONFIG_X86_32
-+	/* switch away from the initial page table */
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
-+#endif
-+
- 	/* otherwise gcc will move up smp_processor_id before the cpu_init */
- 	barrier();
- 	/*
-@@ -774,7 +769,6 @@ do_rest:
- #ifdef CONFIG_X86_32
- 	/* Stack for startup_32 can be just as for start_secondary onwards */
- 	irq_ctx_init(cpu);
--	initial_page_table = __pa(&trampoline_pg_dir);
- #else
- 	clear_tsk_thread_flag(c_idle.idle, TIF_FORK);
- 	initial_gs = per_cpu_offset(cpu);
-@@ -923,7 +917,6 @@ int __cpuinit native_cpu_up(unsigned int cpu)
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
- 	err = do_boot_cpu(apicid, cpu);
--
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
- 		return -EIO;
-diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
-index e2a5952..f1488a3 100644
---- a/arch/x86/kernel/trampoline.c
-+++ b/arch/x86/kernel/trampoline.c
-@@ -38,19 +38,3 @@ unsigned long __trampinit setup_trampoline(void)
- 	memcpy(trampoline_base, trampoline_data, TRAMPOLINE_SIZE);
- 	return virt_to_phys(trampoline_base);
- }
--
--void __init setup_trampoline_page_table(void)
--{
--#ifdef CONFIG_X86_32
--	/* Copy kernel address range */
--	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
--			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--			KERNEL_PGD_PTRS);
--
--	/* Initialize low mappings */
--	clone_pgd_range(trampoline_pg_dir,
--			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--			min_t(unsigned long, KERNEL_PGD_PTRS,
--			      KERNEL_PGD_BOUNDARY));
--#endif
--}
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index bca7909..adad48b 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -548,48 +548,6 @@ static void __init pagetable_init(void)
- 	permanent_kmaps_init(pgd_base);
- }
- 
--#ifdef CONFIG_ACPI_SLEEP
--/*
-- * ACPI suspend needs this for resume, because things like the intel-agp
-- * driver might have split up a kernel 4MB mapping.
-- */
--char swsusp_pg_dir[PAGE_SIZE]
--	__attribute__ ((aligned(PAGE_SIZE)));
--
--static inline void save_pg_dir(void)
--{
--	memcpy(swsusp_pg_dir, swapper_pg_dir, PAGE_SIZE);
--}
--#else /* !CONFIG_ACPI_SLEEP */
--static inline void save_pg_dir(void)
--{
--}
--#endif /* !CONFIG_ACPI_SLEEP */
--
--void zap_low_mappings(bool early)
--{
--	int i;
--
--	/*
--	 * Zap initial low-memory mappings.
--	 *
--	 * Note that "pgd_clear()" doesn't do it for
--	 * us, because pgd_clear() is a no-op on i386.
--	 */
--	for (i = 0; i < KERNEL_PGD_BOUNDARY; i++) {
--#ifdef CONFIG_X86_PAE
--		set_pgd(swapper_pg_dir+i, __pgd(1 + __pa(empty_zero_page)));
--#else
--		set_pgd(swapper_pg_dir+i, __pgd(0));
--#endif
--	}
--
--	if (early)
--		__flush_tlb();
--	else
--		flush_tlb_all();
--}
--
- pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL | _PAGE_IOMAP);
- EXPORT_SYMBOL_GPL(__supported_pte_mask);
- 
-@@ -958,9 +916,6 @@ void __init mem_init(void)
- 
- 	if (boot_cpu_data.wp_works_ok < 0)
- 		test_wp_bit();
--
--	save_pg_dir();
--	zap_low_mappings(true);
- }
- 
- #ifdef CONFIG_MEMORY_HOTPLUG
--- 
-1.7.1
+--GvXjxJ+pjyke8COw
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="dmesg-with-apm-debugging.bz2"
+Content-Transfer-Encoding: base64
 
--- 
-Regards/Gruss,
-    Boris.
+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
+w7aCekv/i7kinChIIlgcV4A=
+
+--GvXjxJ+pjyke8COw--
