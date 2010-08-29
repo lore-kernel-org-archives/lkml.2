@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab0H2MiY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 08:38:24 -0400
-Received: from swm.pp.se ([212.247.200.143]:44887 "EHLO uplift.swm.pp.se"
+	id S1753351Ab0H2Mnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 08:43:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48323 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752650Ab0H2MiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 08:38:22 -0400
-Date: Sun, 29 Aug 2010 14:38:21 +0200 (CEST)
-From: Mikael Abrahamsson <swmike@swm.pp.se>
-To: Pekka Enberg <penberg@kernel.org>
-cc: Stan Hoeppner <stan@hardwarefreak.com>, Christoph Lameter <cl@linux.com>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, Linux Netdev List <netdev@vger.kernel.org>
-Subject: Re: 2.6.34.1 page allocation failure
-In-Reply-To: <4C7A3B1D.7050500@kernel.org>
-Message-ID: <alpine.DEB.1.10.1008291433420.8562@uplift.swm.pp.se>
-References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home> <4C724141.8060000@kernel.org>
- <4C72F7C6.3020109@hardwarefreak.com> <4C74097A.5020504@kernel.org> <alpine.DEB.1.10.1008242114120.8562@uplift.swm.pp.se> <4C7A3B1D.7050500@kernel.org>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Organization: People's Front Against WWW
+	id S1752989Ab0H2Mnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 08:43:49 -0400
+Message-ID: <4C7A5455.7060905@kernel.org>
+Date: Sun, 29 Aug 2010 14:36:37 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: CAI Qian <caiqian@redhat.com>
+CC: kexec <kexec@lists.infradead.org>, linux-next@vger.kernel.org,
+        torvalds@linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kdump regression compared to v2.6.35
+References: <779893521.1479771283083393771.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <779893521.1479771283083393771.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 29 Aug 2010 12:43:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 Aug 2010, Pekka Enberg wrote:
+Hello,
 
-> Do you see these out-of-memory problems with 2.6.35?
+On 08/29/2010 02:03 PM, CAI Qian wrote:
+> 
+> ----- "Tejun Heo" <tj@kernel.org> wrote:
+> 
+>> On 08/29/2010 01:56 PM, CAI Qian wrote:
+>>> It is easy to reproduce by passing maxcpus=1 to the first kernel.
+>>
+>> Do you mean booting w/ maxcpus=1 hangs the first kernel even w/o
+>> kdump?
+> Yes, here was the log,
 
-Haven't tried it.
+Hmmm... I can't reproduce it here.  I wonder what the difference is.
+Can you please trigger sysrq-t after the boot is hung and post the
+result?
 
-Has there been substantial work done there that changes things so that if 
-I reproduce it on 2.6.35, someone will look into the issue in earnest? 
-Since I'll most likely have to compile a new kernel, are there any debug 
-options I should enable to give more information to aid fault finding?
-
-I'll start with the .config file from Ubuntu 10.04 2.6.32 kernel and 
-oldconfig from there.
+Thanks.
 
 -- 
-Mikael Abrahamsson    email: swmike@swm.pp.se
+tejun
