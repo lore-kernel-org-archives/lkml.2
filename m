@@ -1,157 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab0H2BtZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Aug 2010 21:49:25 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:63863 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab0H2BtY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Aug 2010 21:49:24 -0400
-Date: Sun, 29 Aug 2010 03:48:16 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH/RFCv4 2/6] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <201008281437.11830.hverkuil@xs4all.nl>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: linux-mm@kvack.org, Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Message-id: <op.vh6faqnl7p4s8u@localhost>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.61 (Linux)
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>
- <0b02e05fc21e70a3af39e65e628d117cd89d70a1.1282286941.git.m.nazarewicz@samsung.com>
- <343f4b0edf9b5eef598831700cb459cd428d3f2e.1282286941.git.m.nazarewicz@samsung.com>
- <201008281437.11830.hverkuil@xs4all.nl>
+	id S1751703Ab0H2EmU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 00:42:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57915 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab0H2EmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 00:42:18 -0400
+Date: Sun, 29 Aug 2010 14:42:07 +1000
+From: Neil Brown <neilb@suse.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vaurora@redhat.com, viro@zeniv.linux.org.uk, jblunck@suse.de,
+        hch@infradead.org
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+Message-ID: <20100829144207.4fbf2713@notabene>
+In-Reply-To: <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu>
+References: <20100826183340.027591901@szeredi.hu>
+	<20100827170551.19616048@notabene>
+	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
+	<20100827213502.31af4a4c@notabene>
+	<E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Friday, August 20, 2010 11:50:42 Michal Nazarewicz wrote:
->> +**** Regions
->> +
->> +     Regions is a list of regions terminated by a region with size
->> +     equal zero.  The following fields may be set:
->> +
->> +     - size       -- size of the region (required, must not be zero)
->> +     - alignment  -- alignment of the region; must be power of two or
->> +                     zero (optional)
+On Fri, 27 Aug 2010 18:53:45 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-On Sat, 28 Aug 2010 14:37:11 +0200, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> Just wondering: is alignment really needed since we already align to the
-> PAGE_SIZE? Do you know of hardware with alignment requirements > PAGE_SIZE?
+> On Fri, 27 Aug 2010, Neil Brown wrote:
+> > I was wondering why you even bothered to fiddle st_ino.  Given that lots of
+> > other things come from one fs or the other, having the merged directories
+> > appear to be from the upper filesystem doesn't seem like a problem.  I don't
+> > really care either way though.
+> 
+> "rm -rf" complains if st_ino of a directory changes spontaneously.
 
-Our video coder needs its firmware aligned to 128K plus it has to be located
-before any other buffers allocated for the chip.  Because of those, we have
-defined a separate region just for the coder's firmware which is small (256K
-IIRC) and aligned to 128K.
+I see...
+Doesn't that mean that you must always present a merged-directory if the
+lower directory exists.
+Otherwise if you "rm -r" in a directory that only exists in the lower
+filesystem, the inode will change on the first 'unlink' call.
+??
 
->> +     - start      -- where the region has to start (optional)
->> +     - alloc_name -- the name of allocator to use (optional)
->> +     - alloc      -- allocator to use (optional; and besides
->> +                     alloc_name is probably is what you want)
+> 
+> > > > The lower filesystem can be any filesystem supported by Linux and does not
+> > > > need to be writable.  It could even be another union.
+> > > 
+> > > Almost.  Xattr namespace issues currently prevent that, but with
+> > > escaping it could be worked around if necessary.
+> > 
+> > But you never access the xattrs for the lower directory so that shouldn't
+> > matter.
+> 
+> Ah, right.  Another small issue is that currently unionfs accesses
+> inode->i_* from the underlying filesystems instead of calling
+> ->getattr(), which will break if the underlying fs is a union with its
+> dummy inodes.  But that should be easy to fix.
+> 
+> > I actually think that your approach can work quite will with either the
+> > upper or lower changing independently.  Certainly it can produce some odd
+> > situations, but even NFS can do that (though maybe not quite so odd).
+> > 
+> > It think the best approach would be to handle the few that can be handled and
+> > explicitly document the rest - people might even find them useful.
+> 
+> I think it's best to leave that stuff until someone actually cares.
+> The "people might find it useful" argument is not strong enough to put
+> nontrivial effort into thinking about all the weird corner cases.
 
-> I would make this field internal only. At least for now.
+My thought on this is that in order to describe the behaviour of the
+filesystem accurately you need to think about all the weird corner cases.
 
-OK.
+Then it becomes a question of: is it easier to document the weird behaviour,
+or change the code so the documentation will be easier to understand?
+Some cases will go one way, some the other.
 
->> +*** The device and types of memory
->> +
->> +    The name of the device is taken from the device structure.  It is
->> +    not possible to use CMA if driver does not register a device
->> +    (actually this can be overcome if a fake device structure is
->> +    provided with at least the name set).
->> +
->> +    The type of memory is an optional argument provided by the device
->> +    whenever it requests memory chunk.  In many cases this can be
->> +    ignored but sometimes it may be required for some devices.
->
-> This really should not be optional but compulsory. 'type' has the same function
-> as the GFP flags with kmalloc. They tell the kernel where the memory should be
-> allocated. Only if you do not care at all can you pass in NULL. But in almost
-> all cases the memory should be at least DMA-able (and yes, for a lot of SoCs that
-> is the same as any memory -- for now).
+But as you suggest this isn't urgent.
 
-At this moment, if type is NULL "common" is assumed.
+> 
+> > Anyway, here is my next instalment which are the review comments, now that I
+> > have some documentation to read :-)
+> > 
+> > In no particular order:
+> > 
+> > 1/ You call union_remove_whiteouts on an upper directory once you have
+> >    determined that the merged directory is empty, which implies that the only
+> >    things in the the upper directory are whiteouts.
+> >    union_remove_whiteouts calls union_unlink_writeout on every entry.
+> >    It checks that each entry is a DT_LNK - which we assume it must be - but
+> >    doesn't check the the inode there is really a whiteout.
+> >    It seem inconsistent to do the one check but not the other.
+> 
+> The DT_LNK check is done to filter out "." and "..".  Added comment.
+> 
+> >    As this could race with independent changes on the upper filesystem, I
+> >    thick it would be safest to at least check the i_mode and i_size of the
+> >    dentry->d_inode that is found, and possible do a readlink as well to
+> >    ensure we only delete whiteouts.
+> > 
+> > 1a/ A minor optimisation for union_is_white would be to check i_size matches
+> >     size of (union-whiteout)
+> 
+> I'm not fond of relying on inode->i_* members directly as unionfs
+> itself doesn't play by those rules.  But maybe it's OK here as
+> anything wanting to be an upper filesystem will be sufficiently
+> "normal" for this to work.
+> 
+> Fixed.
 
-> Memory types should be defined in the platform code. Some can be generic
-> like 'dma' (i.e. any DMAable memory), 'dma32' (32-bit DMA) and 'common' (any
-> memory). Others are platform specific like 'banka' and 'bankb'.
+I see your point and I think you are right.  In most cases the filesystem or
+some support-library it calls should be the only thing to look at i_*
+directly.
+An exception seems to be that (i_mode & S_IFMT) is often treated and publicly
+viewable.  But I agree that assuming i_size means something particular is
+dangerous.
 
-Yes, that's the idea.
 
-> A memory type definition can either be a start address/size pair but it can
-> perhaps also be a GFP type (e.g. .name = "dma32", .gfp = GFP_DMA32).
->
-> Regions should be of a single memory type. So when you define the region it
-> should have a memory type field.
->
-> Drivers request memory of whatever type they require. The mapping just maps
-> one or more regions to the driver and the cma allocator will pick only those
-> regions with the required type and ignore those that do not match.
->
->> +    For instance, let's say that there are two memory banks and for
->> +    performance reasons a device uses buffers in both of them.
->> +    Platform defines a memory types "a" and "b" for regions in both
->> +    banks.  The device driver would use those two types then to
->> +    request memory chunks from different banks.  CMA attributes could
->> +    look as follows:
->> +
->> +         static struct cma_region regions[] = {
->> +                 { .name = "a", .size = 32 << 20 },
->> +                 { .name = "b", .size = 32 << 20, .start = 512 << 20 },
->> +                 { }
->> +         }
->> +         static const char map[] __initconst = "foo/a=a;foo/b=b;*=a,b";
->
-> So this would become something like this:
->
->          static struct cma_memtype types[] = {
->                  { .name = "a", .size = 32 << 20 },
->                  { .name = "b", .size = 32 << 20, .start = 512 << 20 },
->                  // For example:
->                  { .name = "dma", .gfp = GFP_DMA },
->                  { }
->          }
->          static struct cma_region regions[] = {
->                  // size may of course be smaller than the memtype size.
->                  { .name = "a", type = "a", .size = 32 << 20 },
->                  { .name = "b", type = "b", .size = 32 << 20 },
->                  { }
->          }
->          static const char map[] __initconst = "*=a,b";
->
-> No need to do anything special for driver foo here: cma_alloc will pick the
-> correct region based on the memory type requested by the driver.
->
-> It is probably no longer needed to specify the memory type in the mapping when
-> this is in place.
+> > 
+> > 4/ The problem you mentioned about ->i_mutex which is taken during unlink
+> >    being quasi-global could be eased somewhat by simply having a small pool
+> >    of inodes and assigning them to dentries pseudo-randomly.  Or possibly
+> >    having one 'file' inode per directory (that might be a bit wasteful
+> >    though).
+> 
+> That's an idea, but I'm inclined just to add some hacks to the VFS to
+> omit the locking if some inode flag is set.
 
-I'm not entirely happy with such scheme.
+Every new flag you add is another sign of weakness in the VFS....
 
-For one, types may overlap: ie. the whole "banka" may be "dma" as well.
-This means that a single region could be of several different types.
+Hmmm... vfs_unlink checks if the victim is a mountpoint, which suggests that
+you can mount on a non-directory.  I'm not sure if I knew that.
+I wonder how this union fs would cope if a file in the upper filesystem were
+mounted-on....I suspect it would work correctly.
 
-Moreover, as I've mentioned the video coder needs to allocate buffers from
-different banks.  However, on never platform there's only one bank (actually
-two but they are interlaced) so allocations from different banks no longer
-make sense.  Instead of changing the driver though I'd prefer to only change
-the mapping in the platform.
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
 
+Two other thoughts.
+My comment about set-theory unions being commutative set me thinking.  I
+really don't think "union" is the right name for this thing.  There is
+nothing about it which really fits that proper definition of a union.
+whiteouts mean that even the list of names in a directory is not the union of
+the lists of names in the upper and lower directories.
+"overlay" is a much more accurate name.  But union seems to be the name
+that is most used.  I wonder if it is too late to change that.
+
+Also, dnotify (and presumably inotifiy) doesn't work reliably in the current
+implementation.
+It works for opaque directories and those which don't have a namesake in the
+lower filesystem, but for others it never notifies of changes to any files in
+the directory.
+This is because dnotify will set an fsnotifier on the merged-directory in the
+union-fs, but the change happens to the file in the upper fs, so
+fsnotify_parent will only call notifiers on the parent in the upper fs.
+
+I think the way to fix this would involve the union-fs putting a notifier on
+the upper dir to match whatever is on the merged-dir.  However the filesystem
+currently isn't told when notifiers are attach to an inode.  I think it would
+be good to add an inode_operation which is called whenever the notifiers are
+changed.  This would also allow a networked filesystem to report notification
+if the protocol supported it.
+Does that seem reasonable?
+
+NeilBrown
