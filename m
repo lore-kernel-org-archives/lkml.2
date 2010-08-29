@@ -1,387 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab0H2V3H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 17:29:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45368 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab0H2V3G (ORCPT
+	id S1754004Ab0H2Vjm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 17:39:42 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:20805 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753256Ab0H2Vjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 17:29:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SQgzbZ8AwvKu7DNBdypQ73UcyyrDIkM9VNHF/BAr068YfLMQxHvO7c2SpZqILHy2cc
-         3XolY91KcIJd2Gd+C16dFbvyrbVaYskwpnxVyBRHMWI3FqjnkM+dHPVWZMNjiZ/Sjmyw
-         qMWsmojfzmSWATDQWRB8+6RKGsBRC4DS94G+Y=
-Date: Mon, 30 Aug 2010 01:28:57 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: David Brownell <david-b@pacbell.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] gpio: Add driver for basic memory-mapped GPIO
- controllers
-Message-ID: <20100829212857.GA25592@oksana.dev.rtsoft.ru>
-References: <20100827155751.GA6514@oksana.dev.rtsoft.ru>
- <427545.4213.qm@web180305.mail.gq1.yahoo.com>
+	Sun, 29 Aug 2010 17:39:41 -0400
+Message-ID: <4C7AD3A0.40607@bluewatersys.com>
+Date: Mon, 30 Aug 2010 09:39:44 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <427545.4213.qm@web180305.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Chris Ball <cjb@laptop.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, avictor.za@gmail.com,
+        wolfgang.mues@auerswald.de, akpm@linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/7] mmc: at91_mci: fix pointer errors
+References: <9535dc8dfe4476a0314b9513fb9d37862faa731d.1267209149.git.nicolas.ferre@atmel.com> <20100827193303.GB23079@void.printf.net>
+In-Reply-To: <20100827193303.GB23079@void.printf.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The basic GPIO controllers may be found in various on-board FPGA
-and ASIC solutions that are used to control board's switches, LEDs,
-chip-selects, Ethernet/USB PHY power, etc.
+On 08/28/2010 07:33 AM, Chris Ball wrote:
+> Hi Andrew, Nicolas,
+> 
+> On Fri, Feb 26, 2010 at 07:39:29PM +0100, Nicolas Ferre wrote:
+>> From: Wolfgang Muees <wolfgang.mues@auerswald.de>
+>>
+>> Fixes two pointer errors, one which leads to memory overwrites if used with
+>> large chunks of data.
+>>
+>> Signed-off-by: Wolfgang Muees <wolfgang.mues@auerswald.de>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  drivers/mmc/host/at91_mci.c |    8 +++++---
+>>  1 files changed, 5 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/at91_mci.c b/drivers/mmc/host/at91_mci.c
+>> index 63924e0..6835104 100644
+>> --- a/drivers/mmc/host/at91_mci.c
+>> +++ b/drivers/mmc/host/at91_mci.c
+>> @@ -227,11 +227,13 @@ static inline void at91_mci_sg_to_dma(struct at91mci_host *host, struct mmc_data
+>>  			for (index = 0; index < (amount / 4); index++)
+>>  				*dmabuf++ = swab32(sgbuffer[index]);
+>>  		} else {
+>> -			memcpy(dmabuf, sgbuffer, amount);
+>> -			dmabuf += amount;
+>> +			char *tmpv = (char *)dmabuf;
+>> +			memcpy(tmpv, sgbuffer, amount);
+>> +			tmpv += amount;
+>> +			dmabuf = (unsigned *)tmpv;
 
-Usually these controllers do not privide any means of pin setup
-(in/out/open drain).
+I see this is already applied, but why all the type trickery here? Why
+not just:
 
-The driver provides:
-- Support for 8/16/32/64 bits registers;
-- Support for GPIO controllers with clear/set registers;
-- Support for GPIO controllers with a single "data" register;
-- Support for big endian bits/GPIOs ordering (mostly used on PowerPC).
+	memcpy(dmabuf, sgbuffer, amount);
+	dmabuf += amount / sizeof(dmabuf);
 
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
+>>  		}
+>>  
+>> -		kunmap_atomic(sgbuffer, KM_BIO_SRC_IRQ);
+>> +		kunmap_atomic(((void *)sgbuffer)-sg->offset, KM_BIO_SRC_IRQ);
 
-On Sat, Aug 28, 2010 at 12:08:20PM -0700, David Brownell wrote:
-> But  do it without BUG()... assume that all
-> uses of BUG() are errors, unless the OS
-> really has *NO* way to continue operating.
-> In this case, it can clearly limp along.
+void * arithmetic is a gcc-ism. Isn't it better to cast to char *, since
+the meaning will be a bit more clear.
 
-Yeah, good idea. Let's turn these BUG() into WARN_ON_ONCE()?
+~Ryan
 
-Thanks!
-
- drivers/gpio/Kconfig           |    5 +
- drivers/gpio/Makefile          |    1 +
- drivers/gpio/basic_mmio_gpio.c |  280 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 286 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/basic_mmio_gpio.c
-
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index f623953..d1d1c24 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -70,6 +70,11 @@ config GPIO_MAX730X
- 
- comment "Memory mapped GPIO expanders:"
- 
-+config GPIO_BASIC_MMIO
-+	tristate "Basic memory-mapped GPIO controllers support"
-+	help
-+	  Say yes here to support basic memory-mapped GPIO controllers.
-+
- config GPIO_IT8761E
- 	tristate "IT8761E GPIO support"
- 	depends on GPIOLIB
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index a69e060..dfb571b 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
- 
- obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
- obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
-+obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
- obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
- obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
- obj-$(CONFIG_GPIO_MAX7300)	+= max7300.o
-diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-new file mode 100644
-index 0000000..7117f1d
---- /dev/null
-+++ b/drivers/gpio/basic_mmio_gpio.c
-@@ -0,0 +1,280 @@
-+/*
-+ * Driver for basic memory-mapped GPIO controllers.
-+ *
-+ * Copyright 2008 MontaVista Software, Inc.
-+ * Copyright 2008,2010 Anton Vorontsov <cbouatmailru@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * ....``.```~~~~````.`.`.`.`.```````'',,,.........`````......`.......
-+ * ...``                                                         ```````..
-+ * ..The simplest form of a GPIO controller that the driver supports is``
-+ *  `.just a single "data" register, where GPIO state can be read and/or `
-+ *    `,..written. ,,..``~~~~ .....``.`.`.~~.```.`.........``````.```````
-+ *        `````````
-+                                    ___
-+_/~~|___/~|   . ```~~~~~~       ___/___\___     ,~.`.`.`.`````.~~...,,,,...
-+__________|~$@~~~        %~    /o*o*o*o*o*o\   .. Implementing such a GPIO .
-+o        `                     ~~~~\___/~~~~    ` controller in FPGA is ,.`
-+                                                 `....trivial..'~`.```.```
-+ *                                                    ```````
-+ *  .```````~~~~`..`.``.``.
-+ * .  The driver supports  `...       ,..```.`~~~```````````````....````.``,,
-+ * .   big-endian notation, just`.  .. A bit more sophisticated controllers ,
-+ *  . register the device with -be`. .with a pair of set/clear-bit registers ,
-+ *   `.. suffix.  ```~~`````....`.`   . affecting the data register and the .`
-+ *     ``.`.``...```                  ```.. output pins are also supported.`
-+ *                        ^^             `````.`````````.,``~``~``~~``````
-+ *                                                   .                  ^^
-+ *   ,..`.`.`...````````````......`.`.`.`.`.`..`.`.`..
-+ * .. The expectation is that in at least some cases .    ,-~~~-,
-+ *  .this will be used with roll-your-own ASIC/FPGA .`     \   /
-+ *  .logic in Verilog or VHDL. ~~~`````````..`````~~`       \ /
-+ *  ..````````......```````````                             \o_
-+ *                                                           |
-+ *                              ^^                          / \
-+ *
-+ *           ...`````~~`.....``.`..........``````.`.``.```........``.
-+ *            `  8, 16, 32 and 64 bits registers are supported, and``.
-+ *            . the number of GPIOs is determined by the width of   ~
-+ *             .. the registers. ,............```.`.`..`.`.~~~.`.`.`~
-+ *               `.......````.```
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/bug.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/spinlock.h>
-+#include <linux/compiler.h>
-+#include <linux/types.h>
-+#include <linux/log2.h>
-+#include <linux/ioport.h>
-+#include <linux/io.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mod_devicetable.h>
-+
-+struct bgpio_chip {
-+	struct gpio_chip gc;
-+	void __iomem *reg_dat;
-+	void __iomem *reg_set;
-+	void __iomem *reg_clr;
-+	spinlock_t lock;
-+
-+	int bits;
-+	int big_endian_bits;
-+
-+	/* shadowed data register to clear/set bits safely */
-+	unsigned long data;
-+};
-+
-+static struct bgpio_chip *to_bgpio_chip(struct gpio_chip *gc)
-+{
-+	return container_of(gc, struct bgpio_chip, gc);
-+}
-+
-+static unsigned long bgpio_in(struct bgpio_chip *bgc)
-+{
-+	switch (bgc->bits) {
-+	case 8:
-+		return __raw_readb(bgc->reg_dat);
-+	case 16:
-+		return __raw_readw(bgc->reg_dat);
-+	case 32:
-+		return __raw_readl(bgc->reg_dat);
-+#if BITS_PER_LONG >= 64
-+	case 64:
-+		return __raw_readq(bgc->reg_dat);
-+#endif
-+	}
-+	WARN_ON_ONCE(1);
-+	return 0;
-+}
-+
-+static void bgpio_out(struct bgpio_chip *bgc, void __iomem *reg,
-+		      unsigned long data)
-+{
-+	switch (bgc->bits) {
-+	case 8:
-+		__raw_writeb(data, reg);
-+		return;
-+	case 16:
-+		__raw_writew(data, reg);
-+		return;
-+	case 32:
-+		__raw_writel(data, reg);
-+		return;
-+#if BITS_PER_LONG >= 64
-+	case 64:
-+		__raw_writeq(data, reg);
-+		return;
-+#endif
-+	}
-+	WARN_ON_ONCE(1);
-+}
-+
-+static unsigned long bgpio_pin2mask(struct bgpio_chip *bgc, unsigned int pin)
-+{
-+	if (bgc->big_endian_bits)
-+		return 1 << (bgc->bits - 1 - pin);
-+	else
-+		return 1 << pin;
-+}
-+
-+static int bgpio_get(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+
-+	return bgpio_in(bgc) & bgpio_pin2mask(bgc, gpio);
-+}
-+
-+static void bgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+	unsigned long mask = bgpio_pin2mask(bgc, gpio);
-+	unsigned long flags;
-+
-+	if (bgc->reg_set) {
-+		if (val)
-+			bgpio_out(bgc, bgc->reg_set, mask);
-+		else
-+			bgpio_out(bgc, bgc->reg_clr, mask);
-+		return;
-+	}
-+
-+	spin_lock_irqsave(&bgc->lock, flags);
-+
-+	if (val)
-+		bgc->data |= mask;
-+	else
-+		bgc->data &= ~mask;
-+
-+	bgpio_out(bgc, bgc->reg_dat, bgc->data);
-+
-+	spin_unlock_irqrestore(&bgc->lock, flags);
-+}
-+
-+static int bgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	return 0;
-+}
-+
-+static int bgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	bgpio_set(gc, gpio, val);
-+	return 0;
-+}
-+
-+static int __devinit bgpio_probe(struct platform_device *pdev)
-+{
-+	const struct platform_device_id *platid = platform_get_device_id(pdev);
-+	struct device *dev = &pdev->dev;
-+	struct bgpio_chip *bgc;
-+	struct resource *res_dat;
-+	struct resource *res_set;
-+	struct resource *res_clr;
-+	resource_size_t dat_sz;
-+	int bits;
-+
-+	res_dat = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dat");
-+	if (!res_dat)
-+		return -EINVAL;
-+
-+	dat_sz = resource_size(res_dat);
-+	if (!is_power_of_2(dat_sz))
-+		return -EINVAL;
-+
-+	bits = dat_sz * 8;
-+	if (bits > BITS_PER_LONG)
-+		return -EINVAL;
-+
-+	bgc = devm_kzalloc(dev, sizeof(*bgc), GFP_KERNEL);
-+	if (!bgc)
-+		return -ENOMEM;
-+
-+	bgc->reg_dat = devm_ioremap(dev, res_dat->start, dat_sz);
-+	if (!bgc->reg_dat)
-+		return -ENOMEM;
-+
-+	res_set = platform_get_resource_byname(pdev, IORESOURCE_MEM, "set");
-+	res_clr = platform_get_resource_byname(pdev, IORESOURCE_MEM, "clr");
-+	if (res_set && res_clr) {
-+		if (resource_size(res_set) != resource_size(res_clr) ||
-+				resource_size(res_set) != dat_sz)
-+			return -EINVAL;
-+
-+		bgc->reg_set = devm_ioremap(dev, res_set->start, dat_sz);
-+		bgc->reg_clr = devm_ioremap(dev, res_clr->start, dat_sz);
-+		if (!bgc->reg_set || !bgc->reg_clr)
-+			return -ENOMEM;
-+	} else if (res_set || res_clr) {
-+		return -EINVAL;
-+	}
-+
-+	spin_lock_init(&bgc->lock);
-+
-+	bgc->bits = bits;
-+	bgc->big_endian_bits = !strcmp(platid->name, "basic-mmio-gpio-be");
-+	bgc->data = bgpio_in(bgc);
-+
-+	bgc->gc.ngpio = bits;
-+	bgc->gc.direction_input = bgpio_dir_in;
-+	bgc->gc.direction_output = bgpio_dir_out;
-+	bgc->gc.get = bgpio_get;
-+	bgc->gc.set = bgpio_set;
-+	bgc->gc.dev = dev;
-+	bgc->gc.label = dev_name(dev);
-+
-+	if (dev->platform_data)
-+		bgc->gc.base = (unsigned long)dev->platform_data;
-+	else
-+		bgc->gc.base = -1;
-+
-+	dev_set_drvdata(dev, bgc);
-+
-+	return gpiochip_add(&bgc->gc);
-+}
-+
-+static int __devexit bgpio_remove(struct platform_device *pdev)
-+{
-+	struct bgpio_chip *bgc = dev_get_drvdata(&pdev->dev);
-+
-+	return gpiochip_remove(&bgc->gc);
-+}
-+
-+static const struct platform_device_id bgpio_id_table[] = {
-+	{ "basic-mmio-gpio", },
-+	{ "basic-mmio-gpio-be", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(platform, bgpio_id_table);
-+
-+static struct platform_driver bgpio_driver = {
-+	.driver = {
-+		.name = "basic-mmio-gpio",
-+	},
-+	.id_table = bgpio_id_table,
-+	.probe = bgpio_probe,
-+	.remove = __devexit_p(bgpio_remove),
-+};
-+
-+static int __init bgpio_init(void)
-+{
-+	return platform_driver_register(&bgpio_driver);
-+}
-+module_init(bgpio_init);
-+
-+static void __exit bgpio_exit(void)
-+{
-+	platform_driver_unregister(&bgpio_driver);
-+}
-+module_exit(bgpio_exit);
-+
-+MODULE_DESCRIPTION("Driver for basic memory-mapped GPIO controllers");
-+MODULE_AUTHOR("Anton Vorontsov <cbouatmailru@gmail.com>");
-+MODULE_LICENSE("GPL");
 -- 
-1.7.0.5
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
