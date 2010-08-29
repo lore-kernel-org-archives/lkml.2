@@ -1,40 +1,32 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0H2JTb (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 29 Aug 2010 05:19:31 -0400
-Received: from relay.ubu.es ([193.146.160.3]:37581 "EHLO relay.ubu.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135Ab0H2JTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 05:19:30 -0400
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Aug 2010 05:19:29 EDT
-Message-ID: <5745538707b5a846072b97baec0be0d2.squirrel@correoweb.ubu.es>
-Date: Sun, 29 Aug 2010 11:11:50 +0200 (CEST)
-Subject: bmw x6 Concept car
-From: "BMW AUTOMOBILE COMPANY PROMOTION 2010" <jreglero@ubu.es>
-To: bmwinner@bmw.com
-Reply-To: jamesfredmond@freenet.ch
-User-Agent: SquirrelMail/1.4.17
+	id S1754012Ab0H2Tdr (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sun, 29 Aug 2010 15:33:47 -0400
+Received: from mail.interbgc.com ([217.9.224.122]:40609 "EHLO
+	mail.interbgc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab0H2Tdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 15:33:46 -0400
+To: undisclosed-recipients:;
+Subject: Good News!!!
+X-PHP-Script: mail.cablebg.net/mail/index.php for 83.229.4.228
+X-PHP-Originating-Script: 80:func.inc
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Sun, 29 Aug 2010 22:33:37 +0300
+From: Ana Morrison <ana@lotto649.ca>
+Reply-To: datsongalleon649@24.com
+Message-ID: <8eb0cda3c7e2df7e3b01ecd2e1c14ecf@127.0.0.1>
+User-Agent: RoundCube Webmail/0.4-beta
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+You have won 2,500,000GBP from the Lotto 649. Contact our British Agent
+for more details.  Mr. Datson Galleon via e-mail:
+datsongalleon649@24.com , Tel: +447031979972.
 
- You are a Winner of a BMW X6 Concept Car and a £750,000.00GBP. with Ticket
-number: 22 5954 78 and Serial number:BMWP / S-A-M 7554-1189 Contact Mr
-James Fredmond,with the details below:
-1.Name:
-2.Address:
-3.occupation:
-4.Tel:
-5.Sex:
-6.Age:
-7.Country:
-Reply to this Email:jamesfredmond@freenet.ch
-Regards,
-Bmw Promo Team
-
+Rita jonhson 
+Lotto649 
