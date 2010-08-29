@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab0H2Jxd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 05:53:33 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:51013 "EHLO mgw2.diku.dk"
+	id S1753348Ab0H2Jxp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 05:53:45 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:51012 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753146Ab0H2Jwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753120Ab0H2Jwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 29 Aug 2010 05:52:55 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Timur Tabi <timur@freescale.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 5/7] arch/powerpc/sysdev/qe_lib/qe.c: Add of_node_put to avoid memory leak
-Date: Sun, 29 Aug 2010 11:52:44 +0200
-Message-Id: <1283075566-27441-6-git-send-email-julia@diku.dk>
+Subject: [PATCH 4/7] arch/powerpc/platforms/powermac/pfunc_core.c: Add of_node_put to avoid memory leak
+Date: Sun, 29 Aug 2010 11:52:43 +0200
+Message-Id: <1283075566-27441-5-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283075566-27441-1-git-send-email-julia@diku.dk>
 References: <1283075566-27441-1-git-send-email-julia@diku.dk>
@@ -25,7 +23,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Add a call to of_node_put in the error handling code following a call to
-of_find_compatible_node.
+of_find_node_by_phandle.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -66,19 +64,35 @@ of_node_put(x);
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- arch/powerpc/sysdev/qe_lib/qe.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/platforms/powermac/pfunc_core.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/qe_lib/qe.c b/arch/powerpc/sysdev/qe_lib/qe.c
-index 3da8014..90020de 100644
---- a/arch/powerpc/sysdev/qe_lib/qe.c
-+++ b/arch/powerpc/sysdev/qe_lib/qe.c
-@@ -640,6 +640,7 @@ unsigned int qe_get_num_of_snums(void)
- 		if ((num_of_snums < 28) || (num_of_snums > QE_NUM_OF_SNUM)) {
- 			/* No QE ever has fewer than 28 SNUMs */
- 			pr_err("QE: number of snum is invalid\n");
-+			of_node_put(qe);
- 			return -EINVAL;
- 		}
+diff --git a/arch/powerpc/platforms/powermac/pfunc_core.c b/arch/powerpc/platforms/powermac/pfunc_core.c
+index cec6359..b0c3777 100644
+--- a/arch/powerpc/platforms/powermac/pfunc_core.c
++++ b/arch/powerpc/platforms/powermac/pfunc_core.c
+@@ -837,8 +837,10 @@ struct pmf_function *__pmf_find_function(struct device_node *target,
+ 		return NULL;
+  find_it:
+ 	dev = pmf_find_device(actor);
+-	if (dev == NULL)
+-		return NULL;
++	if (dev == NULL) {
++		result = NULL;
++		goto out;
++	}
+ 
+ 	list_for_each_entry(func, &dev->functions, link) {
+ 		if (name && strcmp(name, func->name))
+@@ -850,8 +852,9 @@ struct pmf_function *__pmf_find_function(struct device_node *target,
+ 		result = func;
+ 		break;
  	}
+-	of_node_put(actor);
+ 	pmf_put_device(dev);
++out:
++	of_node_put(actor);
+ 	return result;
+ }
+ 
 
