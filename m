@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab0H2SjI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 14:39:08 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34267 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab0H2SjH convert rfc822-to-8bit (ORCPT
+	id S1753914Ab0H2SoB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 14:44:01 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33085 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab0H2SoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 14:39:07 -0400
+	Sun, 29 Aug 2010 14:44:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=d+dvH4bcNoRzk2AziKKKMW8V8HD/NOx3/aOeWiCFkbbx6tPtAS8i4uATV3UvKHp9Sd
-         IuFqXPwrp8rXvi2POgsIlhoHyALuIfSZvp2kIQz5NNcOsmFgzH0EyqoMLetWRNkLtoNc
-         cQI//gz44qzQ9WaZoUqTO8NsOmxbLmEeyJcQQ=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=usHb1Y6vQm/Ve6F0nCY5gInwEv6b3HAEZruw1x+86TIGg68Twjw7ZADakc8ReAoelK
+         4Jwp32olWvFxCKcZrTXeqpUg11X2pQB1tmsHk0NFDB9PWcSmVr6GqtxEuihgBYEgLLfL
+         cRgYB2ohGpgVj598AWFh3MnM/Kp/W01Zm0hts=
+Message-ID: <4C7AAAA4.6060709@gmail.com>
+Date: Sun, 29 Aug 2010 11:44:52 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-In-Reply-To: <1283011478-27237-6-git-send-email-brgerst@gmail.com>
-References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
-	<1283011478-27237-6-git-send-email-brgerst@gmail.com>
-Date: Sun, 29 Aug 2010 21:38:27 +0300
-X-Google-Sender-Auth: KDv0mbVjJxN65ksSMNomatX8Ddw
-Message-ID: <AANLkTimFWOqqCf_YmnMKDFsL_yQ4Sv3gpEihw1mjjtwc@mail.gmail.com>
-Subject: Re: [PATCH 05/11] x86-64: Disable preemption when using TS_USEDFPU
-From: Pekka Enberg <penberg@kernel.org>
-To: Brian Gerst <brgerst@gmail.com>
-Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: gcc-help@gcc.gnu.org
+Subject: kernel/perf_event.c:5879:1: internal compiler error: in cgraph_estimate_size_after_inlining,
+ at ipa-inline.c:208
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst <brgerst@gmail.com> wrote:
-> Consolidates code and fixes the below race for 64-bit.
->
-> commit 9fa2f37bfeb798728241cc4a19578ce6e4258f25
-> Author: torvalds <torvalds>
-> Date:   Tue Sep 2 07:37:25 2003 +0000
->
->    Be a lot more careful about TS_USEDFPU and preemption
->
->    We had some races where we testecd (or set) TS_USEDFPU together
->    with sequences that depended on the setting (like clearing or
->    setting the TS flag in %cr0) and we could be preempted in between,
->    which screws up the FPU state, since preemption will itself change
->    USEDFPU and the TS flag.
->
->    This makes it a lot more explicit: the "internal" low-level FPU
->    functions ("__xxxx_fpu()") all require preemption to be disabled,
->    and the exported "real" functions will make sure that is the case.
->
->    One case - in __switch_to() - was switched to the non-preempt-safe
->    internal version, since the scheduler itself has already disabled
->    preemption.
->
->    BKrev: 3f5448b5WRiQuyzAlbajs3qoQjSobw
->
-> Signed-off-by: Brian Gerst <brgerst@gmail.com>
+well.. I know 2.6.35-rc6-00191-ga2dccdb builds without any such 
+errors..(I can bisect this if need be)
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+keep in mind this happens with: gcc --version
+gcc (GCC) 4.6.0 20100416 (experimental)
+
+                  from include/linux/hardirq.h:10,
+                  from kernel/perf_event.c:26:
+include/linux/irq.h: In function 'alloc_desc_masks':
+include/linux/irq.h:442:8: warning: variable 'gfp' set but not used
+kernel/perf_event.c: At top level:
+kernel/perf_event.c:5879:1: internal compiler error: in 
+cgraph_estimate_size_after_inlining, at ipa-inline.c:208
+Please submit a full bug report,
+with preprocessed source if appropriate.
+See <http://gcc.gnu.org/bugs.html> for instructions.
+make[1]: *** [kernel/perf_event.o] Error 1
+make: *** [kernel] Error 2
+
+
+just tested on my other machine running
+gcc --version: gcc (GCC) 4.6.0 20100731 (experimental)
+and this does not occur. kernel builds fine.(not sure with other 
+versions of gcc though).
+
+Justin P. Mattock
