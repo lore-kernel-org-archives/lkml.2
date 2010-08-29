@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab0H2NlQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 09:41:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49929 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab0H2NlP (ORCPT
+	id S1753507Ab0H2NpR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 09:45:17 -0400
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:48319 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753146Ab0H2NpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 09:41:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [RFC PATCH 03/43] ptrace: change signature of arch_ptrace()
-Date: Sun, 29 Aug 2010 15:40:55 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.5.0; x86_64; ; )
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-References: <1282902149-12991-1-git-send-email-namhyung@gmail.com> <201008271628.40023.arnd@arndb.de> <87occof2mw.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
-In-Reply-To: <87occof2mw.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+	Sun, 29 Aug 2010 09:45:15 -0400
+Message-ID: <4C7A640A.1010904@example.com>
+Date: Sun, 29 Aug 2010 15:43:38 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008291540.55414.arnd@arndb.de>
-X-Provags-ID: V02:K0:CQJ/dUstJmru3CU1K5a0MnyaBDcGdXOZgwmoZwaAX17
- rTWNNiWDopDW/MR9XUniwLTNX6cs7gEsNZgZFo4scYxLIpAtbR
- JFxoeux4fJLzMtHlEhEiulUUwjz9Rab4sNmBTVwOPSkelC7gan
- Vckn0iMD0AAu1zJEY5e9CvMhKILOwS0jP+OHyLcrxePE/rfXx4
- fIZgaYxtkfeG9umi4tt8A==
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@suse.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 00/20] mm: Preemptibility -v4
+References: <20100828141637.421594670@chello.nl>	 <4C7923B4.6030208@example.com> <1283008225.1975.3598.camel@laptop>	 <4C79287B.9060609@example.com> <1283009031.1975.3615.camel@laptop>	 <4C7A56BC.6010705@example.com> <1283089076.1820.240.camel@laptop>
+In-Reply-To: <1283089076.1820.240.camel@laptop>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 7208855629063483791
+X-Ovh-Remote: 95.49.238.73 (afje73.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 August 2010 18:20:55 Namhyung Kim wrote:
-> Arnd Bergmann <arnd@arndb.de> writes:
-> > Would it be possible to rearrange your patches so that you don't break
-> > anything in the middle? I think merging all the trivial 'change signature'
-> > patches into one would also make reviewing easier. Nobody in their
-> > right mind is looking through a full series of 43 patches, especially
-> > if they do not make sense on their own, but one patch that changes a
-> > function signature tree-wide would be looked at by many people and can
-> > be applied standalone.
-> >
-> 
-> OK. Will combine those.
-> BTW, one thing I wonder is it will have huge CC list of arch maintainers
-> in commit message, so is it usual? or is there other way?
+On 29.08.2010 15:37, Peter Zijlstra wrote:
+> On Sun, 2010-08-29 at 14:46 +0200, Piotr Hosowicz wrote:
+>> build NVidia module
+>
+> Sorry, you're on your own.
+>
 
-I'd say you don't have to for a trivial patch such at this, as long as
-you keep linux-arch@vger.kernel.org on Cc, since that has all the arch
-maintainers. It also doesn't hurt to keep them all on Cc, since it would
-only be a single mail then.
+OK.
 
-	Arnd
+Regards,
+
+Piotr Hosowicz
+
+-- 
+"Pirotechnicy zdetonowali na warszawskim Okêciu podejrzane ³adunki,
+znalezione przy porzuconym motocyklu. Wszystko wskazuje na to, ¿e
+by³ to fa³szywy alarm". Z polskiego na nasze: "rozp* komu¶ motor".
+NP: Patrick O'Hearn - Night Becomes Her
+NB: 2.6.36-rc2-git5
