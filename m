@@ -1,179 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab0H2U76 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 16:59:58 -0400
-Received: from toccata.ens-lyon.org ([140.77.166.68]:55479 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720Ab0H2U75 (ORCPT
+	id S1754096Ab0H2VGu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 17:06:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55280 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab0H2VGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 16:59:57 -0400
-Date: Sun, 29 Aug 2010 22:59:29 +0200
-From: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-Message-ID: <20100829205929.GA3309@pema>
-References: <20100825094925.GA3632@pema>
- <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain>
- <20100826210815.GA18131@pema>
- <4C76D9A0.2010907@zytor.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="GvXjxJ+pjyke8COw"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C76D9A0.2010907@zytor.com>
+	Sun, 29 Aug 2010 17:06:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 2/5] tty/vt: move files to drivers/tty/vt/
+Date: Sun, 29 Aug 2010 23:06:32 +0200
+Message-Id: <1283115995-4734-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:op6OiRisO3jlluwCb8OOX+LGTVkYcmLmuMMD/Iz2Hhq
+ GvxorZb/X5G/1/o8jKN/F6JEoJt3XOO0HU0rO3I9wx8iXxWVVe
+ TI8GCCid3drzfFVKNLXlPWEcVHVcpNGRjl1KzVsckUmEANT/iS
+ jcWPZcEJ826aTkYXC2Ax4Z8BtJleZXbsOUWG2QzQ3vL+jZYrYh
+ CuTohXn9QfP+wY5Lzu8KQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The virtual terminal is a very special tty driver, so
+it deserves its own directory.
 
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+Signed-off-by: Armd Bergmann <arnd@arndb.de>
+---
+ drivers/char/Kconfig                         |   84 +-------------------------
+ drivers/char/Makefile                        |   33 ----------
+ drivers/tty/Makefile                         |    1 +
+ drivers/tty/vt/Kconfig                       |   84 ++++++++++++++++++++++++++
+ drivers/tty/vt/Makefile                      |   37 +++++++++++
+ drivers/{char => tty/vt}/consolemap.c        |    0
+ drivers/{char => tty/vt}/cp437.uni           |    0
+ drivers/{char => tty/vt}/defkeymap.c_shipped |    0
+ drivers/{char => tty/vt}/defkeymap.map       |    0
+ drivers/{char => tty/vt}/keyboard.c          |    0
+ drivers/{char => tty/vt}/selection.c         |    0
+ drivers/{char => tty/vt}/vc_screen.c         |    0
+ drivers/{char => tty/vt}/vt.c                |    0
+ drivers/{char => tty/vt}/vt_ioctl.c          |    0
+ 14 files changed, 123 insertions(+), 116 deletions(-)
+ create mode 100644 drivers/tty/vt/Kconfig
+ create mode 100644 drivers/tty/vt/Makefile
+ rename drivers/{char => tty/vt}/consolemap.c (100%)
+ rename drivers/{char => tty/vt}/cp437.uni (100%)
+ rename drivers/{char => tty/vt}/defkeymap.c_shipped (100%)
+ rename drivers/{char => tty/vt}/defkeymap.map (100%)
+ rename drivers/{char => tty/vt}/keyboard.c (100%)
+ rename drivers/{char => tty/vt}/selection.c (100%)
+ rename drivers/{char => tty/vt}/vc_screen.c (100%)
+ rename drivers/{char => tty/vt}/vt.c (100%)
+ rename drivers/{char => tty/vt}/vt_ioctl.c (100%)
 
-Hi,
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 7beee39..52fa94d 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -4,89 +4,7 @@
+ 
+ menu "Character devices"
+ 
+-config VT
+-	bool "Virtual terminal" if EMBEDDED
+-	depends on !S390
+-	select INPUT
+-	default y
+-	---help---
+-	  If you say Y here, you will get support for terminal devices with
+-	  display and keyboard devices. These are called "virtual" because you
+-	  can run several virtual terminals (also called virtual consoles) on
+-	  one physical terminal. This is rather useful, for example one
+-	  virtual terminal can collect system messages and warnings, another
+-	  one can be used for a text-mode user session, and a third could run
+-	  an X session, all in parallel. Switching between virtual terminals
+-	  is done with certain key combinations, usually Alt-<function key>.
+-
+-	  The setterm command ("man setterm") can be used to change the
+-	  properties (such as colors or beeping) of a virtual terminal. The
+-	  man page console_codes(4) ("man console_codes") contains the special
+-	  character sequences that can be used to change those properties
+-	  directly. The fonts used on virtual terminals can be changed with
+-	  the setfont ("man setfont") command and the key bindings are defined
+-	  with the loadkeys ("man loadkeys") command.
+-
+-	  You need at least one virtual terminal device in order to make use
+-	  of your keyboard and monitor. Therefore, only people configuring an
+-	  embedded system would want to say N here in order to save some
+-	  memory; the only way to log into such a system is then via a serial
+-	  or network connection.
+-
+-	  If unsure, say Y, or else you won't be able to do much with your new
+-	  shiny Linux system :-)
+-
+-config CONSOLE_TRANSLATIONS
+-	depends on VT
+-	default y
+-	bool "Enable character translations in console" if EMBEDDED
+-	---help---
+-	  This enables support for font mapping and Unicode translation
+-	  on virtual consoles.
+-
+-config VT_CONSOLE
+-	bool "Support for console on virtual terminal" if EMBEDDED
+-	depends on VT
+-	default y
+-	---help---
+-	  The system console is the device which receives all kernel messages
+-	  and warnings and which allows logins in single user mode. If you
+-	  answer Y here, a virtual terminal (the device used to interact with
+-	  a physical terminal) can be used as system console. This is the most
+-	  common mode of operations, so you should say Y here unless you want
+-	  the kernel messages be output only to a serial port (in which case
+-	  you should say Y to "Console on serial port", below).
+-
+-	  If you do say Y here, by default the currently visible virtual
+-	  terminal (/dev/tty0) will be used as system console. You can change
+-	  that with a kernel command line option such as "console=tty3" which
+-	  would use the third virtual terminal as system console. (Try "man
+-	  bootparam" or see the documentation of your boot loader (lilo or
+-	  loadlin) about how to pass options to the kernel at boot time.)
+-
+-	  If unsure, say Y.
+-
+-config HW_CONSOLE
+-	bool
+-	depends on VT && !S390 && !UML
+-	default y
+-
+-config VT_HW_CONSOLE_BINDING
+-       bool "Support for binding and unbinding console drivers"
+-       depends on HW_CONSOLE
+-       default n
+-       ---help---
+-         The virtual terminal is the device that interacts with the physical
+-         terminal through console drivers. On these systems, at least one
+-         console driver is loaded. In other configurations, additional console
+-         drivers may be enabled, such as the framebuffer console. If more than
+-         1 console driver is enabled, setting this to 'y' will allow you to
+-         select the console driver that will serve as the backend for the
+-         virtual terminals.
+-
+-	 See <file:Documentation/console/console.txt> for more
+-	 information. For framebuffer console users, please refer to
+-	 <file:Documentation/fb/fbcon.txt>.
++source "drivers/tty/vt/Kconfig"
+ 
+ config DEVKMEM
+ 	bool "/dev/kmem virtual device support"
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index b7e6058..f507df7 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -2,18 +2,10 @@
+ # Makefile for the kernel character device drivers.
+ #
+ 
+-#
+-# This file contains the font map for the default (hardware) font
+-#
+-FONTMAPFILE = cp437.uni
+-
+ obj-y	 += mem.o random.o
+ 
+ obj-y				+= misc.o
+-obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
+ obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+-obj-$(CONFIG_CONSOLE_TRANSLATIONS) += consolemap.o consolemap_deftbl.o
+-obj-$(CONFIG_HW_CONSOLE)	+= vt.o defkeymap.o
+ obj-$(CONFIG_MVME147_SCC)	+= generic_serial.o vme_scc.o
+ obj-$(CONFIG_MVME162_SCC)	+= generic_serial.o vme_scc.o
+ obj-$(CONFIG_BVME6000_SCC)	+= generic_serial.o vme_scc.o
+@@ -106,28 +98,3 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
+ 
+ obj-$(CONFIG_JS_RTC)		+= js-rtc.o
+ js-rtc-y = rtc.o
+-
+-# Files generated that shall be removed upon make clean
+-clean-files := consolemap_deftbl.c defkeymap.c
+-
+-quiet_cmd_conmk = CONMK   $@
+-      cmd_conmk = scripts/conmakehash $< > $@
+-
+-$(obj)/consolemap_deftbl.c: $(src)/$(FONTMAPFILE)
+-	$(call cmd,conmk)
+-
+-$(obj)/defkeymap.o:  $(obj)/defkeymap.c
+-
+-# Uncomment if you're changing the keymap and have an appropriate
+-# loadkeys version for the map. By default, we'll use the shipped
+-# versions.
+-# GENERATE_KEYMAP := 1
+-
+-ifdef GENERATE_KEYMAP
+-
+-$(obj)/defkeymap.c: $(obj)/%.c: $(src)/%.map
+-	loadkeys --mktable $< > $@.tmp
+-	sed -e 's/^static *//' $@.tmp > $@
+-	rm $@.tmp
+-
+-endif
+diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
+index 562a96f..5845211 100644
+--- a/drivers/tty/Makefile
++++ b/drivers/tty/Makefile
+@@ -12,6 +12,7 @@ obj-y				+= tty_mutex.o
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
+ 
++obj-$(CONFIG_VT)		+= vt/
+ obj-$(CONFIG_AUDIT)		+= tty_audit.o
+ 
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= sysrq.o
+diff --git a/drivers/tty/vt/Kconfig b/drivers/tty/vt/Kconfig
+new file mode 100644
+index 0000000..7373eeb
+--- /dev/null
++++ b/drivers/tty/vt/Kconfig
+@@ -0,0 +1,84 @@
++config VT
++	bool "Virtual terminal" if EMBEDDED
++	depends on !S390
++	select INPUT
++	default y
++	---help---
++	  If you say Y here, you will get support for terminal devices with
++	  display and keyboard devices. These are called "virtual" because you
++	  can run several virtual terminals (also called virtual consoles) on
++	  one physical terminal. This is rather useful, for example one
++	  virtual terminal can collect system messages and warnings, another
++	  one can be used for a text-mode user session, and a third could run
++	  an X session, all in parallel. Switching between virtual terminals
++	  is done with certain key combinations, usually Alt-<function key>.
++
++	  The setterm command ("man setterm") can be used to change the
++	  properties (such as colors or beeping) of a virtual terminal. The
++	  man page console_codes(4) ("man console_codes") contains the special
++	  character sequences that can be used to change those properties
++	  directly. The fonts used on virtual terminals can be changed with
++	  the setfont ("man setfont") command and the key bindings are defined
++	  with the loadkeys ("man loadkeys") command.
++
++	  You need at least one virtual terminal device in order to make use
++	  of your keyboard and monitor. Therefore, only people configuring an
++	  embedded system would want to say N here in order to save some
++	  memory; the only way to log into such a system is then via a serial
++	  or network connection.
++
++	  If unsure, say Y, or else you won't be able to do much with your new
++	  shiny Linux system :-)
++
++config CONSOLE_TRANSLATIONS
++	depends on VT
++	default y
++	bool "Enable character translations in console" if EMBEDDED
++	---help---
++	  This enables support for font mapping and Unicode translation
++	  on virtual consoles.
++
++config VT_CONSOLE
++	bool "Support for console on virtual terminal" if EMBEDDED
++	depends on VT
++	default y
++	---help---
++	  The system console is the device which receives all kernel messages
++	  and warnings and which allows logins in single user mode. If you
++	  answer Y here, a virtual terminal (the device used to interact with
++	  a physical terminal) can be used as system console. This is the most
++	  common mode of operations, so you should say Y here unless you want
++	  the kernel messages be output only to a serial port (in which case
++	  you should say Y to "Console on serial port", below).
++
++	  If you do say Y here, by default the currently visible virtual
++	  terminal (/dev/tty0) will be used as system console. You can change
++	  that with a kernel command line option such as "console=tty3" which
++	  would use the third virtual terminal as system console. (Try "man
++	  bootparam" or see the documentation of your boot loader (lilo or
++	  loadlin) about how to pass options to the kernel at boot time.)
++
++	  If unsure, say Y.
++
++config HW_CONSOLE
++	bool
++	depends on VT && !S390 && !UML
++	default y
++
++config VT_HW_CONSOLE_BINDING
++       bool "Support for binding and unbinding console drivers"
++       depends on HW_CONSOLE
++       default n
++       ---help---
++         The virtual terminal is the device that interacts with the physical
++         terminal through console drivers. On these systems, at least one
++         console driver is loaded. In other configurations, additional console
++         drivers may be enabled, such as the framebuffer console. If more than
++         1 console driver is enabled, setting this to 'y' will allow you to
++         select the console driver that will serve as the backend for the
++         virtual terminals.
++
++	 See <file:Documentation/console/console.txt> for more
++	 information. For framebuffer console users, please refer to
++	 <file:Documentation/fb/fbcon.txt>.
++
+diff --git a/drivers/tty/vt/Makefile b/drivers/tty/vt/Makefile
+new file mode 100644
+index 0000000..4d6714f
+--- /dev/null
++++ b/drivers/tty/vt/Makefile
+@@ -0,0 +1,37 @@
++#
++# Makefile for virtual terminal device driver
++#
++
++#
++# This file contains the font map for the default (hardware) font
++#
++FONTMAPFILE = cp437.uni
++
++obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
++obj-$(CONFIG_CONSOLE_TRANSLATIONS) += consolemap.o consolemap_deftbl.o
++obj-$(CONFIG_HW_CONSOLE)	+= vt.o defkeymap.o
++
++# Files generated that shall be removed upon make clean
++clean-files := consolemap_deftbl.c defkeymap.c
++
++quiet_cmd_conmk = CONMK   $@
++      cmd_conmk = scripts/conmakehash $< > $@
++
++$(obj)/consolemap_deftbl.c: $(src)/$(FONTMAPFILE)
++	$(call cmd,conmk)
++
++$(obj)/defkeymap.o:  $(obj)/defkeymap.c
++
++# Uncomment if you're changing the keymap and have an appropriate
++# loadkeys version for the map. By default, we'll use the shipped
++# versions.
++# GENERATE_KEYMAP := 1
++
++ifdef GENERATE_KEYMAP
++
++$(obj)/defkeymap.c: $(obj)/%.c: $(src)/%.map
++	loadkeys --mktable $< > $@.tmp
++	sed -e 's/^static *//' $@.tmp > $@
++	rm $@.tmp
++
++endif
+diff --git a/drivers/char/consolemap.c b/drivers/tty/vt/consolemap.c
+similarity index 100%
+rename from drivers/char/consolemap.c
+rename to drivers/tty/vt/consolemap.c
+diff --git a/drivers/char/cp437.uni b/drivers/tty/vt/cp437.uni
+similarity index 100%
+rename from drivers/char/cp437.uni
+rename to drivers/tty/vt/cp437.uni
+diff --git a/drivers/char/defkeymap.c_shipped b/drivers/tty/vt/defkeymap.c_shipped
+similarity index 100%
+rename from drivers/char/defkeymap.c_shipped
+rename to drivers/tty/vt/defkeymap.c_shipped
+diff --git a/drivers/char/defkeymap.map b/drivers/tty/vt/defkeymap.map
+similarity index 100%
+rename from drivers/char/defkeymap.map
+rename to drivers/tty/vt/defkeymap.map
+diff --git a/drivers/char/keyboard.c b/drivers/tty/vt/keyboard.c
+similarity index 100%
+rename from drivers/char/keyboard.c
+rename to drivers/tty/vt/keyboard.c
+diff --git a/drivers/char/selection.c b/drivers/tty/vt/selection.c
+similarity index 100%
+rename from drivers/char/selection.c
+rename to drivers/tty/vt/selection.c
+diff --git a/drivers/char/vc_screen.c b/drivers/tty/vt/vc_screen.c
+similarity index 100%
+rename from drivers/char/vc_screen.c
+rename to drivers/tty/vt/vc_screen.c
+diff --git a/drivers/char/vt.c b/drivers/tty/vt/vt.c
+similarity index 100%
+rename from drivers/char/vt.c
+rename to drivers/tty/vt/vt.c
+diff --git a/drivers/char/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
+similarity index 100%
+rename from drivers/char/vt_ioctl.c
+rename to drivers/tty/vt/vt_ioctl.c
+-- 
+1.7.1
 
-H. Peter Anvin (2010/08/26 14:16 -0700):
-> What about APM?
-
-Not either, I think.
-See attached dmesg output.
-Shérab.
-
---GvXjxJ+pjyke8COw
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="dmesg-with-apm-debugging.bz2"
-Content-Transfer-Encoding: base64
-
-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
-w7aCekv/i7kinChIIlgcV4A=
-
---GvXjxJ+pjyke8COw--
