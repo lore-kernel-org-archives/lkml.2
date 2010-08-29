@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab0H2NT1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 09:19:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39752 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab0H2NT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 09:19:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=Q2+qm9pj6VVEfkf9xZuuqFHjZs/zN2aoskCW2IeurkDDT7wEu+1C0+ljWvHnQwwuRb
-         AKQaIGc4WVFuGlgPZoToS/n7eCizh4uz/YYdId57PoA0w7Mt3+g5uVKFmxlR/640/baS
-         UfokUFM+fnBmnjk1TInoDxNG4IUq2O0gpcwyI=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Tino Keitel <tino.keitel+xorg@tikei.de>
-Subject: Re: 2.6.36-rc2 regression: Wrong screen resolution (1024x768 instead of 1680x1050)
-Date: Sun, 29 Aug 2010 15:19:20 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc2; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-References: <20100826073039.GA4567@mac.home>
-In-Reply-To: <20100826073039.GA4567@mac.home>
+	id S1753316Ab0H2NYt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 09:24:49 -0400
+Received: from mail.acbr.com.vn ([118.69.77.199]:42747 "EHLO acbr.com.vn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752374Ab0H2NYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 09:24:48 -0400
+X-Greylist: delayed 12173 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Aug 2010 09:24:47 EDT
+From: "Mr. Mervyn King" <mervyn.king@yahoo.co.uk>
+Reply-To: mervyn.king@windowslive.com
+Subject: I NEED YOUR URGENT RESPONSE!
+Date: Sun, 29 Aug 2010 14:26:38 +0700
+Message-Id: <20100829063932.M91949@yahoo.co.uk>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 172.190.222.115 (sangkht)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008291519.20734.maciej.rutecki@gmail.com>
+Content-Type: text/plain;
+	charset=iso-8859-1
+X-SMTP-Vilter-Version: 1.3.6
+X-SMTP-Vilter-Virus-Backend: clamd
+X-SMTP-Vilter-Status: clean
+X-SMTP-Vilter-clamd-Virus-Status: clean
+X-Spamd-Symbols: ADVANCE_FEE_1,ALL_TRUSTED,SUBJ_ALL_CAPS,TO_CC_NONE,URG_BIZ
+X-SMTP-Vilter-Spam-Backend: spamd
+X-Spam-Score: 0.2
+X-Spam-Threshold: 5.0
+X-Spam-Probability: 0.0
+X-Its-A-Nuisance: This is spam
+X-SMTP-Vilter-Unwanted-Backend: attachment
+X-SMTP-Vilter-attachment-Unwanted-Status: clean
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 26 sierpnia 2010 o 09:30:39 Tino Keitel wrote:
-> Hi,
-> 
-> booting 2.6.36-rc2-git4 (commit
-> d4348c678977c7093438bbbf2067c49396ae941b) results in a screen
-> resolution of 1024x768 instead of 1680x1050.  It works fine with
-> 2.6.35.2.
-> 
-> The framebuffer console uses the correct resolution, but only uses a
-> part of the screen for text output. Xorg output looks distorted.
-> 
-> Xorg log is attached.
-> 
-> $ xrandr
-> Screen 0: minimum 320 x 200, current 1024 x 768, maximum 4096 x 4096
-> VGA1 disconnected (normal left inverted right x axis y axis)
-> DVI1 connected 1024x768+0+0 (normal left inverted right x axis y axis)
-> 454mm x 284mm
->    1680x1050      59.9 +
->    1280x1024      60.0
->    1280x960       60.0
->    1024x768       60.0*
->    800x600        60.3
->    640x480        60.0
->    720x400        70.1
-> TV1 connected 1024x768+0+0 (normal left inverted right x axis y axis)
-> 0mm x 0mm
->    848x480        30.0 +
->    640x480        30.0 +
->    1024x768       30.0*
->    800x600        30.0
-> 
-> This is a Mac mini Core 2 Duo with Intel i945 graphics.
-> 
+Good Day, 
 
-Seems be similar to:
-https://bugzilla.kernel.org/show_bug.cgi?id=17301
+Although you might be apprehensive about my email as we have not met before, 
+My name is Mervyn King, I work with Bank Of England, There is the sum of 
+20,600,000.00 EURO in my Bank, There were no beneficiaries stated concerning 
+these funds which means no one would ever come forward to claim it. 
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+That is why I ask that we work together to transfered the funds out of my 
+Bank into your Bank Account or any other account of your choice I will be 
+pleased to see if you can help me and also be a good and trusted person. Once 
+the funds have been transferred to your Nominated Bank Account we shall then 
+share in the ratio of 60% for me, 40% for you, do send me email as soon as 
+possible for more details here is my email address: 
+mervyn.king@windowslive.com 
+
+Regards,
+Mr. Mervyn King
