@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab0H2Xe3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 19:34:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55399 "EHLO ogre.sisk.pl"
+	id S1754631Ab0H2Xeu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 19:34:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55397 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754178Ab0H2X3O convert rfc822-to-8bit (ORCPT
+	id S1754174Ab0H2X3O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 29 Aug 2010 19:29:14 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Miles Lane" <miles.lane@gmail.com>
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        "Pauli Nieminen" <suokkos@gmail.com>
 References: <c1_O4wHrlB.A.63.mbueMB@chimera>
 In-Reply-To: <c1_O4wHrlB.A.63.mbueMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <ByD_7B96czP.A.gKD.JgueMB@chimera>
-Subject: [Bug #16323] 2.6.35-rc3-git4 - kernel/sched.c:616 invoked rcu_dereference_check() without protection!
+Message-ID: <ByD_7B96czP.A.3DD.5fueMB@chimera>
+Subject: [Bug #16337] general protection fault: 0000 [#1] SMP
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Aug 2010 01:13:28 +0200 (CEST)
+Date: Mon, 30 Aug 2010 01:13:29 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +34,11 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16323
-Subject		: 2.6.35-rc3-git4 - kernel/sched.c:616 invoked rcu_dereference_check() without protection!
-Submitter	: Miles Lane <miles.lane@gmail.com>
-Date		: 2010-07-01 12:21 (60 days old)
-Message-ID	: <AANLkTini6hz2LFeZi8CMUmY3xw1MU7NxmyesuxZ4oCdo@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=127798693125541&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16337
+Subject		: general protection fault: 0000 [#1] SMP
+Submitter	: Justin P. Mattock <justinmattock@gmail.com>
+Date		: 2010-07-03 22:59 (58 days old)
+Message-ID	: <<4C2FC0E3.6050101@gmail.com>>
+References	: http://marc.info/?l=linux-kernel&m=127819798215589&w=2
 
 
