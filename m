@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab0H3SsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 14:48:10 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:52984 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab0H3SsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 14:48:09 -0400
-Date: Mon, 30 Aug 2010 11:48:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Doug Nazar <nazard.lkml@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: Re: WARN with 3c905 boomerang NIC
-Message-ID: <20100830184805.GI2420@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4C70C516.5020404@gmail.com>
+	id S1756202Ab0H3SwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 14:52:18 -0400
+Received: from ns1.siteground211.com ([209.62.36.12]:39890 "EHLO
+	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab0H3SwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 14:52:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C70C516.5020404@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 30 Aug 2010 13:52:18 -0500
+From: Felipe Balbi <me@felipebalbi.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Hemanth V <hemanthv@ti.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <igor.stoppa@nokia.com>, <kai.svahn@nokia.com>,
+        <mathias.nyman@nokia.com>
+Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2] input:
+ CMA3000 Accelerometer driver)
+In-Reply-To: <20100830172143.GA28275@core.coreip.homeip.net>
+References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com> <20100829184904.GC26209@core.coreip.homeip.net> <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com> <20100830162855.GA17325@core.coreip.homeip.net> <d6b6aa8195784d6baf3ffcdc365c6361@secure211.sgcpanel.com> <20100830172143.GA28275@core.coreip.homeip.net>
+Message-ID: <3fe11bc61e6a844b926ec4d32cec1474@secure211.sgcpanel.com>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - serv01.siteground211.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - felipebalbi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 22, 2010 at 02:35:02AM -0400, Doug Nazar wrote:
->  Since de85d99eb7b595f6751550184b94c1e2f74a828b (netpoll: Fix RCU
-> usage) I've been getting the follow warning:
+Hi,
 
-This one is on my list, thank you for checking!
+On Mon, 30 Aug 2010 10:21:44 -0700, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> My response to this - are gyroscopes will _only_ be used to turn around
+> in a game? Are proximity sensor is _only_ usable as a trigger in FPS?
+> Won't we ever see such chips controlling technological processes?
 
-							Thanx, Paul
+similarly, will accelerometers always be used as input devices ?
+of course not, they have been used e.g. to spin down hard disks
+on laptops when they are shaken too hard. Still they have quite a
+fair bit of usage as input devices; you've seen it yourself,
+right ?
 
-> Aug 20 22:33:26 dryad kernel: [   64.263065] ------------[ cut here
-> ]------------
-> Aug 20 22:33:26 dryad kernel: [   64.263089] WARNING: at
-> /usr/src/linux/kernel/softirq.c:143 local_bh_enable+0x58/0x82()
-> Aug 20 22:33:26 dryad kernel: [   64.263095] Hardware name: OptiPlex GX240
-> Aug 20 22:33:26 dryad kernel: [   64.263099] Modules linked in:
-> rpcsec_gss_krb5 softdog snd_intel8x0 snd_ac97_codec 8250_pnp ac97_bu
-> Aug 20 22:33:26 dryad kernel: [   64.263234] Pid: 5892, comm:
-> runscript.sh Not tainted 2.6.36-rc1-00133-g47ade1d #43
-> Aug 20 22:33:26 dryad kernel: [   64.263238] Call Trace:
-> Aug 20 22:33:26 dryad kernel: [   64.263251]  [<c12a492e>] ?
-> printk+0x18/0x1a
-> Aug 20 22:33:26 dryad kernel: [   64.263263]  [<c102a015>]
-> warn_slowpath_common+0x67/0x8e
-> Aug 20 22:33:26 dryad kernel: [   64.263271]  [<c102ee76>] ?
-> local_bh_enable+0x58/0x82
-> Aug 20 22:33:26 dryad kernel: [   64.263277]  [<c102ee76>] ?
-> local_bh_enable+0x58/0x82
-> Aug 20 22:33:26 dryad kernel: [   64.263285]  [<c102a059>]
-> warn_slowpath_null+0x1d/0x1f
-> Aug 20 22:33:26 dryad kernel: [   64.263292]  [<c102ee76>]
-> local_bh_enable+0x58/0x82
-> Aug 20 22:33:26 dryad kernel: [   64.263301]  [<c12399e5>]
-> netif_rx+0x14f/0x172
-> Aug 20 22:33:26 dryad kernel: [   64.263315]  [<e20e8f0f>]
-> boomerang_rx+0x27a/0x42f [3c59x]
-> Aug 20 22:33:26 dryad kernel: [   64.263328]  [<c10a369b>] ?
-> path_put+0x20/0x23
-> Aug 20 22:33:26 dryad kernel: [   64.263342]  [<e20eadfb>]
-> boomerang_interrupt+0xd9/0x2b7 [3c59x]
-> Aug 20 22:33:26 dryad kernel: [   64.263361]  [<c105651c>]
-> handle_IRQ_event+0x3e/0x13e
-> Aug 20 22:33:26 dryad kernel: [   64.263369]  [<c1057c6e>]
-> handle_fasteoi_irq+0x3c/0x89
-> Aug 20 22:33:26 dryad kernel: [   64.263378]  [<c1004e58>]
-> handle_irq+0x18/0x30
-> Aug 20 22:33:26 dryad kernel: [   64.263385]  [<c10048cb>] do_IRQ+0x34/0x97
-> Aug 20 22:33:26 dryad kernel: [   64.263392]  [<c10037a9>]
-> common_interrupt+0x29/0x30
-> Aug 20 22:33:26 dryad kernel: [   64.263398] ---[ end trace
-> 511646352388ce9c ]---
-> 
-> The card is an:
-> 02:0c.0 Ethernet controller: 3Com Corporation 3c905C-TX/TX-M
-> [Tornado] (rev 78)
-> 
-> Doug
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+in the end of the day, when you put those on mobile devices
+like e.g. cellphones, app developers will be really keen on
+creating new ways for interacting with apps (be it a game
+or not) using those devices, so I will agree with Jonathan
+that, maybe, having two separate drivers for different
+purposes would make sense, although that might cause a bit
+of trouble if user ends up enabling the wrong driver when
+building custom kernel for his device.
+
+My hope is that we can make use of a well known and uniform
+API for all input devices in a device, be it a keypad,
+touchscreen, accelerometer, magnetometer, gyro, or whatever.
+
+-- 
+balbi
