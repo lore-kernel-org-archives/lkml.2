@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab0H3XEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 19:04:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63111 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973Ab0H3XEa (ORCPT
+	id S1754276Ab0H3XKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 19:10:41 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59605 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab0H3XKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 19:04:30 -0400
+	Mon, 30 Aug 2010 19:10:40 -0400
 From: "Gustavo F. Padovan" <padovan@profusion.mobi>
 To: linux-bluetooth@vger.kernel.org
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, marcel@holtmann.org
 Subject: [PATCH] Bluetooth: Simplify L2CAP Streaming mode sending
-Date: Mon, 30 Aug 2010 20:04:22 -0300
-Message-Id: <1283209462-8572-1-git-send-email-padovan@profusion.mobi>
+Date: Mon, 30 Aug 2010 20:10:24 -0300
+Message-Id: <1283209824-8795-2-git-send-email-padovan@profusion.mobi>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1283209824-8795-1-git-send-email-padovan@profusion.mobi>
+References: <1283209824-8795-1-git-send-email-padovan@profusion.mobi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
