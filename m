@@ -1,65 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab0H3LHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:07:37 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:45758 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753261Ab0H3LHg (ORCPT
+	id S1755366Ab0H3LHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:07:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:65349 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754891Ab0H3LHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:07:36 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] hid: 3m-pct: Adjust major / minor axes to scale
-Date: Mon, 30 Aug 2010 13:06:51 +0200
-Message-Id: <1283166411-2346-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1Oq2CY-0001Am-55.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Oq2CY-0001Am-55 d2e874f27becc175248e172f72feaec3
+	Mon, 30 Aug 2010 07:07:37 -0400
+Message-ID: <4C7B9106.3010109@steinhoff.de>
+Date: Mon, 30 Aug 2010 13:07:50 +0200
+From: Armin Steinhoff <armin@steinhoff.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: "Hans J. Koch" <hjk@linutronix.de>
+Subject: UIO and Fedora 13  (kernel 33.6) / kernel module corrected
+References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com>	 <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de>	 <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com> <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com>
+In-Reply-To: <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------010508030407080807000001"
+X-Provags-ID: V02:K0:kdAK7RKKzo5HwYmDPSd1Vv9p/NYm7eVNgrAignJFJ90
+ cu8MUwuLJBSN0zEKqopqdQUqkO9gVrj0am4L4WUITUgfYQsf+q
+ jEAOnGnm5+qOwGKGk1ZRH2cqPJEcsS4YcL81V8krDI7sE/UFkl
+ kaB+gk2Mlt259X64jDDGAb9wPSB54X9gJWxRqSbv0KF6yUBjb2
+ FdwABucLkaVk09sQI/lFQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By visual inspection, the reported touch_major and touch_minor axes
-are a factor of two too large. Presumably the device actually reports
-the width_major and width_minor, which are generally about a factor of
-two larger than the touches themselves.
+This is a multi-part message in MIME format.
+--------------010508030407080807000001
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hid/hid-3m-pct.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+   Hi,
 
-diff --git a/drivers/hid/hid-3m-pct.c b/drivers/hid/hid-3m-pct.c
-index 65441e0..cd4b125 100644
---- a/drivers/hid/hid-3m-pct.c
-+++ b/drivers/hid/hid-3m-pct.c
-@@ -162,16 +162,18 @@ static void mmm_filter_event(struct mmm_data *md, struct input_dev *input)
- 		if (f->touch) {
- 			/* this finger is on the screen */
- 			int wide = (f->w > f->h);
-+			/* divided by two to match visual scale of touch */
-+			int major = max(f->w, f->h) >> 1;
-+			int minor = min(f->w, f->h) >> 1;
-+
- 			if (!f->prev_touch)
- 				f->id = md->id++;
- 			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, f->id);
- 			input_event(input, EV_ABS, ABS_MT_POSITION_X, f->x);
- 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, f->y);
- 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
--			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR,
--						wide ? f->w : f->h);
--			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR,
--						wide ? f->h : f->w);
-+			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
-+			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, minor);
- 			/* touchscreen emulation: pick the oldest contact */
- 			if (!oldest || ((f->id - oldest->id) & (SHRT_MAX + 1)))
- 				oldest = f;
--- 
-1.7.1
+I'm writing an UIO driver for a plain PC/104 board (ISA bus).
+After insmod <my_driver_mod> I don't see an entry of uio0 in /dev and 
+also no entries in /sys/class. There are no error messages at module load.
 
+The same happens after loading the module uio.ko and uio_pdrv.ko ... no 
+entries at all, no error messages.
+
+In the attachment is the kernel part of the driver. What could be the 
+problem?
+
+--Armin
+
+
+
+
+--------------010508030407080807000001
+Content-Type: text/x-csrc;
+ name="uio_jand.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="uio_jand.c"
+
+/*
+ * UIO CAN L2
+ *
+ * (C) Armin Steinhoff <as@steinhoff-automation.com>
+ * (C) 2007 Hans J. Koch <hjk@linutronix.de>
+ * Original code (C) 2005 Benedikt Spranger <b.spranger@linutronix.de>
+ *
+ * Licensed under GPL version 2 only.
+ *
+ */
+
+#include <linux/device.h>
+#include <linux/module.h>
+#include <linux/uio_driver.h>
+#include <linux/platform_device.h>
+#include <linux/moduleparam.h>
+#include <asm/io.h>
+
+#define DEBUG 1
+#define DRIVER_MAJOR 240
+#define INT_QUEUE_SIZE 64
+
+static struct uio_info *info;
+static unsigned char int_x[2], * int_q[2];
+static	void __iomem *isr[2]; 
+
+static unsigned int irq = 11;
+module_param (irq, uint, 0);
+MODULE_PARM_DESC (irq, "IRQ (default 11)");
+
+static unsigned long base_addr = 0xd00000;
+module_param (base_addr, ulong, 0);
+MODULE_PARM_DESC (base_addr, "Base address (default 0xD0000)");
+
+static unsigned long base_len;
+module_param (base_len, ulong, 0);
+MODULE_PARM_DESC (base_len, "Base length (default 0x1)");
+
+static struct platform_device * uio_jand_device;
+static int jand_probe(struct device *dev);
+static int jand_remove(struct device *dev);
+
+static struct device_driver uio_jand_driver = 
+{
+ .name   = "uio_jand",
+ .bus    = &platform_bus_type,
+ .probe  = jand_probe,
+ .remove = jand_remove,
+};
+
+static irqreturn_t int_handler(int irq, struct uio_info *dev_info)
+{
+    int irq_flag = 0;
+	unsigned char ISRstat;
+	
+	ISRstat = readb(isr[0]);
+	if(ISRstat & 0x02)
+	{
+		int_q[0][int_x[0]] = ISRstat;
+		int_x[0] = (int_x[0] + 1) & 0xF ; // modulo 16
+		
+		irq_flag = 1;
+	}
+
+	ISRstat = readb(isr[1]);
+	if(ISRstat & 0x02)
+	{
+		int_q[1][int_x[1]] = ISRstat;
+		int_x[1] = (int_x[1] + 1) & 0xF ; // modulo 16
+		irq_flag = 1;
+	}
+	
+	if(irq_flag)
+		return(IRQ_HANDLED);
+	else
+		return(IRQ_NONE);
+}
+
+static int jand_probe(struct device *dev)
+{	
+	info = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
+	if (!info)
+	{
+		return -ENOMEM;
+	}
+	
+	info->mem[0].addr = base_addr;
+	info->mem[0].size = base_len;
+	info->mem[0].memtype = UIO_MEM_PHYS;
+	
+	info->mem[0].internal_addr = ioremap(info->mem[0].addr,info->mem[0].size);
+	if (!info->mem[0].internal_addr)
+		goto out_release;
+		
+	/* interrupt queue */
+	info->mem[1].addr = (unsigned long)kmalloc(64, GFP_KERNEL);	
+	if (!info->mem[1].addr)
+		goto out_release1;
+	
+	int_q[0] = (unsigned char * )info->mem[1].addr;
+	int_q[1] = (unsigned char * )info->mem[1].addr +32;
+	
+	memset(&int_q[0], 0x00, 16);
+	int_x[0] = 0;
+	memset(&int_q[1], 0x00, 16);
+	int_x[1] = 0;
+
+	info->mem[1].memtype = UIO_MEM_LOGICAL;
+	info->mem[1].size = 64;
+	
+	isr[0] = info->mem[0].internal_addr + 3;	        /* interrupt reg channel 1 */
+	isr[1] = info->mem[0].internal_addr + 3 + 0x200;	/* interrupt reg channel 2 */
+	
+	info->name = "uio_jand";	
+	info->version = "0.0.1";
+	info->irq = irq;
+	info->irq_flags = 0;
+	info->handler = int_handler;
+
+	if (uio_register_device(dev, info))
+		goto out_release2;
+	printk("uio_jand started!\n");
+	return 0;
+	
+	
+out_release2:
+	kfree((void *)info->mem[1].addr);
+	printk("uio_register_device failed!\n");
+out_release1:	
+	free_irq( irq, "uio_jand" );	
+	iounmap(info->mem[0].internal_addr);		
+	release_mem_region( base_addr, base_len);
+out_release:	
+	kfree (info);
+    printk("Error exit ENODEV! \n");
+	return -ENODEV;
+}
+
+static int jand_remove(struct device *dev)
+{
+	uio_unregister_device(info);
+	iounmap(info->mem[0].internal_addr);
+	release_mem_region( base_addr, base_len);
+	free_irq( irq, "uio_jand" );		
+	kfree((void *)info->mem[1].addr);
+	kfree (info);
+	return 0;
+}
+
+
+static int __init uio_jand_init(void)
+{
+	uio_jand_device = platform_device_register_simple("uio_jand", -1,NULL, 0);
+	return driver_register(&uio_jand_driver);
+}
+
+static void __exit uio_jand_exit(void)
+{
+	platform_device_unregister(uio_jand_device);
+	driver_unregister(&uio_jand_driver);
+}
+
+module_init( uio_jand_init );
+module_exit( uio_jand_exit );
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("A. Steinhoff");
+MODULE_DESCRIPTION("UIO Janus-D CAN driver");
+
+--------------010508030407080807000001--
