@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab0H3JWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 05:22:40 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:14549 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab0H3JWf (ORCPT
+	id S1754849Ab0H3JUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 05:20:42 -0400
+Received: from smtp101.sbc.mail.gq1.yahoo.com ([67.195.15.60]:41693 "HELO
+	smtp101.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754768Ab0H3JU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 05:22:35 -0400
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2cK1432N98dNzz1202hzz8275bh8275dhz32i2a8h5bem5bfn61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7YK3T-01-6JB-02
-X-M-MSG: 
-Date: Mon, 30 Aug 2010 11:09:29 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/3] x86: oprofile: fix oprofile_arch_init behaviour on
- failure
-Message-ID: <20100830090929.GU22783@erda.amd.com>
-References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
- <1283107921-21464-2-git-send-email-will.deacon@arm.com>
- <1283107921-21464-3-git-send-email-will.deacon@arm.com>
- <1283107921-21464-4-git-send-email-will.deacon@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1283107921-21464-4-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Mon, 30 Aug 2010 05:20:28 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 5fXWZsgVM1m9VPVkDHiVbcTVZFZJRsmlcnVn1Ef.CkjeA5U
+ 8EMGj3CaRFCqo_Lulha0.ZCgwCoDiSLrXJhq1R2Bywly.5Y6zLRkTXV0peAR
+ 8Dq6MTBP43uKOMd5S0osvmZYH8UXjqWP1WP6gJ34M8rSsWqVM6LDjheDDXlj
+ tW3L8hGoGH3PdxWF_BFXGgBZDwiKA6FQympbZwUIBRJxszEPWseRW5K5DcvV
+ yhdLM_6M2.vZkIWyf..tsn4qu6JV_U56TgQqzR.gPVEJXVEdWHQBqcWLMxjk
+ EuuKPYwF5GlMImmheY9w1h6lX.rqNdWS5JauX.9bASWcTRG61_E47s5o4kCW
+ pjaHVjHJduvow2oANJw--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFC 02/22] configfs: Add struct configfs_item_operations->check_link() in configfs_unlink()
+Date: Mon, 30 Aug 2010 02:20:25 -0700
+Message-Id: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.08.10 14:52:01, Will Deacon wrote:
-> The OProfile driver no longer calls oprofile_arch_exit when
-> oprofile_arch_init return failure.
-> 
-> This patch fixes the x86 implementation of oprofile_arch_init
-> to ensure that op_nmi_exit is called if necessary.
-> 
-> Cc: Robert Richter <robert.richter@amd.com>
-> Cc: Matt Fleming <matt@console-pimps.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/x86/oprofile/init.c |   26 +++++++++++++++-----------
->  1 files changed, 15 insertions(+), 11 deletions(-)
-> 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
->  int __init oprofile_arch_init(struct oprofile_operations *ops)
->  {
->  	int ret;
->  
-> -	ret = -ENODEV;
-> -
-> -#ifdef CONFIG_X86_LOCAL_APIC
->  	ret = op_nmi_init(ops);
-> -#endif
-> -#ifdef CONFIG_X86_IO_APIC
->  	if (ret < 0)
-> +#ifdef CONFIG_X86_IO_APIC
->  		ret = op_nmi_timer_init(ops);
-> +#else
-> +		return ret;
->  #endif
-> +
->  	ops->backtrace = x86_backtrace;
->  
-> +	if (ret < 0)
-> +		op_nmi_exit();
-> +
+This patch adds a optional struct configfs_item_operations->check_link() check
+called in fs/configfs/symlink.c:configfs_unlink() that can be used by configfs
+consumers to check for an explict struct config_group dependence with active
+symlink and fail with -EPERM before the unlink(2) syscall is allowed to occur.
 
-I don't see why we have to do this. All init functions above clean up
-properly on failure. If op_nmi_init() succeeds we don't call
-op_nmi_timer_init(), so we don't need to free it it either.
+Currently without this patch, there is not a method that a consumer can tell
+configfs_unlink() that it needs to fail for this particular case.  Allowing
+->check_link() to propigate up the errno to VFS is also another option for the
+call, but currently for TCM using the existing -EPERM in configfs_unlink() is fine here.
 
--Robert
+Note this patch is used by TCM v4 generic configfs fabric module infrastructure to
+allow  explict Initiator Port MappedLUNs symlinks to create a dependency for
+the fabric TPG Port LUNs living in a configfs group that is not a direct
+struct config_group parent.
 
->  	return ret;
->  }
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ fs/configfs/symlink.c    |   13 +++++++++++++
+ include/linux/configfs.h |    1 +
+ 2 files changed, 14 insertions(+), 0 deletions(-)
 
+diff --git a/fs/configfs/symlink.c b/fs/configfs/symlink.c
+index 0f3eb41..b8010de 100644
+--- a/fs/configfs/symlink.c
++++ b/fs/configfs/symlink.c
+@@ -205,6 +205,19 @@ int configfs_unlink(struct inode *dir, struct dentry *dentry)
+ 	parent_item = configfs_get_config_item(dentry->d_parent);
+ 	type = parent_item->ci_type;
+ 
++	/*
++	 * See if the underlying struct config_item has dependent
++	 * symlinks, and should return -EPERM here.
++	 */
++	if (type && type->ct_item_ops &&
++	    type->ct_item_ops->check_link) {
++		if (type->ct_item_ops->check_link(parent_item,
++					sl->sl_target) != 0) {
++			config_item_put(parent_item);
++			goto out;
++		}
++	}
++
+ 	spin_lock(&configfs_dirent_lock);
+ 	list_del_init(&sd->s_sibling);
+ 	spin_unlock(&configfs_dirent_lock);
+diff --git a/include/linux/configfs.h b/include/linux/configfs.h
+index ddb7a97..7c01d86 100644
+--- a/include/linux/configfs.h
++++ b/include/linux/configfs.h
+@@ -226,6 +226,7 @@ struct configfs_item_operations {
+ 	ssize_t	(*show_attribute)(struct config_item *, struct configfs_attribute *,char *);
+ 	ssize_t	(*store_attribute)(struct config_item *,struct configfs_attribute *,const char *, size_t);
+ 	int (*allow_link)(struct config_item *src, struct config_item *target);
++	int (*check_link)(struct config_item *src, struct config_item *target);
+ 	int (*drop_link)(struct config_item *src, struct config_item *target);
+ };
+ 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.7.2.2
 
