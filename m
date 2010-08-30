@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab0H3RbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:31:19 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:15889 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab0H3RbS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:31:18 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Arnd Bergmann <arnd@arndb.de>, Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
-Subject: RE: hv block drivers
-Thread-Topic: hv block drivers
-Thread-Index: AQHLSFHcnkjYB5qn30uR65rFUVBeSJL6onMAgAAOS4D//47G0A==
-Date: Mon, 30 Aug 2010 17:31:10 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56224274727@TK5EX14MBXC118.redmond.corp.microsoft.com>
-References: <201008301643.42253.arnd@arndb.de> <4C7BD9A6.1090108@goop.org>
- <201008301908.51521.arnd@arndb.de>
-In-Reply-To: <201008301908.51521.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756235Ab0H3Rb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:31:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40554 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756042Ab0H3Rb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 13:31:58 -0400
+Message-ID: <4C7BEB00.9060801@kernel.org>
+Date: Mon, 30 Aug 2010 19:31:44 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
+To: caiqian@redhat.com
+CC: kexec <kexec@lists.infradead.org>, linux-next@vger.kernel.org,
+        torvalds@linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kdump regression compared to v2.6.35
+References: <1331313838.1541221283181038073.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <4C7BDE6E.8030107@kernel.org>
+In-Reply-To: <4C7BDE6E.8030107@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 17:31:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please try this one instead.  Thanks.
 
->On Monday 30 August 2010 Arnd Bergmann wrote: 
->>On Monday 30 August 2010, Jeremy Fitzhardinge wrote:
->> Have you investigated making virtio a scsi device?
->
->I doubt that there is much value in changing it now, and it's not something I'd be interested in working on.
->For the HyperV drivers, it probably makes sense because half of it is trying to look 
->like SCSI anyway, while the other half is trying to look like ATA. For the ATA driver, 
->the obvious choice would be to make it a libata backend, though my impression 
->from a brief look at the driver was that it's better to copy some of the libata code 
->and integrate it into the hv SCSI driver.
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index a2dccfc..75cdbc2 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1224,6 +1224,8 @@ __acquires(&gcwq->lock)
+ {
+ 	struct global_cwq *gcwq = worker->gcwq;
+ 	struct task_struct *task = worker->task;
++	static unsigned int cnt;
++	int rc;
 
-Arnd,
+ 	while (true) {
+ 		/*
+@@ -1232,8 +1234,11 @@ __acquires(&gcwq->lock)
+ 		 * it races with cpu hotunplug operation.  Verify
+ 		 * against GCWQ_DISASSOCIATED.
+ 		 */
+-		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
+-			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
++		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
++			rc = set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
++			if (rc && ++cnt < 10)
++				printk("XXX set_cpus_allowed_ptr() failed w/ %d\n", rc);
++		}
 
-Thanks for following up! I was cleaning up some other part of the drivers (not related to IDE/SCSI) 
-And on my todo list is to clean up the IDE/SCSI drivers. I will go through the libata code and see
-If there is anything in there that I can use to make these drivers somewhat saner.
+ 		spin_lock_irq(&gcwq->lock);
+ 		if (gcwq->flags & GCWQ_DISASSOCIATED)
+@@ -1985,13 +1990,16 @@ repeat:
+ 		struct cpu_workqueue_struct *cwq = get_cwq(tcpu, wq);
+ 		struct global_cwq *gcwq = cwq->gcwq;
+ 		struct work_struct *work, *n;
++		bool bound;
 
-I am not sure if I can combine them into one yet, Hyper-V treats both drivers differently. And there
-Are some rumored changes to Hyper-V that would make these changes maybe even a bit more difficult.
+ 		__set_current_state(TASK_RUNNING);
+ 		mayday_clear_cpu(cpu, wq->mayday_mask);
 
-I will use this mailing list to bounce ideas off of. 
+ 		/* migrate to the target cpu if possible */
+ 		rescuer->gcwq = gcwq;
+-		worker_maybe_bind_and_lock(rescuer);
++		printk("XXX %s: rescuer dispatching to cpu%u\n", wq->name, gcwq->cpu);
++		bound = worker_maybe_bind_and_lock(rescuer);
++		printk("XXX %s: rescuer done binding, bound=%d\n", wq->name, bound);
 
-I still need to clean up your other suggestion as well, the static declarations :)
+ 		/*
+ 		 * Slurp in all works issued via this workqueue and
+@@ -3558,8 +3566,7 @@ static int __init init_workqueues(void)
+ 		spin_lock_init(&gcwq->lock);
+ 		INIT_LIST_HEAD(&gcwq->worklist);
+ 		gcwq->cpu = cpu;
+-		if (cpu == WORK_CPU_UNBOUND)
+-			gcwq->flags |= GCWQ_DISASSOCIATED;
++		gcwq->flags |= GCWQ_DISASSOCIATED;
 
-For a more general question, When/if we make it out of staging, where should these drivers live?
+ 		INIT_LIST_HEAD(&gcwq->idle_list);
+ 		for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)
+@@ -3583,6 +3590,8 @@ static int __init init_workqueues(void)
+ 		struct global_cwq *gcwq = get_gcwq(cpu);
+ 		struct worker *worker;
 
-	drivers/hyper-v or drivers/scsi and drivers/ide.
-
-Is there a standard that is being followed?
-
-Hank.
-
++		if (cpu != WORK_CPU_UNBOUND)
++			gcwq->flags &= ~GCWQ_DISASSOCIATED;
+ 		worker = create_worker(gcwq, true);
+ 		BUG_ON(!worker);
+ 		spin_lock_irq(&gcwq->lock);
