@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab0H3PIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 11:08:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50670 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753554Ab0H3PIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 11:08:11 -0400
-Message-ID: <4C7BC942.7070703@kernel.org>
-Date: Mon, 30 Aug 2010 17:07:46 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, j-nomura@ce.jp.nec.com,
-        jamie@shareable.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de
-Subject: Re: [PATCH 4/5] dm: implement REQ_FLUSH/FUA support for request-based
- dm
-References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org>
-In-Reply-To: <4C7BB932.1070405@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 15:07:48 +0000 (UTC)
+	id S1753944Ab0H3PKy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 11:10:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63540 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab0H3PKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 11:10:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=t8JCxY6NngcTPNt7jIDP/CMFxGXuqwy6uQQKQn2SW6zCWQ5igNmHVjOF6QBuaFD8SS
+         pMKBh2ZqQdU37Y457H6jzmuPPm+2Q931/iT1ZA007w+ps/h4TyxhV/4P8OTatXrzitDo
+         DdoXzO5AO2TIGltTupTjeEQyflYxFgPXwkL5E=
+Subject: Re: [Uclinux-dist-devel] [PATCH] mtd: Blackfin NFC: fix invalid
+ free in remove()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+In-Reply-To: <AANLkTikE93Uqnf7_8p72rEhcRydmx0LdBVCM_z3tNr-z@mail.gmail.com>
+References: <1283028125-6027-1-git-send-email-vapier@gentoo.org>
+	 <1283173086.12995.74.camel@brekeke> <1283173173.12995.75.camel@brekeke>
+	 <AANLkTikE93Uqnf7_8p72rEhcRydmx0LdBVCM_z3tNr-z@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 Aug 2010 18:10:47 +0300
+Message-ID: <1283181047.2005.1.camel@brekeke>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2010 03:59 PM, Tejun Heo wrote:
-> Ah... that's probably from "if (!elv_queue_empty(q))" check below,
-> flushes are on a separate queue but I forgot to update
-> elv_queue_empty() to check the flush queue.  elv_queue_empty() can
-> return %true spuriously in which case the queue won't be plugged and
-> restarted later leading to queue hang.  I'll fix elv_queue_empty().
+On Mon, 2010-08-30 at 09:32 -0400, Mike Frysinger wrote:
+> On Mon, Aug 30, 2010 at 08:59, Artem Bityutskiy wrote:
+> > On Mon, 2010-08-30 at 15:58 +0300, Artem Bityutskiy wrote:
+> >> On Sat, 2010-08-28 at 16:42 -0400, Mike Frysinger wrote:
+> >> > Since info->mtd isn't dynamically allocated, we shouldn't attempt to
+> >> > kfree() it.  Otherwise we get random fun corruption when unloading
+> >> > the driver built as a module.
+> >> >
+> >> > Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> >> > ---
+> >> > note: this should be merged for 2.6.36 and probably sent to stable trees
+> >>
+> >> You send the same patch 2 times once with this note and the other time
+> >> without this note. Which one should be ignored?
+> >
+> > I guess it is 2.6.36 material. Also, if you want this in -stable, add
+> > corresponding CC please.
+> 
+> once it gets merged, then i can notify the stable guys
 
-I think I was too quick to blame elv_queue_empty().  Can you please
-test whether the following patch fixes the hang?
+AFAIK, this is not the way they prefer to work. The right protocol is
+that you add 'Cc: stable@kernel.org' to the commit message, ane they
+pick the patch. I might be mistaken, but AFAIK this is the way.
 
-Thanks.
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
----
- block/blk-flush.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
-
-Index: block/block/blk-flush.c
-===================================================================
---- block.orig/block/blk-flush.c
-+++ block/block/blk-flush.c
-@@ -28,7 +28,8 @@ unsigned blk_flush_cur_seq(struct reques
- }
-
- static struct request *blk_flush_complete_seq(struct request_queue *q,
--					      unsigned seq, int error)
-+					      unsigned seq, int error,
-+					      bool from_end_io)
- {
- 	struct request *next_rq = NULL;
-
-@@ -51,6 +52,13 @@ static struct request *blk_flush_complet
- 		if (!list_empty(&q->pending_flushes)) {
- 			next_rq = list_entry_rq(q->pending_flushes.next);
- 			list_move(&next_rq->queuelist, &q->queue_head);
-+			/*
-+			 * Moving a request silently to queue_head may
-+			 * stall the queue, kick the queue if we
-+			 * aren't in the issue path already.
-+			 */
-+			if (from_end_io)
-+				__blk_run_queue(q);
- 		}
- 	}
- 	return next_rq;
-@@ -59,19 +67,19 @@ static struct request *blk_flush_complet
- static void pre_flush_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_PREFLUSH, error);
-+	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_PREFLUSH, error, true);
- }
-
- static void flush_data_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_DATA, error);
-+	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_DATA, error, true);
- }
-
- static void post_flush_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_POSTFLUSH, error);
-+	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_POSTFLUSH, error, true);
- }
-
- static void init_flush_request(struct request *rq, struct gendisk *disk)
-@@ -165,7 +173,7 @@ struct request *blk_do_flush(struct requ
- 		skip |= QUEUE_FSEQ_DATA;
- 	if (!do_postflush)
- 		skip |= QUEUE_FSEQ_POSTFLUSH;
--	return blk_flush_complete_seq(q, skip, 0);
-+	return blk_flush_complete_seq(q, skip, 0, false);
- }
-
- static void bio_end_flush(struct bio *bio, int err)
