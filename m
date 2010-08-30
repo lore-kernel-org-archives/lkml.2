@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab0H3G5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 02:57:52 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:34295 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab0H3G5v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 02:57:51 -0400
-Date: Mon, 30 Aug 2010 08:57:49 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH resend v2.6.36-rc3] staging: spectra needs <linux/slab.h>
-Message-ID: <alpine.DEB.2.00.1008300856010.28212@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753248Ab0H3G7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 02:59:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291Ab0H3G7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 02:59:12 -0400
+Message-ID: <4C7B56BA.4060306@redhat.com>
+Date: Mon, 30 Aug 2010 09:59:06 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 4/4] KVM: MMU: lower the aduit frequency
+References: <4C78FA00.8090606@cn.fujitsu.com> <4C78FAF4.4070302@cn.fujitsu.com> <4C7A263F.1060407@redhat.com> <4C7B1486.7010502@cn.fujitsu.com>
+In-Reply-To: <4C7B1486.7010502@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On one of my m68k test builds I get:
+  On 08/30/2010 05:16 AM, Xiao Guangrong wrote:
+> On 08/29/2010 05:19 PM, Avi Kivity wrote:
+>>   On 08/28/2010 03:03 PM, Xiao Guangrong wrote:
+>>> The audit is very high overhead, so we need lower the frequency to
+>>> assure the guest running
+>>>
+>>>
+>>>     */
+>>>
+>>>    #include<linux/debugfs.h>
+>>> +#include<linux/ratelimit.h>
+>>>
+>>>    static struct dentry *debugfs_file;
+>>>    static bool mmu_debug;
+>>> @@ -233,6 +234,11 @@ static void audit_vcpu_spte(struct kvm_vcpu *vcpu)
+>>>
+>>>    static void kvm_mmu_audit(void *ignore, struct kvm_vcpu *vcpu, const
+>>> char *msg)
+>>>    {
+>>> +    static DEFINE_RATELIMIT_STATE(ratelimit_state, 5 * HZ, 10);
+>>> +
+>>> +    if (!__ratelimit(&ratelimit_state))
+>>> +        return;
+>>> +
+>>>        audit_msg = msg;
+>>>        audit_all_active_sps(vcpu->kvm);
+>>>        audit_vcpu_spte(vcpu);
+>> This means we see a bug long after it happened, so we can't correlate it
+>> to the cause.
+>>
+>> It's fine as an option (even the default) but I'd like to be able to
+>> audit after every operation.  Perhaps a partial audit that only looks at
+>> the gfns and vaddrs that were affected in the last operation?
+>>
+> Audit checks all the active shadow pages and all vcpu's page table, so the
+> overload is very high :-)
+>
+> During my test, if enable the aduit, the guest mostly hung, it means the guest
+> not do anything.
+> (Host: Intel(R) Xeon(R) X3430  @ 2.40GHz * 4 + 4G memory
+>   GUest: x2VCPU + 1G memory
+> )
 
-drivers/staging/spectra/ffsport.c: In function ¡ioctl_read_page_data¢:
-drivers/staging/spectra/ffsport.c:196: error: implicit declaration of function ¡kmalloc¢
-drivers/staging/spectra/ffsport.c:196: warning: assignment makes pointer from integer without a cast
-drivers/staging/spectra/ffsport.c:212: error: implicit declaration of function ¡kfree¢
-drivers/staging/spectra/ffsport.c: In function ¡ioctl_write_page_data¢:
-drivers/staging/spectra/ffsport.c:229: warning: assignment makes pointer from integer without a cast
-drivers/staging/spectra/ffsport.c: In function ¡SBD_setup_device¢:
-drivers/staging/spectra/ffsport.c:637: warning: assignment makes pointer from integer without a cast
+You're right, I remember that from the last time I used audit many years 
+ago.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/staging/spectra/ffsport.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> I'll set the 'ratelimit' as a module parameter, then if the user's machine is
+> fast enough, the ratelimit can be disabled.
 
-diff --git a/drivers/staging/spectra/ffsport.c b/drivers/staging/spectra/ffsport.c
-index 44a7fbe..fa21a0f 100644
---- a/drivers/staging/spectra/ffsport.c
-+++ b/drivers/staging/spectra/ffsport.c
-@@ -28,6 +28,7 @@
- #include <linux/log2.h>
- #include <linux/init.h>
- #include <linux/smp_lock.h>
-+#include <linux/slab.h>
- 
- /**** Helper functions used for Div, Remainder operation on u64 ****/
- 
+It's only useful in very special cases - low memory and a very fast 
+reproducer.  I think we can live without the parameter, if someone has 
+this special case they can hack the code.
+
 -- 
-1.7.0.4
+error compiling committee.c: too many arguments to function
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
