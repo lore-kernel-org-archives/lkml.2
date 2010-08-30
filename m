@@ -1,112 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab0H3VoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 17:44:04 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57361 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868Ab0H3VoC (ORCPT
+	id S1756211Ab0H3VuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 17:50:22 -0400
+Received: from smtp108.sbc.mail.gq1.yahoo.com ([67.195.14.111]:20485 "HELO
+	smtp108.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754643Ab0H3VuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 17:44:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=p89AcsON+jlWC94ZAgTWMYPFdS/pPLpVdXIW/iLYokcbOkd2WpcJ0z9VqiLwCncD2S
-         2/kjU6EXYpOhCfTY9JvkAOSFWvskmKO7f8vIj2BHqoOFdpU3xnlQURT6HzhIzAYhd6V4
-         B8RG+60hLO9daia9+YIbk3FoKnrd4lmofIliQ=
-Date: Mon, 30 Aug 2010 14:43:56 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Felipe Balbi <me@felipebalbi.com>,
-        Hemanth V <hemanthv@ti.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "igor.stoppa@nokia.com" <igor.stoppa@nokia.com>,
-        "kai.svahn@nokia.com" <kai.svahn@nokia.com>,
-        "matthias.nyman@nokia.com" <matthias.nyman@nokia.com>
-Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2] input:
- CMA3000 Accelerometer driver)
-Message-ID: <20100830214355.GB28865@core.coreip.homeip.net>
-References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
- <20100829184904.GC26209@core.coreip.homeip.net>
- <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com>
- <20100830214025.2f9677a1@lxorguk.ukuu.org.uk>
- <20100830204412.GA28711@core.coreip.homeip.net>
- <AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Mon, 30 Aug 2010 17:50:20 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: f8VSvN8VM1ltYe5O84.xSfzoLBJhLy9Ihw5TBIvTMxd1dz3
+ IyZzOGAPr5dhdI5Y0.aY7BrYUwOzQSnh1iW7BJKVj4NtLioyOycnllFi1DiX
+ PWnIN_YTH_EmaP84blV67Piq9RIm1hr2yuM3Q8P_XEvGTdABYG9xEzUdu.Wx
+ y2XJtU8Om01T1mhyHORW1eDRNvsd0XErwZqxvOurdqk7RyOOiYOHIVvZZfQG
+ PSbeYuC1OrXYoqFGxn7Ttc4FuJ2qMwulRbbTAD2gkmW6cKp3v48XDKIIrnmm
+ 9ozFMMTcBKx33eGpUhIwtHo4ua44KlZ5JlTN0xOHlcCfn064aOKXp0DdrSdx
+ 2z0_WNg--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C7C18CE.5020103@vlnb.net>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	 <1282144271.3035.31.camel@mulgrave.site>
+	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
+	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>
+	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
+	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>
+	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>
+	 <4C73DA15.2010207@vlnb.net> <1282661876.2993.20.camel@mulgrave.site>
+	 <4C7421FB.2060007@vlnb.net>
+	 <1282685014.32007.51.camel@haakon2.linux-iscsi.org>
+	 <4C76CA57.3050405@vlnb.net>
+	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+	 <4C79484B.3090607@vlnb.net>
+	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
+	 <4C7C18CE.5020103@vlnb.net>
+Content-Type: text/plain
+Date: Mon, 30 Aug 2010 14:46:32 -0700
+Message-Id: <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 02:28:37PM -0700, Linus Torvalds wrote:
-> On Monday, August 30, 2010, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+On Tue, 2010-08-31 at 00:47 +0400, Vladislav Bolkhovitin wrote:
+> Nicholas A. Bellinger, on 08/29/2010 12:47 AM wrote:
+> >>>>> As mentioned explictly earlier in this thread, my WIP code for the
+> >>>>> kernel level subsystem backstore using STGT kernel<->    user CDB
+> >>>>> passthrough logic in drivers/target/target_core_stgt.c is a item on
+> >>>>> my TODO list, but I will repeat, is NOT being tagged as a mainline
+> >>>>> .37 item.
+> >>>>
+> >>>> Hmm, I can't understand, if target_core_stgt.c is "NOT being tagged as a
+> >>>> mainline .37 item", then the STGT ABI compatibility for being a drop in
+> >>>> replacement for STGT isn't a requirement? Or am I missing something?
+> >>>
+> >>> Sorry, but I have no idea what you are trying to conjour up here.
+> >>>
+> >>> To spell out (again) the TCM/LIO<->STGT compatibility stages that have
+> >>> been persued pubically over the last months:
+> >>>
+> >>> I) Create proper userspace tgt.git SG_IO and BSG passthrough into
+> >>>      TCM_Loop v4 using high-level multi-fabric WWPN emulation so that TCM
+> >>>      Core SPC-4 kernel emulation is exposed to STGT user fabrics, eg:
+> >>>      userspace fabric module ->   kernel backstore passthrough.  (DONE
+> >>>      for .37, and STGT passthrough + BSG backstore support merged into
+> >>>      tgt.git by Tomo-san)
+> >>>
+> >>> II) Complete target_core_stgt.c TCM subsystem plugin for kernel ->   user
+> >>>       CDB ->   LUN passthrough building upon existing
+> >>>       drivers/scsi/scsi_tgt_*.c code.  (WIP for .38, made available
+> >>>       initially as a seperate standalone .ko module in lio-core-2.6.git)
+> >>
+> >> That would mean that if LIO merged in .37:
+> >>
+> >> 1. It would be merged _without_ STGT ABI compatibility, i.e. one of the
+> >> requirements for a new SCSI target infrastructure merge is violated.
+> >>
 > >
-> > But do you believe that input should be the "primary residence" for the
-> > devices when they are only _sometimes_ used as input devices? Or it
-> > would make sense to employ a converter from XXX to input (either purely
-> > in-kernel or userspace over uinput)?
+> > Sorry, but you are completely wrong here.  This has nothing to do with a
+> > question of STGT kernel 'ABI compatibility' (because there is only one
+> > mainline user!), but has everything to do with being able to expose TCM
+> > kernel level SPC-4 emulation, and make this logic available to existing
+> > userspace fabrics in tgt.git.  Again, we are talking about userspace
+> > STGT fabric module<->  TCM kernel backstore support for .37, which has
+> > already been merged by into tgt.git, and being used by other STGT users
+> > for SG_IO and BSG passthrough.
 > 
-> Umm... You've brought that up before as an objection, but what _is_
-> that other model that you would convert from? IOW what *is* that XXX
-> that you talk about?
+> You are proving that I'm actually right ;). In the beginning of this 
+> thread I offered a transition path from STGT to SCST and James rejected 
+> it, because it didn't confirm a requirement that a new SCSI target 
+> infrastructure must be STGT ABI compatible. But latter James left this 
+> decision up to the STGT developers and now you are confirming that they 
+> don't see any ABI compatibility issues, so my transition path fully 
+> confirms all the requirements.
 > 
 
-IIO which is currently in staging.
+Again, I still have no idea what you are trying to conjour up.  The
+passthrough for STGT compatibility with TCM_Loop via SG_IO and BSG has
+already been merged by Tomo-san into tgt.git.  Futhermore, we are using
+the same TCM_Loop high level multi-fabric WWPN emulation together with
+new (and old) QEMU HBA emulation into KVM guest using SG_IO and BSG as
+well.
 
-> So I think accelerometers etc should be seen as input devices for the
-> simple reason that
+> >> 2. It would _not_ be a drop in replacement for STGT, because STGT's
+> >> drivers/scsi/scsi_tgt_*.c code would stay in the kernel. Those would
+> >> effectively mean that another requirement for a new SCSI target
+> >> infrastructure merge would be violated: there would be 2 SCSI target
+> >> infrastructures in the kernel and any STGT in-kernel driver (for
+> >> instance, built as an outside module) would continue working. My
+> >> understanding of "drop in replacement" is "one out, another in at once".
+> >
+> > Sorry, but this is just more generic handwaving on your part.  What
+> > constitutes a 'drop in replacement' for STGT is a decision that was to
+> > be made by the STGT developers, not by you.  target_core_stgt.c is an
+> > extraordinarly transparent method of bringing drivers/scsi/scsi_tgt_*
+> > logic into the TCM Core HBA/DEV design, and allows us to build upon and
+> > improve the existing mainline kernel code.
 > 
->  (a) They really *are* input devices in all the most common cases. If
-> you have a phone with an accelerometer, it really is used as an input
-> device quite like a joystick.
+> I'm not deciding anything, I'm only analyzing and seeing a contradiction:
 > 
-> The fact that there are specialized and rare cases where people may
-> have some fancier accelerometer that isn't necessarily seen that way,
-> and where it is used for some fancy scientific experiment or whatever
-> doesn't change this in *any* way. The common case that almost
-> everybody cares about - and that is getting more common - is the
-> simple and obvious input case.
+> 1. James wants only one SCSI target infrastructure in the kernel.
 > 
-> How is a Wii accelerometer in any way different from a joystick? How
-> is a phone accelerometer any different from one? The answer is clear:
-> they aren't different! So it makes 100% sense to expose them under the
-> same subsystem.
+> 2. If drivers/scsi/scsi_tgt_*.c left after the merge of the new SCSI 
+> target infrastructure, it would mean that STGT left as well => 2 SCSI 
+> target infrastructure in the kernel.
 > 
-> (b) You cannot even name your XXX thing. It clearly makes sense (at
+> For me it doesn't matter. I just want clear rules, hence asking for 
+> clarification.
 
-I can - see above.
+Seriously, arguing over the use of people's language from weeks ago once
+the decision has already been made to move forward is really of little
+value at this point.
 
-> least within Tue context of a driver for some embedded phone chip) to
-> see it as an input device. And nothing else comes to mind. You'd have
-> to expose it as some random character device and then everybody would
-> just have to make it emulate an input device in user space anyway.
-> What's the point of that?
 > 
-> None. That's what the point is.
+> > It is obvious to even an casual observer from watching the TCM/LIO patch
+> > series that have been flying across the linux-scsi wire the last 24
+> > months that the major features (including PR and ALUA, and new fabric
+> > module drivers) have been developed individual feature bit by feature
+> > bit using a distributed git workflow in a bisectable manner.  Each
+> > series was produced in such a manner that each patch could be reviewed
+> > individually by those interested parties.
 > 
-> So I really don't understand why you're fighting the input device
-> angle. It makes sense as an input device. It does NOT make sense as
-> anything else.
+> That's a nice, but quite meaningless LIO advertisement. SCST is using 
+> the same bisectable, distributed and reviewable workflow.
+
+Actually, that is incorrect.  Your project uses a centralized
+development model, which has it's obvious limitiations in terms of
+speed, flexability, and community scale.  But really, don't take my word
+for it, you can hear it for yourself directly from the horse's mouth
+here:
+
+http://www.youtube.com/watch?v=4XpnKHJAok8
+
+I also very strongly suggest you find a transcript of this talk so you
+can really understand what Linus means here wrt to a distributed
+development workflow.
+
+>  If we had a 
+> kernel.org git account, we would use it as well, but so far we are happy 
+> with SF.net hosting. BTW, how was you able to get the git account 
+> without a single patch merged in the kernel? You must have good 
+> connections in the kernel community.
+
+Please don't turn this into a kernel.org vs. SF.net thing..  There are
+plenty of places that offer free git hosting (see github)
+
 > 
-> Really - what else could a phone accelerometer
+> > This is the big difference between our respective development processes.
+> > This is the case not only for SCSI feature bits that TCM/LIO and SCST
+> > share, but for features in TCM/LIO v4 that are unique and not available
+> > in any other target implemention, anywhere.  And yes, I am most
+> > certainly talking about code beyond just the SCSI level fabric emulation
+> > bits you are mentioning above.
+> 
+> Can you list us benefits for an average user of that work?
 
-That is why I started taking accelerometers in. But I am concerned that
-taking accelerometers (which indeed are most often input devices) will
-lead people to try and use the same for temperature, ALS and other
-sensors that are more often used in industrial process controls.
+Well, amougst the biggest advantages is actually having a sane ConfigFS
+interface that can represent the parent / child relationship between
+data structures across multiple LKMs.  Not only does this give us a
+proper representation of TCM and fabric data structures that can be
+accesses directly by an advanced user in /sys/kernel/config/target/, it
+also provides an ideal foundation to build 1) a userspace library in
+intrepted languages and 2) create high level applications using said
+userspace libraries that allow compatiblity to be contained in the lib
+below.
 
-> (or GPS device, for that matter) really be?
+But wrt to actual kernel code (because this is a kernel list), the
+shortlog for the RFC posting below nicely sums up what TCM v4 is
+bringing to the table:
 
-But why GPS should be input device? It has nothing to do with user
-input.
+http://lkml.org/lkml/2010/8/30/88
 
-> It very much is about user input - even if it
-> isn't a keyboard.
 
--- 
-Dmitry
+> >> But all my attempts to explain my view are just blindly
+> >> ignored without any considerations, so I have no idea how more I can
+> >> explain it.
+> >>
+> >
+> > Then I suggest you learn a better way of communicating your ideas if you
+> > really want to work with members of the LIO/STGT development
+> > communities.
+> >
+> > First, I suggest you start explaining your ideas with actual kernel code
+> > that is 1) human readable and 2) presented in such a manner that makes
+> > it accessable for others with skills possibly different (and greater)
+> > than your own to review and give feedback.
+> 
+> I have sent patches twice, the second time few months ago. Weren't they 
+> human readable and accessible for kernel developers who are experts in 
+> dealing with sent by e-mail patches?
+
+I think a proper kernel subsystem maintainer workflow has to do alot
+more to do these days than just sending patches over email, than it did
+say 10 years ago.  Like it or not, git is the language of the mainline
+kernel development process, and trying to imagine a *new* kernel
+subsystem maintainer (besides say, someone like akpm) not using git is
+quite a stretch of the imagination at this point.
+
+Best,
+
+--nab
+
