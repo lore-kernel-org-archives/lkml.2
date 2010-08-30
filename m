@@ -1,118 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab0H3KHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 06:07:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63936 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754936Ab0H3KHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 06:07:06 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Solar Designer <solar@openwall.com>
-X-Fcc: ~/Mail/linus
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        oss-security@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] exec argument expansion can inappropriately trigger OOM-killer
-In-Reply-To: Solar Designer's message of  Monday, 30 August 2010 07:23:31 +0400 <20100830032331.GA22773@openwall.com>
-References: <20100827220258.GF4703@outflux.net>
-	<20100830005648.431B7400D9@magilla.sf.frob.com>
-	<20100830032331.GA22773@openwall.com>
-Emacs: the definitive fritterware.
-Message-Id: <20100830100616.78971400D9@magilla.sf.frob.com>
-Date: Mon, 30 Aug 2010 03:06:16 -0700 (PDT)
+	id S1755008Ab0H3KSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 06:18:24 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:51808 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754700Ab0H3KSX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 06:18:23 -0400
+To: Neil Brown <neilb@suse.de>
+CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vaurora@redhat.com,
+        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
+In-reply-to: <20100829144207.4fbf2713@notabene> (message from Neil Brown on
+	Sun, 29 Aug 2010 14:42:07 +1000)
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+References: <20100826183340.027591901@szeredi.hu>
+	<20100827170551.19616048@notabene>
+	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
+	<20100827213502.31af4a4c@notabene>
+	<E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu> <20100829144207.4fbf2713@notabene>
+Message-Id: <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 30 Aug 2010 12:18:11 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> IIRC, prior to that fix, I was able to cause the kernel to loop for tens
-> of minutes in a single execve() call on an Alpha with 128 MB RAM, by
-> using repeated mappings of the same pages (almost 200 GB total).
-
-And I say, if your userland process could really allocate another 200GB,
-then more power to you, you can do it with an exec too.  If you could do
-the same with a userland stack allocation, and spend all that time in
-strlen calls and then memcpy, you can do it inside execve too.  If it
-takes days, that's what you asked for, and it's your process.  It just
-ought to be every bit (or near enough) as preemptible and interruptible
-as that normal userland activity ought to be.
-
-So, perhaps we want this (count already has a cond_resched in its loop):
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 2d94552..0000000 100644  
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -369,6 +369,9 @@ static int count(const char __user * con
- 		for (;;) {
- 			const char __user * p;
- 
-+			if (signal_pending(current))
-+				return -ERESTARTNOINTR;
-+
- 			if (get_user(p, argv))
- 				return -EFAULT;
- 			if (!p)
-@@ -400,6 +403,10 @@ static int copy_strings(int argc, const 
- 		int len;
- 		unsigned long pos;
- 
-+		if (signal_pending(current))
-+			return -ERESTARTNOINTR;
-+		cond_resched();
-+
- 		if (get_user(str, argv+argc) ||
- 				!(len = strnlen_user(str, MAX_ARG_STRLEN))) {
- 			ret = -EFAULT;
-
-> Now it appears that, besides the issue that started this thread, the
-> same problem I mentioned above got re-introduced.  We still have
-> strnlen_user() and the "max" argument to count(), but we no longer have
-> hard limits for "max".  Someone set MAX_ARG_STRINGS to 0x7FFFFFFF, and
-> this is just too much.  MAX_ARG_STRLEN is set to 32 pages, and these two
-> combined allow a userspace program to make the kernel loop for days.
-
-I really don't think we need that stuff back.  I think we can get rid of
-it and fix the real problems, and be happier overall.
-
-> > But it sounds like all you really need is to fix the OOM/allocation
-> > behavior for huge stack allocations.
+On Sun, 29 Aug 2010, Neil Brown wrote:
+> On Fri, 27 Aug 2010 18:53:45 +0200
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
 > 
-> No, we need both.
+> > On Fri, 27 Aug 2010, Neil Brown wrote:
+> > > I was wondering why you even bothered to fiddle st_ino.  Given
+> > > that lots of other things come from one fs or the other, having
+> > > the merged directories appear to be from the upper filesystem
+> > > doesn't seem like a problem.  I don't really care either way
+> > > though.
+> > 
+> > "rm -rf" complains if st_ino of a directory changes spontaneously.
+> 
+> I see...
+> Doesn't that mean that you must always present a merged-directory if the
+> lower directory exists.
 
-I don't agree.  If all of the implicit allocation done inside execve is
-accounted and controlled as well as normal userland allocations so that
-the execve fails when userland allocation would fail, then there is no
-reason for special-case arbitrary limits.
+Directory opens are never "forwarded" to the lower filesystem like
+other opens.  One reason is that lookups continuing from the file's
+path need to be on the union filesystem instead on one of the
+underlying filesystems.
 
-> Additionally, 64bit_dos.c mentions that "it triggers a BUG() as the
-> stack tries to expand around the address space when shifted".  Perhaps
-> limiting the stack size would deal with that, but maybe the "bug" needs
-> to be patched elsewhere as well.  grsecurity has the following hunk:
+> Otherwise if you "rm -r" in a directory that only exists in the lower
+> filesystem, the inode will change on the first 'unlink' call.
+> ??
 
-That change seems like it might be reasonable, but I haven't really
-looked at shift_arg_pages before.  Has someone reported this BUG_ON
-failure mode with a reproducer?
+Right.
 
-> Overall, there are multiple issues here (maybe up to four?) and multiple
-> things to review the code for.
+Since the union filesystem doesn't have "real" inodes the st_ino on
+union directories are stable only as long as the inode is in the
+cache.  That's not a problem for "rm -rf" because the ancestor
+directory will always have a reference through one of its children.
 
-Agreed.  But IMHO the missing arbitrary limits on arg/env size are not
-among them.  I don't know about shift_arg_pages.  The core fix I think
-makes sense is making the nascent mm get accounted to the user process
-normally.  Rather than better enabling OOM killing, I think what really
-makes sense is for the nascent mm to be marked such that allocations in
-it (they'll be from get_arg_page->get_user_pages->handle_mm_fault) just
-fail with ENOMEM before it resorts to the OOM killer (or perhaps even to
-very aggressive pageout).  That should percolate back to the execve just
-failing with ENOMEM, which is nicer than OOM kill even if the OOM killer
-actually does pick exactly and only the right target.
+> > I think it's best to leave that stuff until someone actually cares.
+> > The "people might find it useful" argument is not strong enough to put
+> > nontrivial effort into thinking about all the weird corner cases.
+> 
+> My thought on this is that in order to describe the behaviour of the
+> filesystem accurately you need to think about all the weird corner cases.
+> 
+> Then it becomes a question of: is it easier to document the weird behaviour,
+> or change the code so the documentation will be easier to understand?
+> Some cases will go one way, some the other.
+> 
+> But as you suggest this isn't urgent.
 
+You didn't mention one possibility: add limitations that prevent the
+weird corner cases arising.  I believe this is the simplest option.
+
+
+> > > 4/ The problem you mentioned about ->i_mutex which is taken during unlink
+> > >    being quasi-global could be eased somewhat by simply having a small pool
+> > >    of inodes and assigning them to dentries pseudo-randomly.  Or possibly
+> > >    having one 'file' inode per directory (that might be a bit wasteful
+> > >    though).
+> > 
+> > That's an idea, but I'm inclined just to add some hacks to the VFS to
+> > omit the locking if some inode flag is set.
+> 
+> Every new flag you add is another sign of weakness in the VFS....
+> 
+> Hmmm... vfs_unlink checks if the victim is a mountpoint, which suggests that
+> you can mount on a non-directory.  I'm not sure if I knew that.
+
+mount --bind has always worked on non-directories too.  It's a useful
+feature.
+
+> I wonder how this union fs would cope if a file in the upper filesystem were
+> mounted-on....I suspect it would work correctly.
+
+Mounts on the union fs work as expected, they don't care about inodes
+except that directories cannot cover non-directories and vice-versa.
+
+Mounts on the upper and lower fs are currenly ignored.  It's an
+interesting question whether union fs should handle mount trees on the
+underlying filesystems or not.
+
+
+> My comment about set-theory unions being commutative set me thinking.  I
+> really don't think "union" is the right name for this thing.  There is
+> nothing about it which really fits that proper definition of a union.
+> whiteouts mean that even the list of names in a directory is not the union of
+> the lists of names in the upper and lower directories.
+> "overlay" is a much more accurate name.  But union seems to be the name
+> that is most used.  I wonder if it is too late to change that.
+
+We could call it overlayfs.  People learn new names quickly :)
+
+> Also, dnotify (and presumably inotifiy) doesn't work reliably in the current
+> implementation.
+> It works for opaque directories and those which don't have a namesake in the
+> lower filesystem, but for others it never notifies of changes to any files in
+> the directory.
+> This is because dnotify will set an fsnotifier on the merged-directory in the
+> union-fs, but the change happens to the file in the upper fs, so
+> fsnotify_parent will only call notifiers on the parent in the upper fs.
+
+I think *notify will work correctly, every modificaton will be
+notified on both the union fs and the upper fs.  But I haven't tested
+this yet.
 
 Thanks,
-Roland
+Miklos
