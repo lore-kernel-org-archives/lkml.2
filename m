@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0H3PyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 11:54:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51880 "EHLO hera.kernel.org"
+	id S1755810Ab0H3P4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 11:56:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51946 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754947Ab0H3PyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 11:54:14 -0400
-Message-ID: <4C7BD3E1.2000806@kernel.org>
-Date: Mon, 30 Aug 2010 17:53:05 +0200
+	id S1754893Ab0H3P4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 11:56:23 -0400
+Message-ID: <4C7BD45B.3050300@kernel.org>
+Date: Mon, 30 Aug 2010 17:55:07 +0200
 From: Tejun Heo <tj@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
@@ -16,33 +16,41 @@ CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Jiri Kosina <jkosina@suse.cz>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] idr: fix kernel-doc warnings.
-References: <m27hj8cdsw.fsf@elisp.net>
-In-Reply-To: <m27hj8cdsw.fsf@elisp.net>
+Subject: Re: [PATCH 2/2] idr: describe how nextidp works in idr_get_next().
+References: <m27hj8cdsw.fsf@elisp.net> <m2pqx0az4h.fsf@elisp.net>
+In-Reply-To: <m2pqx0az4h.fsf@elisp.net>
 X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 15:53:11 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 15:55:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2010 05:37 PM, Naohiro Aota wrote:
-> Fix the following kernel-doc warnings.
-> 
-> % perl scripts/kernel-doc lib/idr.c > /dev/null
-> Warning(lib/idr.c:300): No description found for parameter 'starting_id'
-> Warning(lib/idr.c:300): Excess function parameter 'start_id' description in 'idr_get_new_above'
-> Warning(lib/idr.c:485): No description found for parameter 'idp'
-> Warning(lib/idr.c:596): No description found for parameter 'nextidp'
-> Warning(lib/idr.c:596): Excess function parameter 'id' description in 'idr_get_next'
-> Warning(lib/idr.c:774): No description found for parameter 'starting_id'
-> Warning(lib/idr.c:774): Excess function parameter 'staring_id' description in 'ida_get_new_above'
-> Warning(lib/idr.c:918): No description found for parameter 'ida'
+On 08/30/2010 05:39 PM, Naohiro Aota wrote:
+> It was unclear in original kernel-doc how nextidp worked in
+> idr_get_next(). Let's describe it.
 > 
 > Signed-off-by: Naohiro Aota <naota@elisp.net>
+> ---
+>  lib/idr.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/idr.c b/lib/idr.c
+> index fb86a67..cf8c46b 100644
+> --- a/lib/idr.c
+> +++ b/lib/idr.c
+> @@ -589,7 +589,8 @@ EXPORT_SYMBOL(idr_for_each);
+>   * @nextidp:  pointer to lookup key
+>   *
+>   * Returns pointer to registered object with id, which is next number to
+> - * given id.
+> + * given id. The id pointed by nextidp will be updated
+> + * appropriately for next iteration.
+>   */
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Maybe "After being looked up, *@nextidp will be updated for the next
+iteration" would be clearer?
 
 Thanks.
 
