@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab0H3R6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:58:44 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33821 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387Ab0H3R6n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:58:43 -0400
+	id S1756452Ab0H3SEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 14:04:14 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36160 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756161Ab0H3SEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 14:04:12 -0400
+Date: Mon, 30 Aug 2010 11:03:03 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Joe Perches <joe@perches.com>,
+        Tejun Heo <tj@kernel.org>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Jean Tourrilhes <jt@hpl.hp.com>
+Subject: Re: [PATCH] wireless extensions: fix kernel heap content leak
+Message-ID: <20100830180302.GM4703@outflux.net>
+References: <20100827210240.GC4703@outflux.net>
+ <20100827212254.GB32275@bougret.hpl.hp.com>
+ <1283158058.3691.10.camel@jlt3.sipsolutions.net>
+ <1283158704.3691.11.camel@jlt3.sipsolutions.net>
+ <1283162341.3691.45.camel@jlt3.sipsolutions.net>
+ <1283163894.3691.48.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-In-Reply-To: <20100829235100.6dcedcb8@debxo>
-References: <20100628215407.2017bf2f@debian> <20100829235100.6dcedcb8@debxo>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 30 Aug 2010 11:58:22 -0600
-X-Google-Sender-Auth: hs2p6PytkVjjSCY6A-peTN5BufU
-Message-ID: <AANLkTikvVizX2jcnxgWOcJoewXR1hAE5SsEd9yzPF9Ys@mail.gmail.com>
-Subject: Re: [PATCH 0/9] add OLPC device-tree support
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283163894.3691.48.camel@jlt3.sipsolutions.net>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 9:51 PM, Andres Salomon <dilinger@queued.net> wrote:
-> These patches modify drivers/of, sparc, and x86 accordingly to add
-> OLPC device-tree support.  Updates have been made based upon Grant and
-> Davem's comments.  They've been compile-tested on sparc64 and x86, and
-> runtime tested on OLPC machines.
->
-> Dave's 25edd6946 commit caused some conflicts w/ patch #2;
-> hopefully I mangled it properly.
+Hi Johannes,
 
-I've only looked through this code lightly, but it seems fairly sane,
-other than issues already raised.  Since this has more impact on sparc
-than anything, I'll need to have David's feedback before doing
-anything with it.
+On Mon, Aug 30, 2010 at 12:24:54PM +0200, Johannes Berg wrote:
+> --- wireless-testing.orig/net/wireless/wext-compat.c	2010-08-30 12:04:57.000000000 +0200
+> +++ wireless-testing/net/wireless/wext-compat.c	2010-08-30 12:11:32.000000000 +0200
+> @@ -1420,6 +1420,9 @@ int cfg80211_wext_giwessid(struct net_de
+>  {
+>  	struct wireless_dev *wdev = dev->ieee80211_ptr;
+>  
+> +	data->flags = 0;
+> +	data->length = 0;
+> +
+>  	switch (wdev->iftype) {
+>  	case NL80211_IFTYPE_ADHOC:
+>  		return cfg80211_ibss_wext_giwessid(dev, info, data, ssid);
 
-g.
+Thanks for all your work on this! Were you able to trigger the leak
+through cfg80211? If so, then this will need a CVE assigned and sent to
+stable too, I think.
+
+-Kees
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Kees Cook
+Ubuntu Security Team
