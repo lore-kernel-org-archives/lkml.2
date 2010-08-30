@@ -1,95 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab0H3ASs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 20:18:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61244 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab0H3ASr convert rfc822-to-8bit (ORCPT
+	id S1754156Ab0H3AUF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 20:20:05 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53426 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab0H3AUD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 20:18:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CFOPcrrekJHRDJY1teUrZ6/yt2pAh4inoW7MVT7NScFVpjvb7UdcFpUb8dxDKerGyb
-         /XIAUxSqzytF1D0AeHwRYsZq5xqxXv0fcSapPoAH+wHcsMD0Ef7AkJOhR1+q8eVeSnhR
-         iiZq4G3jQ7V7ezvKMrq0vtngh86j5gLnSt8zI=
+	Sun, 29 Aug 2010 20:20:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Kees Cook <kees.cook@canonical.com>
+Subject: Re: [PATCH] exec argument expansion can inappropriately trigger OOM-killer
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        oss-security@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Roland McGrath <roland@redhat.com>, linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100827220258.GF4703@outflux.net>
+References: <20100827220258.GF4703@outflux.net>
+Message-Id: <20100830091909.5248.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimjVHp1=Fc35xLnyPb2aa+ew7w1P9DC_0GfhZgY@mail.gmail.com>
-References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>
-	<AANLkTinCKJw2oaNgAvfm0RawbW4zuJMtMb2pUROeY2ij@mail.gmail.com>
-	<4C7ABD14.9050207@redhat.com>
-	<AANLkTimjVHp1=Fc35xLnyPb2aa+ew7w1P9DC_0GfhZgY@mail.gmail.com>
-Date: Mon, 30 Aug 2010 09:18:46 +0900
-Message-ID: <AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Ying Han <yinghan@google.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 30 Aug 2010 09:19:58 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ying,
+> Brad Spengler published a local memory-allocation DoS that
+> evades the OOM-killer (though not the virtual memory RLIMIT):
+> http://www.grsecurity.net/~spender/64bit_dos.c
+> 
+> The recent changes to create a stack guard page helps slightly to
+> discourage this attack, but it is not sufficient. Compiling it statically
+> moves the libraries out of the way, allowing the stack VMA to fill the
+> entire TASK_SIZE.
+> 
+> There are two issues:
+>  1) the OOM killer doesn't notice this argv memory explosion
+>  2) the argv expansion does not check if rlim[RLIMIT_STACK].rlim_cur is -1.
+> 
+> I figure a quick solution for #2 would be the following patch. However,
+> running multiple copies of this program could result in similar OOM
+> behavior, so issue #1 still needs a solution.
+>
+>Reported-by: Brad Spengler <spender@grsecurity.net>
+>Signed-off-by: Kees Cook <kees.cook@canonical.com>
 
-On Mon, Aug 30, 2010 at 6:23 AM, Ying Han <yinghan@google.com> wrote:
-> On Sun, Aug 29, 2010 at 1:03 PM, Rik van Riel <riel@redhat.com> wrote:
->> On 08/29/2010 01:45 PM, Ying Han wrote:
->>
->>> There are few other places in vmscan where we check nr_swap_pages and
->>> inactive_anon_is_low. Are we planning to change them to use
->>> total_swap_pages
->>> to be consistent ?
->>
->> If that makes sense, maybe the check can just be moved into
->> inactive_anon_is_low itself?
->
-> That was the initial patch posted, instead we changed to use
-> total_swap_pages instead. How this patch looks:
->
-> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
-> *zone, struct scan_control *sc)
->  {
->        int low;
->
-> +       if (total_swap_pages <= 0)
-> +               return 0;
-> +
->        if (scanning_global_lru(sc))
->                low = inactive_anon_is_low_global(zone);
->        else
-> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
->         * Even if we did not try to evict anon pages at all, we want to
->         * rebalance the anon lru active/inactive ratio.
->         */
-> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
-> +       if (inactive_anon_is_low(zone, sc))
->                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
->
->        throttle_vm_writeout(sc->gfp_mask);
->
-> --Ying
->
->>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-I did it intentionally since inactive_anon_is_low have been used both
-direct reclaim and background path. In this point, your patch could
-make side effect in swap enabled system when swap is full.
 
-I think we need aging in only background if system is swap full.
-That's because if the swap space is full, we don't reclaim anon pages
-in direct reclaim path with (nr_swap_pages < 0)  and even have been
-not rebalance it until now.
-I think direct reclaim path is important about latency as well as
-reclaim's effectiveness.
-So if you don't mind, I hope direct reclaim patch would be left just as it is.
+And, I have a patch for #1. Can you please see this? Alternative idea
+is to change rss accounting itself.
 
+
+
+>From d4e114e5d31b14ebfc399d4b1fb142c7dfce0ca4 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 19 Aug 2010 20:40:20 +0900
+Subject: [PATCH] oom: don't ignore temporary rss while execve
+
+execve() makes new mm struct and setup stack and argv vector,
+Unfortunately this new mm is not pointed any tasks, then oom-kill
+can't detect this memory usage. therefore oom-kill may kill incorrect
+task.
+
+This patch added in-exec rss treatness to oom.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ fs/compat.c             |    8 ++++++--
+ fs/exec.c               |   19 +++++++++++++++++--
+ include/linux/binfmts.h |    1 +
+ include/linux/sched.h   |    1 +
+ mm/oom_kill.c           |   36 +++++++++++++++++++++++++++---------
+ 5 files changed, 52 insertions(+), 13 deletions(-)
+
+diff --git a/fs/compat.c b/fs/compat.c
+index 718c706..643140c 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1527,6 +1527,7 @@ int compat_do_execve(char * filename,
+ 	retval = bprm_mm_init(bprm);
+ 	if (retval)
+ 		goto out_file;
++	set_exec_mm(bprm->mm);
+ 
+ 	bprm->argc = compat_count(argv, MAX_ARG_STRINGS);
+ 	if ((retval = bprm->argc) < 0)
+@@ -1560,6 +1561,7 @@ int compat_do_execve(char * filename,
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
++	set_exec_mm(NULL);
+ 	acct_update_integrals(current);
+ 	free_bprm(bprm);
+ 	if (displaced)
+@@ -1567,8 +1569,10 @@ int compat_do_execve(char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
+-		mmput(bprm->mm);
++	if (current->in_exec_mm) {
++		struct mm_struct *in_exec_mm = set_exec_mm(NULL);
++		mmput (in_exec_mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+diff --git a/fs/exec.c b/fs/exec.c
+index 2d94552..85192e1 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1314,6 +1314,17 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 
+ EXPORT_SYMBOL(search_binary_handler);
+ 
++struct mm_struct* set_exec_mm(struct mm_struct *mm)
++{
++	struct mm_struct *old = current->in_exec_mm;
++
++	task_lock(current);
++	current->in_exec_mm = mm;
++	task_unlock(current);
++
++	return old;
++}
++
+ /*
+  * sys_execve() executes a new program.
+  */
+@@ -1361,6 +1372,7 @@ int do_execve(const char * filename,
+ 	retval = bprm_mm_init(bprm);
+ 	if (retval)
+ 		goto out_file;
++	set_exec_mm(bprm->mm);
+ 
+ 	bprm->argc = count(argv, MAX_ARG_STRINGS);
+ 	if ((retval = bprm->argc) < 0)
+@@ -1395,6 +1407,7 @@ int do_execve(const char * filename,
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
++	set_exec_mm(NULL);
+ 	acct_update_integrals(current);
+ 	free_bprm(bprm);
+ 	if (displaced)
+@@ -1402,8 +1415,10 @@ int do_execve(const char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
+-		mmput (bprm->mm);
++	if (current->in_exec_mm) {
++		struct mm_struct *in_exec_mm = set_exec_mm(NULL);
++		mmput (in_exec_mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index a065612..8cf61eb 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -133,6 +133,7 @@ extern void install_exec_creds(struct linux_binprm *bprm);
+ extern void do_coredump(long signr, int exit_code, struct pt_regs *regs);
+ extern void set_binfmt(struct linux_binfmt *new);
+ extern void free_bprm(struct linux_binprm *);
++extern struct mm_struct* set_exec_mm(struct mm_struct *mm);
+ 
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_BINFMTS_H */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..d413757 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1217,6 +1217,7 @@ struct task_struct {
+ 	struct plist_node pushable_tasks;
+ 
+ 	struct mm_struct *mm, *active_mm;
++	struct mm_struct *in_exec_mm;
+ #if defined(SPLIT_RSS_COUNTING)
+ 	struct task_rss_stat	rss_stat;
+ #endif
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 57c05f7..7fc6916 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -120,6 +120,30 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
+ 	return NULL;
+ }
+ 
++static unsigned long calculate_rss_swap(struct task_struct *p)
++{
++	struct task_struct *t = p;
++	int mm_accounted = 0;
++	unsigned long points = 0;
++
++	do {
++		task_lock(t);
++		if (!mm_accounted && t->mm) {
++			points += get_mm_rss(t->mm);
++			points += get_mm_counter(t->mm, MM_SWAPENTS);
++			mm_accounted = 1;
++		}
++		if (t->in_exec_mm) {
++			points += get_mm_rss(t->in_exec_mm);
++			points += get_mm_counter(t->in_exec_mm, MM_SWAPENTS);
++		}
++		task_unlock(t);
++	} while_each_thread(p, t);
++
++	return points;
++}
++
++
+ /* return true if the task is not adequate as candidate victim task. */
+ static bool oom_unkillable_task(struct task_struct *p, struct mem_cgroup *mem,
+ 			   const nodemask_t *nodemask)
+@@ -157,16 +181,11 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	if (oom_unkillable_task(p, mem, nodemask))
+ 		return 0;
+ 
+-	p = find_lock_task_mm(p);
+-	if (!p)
+-		return 0;
+-
+ 	/*
+ 	 * Shortcut check for OOM_SCORE_ADJ_MIN so the entire heuristic doesn't
+ 	 * need to be executed for something that cannot be killed.
+ 	 */
+ 	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
+-		task_unlock(p);
+ 		return 0;
+ 	}
+ 
+@@ -175,7 +194,6 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	 * priority for oom killing.
+ 	 */
+ 	if (p->flags & PF_OOM_ORIGIN) {
+-		task_unlock(p);
+ 		return 1000;
+ 	}
+ 
+@@ -190,9 +208,9 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	 * The baseline for the badness score is the proportion of RAM that each
+ 	 * task's rss and swap space use.
+ 	 */
+-	points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
+-			totalpages;
+-	task_unlock(p);
++	points = calculate_rss_swap(p) * 1000 / totalpages;
++	if (!points)
++		return 0;
+ 
+ 	/*
+ 	 * Root processes get 3% bonus, just like the __vm_enough_memory()
 -- 
-Kind regards,
-Minchan Kim
+1.6.5.2
+
+
+
+
+
