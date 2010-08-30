@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab0H3MLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 08:11:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47627 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab0H3MLS (ORCPT
+	id S1755500Ab0H3MMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 08:12:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61217 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755455Ab0H3MMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 08:11:18 -0400
-Date: Mon, 30 Aug 2010 14:10:22 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Neil Brown <neilb@suse.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
-Subject: Re: [REGRESSION PATCH] NFS: let NFS_V4 and NFSD_V4 enforce CRYPTO
-Message-ID: <20100830121022.GA14459@pengutronix.de>
-References: <20100825084912.GA10293@pengutronix.de> <1282727119-8295-1-git-send-email-u.kleine-koenig@pengutronix.de> <20100827061139.GA27851@pengutronix.de> <20100830082618.GA24402@pengutronix.de> <20100830203659.3b9884f6@notabene>
+	Mon, 30 Aug 2010 08:12:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [RFC v2 PATCH 1/3] init: add sys-wrapper.h
+Date: Mon, 30 Aug 2010 14:11:43 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Phillip Lougher <phillip@lougher.demon.co.uk>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+References: <1283102928-3051-1-git-send-email-namhyung@gmail.com> <1283102928-3051-2-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1283102928-3051-2-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100830203659.3b9884f6@notabene>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008301411.43910.arnd@arndb.de>
+X-Provags-ID: V02:K0:nqJbyQae7Cpk8LqzLoehU5LwVZr4y+XTM3gm8L1Tmhw
+ V6H/pja2W3S1cOcBpHfab/C/gdLoFK49c4kXqOMtiNnqltQP4T
+ UJYp8zRsbz/FktoAc5LIBqiK8nC7PX/WJ8D8Ao1vY4qvYHpXq1
+ c9yhxXOopIAA0opwJOjr5QZa9gRg6qboEQ5GPqAZlLUZRcq9oG
+ zag+1G3p1YqIEpvUnzA8w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 08:36:59PM +1000, Neil Brown wrote:
-> On Mon, 30 Aug 2010 10:26:18 +0200
-> Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> 
-> > [extending Cc: to contain Neil and linux-nfs]
-> > 
-> > On Fri, Aug 27, 2010 at 08:11:39AM +0200, Uwe Kleine-König wrote:
-> > > On Wed, Aug 25, 2010 at 11:05:19AM +0200, Uwe Kleine-König wrote:
-> 
-> I would tend to wait more than 2 days between pings..
+On Sunday 29 August 2010, Namhyung Kim wrote:
+> +
+> +/* These macro are called just before/after actual syscalls. */
+> +#define KSYS_PREPARE				\
+> +	mm_segment_t old_fs = get_fs();		\
+> +	set_fs(KERNEL_DS);
+> +
+> +#define KSYS_RESTORE				\
+> +	set_fs(old_fs);
 
-	ukl@octopus:~/gsrc/linux-2.6$ git rev-parse linus/master
-	2bfc96a127bc1cc94d26bfaa40159966064f9c8c
-	ukl@octopus:~/gsrc/linux-2.6$ git grep -E CRYPTO= linus/master arch/arm/configs/ | wc -l
-	6
-	ukl@octopus:~/gsrc/linux-2.6$ git grep -E NFSD?_V4 linus/master arch/arm/configs/ | wc -l
-	37
+These macros are not that nice, because they depend on context.
+I would probably open-code them in each function, or possibly
+use a single macro to combine it to something like
 
-So I think that at least 31 arm-defconfigs don't build because of this
-issue.  And as this kind of error greatly hurts automatic bisection I
-thought this to be critical enough to be a bit impatient.
+#define kern_sys_call(call, ...)	\
+({					\
+	mm_segment_t old_fs = get_fs();	\
+	long result;			\
+	set_fs(KERNEL_DS);		\
+	result = call(__VA_ARGS__);	\
+	set_fs(old_fs);			\
+	result;				\
+})
 
-> > > > This is a follow up to
-> > > > 
-> > > > 	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
-> > > > 
-> > > > which broke (among others) arm/mx1_defconfig.
-> > > > 
-> > > > Moreover let NFS_V4 select RPCSEC_GSS_KRB5 again as it was before
-> > > > df486a2.  This make the dependency more explicit than relying on the no
-> > > > prompt + default y if !(NFS_V4 || NFSD_V4).
-> 
-> Maybe if you said a little bit about how it broke?
-  LD      .tmp_vmlinux1
-fs/built-in.o: In function `nfs_callback_authenticate':
-compr_zlib.c:(.text+0x7c040): undefined reference to `svc_gss_principal'
-make[2]: *** [.tmp_vmlinux1] Error 1
-make[1]: *** [sub-make] Error 2
-make: *** [all] Error 2
+static inline int kern_sys_link(const char *oldname, const char *newname)
+{
+	return kern_sys_call(sys_link, (const char __user __force *)oldname,
+			     (const char __user __force *)newname);
+}
 
-I can add this to the commit log.
+> +static inline int kern_sys_fchown(unsigned int fd, uid_t user, gid_t group)
+> +{
+> +	int ret;
+> +	KSYS_PREPARE;
+> +
+> +	ret = sys_fchown(fd, user, group);
+> +
+> +	KSYS_RESTORE;
+> +	return ret;
+> +}
 
-> And I'm not sure of the point of the "recursive dependency" comment below...
-I added this because if kconfig were a bit smarter it would select
-CRYPTO, too, if asked to select RPCSEC_GSS_KRB5.  On the
-linux-arm-kernel ML Catalin Marinas already thought about making kconfig
-smarter and so I wanted to mark the symbol.
- 
-> I don't fully understand all the issues behind choosing between 'depends' and
-> 'select' (why isn't is 'selects' I wonder - that would be more consistent...)
-I think it's an imperative, not a normal present tense?!  And note this
-is different.  Here it's not depend vs. select but select vs.
+When there are no pointer arguments, there is no need to do set_fs
+tricks.
 
-	config SOMESYMBOL
-		prompt "sometext" if !(NFS_V4 || NFSD_V4)
-		default y
-
-So a dependency for NFS_V4 is hidden in net/sunrpc/Kconfig.
-
-> But that patch seems to make sense to me.
-Thanks, that's an Ack?
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+	Arnd
