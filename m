@@ -1,98 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab0H3SXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 14:23:55 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51212 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab0H3SXy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 14:23:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com>
-References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com>
- <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain>
- <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com> <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 30 Aug 2010 12:23:33 -0600
-X-Google-Sender-Auth: sQRasxekQ39hROhqU8WdWqacTBU
-Message-ID: <AANLkTikpj6Q6QjFn4S9cYfBiKbMNQB_N2ptHEAvfW0wb@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, meego-dev@meego.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756122Ab0H3S1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 14:27:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755972Ab0H3S1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 14:27:10 -0400
+Date: Mon, 30 Aug 2010 14:26:30 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Wilcox <matthew@wil.cx>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Karel Zak <kzak@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: Sanity check mount flags passed to change_mnt_propagation()
+Message-ID: <20100830182629.GA2444@shell>
+References: <20100826200318.GA13636@shell> <20100827011436.GB3521@parisc-linux.org> <AANLkTi=400UGaZZNnNaDM-=gF5VrZ=myROZDgS=UnFV0@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=400UGaZZNnNaDM-=gF5VrZ=myROZDgS=UnFV0@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 1:28 AM, Masayuki Ohtake
-<masa-korg@dsn.okisemi.com> wrote:
-> ----- Original Message -----
-> From: "Grant Likely" <grant.likely@secretlab.ca>
-> To: "Thomas Gleixner" <tglx@linutronix.de>
-> Cc: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
-> Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
-> <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
-> <morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-> Sent: Saturday, August 28, 2010 4:20 AM
-> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
->
->
->> On Fri, Aug 27, 2010 at 12:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > B1;2401;0cOn Fri, 27 Aug 2010, Grant Likely wrote:
->> >> [cc'ing Thomas Gleixner and David Woodhouse since this driver needs to
->> >> get some data about the platform (to know what spi_devices are
->> >> present) and I don't know how that is handled for x86 SoCs.]
->> >
->> > The best way to do all this platform specific configuration is to use
->> > device tree. I really don't want to have x86/mach-xyz/board[A-Z]
->> > horror, which is unavoidable when we don't get a sensible way to
->> > configure the boards.
->>
->> I knew you were going to say that!  :-)
->>
->> Ohtak-san, for this patch I'd like you to drop the separate driver
->> that only registers the spi_devices and just submit the core driver.
->
-> Sorry, I can't follow your discussion by lack of SPI knowledge.
-> Which the above mean that "spi_register_board_info"  moves to our spi_pch or
-> delete for our driver ?
+On Sat, Aug 28, 2010 at 02:23:51PM -0700, Linus Torvalds wrote:
+> On Thu, Aug 26, 2010 at 6:14 PM, Matthew Wilcox <matthew@wil.cx> wrote:
+> >
+> > ? ? ? ?/* Only one propagation flag should be set, and no others */
+> > ? ? ? ?if (hweight32(type) != 1
+> 
+> Guys, stop with "teh crazy".
+> 
+> What the f*ck kind of expression is that? We don't do this kind of
+> crap. Even if it's possible that the compiler might be able to
+> optimize it, it's just crazy to call "hweight32()" for something like
+> this.
+> 
+> Please think about what you're really after for a second, and realize
+> that "one bit set" is just another way of saying "power of two". And
+> then sit back, relax, and realize that there are way better ways to
+> say "is this is a power of two" than counting bits, for chrissake!
 
-I mean remove drivers/spi/spi_pch_device.c and the related Kconfig
-bits from this patch.  The spi_device registration is a separate task
-which should be submitted in a separate patch, and would be better
-handled in either platform support code or with a device tree.
+I considered is_power_of_2() initially but rejected it as not
+particularly readable.  But hey, this is VFS code!
 
->> (You can of course keep the spi_device registration in your own tree
->> for debug purposes).  I'll expect that the device will get
->> instantiated using a device tree to determine which spi_devices are
->> present.  The parsing of spi device tree data will be moving into the
->> core spi subsystem code in the next merge window most likely, so it
->> can all be handled transparently.
->>
->> > SFI was meant to provide a lightweight ACPI, but
->> > now that device tree is generic and more platforms are using it, I
->> > really want to standartize on that and forget SFI.
->> >
->> > That makes even more sense, as all these AMBA peripherals which are
->> > duct-taped to a x86 core can be found in other SoCs with different
->> > cores as well.
->>
->> Indeed.  BTW, Ohtak-san, is this spi bus device something brand new,
->> or is it derived from an existing spi device?
->
-> Yes, Intel Topcliff is new concept device.
+-VAL
 
-As Thomas already commented, what I'm really interested in is whether
-or not this spi controller is based on an older SPI controller.  If it
-is, then it may be possible to add support for this chip to an
-existing driver instead of writing a whole new one.
+commit ce3708ab514d850b0d0939f3fa6c64daad306a15
+Author: Valerie Aurora <vaurora@redhat.com>
+Date:   Thu Aug 26 11:07:22 2010 -0700
 
-g.
+    VFS: Sanity check mount flags passed to change_mnt_propagation()
+    
+    Sanity check the flags passed to change_mnt_propagation().  Exactly
+    one flag should be set.  Return EINVAL otherwise.
+    
+    Userspace can pass in arbitrary combinations of MS_* flags to mount().
+    do_change_type() is called if any of MS_SHARED, MS_PRIVATE, MS_SLAVE,
+    or MS_UNBINDABLE is set.  do_change_type() clears MS_REC and then
+    calls change_mnt_propagation() with the rest of the user-supplied
+    flags.  change_mnt_propagation() clearly assumes only one flag is set
+    but do_change_type() does not check that this is true.  For example,
+    mount() with flags MS_SHARED | MS_RDONLY does not actually make the
+    mount shared or read-only but does clear MNT_UNBINDABLE.
+    
+    Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index de402eb..ddc5565 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1484,13 +1484,29 @@ out_unlock:
+ }
+ 
+ /*
++ * Sanity check the flags to change_mnt_propagation.
++ */
++
++static int flags_to_propagation_type(int flags) {
++	int type = flags & ~MS_REC;
++
++	/* Fail if any non-propagation flags are set */
++	if (type & ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
++		return 0;
++	/* Only one propagation flag should be set */
++	if (!is_power_of_2(type))
++		return 0;
++	return type;
++}
++
++/*
+  * recursively change the type of the mountpoint.
+  */
+ static int do_change_type(struct path *path, int flag)
+ {
+ 	struct vfsmount *m, *mnt = path->mnt;
+ 	int recurse = flag & MS_REC;
+-	int type = flag & ~MS_REC;
++	int type;
+ 	int err = 0;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+@@ -1499,6 +1515,10 @@ static int do_change_type(struct path *path, int flag)
+ 	if (path->dentry != path->mnt->mnt_root)
+ 		return -EINVAL;
+ 
++	type = flags_to_propagation_type(flag);
++	if (!type)
++		return -EINVAL;
++
+ 	down_write(&namespace_sem);
+ 	if (type == MS_SHARED) {
+ 		err = invent_group_ids(mnt, recurse);
