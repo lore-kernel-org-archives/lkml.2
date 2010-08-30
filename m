@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab0H3PqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 11:46:15 -0400
-Received: from s318.xrea.com ([125.53.25.46]:43429 "HELO s318.xrea.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754920Ab0H3PqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 11:46:14 -0400
-From: Naohiro Aota <naota@elisp.net>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Naohiro Aota <naota@elisp.net>, Jiri Kosina <jkosina@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 2/2] idr: describe how nextidp works in idr_get_next().
-References: <m27hj8cdsw.fsf@elisp.net>
-Date: Tue, 31 Aug 2010 00:39:26 +0900
-In-Reply-To: <m27hj8cdsw.fsf@elisp.net> (Naohiro Aota's message of "Tue, 31
-	Aug 2010 00:37:03 +0900")
-Message-ID: <m2pqx0az4h.fsf@elisp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (darwin)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755734Ab0H3Psb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 11:48:31 -0400
+Received: from mail55.messagelabs.com ([216.82.241.163]:45865 "EHLO
+	mail55.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab0H3Psa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 11:48:30 -0400
+X-VirusChecked: Checked
+X-Env-Sender: jcarlyle@motorola.com
+X-Msg-Ref: server-10.tower-55.messagelabs.com!1283183308!102592609!1
+X-StarScan-Version: 6.2.4; banners=-,-,-
+X-Originating-IP: [129.188.136.8]
+In-Reply-To: <4C784B04.7060604@kernel.org>
+References: <4C784B04.7060604@kernel.org>
+From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+To: Tejun Heo <tj@kernel.org>
+Date: Mon, 30 Aug 2010 10:01:40 -0500
+Subject: [PATCH v2] scatterlist: prevent invalid free when alloc fails
+Cc: OLUSANYA SOYANNWO <olusanya.soyannwo@motorola.com>,
+        <linux-kernel@vger.kernel.org>, Hu Tao <taohu@motorola.com>,
+        <jaxboe@fusionio.com>, <torvalds@osdl.org>,
+        Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Message-Id: <20100830154825.E4E2560255F@il93ubuntu.localdomain>
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was unclear in original kernel-doc how nextidp worked in
-idr_get_next(). Let's describe it.
+When alloc fails, free_table is being called. Depending on the number of
+bytes requested, we determine if we are going to call _get_free_page()
+or kmalloc(). When alloc fails, our math is wrong (due to sg_size - 1),
+and the last buffer is wrongfully assumed to have been allocated by
+kmalloc. Hence, kfree gets called and a panic occurs.
 
-Signed-off-by: Naohiro Aota <naota@elisp.net>
+Signed-off-by: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Signed-off-by: Olusanya Soyannwo <c23746@motorola.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>
 ---
- lib/idr.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ lib/scatterlist.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/lib/idr.c b/lib/idr.c
-index fb86a67..cf8c46b 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -589,7 +589,8 @@ EXPORT_SYMBOL(idr_for_each);
-  * @nextidp:  pointer to lookup key
-  *
-  * Returns pointer to registered object with id, which is next number to
-- * given id.
-+ * given id. The id pointed by nextidp will be updated
-+ * appropriately for next iteration.
-  */
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index a5ec428..9bc637f 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -248,8 +248,14 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
+ 		left -= sg_size;
  
- void *idr_get_next(struct idr *idp, int *nextidp)
+ 		sg = alloc_fn(alloc_size, gfp_mask);
+-		if (unlikely(!sg))
++		if (unlikely(!sg)) {
++			/*
++			 * Adjust entry count so that proper free function is
++			 * used in sg_kfree.
++			 */
++			table->nents = ++table->orig_nents;
+ 			return -ENOMEM;
++		}
+ 
+ 		sg_init_table(sg, alloc_size);
+ 		table->nents = table->orig_nents += sg_size;
 -- 
-1.7.2
+1.6.3.3
 
