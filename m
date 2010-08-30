@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab0H2XwS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 19:52:18 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:62723 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab0H2XwR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 19:52:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nx/JqIEr4HMHRDXezH/uleCiYKxTVRtfhHwzJZWPjtJsIzJdcDiAs0OPO5JgI3CTAw
-         uJXu539UMuIBD0uYMKKDh/9H9Wp8AuzuJo+GSlrQHAyr0lXCv4rJRHIc8Wqoj7HCuoEQ
-         z6sY02iQoLfte53BB5fPK59NfKcdDxBsTaihI=
-Message-ID: <4C7AF2C4.9040507@gmail.com>
-Date: Sun, 29 Aug 2010 16:52:36 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+	id S1753960Ab0H3ALf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 20:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27814 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752313Ab0H3ALe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 20:11:34 -0400
+Date: Sun, 29 Aug 2010 20:14:41 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Tomasz Chmielewski <mangoo@wpkg.org>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        hch@infradead.org, gg.mariotti@gmail.com,
+        "Justin P. Mattock" <justinmattock@gmail.com>, mjt@tls.msk.ru,
+        josef@redhat.com, tytso@mit.edu
+Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
+Message-ID: <20100830001441.GA838@dhcp231-156.rdu.redhat.com>
+References: <4C7AB645.5090804@wpkg.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Pauli Nieminen <suokkos@gmail.com>
-Subject: Re: [Bug #16337] general protection fault: 0000 [#1] SMP
-References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.3DD.5fueMB@chimera>
-In-Reply-To: <ByD_7B96czP.A.3DD.5fueMB@chimera>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C7AB645.5090804@wpkg.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2010 04:13 PM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
+On Sun, Aug 29, 2010 at 09:34:29PM +0200, Tomasz Chmielewski wrote:
+> Christoph Hellwig wrote:
 >
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+>> There are a lot of variables when using qemu.
+>>
+>> The most important one are:
+>>
+>>  - the cache mode on the device.  The default is cache=writethrough,
+>>    which is not quite optimal.  You generally do want to use cache=none
+>>    which uses O_DIRECT in qemu.
+>>  - if the backing image is sparse or not.
+>>  - if you use barrier - both in the host and the guest.
+>
+> I noticed that when btrfs is mounted with default options, when writing  
+> i.e. 10 GB on the KVM guest using qcow2 image, 20 GB are written on the  
+> host (as measured with "iostat -m -p").
 >
 >
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16337
-> Subject		: general protection fault: 0000 [#1] SMP
-> Submitter	: Justin P. Mattock<justinmattock@gmail.com>
-> Date		: 2010-07-03 22:59 (58 days old)
-> Message-ID	:<<4C2FC0E3.6050101@gmail.com>>
-> References	: http://marc.info/?l=linux-kernel&m=127819798215589&w=2
->
->
+> With ext4 (or btrfs mounted with nodatacow), 10 GB write on a guest  
+> produces 10 GB write on the host.
 >
 
+Whoa 20gb?  That doesn't sound right, COW should just mean we get quite a bit of
+fragmentation, not write everything twice.  What exactly is qemu doing?  Thanks,
 
-only have seen this once..on the other hand (If im correct)maciej or 
-pauli where able to reproduce this.. I say leave open then go from there.
-
-Justin P. Mattock
+Josef
