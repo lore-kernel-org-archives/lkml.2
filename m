@@ -1,296 +1,492 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab0H3Owp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 10:52:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41338 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754772Ab0H3Owk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 10:52:40 -0400
-Message-ID: <4C7BC5B4.3010707@suse.de>
-Date: Mon, 30 Aug 2010 16:52:36 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
+	id S1755167Ab0H3O4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 10:56:07 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:60956 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab0H3O4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 10:56:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Z8TsHsSphHXTusElRymXIavBfa42rdLIH9TBxUVp37ka/NUuFP65zx6dANViiCvxKU
+         Z/Z1l0Jqwcqw5nPAaNMwaPOvnUZ6JKu8hLe/cJvvRmVG8JhpImx43Z1DqAOWLFszgF5T
+         /BU6s05jJX0IPbJWancG079a1XfGQhT2Qj/Og=
+Date: Mon, 30 Aug 2010 07:55:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Xing Wei <weixing@hanwang.com.cn>
+Cc: jkosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] input: Add support for Hanwang tablet
+Message-ID: <20100830145559.GA7705@core.coreip.homeip.net>
+References: <201008301903259846570@hanwang.com.cn>
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, michaelc@cs.wisc.edu,
-        tytso@mit.edu, linux-scsi@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, linux-raid@vger.kernel.org,
-        linux-ide@vger.kernel.org, James.Bottomley@suse.de,
-        rwheeler@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        Tejun Heo <tj@kernel.org>, jack@suse.cz, vst@vlnb.net,
-        swhiteho@redhat.com, chris.mason@oracle.com
-Subject: Re: [dm-devel] [RFC] training mpath to discern between SCSI errors
-References: <20100825155918.GB8509@redhat.com> <4C7B984E.4070802@suse.de>	<4C7B9F14.9080900@mvista.com> <4C7BA670.2060303@suse.de>
-In-Reply-To: <4C7BA670.2060303@suse.de>
-X-Enigmail-Version: 0.95.7
-Content-Type: multipart/mixed;
- boundary="------------080001040105040309060106"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008301903259846570@hanwang.com.cn>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080001040105040309060106
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Hi Xing,
 
-Hannes Reinecke wrote:
-> Sergei Shtylyov wrote:
->> Hello.
->>
->> Hannes Reinecke wrote:
->>
->>> Actually, I think we have two separate issues here:
->>> 1) The need of having more detailed I/O errors even in the fs layer. This
->>>    we've already discussed at the LSF, consensus here is to allow other
->>>    errors than just 'EIO'.
->>>    Instead of Mike's approach I would rather use existing error codes
->>> here;
->>>    this will make the transition somewhat easier.
->>>    Initially I would propose to return 'ENOLINK' for a transport failure,
->>>    'EIO' for a non-retryable failure on the target, and 'ENODEV' for a
->>>    retryable failure on the target.
->>    Are you sure it's not vice versa: EIO for retryable and ENODEV for
->> non-retryable failures. ENODEV looks more like permanent condition to me.
->>
-> Ok, can do.
-> And looking a the error numbers again, maybe we should be using 'EREMOTEIO'
-> for non-retryable failures.
+On Mon, Aug 30, 2010 at 07:03:26PM +0800, Xing Wei wrote:
+> From: Xing Wei  <weixing@hanwang.com.cn>
 > 
-> So we would be ending with:
+> Add support for Art Master III tablet of BeiJing HanwangTechnology Co, Ltd.
 > 
-> ENOLINK: transport failure
-> EIO: retryable remote failure
-> EREMOTEIO: non-retryable remote failure
+> Signed-off-by: Xing Wei <weixing@hanwang.com.cn>
 > 
-And here is the corresponding patch.
-Compile tested only; just to give an idea of the possible implementation.
+> ---
+> 
+> Thanks for jiri's advice,and I'll seriously consider and learn to use git.
+> This patch got several warnings("line over 80 characters").
+> This is our first time to submit the patch for linux and I really appreciate the comment and advice.
+> 
 
-I have decided to pass the I/O failure information in-line:
-- scsi_check_sense() might now return 'TARGET_ERROR' to signal
-  a permanent error
-- scsi_decide_disposition() sets the driver byte of the result
-  field to 'DID_TARGET_FAILURE' if a return code of 'TARGET_ERROR'
-  is encountered.
-- scsi_io_completion() sets the error to ENOLINK for DID_TRANSPORT_FAILFAST,
-  EREMOTEIO for DID_TARGET_FAILURE, and EIO for any other error. It also
-  resets DID_TARGET_FAILURE back to DID_OK once the error code is set.
+Very mice and clean driver, just a couple of comments below:
 
-I'm not 100% happy with this patch; DID_TARGET_FAILURE is really just
-a communication vehicle to signal the permanent target failure.
-I looked at passing this information directly via an explicit argument
-to scsi_finish_command(), but this would include changing
-scsi_io_completion(), too. As both of them are exported / public
-interfaces I didn't like modifying them.
+> 
+> diff -uprN -X linux-2.6.35.3-vanilla/Documentation/dontdiff linux-2.6.35.3-vanilla/drivers/hid/hid-core.c devel/linux-2.6.35.3/drivers/hid/hid-core.c
+> --- linux-2.6.35.3-vanilla/drivers/hid/hid-core.c	2010-08-21 02:55:55.000000000 +0800
+> +++ devel/linux-2.6.35.3/drivers/hid/hid-core.c	2010-08-25 18:02:15.942574998 +0800
+> @@ -1759,6 +1759,11 @@ static bool hid_ignore(struct hid_device
+>  		    hdev->product <= USB_DEVICE_ID_SOUNDGRAPH_IMON_LAST)
+>  			return true;
+>  		break;
+> +	case USB_VENDOR_ID_HANWANG:
+> +		if (hdev->product >= USB_DEVICE_ID_HANWANG_TABLET_FIRST &&
+> +		    hdev->product <= USB_DEVICE_ID_HANWANG_TABLET_LAST)
+> +			return true;
+> +		break;
+>  	}
+>  
+>  	if (hdev->type == HID_TYPE_USBMOUSE &&
+> diff -uprN -X linux-2.6.35.3-vanilla/Documentation/dontdiff linux-2.6.35.3-vanilla/drivers/hid/hid-ids.h devel/linux-2.6.35.3/drivers/hid/hid-ids.h
+> --- linux-2.6.35.3-vanilla/drivers/hid/hid-ids.h	2010-08-21 02:55:55.000000000 +0800
+> +++ devel/linux-2.6.35.3/drivers/hid/hid-ids.h	2010-08-25 18:00:21.416574999 +0800
+> @@ -526,5 +526,8 @@
+>  #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
+>  #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
+>  
+> +#define USB_VENDOR_ID_HANWANG		0x0b57
+> +#define USB_DEVICE_ID_HANWANG_TABLET_FIRST	0x5000
+> +#define USB_DEVICE_ID_HANWANG_TABLET_LAST	0x8fff
+>  
+>  #endif
+> diff -uprN -X linux-2.6.35.3-vanilla/Documentation/dontdiff linux-2.6.35.3-vanilla/drivers/input/tablet/hanwang.c devel/linux-2.6.35.3/drivers/input/tablet/hanwang.c
+> --- linux-2.6.35.3-vanilla/drivers/input/tablet/hanwang.c	1970-01-01 08:00:00.000000000 +0800
+> +++ devel/linux-2.6.35.3/drivers/input/tablet/hanwang.c	2010-08-30 18:48:08.052906001 +0800
+> @@ -0,0 +1,350 @@
+> +/*
+> + *  USB Hanwang tablet support
+> + *
+> + *  Copyright (c) 2010 Xing Wei <weixing@hanwang.com.cn>
+> + *
+> + */
+> +
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+> + *
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/usb/input.h>
+> +
+> +#define DRIVER_VERSION  "v0.1"
+> +#define DRIVER_AUTHOR   "Xing Wei <weixing@hanwang.com.cn>"
+> +#define DRIVER_DESC     "USB Hanwang tablet driver"
+> +#define DRIVER_LICENSE  "GPL"
+> +
+> +MODULE_AUTHOR(DRIVER_AUTHOR);
+> +MODULE_DESCRIPTION(DRIVER_DESC);
+> +MODULE_LICENSE(DRIVER_LICENSE);
+> +
+> +#define USB_VENDOR_ID_HANWANG		0x0b57
+> +#define HANWANG_TABLET_INT_CLASS	0x0003
+> +#define HANWANG_TABLET_INT_SUB_CLASS	0x0001
+> +#define HANWANG_TABLET_INT_PROTOCOL	0x0002
+> +
+> +#define ART_MASTERIII_PKGLEN_MAX	10
+> +
+> +/* match vendor and interface info  */
+> +#define HANWANG_TABLET_DEVICE(vend, cl, sc, pr) \
+> +	.match_flags = USB_DEVICE_ID_MATCH_VENDOR \
+> +		| USB_DEVICE_ID_MATCH_INT_INFO, \
+> +	.idVendor = (vend), \
+> +	.bInterfaceClass = (cl), \
+> +	.bInterfaceSubClass = (sc), \
+> +	.bInterfaceProtocol = (pr)
+> +
+> +struct hanwang_state{
 
-Another possibility would be to re-use / redefine the 'DRIVER_'
-bits; they don't seem to be used a the moment. Eg 'DRIVER_HARD'
-for permanent errors, DRIVER_SOFT for link failures.
+Doesn't checkpatch script complain about nissing space before the
+opening curly bracket?
 
-Opinions welcome.
+> +	unsigned int tool_style;
+> +	unsigned int tool_state;
+> +};
+> +struct hanwang{
+> +	char name[64];
+> +	unsigned char *data;
+> +	dma_addr_t data_dma;
+> +	struct input_dev *dev;
+> +	struct usb_device *usbdev;
+> +	struct urb *irq;
+> +	struct hanwang_features *features;
 
-Cheers,
+This should probably be const.
 
-Hannes
+> +	struct hanwang_state hws;
+> +	char phys[32];
+> +};
+> +
+> +struct hanwang_features{
+> +	unsigned short pid;
+> +	int pkg_len;
+> +	char *name;
+> +	int max_x;
+> +	int max_y;
+> +	int max_tilt_x;
+> +	int max_tilt_y;
+> +	int max_pressure;
+> +	int max_distance;
+> +};
+> +
+> +
+> +struct hanwang_features hanwang_features_arr[] = {
+
+This should probably be static const as well.
+
+> +	{0x8528, ART_MASTERIII_PKGLEN_MAX, "Hanwang Art Master III 0906",
+> +	0x5757, 0x3692, 0x3f, 0x7f, 2048, 0xff},
+> +	{0x8529, ART_MASTERIII_PKGLEN_MAX, "Hanwang Art Master III 0604",
+> +	0x3d84, 0x2672, 0x3f, 0x7f, 2048, 0xff},
+> +	{0x852a, ART_MASTERIII_PKGLEN_MAX, "Hanwang Art Master III 1308",
+> +	0x7f00, 0x4f60, 0x3f, 0x7f, 2048, 0xff},
+> +};
+> +
+> +static const int hw_eventtypes[] = {
+> +	EV_KEY, EV_ABS,
+> +};
+> +
+> +static const int hw_absevents[] = {
+> +	ABS_X, ABS_Y, ABS_TILT_X, ABS_TILT_Y, ABS_WHEEL,
+> +	ABS_PRESSURE, ABS_DISTANCE
+> +};
+> +
+> +static const int hw_btnevents[] = {
+> +	BTN_STYLUS, BTN_STYLUS2, BTN_TOOL_PEN, BTN_TOOL_RUBBER,
+> +	BTN_TOOL_MOUSE, BTN_0, BTN_1, BTN_2, BTN_3, BTN_4,
+> +	BTN_5, BTN_6, BTN_7, BTN_8
+> +};
+> +
+> +static struct usb_device_id hanwang_ids[] = {
+> +	{HANWANG_TABLET_DEVICE(USB_VENDOR_ID_HANWANG, HANWANG_TABLET_INT_CLASS,
+> +		HANWANG_TABLET_INT_SUB_CLASS, HANWANG_TABLET_INT_PROTOCOL)},
+> +	{}
+> +};
+> +
+> +MODULE_DEVICE_TABLE(usb, hanwang_ids);
+> +
+> +static int hanwang_open(struct input_dev *dev)
+> +{
+> +	struct hanwang *hanwang = input_get_drvdata(dev);
+> +
+> +	hanwang->irq->dev = hanwang->usbdev;
+> +	if (usb_submit_urb(hanwang->irq, GFP_KERNEL))
+> +		return -EIO;
+> +
+> +	return 0;
+> +}
+> +
+> +static void hanwang_close(struct input_dev *dev)
+> +{
+> +	struct hanwang *hanwang = input_get_drvdata(dev);
+> +
+> +	usb_kill_urb(hanwang->irq);
+> +}
+> +
+> +static void hanwang_irq(struct urb *urb)
+> +{
+> +
+> +	struct hanwang *hanwang = urb->context;
+> +	unsigned char *data = hanwang->data;
+> +	struct input_dev *dev = hanwang->dev;
+> +	struct hanwang_state *phws = &hanwang->hws;
+> +	int retval;
+> +
+> +	switch (urb->status) {
+> +	case 0:
+> +		/* success */;
+> +		break;
+> +	case -ECONNRESET:
+> +	case -ENOENT:
+> +	case -ESHUTDOWN:
+> +		/* this urb is terminated, clean up */
+> +		err("%s - urb shutting down with status: %d", __func__, urb->status);
+
+Consider using dev_err() and friends.
+
+> +		return;
+> +	default:
+> +		err("%s - nonzero urb status received: %d", __func__, urb->status);
+> +		goto exit;
+> +	}
+> +
+> +	/* data packet */
+> +	if (data[0] == 0x02) {
+> +		/* tool prox out */
+> +		if (data[1] == 0x80) {
+> +			input_report_key(dev, phws->tool_style, 0);
+> +		} else if (data[1] == 0xc2) {	/* first time tool prox in */
+> +			switch (data[3] & 0xf0) {
+> +			case 0x20:
+> +				phws->tool_style = BTN_TOOL_PEN;
+> +				input_report_key(dev, BTN_TOOL_PEN, 1);
+> +				break;
+> +			case 0xa0:
+> +				phws->tool_style = BTN_TOOL_RUBBER;
+> +				input_report_key(dev, BTN_TOOL_RUBBER, 1);
+> +				break;
+> +			default:
+> +				dbg("unknown tablet tool %02x ", data[0]);
+> +				break;
+> +			}
+> +		} else {	/* tool data packet */
+> +			input_report_abs(dev, ABS_X, (data[2] << 8) | data[3]);
+> +			input_report_abs(dev, ABS_Y, (data[4] << 8) | data[5]);
+> +			input_report_abs(dev, ABS_PRESSURE, (data[6] << 3) | ((data[7] & 0xc0) >> 5) | (data[1] & 0x01));
+> +			input_report_abs(dev, ABS_TILT_X, data[7] & 0x3f);
+> +			input_report_abs(dev, ABS_TILT_Y, data[8] & 0x7f);
+> +			input_report_key(dev, BTN_STYLUS, (data[1] & 0x02) >> 1);
+> +			input_report_key(dev, BTN_STYLUS2, (data[1] & 0x04) >> 2);
+> +		}
+> +	} else if (data[0] == 0x0c) {	/* roll wheel */
+> +		if (data[1]) {
+> +			input_report_abs(dev, ABS_WHEEL, data[1]);
+> +		}
+> +		input_report_key(dev, BTN_0, data[2]);
+> +		input_report_key(dev, BTN_1, data[3] & 0x01);
+> +		input_report_key(dev, BTN_2, data[3] & 0x02);
+> +		input_report_key(dev, BTN_3, data[3] & 0x04);
+> +		input_report_key(dev, BTN_4, data[3] & 0x08);
+> +		input_report_key(dev, BTN_5, data[3] & 0x10);
+> +		input_report_key(dev, BTN_6, data[3] & 0x20);
+> +		input_report_key(dev, BTN_7, data[3] & 0x30);
+> +		input_report_key(dev, BTN_8, data[3] & 0x40);
+> +	} else {
+> +		err("error packet  %02x ", data[0]);
+> +	}
+> +
+> +	input_sync(dev);
+> +
+> +exit:
+> +	retval = usb_submit_urb(urb, GFP_ATOMIC);
+> +	if (retval)
+> +		printk(KERN_INFO "%s - usb_submit_urb failed with result %d",
+> +		     __func__, retval);
+> +}
+> +
+> +static int hanwang_get_features(struct usb_device *dev , struct hanwang *hanwang)
+
+bool?
+
+> +{
+> +	int i, total_features;
+> +
+> +	total_features = sizeof(hanwang_features_arr) / sizeof(struct hanwang_features);
+
+ARRAY_SIZE();
+
+> +	for (i = 0; i < total_features; i++) {
+> +		if (le16_to_cpu(dev->descriptor.idProduct) == hanwang_features_arr[i].pid) {
+> +			hanwang->features = &hanwang_features_arr[i];
+> +			return 1;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +
+> +static int hanwang_probe(struct usb_interface *intf, const struct usb_device_id *id)
+> +{
+> +	struct usb_device *dev = interface_to_usbdev(intf);
+> +	struct usb_endpoint_descriptor *endpoint;
+> +	struct hanwang *hanwang;
+> +	struct input_dev *input_dev;
+> +	int error = -ENOMEM;
+> +	int i;
+> +
+> +	hanwang = kzalloc(sizeof(struct hanwang), GFP_KERNEL);
+> +	input_dev = input_allocate_device();
+> +	if (!hanwang || !input_dev)
+> +		goto fail1;
+> +
+> +	if (!hanwang_get_features(dev, hanwang)) {
+> +		err("hanwang device not be supported now");
+> +		goto fail1;
+> +	}
+> +
+> +	hanwang->data = usb_alloc_coherent(dev, hanwang->features->pkg_len, GFP_KERNEL, &hanwang->data_dma);
+> +	if (!hanwang->data)
+> +		goto fail1;
+> +
+> +	hanwang->irq = usb_alloc_urb(0, GFP_KERNEL);
+> +	if (!hanwang->irq)
+> +		goto fail2;
+> +
+> +	hanwang->usbdev = dev;
+> +	hanwang->dev = input_dev;
+> +
+> +	usb_make_path(dev, hanwang->phys, sizeof(hanwang->phys));
+> +	strlcat(hanwang->phys, "/input0", sizeof(hanwang->phys));
+> +
+> +	strlcpy(hanwang->name, hanwang->features->name, sizeof(hanwang->name));
+> +	input_dev->name = hanwang->name;
+> +	input_dev->phys = hanwang->phys;
+> +	usb_to_input_id(dev, &input_dev->id);
+> +	input_dev->dev.parent = &intf->dev;
+> +
+> +	input_set_drvdata(input_dev, hanwang);
+> +
+> +	input_dev->open = hanwang_open;
+> +	input_dev->close = hanwang_close;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(hw_eventtypes); ++i)
+> +		__set_bit(hw_eventtypes[i], input_dev->evbit);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(hw_absevents); ++i)
+> +		__set_bit(hw_absevents[i], input_dev->absbit);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(hw_btnevents); ++i)
+> +		__set_bit(hw_btnevents[i], input_dev->keybit);
+> +
+> +	input_set_abs_params(input_dev, ABS_X, 0, hanwang->features->max_x, 4, 0);
+> +	input_set_abs_params(input_dev, ABS_Y, 0, hanwang->features->max_y, 4, 0);
+> +	input_set_abs_params(input_dev, ABS_TILT_X, 0, hanwang->features->max_tilt_x, 0, 0);
+> +	input_set_abs_params(input_dev, ABS_TILT_Y, 0, hanwang->features->max_tilt_y, 0, 0);
+> +	input_set_abs_params(input_dev, ABS_PRESSURE, 0, hanwang->features->max_pressure, 0, 0);
+> +	input_set_abs_params(input_dev, ABS_DISTANCE, 0, hanwang->features->max_distance, 0, 0);
+> +
+> +	endpoint = &intf->cur_altsetting->endpoint[0].desc;
+> +	usb_fill_int_urb(hanwang->irq, dev,
+> +			usb_rcvintpipe(dev, endpoint->bEndpointAddress),
+> +			hanwang->data, hanwang->features->pkg_len,
+> +			hanwang_irq, hanwang, endpoint->bInterval);
+> +	hanwang->irq->transfer_dma = hanwang->data_dma;
+> +	hanwang->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+> +
+> +	error = input_register_device(hanwang->dev);
+> +	if (error)
+> +		goto fail3;
+> +
+> +	usb_set_intfdata(intf, hanwang);
+> +
+> +	return 0;
+> +
+> + fail3:	usb_free_urb(hanwang->irq);
+> + fail2:	usb_free_coherent(dev, hanwang->features->pkg_len, hanwang->data, hanwang->data_dma);
+> + fail1:	input_free_device(input_dev);
+> +	kfree(hanwang);
+> +	return error;
+> +
+> +}
+> +
+> +static void hanwang_disconnect(struct usb_interface *intf)
+> +{
+> +	struct hanwang *hanwang = usb_get_intfdata(intf);
+> +
+> +	usb_set_intfdata(intf, NULL);
+> +	if (hanwang) {
+> +		usb_kill_urb(hanwang->irq);
+> +		input_unregister_device(hanwang->dev);
+> +		usb_free_urb(hanwang->irq);
+> +		usb_free_coherent(interface_to_usbdev(intf), hanwang->features->pkg_len,
+> +					hanwang->data, hanwang->data_dma);
+> +		kfree(hanwang);
+> +	}
+> +}
+> +
+> +static struct usb_driver hanwang_driver = {
+> +	.name =		"hanwang",
+> +	.probe =	hanwang_probe,
+> +	.disconnect =	hanwang_disconnect,
+> +	.id_table =	hanwang_ids,
+> +};
+> +
+> +static int __init hanwang_init(void)
+> +{
+> +	int result = usb_register(&hanwang_driver);
+> +	if (result == 0)
+> +		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+> +		     DRIVER_DESC "\n");
+
+I'd rather see this banner go - boot is noisy enough as it is...
+
+> +	return result;
+> +}
+> +
+> +static void __exit hanwang_exit(void)
+> +{
+> +	usb_deregister(&hanwang_driver);
+> +}
+> +
+> +module_init(hanwang_init);
+> +module_exit(hanwang_exit);
+> diff -uprN -X linux-2.6.35.3-vanilla/Documentation/dontdiff linux-2.6.35.3-vanilla/drivers/input/tablet/Kconfig devel/linux-2.6.35.3/drivers/input/tablet/Kconfig
+> --- linux-2.6.35.3-vanilla/drivers/input/tablet/Kconfig	2010-08-21 02:55:55.000000000 +0800
+> +++ devel/linux-2.6.35.3/drivers/input/tablet/Kconfig	2010-08-30 16:09:11.601568992 +0800
+> @@ -75,4 +75,17 @@ config TABLET_USB_WACOM
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called wacom.
+>  
+> +config TABLET_USB_HANWANG
+> +	tristate "Hanwang Art Master III tablet support (USB)"
+> +	depends on USB_ARCH_HAS_HCD
+> +	select USB
+> +	help
+> +	  Say Y here if you want to use the USB version of the Hanwang Art
+> +	  Master III tablet.  Make sure to say Y to "Mouse support"
+> +	  (CONFIG_INPUT_MOUSEDEV) and/or "Event interface support"
+> +	  (CONFIG_INPUT_EVDEV) as well.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called hanwang.
+> +
+>  endif
+> diff -uprN -X linux-2.6.35.3-vanilla/Documentation/dontdiff linux-2.6.35.3-vanilla/drivers/input/tablet/Makefile devel/linux-2.6.35.3/drivers/input/tablet/Makefile
+> --- linux-2.6.35.3-vanilla/drivers/input/tablet/Makefile	2010-08-21 02:55:55.000000000 +0800
+> +++ devel/linux-2.6.35.3/drivers/input/tablet/Makefile	2010-08-30 14:06:24.827403978 +0800
+> @@ -10,3 +10,4 @@ obj-$(CONFIG_TABLET_USB_AIPTEK)	+= aipte
+>  obj-$(CONFIG_TABLET_USB_GTCO)	+= gtco.o
+>  obj-$(CONFIG_TABLET_USB_KBTAB)	+= kbtab.o
+>  obj-$(CONFIG_TABLET_USB_WACOM)	+= wacom.o
+> +obj-$(CONFIG_TABLET_USB_HANWANG) += hanwang.o
+> 
+
+Please keep the Makefile and Kconfig  sorted alphabetically.
+
+Thanks.
+
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
-
---------------080001040105040309060106
-Content-Type: text/plain;
- name="scsi-detailed-io-errors"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="scsi-detailed-io-errors"
-
->From f0835d92426cb3938f79f1b7a1e1208de63ca7bc Mon Sep 17 00:00:00 2001
-From: Hannes Reinecke <hare@suse.de>
-Date: Mon, 30 Aug 2010 16:21:10 +0200
-Subject: [RFC][PATCH] scsi: Detailed I/O errors
-
-Instead of just passing 'EIO' for any I/O errors we should be
-notifying the upper layers with some more details about the cause
-of this error.
-This patch updates the possible I/O errors to:
-
-- ENOLINK: Link failure between host and target
-- EIO: Retryable I/O error
-- EREMOTEIO: Non-retryable I/O error
-
-'Retryable' in this context means that an I/O error _might_ be
-restricted to the I_T_L nexus (vulgo: path), so retrying on another
-nexus / path might succeed.
-
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-
-diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-index 487ecda..d49b375 100644
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1270,7 +1270,7 @@ static int do_end_io(struct multipath *m, struct request *clone,
- 	if (!error && !clone->errors)
- 		return 0;	/* I/O complete */
- 
--	if (error == -EOPNOTSUPP)
-+	if (error == -EOPNOTSUPP || error == -EREMOTEIO)
- 		return error;
- 
- 	if (clone->cmd_flags & REQ_DISCARD)
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index ce089df..5da040b 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -223,7 +223,7 @@ static inline void scsi_eh_prt_fail_stats(struct Scsi_Host *shost,
-  * @scmd:	Cmd to have sense checked.
-  *
-  * Return value:
-- * 	SUCCESS or FAILED or NEEDS_RETRY
-+ *	SUCCESS or FAILED or NEEDS_RETRY or TARGET_ERROR
-  *
-  * Notes:
-  *	When a deferred error is detected the current command has
-@@ -338,25 +338,25 @@ static int scsi_check_sense(struct scsi_cmnd *scmd)
- 	case COPY_ABORTED:
- 	case VOLUME_OVERFLOW:
- 	case MISCOMPARE:
--		return SUCCESS;
-+	case DATA_PROTECT:
-+	case BLANK_CHECK:
-+		return TARGET_ERROR;
- 
- 	case MEDIUM_ERROR:
- 		if (sshdr.asc == 0x11 || /* UNRECOVERED READ ERR */
- 		    sshdr.asc == 0x13 || /* AMNF DATA FIELD */
- 		    sshdr.asc == 0x14) { /* RECORD NOT FOUND */
--			return SUCCESS;
-+			return TARGET_ERROR;
- 		}
- 		return NEEDS_RETRY;
- 
- 	case HARDWARE_ERROR:
- 		if (scmd->device->retry_hwerror)
- 			return ADD_TO_MLQUEUE;
--		else
--			return SUCCESS;
--
-+		else {
-+			return TARGET_ERROR;
-+		}
- 	case ILLEGAL_REQUEST:
--	case BLANK_CHECK:
--	case DATA_PROTECT:
- 	default:
- 		return SUCCESS;
- 	}
-@@ -819,6 +819,7 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
- 		case SUCCESS:
- 		case NEEDS_RETRY:
- 		case FAILED:
-+		case TARGET_ERROR:
- 			break;
- 		case ADD_TO_MLQUEUE:
- 			rtn = NEEDS_RETRY;
-@@ -1512,6 +1513,12 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
- 		rtn = scsi_check_sense(scmd);
- 		if (rtn == NEEDS_RETRY)
- 			goto maybe_retry;
-+		if (rtn == TARGET_ERROR) {
-+			/* Need to modify host byte to signal a
-+			 * permanent target failure */
-+			scmd->result |= (DID_TARGET_FAILURE << 16);
-+			rtn = SUCCESS;
-+		}
- 		/* if rtn == FAILED, we have no sense information;
- 		 * returning FAILED will wake the error handler thread
- 		 * to collect the sense and redo the decide
-@@ -1529,6 +1536,7 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
- 	case RESERVATION_CONFLICT:
- 		SCSI_LOG_ERROR_RECOVERY(3, sdev_printk(KERN_INFO, scmd->device,
- 						"reservation conflict\n"));
-+		scmd->result |= (DID_TARGET_FAILURE << 16);
- 		return SUCCESS; /* causes immediate i/o error */
- 	default:
- 		return FAILED;
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 9ade720..fb841e3 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -736,8 +736,20 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 				memcpy(req->sense, cmd->sense_buffer,  len);
- 				req->sense_len = len;
- 			}
--			if (!sense_deferred)
--				error = -EIO;
-+			if (!sense_deferred) {
-+				switch(host_byte(result)) {
-+				case DID_TRANSPORT_FAILFAST:
-+					error = -ENOLINK;
-+					break;
-+				case DID_TARGET_FAILURE:
-+					cmd->result |= (DID_OK << 16);
-+					error = -EREMOTEIO;
-+					break;
-+				default:
-+					error = -EIO;
-+					break;
-+				}
-+			}
- 		}
- 
- 		req->resid_len = scsi_get_resid(cmd);
-@@ -796,7 +808,18 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 	if (scsi_end_request(cmd, error, good_bytes, result == 0) == NULL)
- 		return;
- 
--	error = -EIO;
-+	switch (host_byte(result)) {
-+	case DID_TRANSPORT_FAILFAST:
-+		error = -ENOLINK;
-+		break;
-+	case DID_TARGET_FAILURE:
-+		cmd->result |= (DID_OK << 16);
-+		error = -EREMOTEIO;
-+		break;
-+	default:
-+		error = -EIO;
-+		break;
-+	}
- 
- 	if (host_byte(result) == DID_RESET) {
- 		/* Third party bus reset or reset for error recovery
-@@ -1418,7 +1441,6 @@ static void scsi_softirq_done(struct request *rq)
- 			    wait_for/HZ);
- 		disposition = SUCCESS;
- 	}
--			
- 	scsi_log_completion(cmd, disposition);
- 
- 	switch (disposition) {
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index 8fcb6e0..abfee76 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -397,6 +397,8 @@ static inline int scsi_is_wlun(unsigned int lun)
- 				      * recover the link. Transport class will
- 				      * retry or fail IO */
- #define DID_TRANSPORT_FAILFAST	0x0f /* Transport class fastfailed the io */
-+#define DID_TARGET_FAILURE 0x10 /* Permanent target failure, do not retry on
-+				 * other paths */
- #define DRIVER_OK       0x00	/* Driver status                           */
- 
- /*
-@@ -426,6 +428,7 @@ static inline int scsi_is_wlun(unsigned int lun)
- #define TIMEOUT_ERROR   0x2007
- #define SCSI_RETURN_NOT_HANDLED   0x2008
- #define FAST_IO_FAIL	0x2009
-+#define TARGET_ERROR    0x200A
- 
- /*
-  * Midlevel queue return values.
-
---------------080001040105040309060106--
+Dmitry
