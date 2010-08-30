@@ -1,20 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab0H3IJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 04:09:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54076 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760Ab0H3IJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 04:09:44 -0400
-Date: Mon, 30 Aug 2010 18:09:34 +1000
-From: Neil Brown <neilb@suse.de>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/raid6: ignore generated files
-Message-ID: <20100830180934.2dd88033@notabene>
-In-Reply-To: <m2d3t9z1f9.fsf@igel.home>
-References: <m2d3t9z1f9.fsf@igel.home>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754568Ab0H3ILh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 04:11:37 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:54234 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab0H3ILf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 04:11:35 -0400
+Date: Mon, 30 Aug 2010 17:03:24 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "menage@google.com" <menage@google.com>,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 2/5] memcg: quick memcg lookup array
+Message-Id: <20100830170324.16933949.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100825170741.f1f0a220.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100825170741.f1f0a220.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -22,67 +31,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Aug 2010 19:25:30 +0200
-Andreas Schwab <schwab@linux-m68k.org> wrote:
+> Index: mmotm-0811/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0811.orig/mm/memcontrol.c
+> +++ mmotm-0811/mm/memcontrol.c
+> @@ -195,6 +195,7 @@ static void mem_cgroup_oom_notify(struct
+>   */
+>  struct mem_cgroup {
+>  	struct cgroup_subsys_state css;
+> +	int	valid; /* for checking validness under RCU access.*/
+>  	/*
+>  	 * the counter to account for memory usage
+>  	 */
+Do we really need to add this new member ?
+Can't we safely access "mem(=rcu_dereference(mem_cgroup[id]))" under rcu_read_lock() ?
+(iow, "mem" is not freed ?)
 
-> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-> ---
->  lib/raid6/.gitignore |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
->  create mode 100644 lib/raid6/.gitignore
-> 
-> diff --git a/lib/raid6/.gitignore b/lib/raid6/.gitignore
-> new file mode 100644
-> index 0000000..730e5ec
-> --- /dev/null
-> +++ b/lib/raid6/.gitignore
-> @@ -0,0 +1,12 @@
-> +int1.c
-> +int2.c
-> +int4.c
-> +int8.c
-> +int16.c
-> +int32.c
-> +altivec1.c
-> +altivec2.c
-> +altivec4.c
-> +altivec8.c
-> +tables.c
-> +mktables
 
-Thanks.  I've queued a slightly different patch for Linus.
+> @@ -4049,6 +4068,7 @@ static void __mem_cgroup_free(struct mem
+>  	mem_cgroup_remove_from_trees(mem);
+>  	free_css_id(&mem_cgroup_subsys, &mem->css);
+>  
+> +	atomic_dec(&mem_cgroup_num);
+>  	for_each_node_state(node, N_POSSIBLE)
+>  		free_mem_cgroup_per_zone_info(mem, node);
+>  
+> @@ -4059,6 +4079,19 @@ static void __mem_cgroup_free(struct mem
+>  		vfree(mem);
+>  }
+>  
+> +static void mem_cgroup_free(struct mem_cgroup *mem)
+> +{
+> +	/* No more lookup */
+> +	mem->valid = 0;
+> +	rcu_assign_pointer(mem_cgroups[css_id(&mem->css)], NULL);
+> +	/*
+> +	 * Because we call vfree() etc...use synchronize_rcu() rather than
+> + 	 * call_rcu();
+> + 	 */
+> +	synchronize_rcu();
+> +	__mem_cgroup_free(mem);
+> +}
+> +
+>  static void mem_cgroup_get(struct mem_cgroup *mem)
+>  {
+>  	atomic_inc(&mem->refcnt);
+> @@ -4068,7 +4101,7 @@ static void __mem_cgroup_put(struct mem_
+>  {
+>  	if (atomic_sub_and_test(count, &mem->refcnt)) {
+>  		struct mem_cgroup *parent = parent_mem_cgroup(mem);
+> -		__mem_cgroup_free(mem);
+> +		mem_cgroup_free(mem);
+>  		if (parent)
+>  			mem_cgroup_put(parent);
+>  	}
+> @@ -4189,9 +4222,11 @@ mem_cgroup_create(struct cgroup_subsys *
+>  	atomic_set(&mem->refcnt, 1);
+>  	mem->move_charge_at_immigrate = 0;
+>  	mutex_init(&mem->thresholds_lock);
+> +	atomic_inc(&mem_cgroup_num);
+> +	register_memcg_id(mem);
+>  	return &mem->css;
+>  free_out:
+> -	__mem_cgroup_free(mem);
+> +	mem_cgroup_free(mem);
+>  	root_mem_cgroup = NULL;
+>  	return ERR_PTR(error);
+>  }
+I think mem_cgroup_num should be increased at mem_cgroup_alloc(), because it
+is decreased at __mem_cgroup_free(). Otherwise, it can be decreased while it
+has not been increased, if mem_cgroup_create() fails after mem_cgroup_alloc().
 
-NeilBrown
 
-commit 7c44ece988a3419e51c833cf14be186a22224dd1
-Author: NeilBrown <neilb@suse.de>
-Date:   Mon Aug 30 17:35:52 2010 +1000
-
-    Move .gitignore from drivers/md to lib/raid6
-    
-    Another missing bit of the raid6 -> /lib move.
-    
-    Reported-by: Andreas Schwab <schwab@linux-m68k.org>
-    Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/md/.gitignore b/drivers/md/.gitignore
-deleted file mode 100644
-index a7afec6..0000000
---- a/drivers/md/.gitignore
-+++ /dev/null
-@@ -1,4 +0,0 @@
--mktables
--raid6altivec*.c
--raid6int*.c
--raid6tables.c
-diff --git a/lib/raid6/.gitignore b/lib/raid6/.gitignore
-new file mode 100644
-index 0000000..162beca
---- /dev/null
-+++ b/lib/raid6/.gitignore
-@@ -0,0 +1,4 @@
-+mktables
-+altivec*.c
-+int*.c
-+tables.c
-
+Thanks,
+Daisuke Nishimura.
