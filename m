@@ -1,133 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab0H3Fkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 01:40:52 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:34815 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab0H3Fkv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 01:40:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uRDZH94cwYIrErK7c7MDbRzkWlZTxR//xdvkkhkjqKTfQGKcZA88zvpKdS4t2uzEEF
-         2/h3LTx/CoeEmxeQnxTw==
+	id S1752075Ab0H3Fop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 01:44:45 -0400
+Received: from freeflow.nu ([178.79.134.28]:49307 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760Ab0H3Fop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 01:44:45 -0400
+Message-ID: <4C7B454A.7050101@kernel.org>
+Date: Mon, 30 Aug 2010 08:44:42 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>
-References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>
-	<AANLkTinCKJw2oaNgAvfm0RawbW4zuJMtMb2pUROeY2ij@mail.gmail.com>
-	<4C7ABD14.9050207@redhat.com>
-	<AANLkTimjVHp1=Fc35xLnyPb2aa+ew7w1P9DC_0GfhZgY@mail.gmail.com>
-	<AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>
-Date: Sun, 29 Aug 2010 22:40:47 -0700
-Message-ID: <AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
-From: Ying Han <yinghan@google.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Brian Gerst <brgerst@gmail.com>
+CC: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/11] x86: Remove unnecessary ifdefs from i387 code.
+References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>	<1283011478-27237-11-git-send-email-brgerst@gmail.com>	<AANLkTinnhht86aKkmHKypmgmThJP8a1rGEXFkwyW7dc3@mail.gmail.com> <AANLkTik7Gv3xoZphR0VRkHdr3Z1tvO484S-zkYncC2K7@mail.gmail.com>
+In-Reply-To: <AANLkTik7Gv3xoZphR0VRkHdr3Z1tvO484S-zkYncC2K7@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 5:18 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> Hi Ying,
->
-> On Mon, Aug 30, 2010 at 6:23 AM, Ying Han <yinghan@google.com> wrote:
->> On Sun, Aug 29, 2010 at 1:03 PM, Rik van Riel <riel@redhat.com> wrote:
->>> On 08/29/2010 01:45 PM, Ying Han wrote:
+  Hi Brian,
+
+On 8/30/10 2:38 AM, Brian Gerst wrote:
+> On Sun, Aug 29, 2010 at 3:00 PM, Pekka Enberg<penberg@kernel.org>  wrote:
+>> On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst<brgerst@gmail.com>  wrote:
+>>> Remove ifdefs for code that the compiler can optimize away on 64-bit.
 >>>
->>>> There are few other places in vmscan where we check nr_swap_pages and
->>>> inactive_anon_is_low. Are we planning to change them to use
->>>> total_swap_pages
->>>> to be consistent ?
+>>> Signed-off-by: Brian Gerst<brgerst@gmail.com>
+>>> @@ -74,10 +74,8 @@ static void __cpuinit init_thread_xstate(void)
 >>>
->>> If that makes sense, maybe the check can just be moved into
->>> inactive_anon_is_low itself?
->>
->> That was the initial patch posted, instead we changed to use
->> total_swap_pages instead. How this patch looks:
->>
->> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
->> *zone, struct scan_control *sc)
->>  {
->>        int low;
->>
->> +       if (total_swap_pages <= 0)
->> +               return 0;
->> +
->>        if (scanning_global_lru(sc))
->>                low = inactive_anon_is_low_global(zone);
->>        else
->> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
->>         * Even if we did not try to evict anon pages at all, we want to
->>         * rebalance the anon lru active/inactive ratio.
->>         */
->> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
->> +       if (inactive_anon_is_low(zone, sc))
->>                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
->>
->>        throttle_vm_writeout(sc->gfp_mask);
->>
->> --Ying
->>
->>>
->
-> I did it intentionally since inactive_anon_is_low have been used both
-> direct reclaim and background path. In this point, your patch could
-> make side effect in swap enabled system when swap is full.
->
-> I think we need aging in only background if system is swap full.
-> That's because if the swap space is full, we don't reclaim anon pages
-> in direct reclaim path with (nr_swap_pages < 0)  and even have been
-> not rebalance it until now.
-> I think direct reclaim path is important about latency as well as
-> reclaim's effectiveness.
-> So if you don't mind, I hope direct reclaim patch would be left just as it is.
+>>>         if (cpu_has_fxsr)
+>>>                 xstate_size = sizeof(struct i387_fxsave_struct);
+>>> -#ifdef CONFIG_X86_32
+>>>         else
+>>>                 xstate_size = sizeof(struct i387_fsave_struct);
+>>> -#endif
+>>>   }
+>> I guess this is OK but keep in mind that cpu_has_fsxr is _not_
+>> optimized by the compiler on 64-bit so the change probably increases
+>> kernel text by few bytes.
+> FXSR is a required feature on 64-bit, therefore cpu_has_fxsr is always true.
+Yes, I realize that but it will still read boot_cpu_data at runtime, no?
 
-Minchan, I would prefer to make kswapd as well as direct reclaim to be
-consistent if possible.
-They both try to reclaim pages when system is under memory pressure,
-and also do not make
-much sense to look at anon lru if no swap space available. Either
-because of no swapon or run
-out of swap space.
-
-I think letting kswapd to age anon lru without free swap space is not
-necessary neither. That leads
-to my initial patch:
-
-@@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
-*zone, struct scan_control *sc)
- {
-       int low;
-
-+       if (nr_swap_pages <= 0)
-+               return 0;
-+
-       if (scanning_global_lru(sc))
-               low = inactive_anon_is_low_global(zone);
-       else
-@@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
-        * Even if we did not try to evict anon pages at all, we want to
-        * rebalance the anon lru active/inactive ratio.
-        */
--       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
-+       if (inactive_anon_is_low(zone, sc))
-               shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
-
-What do you think ?
-
---Ying
->
-> --
-> Kind regards,
-> Minchan Kim
->
+             Pekka
