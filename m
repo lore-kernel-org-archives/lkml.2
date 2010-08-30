@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab0H3RAj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:00:39 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45664 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756008Ab0H3RAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:00:38 -0400
-Message-ID: <4C7BE3AE.8020204@suse.de>
-Date: Mon, 30 Aug 2010 22:30:30 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1756065Ab0H3RJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:09:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64279 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab0H3RJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 13:09:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: hv block drivers
+Date: Mon, 30 Aug 2010 19:08:51 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Hank Janssen <hjanssen@microsoft.com>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
+References: <201008301643.42253.arnd@arndb.de> <4C7BD9A6.1090108@goop.org>
+In-Reply-To: <4C7BD9A6.1090108@goop.org>
 MIME-Version: 1.0
-To: Miguel Calleja <mcalleja1@telecable.es>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
-        Shirish S Pargaonkar <shirishp@us.ibm.com>
-Subject: Re: Linux 2.6.36-rc3
-References: <AANLkTinRRiW1VUzS+3T82=q8PsoRn78Cgn_X8gSduM0U@mail.gmail.com> <i5fr6h$ih6$1@dough.gmane.org>
-In-Reply-To: <i5fr6h$ih6$1@dough.gmane.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008301908.51521.arnd@arndb.de>
+X-Provags-ID: V02:K0:JlTnlK3pyNjepzqD/3dKhiAurUSaYSVMr60iY+IHLb0
+ oHdrTGEV/tVXrat2mbDqdFXf3WNOykxnRTRAG1pnHqV816HqcM
+ savR4rga8J9gjwatfKBQJyF7+OYXEZBUz8W+SHchpqIP280H1Q
+ 3fSLrkZ0bXotMVh1dTKh6rim9qyykIZ/GMDYqXOkA2z0kZwpNe
+ mqMwtfWX0xmjQe8VNl+1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Cc linux-cifs@vger.kernel.org)
+On Monday 30 August 2010, Jeremy Fitzhardinge wrote:
+> Have you investigated making virtio a scsi device?
 
-Couldn't get a chance to check this, but I guess this is perhaps due to
-the recent crypto patches..
+I doubt that there is much value in changing it now, and it's not something
+I'd be interested in working on.
 
-On 08/30/2010 02:17 PM, Miguel Calleja wrote:
-> CIFS does not build without CRYPTO selected.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+For the HyperV drivers, it probably makes sense because half of it is
+trying to look like SCSI anyway, while the other half is trying to look
+like ATA. For the ATA driver, the obvious choice would be to make it
+a libata backend, though my impression from a brief look at the driver
+was that it's better to copy some of the libata code and integrate it
+into the hv SCSI driver.
 
-
--- 
-Suresh Jayaraman
+	Arnd
