@@ -1,95 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0H3Qi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 12:38:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52452 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755955Ab0H3Qi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 12:38:57 -0400
-Message-ID: <4C7BDE6E.8030107@kernel.org>
-Date: Mon, 30 Aug 2010 18:38:06 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1756014Ab0H3Qp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 12:45:56 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41226 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab0H3Qpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 12:45:55 -0400
 MIME-Version: 1.0
-To: caiqian@redhat.com
-CC: kexec <kexec@lists.infradead.org>, linux-next@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kdump regression compared to v2.6.35
-References: <1331313838.1541221283181038073.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1331313838.1541221283181038073.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-X-Enigmail-Version: 1.1.1
+X-Originating-IP: [192.94.94.105]
+Date: Mon, 30 Aug 2010 11:45:53 -0500
+Message-ID: <AANLkTi==im4bxnn9Ga2-ukUCiKdzQETHahcgvEj0Sef6@mail.gmail.com>
+Subject: usage of kill_pid and family
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 16:38:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you please try the following patch?
+Hi,
 
-Thanks.
+I use kill_pid in one of our drivers to signal a user-space daemon to
+perform a particular action (open-UART for instance), I recently ran
+into problems with permissions as to when a user with stranger UID
+started open up a device, which internally calls the kill_pid in that
+context, could not send the signal and returned with "permission
+denied".
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a2dccfc..f57cd6e 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1224,6 +1224,8 @@ __acquires(&gcwq->lock)
- {
- 	struct global_cwq *gcwq = worker->gcwq;
- 	struct task_struct *task = worker->task;
-+	static unsigned int cnt;
-+	int rc;
+I started using kill_pid_info_as_uid and sent signals as UID 0 to
+solve the problem, it did solve the problem, but is this the right
+approach?
 
- 	while (true) {
- 		/*
-@@ -1232,8 +1234,11 @@ __acquires(&gcwq->lock)
- 		 * it races with cpu hotunplug operation.  Verify
- 		 * against GCWQ_DISASSOCIATED.
- 		 */
--		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
--			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
-+		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
-+			rc = set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
-+			if (rc && ++cnt < 10)
-+				printk("XXX set_cpus_allowed_ptr() failed w/ %d\n", rc);
-+		}
+Also why is not suggested to use kill_pid and family to communicate
+with user-space? (namespace issues??- what do they mean?)
 
- 		spin_lock_irq(&gcwq->lock);
- 		if (gcwq->flags & GCWQ_DISASSOCIATED)
-@@ -1985,13 +1990,16 @@ repeat:
- 		struct cpu_workqueue_struct *cwq = get_cwq(tcpu, wq);
- 		struct global_cwq *gcwq = cwq->gcwq;
- 		struct work_struct *work, *n;
-+		bool bound;
-
- 		__set_current_state(TASK_RUNNING);
- 		mayday_clear_cpu(cpu, wq->mayday_mask);
-
- 		/* migrate to the target cpu if possible */
- 		rescuer->gcwq = gcwq;
--		worker_maybe_bind_and_lock(rescuer);
-+		printk("XXX %s: rescuer dispatching to cpu%u\n", wq->name, gcwq->cpu);
-+		bound = worker_maybe_bind_and_lock(rescuer);
-+		printk("XXX %s: rescuer done binding, bound=%d\n", wq->name, bound);
-
- 		/*
- 		 * Slurp in all works issued via this workqueue and
-@@ -3558,8 +3566,7 @@ static int __init init_workqueues(void)
- 		spin_lock_init(&gcwq->lock);
- 		INIT_LIST_HEAD(&gcwq->worklist);
- 		gcwq->cpu = cpu;
--		if (cpu == WORK_CPU_UNBOUND)
--			gcwq->flags |= GCWQ_DISASSOCIATED;
-+		gcwq->flags |= GCWQ_DISASSOCIATED;
-
- 		INIT_LIST_HEAD(&gcwq->idle_list);
- 		for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)
-@@ -3583,6 +3590,7 @@ static int __init init_workqueues(void)
- 		struct global_cwq *gcwq = get_gcwq(cpu);
- 		struct worker *worker;
-
-+		gcwq->flags &= ~GCWQ_DISASSOCIATED;
- 		worker = create_worker(gcwq, true);
- 		BUG_ON(!worker);
- 		spin_lock_irq(&gcwq->lock);
+Note:
+I get the PID of the process which receives signal from one of the
+sysfs entries created by driver, but filled up by the daemon...
