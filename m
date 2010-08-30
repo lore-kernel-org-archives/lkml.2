@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab0H3HFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 03:05:16 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:54189 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392Ab0H3HFP (ORCPT
+	id S1753369Ab0H3HGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 03:06:53 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44867 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab0H3HGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 03:05:15 -0400
-Message-ID: <4C7B5825.6030302@bluewatersys.com>
-Date: Mon, 30 Aug 2010 19:05:09 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Mon, 30 Aug 2010 03:06:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=i0ztfyws6GQkx9g0y9dEgsPnBq5DPiv2t5VjsTMoq0WnWmJxK+mdKo8chiUiibLyBj
+         N1+/wuhynD3t0pTTG+JsmNJyfnQuwNmG8QOUj3iI6qphwIKq0CULijhHXyGKGjB52NwR
+         EgQjNqFtQ3MYYcW2i0ds2Jz3ovM9vXUOrgasM=
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Wolfgang_M=FCes?= <wolfgang.mues@auerswald.de>
-CC: Chris Ball <cjb@laptop.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        avictor.za@gmail.com, akpm@linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/7] mmc: at91_mci: fix pointer errors
-References: <9535dc8dfe4476a0314b9513fb9d37862faa731d.1267209149.git.nicolas.ferre@atmel.com> <20100827193303.GB23079@void.printf.net> <4C7AD3A0.40607@bluewatersys.com> <4C7B5601.5060505@auerswald.de>
-In-Reply-To: <4C7B5601.5060505@auerswald.de>
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 30 Aug 2010 15:00:17 +0800
+Message-ID: <AANLkTimjO7sBzR55XkPB7dmZvxXqc8PS4UDsgptXVt90@mail.gmail.com>
+Subject: Linux Kernel GDB tracepoint module 2010-8-30 release
+To: "gdb@sourceware.org" <gdb@sourceware.org>, linux-kernel@vger.kernel.org
+Cc: Michael Snyder <msnyder@vmware.com>,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>, mqyoung@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfgang Mües wrote:
-> Hi,
-> 
-> Am 29.08.2010 23:39, schrieb Ryan Mallon:
->> I see this is already applied, but why all the type trickery here? Why
->> not just:
->>
->>     memcpy(dmabuf, sgbuffer, amount);
->>     dmabuf += amount / sizeof(dmabuf);
-> 
-> Because this is wrong?
-> 
-> Maybe you mean sizeof(*dmabuf)?
+http://kgtp.googlecode.com/files/kgtp_20100830.tar.bz2
+or
+svn co https://kgtp.googlecode.com/svn/tags/20100830
+to get it.
 
-Sorry, yes.
+Fix bug in ref16, ref32, ref64 in issue
+https://code.google.com/p/kgtp/issues/detail?id=2
+Fix bug that disable some tracepoint will make "tstart" get error.
 
-> The exact style of the bug fix is not important, it's important that
-> it's fixed.
+Support qtstatus. Then KGTP support GDB command "tstatus".
+Add support for "make install" and "make uninstall".
+Add support for qtro. Fix a bug about GTP_GDBRSP_REG_SIZE.
 
-I disagree, it's also important that it is fixed in a clear,
-understandable way. I found the fix confusing, especially since there
-are casts to both signed and unsigned char.
+Change gtp_list make it more efficient.
 
-~Ryan
-
+Please goto http://code.google.com/p/kgtp/wiki/HOWTO to get more info
+about how to use KGTP.
