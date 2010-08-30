@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0H3R33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:29:29 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46471 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab0H3R32 (ORCPT
+	id S1756190Ab0H3RbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:31:19 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:15889 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756042Ab0H3RbS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:29:28 -0400
-Date: Mon, 30 Aug 2010 22:50:31 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>, Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>
-Subject: Re: [RFC][PATCH 1/3] sched: Rewrite tg_shares_up
-Message-ID: <20100830172031.GA17281@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <20100828223025.054328145@chello.nl>
- <20100828223546.952988054@chello.nl>
+	Mon, 30 Aug 2010 13:31:18 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Arnd Bergmann <arnd@arndb.de>, Jeremy Fitzhardinge <jeremy@goop.org>
+CC: "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
+Subject: RE: hv block drivers
+Thread-Topic: hv block drivers
+Thread-Index: AQHLSFHcnkjYB5qn30uR65rFUVBeSJL6onMAgAAOS4D//47G0A==
+Date: Mon, 30 Aug 2010 17:31:10 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56224274727@TK5EX14MBXC118.redmond.corp.microsoft.com>
+References: <201008301643.42253.arnd@arndb.de> <4C7BD9A6.1090108@goop.org>
+ <201008301908.51521.arnd@arndb.de>
+In-Reply-To: <201008301908.51521.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100828223546.952988054@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 12:30:26AM +0200, Peter Zijlstra wrote:
-> By tracking a per-cpu load-avg for each cfs_rq and folding it into a
-> global task_group load on each tick we can rework tg_shares_up to be
-> strictly per-cpu.
 
-So tg->load_weight is supposed to represent more or less current task load
-across all cpus? I see only atomic_add() to it - which means it can only keep
-growing or remain constant - IOW capturing the historical load even since
-the task group was started? I was expecting it to reduce based on how a group 
-goes idle, otherwise 
+>On Monday 30 August 2010 Arnd Bergmann wrote: 
+>>On Monday 30 August 2010, Jeremy Fitzhardinge wrote:
+>> Have you investigated making virtio a scsi device?
+>
+>I doubt that there is much value in changing it now, and it's not something I'd be interested in working on.
+>For the HyperV drivers, it probably makes sense because half of it is trying to look 
+>like SCSI anyway, while the other half is trying to look like ATA. For the ATA driver, 
+>the obvious choice would be to make it a libata backend, though my impression 
+>from a brief look at the driver was that it's better to copy some of the libata code 
+>and integrate it into the hv SCSI driver.
 
-> +static void update_cfs_shares(struct cfs_rq *cfs_rq)
-> +{
-> +	struct task_group *tg;
-> +	struct sched_entity *se;
-> +	unsigned long load_weight, load, shares;
-> +
-> +	if (!cfs_rq)
-> +		return;
-> +
-> +	tg = cfs_rq->tg;
-> +	se = tg->se[cpu_of(rq_of(cfs_rq))];
-> +	if (!se)
-> +		return;
-> +
-> +	load = cfs_rq->load.weight;
-> +
-> +	load_weight = atomic_read(&tg->load_weight);
-> +	load_weight -= cfs_rq->load_contribution;
-> +	load_weight += load;
-> +
-> +	shares = (tg->shares * load);
-> +	if (load_weight)
-> +		shares /= load_weight;
+Arnd,
 
-this seem incorrect? Even though we have corrected tg->load_weight to reflect
-current load on 'cfs_rq', tg->load_weight still captures historical load on
-other cpus and hence could be a large #, making the division inaccurate?
+Thanks for following up! I was cleaning up some other part of the drivers (not related to IDE/SCSI) 
+And on my todo list is to clean up the IDE/SCSI drivers. I will go through the libata code and see
+If there is anything in there that I can use to make these drivers somewhat saner.
 
-Also I wonder how much of a hot spot tg->load_weight would become ..
+I am not sure if I can combine them into one yet, Hyper-V treats both drivers differently. And there
+Are some rumored changes to Hyper-V that would make these changes maybe even a bit more difficult.
 
-- vatsa
+I will use this mailing list to bounce ideas off of. 
+
+I still need to clean up your other suggestion as well, the static declarations :)
+
+For a more general question, When/if we make it out of staging, where should these drivers live?
+
+	drivers/hyper-v or drivers/scsi and drivers/ide.
+
+Is there a standard that is being followed?
+
+Hank.
+
