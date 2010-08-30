@@ -1,131 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab0H3KSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 06:18:24 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:51808 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab0H3KSX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 06:18:23 -0400
-To: Neil Brown <neilb@suse.de>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaurora@redhat.com,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-In-reply-to: <20100829144207.4fbf2713@notabene> (message from Neil Brown on
-	Sun, 29 Aug 2010 14:42:07 +1000)
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-References: <20100826183340.027591901@szeredi.hu>
-	<20100827170551.19616048@notabene>
-	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
-	<20100827213502.31af4a4c@notabene>
-	<E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu> <20100829144207.4fbf2713@notabene>
-Message-Id: <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 30 Aug 2010 12:18:11 +0200
+	id S1755206Ab0H3KSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 06:18:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51467 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755146Ab0H3KSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 06:18:39 -0400
+Message-ID: <4C7B867D.9080500@cn.fujitsu.com>
+Date: Mon, 30 Aug 2010 18:22:53 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 1/5] KVM: MMU: support disable/enable mmu audit dynamicly
+References: <4C78FA00.8090606@cn.fujitsu.com>
+In-Reply-To: <4C78FA00.8090606@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 Aug 2010, Neil Brown wrote:
-> On Fri, 27 Aug 2010 18:53:45 +0200
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
-> 
-> > On Fri, 27 Aug 2010, Neil Brown wrote:
-> > > I was wondering why you even bothered to fiddle st_ino.  Given
-> > > that lots of other things come from one fs or the other, having
-> > > the merged directories appear to be from the upper filesystem
-> > > doesn't seem like a problem.  I don't really care either way
-> > > though.
-> > 
-> > "rm -rf" complains if st_ino of a directory changes spontaneously.
-> 
-> I see...
-> Doesn't that mean that you must always present a merged-directory if the
-> lower directory exists.
+Add a r/w module parameter named 'mmu_audit', it can control audit enable/disable:
 
-Directory opens are never "forwarded" to the lower filesystem like
-other opens.  One reason is that lookups continuing from the file's
-path need to be on the union filesystem instead on one of the
-underlying filesystems.
+enable:
+echo 1 > /sys/module/kvm/parameters/mmu_audit 
 
-> Otherwise if you "rm -r" in a directory that only exists in the lower
-> filesystem, the inode will change on the first 'unlink' call.
-> ??
+disable:
+echo 0 > /sys/module/kvm/parameters/mmu_audit
 
-Right.
+This patch not change the logic
 
-Since the union filesystem doesn't have "real" inodes the st_ino on
-union directories are stable only as long as the inode is in the
-cache.  That's not a problem for "rm -rf" because the ancestor
-directory will always have a reference through one of its children.
+V2:
+  Using r/w module parameter instead of debugfs file
 
-> > I think it's best to leave that stuff until someone actually cares.
-> > The "people might find it useful" argument is not strong enough to put
-> > nontrivial effort into thinking about all the weird corner cases.
-> 
-> My thought on this is that in order to describe the behaviour of the
-> filesystem accurately you need to think about all the weird corner cases.
-> 
-> Then it becomes a question of: is it easier to document the weird behaviour,
-> or change the code so the documentation will be easier to understand?
-> Some cases will go one way, some the other.
-> 
-> But as you suggest this isn't urgent.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/Kconfig       |    7 +++
+ arch/x86/kvm/mmu.c         |   91 +++++++++++++++++++++++++++++++++++---------
+ arch/x86/kvm/mmutrace.h    |   19 +++++++++
+ arch/x86/kvm/paging_tmpl.h |    4 +-
+ 4 files changed, 101 insertions(+), 20 deletions(-)
 
-You didn't mention one possibility: add limitations that prevent the
-weird corner cases arising.  I believe this is the simplest option.
+diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+index 970bbd4..ddc131f 100644
+--- a/arch/x86/kvm/Kconfig
++++ b/arch/x86/kvm/Kconfig
+@@ -64,6 +64,13 @@ config KVM_AMD
+ 	  To compile this as a module, choose M here: the module
+ 	  will be called kvm-amd.
+ 
++config KVM_MMU_AUDIT
++	bool "Audit KVM MMU"
++	depends on KVM && TRACEPOINTS
++	---help---
++	 This option adds a R/W kVM module parameter 'mmu_audit', which allows
++	 audit  KVM MMU at runtime.
++
+ # OK, it's a little counter-intuitive to do this, but it puts it neatly under
+ # the virtualization menu.
+ source drivers/vhost/Kconfig
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 0bff4d5..8b750ff 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -49,15 +49,21 @@
+  */
+ bool tdp_enabled = false;
+ 
+-#undef MMU_DEBUG
++enum {
++	AUDIT_PRE_PAGE_FAULT,
++	AUDIT_POST_PAGE_FAULT,
++	AUDIT_PRE_PTE_WRITE,
++	AUDIT_POST_PTE_WRITE
++};
+ 
+-#undef AUDIT
++char *audit_point_name[] = {
++	"pre page fault",
++	"post page fault",
++	"pre pte write",
++	"post pte write"
++};
+ 
+-#ifdef AUDIT
+-static void kvm_mmu_audit(struct kvm_vcpu *vcpu, const char *msg);
+-#else
+-static void kvm_mmu_audit(struct kvm_vcpu *vcpu, const char *msg) {}
+-#endif
++#undef MMU_DEBUG
+ 
+ #ifdef MMU_DEBUG
+ 
+@@ -71,7 +77,7 @@ static void kvm_mmu_audit(struct kvm_vcpu *vcpu, const char *msg) {}
+ 
+ #endif
+ 
+-#if defined(MMU_DEBUG) || defined(AUDIT)
++#ifdef MMU_DEBUG
+ static int dbg = 0;
+ module_param(dbg, bool, 0644);
+ #endif
+@@ -2964,7 +2970,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	kvm_mmu_access_page(vcpu, gfn);
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	++vcpu->kvm->stat.mmu_pte_write;
+-	kvm_mmu_audit(vcpu, "pre pte write");
++	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
+ 	if (guest_initiated) {
+ 		if (gfn == vcpu->arch.last_pt_write_gfn
+ 		    && !last_updated_pte_accessed(vcpu)) {
+@@ -3037,7 +3043,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	}
+ 	mmu_pte_write_flush_tlb(vcpu, zap_page, remote_flush, local_flush);
+ 	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+-	kvm_mmu_audit(vcpu, "post pte write");
++	trace_kvm_mmu_audit(vcpu, AUDIT_POST_PTE_WRITE);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 	if (!is_error_pfn(vcpu->arch.update_pte.pfn)) {
+ 		kvm_release_pfn_clean(vcpu->arch.update_pte.pfn);
+@@ -3483,8 +3489,7 @@ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
+ }
+ EXPORT_SYMBOL_GPL(kvm_mmu_get_spte_hierarchy);
+ 
+-#ifdef AUDIT
+-
++#ifdef CONFIG_KVM_MMU_AUDIT
+ static const char *audit_msg;
+ 
+ typedef void (*inspect_spte_fn) (struct kvm *kvm, u64 *sptep);
+@@ -3699,18 +3704,68 @@ static void audit_write_protection(struct kvm_vcpu *vcpu)
+ 	}
+ }
+ 
+-static void kvm_mmu_audit(struct kvm_vcpu *vcpu, const char *msg)
++static void kvm_mmu_audit(void *ignore, struct kvm_vcpu *vcpu, int audit_point)
+ {
+-	int olddbg = dbg;
+-
+-	dbg = 0;
+-	audit_msg = msg;
++	audit_msg = audit_point_name[audit_point];
+ 	audit_rmap(vcpu);
+ 	audit_write_protection(vcpu);
+ 	if (strcmp("pre pte write", audit_msg) != 0)
+ 		audit_mappings(vcpu);
+ 	audit_sptes_have_rmaps(vcpu);
+-	dbg = olddbg;
+ }
+ 
++static bool mmu_audit;
++
++static void mmu_audit_enable(void)
++{
++	int ret;
++
++	if (mmu_audit)
++		return;
++
++	ret = register_trace_kvm_mmu_audit(kvm_mmu_audit, NULL);
++	WARN_ON(ret);
++
++	mmu_audit = true;
++}
++
++static void mmu_audit_disable(void)
++{
++	if (!mmu_audit)
++		return;
++
++	unregister_trace_kvm_mmu_audit(kvm_mmu_audit, NULL);
++	tracepoint_synchronize_unregister();
++	mmu_audit = false;
++}
++
++static int mmu_audit_set(const char *val, const struct kernel_param *kp)
++{
++	int ret;
++	unsigned long enable;
++
++	ret = strict_strtoul(val, 10, &enable);
++	if (ret < 0)
++		return -EINVAL;
++
++	switch (enable) {
++	case 0:
++		mmu_audit_disable();
++		break;
++	case 1:
++		mmu_audit_enable();
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static struct kernel_param_ops audit_param_ops = {
++	.set = mmu_audit_set,
++	.get = param_get_bool,
++};
++
++module_param_cb(mmu_audit, &audit_param_ops, &mmu_audit, 0644);
+ #endif
+diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+index 3aab0f0..b60b4fd 100644
+--- a/arch/x86/kvm/mmutrace.h
++++ b/arch/x86/kvm/mmutrace.h
+@@ -195,6 +195,25 @@ DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_prepare_zap_page,
+ 
+ 	TP_ARGS(sp)
+ );
++
++TRACE_EVENT(
++	kvm_mmu_audit,
++	TP_PROTO(struct kvm_vcpu *vcpu, int audit_point),
++	TP_ARGS(vcpu, audit_point),
++
++	TP_STRUCT__entry(
++		__field(struct kvm_vcpu *, vcpu)
++		__field(int, audit_point)
++	),
++
++	TP_fast_assign(
++		__entry->vcpu = vcpu;
++		__entry->audit_point = audit_point;
++	),
++
++	TP_printk("vcpu:%d %s", __entry->vcpu->cpu,
++		  audit_point_name[__entry->audit_point])
++);
+ #endif /* _TRACE_KVMMMU_H */
+ 
+ #undef TRACE_INCLUDE_PATH
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index a0f2feb..debe770 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -542,7 +542,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+ 	if (mmu_notifier_retry(vcpu, mmu_seq))
+ 		goto out_unlock;
+ 
+-	kvm_mmu_audit(vcpu, "pre page fault");
++	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PAGE_FAULT);
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
+ 			     level, &write_pt, pfn);
+@@ -554,7 +554,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+ 		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
+ 
+ 	++vcpu->stat.pf_fixed;
+-	kvm_mmu_audit(vcpu, "post page fault (fixed)");
++	trace_kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 
+ 	return write_pt;
+-- 
+1.7.0.4
 
-
-> > > 4/ The problem you mentioned about ->i_mutex which is taken during unlink
-> > >    being quasi-global could be eased somewhat by simply having a small pool
-> > >    of inodes and assigning them to dentries pseudo-randomly.  Or possibly
-> > >    having one 'file' inode per directory (that might be a bit wasteful
-> > >    though).
-> > 
-> > That's an idea, but I'm inclined just to add some hacks to the VFS to
-> > omit the locking if some inode flag is set.
-> 
-> Every new flag you add is another sign of weakness in the VFS....
-> 
-> Hmmm... vfs_unlink checks if the victim is a mountpoint, which suggests that
-> you can mount on a non-directory.  I'm not sure if I knew that.
-
-mount --bind has always worked on non-directories too.  It's a useful
-feature.
-
-> I wonder how this union fs would cope if a file in the upper filesystem were
-> mounted-on....I suspect it would work correctly.
-
-Mounts on the union fs work as expected, they don't care about inodes
-except that directories cannot cover non-directories and vice-versa.
-
-Mounts on the upper and lower fs are currenly ignored.  It's an
-interesting question whether union fs should handle mount trees on the
-underlying filesystems or not.
-
-
-> My comment about set-theory unions being commutative set me thinking.  I
-> really don't think "union" is the right name for this thing.  There is
-> nothing about it which really fits that proper definition of a union.
-> whiteouts mean that even the list of names in a directory is not the union of
-> the lists of names in the upper and lower directories.
-> "overlay" is a much more accurate name.  But union seems to be the name
-> that is most used.  I wonder if it is too late to change that.
-
-We could call it overlayfs.  People learn new names quickly :)
-
-> Also, dnotify (and presumably inotifiy) doesn't work reliably in the current
-> implementation.
-> It works for opaque directories and those which don't have a namesake in the
-> lower filesystem, but for others it never notifies of changes to any files in
-> the directory.
-> This is because dnotify will set an fsnotifier on the merged-directory in the
-> union-fs, but the change happens to the file in the upper fs, so
-> fsnotify_parent will only call notifiers on the parent in the upper fs.
-
-I think *notify will work correctly, every modificaton will be
-notified on both the union fs and the upper fs.  But I haven't tested
-this yet.
-
-Thanks,
-Miklos
