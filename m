@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab0H3Bfe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 21:35:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51407 "EHLO smtps.tip.net.au"
+	id S1754504Ab0H3Bft (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 21:35:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47237 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754170Ab0H3Bfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 21:35:33 -0400
-Date: Mon, 30 Aug 2010 11:35:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>
-Subject: linux-next: build failure after merge of the kvm tree
-Message-Id: <20100830113523.28e6fa9e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__30_Aug_2010_11_35_23_+1000_k2AbCgCp80YfFQO2"
+	id S1754484Ab0H3Bfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 21:35:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,289,1280732400"; 
+   d="scan'208";a="549897668"
+Message-ID: <4C7B0AF0.8040103@intel.com>
+Date: Mon, 30 Aug 2010 09:35:44 +0800
+From: Weidong Han <weidong.han@intel.com>
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+MIME-Version: 1.0
+To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [patch 1/3] x86, intr-remap: set redirection hint in the IRTE
+References: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__30_Aug_2010_11_35_23_+1000_k2AbCgCp80YfFQO2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Siddha, Suresh B wrote:
+> Currently the redirection hint in the interrupt-remapping table entry
+> is set to 0, which means the remapped interrupt is directed to the
+> processors listed in the destination. So in logical flat mode
+> in the presence of intr-remapping, this results in a single
+> interrupt multi-casted to multiple cpu's as specified by the destination
+> bit mask. But what we really want is to send that interrupt to one of the cpus
+> based on the lowest priority delivery mode.
+>
+> Set the redirection hint in the IRTE to '1' to indicate that we want
+> the remapped interrupt to be directed to only one of the processors
+> listed in the destination.
+>
+> This fixes the issue of same interrupt getting delivered to multiple cpu's
+> in the logical flat mode in the presence of interrupt-remapping. While
+> there is no functional issue observed with this behavior, this will
+> impact performance of such configurations (<=8 cpu's using logical flat
+> mode in the presence of interrupt-remapping)
+>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: Weidong Han <weidong.han@intel.com>
+> Cc: <stable@kernel.org> # [v2.6.32+]
+> ---
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index f1efeba..90f8a75 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -1392,6 +1392,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+>  		irte.dlvry_mode = apic->irq_delivery_mode;
+>  		irte.vector = vector;
+>  		irte.dest_id = IRTE_DEST(destination);
+> +		irte.redir_hint = 1;
+>  
+>  		/* Set source-id of interrupt request */
+>  		set_ioapic_sid(&irte, apic_id);
+> @@ -3343,6 +3344,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+>  		irte.dlvry_mode = apic->irq_delivery_mode;
+>  		irte.vector = cfg->vector;
+>  		irte.dest_id = IRTE_DEST(dest);
+> +		irte.redir_hint = 1;
+>  
+>  		/* Set source-id of interrupt request */
+>  		if (pdev)
+>
+>
+>   
+Hi Suresh,
 
-Hi all,
+Your patch always sets redir_hint to 1 for all delivery modes. Why not 
+check if it's lowest priority delivery mode before set redit_hint to 1?
 
-After merging the kvm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Regards,
+Weidong
 
-arch/powerpc/kernel/asm-offsets.c: In function 'main':
-arch/powerpc/kernel/asm-offsets.c:470: error: invalid use of undefined type=
- 'struct kvm_vcpu_arch_shared'
-arch/powerpc/kernel/asm-offsets.c:472: error: invalid use of undefined type=
- 'struct kvm_vcpu_arch_shared'
-arch/powerpc/kernel/asm-offsets.c:474: error: invalid use of undefined type=
- 'struct kvm_vcpu_arch_shared'
-arch/powerpc/kernel/asm-offsets.c:476: error: invalid use of undefined type=
- 'struct kvm_vcpu_arch_shared'
-arch/powerpc/kernel/asm-offsets.c:478: error: invalid use of undefined type=
- 'struct kvm_vcpu_arch_shared'
-arch/powerpc/kernel/asm-offsets.c:479: error: invalid use of undefined type=
- 'struct kvm_vcpu_arch_shared'
 
-Caused by commits 3623fdb1aa54678f73da95e797eb6e4756d4bd0e ("KVM: PPC:
-Convert MSR to shared page") and 158a244474a6620715c626d4647fec4d61aaeee7
-("KVM: PPC: Generic KVM PV guest support").
-
-I have used the kvm tree from next-20100827 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__30_Aug_2010_11_35_23_+1000_k2AbCgCp80YfFQO2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMewrbAAoJEDMEi1NhKgbsj8MH/2n7ax5uDVbQIVHpYuY8093/
-3b9b9FVmonpIs+jGH+C8BR/8zkmLeksZdFWrxevf+4N+JagfBfHviBvZtP6XriRm
-xNeSeT39pv/ZNZlM3FVy9ZhzwG528/148muoKdOVl6nqhsYC3deGSlpjgOVm8ziv
-QJ18lx4SSFUaQIJ/Q5LA0X3VdeRPsp+96Pi3FB6bIkYNlh3BYilkERgQK0kcA3mg
-HVYXf4l3PZIFIeorZPONEflIXOQUQVLcFRHXX2cMLZX/eoNaKfHMCGfrGNChQ0yd
-OvRDHhsjqHo01bnXb6g0w7tx1JgQPM0fk9kfws+3yM/8MjNFDT/T3EUc7ucHfdI=
-=Osus
------END PGP SIGNATURE-----
-
---Signature=_Mon__30_Aug_2010_11_35_23_+1000_k2AbCgCp80YfFQO2--
