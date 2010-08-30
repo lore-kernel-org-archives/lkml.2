@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab0H3JKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 05:10:40 -0400
-Received: from david.siemens.de ([192.35.17.14]:24636 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab0H3JKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 05:10:39 -0400
-Message-ID: <4C7B7572.3070406@siemens.com>
-Date: Mon, 30 Aug 2010 11:10:10 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [KVM timekeeping 13/35] Perform hardware_enable in CPU_STARTING
- callback
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-14-git-send-email-zamsden@redhat.com> <4C77E89E.3040106@siemens.com> <4C784DB8.5090105@redhat.com>
-In-Reply-To: <4C784DB8.5090105@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1754788Ab0H3JMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 05:12:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44290 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab0H3JMr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 05:12:47 -0400
+Subject: Re: [Bug #16399] perf failed with kernel 2.6.35-rc
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+In-Reply-To: <ByD_7B96czP.A.XtC.eeueMB@chimera>
+References: <c1_O4wHrlB.A.63.mbueMB@chimera>
+	 <ByD_7B96czP.A.XtC.eeueMB@chimera>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 30 Aug 2010 11:12:43 +0200
+Message-ID: <1283159563.1820.665.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zachary Amsden wrote:
-> On 08/27/2010 06:32 AM, Jan Kiszka wrote:
->> Zachary Amsden wrote:
->>    
->>> The CPU_STARTING callback was added upstream with the intention
->>> of being used for KVM, specifically for the hardware enablement
->>> that must be done before we can run in hardware virt.  It had
->>> bugs on the x86_64 architecture at the time, where it was called
->>> after CPU_ONLINE.  The arches have since merged and the bug is
->>> gone.
->>>      
->> What bugs are you referring to, or since which kernel version is
->> CPU_STARTING usable for KVM? I need to encode this into kvm-kmod.
->>    
+On Mon, 2010-08-30 at 01:13 +0200, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.34 and 2.6.35.
 > 
-> Prior to the x86_64 / i386 merge, CPU_STARTING didn't work the same way 
-> / exist in the x86_64 code... most of this is historical guesswork.  At 
-> some point, the 32/64 versions of the code in smpboot.c got merged and 
-> now it does.
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 > 
-> Binary searching around my tree shows this timeframe:
 > 
-> 2.6.11? - 2.6.23 : silver age ; i386 and x86_64 merge underway
->     |
-> 2.6.24 : bronze age ; i386 and x86_64 deprecated
->     |
-> 2.6.26 : iron age; smpboot_32.c / smpboot_64.c merge
->       \
->       2.6.28 : CPU_STARTING exists and first used
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16399
+> Subject		: perf failed with kernel 2.6.35-rc
+> Submitter	: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+> Date		: 2010-07-13 8:14 (48 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+> Message-ID	: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+> References	: http://marc.info/?l=linux-kernel&m=127900880212470&w=2
 > 
-> /me scratches head wondering how this affects operation on older kernels....
+> 
 
-I basically need to revert your patch on host kernels without
-CPU_STARTING and also on those where it might be broken. So I will set
-the barrier to 2.6.28 then.
+Should be fixed by:
 
-Thanks,
-Jan
+commit 351af0725e5222e35741011d1ea62215c1ed06db
+Author: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+Date:   Fri Aug 6 13:39:08 2010 +0800
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+    perf, x86: Fix Intel-nhm PMU programming errata workaround                                                                                                        
+                                                                                                                                                                      
+    Fix the Errata AAK100/AAP53/BD53 workaround, the officialy documented                                                                                             
+    workaround we implemented in:                                                                                                                                     
+                                                                                                                                                                      
+     11164cd: perf, x86: Add Nehelem PMU programming errata workaround                                                                                                
+                                                                                                                                                                      
+    doesn't actually work fully and causes a stuck PMU state                                                                                                          
+    under load and non-functioning perf profiling.                                                                                                                    
+                                                                                                                                                                      
+    A functional workaround was found by trial & error.                                                                                                               
+                                                                                                                                                                      
+    Affects all Nehalem-class Intel PMUs.                                                                                                                             
+                                                                                                                                                                      
+    Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>                                                                                                        
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>                                                                                                            
+    LKML-Reference: <1281073148.2125.63.camel@ymzhang.sh.intel.com>                                                                                                   
+    Cc: Arjan van de Ven <arjan@linux.intel.com>                                                                                                                      
+    Cc: "H. Peter Anvin" <hpa@zytor.com>                                                                                                                              
+    Cc: <stable@kernel.org> # .35.x                                                                                                                                   
+    Signed-off-by: Ingo Molnar <mingo@elte.hu> 
