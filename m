@@ -1,270 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab0H3LII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:08:08 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:40592 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755135Ab0H3LIH (ORCPT
+	id S1755347Ab0H3LTj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:19:39 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:32241 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab0H3LTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:08:07 -0400
-From: Arun Murthy <arun.murthy@stericsson.com>
-To: <sameo@linux.intel.com>, <riku.voipio@iki.fi>, <mike@compulab.co.il>
-Cc: <linux-kernel@vger.kernel.org>, <STEricsson_nomadik_linux@list.st.com>,
-        <arun.murthy@stericsson.com>
-Subject: [PATCH v2] u8500: ab8500-pwm: Add pwm driver
-Date: Mon, 30 Aug 2010 16:36:27 +0530
-Message-ID: <1283166387-19296-2-git-send-email-arun.murthy@stericsson.com>
-X-Mailer: git-send-email 1.7.2.dirty
-In-Reply-To: <1283166387-19296-1-git-send-email-arun.murthy@stericsson.com>
-References: <1283166387-19296-1-git-send-email-arun.murthy@stericsson.com>
+	Mon, 30 Aug 2010 07:19:38 -0400
+X-IronPort-AV: E=Sophos;i="4.56,292,1280707200"; 
+   d="scan'208";a="1602621"
+Date: Mon, 30 Aug 2010 12:20:17 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH 0/7] PV on HVM: receive interrupts as xen events
+Message-ID: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a Pulse Width Modulation driver for Analog Baseband
-Chip AB8500.
+Hi all,
+this patch series introduces some performance improvements for xen PV on
+HVM guests: interacting with the emulated APIC is slow because it causes
+traps in the hypervisor while receiving xen events using the vector callback
+mechanism allow us to skip all that. For this reason we remap interrupts
+and MSIs into xen pirqs so that from that point on we can receive them
+as xen events instead.
+This series is based on Konrad's pcifront series (not upstream yet):
 
-Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/misc/Kconfig      |    9 ++
- drivers/misc/Makefile     |    1 +
- drivers/misc/ab8500-pwm.c |  195 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 205 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/ab8500-pwm.c
+http://lkml.org/lkml/2010/8/4/374
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 9df5b75..fcf2e7f 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -62,6 +62,15 @@ config ATMEL_PWM
- 	  purposes including software controlled power-efficient backlights
- 	  on LCD displays, motor control, and waveform generation.
- 
-+config AB8500_PWM
-+	bool "AB8500 PWM support"
-+	depends on AB8500_CORE
-+	select HAVE_PWM
-+	help
-+	  This driver exports functions to enable/disble/config/free Pulse
-+	  Width Modulation in the Ananlog Baseband Chip AB8500.
-+	  It is used by led and backlight driver to control the intensity.
-+
- config ATMEL_TCLIB
- 	bool "Atmel AT32/AT91 Timer/Counter Library"
- 	depends on (AVR32 || ARCH_AT91)
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 255a80d..33bc441 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -35,3 +35,4 @@ obj-y				+= eeprom/
- obj-y				+= cb710/
- obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
- obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
-+obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
-diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
-new file mode 100644
-index 0000000..258a2be
---- /dev/null
-+++ b/drivers/misc/ab8500-pwm.c
-@@ -0,0 +1,195 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/pwm.h>
-+#include <linux/mfd/ab8500.h>
-+#include <linux/mfd/abx500.h>
-+
-+/*
-+ * PWM Out generators
-+ * Bank: 0x10
-+ */
-+#define AB8500_PWM_OUT_CTRL1_REG	0x60
-+#define AB8500_PWM_OUT_CTRL2_REG	0x61
-+#define AB8500_PWM_OUT_CTRL3_REG	0x62
-+#define AB8500_PWM_OUT_CTRL4_REG	0x63
-+#define AB8500_PWM_OUT_CTRL5_REG	0x64
-+#define AB8500_PWM_OUT_CTRL6_REG	0x65
-+#define AB8500_PWM_OUT_CTRL7_REG	0x66
-+
-+/* backlight driver constants */
-+#define ENABLE_PWM			1
-+#define DISABLE_PWM			0
-+
-+static struct device *dev;
-+
-+struct pwm_device {
-+	const char *label;
-+	unsigned int pwm_id;
-+};
-+
-+int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	int ret = 0;
-+	unsigned int higher_val, lower_val, pwm_val;
-+
-+	if (!dev)
-+		return -EAGAIN;
-+	/*
-+	 * get the first 8 bits that are be written to
-+	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
-+	 */
-+	lower_val = duty_ns & 0x00FF;
-+	/*
-+	 * get bits [9:10] that are to be written to
-+	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
-+	 */
-+	higher_val = ((duty_ns & 0x0300) >> 8);
-+	switch (pwm->pwm_id) {
-+	case 1:
-+		/* pwm-1 */
-+		ret = abx500_set_register_interruptible(dev,
-+					AB8500_MISC, AB8500_PWM_OUT_CTRL1_REG,
-+					(u8)lower_val);
-+		if (ret < 0)
-+			return ret;
-+		ret = abx500_set_register_interruptible(dev,
-+					AB8500_MISC, AB8500_PWM_OUT_CTRL2_REG,
-+					(u8)higher_val);
-+		break;
-+	case 2:
-+		/* pwm-2 */
-+		ret = abx500_set_register_interruptible(dev,
-+					AB8500_MISC, AB8500_PWM_OUT_CTRL3_REG,
-+					(u8)lower_val);
-+		if (ret < 0)
-+			return ret;
-+		ret = abx500_set_register_interruptible(dev,
-+					AB8500_MISC, AB8500_PWM_OUT_CTRL4_REG,
-+					(u8)higher_val);
-+		break;
-+	case 3:
-+		/* pwm-3 */
-+		ret = abx500_set_register_interruptible(dev,
-+					AB8500_MISC, AB8500_PWM_OUT_CTRL5_REG,
-+					(u8)lower_val);
-+		if (ret < 0)
-+			return ret;
-+		ret = abx500_set_register_interruptible(dev,
-+					AB8500_MISC, AB8500_PWM_OUT_CTRL6_REG,
-+					(u8)higher_val);
-+		break;
-+	default:
-+		dev_err(dev, "%s: invalid pwm entry = %d\n", __func__,
-+								pwm->pwm_id);
-+		return -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(pwm_config);
-+
-+int pwm_enable(struct pwm_device *pwm)
-+{
-+	int ret;
-+
-+	if (!dev)
-+		return -EAGAIN;
-+
-+	ret = abx500_mask_and_set_register_interruptible(dev,
-+				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
-+				1 << (pwm->pwm_id-1), ENABLE_PWM);
-+	if (ret < 0)
-+		dev_err(dev, "%s: Failed to disable PWM, Error %d\n",
-+							pwm->label, ret);
-+	return ret;
-+}
-+EXPORT_SYMBOL(pwm_enable);
-+
-+void pwm_disable(struct pwm_device *pwm)
-+{
-+	int ret;
-+
-+	ret = abx500_mask_and_set_register_interruptible(dev,
-+				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
-+				1 << (pwm->pwm_id-1), DISABLE_PWM);
-+	if (ret < 0)
-+		dev_err(dev, "%s: Failed to disable PWM, Error %d\n",
-+							pwm->label, ret);
-+	return;
-+}
-+EXPORT_SYMBOL(pwm_disable);
-+
-+struct pwm_device *pwm_request(int pwm_id, const char *label)
-+{
-+	struct pwm_device *pwm;
-+
-+	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-+	if (pwm == NULL) {
-+		dev_err(dev, "%s: failed to allocate memory\n", label);
-+		return NULL;
-+	}
-+
-+	pwm->label = label;
-+	pwm->pwm_id = pwm_id;
-+
-+	return pwm;
-+}
-+EXPORT_SYMBOL(pwm_request);
-+
-+void pwm_free(struct pwm_device *pwm)
-+{
-+	pwm_disable(pwm);
-+	kfree(pwm);
-+}
-+EXPORT_SYMBOL(pwm_free);
-+
-+static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
-+{
-+	/*
-+	 * Nothing to be done in probe, this is required to get the
-+	 * device which is required for ab8500 read and write
-+	 */
-+	dev = &pdev->dev;
-+	dev_info(dev, "pwm probe successful\n");
-+	return 0;
-+}
-+
-+static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
-+{
-+	dev = NULL;
-+	dev_info(&pdev->dev, "pwm driver removed\n");
-+	return 0;
-+}
-+
-+static struct platform_driver ab8500_pwm_driver = {
-+	.driver = {
-+		.name = "ab8500-pwm",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = ab8500_pwm_probe,
-+	.remove = __devexit_p(ab8500_pwm_remove),
-+};
-+
-+static int __init ab8500_pwm_init(void)
-+{
-+	return platform_driver_register(&ab8500_pwm_driver);
-+}
-+
-+static void __exit ab8500_pwm_exit(void)
-+{
-+	platform_driver_unregister(&ab8500_pwm_driver);
-+}
-+
-+subsys_initcall(ab8500_pwm_init);
-+module_exit(ab8500_pwm_exit);
-+MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
-+MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
-+MODULE_ALIAS("AB8500 PWM driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.2.dirty
+and requires a patch to xen and a patch to qemu-xen (just sent to
+xen-devel).
 
+
+The list of patches with diffstat follows:
+
+Jeremy Fitzhardinge (2):
+ xen: add xen hvm acpi_register_gsi variant
+ acpi: use indirect call to register gsi in different modes
+
+Stefano Stabellini (5):
+ xen: xen: map MSIs into pirqs
+ xen: support GSI -> pirq remapping in PV on HVM guests
+ xen: implement xen_hvm_register_pirq
+ xen: get the maximum number of pirqs from xen
+ xen: support pirq != irq
+
+
+ arch/x86/include/asm/acpi.h      |    3 +
+ arch/x86/include/asm/xen/pci.h   |   10 +++
+ arch/x86/kernel/acpi/boot.c      |   60 ++++++++++++++------
+ arch/x86/pci/xen.c               |  114 ++++++++++++++++++++++++++++++++++++++
+ drivers/pci/xen-pcifront.c       |    2 +-
+ drivers/xen/events.c             |  106 +++++++++++++++++++++++++++++++----
+ include/xen/events.h             |    3 +
+ include/xen/interface/features.h |    3 +
+ include/xen/interface/physdev.h  |   36 ++++++++++++
+ 9 files changed, 308 insertions(+), 29 deletions(-)
+
+
+A git tree with this series and Konrad's pcifront series on top of Linux
+2.6.36-rc1 is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.36-rc1-pvhvm-pirq-v3
+
+Cheers,
+
+Stefano Stabellini
