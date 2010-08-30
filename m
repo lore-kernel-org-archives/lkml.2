@@ -1,122 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab0H3GZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 02:25:37 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:44854 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab0H3GZg (ORCPT
+	id S1752870Ab0H3Gou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 02:44:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46765 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab0H3Got convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 02:25:36 -0400
-Date: Mon, 30 Aug 2010 08:24:38 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: akpm@linux-foundation.org, david-b@pacbell.net,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] gpio: sx150x: correct and refine reset-on-probe
- behavior.
-Message-ID: <20100830082438.52958d60@hyperion.delvare>
-In-Reply-To: <1283120302-6259-1-git-send-email-gbean@codeaurora.org>
-References: <1283120302-6259-1-git-send-email-gbean@codeaurora.org>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Aug 2010 02:44:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ISL5PkvALnasKNJeGgKqkb4RBxxOHc56oNTyfx8J/foX9ORu+3sZ55Gj6qFcQgyLLf
+         cW3aeV5a/HnNdkBeiTmFg6ESGM8tqGmhsMhj6L+XQ1otzttN96cjEs0IQhNte/wO3qh1
+         paNQcEUtg28jT7vdANzoGsQRRosIbW6Lt2p58=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinVQFHG1nh5XBd1tJ29fBDjQc=QRThXySiPWd2q@mail.gmail.com>
+References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
+	<1283011478-27237-7-git-send-email-brgerst@gmail.com>
+	<AANLkTi=G+=Hc3e8Z+HH6yJPGi4TM3TyYZ6UvdUpHyBsC@mail.gmail.com>
+	<AANLkTinVQFHG1nh5XBd1tJ29fBDjQc=QRThXySiPWd2q@mail.gmail.com>
+Date: Mon, 30 Aug 2010 09:44:48 +0300
+X-Google-Sender-Auth: 4IqQNG6wHnSIAQXG2YAbXQU_HA8
+Message-ID: <AANLkTikcZ1sWe4+j+Q6nw7ZNy-fi-=ojdvnZP5+N+QQY@mail.gmail.com>
+Subject: Re: [PATCH 06/11] x86-64: Fix %cs value in convert_from_fxsr()
+From: Pekka Enberg <penberg@kernel.org>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 Aug 2010 15:18:22 -0700, Gregory Bean wrote:
-> Replace the arbitrary software-reset call from the device-probe
-> method, because:
-> - It is defective.  To work correctly, it should be two byte writes,
->   not a single word write.  As it stands, it does nothing.
-> - Some devices with sx150x expanders installed have their NRESET pins
->   ganged on the same line, so resetting one causes the others to reset -
->   not a nice thing to do arbitrarily!
-> - The probe, usually taking place at boot, implies a recent hard-reset,
->   so a software reset at this point is just a waste of energy anyway.
-> 
-> Therefore, make it optional, defaulting to off, as this will match the
-> common case of probing at powerup and also matches the current
-> broken no-op behavior.
-> 
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst <brgerst@gmail.com> wrote:
+>>> While %ds still contains the userspace selector, %cs is KERNEL_CS
+>>> at this point.  Always get %cs from pt_regs.
+>>>
+>>> It actually is possible to get the correct segments for compat tasks,
+>>> but that involves using the [f]xsave instruction without a REX.W prefix.
+>>>
+>>> Signed-off-by: Brian Gerst <brgerst@gmail.com>
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+On Sun, Aug 29, 2010 at 2:41 PM, Pekka Enberg <penberg@kernel.org> wrote:
+>> It might be just me but the above description doesn't explain
+>> anything. What's the problem here? What is this fixing?
 
-> ---
->  drivers/gpio/sx150x.c      |   26 +++++++++++++++++++++-----
->  include/linux/i2c/sx150x.h |    4 ++++
->  2 files changed, 25 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/gpio/sx150x.c b/drivers/gpio/sx150x.c
-> index b42f42c..823559a 100644
-> --- a/drivers/gpio/sx150x.c
-> +++ b/drivers/gpio/sx150x.c
-> @@ -459,17 +459,33 @@ static int sx150x_init_io(struct sx150x_chip *chip, u8 base, u16 cfg)
->  	return err;
->  }
->  
-> -static int sx150x_init_hw(struct sx150x_chip *chip,
-> -			struct sx150x_platform_data *pdata)
-> +static int sx150x_reset(struct sx150x_chip *chip)
->  {
-> -	int err = 0;
-> +	int err;
->  
-> -	err = i2c_smbus_write_word_data(chip->client,
-> +	err = i2c_smbus_write_byte_data(chip->client,
->  					chip->dev_cfg->reg_reset,
-> -					0x3412);
-> +					0x12);
->  	if (err < 0)
->  		return err;
->  
-> +	err = i2c_smbus_write_byte_data(chip->client,
-> +					chip->dev_cfg->reg_reset,
-> +					0x34);
-> +	return err;
-> +}
-> +
-> +static int sx150x_init_hw(struct sx150x_chip *chip,
-> +			struct sx150x_platform_data *pdata)
-> +{
-> +	int err = 0;
-> +
-> +	if (pdata->reset_during_probe) {
-> +		err = sx150x_reset(chip);
-> +		if (err < 0)
-> +			return err;
-> +	}
-> +
->  	err = sx150x_i2c_write(chip->client,
->  			chip->dev_cfg->reg_misc,
->  			0x01);
-> diff --git a/include/linux/i2c/sx150x.h b/include/linux/i2c/sx150x.h
-> index ee3049c..52baa79 100644
-> --- a/include/linux/i2c/sx150x.h
-> +++ b/include/linux/i2c/sx150x.h
-> @@ -63,6 +63,9 @@
->   *            IRQ lines will appear.  Similarly to gpio_base, the expander
->   *            will create a block of irqs beginning at this number.
->   *            This value is ignored if irq_summary is < 0.
-> + * @reset_during_probe: If set to true, the driver will trigger a full
-> + *                      reset of the chip at the beginning of the probe
-> + *                      in order to place it in a known state.
->   */
->  struct sx150x_platform_data {
->  	unsigned gpio_base;
-> @@ -73,6 +76,7 @@ struct sx150x_platform_data {
->  	u16      io_polarity;
->  	int      irq_summary;
->  	unsigned irq_base;
-> +	bool     reset_during_probe;
->  };
->  
->  #endif /* __LINUX_I2C_SX150X_H */
+On Mon, Aug 30, 2010 at 3:25 AM, Brian Gerst <brgerst@gmail.com> wrote:
+> The %cs segment being reported to a compat task is flat out wrong.  It
+> is getting KERNEL_CS when it should be some userspace segment.  The
+> code segment may still be wrong, because the %cs in pt_regs may not
+> have been the segment where the instruction that flagged the exception
+> executed from.  That could be fixed by using fxsave without a REX.W
+> prefix when saving the state of compat tasks, which would save the
+> segment and 32-bit offset instead of the 64-bit offset for the code
+> and data pointers.  This is such a corner case that it probably isn't
+> worth putting much effort into fixing unless someone demonstrates a
+> real need for it.
 
-
--- 
-Jean Delvare
+I sort of was able to deduce most of that from the original
+description. However, I still don't quite understand what the problem
+causes. Just a wrong cs reported to a signal handler or something
+else?
