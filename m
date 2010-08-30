@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab0H3DNE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 23:13:04 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:45735 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab0H3DND (ORCPT
+	id S1754613Ab0H3DUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 23:20:16 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43111 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab0H3DUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 23:13:03 -0400
-Date: Mon, 30 Aug 2010 05:12:20 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] mm: pageblock-flags.h: dead code removed
-To: linux-mm@kvack.org
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>
-Message-id: <ced62161886b800e8f0706cc6a17786d69f4200a.1283137455.git.mina86@mina86.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
+	Sun, 29 Aug 2010 23:20:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=nj5ypvuBKA7s5JU+azyMpHSZCF6PEmoxcASIzOG8qpvS77DoriEsZO+Y468tEUV/gz
+         6/37ghLSxc+jd7960WQjvY2thyulYAZCaj0NeMeXEZpeIuMtjN+FBfVl+9umX4bwNwSU
+         AhRnMBnMejHONOHgBg2GQRTK1uut802ZfsDI0=
+Message-ID: <4C7B2379.7040705@lwfinger.net>
+Date: Sun, 29 Aug 2010 22:20:25 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
+Subject: New staging driver for Realtek RTL8192 USB device
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+Greg,
 
-This commit removes two unused macros one of which was, as
-a matter of fact, invalid.
+Realtek has finally given me permission to submit the driver named r8712u for
+the RTL8192 USB device.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- include/linux/pageblock-flags.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+My first question is how do you want to get the info. I have it in a git tree at
+kernel.org if you want to pull from there, otherwise, I can generate a single
+massive patch, or a set of smaller patches. Please advise me.
 
-diff --git a/include/linux/pageblock-flags.h b/include/linux/pageblock-flags.h
-index e8c0612..0949302 100644
---- a/include/linux/pageblock-flags.h
-+++ b/include/linux/pageblock-flags.h
-@@ -65,9 +65,4 @@ unsigned long get_pageblock_flags_group(struct page *page,
- void set_pageblock_flags_group(struct page *page, unsigned long flags,
- 					int start_bitidx, int end_bitidx);
- 
--#define get_pageblock_flags(page) \
--			get_pageblock_flags_group(page, 0, NR_PAGEBLOCK_BITS-1)
--#define set_pageblock_flags(page) \
--			set_pageblock_flags_group(page, 0, NR_PAGEBLOCK_BITS-1)
--
- #endif	/* PAGEBLOCK_FLAGS_H */
--- 
-1.7.1
+A second question will be how to handle the driver for this device that is now
+in drivers/staging/rtl8192su/. My suggestion would be to remove it, but I'll
+leave that to you.
 
-
+Larry
