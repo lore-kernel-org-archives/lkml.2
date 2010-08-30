@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab0H3OYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 10:24:14 -0400
-Received: from plane.gmane.org ([80.91.229.3]:55558 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752438Ab0H3OYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 10:24:13 -0400
-Date: Mon, 30 Aug 2010 16:21:50 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Larry Finger 
-	<public-Larry.Finger-tQ5ms3gMjBLk1uMJSBkQmQ@plane.gmane.org>
-Newsgroups: gmane.linux.kernel.kernel-testers,gmane.linux.kernel
-Cc: "Rafael J. Wysocki" <public-rjw-KKrjLPT3xs0@plane.gmane.org>,
-        Linux Kernel Mailing List 
-	<public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org>,
-        Kernel Testers List 
-	<public-kernel-testers-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org>,
-        Maciej Rutecki 
-	<public-maciej.rutecki-Re5JQEeQqe8AvxtiuMwx3w@plane.gmane.org>,
-        archman 
-	<public-spermmail001-/E1597aS9LQAvxtiuMwx3w@plane.gmane.org>
-Subject: Re: [Bug #16505] 2.6.34.2 breaks b43
-Message-ID: <20100830162150.30a73403@schatten.dmk.lab>
-In-Reply-To: <4C7AFE2C.1080204@lwfinger.net>
-References: <c1_O4wHrlB.A.63.mbueMB@chimera>
-	<ByD_7B96czP.A.h7B.DdueMB@chimera>
-	<4C7AFE2C.1080204@lwfinger.net>
-X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753635Ab0H3Odd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 10:33:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22554 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab0H3Odb (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 30 Aug 2010 10:33:31 -0400
+Date: Mon, 30 Aug 2010 10:32:06 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: pci_iommu_init() crash
+Message-ID: <20100830143206.GB5652@phenom.dumpdata.com>
+References: <20100829173216.GA19896@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100829173216.GA19896@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sun, 29 Aug 2010 19:41:16 -0500
-Larry Finger <Larry.Finger-tQ5ms3gMjBLk1uMJSBkQmQ@public.gmane.org>
-wrote:
-
-> On 08/29/2010 06:13 PM, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.34 and 2.6.35.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16505
-> > Subject		: 2.6.34.2 breaks b43
-> > Submitter	: archman <spermmail001-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
-> > Date		: 2010-08-03 23:53 (27 days old)
-> > Handled-By	: Larry Finger <Larry.Finger-tQ5ms3gMjBLk1uMJSBkQmQ@public.gmane.org>
-> > Patch		: https://bugzilla.kernel.org/attachment.cgi?id=27335
+On Sun, Aug 29, 2010 at 07:32:16PM +0200, Ingo Molnar wrote:
 > 
-> This one was fixed in 2.6.34.3. Mainline was OK - only the patches to stable
-> were affected. The bug should be closed.
+> FYI, -tip testing found a new boot crash, caused by the new x86/iommu 
+> commits:
 > 
-> Larry
+> 6f44d03: x86, doc: Adding comments about .iommu_table and its neighbors.
+> ee1f284: x86, iommu: Utilize the IOMMU_INIT macros functionality.
+> 4db77ff: x86, VT-d: Make Intel VT-d IOMMU use IOMMU_INIT_* macros.
+> 22e6daf: x86, GART/AMD-VI: Make AMD GART and IOMMU use IOMMU_INIT_* macros.
+> d2aa232: x86, calgary: Make Calgary IOMMU use IOMMU_INIT_* macros.
+> 5cb3a26: x86, xen-swiotlb: Make Xen-SWIOTLB use IOMMU_INIT_* macros.
+> c116c54: x86, swiotlb: Make SWIOTLB use IOMMU_INIT_* macros.
+> efa631c: x86, swiotlb: Simplify SWIOTLB pci_swiotlb_detect routine.
+> 5bef80a: x86, iommu: Add proper dependency sort routine (and sanity check).
+> 480125b: x86, iommu: Make all IOMMU's detection routines return a value.
+> 0444ad9: x86, iommu: Add IOMMU_INIT macros, .iommu_table section, and iommu_table_entry structure
 > 
+> Crashlog is below, config attached. I've excluded x86/iommu from 
+> tip:master for now.
 
-In the bugzilla entry someone mentioned that 2.6.32.y need this
-too?
-
-Cheers,
-Flo
+Fixing it right now. Thanks for the e-mail.
 
