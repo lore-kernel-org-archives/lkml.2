@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0H3KW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 06:22:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52832 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754889Ab0H3KWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 06:22:24 -0400
-Message-ID: <4C7B8759.60900@cn.fujitsu.com>
-Date: Mon, 30 Aug 2010 18:26:33 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 5/5] KVM: MMU: lower the aduit frequency
-References: <4C78FA00.8090606@cn.fujitsu.com> <4C7B867D.9080500@cn.fujitsu.com>
-In-Reply-To: <4C7B867D.9080500@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755287Ab0H3KZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 06:25:07 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:35147 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754889Ab0H3KZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 06:25:05 -0400
+Subject: [PATCH] wireless extensions: fix kernel heap content leak
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Joe Perches <joe@perches.com>,
+        Tejun Heo <tj@kernel.org>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Jean Tourrilhes <jt@hpl.hp.com>
+In-Reply-To: <1283162341.3691.45.camel@jlt3.sipsolutions.net>
+References: <20100827210240.GC4703@outflux.net>
+	 <20100827212254.GB32275@bougret.hpl.hp.com>
+	 <1283158058.3691.10.camel@jlt3.sipsolutions.net>
+	 <1283158704.3691.11.camel@jlt3.sipsolutions.net>
+	 <1283162341.3691.45.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 Aug 2010 12:24:54 +0200
+Message-ID: <1283163894.3691.48.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The audit is very high overhead, so we need lower the frequency to assure the guest running
+From: Johannes Berg <johannes.berg@intel.com>
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Wireless extensions have an unfortunate, undocumented
+requirement which requires drivers to always fill
+iwp->length when returning a successful status. When
+a driver doesn't do this, it leads to a kernel heap
+content leak when userspace offers a larger buffer
+than would have been necessary.
+
+Arguably, this is a driver bug, as it should, if it
+returns 0, fill iwp->length, even if it separately
+indicated that the buffer contents was not valid.
+
+However, we can also at least avoid the memory content
+leak if the driver doesn't do this by setting the iwp
+length to max_tokens, which then reflects how big the
+buffer is that the driver may fill, regardless of how
+big the userspace buffer is.
+
+To illustrate the point, this patch also fixes a
+corresponding cfg80211 bug (since this requirement
+isn't documented nor was ever pointed out by anyone
+during code review, I don't trust all drivers nor
+all cfg80211 handlers to implement it correctly).
+
+Cc: stable@kernel.org [all the way back]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 ---
- arch/x86/kvm/mmu_audit.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Tested all four cases now (both hunks of the patch present/not present)
+and reproduced the problem in the unpatched case.
 
-diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-index 3bde186..bd2b1be 100644
---- a/arch/x86/kvm/mmu_audit.c
-+++ b/arch/x86/kvm/mmu_audit.c
-@@ -17,6 +17,8 @@
-  *
-  */
+ net/wireless/wext-compat.c |    3 +++
+ net/wireless/wext-core.c   |   16 ++++++++++++++++
+ 2 files changed, 19 insertions(+)
+
+--- wireless-testing.orig/net/wireless/wext-core.c	2010-08-30 12:04:57.000000000 +0200
++++ wireless-testing/net/wireless/wext-core.c	2010-08-30 12:10:35.000000000 +0200
+@@ -782,6 +782,22 @@ static int ioctl_standard_iw_point(struc
+ 		}
+ 	}
  
-+#include <linux/ratelimit.h>
++	if (IW_IS_GET(cmd) && !(descr->flags & IW_DESCR_FLAG_NOMAX)) {
++		/*
++		 * If this is a GET, but not NOMAX, it means that the extra
++		 * data is not bounded by userspace, but by max_tokens. Thus
++		 * set the length to max_tokens. This matches the extra data
++		 * allocation.
++		 * The driver should fill it with the number of tokens it
++		 * provided, and it may check iwp->length rather than having
++		 * knowledge of max_tokens. If the driver doesn't change the
++		 * iwp->length, this ioctl just copies back max_token tokens
++		 * filled with zeroes. Hopefully the driver isn't claiming
++		 * them to be valid data.
++		 */
++		iwp->length = descr->max_tokens;
++	}
 +
- static const char *audit_msg;
+ 	err = handler(dev, info, (union iwreq_data *) iwp, extra);
  
- typedef void (*inspect_spte_fn) (struct kvm_vcpu *vcpu, u64 *sptep, int level);
-@@ -228,6 +230,11 @@ static void audit_vcpu_spte(struct kvm_vcpu *vcpu)
- 
- static void kvm_mmu_audit(void *ignore, struct kvm_vcpu *vcpu, int audit_point)
+ 	iwp->length += essid_compat;
+--- wireless-testing.orig/net/wireless/wext-compat.c	2010-08-30 12:04:57.000000000 +0200
++++ wireless-testing/net/wireless/wext-compat.c	2010-08-30 12:11:32.000000000 +0200
+@@ -1420,6 +1420,9 @@ int cfg80211_wext_giwessid(struct net_de
  {
-+	static DEFINE_RATELIMIT_STATE(ratelimit_state, 5 * HZ, 10);
+ 	struct wireless_dev *wdev = dev->ieee80211_ptr;
+ 
++	data->flags = 0;
++	data->length = 0;
 +
-+	if (!__ratelimit(&ratelimit_state))
-+		return;
-+
- 	audit_msg = audit_point_name[audit_point];
- 	audit_all_active_sps(vcpu->kvm);
- 	audit_vcpu_spte(vcpu);
--- 
-1.7.0.4
+ 	switch (wdev->iftype) {
+ 	case NL80211_IFTYPE_ADHOC:
+ 		return cfg80211_ibss_wext_giwessid(dev, info, data, ssid);
+
 
