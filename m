@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab0H3M2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 08:28:14 -0400
-Received: from relay.atmel.no ([80.232.32.139]:52450 "EHLO relay.atmel.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755459Ab0H3M2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 08:28:13 -0400
-Date: Mon, 30 Aug 2010 14:27:27 +0200
-From: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [patch 02/10] ioctl: Use asm-generic/ioctls.h on avr32 (enables
- termiox)
-Message-ID: <20100830142727.09830279@hskinnemoen-d830>
-In-Reply-To: <20100820211538.179970218@suse.com>
-References: <20100820211401.651509182@suse.com>
-	<20100820211538.179970218@suse.com>
-Organization: Atmel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755574Ab0H3M2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 08:28:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61093 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459Ab0H3M2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 08:28:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 4/5] tty/hw: move hardware drivers to drivers/tty/hw
+Date: Mon, 30 Aug 2010 14:28:34 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Mike Frysinger <vapier.adi@gmail.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <201008301055.49600.arnd@arndb.de> <20100830115428.24e76ae5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100830115428.24e76ae5@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008301428.34979.arnd@arndb.de>
+X-Provags-ID: V02:K0:exRLbStX9uCqE0VbtzRze4vlXzOH2DmlSFAzrq7/XAV
+ hWj7jpifHmecttEr25EOXbCw8XANWlvnk+oTx6JTNOCusOYPSS
+ SiG6mn4aEztTQ3FoXeGAizSl/depExXG9X3zamt7bkut2Y6VH6
+ o2+N9MjxjyAZtjlWne/s32kESwLccZ5m47qsaiCYgixxjXyreQ
+ fjjnlM3kI+rcIVLUrXW5g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Mahoney <jeffm@suse.com> wrote:
-> This patch converts avr32 to use asm-generic/ioctls.h instead of its
-> own version.
+On Monday 30 August 2010, Alan Cox wrote:
+> > My impression was that it should actually be converted into an hvc
+> > driver as a cleanup and moved to drivers/tty/hvc. It can probably
+> > get reduced to one third of its size if you do that.
 > 
-> The differences between the arch-specific version and the generic
-> version are as follows:
-> 
-> - The generic version adds support for termiox
-> 
-> Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> Not sure it makes sense - hvc seems the wrong abstraction.
 
-Makes sense to me. Perhaps not so good that it adds extra code for
-termiox, but then again, I guess it might be useful some day, as the
-USART hardware has a lot of extra modes that the current atmel_serial
-driver doesn't support.
+It seems to be very similar to hvc_tile.c in purpose, which is
+the most trivial driver we have. Why would that not work?
 
-Acked-by: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+Most of bfin_jtag_comm is about interfacing with the tty layer
+and providing a kernel thread to do the polling, which is exactly
+what hvc_console.c does.
+
+	Arnd
