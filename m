@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0H3Mmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 08:42:51 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58506 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751920Ab0H3Mmu (ORCPT
+	id S1754859Ab0H3Mob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 08:44:31 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53522 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612Ab0H3Mo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 08:42:50 -0400
-Date: Mon, 30 Aug 2010 14:00:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/5] tty: move stuff around
-Message-ID: <20100830140054.294a15f1@lxorguk.ukuu.org.uk>
-In-Reply-To: <201008301415.56934.arnd@arndb.de>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
-	<201008301337.27672.arnd@arndb.de>
-	<4C7B9C1D.9030207@suse.cz>
-	<201008301415.56934.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Aug 2010 08:44:28 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(ze80izbb2cK1432N98dNzz1202hzzz32i2a8h5bem5bfn61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7YTXX-01-F8S-02
+X-M-MSG: 
+Date: Mon, 30 Aug 2010 14:41:58 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 2/4] sh: Accessor functions for the sh_pmu state
+Message-ID: <20100830124158.GY22783@erda.amd.com>
+References: <cover.1282848651.git.matt@console-pimps.org>
+ <f259830dbccb084d27d127676b979d9cb502e36f.1282848651.git.matt@console-pimps.org>
+ <20100827134301.GL22783@erda.amd.com>
+ <20100827191745.GA7258@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100827191745.GA7258@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Aug 2010 14:15:56 +0200
-Arnd Bergmann <arnd@arndb.de> wrote:
+On 27.08.10 15:17:45, Matt Fleming wrote:
 
-> On Monday 30 August 2010, Jiri Slaby wrote:
-> > On 08/30/2010 01:37 PM, Arnd Bergmann wrote:
-> > > These are the drivers I was planning to move:
-> > > +obj-$(CONFIG_CYCLADES)         += cyclades.o
-> > 
-> > There are some users still with CYY cards. No CYZ card users known to me.
-> > 
-> > > +obj-$(CONFIG_MOXA_INTELLIO)    += moxa.o
-> > 
-> > Maybe few users left.
-> > 
-> > > +obj-$(CONFIG_MOXA_SMARTIO)     += mxser.o
-> > 
-> > Still in use. (And supports relatively new devices; not the PCI-e ones
-> > though.)
+> > > --- a/arch/sh/kernel/perf_event.c
+> > > +++ b/arch/sh/kernel/perf_event.c
+> > > @@ -60,6 +60,19 @@ static inline int sh_pmu_initialized(void)
+> > >  }
+> > >  
+> > >  /*
+> > > + * Return the number of events for the current sh_pmu.
+> > > + */
+> > > +int sh_pmu_num_events(void)
+> > > +{
+> > > +	return sh_pmu->num_events;
+> > > +}
+> > > +
+> > > +const char *sh_pmu_name(void)
+> > > +{
+> > > +	return sh_pmu->name;
+> > > +}
+
+> > This accessor functions should be generic for all architectures.
 > 
-> Are they all candidates for a conversion to serial_core then?
-> Or are they not sufficiently 8250-like?
+> This isn't going to work. ARM uses an integer ID whereas SH uses a
+> string name. This is specific to an architecture and making it generic
+> would probably involve some abstraction layer.
 
-Please don't convert stuff to serial_core - it's got some horrible
-problems with adapting to the new locking model, its buffering model
-pre-dates kfifo and all in all serial_core needs a rewrite not more users.
+Perf should provide the interface to detect the number of counters
+(btw. *num_events is wrong) and the name of the pmu. The information
+is part of perf and thus the functions accessing it should be part of
+perf too, not oprofile.
+
+We also need generic functions, because we want to have a generic
+oprofile-perf driver.
+
+I don't see that this is hard to implement. We could add function
+stubs returning an error or invalid value using the __weak attribute
+and implement it for those architectures where we need it.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
