@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab0H3EEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 00:04:21 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:57996 "EHLO lunge.queued.net"
+	id S1752312Ab0H3EF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 00:05:57 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:58008 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721Ab0H3EET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 00:04:19 -0400
-Date: Mon, 30 Aug 2010 00:06:14 -0400
+	id S1750724Ab0H3EF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 00:05:56 -0400
+Date: Mon, 30 Aug 2010 00:07:51 -0400
 From: Andres Salomon <dilinger@queued.net>
 To: devicetree-discuss@lists.ozlabs.org
 Cc: sparclinux@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
@@ -15,9 +15,8 @@ Cc: sparclinux@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
         linux-kernel@vger.kernel.org, davem@davemloft.net,
         grant.likely@secretlab.ca,
         Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
-Subject: [PATCH 8/9] x86: of: irq additions to make drivers/of/* build on
- x86
-Message-ID: <20100830000614.0d571f10@debxo>
+Subject: [PATCH 9/9] x86: OLPC: add OLPC device-tree support
+Message-ID: <20100830000751.2b845d05@debxo>
 In-Reply-To: <20100829235100.6dcedcb8@debxo>
 References: <20100628215407.2017bf2f@debian>
 	<20100829235100.6dcedcb8@debxo>
@@ -30,71 +29,303 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This functionality overlaps with patches previously submitted
-by Stephen Neuendorffer.  I don't care whose eventually get applied,
-so long as drivers/of/* becomes buildable on x86.
+Make use of PROC_DEVICETREE to export the tree, and sparc's PROMTREE code to
+call into OLPC's Open Firmware to build the tree.
+
+This also adds an init hook to proc_device_tree_init so that we can ensure
+the device tree has been built prior to the proc_root_init stuff attempting
+to populate /proc/device-tree.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- arch/x86/include/asm/irq.h |    5 +++++
- arch/x86/kernel/irq.c      |    8 ++++++++
- include/linux/of_irq.h     |    1 +
- 3 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig                |    2 +
+ arch/x86/include/asm/olpc_ofw.h |    4 +
+ arch/x86/include/asm/prom.h     |    1 +
+ arch/x86/kernel/Makefile        |    1 +
+ arch/x86/kernel/olpc_ofw.c      |    8 ++
+ arch/x86/kernel/olpc_prom.c     |  152 +++++++++++++++++++++++++++++++++++++++
+ drivers/of/pdt.c                |    2 +
+ fs/proc/proc_devtree.c          |    4 +
+ include/linux/of_pdt.h          |    1 +
+ 9 files changed, 175 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/prom.h
+ create mode 100644 arch/x86/kernel/olpc_prom.c
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 5458380..0a656b9 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -10,6 +10,11 @@
- #include <asm/apicdef.h>
- #include <asm/irq_vectors.h>
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cea0cd9..7d4ef72 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2069,6 +2069,8 @@ config OLPC_OPENFIRMWARE
+ 	bool "Support for OLPC's Open Firmware"
+ 	depends on !X86_64 && !X86_PAE
+ 	default y if OLPC
++	select OF
++	select OF_PROMTREE
+ 	help
+ 	  This option adds support for the implementation of Open Firmware
+ 	  that is used on the OLPC XO-1 Children's Machine.
+diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
+index 08fde47..13075df 100644
+--- a/arch/x86/include/asm/olpc_ofw.h
++++ b/arch/x86/include/asm/olpc_ofw.h
+@@ -28,4 +28,8 @@ static inline void setup_olpc_ofw_pgd(void) { }
  
-+#define NO_IRQ 0
+ #endif /* !CONFIG_OLPC_OPENFIRMWARE */
+ 
++#ifdef CONFIG_PROC_DEVICETREE
++extern void olpc_prom_build_devicetree(void);
++#endif /* CONFIG_PROC_DEVICETREE */
 +
-+/* Even though we don't support this, supply it to appease OF */
-+static inline void irq_dispose_mapping(unsigned int virq) { }
-+
- static inline int irq_canonicalize(int irq)
- {
- 	return ((irq == 2) ? 9 : irq);
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 91fd0c7..d53f639 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -7,6 +7,7 @@
- #include <linux/seq_file.h>
- #include <linux/smp.h>
- #include <linux/ftrace.h>
+ #endif /* _ASM_X86_OLPC_OFW_H */
+diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
+new file mode 100644
+index 0000000..b4ec95f
+--- /dev/null
++++ b/arch/x86/include/asm/prom.h
+@@ -0,0 +1 @@
++/* dummy prom.h; here to make linux/of.h's #includes happy */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 0925676..3d7e535 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -105,6 +105,7 @@ scx200-y			+= scx200_32.o
+ 
+ obj-$(CONFIG_OLPC)		+= olpc.o
+ obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
++obj-$(CONFIG_PROC_DEVICETREE)	+= olpc_prom.o
+ obj-$(CONFIG_X86_MRST)		+= mrst.o
+ 
+ microcode-y				:= microcode_core.o
+diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
+index 3218aa7..6c4d243 100644
+--- a/arch/x86/kernel/olpc_ofw.c
++++ b/arch/x86/kernel/olpc_ofw.c
+@@ -1,5 +1,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
 +#include <linux/of.h>
++#include <linux/of_pdt.h>
+ #include <linux/init.h>
+ #include <asm/page.h>
+ #include <asm/setup.h>
+@@ -38,6 +40,12 @@ void __init setup_olpc_ofw_pgd(void)
+ 	/* implicit optimization barrier here due to uninline function return */
  
- #include <asm/apic.h>
- #include <asm/io_apic.h>
-@@ -275,6 +276,13 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
- 
- EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
- 
-+unsigned int irq_create_of_mapping(struct device_node *controller,
-+		const u32 *intspec, unsigned int intsize)
-+{
-+	return intspec[0] + 1;
-+}
-+EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+ 	early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
 +
- #ifdef CONFIG_HOTPLUG_CPU
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
- void fixup_irqs(void)
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 5929781..05ad27b 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -5,6 +5,7 @@
- struct of_irq;
- #include <linux/types.h>
- #include <linux/errno.h>
-+#include <linux/irq.h>
- #include <linux/ioport.h>
- #include <linux/of.h>
++#ifdef CONFIG_PROC_DEVICETREE
++	/* OFW set up succesfully; use it for the device tree */
++	of_pdt_init_devicetree = olpc_prom_build_devicetree;
++#endif
++
+ }
  
+ int __olpc_ofw(const char *name, int nr_args, const void **args, int nr_res,
+diff --git a/arch/x86/kernel/olpc_prom.c b/arch/x86/kernel/olpc_prom.c
+new file mode 100644
+index 0000000..fb04d8a
+--- /dev/null
++++ b/arch/x86/kernel/olpc_prom.c
+@@ -0,0 +1,152 @@
++/*
++ * olpc_prom.c: OLPC-specific OFW device tree support code.
++ *
++ * Paul Mackerras	August 1996.
++ * Copyright (C) 1996-2005 Paul Mackerras.
++ *
++ *  Adapted for 64bit PowerPC by Dave Engebretsen and Peter Bergner.
++ *    {engebret|bergner}@us.ibm.com
++ *
++ *  Adapted for sparc by David S. Miller davem@davemloft.net
++ *  Adapted for x86/OLPC by Andres Salomon <dilinger@queued.net>
++ *
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/of_pdt.h>
++#include <asm/olpc_ofw.h>
++
++static phandle __init olpc_prom_getsibling(phandle node)
++{
++	const void *args[] = { (void *)node };
++	void *res[] = { &node };
++
++	if (node == -1)
++		return 0;
++
++	if (olpc_ofw("peer", args, res) || node == -1)
++		return 0;
++
++	return node;
++}
++
++static phandle __init olpc_prom_getchild(phandle node)
++{
++	const void *args[] = { (void *)node };
++	void *res[] = { &node };
++
++	if (node == -1)
++		return 0;
++
++	if (olpc_ofw("child", args, res) || node == -1) {
++		pr_err("PROM: %s: fetching child failed!\n", __func__);
++		return 0;
++	}
++
++	return node;
++}
++
++static int __init olpc_prom_getproplen(phandle node, const char *prop)
++{
++	const void *args[] = { (void *)node, prop };
++	int len;
++	void *res[] = { &len };
++
++	if (node == -1)
++		return -1;
++
++	if (olpc_ofw("getproplen", args, res)) {
++		pr_err("PROM: %s: getproplen failed!\n", __func__);
++		return -1;
++	}
++
++	return len;
++}
++
++static int __init olpc_prom_getproperty(phandle node, const char *prop,
++		char *buf, int bufsize)
++{
++	int plen;
++
++	plen = olpc_prom_getproplen(node, prop);
++	if (plen > bufsize || plen < 1)
++		return -1;
++	else {
++		const void *args[] = { (void *)node, prop, buf, (void *)plen };
++		void *res[] = { &plen };
++
++		if (olpc_ofw("getprop", args, res)) {
++			pr_err("PROM: %s: getprop failed!\n", __func__);
++			return -1;
++		}
++	}
++
++	return plen;
++}
++
++static int __init olpc_prom_nextprop(phandle node, const char *prev, char *buf)
++{
++	const void *args[] = { (void *)node, prev, buf };
++	int success;
++	void *res[] = { &success };
++
++	buf[0] = '\0';
++
++	if (node == -1)
++		return -1;
++
++	if (olpc_ofw("nextprop", args, res) || success != 1)
++		return -1;
++
++	return 0;
++}
++
++static int __init olpc_prom_pkg2path(phandle node, char *buf,
++		const int buflen, int *len)
++{
++	const void *args[] = { (void *)node, buf, (void *)buflen };
++	void *res[] = { len };
++
++	if (node == -1)
++		return -1;
++
++	if (olpc_ofw("package-to-path", args, res) || *len < 1)
++		return -1;
++
++	return 0;
++}
++
++void * __init prom_early_alloc(unsigned long size)
++{
++	/* this is called late enough that we can alloc normally */
++	return kzalloc(size, GFP_KERNEL);
++}
++
++static struct of_pdt_ops prom_olpc_ops __initdata = {
++	.nextprop = olpc_prom_nextprop,
++	.getproplen = olpc_prom_getproplen,
++	.getproperty = olpc_prom_getproperty,
++	.getchild = olpc_prom_getchild,
++	.getsibling = olpc_prom_getsibling,
++	.pkg2path = olpc_prom_pkg2path,
++};
++
++void __init olpc_prom_build_devicetree(void)
++{
++	phandle root;
++
++	root = olpc_prom_getsibling(0);
++	if (root < 0) {
++		pr_err("PROM: unable to get root node from OFW!\n");
++		return;
++	}
++	of_pdt_build_devicetree(root, &prom_olpc_ops);
++}
+diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+index 28295d0..07e3daa 100644
+--- a/drivers/of/pdt.c
++++ b/drivers/of/pdt.c
+@@ -29,6 +29,8 @@ static struct of_pdt_ops *of_pdt_prom_ops __initdata;
+ void __initdata (*of_pdt_build_more)(struct device_node *dp,
+ 		struct device_node ***nextp);
+ 
++void __initdata (*of_pdt_init_devicetree)(void);
++
+ #if defined(CONFIG_SPARC)
+ unsigned int of_pdt_unique_id __initdata;
+ 
+diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+index d9396a4..9779039 100644
+--- a/fs/proc/proc_devtree.c
++++ b/fs/proc/proc_devtree.c
+@@ -11,6 +11,7 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/of.h>
++#include <linux/of_pdt.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <asm/prom.h>
+@@ -228,6 +229,9 @@ void __init proc_device_tree_init(void)
+ {
+ 	struct device_node *root;
+ 
++	if (of_pdt_init_devicetree)
++		of_pdt_init_devicetree();
++
+ 	proc_device_tree = proc_mkdir("device-tree", NULL);
+ 	if (proc_device_tree == NULL)
+ 		return;
+diff --git a/include/linux/of_pdt.h b/include/linux/of_pdt.h
+index 9945e58..b4bd0ee 100644
+--- a/include/linux/of_pdt.h
++++ b/include/linux/of_pdt.h
+@@ -38,6 +38,7 @@ extern void *prom_early_alloc(unsigned long size);
+ 
+ /* for building the device tree */
+ extern void of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops);
++extern void (*of_pdt_init_devicetree)(void);
+ 
+ extern void (*of_pdt_build_more)(struct device_node *dp,
+ 		struct device_node ***nextp);
 -- 
 1.5.6.5
 
