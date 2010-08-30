@@ -1,54 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab0H3HJu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 03:09:50 -0400
-Received: from fw2.winet.de ([84.17.96.48]:59269 "EHLO fw2.winet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752808Ab0H3HJs convert rfc822-to-8bit (ORCPT
+	id S1753422Ab0H3HMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 03:12:54 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:35043 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab0H3HMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 03:09:48 -0400
-Message-ID: <4C7B54F9.6090200@auerswald.de>
-Date: Mon, 30 Aug 2010 08:51:37 +0200
-From: =?ISO-8859-1?Q?Wolfgang_M=FCes?= <wolfgang.mues@auerswald.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, <akpm@linux-foundation.org>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <avictor.za@gmail.com>
-Subject: Re: [PATCH 1/7] mmc: at91_mci: fix pointer errors
-References: <9535dc8dfe4476a0314b9513fb9d37862faa731d.1267209149.git.nicolas.ferre@atmel.com> <20100827193303.GB23079@void.printf.net> <20100827193457.GC23079@void.printf.net>
-In-Reply-To: <20100827193457.GC23079@void.printf.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Aug 2010 03:12:53 -0400
+Subject: Re: [PATCH 1/3] drivers: misc: ak8974 / ami305 magnetometer driver
+From: Onkalo Samu <samu.p.onkalo@nokia.com>
+Reply-To: samu.p.onkalo@nokia.com
+To: ext Sundar <sunder.svit@gmail.com>
+Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTim=Zq7Pxixdwe_H-659cLZ2yybediDURGwvoO3=@mail.gmail.com>
+References: <1282910083-8629-1-git-send-email-samu.p.onkalo@nokia.com>
+	 <1282910083-8629-2-git-send-email-samu.p.onkalo@nokia.com>
+	 <AANLkTim=Zq7Pxixdwe_H-659cLZ2yybediDURGwvoO3=@mail.gmail.com>
+Content-Type: text/plain
+Organization: Nokia Oyj
+Date: Mon, 30 Aug 2010 10:12:41 +0300
+Message-Id: <1283152361.16404.22.camel@4fid08082>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Sundar,
 
-Am 27.08.2010 21:34, schrieb Chris Ball:
-> On Fri, Aug 27, 2010 at 08:33:03PM +0100, Chris Ball wrote:
->> Looks like only the first half of this patch was applied?  The
->> kunmap_atomic() line is still present as before in Linus' tree.
+On Sat, 2010-08-28 at 18:10 +0200, ext Sundar wrote:
+> Hi Samu,
+> 
+> few minor comments,
+> 
+> On Fri, Aug 27, 2010 at 5:24 PM, Samu Onkalo <samu.p.onkalo@nokia.com> wrote:
+> > +
+> > +struct ak8974_chip {
+> > +       struct miscdevice       miscdev;
+> > +       struct mutex            lock;   /* Serialize access to chip */
+> > +       struct mutex            users_lock;
+> > +       struct i2c_client       *client;
+> > +       struct regulator_bulk_data regs[2];
+> > +       struct work_struct      work;
+> > +       wait_queue_head_t       misc_wait;
+> > +       loff_t                  offset;
+> > +
+> > +       int                     max_range;
+> > +       int                     users;
+> > +
+> > +       const char              *id;
+> > +       u8                      info[2];
+> > +
+> > +       s16                     x, y, z; /* Latest measurements */
+> > +       s8                      axis_x;
+> > +       s8                      axis_y;
+> > +       s8                      axis_z;
+> > +       bool                    valid;
+> > +
+> > +       char                    name[20];
+> > +};
+> 
+> This can be static ?
 
-It was argued that the kunmap_atomic() will truncate the pointer to the 
-start of the page anyway, so the subtraction is not needed.
+It is filled based on the detected chip type.
 
-best regards
+> 
+> > +
+> > +       ak8974_regulators_off(chip);
+> > +
+> 
+> [..]
+> 
+> > +       if (err < 0) {
+> > +               dev_err(&chip->client->dev, "Device registration failed\n");
+> > +               goto fail3;
+> > +       }
+> 
+> [..]
+> 
+> > +       return 0;
+> > +fail4:
+> > +       misc_deregister(&chip->miscdev);
+> > +fail3:
+> > +       ak8974_regulators_off(chip);
+> 
+> in case of fail3, regulators get disabled twice. i think we will have
+> unbalanced calls to the supplies then.
+> 
 
-i. A. Wolfgang Muees
+Yes, you are correct.
 
-Hardware-Entwicklung
-Leiter Pruefen & Layout
--- 
-Auerswald Gesellschaft fuer Datensysteme mbH
 
-Phone: +49 5306-9219-562
-Fax:   +49 5306-9200-94
---------------------------------------------------------------
-Auerswald Gesellschaft fuer Datensysteme mbH,
-Vor den Grashoefen 1, 38162 Cremlingen
+> > +
+> > +
+> > +#ifdef CONFIG_PM
+> > +static int ak8974_suspend(struct i2c_client *client, pm_message_t mesg)
+> > +{
+> > +       struct ak8974_chip *chip = i2c_get_clientdata(client);
+> > +       mutex_lock(&chip->users_lock);
+> > +       if (chip->users > 0)
+> > +               ak8974_enable(chip, AK8974_PWR_OFF);
+> > +       mutex_unlock(&chip->users_lock);
+> > +       return 0;
+> > +}
+> 
+> Can we disable the regulators here too?
 
-Registriert beim AG Braunschweig HRB 7499
-Geschäftsführer: Dipl-Ing. Gerhard Auerswald
+It would require some more operations since the chip would loose its
+state totally. But yes, it could be done.
+
+-Samu
+
+
