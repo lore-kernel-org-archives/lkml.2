@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab0H3KFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 06:05:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59452 "EHLO hera.kernel.org"
+	id S1755279Ab0H3KFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 06:05:36 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59454 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755151Ab0H3KFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 06:05:24 -0400
+	id S1755160Ab0H3KFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 06:05:25 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, snitzer@redhat.com,
         j-nomura@ce.jp.nec.com, jamie@shareable.org,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-raid@vger.kernel.org, hch@lst.de
-Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 5/5] block: remove the WRITE_BARRIER flag
-Date: Mon, 30 Aug 2010 11:58:16 +0200
-Message-Id: <1283162296-13650-6-git-send-email-tj@kernel.org>
+Subject: [PATCHSET 2.6.36-rc2] block, dm: finish REQ_FLUSH/FUA conversion, take#2
+Date: Mon, 30 Aug 2010 11:58:11 +0200
+Message-Id: <1283162296-13650-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283162296-13650-1-git-send-email-tj@kernel.org>
-References: <1283162296-13650-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 10:05:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 10:04:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Hellwig <hch@infradead.org>
+Hello,
 
-It's unused now.
+This is the second take of block-dm-finish-REQ_FLUSH-FUA-conversion.
+I've put patches on top of the previous patches for easier review.
+The series can be trivially reordered so that the order is more
+logical.  Jens, please let me know if you want it to be reordered.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/fs.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+The dm conversion is _lightly_ tested.  Please proceed with caution.
+Let's hold off merging these bits until dm people can verify the
+conversion is correct.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 32703a9..6b0f6e9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -135,7 +135,6 @@ struct inodes_stat_t {
-  *			immediately after submission. The write equivalent
-  *			of READ_SYNC.
-  * WRITE_ODIRECT_PLUG	Special case write for O_DIRECT only.
-- * WRITE_BARRIER	DEPRECATED. Always fails. Use FLUSH/FUA instead.
-  * WRITE_FLUSH		Like WRITE_SYNC but with preceding cache flush.
-  * WRITE_FUA		Like WRITE_SYNC but data is guaranteed to be on
-  *			non-volatile media on completion.
-@@ -157,8 +156,6 @@ struct inodes_stat_t {
- #define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG)
- #define WRITE_ODIRECT_PLUG	(WRITE | REQ_SYNC)
- #define WRITE_META		(WRITE | REQ_META)
--#define WRITE_BARRIER		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
--				 REQ_HARDBARRIER)
- #define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
- 				 REQ_FLUSH)
- #define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
--- 
-1.7.1
+  0001-block-make-__blk_rq_prep_clone-copy-most-command-fla.patch
+  0002-dm-implement-REQ_FLUSH-FUA-support-for-bio-based-dm.patch
+  0003-dm-relax-ordering-of-bio-based-flush-implementation.patch
+  0004-dm-implement-REQ_FLUSH-FUA-support-for-request-based.patch
+  0005-block-remove-the-WRITE_BARRIER-flag.patch
 
+Differences from the previous attempt[1] are,
+
+* bio-based dm and requested-based dm patches are split.  0002-0003
+  convert bio-based dm and 0004 converts requested-based dm.
+
+* The previous requested based dm conversion was broken in the way
+  requests are sequenced.  This patch rips out special multi-target
+  handling for flushes and handles flushes the same way other requests
+  are handled.
+
+This patchset is on top of "block, fs: replace HARDBARRIER with
+FLUSH/FUA" patchset[2] and available in the following git tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua
+
+and contains the following changes.
+
+ block/blk-core.c                |    4 
+ drivers/md/dm-crypt.c           |    2 
+ drivers/md/dm-io.c              |   20 --
+ drivers/md/dm-log.c             |    2 
+ drivers/md/dm-raid1.c           |    8 
+ drivers/md/dm-region-hash.c     |   16 -
+ drivers/md/dm-snap-persistent.c |    2 
+ drivers/md/dm-snap.c            |    6 
+ drivers/md/dm-stripe.c          |    2 
+ drivers/md/dm.c                 |  394 ++++++++--------------------------------
+ include/linux/blk_types.h       |    1 
+ include/linux/fs.h              |    3 
+ 12 files changed, 104 insertions(+), 356 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.raid/29344
+[2] http://thread.gmane.org/gmane.linux.kernel/1022363
