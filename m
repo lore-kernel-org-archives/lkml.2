@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab0H3D1P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 23:27:15 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43575 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab0H3D1O convert rfc822-to-8bit (ORCPT
+	id S1754671Ab0H3D3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 23:29:46 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:49319 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754616Ab0H3D3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 23:27:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HOPMhExOrkSE8g+w0Pwn67fm+cE/EtQHPWkTWYbOmFA8iAKNr0QGiLBoOGm455l9ct
-         3JtxB1jsMLQ+4TRPBTSk4qOQXkHZ1HwmUASAiMf5XIuS1PJVojwzIjsO3LmAQGrOrs74
-         bQ4IXf1GtAnE3DFc9hdnKcJJP6GgMNwJmjXl0=
+	Sun, 29 Aug 2010 23:29:45 -0400
+Date: Mon, 30 Aug 2010 12:29:39 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+Message-ID: <20100830032935.GA18072@verge.net.au>
+References: <20100830130453.d810b086.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <4C7A806D.4010106@linux.intel.com>
-References: <1283094309-6635-1-git-send-email-yong.zhang0@gmail.com>
-	<4C7A806D.4010106@linux.intel.com>
-Date: Mon, 30 Aug 2010 11:27:13 +0800
-Message-ID: <AANLkTime0pid_ToCSmPW1duW+G+RFNKK+UxdtiN-VaLq@mail.gmail.com>
-Subject: Re: [RFC PATCHSET 0/6] timer/hrtimer/timer_stats: Improvement on timer_stats
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tj@kernel.org, oleg@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100830130453.d810b086.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 11:44 PM, Arjan van de Ven
-<arjan@linux.intel.com> wrote:
-> On 8/29/2010 8:05 AM, Yong Zhang wrote:
->>
->> Hi,
->>
->> This patchset focus on two problem:
->>
->> 1)timer_stats_timer_*_start_info() should belong to timer core only.
->>   It should not be seen by outsider, such as workqueue. And should
->>   not resident in timer.h.
->>   Patch-0001~0003 first remove the only explicit out call, then move
->>   timer_stats_timer_*_start_info() from timer.h to timer.c.
->>
->> 2)call site recorded by timer_stats sometimes show the timer core
->> functions
->>   instead of the real call site.
->>   Now /proc/timer_stats is like below on my machine:
->> ---now---
->>
->
->
-> one question; have you tested this with powertop? (powertop being one of the
-> prime consumers of this interface)
->
+On Mon, Aug 30, 2010 at 01:04:53PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
+> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
+> 
+> Caused by commit 8870f8427b8fe30b2684b9e569e5ce038faf41ac ("IPVS: ICMPv6
+> checksum calculation").  I added the following patch:
+> [I think we have seen this before :-(]
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 30 Aug 2010 13:01:20 +1000
+> Subject: [PATCH] IPVS: include net/ip6_checksum.h for csum_ipv6_magic
+> 
+> Fixes this build error:
+> 
+> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
+> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
 
-Now, vanilla kernel with powtop is
-Top causes for wakeups:
-  49.4% (250.3)       kworker/0:0 : hrtimer_start_range_ns (tick_sched_timer)
-  49.4% (250.3)     <kernel core> : hrtimer_start_range_ns (tick_sched_timer)
-   0.4% (  2.0)     <kernel core> : clocksource_watchdog (clocksource_watchdog)
-   0.4% (  1.8)       <interrupt> : eth1
-   0.2% (  1.0)       kworker/0:0 : add_timer (tg3_timer)
-   0.1% (  0.3)     <kernel core> : dev_watchdog (dev_watchdog)
-   0.0% (  0.2)          sendmail : hrtimer_start_range_ns (hrtimer_wakeup)
-   0.0% (  0.2)              init : hrtimer_start_range_ns (hrtimer_wakeup)
-   0.0% (  0.1)     <kernel core> : bdi_arm_supers_timer (sync_supers_timer_fn)
-   0.0% (  0.1)        flush-0:13 : bdi_writeback_thread (process_timeout)
-   0.0% (  0.1)     <kernel core> : __enqueue_rt_entity (sched_rt_period_timer)
+Sorry about that, I didn't notice it because it doesn't show up on x86.
 
-And the patched kernel:
-Top causes for wakeups:
-  34.9% (  2.0)       kworker/0:0 : clocksource_watchdog (clocksource_watchdog)
-  29.1% (  1.7)       <interrupt> : eth1
-  17.4% (  1.0)       kworker/0:0 : tg3_timer (tg3_timer)
-   3.5% (  0.2)          sendmail : schedule_hrtimeout_range_clock
-(hrtimer_wakeup)
-   3.5% (  0.2)     <kernel core> : dev_watchdog (dev_watchdog)
-   3.5% (  0.2)              init : schedule_hrtimeout_range_clock
-(hrtimer_wakeup)
-   2.3% (  0.1)     <kernel core> : bdi_arm_supers_timer (sync_supers_timer_fn)
-   2.3% (  0.1)        flush-0:13 : bdi_writeback_thread (process_timeout)
-   1.2% (  0.1)     <kernel core> : __enqueue_rt_entity (sched_rt_period_timer)
-   1.2% (  0.1)           syslogd : do_setitimer (it_real_fn)
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 
-The difference is tick_sched_timer() is gone in the patches version.
-
-And after taking a look at powertop, I think you want to get rid of the tick
-events, right?  Or maybe I'm missing something?
-
-Thanks,
-Yong
+> ---
+>  net/netfilter/ipvs/ip_vs_core.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
+> index 69661db..edbfb96 100644
+> --- a/net/netfilter/ipvs/ip_vs_core.c
+> +++ b/net/netfilter/ipvs/ip_vs_core.c
+> @@ -40,6 +40,7 @@
+>  #include <net/udp.h>
+>  #include <net/icmp.h>                   /* for icmp_send */
+>  #include <net/route.h>
+> +#include <net/ip6_checksum.h>
+>  
+>  #include <linux/netfilter.h>
+>  #include <linux/netfilter_ipv4.h>
+> -- 
+> 1.7.1
+> 
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
