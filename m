@@ -1,89 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab0H3Ikz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 04:40:55 -0400
-Received: from miranda.se.axis.com ([193.13.178.8]:49095 "EHLO
-	miranda.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662Ab0H3Iky convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 04:40:54 -0400
-From: Mikael Starvik <mikael.starvik@axis.com>
-To: Claudio Scordino <claudio@evidence.eu.com>,
-        Jesper Nilsson <Jesper.Nilsson@axis.com>
-CC: linux-cris-kernel <linux-cris-kernel@axis.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hinko Kocevar <hinko.kocevar@cetrtapot.si>,
-        Janez Cufer <janez.cufer@cetrtapot.si>,
-        Andy Whitcroft <apw@canonical.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        dev-etrax <dev-etrax@axis.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Date: Mon, 30 Aug 2010 10:39:54 +0200
-Subject: RE: [PATCH] CRIS RS485: Check SER_RS485_RTS_BEFORE_SEND before
- delaying.
-Thread-Topic: [PATCH] CRIS RS485: Check SER_RS485_RTS_BEFORE_SEND before
- delaying.
-Thread-Index: ActIHqnbdgLmzJXjR9G6q9ZskdDTTAAACpCw
-Message-ID: <4BEA3FF3CAA35E408EA55C7BE2E61D05583CAE6AF5@xmail3.se.axis.com>
-References: <4C62BD2B.2010508@evidence.eu.com>
- <4C7B6C9B.2050801@evidence.eu.com>
-In-Reply-To: <4C7B6C9B.2050801@evidence.eu.com>
-Accept-Language: sv-SE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: sv-SE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754701Ab0H3IqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 04:46:00 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:60219 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751548Ab0H3Ip7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 04:45:59 -0400
+Date: Mon, 30 Aug 2010 11:45:56 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [Bug #16971] qla4xxx compile failure on 32-bit PowerPC: missing
+ readq and writeq
+In-Reply-To: <4AUWBNzTkbD.A.aU.BGueMB@chimera>
+Message-ID: <alpine.SOC.1.00.1008301145230.29117@math.ut.ee>
+References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera> <4AUWBNzTkbD.A.aU.BGueMB@chimera>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16971
+> Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
+> Submitter	: Meelis Roos <mroos@linux.ee>
+> Date		: 2010-08-19 21:03 (11 days old)
+> Message-ID	: <alpine.SOC.1.00.1008192359310.19654@math.ut.ee>
+> References	: http://marc.info/?l=linux-kernel&m=128225184900892&w=2
 
-Jesper is on vacation but I find this patch ok.
+Still present in 2.6.36-rc3.
 
-Acked-by: Mikael Starvik<Starvik@axis.com>
-
-/Mikael
-
------Original Message-----
-From: Claudio Scordino [mailto:claudio@evidence.eu.com] 
-Sent: den 30 augusti 2010 10:32
-To: Jesper Nilsson
-Cc: Mikael Starvik; linux-cris-kernel; Alan Cox; Andrew Morton; Hinko Kocevar; Janez Cufer; Andy Whitcroft; Linux Kernel; dev-etrax; linux-serial@vger.kernel.org
-Subject: Re: [PATCH] CRIS RS485: Check SER_RS485_RTS_BEFORE_SEND before delaying.
-
-Claudio Scordino ha scritto:
-> Hi Jesper,
-> 
-> 	the following patch fixes the usage of the delay in RS485 mode
-> on the Cris architecture.
-> 
-> Very recently, the RS485 interface has been fixed by adding two further
-> fields (see commit 1b6331848b69d1ed165a6bdc75c4046d68767563).
-> 
-> This patch checks the value of the flag SER_RS485_RTS_BEFORE_SEND before
-> delaying.
-
-
-Hi all,
-
-	so far I didn't receive any acknowledgement about this patch.
-
-As I said, recently (see commit 1b6331848b69d1ed165a6bdc75c4046d68767563) the
-Linux RS485 interface has been fixed by adding two missing fields.
-
-With the "new" interface, you have to check the SER_RS485_RTS_BEFORE_SEND flag
-before using the delay_rts_before_send field.
-
-The Atmel serial driver has been already fixed (with commit
-1b6331848b69d1ed165a6bdc75c4046d68767563 itself).
-
-This patch fixes the usage of the interface in the Cris driver too.
-
-Best regards,
-
-		Claudio
+-- 
+Meelis Roos (mroos@linux.ee)
