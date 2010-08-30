@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab0H3MNw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 08:13:52 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:39346 "EHLO
+	id S1755570Ab0H3MNx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 08:13:53 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39359 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755528Ab0H3MNt (ORCPT
+	by vger.kernel.org with ESMTP id S1755532Ab0H3MNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 08:13:49 -0400
+	Mon, 30 Aug 2010 08:13:50 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
         Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: [RFC][PATCH 1/5] perf: Check if we should exclude idle thread in perf_exclude_event()
-Date: Mon, 30 Aug 2010 13:13:43 +0100
-Message-Id: <72c0ed93ff0b24365cc4d0a40e24efa3be3fe3df.1283123521.git.matt@console-pimps.org>
+Subject: [RFC][PATCH 2/5] perf: Turn the group counter values into delta values
+Date: Mon, 30 Aug 2010 13:13:44 +0100
+Message-Id: <1fe2a061e566c83668312ad64800768046f3ac07.1283123521.git.matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1283123521.git.matt@console-pimps.org>
 References: <cover.1283123521.git.matt@console-pimps.org>
@@ -28,40 +28,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't open code the event check for excluding the idle thread. Instead
-include the check in perf_exclude_event().
+Change the semantics of the PERF_FORMAT_GROUP records and make them
+delta values, i.e. the difference in value between consecutive reads of
+the hardware counters. These delta values will be used in a subsequent
+patch to calculate weighted values (by multiplying the deltas with the
+time difference between reads of the counters). Calculating these deltas
+is easiest to do in the kernel (as opposed to the userland tools)
+because we can reset the counter whenever we read from it.
+
+Note that even though this patch changes the semantics of
+PERF_FORMAT_GROUP records there were no users of them anyway (the tools
+didn't even understand them).
 
 Signed-off-by: Matt Fleming <matt@console-pimps.org>
 ---
- kernel/perf_event.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ kernel/perf_event.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 0d38f27..16b0476 100644
+index 16b0476..2cda375 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -4310,6 +4310,9 @@ static int perf_exclude_event(struct perf_event *event,
+@@ -3450,7 +3450,14 @@ static void perf_output_read_group(struct perf_output_handle *handle,
+ 	if (leader != event)
+ 		leader->pmu->read(leader);
  
- 		if (event->attr.exclude_kernel && !user_mode(regs))
- 			return 1;
++	/*
++	 * Reset the counter value so that ->count contains a delta from
++	 * the previous value.
++	 */
+ 	values[n++] = perf_event_count(leader);
++	local64_set(&leader->count, 0);
++	atomic64_set(&leader->child_count, 0);
 +
-+		if (event->attr.exclude_idle && current->pid == 0)
-+			return 1;
- 	}
+ 	if (read_format & PERF_FORMAT_ID)
+ 		values[n++] = primary_event_id(leader);
  
- 	return 0;
-@@ -4512,9 +4515,8 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
- 	regs = get_irq_regs();
+@@ -3463,6 +3470,9 @@ static void perf_output_read_group(struct perf_output_handle *handle,
+ 			sub->pmu->read(sub);
  
- 	if (regs && !perf_exclude_event(event, regs)) {
--		if (!(event->attr.exclude_idle && current->pid == 0))
--			if (perf_event_overflow(event, 0, &data, regs))
--				ret = HRTIMER_NORESTART;
-+		if (perf_event_overflow(event, 0, &data, regs))
-+			ret = HRTIMER_NORESTART;
- 	}
+ 		values[n++] = perf_event_count(sub);
++		local64_set(&sub->count, 0);
++		atomic64_set(&sub->child_count, 0);
++
+ 		if (read_format & PERF_FORMAT_ID)
+ 			values[n++] = primary_event_id(sub);
  
- 	period = max_t(u64, 10000, event->hw.sample_period);
 -- 
 1.7.1
 
