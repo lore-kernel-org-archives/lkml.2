@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab0H3EW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 00:22:56 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59013
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751070Ab0H3EWz (ORCPT
+	id S1753726Ab0H3Egu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 00:36:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59340 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab0H3Egs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 00:22:55 -0400
-Date: Sun, 29 Aug 2010 21:23:11 -0700 (PDT)
-Message-Id: <20100829.212311.35029746.davem@davemloft.net>
-To: horms@verge.net.au
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100830032935.GA18072@verge.net.au>
-References: <20100830130453.d810b086.sfr@canb.auug.org.au>
-	<20100830032935.GA18072@verge.net.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Aug 2010 00:36:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=myVZ22FjRZoeBlNQynhDfehNVbI5zoaPVOkcWJolDOssQeqOJoPFSQVy6GLFkOK7dM
+         5Vh3wnNldaSz1iEAkeZGKb0eKrl7+LUfmpCmzDDosrIj+f1rc+V/zSuXTGQxYJWG9nYX
+         f7ZIFIt27+U78wC7VUhgM2obQGTydvo4QsFbk=
+MIME-Version: 1.0
+In-Reply-To: <4AUWBNzTkbD.A.FI.7FueMB@chimera>
+References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
+	<4AUWBNzTkbD.A.FI.7FueMB@chimera>
+Date: Mon, 30 Aug 2010 06:36:47 +0200
+Message-ID: <AANLkTikzDgHsPsUQMdb87R8dG61CBBekxBfhbuguLEPX@mail.gmail.com>
+Subject: Re: [Bug #17041] 2.6.36-rc1 hangs during XFS barrier test for /
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Horman <horms@verge.net.au>
-Date: Mon, 30 Aug 2010 12:29:39 +0900
+On Mon, Aug 30, 2010 at 12:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.35.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=17041
+> Subject         : 2.6.36-rc1 hangs during XFS barrier test for /
+> Submitter       : Torsten Kaiser <just.for.lkml@googlemail.com>
+> Date            : 2010-08-20 (10 days old)
+> Message-ID      : <AANLkTim1PXibiY98GUdMj-UZLTav+n7GAnJ0Mjn6_5a3@mail.gmail.com>
+> References      : http://marc.info/?l=linux-kernel&m=128231691708710&w=2
 
-> On Mon, Aug 30, 2010 at 01:04:53PM +1000, Stephen Rothwell wrote:
->> Hi all,
->> 
->> After merging the final tree, today's linux-next build (powerpc
->> allyesconfig) failed like this:
->> 
->> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
->> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
->> 
->> Caused by commit 8870f8427b8fe30b2684b9e569e5ce038faf41ac ("IPVS: ICMPv6
->> checksum calculation").  I added the following patch:
->> [I think we have seen this before :-(]
->> 
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Mon, 30 Aug 2010 13:01:20 +1000
->> Subject: [PATCH] IPVS: include net/ip6_checksum.h for csum_ipv6_magic
->> 
->> Fixes this build error:
->> 
->> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
->> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
-> 
-> Sorry about that, I didn't notice it because it doesn't show up on x86.
-> 
->> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Simon Horman <horms@verge.net.au>
+As noted in comment #1 in this Bug, this was the same Bug as
+http://marc.info/?l=linux-kernel&m=128208298507451&w=2
+It is fixed as of 2.6.36-rc2.
 
-Applied thanks everyone.
+You can close this Bug as fixed.
+
+Thanks, Torsten
