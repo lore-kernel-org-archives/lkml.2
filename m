@@ -1,345 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab0H3SPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 14:15:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49066 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756491Ab0H3SPS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 14:15:18 -0400
+	id S1756540Ab0H3SR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 14:17:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24712 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756372Ab0H3SR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 14:17:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,294,1280732400"; 
+   d="c'?scan'208";a="833242129"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Hedi Berriche <hedi@sgi.com>
+CC: Petr Tesarik <ptesarik@suse.cz>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 30 Aug 2010 11:17:25 -0700
+Subject: RE: Serious problem with ticket spinlocks on ia64
+Thread-Topic: Serious problem with ticket spinlocks on ia64
+Thread-Index: ActGSAkqvQ6PUp1nT9SemA+ns7S8DAAI/QoQAIBhiOA=
+Message-ID: <987664A83D2D224EAE907B061CE93D53015D9B14DC@orsmsx505.amr.corp.intel.com>
+References: <201008271537.35709.ptesarik@suse.cz>
+ <201008272303.34228.ptesarik@suse.cz>
+ <987664A83D2D224EAE907B061CE93D53015D91D45F@orsmsx505.amr.corp.intel.com>
+ <201008280013.19941.ptesarik@suse.cz>
+ <987664A83D2D224EAE907B061CE93D53015D91D604@orsmsx505.amr.corp.intel.com>
+ <987664A83D2D224EAE907B061CE93D53015D91D645@orsmsx505.amr.corp.intel.com>
+ <20100828002855.GI18967@zorg.emea.sgi.com>
+ <987664A83D2D224EAE907B061CE93D53015D91D6F5@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D53015D91D6F5@orsmsx505.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_987664A83D2D224EAE907B061CE93D53015D9B14DCorsmsx505amrc_"
 MIME-Version: 1.0
-In-Reply-To: <20100830000751.2b845d05@debxo>
-References: <20100628215407.2017bf2f@debian> <20100829235100.6dcedcb8@debxo> <20100830000751.2b845d05@debxo>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 30 Aug 2010 12:14:57 -0600
-X-Google-Sender-Auth: cFpx0b9iTZE4V4c93CIsKph1-gA
-Message-ID: <AANLkTi=EMkZLiAG7-ni8_7K=qtAriv=AfSUZ58661jNY@mail.gmail.com>
-Subject: Re: [PATCH 9/9] x86: OLPC: add OLPC device-tree support
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 10:07 PM, Andres Salomon <dilinger@queued.net> wrote:
->
-> Make use of PROC_DEVICETREE to export the tree, and sparc's PROMTREE code to
-> call into OLPC's Open Firmware to build the tree.
->
-> This also adds an init hook to proc_device_tree_init so that we can ensure
-> the device tree has been built prior to the proc_root_init stuff attempting
-> to populate /proc/device-tree.
+--_002_987664A83D2D224EAE907B061CE93D53015D9B14DCorsmsx505amrc_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-I'm not clear as to why this is needed.  I would expect OLPC platform
-setup code would take care of extracting the device tree well before
-the kernel gets to setting up the representation in /proc/device-tree.
+> I may tinker with this test a bit to include some short random
+> amounts of hold-time for the lock, and delays between attempts
+> to acquire it (to make it look more like a contended kernel lock
+> and less like a continuous queue of processes trading around a
+> lock that is never free
 
-g.
+I've been iterating ... adding new bits to try to reproduce the
+kernel environment:
 
->
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  arch/x86/Kconfig                |    2 +
->  arch/x86/include/asm/olpc_ofw.h |    4 +
->  arch/x86/include/asm/prom.h     |    1 +
->  arch/x86/kernel/Makefile        |    1 +
->  arch/x86/kernel/olpc_ofw.c      |    8 ++
->  arch/x86/kernel/olpc_prom.c     |  152 +++++++++++++++++++++++++++++++++++++++
->  drivers/of/pdt.c                |    2 +
->  fs/proc/proc_devtree.c          |    4 +
->  include/linux/of_pdt.h          |    1 +
->  9 files changed, 175 insertions(+), 0 deletions(-)
->  create mode 100644 arch/x86/include/asm/prom.h
->  create mode 100644 arch/x86/kernel/olpc_prom.c
->
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index cea0cd9..7d4ef72 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -2069,6 +2069,8 @@ config OLPC_OPENFIRMWARE
->        bool "Support for OLPC's Open Firmware"
->        depends on !X86_64 && !X86_PAE
->        default y if OLPC
-> +       select OF
-> +       select OF_PROMTREE
->        help
->          This option adds support for the implementation of Open Firmware
->          that is used on the OLPC XO-1 Children's Machine.
-> diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
-> index 08fde47..13075df 100644
-> --- a/arch/x86/include/asm/olpc_ofw.h
-> +++ b/arch/x86/include/asm/olpc_ofw.h
-> @@ -28,4 +28,8 @@ static inline void setup_olpc_ofw_pgd(void) { }
->
->  #endif /* !CONFIG_OLPC_OPENFIRMWARE */
->
-> +#ifdef CONFIG_PROC_DEVICETREE
-> +extern void olpc_prom_build_devicetree(void);
-> +#endif /* CONFIG_PROC_DEVICETREE */
-> +
->  #endif /* _ASM_X86_OLPC_OFW_H */
-> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-> new file mode 100644
-> index 0000000..b4ec95f
-> --- /dev/null
-> +++ b/arch/x86/include/asm/prom.h
-> @@ -0,0 +1 @@
-> +/* dummy prom.h; here to make linux/of.h's #includes happy */
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-> index 0925676..3d7e535 100644
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -105,6 +105,7 @@ scx200-y                    += scx200_32.o
->
->  obj-$(CONFIG_OLPC)             += olpc.o
->  obj-$(CONFIG_OLPC_OPENFIRMWARE)        += olpc_ofw.o
-> +obj-$(CONFIG_PROC_DEVICETREE)  += olpc_prom.o
->  obj-$(CONFIG_X86_MRST)         += mrst.o
->
->  microcode-y                            := microcode_core.o
-> diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
-> index 3218aa7..6c4d243 100644
-> --- a/arch/x86/kernel/olpc_ofw.c
-> +++ b/arch/x86/kernel/olpc_ofw.c
-> @@ -1,5 +1,7 @@
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_pdt.h>
->  #include <linux/init.h>
->  #include <asm/page.h>
->  #include <asm/setup.h>
-> @@ -38,6 +40,12 @@ void __init setup_olpc_ofw_pgd(void)
->        /* implicit optimization barrier here due to uninline function return */
->
->        early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
-> +
-> +#ifdef CONFIG_PROC_DEVICETREE
-> +       /* OFW set up succesfully; use it for the device tree */
-> +       of_pdt_init_devicetree = olpc_prom_build_devicetree;
-> +#endif
-> +
->  }
->
->  int __olpc_ofw(const char *name, int nr_args, const void **args, int nr_res,
-> diff --git a/arch/x86/kernel/olpc_prom.c b/arch/x86/kernel/olpc_prom.c
-> new file mode 100644
-> index 0000000..fb04d8a
-> --- /dev/null
-> +++ b/arch/x86/kernel/olpc_prom.c
-> @@ -0,0 +1,152 @@
-> +/*
-> + * olpc_prom.c: OLPC-specific OFW device tree support code.
-> + *
-> + * Paul Mackerras      August 1996.
-> + * Copyright (C) 1996-2005 Paul Mackerras.
-> + *
-> + *  Adapted for 64bit PowerPC by Dave Engebretsen and Peter Bergner.
-> + *    {engebret|bergner}@us.ibm.com
-> + *
-> + *  Adapted for sparc by David S. Miller davem@davemloft.net
-> + *  Adapted for x86/OLPC by Andres Salomon <dilinger@queued.net>
-> + *
-> + *      This program is free software; you can redistribute it and/or
-> + *      modify it under the terms of the GNU General Public License
-> + *      as published by the Free Software Foundation; either version
-> + *      2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/errno.h>
-> +#include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <linux/of_pdt.h>
-> +#include <asm/olpc_ofw.h>
-> +
-> +static phandle __init olpc_prom_getsibling(phandle node)
-> +{
-> +       const void *args[] = { (void *)node };
-> +       void *res[] = { &node };
-> +
-> +       if (node == -1)
-> +               return 0;
-> +
-> +       if (olpc_ofw("peer", args, res) || node == -1)
-> +               return 0;
-> +
-> +       return node;
-> +}
-> +
-> +static phandle __init olpc_prom_getchild(phandle node)
-> +{
-> +       const void *args[] = { (void *)node };
-> +       void *res[] = { &node };
-> +
-> +       if (node == -1)
-> +               return 0;
-> +
-> +       if (olpc_ofw("child", args, res) || node == -1) {
-> +               pr_err("PROM: %s: fetching child failed!\n", __func__);
-> +               return 0;
-> +       }
-> +
-> +       return node;
-> +}
-> +
-> +static int __init olpc_prom_getproplen(phandle node, const char *prop)
-> +{
-> +       const void *args[] = { (void *)node, prop };
-> +       int len;
-> +       void *res[] = { &len };
-> +
-> +       if (node == -1)
-> +               return -1;
-> +
-> +       if (olpc_ofw("getproplen", args, res)) {
-> +               pr_err("PROM: %s: getproplen failed!\n", __func__);
-> +               return -1;
-> +       }
-> +
-> +       return len;
-> +}
-> +
-> +static int __init olpc_prom_getproperty(phandle node, const char *prop,
-> +               char *buf, int bufsize)
-> +{
-> +       int plen;
-> +
-> +       plen = olpc_prom_getproplen(node, prop);
-> +       if (plen > bufsize || plen < 1)
-> +               return -1;
-> +       else {
-> +               const void *args[] = { (void *)node, prop, buf, (void *)plen };
-> +               void *res[] = { &plen };
-> +
-> +               if (olpc_ofw("getprop", args, res)) {
-> +                       pr_err("PROM: %s: getprop failed!\n", __func__);
-> +                       return -1;
-> +               }
-> +       }
-> +
-> +       return plen;
-> +}
-> +
-> +static int __init olpc_prom_nextprop(phandle node, const char *prev, char *buf)
-> +{
-> +       const void *args[] = { (void *)node, prev, buf };
-> +       int success;
-> +       void *res[] = { &success };
-> +
-> +       buf[0] = '\0';
-> +
-> +       if (node == -1)
-> +               return -1;
-> +
-> +       if (olpc_ofw("nextprop", args, res) || success != 1)
-> +               return -1;
-> +
-> +       return 0;
-> +}
-> +
-> +static int __init olpc_prom_pkg2path(phandle node, char *buf,
-> +               const int buflen, int *len)
-> +{
-> +       const void *args[] = { (void *)node, buf, (void *)buflen };
-> +       void *res[] = { len };
-> +
-> +       if (node == -1)
-> +               return -1;
-> +
-> +       if (olpc_ofw("package-to-path", args, res) || *len < 1)
-> +               return -1;
-> +
-> +       return 0;
-> +}
-> +
-> +void * __init prom_early_alloc(unsigned long size)
-> +{
-> +       /* this is called late enough that we can alloc normally */
-> +       return kzalloc(size, GFP_KERNEL);
-> +}
-> +
-> +static struct of_pdt_ops prom_olpc_ops __initdata = {
-> +       .nextprop = olpc_prom_nextprop,
-> +       .getproplen = olpc_prom_getproplen,
-> +       .getproperty = olpc_prom_getproperty,
-> +       .getchild = olpc_prom_getchild,
-> +       .getsibling = olpc_prom_getsibling,
-> +       .pkg2path = olpc_prom_pkg2path,
-> +};
-> +
-> +void __init olpc_prom_build_devicetree(void)
-> +{
-> +       phandle root;
-> +
-> +       root = olpc_prom_getsibling(0);
-> +       if (root < 0) {
-> +               pr_err("PROM: unable to get root node from OFW!\n");
-> +               return;
-> +       }
-> +       of_pdt_build_devicetree(root, &prom_olpc_ops);
-> +}
-> diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-> index 28295d0..07e3daa 100644
-> --- a/drivers/of/pdt.c
-> +++ b/drivers/of/pdt.c
-> @@ -29,6 +29,8 @@ static struct of_pdt_ops *of_pdt_prom_ops __initdata;
->  void __initdata (*of_pdt_build_more)(struct device_node *dp,
->                struct device_node ***nextp);
->
-> +void __initdata (*of_pdt_init_devicetree)(void);
-> +
->  #if defined(CONFIG_SPARC)
->  unsigned int of_pdt_unique_id __initdata;
->
-> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
-> index d9396a4..9779039 100644
-> --- a/fs/proc/proc_devtree.c
-> +++ b/fs/proc/proc_devtree.c
-> @@ -11,6 +11,7 @@
->  #include <linux/stat.h>
->  #include <linux/string.h>
->  #include <linux/of.h>
-> +#include <linux/of_pdt.h>
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  #include <asm/prom.h>
-> @@ -228,6 +229,9 @@ void __init proc_device_tree_init(void)
->  {
->        struct device_node *root;
->
-> +       if (of_pdt_init_devicetree)
-> +               of_pdt_init_devicetree();
-> +
->        proc_device_tree = proc_mkdir("device-tree", NULL);
->        if (proc_device_tree == NULL)
->                return;
-> diff --git a/include/linux/of_pdt.h b/include/linux/of_pdt.h
-> index 9945e58..b4bd0ee 100644
-> --- a/include/linux/of_pdt.h
-> +++ b/include/linux/of_pdt.h
-> @@ -38,6 +38,7 @@ extern void *prom_early_alloc(unsigned long size);
->
->  /* for building the device tree */
->  extern void of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops);
-> +extern void (*of_pdt_init_devicetree)(void);
->
->  extern void (*of_pdt_build_more)(struct device_node *dp,
->                struct device_node ***nextp);
-> --
-> 1.5.6.5
->
->
+1) Added delays (bigger delay not holding the lock than holding
+   it - so contention is controlled)
+2) Check that locking actually works (with a critzone element that
+is only modified when the lock is held).
+3) Sometimes use trylock (all the odd numbered threads do this).
 
+Compile with -frename-registers ... and add a nop() { } function
+in another file (just to make sure the compiler doesn't optimize
+the delay loops).
 
+Sadly ... my user mode experiments haven't yet yielded any cases
+where the ticket locks fail in the way that Petr saw them mess up
+inside the kernel.  This latest version has been running for ~90
+minutes and has completed 25 million lock/trylock iterations (with
+about a third of the ticket lock wraparounds passing through the
+uncontested case (lock =3D=3D 0) and the rest happening with some
+processes waiting for the lock.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+So now I'm trying to think of other ways that the kernel case
+differs from my user mode mock-up.
+
+-Tony
+
+--_002_987664A83D2D224EAE907B061CE93D53015D9B14DCorsmsx505amrc_
+Content-Type: text/plain; name="spinwrap.c"
+Content-Description: spinwrap.c
+Content-Disposition: attachment; filename="spinwrap.c"; size=12024;
+	creation-date="Mon, 30 Aug 2010 11:02:12 GMT";
+	modification-date="Mon, 30 Aug 2010 11:02:12 GMT"
+Content-Transfer-Encoding: base64
+
+dHlwZWRlZiBzdHJ1Y3QgewogICAgICAgIHZvbGF0aWxlIHVuc2lnbmVkIGludCBsb2NrOwp9IGFy
+Y2hfc3BpbmxvY2tfdDsKCiNkZWZpbmUgV09SS0VSUyAxNgppbnQgd29ya2VycyA9IFdPUktFUlM7
+CgpzdHJ1Y3Qgc2ggewoJYXJjaF9zcGlubG9ja190CWw7IGNoYXIgcGFkMVs2MF07Cglsb25nIHN1
+Y2Nlc3M7IGNoYXIgcGFkMls1Nl07Cgl1bnNpZ25lZCBsb25nIGNyaXR6b25lOyBjaGFyIHBhZDNb
+NTZdOwoJdW5zaWduZWQgbG9uZyBydW5uaW5nOyBjaGFyIHBhZDRbNTZdOwoJbG9uZyB3b3JrZXJb
+V09SS0VSU107CglpbnQgd3JhcHNbV09SS0VSU107Cn0gKnM7CgppbnQgbWU7CgovKiBjdXQgJiBw
+YXN0ZSBpbmZyYXN0cnVjdHVyZSBmcm9tIGtlcm5lbCBzdGFydCBoZXJlICovCnR5cGVkZWYgdW5z
+aWduZWQgbG9uZyBfX3U2NDsKdHlwZWRlZiB1bnNpZ25lZCBpbnQgX191MzI7CnR5cGVkZWYgdW5z
+aWduZWQgc2hvcnQgX191MTY7CnR5cGVkZWYgdW5zaWduZWQgY2hhciBfX3U4OwojZGVmaW5lIF9f
+YWx3YXlzX2lubGluZSBpbmxpbmUgX19hdHRyaWJ1dGVfXygoYWx3YXlzX2lubGluZSkpCiNkZWZp
+bmUgQUNDRVNTX09OQ0UoeCkgKCoodm9sYXRpbGUgdHlwZW9mKHgpICopJih4KSkKCmV4dGVybiB1
+bnNpZ25lZCBsb25nIF9fYmFkX3NpemVfZm9yX2lhNjRfZmV0Y2hfYW5kX2FkZCAodm9pZCk7CmV4
+dGVybiB1bnNpZ25lZCBsb25nIF9fYmFkX2luY3JlbWVudF9mb3JfaWE2NF9mZXRjaF9hbmRfYWRk
+ICh2b2lkKTsKCiNkZWZpbmUgaWE2NF9pbnZhbGEoKSBhc20gdm9sYXRpbGUgKCJpbnZhbGEiIDo6
+OiAibWVtb3J5IikKCiNkZWZpbmUgaWE2NF9oaW50X3BhdXNlIDAKCiNkZWZpbmUgaWE2NF9oaW50
+KG1vZGUpICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCih7ICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBc
+CiAgICAgICAgc3dpdGNoIChtb2RlKSB7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICBcCiAgICAgICAgY2FzZSBpYTY0X2hpbnRfcGF1c2U6ICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICBcCiAgICAgICAgICAgICAgICBhc20gdm9sYXRpbGUgKCJoaW50IEBw
+YXVzZSIgOjo6ICJtZW1vcnkiKTsgICAgICBcCiAgICAgICAgICAgICAgICBicmVhazsgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCiAgICAgICAgfSAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCn0pCiNkZWZpbmUg
+Y3B1X3JlbGF4KCkgaWE2NF9oaW50KGlhNjRfaGludF9wYXVzZSkKCiNkZWZpbmUgaWE2NF9mZXRj
+aGFkZDRfYWNxKHAsIGluYykgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgXAooeyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBc
+CiAgICAgICAgX191NjQgaWE2NF9pbnRyaV9yZXM7ICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgIGFzbSB2b2xhdGlsZSAoImZldGNoYWRk
+NC5hY3EgJTA9WyUxXSwlMiIgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICA6ICI9ciIoaWE2NF9pbnRyaV9yZXMpIDogInIiKHAp
+LCAiaSIgKGluYykgICAgICBcCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgOiAibWVt
+b3J5Iik7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgIFwKICAgICAgICBpYTY0X2ludHJpX3JlczsgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCn0pCgojZGVmaW5lIElBNjRfRkVU
+Q0hBREQodG1wLHYsbixzeixzZW0pICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgIFwKKHsgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCiAgICAgICAgc3dpdGNoIChzeikgeyAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+XAogICAgICAgICAgICAgIGNhc2UgNDogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgIHRtcCA9IGlhNjRfZmV0
+Y2hhZGQ0XyMjc2VtKCh1bnNpZ25lZCBpbnQgKikgdiwgbik7ICAgICAgICAgICAgICBcCiAgICAg
+ICAgICAgICAgICBicmVhazsgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAg
+ICBjYXNlIDg6ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICBcCiAgICAgICAgICAgICAgICB0bXAgPSBpYTY0X2ZldGNoYWRkOF8jI3NlbSgo
+dW5zaWduZWQgbG9uZyAqKSB2LCBuKTsgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgYnJl
+YWs7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgIFwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCiAgICAgICAgICAgICAgZGVmYXVsdDogICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAog
+ICAgICAgICAgICAgICAgX19iYWRfc2l6ZV9mb3JfaWE2NF9mZXRjaF9hbmRfYWRkKCk7ICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICB9ICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCn0pCgojZGVm
+aW5lIGlhNjRfZmV0Y2hhZGQoaSx2LHNlbSkgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgXAooeyAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgXAogICAgICAgIF9fdTY0IF90bXA7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgIHZvbGF0aWxlIF9f
+dHlwZW9mX18oKih2KSkgKl92ID0gKHYpOyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgXAogICAgICAgIC8qIENhbid0IHVzZSBhIHN3aXRjaCAoKSBoZXJlOiBnY2Mg
+aXNuJ3QgYWx3YXlzIHNtYXJ0IGVub3VnaCBmb3IgdGhhdC4uLiAqLyAgICAgXAogICAgICAgIGlm
+ICgoaSkgPT0gLTE2KSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgSUE2NF9GRVRDSEFERChfdG1w
+LCBfdiwgLTE2LCBzaXplb2YoKih2KSksIHNlbSk7ICAgICAgICAgICAgICAgICAgICAgICAgXAog
+ICAgICAgIGVsc2UgaWYgKChpKSA9PSAtOCkgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgSUE2NF9GRVRD
+SEFERChfdG1wLCBfdiwgLTgsIHNpemVvZigqKHYpKSwgc2VtKTsgICAgICAgICAgICAgICAgICAg
+ICAgICAgXAogICAgICAgIGVsc2UgaWYgKChpKSA9PSAtNCkgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAg
+SUE2NF9GRVRDSEFERChfdG1wLCBfdiwgLTQsIHNpemVvZigqKHYpKSwgc2VtKTsgICAgICAgICAg
+ICAgICAgICAgICAgICAgXAogICAgICAgIGVsc2UgaWYgKChpKSA9PSAtMSkgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAg
+ICAgICAgICAgSUE2NF9GRVRDSEFERChfdG1wLCBfdiwgLTEsIHNpemVvZigqKHYpKSwgc2VtKTsg
+ICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgIGVsc2UgaWYgKChpKSA9PSAxKSAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+XAogICAgICAgICAgICAgICAgSUE2NF9GRVRDSEFERChfdG1wLCBfdiwgMSwgc2l6ZW9mKCoodikp
+LCBzZW0pOyAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgIGVsc2UgaWYgKChpKSA9
+PSA0KSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgXAogICAgICAgICAgICAgICAgSUE2NF9GRVRDSEFERChfdG1wLCBfdiwgNCwgc2l6
+ZW9mKCoodikpLCBzZW0pOyAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgIGVsc2Ug
+aWYgKChpKSA9PSA4KSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgSUE2NF9GRVRDSEFERChfdG1wLCBf
+diwgOCwgc2l6ZW9mKCoodikpLCBzZW0pOyAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAg
+ICAgIGVsc2UgaWYgKChpKSA9PSAxNikgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgSUE2NF9GRVRDSEFE
+RChfdG1wLCBfdiwgMTYsIHNpemVvZigqKHYpKSwgc2VtKTsgICAgICAgICAgICAgICAgICAgICAg
+ICAgXAogICAgICAgIGVsc2UgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgX3Rt
+cCA9IF9fYmFkX2luY3JlbWVudF9mb3JfaWE2NF9mZXRjaF9hbmRfYWRkKCk7ICAgICAgICAgICAg
+ICAgICAgICAgICAgXAogICAgICAgIChfX3R5cGVvZl9fKCoodikpKSAoX3RtcCk7ICAgICAgLyog
+cmV0dXJuIG9sZCB2YWx1ZSAqLyAgICAgICAgICAgICAgICAgICAgICAgICAgXAp9KQoKI2RlZmlu
+ZSBpYTY0X2NtcHhjaGc0X2FjcShwdHIsIG5ldywgb2xkKSAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgIFwKKHsgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+IFwKICAgICAgICBfX3U2NCBpYTY0X2ludHJpX3JlczsgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICBhc20gdm9sYXRpbGUg
+KCJtb3YgYXIuY2N2PSUwOzsiIDo6ICJyTyIob2xkKSk7ICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgIFwKICAgICAgICBhc20gdm9sYXRpbGUgKCJjbXB4Y2hnNC5hY3EgJTA9WyUxXSwl
+Mixhci5jY3YiOiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgIj1yIihpYTY0X2ludHJpX3JlcykgOiAiciIocHRyKSwgInIiKG5l
+dykgOiAibWVtb3J5Iik7ICAgIFwKICAgICAgICBpYTY0X2ludHJpX3JlczsgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKfSkK
+Ci8qCiAqIFRoaXMgZnVuY3Rpb24gZG9lc24ndCBleGlzdCwgc28geW91J2xsIGdldCBhIGxpbmtl
+ciBlcnJvcgogKiBpZiBzb21ldGhpbmcgdHJpZXMgdG8gZG8gYW4gaW52YWxpZCBjbXB4Y2hnKCku
+CiAqLwpleHRlcm4gbG9uZyBpYTY0X2NtcHhjaGdfY2FsbGVkX3dpdGhfYmFkX3BvaW50ZXIgKHZv
+aWQpOwoKI2RlZmluZSBpYTY0X2NtcHhjaGcoc2VtLHB0cixvbGQsbmV3LHNpemUpICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKKHsgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgIFwKICAgICAgICBfX3U2NCBfb18sIF9yXzsgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICBzd2l0Y2ggKHNpemUpIHsgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwK
+ICAgICAgICAgICAgICBjYXNlIDE6IF9vXyA9IChfX3U4ICkgKGxvbmcpIChvbGQpOyBicmVhazsg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICBjYXNlIDI6IF9v
+XyA9IChfX3UxNikgKGxvbmcpIChvbGQpOyBicmVhazsgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgIFwKICAgICAgICAgICAgICBjYXNlIDQ6IF9vXyA9IChfX3UzMikgKGxvbmcpIChvbGQp
+OyBicmVhazsgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICBj
+YXNlIDg6IF9vXyA9IChfX3U2NCkgKGxvbmcpIChvbGQpOyBicmVhazsgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICBkZWZhdWx0OiBicmVhazsgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAg
+ICB9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICBzd2l0Y2ggKHNpemUpIHsgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+IFwKICAgICAgICAgICAgICBjYXNlIDE6ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgIF9yXyA9
+IGlhNjRfY21weGNoZzFfIyNzZW0oKF9fdTggKikgcHRyLCBuZXcsIF9vXyk7ICAgICAgICAgICAg
+ICAgICAgICAgIFwKICAgICAgICAgICAgICAgIGJyZWFrOyAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICBjYXNlIDI6ICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAg
+ICAgICAgICAgICAgX3JfID0gaWE2NF9jbXB4Y2hnMl8jI3NlbSgoX191MTYgKikgcHRyLCBuZXcs
+IF9vXyk7ICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgIGJyZWFrOyAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgIFwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICBjYXNl
+IDQ6ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgIF9yXyA9IGlhNjRfY21weGNoZzRfIyNzZW0o
+KF9fdTMyICopIHB0ciwgbmV3LCBfb18pOyAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAg
+ICAgICAgIGJyZWFrOyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwK
+ICAgICAgICAgICAgICBjYXNlIDg6ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgIF9yXyA9IGlh
+NjRfY21weGNoZzhfIyNzZW0oKF9fdTY0ICopIHB0ciwgbmV3LCBfb18pOyAgICAgICAgICAgICAg
+ICAgICAgIFwKICAgICAgICAgICAgICAgIGJyZWFrOyAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICBkZWZhdWx0OiAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAg
+ICAgICAgICAgIF9yXyA9IGlhNjRfY21weGNoZ19jYWxsZWRfd2l0aF9iYWRfcG9pbnRlcigpOyAg
+ICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgICAgIGJyZWFrOyAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+IFwKICAgICAgICB9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAoX190eXBlb2ZfXyhv
+bGQpKSBfcl87ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgIFwKfSkKCiNkZWZpbmUgVElDS0VUX1NISUZUICAgIDE3IC8qd2FzMTcqLwojZGVm
+aW5lIFRJQ0tFVF9CSVRTICAgICAxNSAvKndhczE1Ki8KI2RlZmluZSBUSUNLRVRfTUFTSyAgICAg
+KCgxIDw8IFRJQ0tFVF9CSVRTKSAtIDEpCgpzdGF0aWMgX19hbHdheXNfaW5saW5lIHZvaWQgX190
+aWNrZXRfc3Bpbl9sb2NrKGFyY2hfc3BpbmxvY2tfdCAqbG9jaykKewogICAgICAgIGludCAgICAg
+KnAgPSAoaW50ICopJmxvY2stPmxvY2ssIHRpY2tldCwgc2VydmU7CgogICAgICAgIHRpY2tldCA9
+IGlhNjRfZmV0Y2hhZGQoMSwgcCwgYWNxKTsKCmlmICh0aWNrZXQgPT0gMCkgcy0+d3JhcHNbbWVd
+Kys7CgogICAgICAgIGlmICghKCgodGlja2V0ID4+IFRJQ0tFVF9TSElGVCkgXiB0aWNrZXQpICYg
+VElDS0VUX01BU0spKQogICAgICAgICAgICAgICAgcmV0dXJuOwoKICAgICAgICBpYTY0X2ludmFs
+YSgpOwoKICAgICAgICBmb3IgKDs7KSB7CiAgICAgICAgICAgICAgICBhc20gdm9sYXRpbGUgKCJs
+ZDQuYy5uYyAlMD1bJTFdIiA6ICI9ciIoc2VydmUpIDogInIiKHApIDogIm1lbW9yeSIpOwoKICAg
+ICAgICAgICAgICAgIGlmICghKCgoc2VydmUgPj4gVElDS0VUX1NISUZUKSBeIHRpY2tldCkgJiBU
+SUNLRVRfTUFTSykpIHsKICAgICAgICAgICAgICAgICAgICAgICAgcmV0dXJuOwoJCX0KICAgICAg
+ICAgICAgICAgIGNwdV9yZWxheCgpOwogICAgICAgIH0KfQoKc3RhdGljIF9fYWx3YXlzX2lubGlu
+ZSBpbnQgX190aWNrZXRfc3Bpbl90cnlsb2NrKGFyY2hfc3BpbmxvY2tfdCAqbG9jaykKewogICAg
+ICAgIGludCB0bXAgPSBBQ0NFU1NfT05DRShsb2NrLT5sb2NrKTsKCmlmICh0bXAgPT0gMCkgcy0+
+d3JhcHNbbWVdKys7CiAgICAgICAgaWYgKCEoKCh0bXAgPj4gVElDS0VUX1NISUZUKSBeIHRtcCkg
+JiBUSUNLRVRfTUFTSykpCiAgICAgICAgICAgICAgICByZXR1cm4gaWE2NF9jbXB4Y2hnKGFjcSwg
+JmxvY2stPmxvY2ssIHRtcCwgdG1wICsgMSwgc2l6ZW9mICh0bXApKSA9PSB0bXA7CiAgICAgICAg
+cmV0dXJuIDA7Cn0KCnN0YXRpYyBfX2Fsd2F5c19pbmxpbmUgdm9pZCBfX3RpY2tldF9zcGluX3Vu
+bG9jayhhcmNoX3NwaW5sb2NrX3QgKmxvY2spCnsKICAgICAgICB1bnNpZ25lZCBzaG9ydCAgKnAg
+PSAodW5zaWduZWQgc2hvcnQgKikmbG9jay0+bG9jayArIDEsIHRtcDsKCiAgICAgICAgYXNtIHZv
+bGF0aWxlICgibGQyLmJpYXMgJTA9WyUxXSIgOiAiPXIiKHRtcCkgOiAiciIocCkpOwogICAgICAg
+IEFDQ0VTU19PTkNFKCpwKSA9ICh0bXAgKyAyKSAmIH4xOwp9Ci8qIGN1dCAmIHBhc3RlIGluZnJh
+c3RydWN0dXJlIGZyb20ga2VybmVsIGVuZHMgaGVyZSAqLwoKI2luY2x1ZGUgPHN0ZGlvLmg+CiNp
+bmNsdWRlIDxzdGRsaWIuaD4KI2luY2x1ZGUgPHVuaXN0ZC5oPgojaW5jbHVkZSA8c3lzL3R5cGVz
+Lmg+CiNpbmNsdWRlIDxzeXMvbW1hbi5oPgoKZXh0ZXJuIHZvaWQgbm9wKHZvaWQpOwoKdm9pZApk
+ZWxheShpbnQgc2NhbGUpCnsKCWludAlyID0gcmFuZG9tKCk7CgoJciAmPSAweGZmZmY7CgoJciAq
+PSBzY2FsZTsKCgl3aGlsZSAoci0tID4gMCkKCQlub3AoKTsKfQoKd29yaygpCnsKCXVuc2lnbmVk
+IGxvbmcgY3JpdCwgbXltYXNrID0gKDF1bCA8PCBtZSk7CglpbnQgZ290bG9jazsKCglzcmFuZG9t
+KGdldHBpZCgpKTsKCXdoaWxlIChzLT5ydW5uaW5nKSB7CgkJZGVsYXkod29ya2Vycyk7CgkJaWYg
+KG1lICYgMSkgewoJCQlnb3Rsb2NrID0gX190aWNrZXRfc3Bpbl90cnlsb2NrKCZzLT5sKTsKCQl9
+IGVsc2UgewoJCQlfX3RpY2tldF9zcGluX2xvY2soJnMtPmwpOwoJCQlnb3Rsb2NrID0gMTsKCQl9
+CgkJaWYgKGdvdGxvY2spIHsKCQkJaWYgKGNyaXQgPSBzLT5jcml0em9uZSkgewoJCQkJcy0+cnVu
+bmluZyA9IDA7CgkJCQlwcmludGYoIldvcmtlciAlZCBzYXcgJWx4IGF0IGVudHJ5XG4iLCBtZSwg
+Y3JpdCk7CgkJCQlicmVhazsKCQkJfQoJCQlzLT5jcml0em9uZSB8PSBteW1hc2s7CgkJCXMtPnN1
+Y2Nlc3MrKzsKCQkJcy0+d29ya2VyW21lXSsrOwoKCQkJZGVsYXkoMSk7CgoJCQlpZiAoKGNyaXQg
+PSBzLT5jcml0em9uZSkgIT0gbXltYXNrKSB7CgkJCQlwcmludGYoIldvcmtlciAlZCBzYXcgJWx4
+IGF0IGV4aXRcbiIsIG1lLCBjcml0KTsKCQkJCXMtPnJ1bm5pbmcgPSAwOwoJCQkJYnJlYWs7CgkJ
+CX0KCQkJcy0+Y3JpdHpvbmUgPSAwOwoJCQlfX3RpY2tldF9zcGluX3VubG9jaygmcy0+bCk7CgkJ
+fQoJfQp9CgptYWluKGludCBhcmdjLCBjaGFyICoqYXJndikKewoJaW50IGksIHBpZDsKCglpZiAo
+YXJnYyA+IDEpIHsKCQl3b3JrZXJzID0gYXRvaShhcmd2WzFdKTsKCQlpZiAod29ya2VycyA8IDEg
+fHwgd29ya2VycyA+IFdPUktFUlMpCgkJCXdvcmtlcnMgPSBXT1JLRVJTOwoJfQoJcyA9IG1tYXAo
+TlVMTCwgNjU1MzYsIFBST1RfUkVBRHxQUk9UX1dSSVRFLCBNQVBfU0hBUkVEfE1BUF9BTk9OWU1P
+VVMsIC0xLCAwTCk7CgoJcHJpbnRmKCJzaGFyZWQgbWFwcGluZyBhdCAlcFxuIiwgcyk7CglzLT5y
+dW5uaW5nID0gMTsKCglmb3IgKGkgPSAwOyBpIDwgd29ya2VyczsgaSsrKSBzd2l0Y2ggKHBpZCA9
+IGZvcmsoKSkgewoJY2FzZSAtMTogcGVycm9yKCJmb3JrIik7IHMtPnJ1bm5pbmcgPSAwOyByZXR1
+cm4gMTsKCWNhc2UgMDogbWUgPSBpOyB3b3JrKCk7IHJldHVybiAwOwoJfQoKCXdoaWxlIChzLT5y
+dW5uaW5nKSB7CgkJc2xlZXAoNSk7CgkJcHJpbnRmKCIlbGQgW2xvY2sgPSAlLjh4XVxuIiwgcy0+
+c3VjY2Vzcywgcy0+bC5sb2NrKTsKCQlmb3IgKGkgPSAwOyBpIDwgd29ya2VyczsgaSsrKQoJCQlw
+cmludGYoIiAlbGQgJS44eFxuIiwgcy0+d29ya2VyW2ldLCBzLT53cmFwc1tpXSk7Cgl9Cn0K
+
+--_002_987664A83D2D224EAE907B061CE93D53015D9B14DCorsmsx505amrc_--
