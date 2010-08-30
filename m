@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab0H3Ucn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 16:32:43 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:46723 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755495Ab0H3Ucm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 16:32:42 -0400
-Date: Mon, 30 Aug 2010 13:32:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, jmorris@namei.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH RFC] pid: make setpgid() system call use RCU read-side
- critical section
-Message-ID: <20100830203233.GK2420@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100830172631.GA11868@linux.vnet.ibm.com>
- <4C7C0BAB.3000709@suse.cz>
+	id S1755769Ab0H3UgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 16:36:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:63731 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab0H3UgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 16:36:16 -0400
+Message-ID: <4C7C15D8.1060000@vlnb.net>
+Date: Tue, 31 Aug 2010 00:34:32 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7C0BAB.3000709@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Hannes Reinecke <hare@suse.de>
+CC: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
+        tytso@mit.edu, chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, jack@suse.cz,
+        rwheeler@redhat.com
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <4C6540C5.8070108@vlnb.net> <4C6546E0.7070208@kernel.org> <4C6C34E0.3050601@vlnb.net> <4C6CFEAA.1060004@kernel.org> <4C7B7FC3.1050701@suse.de>
+In-Reply-To: <4C7B7FC3.1050701@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:bbn5BLf3Leu8Zo8aZQq5SpjGr2bd6fXjfmIcKNmiYvD
+ k9GerYFPuk6pKBzCyTR/ADHeFv2pZOD/DQ1UclAR5rpB7tnT+w
+ tU/AAfVtjbr0XwIDKCCIgosNxE/j6/kxTJ0ochMVfQbJbqV1lO
+ qNWuaqbWFL1ifhDfjJda2yRKrXbsvYTDV1ciM85VnnIf3bef7g
+ CZNo61fVtKzTX+baTQZKw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 09:51:07PM +0200, Jiri Slaby wrote:
-> Ccing Oleg.
-> 
-> On 08/30/2010 07:26 PM, Paul E. McKenney wrote:
-> > [   23.584720] ===================================================
-> > [   23.585059] [ INFO: suspicious rcu_dereference_check() usage. ]
-> > [   23.585176] ---------------------------------------------------
-> > [   23.585176] kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-> > [   23.585176]
-> > [   23.585176] other info that might help us debug this:
-> > [   23.585176]
-> > [   23.585176]
-> > [   23.585176] rcu_scheduler_active = 1, debug_locks = 1
-> > [   23.585176] 1 lock held by rc.sysinit/728:
-> > [   23.585176]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff8104771f>] sys_setpgid+0x5f/0x193
-> > [   23.585176]
-> > [   23.585176] stack backtrace:
-> > [   23.585176] Pid: 728, comm: rc.sysinit Not tainted 2.6.36-rc2 #2
-> > [   23.585176] Call Trace:
-> > [   23.585176]  [<ffffffff8105b436>] lockdep_rcu_dereference+0x99/0xa2
-> > [   23.585176]  [<ffffffff8104c324>] find_task_by_pid_ns+0x50/0x6a
-> > [   23.585176]  [<ffffffff8104c35b>] find_task_by_vpid+0x1d/0x1f
-> > [   23.585176]  [<ffffffff81047727>] sys_setpgid+0x67/0x193
-> > [   23.585176]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
-> > [   24.959669] type=1400 audit(1282938522.956:4): avc:  denied  { module_request } for  pid=766 comm="hwclock" kmod="char-major-10-135" scontext=system_u:system_r:hwclock_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclas
-> > 
-> > It turns out that the setpgid() system call fails to enter an RCU
-> > read-side critical section before doing a PID-to-task_struct translation.
-> > This commit therefore does rcu_read_lock() before the translation, and
-> > also does rcu_read_unlock() after the last use of the returned pointer.
-> > 
-> > Located-by: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> > 
-> >  sys.c |    2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/kernel/sys.c b/kernel/sys.c
-> > index e9ad444..05a4b0c 100644
-> > --- a/kernel/sys.c
-> > +++ b/kernel/sys.c
-> > @@ -938,6 +938,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
-> >  	write_lock_irq(&tasklist_lock);
-> >  
-> >  	err = -ESRCH;
-> > +	rcu_read_lock();
-> >  	p = find_task_by_vpid(pid);
-> 
-> AFAICT the missing lock doesn't harm due to the write_lock of tasklist
-> above. But is probably a good thing to do anyway.
+Hannes Reinecke, on 08/30/2010 01:54 PM wrote:
+>> As I've wrote multiple times, I'm pretty skeptical it will bring much.
+>> Ordered tag mandates draining inside the device just like the original
+>> barrier implementation.  Sure, it's done at a lower layer and command
+>> issue latencies will be reduced thanks to that but ordered-by-waiting
+>> doesn't require _any_ draining at all.  The whole pipeline can be kept
+>> full all the time.  I'm often wrong tho, so please feel free to go
+>> ahead and prove me wrong.  :-)
+>>
+> Actually, I thought about ordered tag writes, too.
+> But eventually I had to give up on this for a simple reason:
+> Ordered tag controls the ordering on the SCSI _TARGET_. But for a
+> meaningful implementation we need to control the ordering all the way
+> down from ->queuecommand(). Which means we have three areas we need
+> to cover here:
+> - driver (ie between ->queuecommand() and passing it off to the firmware)
+> - firmware
+> - fabric
+>
+> Sadly, the latter two are really hard to influence. And, what's more,
+> with the new/modern CNAs with multiple queues and possible multiple
+> routes to the target it becomes impossible to guarantee ordering.
+> So using ordered tags for FibreChannel is not going to work, which
+> makes implementing it a bit of a pointless exercise for me.
 
-Or we can add the tasklist lock to the rcu_dereference_check() condition.
+The situation is, actually, much better than you think. An SCSI 
+transport should provide an in-order delivery of commands. In some 
+transports it is required (e.g. iSCSI), in some - optional (e.g. FC). 
+For FC "an application client may determine if a device server supports 
+the precise delivery function by using the MODE SENSE and MODE SELECT 
+commands to examine and set the enable precise delivery checking (EPDC) 
+bit in the Fibre Channel Logical Unit Control page" (Fibre Channel 
+Protocol for SCSI (FCP)). You can find more details in FCP section 
+"Precise delivery of SCSI commands".
 
-							Thanx, Paul
+Regarding multiple queues, in case of a multipath access to a device 
+SCSI requires either each path be a separate I_T nexus, where order of 
+commands is maintained, or a transport required to maintain in-order 
+commands delivery among multiple paths in a single I_T nexus (session) 
+as it is done in iSCSI's MC/S and, most likely, wide SAS ports.
 
-> regards,
-> -- 
-> js
-> suse labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+So, everything is in the specs. We only need to use it properly. How it 
+can be done on the drivers level as well as how errors recovery can be 
+done using ACA and UA_INTLCK facilities I wrote few weeks ago in the 
+"[RFC] relaxed barrier semantics" thread.
+
+Vlad
