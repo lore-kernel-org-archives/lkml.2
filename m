@@ -1,192 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab0H3Lrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:47:42 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:32488 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab0H3Lrk (ORCPT
+	id S1755161Ab0H3LzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:55:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63965 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab0H3LzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:47:40 -0400
-Date: Mon, 30 Aug 2010 20:47:29 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH 3/3] ARM: Samsung S3C: Move/use the S3C common GPIO IRQ type
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: jy0922.shim@samsung.com, m.szyprowski@samsung.com, ben-linux@fluff.org,
-        kgene.kim@samsung.com
-Message-id: <20100830114729.GA13150@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 30 Aug 2010 11:47:38.0569 (UTC)
- FILETIME=[25433B90:01CB4839]
+	Mon, 30 Aug 2010 07:55:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=NF/RP7Mhx/K6SuEVOmKiSk+ZxGCjZ85PjUwL9NzoyM6Trnlxx3B6r9sBJldiMIvPeq
+         7L/9se/Y/T2drggbYzHClLP0kq1ONrnQXWuB5dRoCcVxLjeBED3btlJaEP8gfkBZBKNr
+         1/UY/dNDWsDDEwNqRBB9uPyBxhEb1LeHYmZWc=
+Message-ID: <4C7B9C1D.9030207@suse.cz>
+Date: Mon, 30 Aug 2010 13:55:09 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/5] tty: move stuff around
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <20100830001855.1071b6fc@lxorguk.ukuu.org.uk> <201008301337.27672.arnd@arndb.de>
+In-Reply-To: <201008301337.27672.arnd@arndb.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+On 08/30/2010 01:37 PM, Arnd Bergmann wrote:
+> These are the drivers I was planning to move:
+> +obj-$(CONFIG_CYCLADES)         += cyclades.o
 
-Samsung S3C series have the common GPIO IRQ type for all S3C series.
+There are some users still with CYY cards. No CYZ card users known to me.
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/mach-s3c64xx/irq-eint.c                  |   12 ++++++------
- arch/arm/plat-s3c24xx/irq.c                       |   14 +++++++-------
- arch/arm/plat-s5p/irq-eint.c                      |    2 --
- arch/arm/plat-samsung/include/plat/gpio-core.h    |    6 ++++++
- arch/arm/plat-samsung/include/plat/regs-irqtype.h |   21 ---------------------
- 5 files changed, 19 insertions(+), 36 deletions(-)
- delete mode 100644 arch/arm/plat-samsung/include/plat/regs-irqtype.h
+> +obj-$(CONFIG_STALLION)         += stallion.o
+> +obj-$(CONFIG_ISTALLION)        += istallion.o
+...
+> +obj-$(CONFIG_DIGIEPCA)         += epca/
+> +obj-$(CONFIG_SPECIALIX)        += specialix.o
 
-diff --git a/arch/arm/mach-s3c64xx/irq-eint.c b/arch/arm/mach-s3c64xx/irq-eint.c
-index 5682d6a..c079147 100644
---- a/arch/arm/mach-s3c64xx/irq-eint.c
-+++ b/arch/arm/mach-s3c64xx/irq-eint.c
-@@ -21,8 +21,8 @@
- 
- #include <asm/hardware/vic.h>
- 
--#include <plat/regs-irqtype.h>
- #include <mach/regs-gpio.h>
-+#include <plat/gpio-core.h>
- #include <plat/gpio-cfg.h>
- 
- #include <mach/map.h>
-@@ -85,23 +85,23 @@ static int s3c_irq_eint_set_type(unsigned int irq, unsigned int type)
- 		break;
- 
- 	case IRQ_TYPE_EDGE_RISING:
--		newvalue = S3C2410_EXTINT_RISEEDGE;
-+		newvalue = S3C_GPIO_EDGE_RISING;
- 		break;
- 
- 	case IRQ_TYPE_EDGE_FALLING:
--		newvalue = S3C2410_EXTINT_FALLEDGE;
-+		newvalue = S3C_GPIO_EDGE_FALLING;
- 		break;
- 
- 	case IRQ_TYPE_EDGE_BOTH:
--		newvalue = S3C2410_EXTINT_BOTHEDGE;
-+		newvalue = S3C_GPIO_EDGE_BOTH;
- 		break;
- 
- 	case IRQ_TYPE_LEVEL_LOW:
--		newvalue = S3C2410_EXTINT_LOWLEV;
-+		newvalue = S3C_GPIO_LEVEL_LOW;
- 		break;
- 
- 	case IRQ_TYPE_LEVEL_HIGH:
--		newvalue = S3C2410_EXTINT_HILEV;
-+		newvalue = S3C_GPIO_LEVEL_HIGH;
- 		break;
- 
- 	default:
-diff --git a/arch/arm/plat-s3c24xx/irq.c b/arch/arm/plat-s3c24xx/irq.c
-index ad0d44e..e1a6fe5 100644
---- a/arch/arm/plat-s3c24xx/irq.c
-+++ b/arch/arm/plat-s3c24xx/irq.c
-@@ -23,12 +23,12 @@
- #include <linux/interrupt.h>
- #include <linux/ioport.h>
- #include <linux/sysdev.h>
-+#include <linux/gpio.h>
- 
- #include <asm/irq.h>
- #include <asm/mach/irq.h>
- 
--#include <plat/regs-irqtype.h>
--
-+#include <plat/gpio-core.h>
- #include <plat/cpu.h>
- #include <plat/pm.h>
- #include <plat/irq.h>
-@@ -201,23 +201,23 @@ s3c_irqext_type(unsigned int irq, unsigned int type)
- 			break;
- 
- 		case IRQ_TYPE_EDGE_RISING:
--			newvalue = S3C2410_EXTINT_RISEEDGE;
-+			newvalue = S3C_GPIO_EDGE_RISING;
- 			break;
- 
- 		case IRQ_TYPE_EDGE_FALLING:
--			newvalue = S3C2410_EXTINT_FALLEDGE;
-+			newvalue = S3C_GPIO_EDGE_FALLING;
- 			break;
- 
- 		case IRQ_TYPE_EDGE_BOTH:
--			newvalue = S3C2410_EXTINT_BOTHEDGE;
-+			newvalue = S3C_GPIO_EDGE_BOTH;
- 			break;
- 
- 		case IRQ_TYPE_LEVEL_LOW:
--			newvalue = S3C2410_EXTINT_LOWLEV;
-+			newvalue = S3C_GPIO_LEVEL_LOW;
- 			break;
- 
- 		case IRQ_TYPE_LEVEL_HIGH:
--			newvalue = S3C2410_EXTINT_HILEV;
-+			newvalue = S3C_GPIO_LEVEL_HIGH;
- 			break;
- 
- 		default:
-diff --git a/arch/arm/plat-s5p/irq-eint.c b/arch/arm/plat-s5p/irq-eint.c
-index 4e0d94b..02d6ea2 100644
---- a/arch/arm/plat-s5p/irq-eint.c
-+++ b/arch/arm/plat-s5p/irq-eint.c
-@@ -19,8 +19,6 @@
- 
- #include <asm/hardware/vic.h>
- 
--#include <plat/regs-irqtype.h>
--
- #include <mach/map.h>
- #include <plat/cpu.h>
- #include <plat/pm.h>
-diff --git a/arch/arm/plat-samsung/include/plat/gpio-core.h b/arch/arm/plat-samsung/include/plat/gpio-core.h
-index c8681e0..2aef589 100644
---- a/arch/arm/plat-samsung/include/plat/gpio-core.h
-+++ b/arch/arm/plat-samsung/include/plat/gpio-core.h
-@@ -14,6 +14,12 @@
- #define GPIOCON_OFF	(0x00)
- #define GPIODAT_OFF	(0x04)
- 
-+#define S3C_GPIO_LEVEL_LOW		(0x00)
-+#define S3C_GPIO_LEVEL_HIGH		(0x01)
-+#define S3C_GPIO_EDGE_FALLING		(0x02)
-+#define S3C_GPIO_EDGE_RISING		(0x04)
-+#define S3C_GPIO_EDGE_BOTH		(0x06)
-+
- #define S5P_GPIO_LEVEL_LOW		(0x00)
- #define S5P_GPIO_LEVEL_HIGH		(0x01)
- #define S5P_GPIO_EDGE_FALLING		(0x02)
-diff --git a/arch/arm/plat-samsung/include/plat/regs-irqtype.h b/arch/arm/plat-samsung/include/plat/regs-irqtype.h
-deleted file mode 100644
-index c63cd3f..0000000
---- a/arch/arm/plat-samsung/include/plat/regs-irqtype.h
-+++ /dev/null
-@@ -1,21 +0,0 @@
--/* arch/arm/plat-s3c/include/plat/regs-irqtype.h
-- *
-- * Copyright 2008 Simtec Electronics
-- *      Ben Dooks <ben@simtec.co.uk>
-- *      http://armlinux.simtec.co.uk/
-- *
-- * S3C - IRQ detection types.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--/* values for S3C2410_EXTINT0/1/2 and other cpus in the series, including
-- * the S3C64XX
--*/
--#define S3C2410_EXTINT_LOWLEV	 (0x00)
--#define S3C2410_EXTINT_HILEV	 (0x01)
--#define S3C2410_EXTINT_FALLEDGE	 (0x02)
--#define S3C2410_EXTINT_RISEEDGE	 (0x04)
--#define S3C2410_EXTINT_BOTHEDGE	 (0x06)
+These 4 may go probably. I remember Alan suggested epca to be removed
+few years ago.
+
+> +obj-$(CONFIG_MOXA_INTELLIO)    += moxa.o
+
+Maybe few users left.
+
+> +obj-$(CONFIG_MOXA_SMARTIO)     += mxser.o
+
+Still in use. (And supports relatively new devices; not the PCI-e ones
+though.)
+
+> +obj-$(CONFIG_COMPUTONE)        += ip2/
+> +obj-$(CONFIG_RISCOM8)          += riscom8.o
+> +obj-$(CONFIG_ISI)              += isicom.o
+
+Unused? isicom is broken last I heard.
+
+thanks,
 -- 
-1.5.3.3
-
+js
+suse labs
