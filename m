@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab0H3UAE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 16:00:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33188 "EHLO mx2.suse.de"
+	id S1755370Ab0H3UVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 16:21:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52408 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755157Ab0H3UAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 16:00:01 -0400
-Date: Mon, 30 Aug 2010 11:47:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/5] tty: move stuff around
-Message-ID: <20100830184737.GA21339@suse.de>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+	id S1753902Ab0H3UV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 16:21:29 -0400
+Date: Mon, 30 Aug 2010 22:20:34 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, jeremy@goop.org,
+        snitzer@redhat.com, k-ueda@ct.jp.nec.com,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 26/30] ext4: do not send discards as barriers
+Message-ID: <20100830202034.GB12226@quack.quadriga.com>
+References: <1282751267-3530-1-git-send-email-tj@kernel.org>
+ <1282751267-3530-27-git-send-email-tj@kernel.org>
+ <20100825155842.GA3229@lst.de>
+ <20100825160032.GC3229@lst.de>
+ <4C753D75.2010305@kernel.org>
+ <20100825200223.GE2738@quack.suse.cz>
+ <4C76250B.6060800@kernel.org>
+ <20100827173147.GA12374@quack.suse.cz>
+ <x4939tv98n8.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+In-Reply-To: <x4939tv98n8.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 11:06:30PM +0200, Arnd Bergmann wrote:
-> Hi Greg,
+On Mon 30-08-10 15:56:43, Jeff Moyer wrote:
+> Jan Kara <jack@suse.cz> writes:
 > 
-> After fighting with the BKL removal in tty, I realized that the
-> files in drivers/char could use a reorganization to split the
-> tty files from those drivers that have nothing to do with ttys.
+> >   An update: I've set up an ext4 barrier testing in KVM - run fsstress,
+> > kill KVM at some random moment and check that the filesystem is consistent
+> > (kvm is run in cache=writeback mode to simulate disk cache). About 70 runs
+> 
+> But doesn't your "disk cache" survive the "power cycle" of your guest?
+  Yes, you're right. Thinking about it now the test setup was wrong because
+it didn't refuse writes to the VM's data partition after the moment I
+killed KVM. Thanks for catching this. I will probably have to use the fault
+injection on the host to disallow writing the device at a certain moment.
+Or does somebody have a better option?
+  My setup is that I have a dedicated partition / drive for a filesystem
+which is written to from a guest kernel running under KVM. I have set it up
+using virtio driver with cache=writeback so that the host caches the writes
+in a similar way disk caches them. At some point I just kill the qemu-kvm
+process and at that point I'd like to also throw away data cached by the
+host...
 
-<snip>
+									Honza
 
-I like the idea, and after you've worked out with Alan which ones should
-be "deleted" and others moved around, I'll be glad to apply these types
-of patches.
-
-Oh, we shouldn't just delete the drivers, we can move them to
-drivers/staging/ where they will then be removed after 2 kernel releases
-if no one steps up to fix/maintain them.  That's the "proper" way to
-depreciate a driver.
-
-> Of course, moving stuff around always has the tendency to
-> break patches against it, so we might not want to do this after
-> all.
-
-Nah, it's no problem to this, git can handle renames just fine :)
-
-thanks,
-
-greg k-h
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
