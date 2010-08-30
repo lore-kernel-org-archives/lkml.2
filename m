@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab0H3EVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 00:21:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59007
+	id S1753337Ab0H3EW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 00:22:56 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59013
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752404Ab0H3EVk (ORCPT
+	by vger.kernel.org with ESMTP id S1751070Ab0H3EWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 00:21:40 -0400
-Date: Sun, 29 Aug 2010 21:21:56 -0700 (PDT)
-Message-Id: <20100829.212156.229740543.davem@davemloft.net>
-To: agruen@suse.de
-Cc: eparis@parisplace.org, netfilter@vger.kernel.org, eparis@redhat.com,
-        linux-kernel@vger.kernel.org, schwab@redhat.com,
-        tvrtko.ursulin@sophos.com
-Subject: Re: aligned_{u64,be64,le64} defined in #ifdef __KERNEL__
+	Mon, 30 Aug 2010 00:22:55 -0400
+Date: Sun, 29 Aug 2010 21:23:11 -0700 (PDT)
+Message-Id: <20100829.212311.35029746.davem@davemloft.net>
+To: horms@verge.net.au
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <201008300326.30233.agruen@suse.de>
-References: <1282682582-15980-1-git-send-email-eparis@redhat.com>
-	<AANLkTimbQivEd7z1+sdLgChieGrY3c9iQWXVKgcYRAY=@mail.gmail.com>
-	<201008300326.30233.agruen@suse.de>
+In-Reply-To: <20100830032935.GA18072@verge.net.au>
+References: <20100830130453.d810b086.sfr@canb.auug.org.au>
+	<20100830032935.GA18072@verge.net.au>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,18 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@suse.de>
-Date: Mon, 30 Aug 2010 03:26:29 +0200
+From: Simon Horman <horms@verge.net.au>
+Date: Mon, 30 Aug 2010 12:29:39 +0900
 
-> On Saturday 28 August 2010 01:51:53 Eric Paris wrote:
->> I liked this version until I realized that userspace doesn't have
->> aligned_u64 as a valid type.
+> On Mon, Aug 30, 2010 at 01:04:53PM +1000, Stephen Rothwell wrote:
+>> Hi all,
+>> 
+>> After merging the final tree, today's linux-next build (powerpc
+>> allyesconfig) failed like this:
+>> 
+>> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
+>> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
+>> 
+>> Caused by commit 8870f8427b8fe30b2684b9e569e5ce038faf41ac ("IPVS: ICMPv6
+>> checksum calculation").  I added the following patch:
+>> [I think we have seen this before :-(]
+>> 
+>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date: Mon, 30 Aug 2010 13:01:20 +1000
+>> Subject: [PATCH] IPVS: include net/ip6_checksum.h for csum_ipv6_magic
+>> 
+>> Fixes this build error:
+>> 
+>> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
+>> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
 > 
-> This looks like an error in include/linux/types.h.  The aligned types should 
-> probably not be defined inside #ifdef __KERNEL__.
+> Sorry about that, I didn't notice it because it doesn't show up on x86.
+> 
+>> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Simon Horman <horms@verge.net.au>
 
-You can't do this, as it would pollute the POSIX namespace.
-
-If we want a version of this type visible to userspace, it needs to,
-for example, have double underscores prepended to the type name just
-as we do for things like __u16 and __u32.
+Applied thanks everyone.
