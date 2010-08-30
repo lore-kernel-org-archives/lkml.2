@@ -1,267 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab0H3AUF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 20:20:05 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53426 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab0H3AUD convert rfc822-to-8bit (ORCPT
+	id S1754141Ab0H3AWU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 20:22:20 -0400
+Received: from smtp107.sbc.mail.gq1.yahoo.com ([67.195.14.110]:36195 "HELO
+	smtp107.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753587Ab0H3AWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 20:20:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Kees Cook <kees.cook@canonical.com>
-Subject: Re: [PATCH] exec argument expansion can inappropriately trigger OOM-killer
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        oss-security@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Roland McGrath <roland@redhat.com>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100827220258.GF4703@outflux.net>
-References: <20100827220258.GF4703@outflux.net>
-Message-Id: <20100830091909.5248.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 30 Aug 2010 09:19:58 +0900 (JST)
+	Sun, 29 Aug 2010 20:22:19 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: lhPjC9gVM1lrjhOn_sqlhwZ72msBUK1XF7OzV.rKND2ExLv
+ e1qTMOG8SOROs9IszLWiIa05f7nrDMqn3Y3nRDdLmk9VXCidCdp2pyfJoRD_
+ cx0aEoprYRtV0ymmjczd3ni_Qbvu3hPX0et_Iq_531eukaVP7fXEVu9oEURV
+ JLR0i5u7lKnWC9ucqOP_b1JzHJpEMo2MloiBR1yT9W8Drsb3YVD80qr06yrM
+ IrPgLHdtwfl1wk6y9TWyEa1a8fl.rIGxHU_bWyZBgDh5JI9uh3Yf6Kq1cO2l
+ tB4sVoWVPG9ohHWLLHH5xnm0lBPlt72T9azMJhaSzUnT2Dkki4soUrHd8KJN
+ t.MtZFF7RD5ji0dvY
+X-Yahoo-Newman-Property: ymail-3
+Subject: [ANNOUNCE] TCM/LIO v4.0.0-rc3 for 2.6.36-rc3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
+Content-Type: text/plain
+Date: Sun, 29 Aug 2010 17:18:27 -0700
+Message-Id: <1283127507.32007.403.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Brad Spengler published a local memory-allocation DoS that
-> evades the OOM-killer (though not the virtual memory RLIMIT):
-> http://www.grsecurity.net/~spender/64bit_dos.c
-> 
-> The recent changes to create a stack guard page helps slightly to
-> discourage this attack, but it is not sufficient. Compiling it statically
-> moves the libraries out of the way, allowing the stack VMA to fill the
-> entire TASK_SIZE.
-> 
-> There are two issues:
->  1) the OOM killer doesn't notice this argv memory explosion
->  2) the argv expansion does not check if rlim[RLIMIT_STACK].rlim_cur is -1.
-> 
-> I figure a quick solution for #2 would be the following patch. However,
-> running multiple copies of this program could result in similar OOM
-> behavior, so issue #1 still needs a solution.
->
->Reported-by: Brad Spengler <spender@grsecurity.net>
->Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Greetings all,
 
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+I am very pleased to announce that TCM/LIO v4.0.0-rc3 for the 2.6.36-rc3 kernel
+has been pushed into lio-core-2.6.git/lio-4.0.  Along with the numerous bugfixes
+listed in the shortlog below, the main cleanups and features since v4.0.0-rc2
+was released earlier this month include:
 
+	*) Major cleanups of TCM/pSCSI struct scsi_device registration code (hch assist)
+	*) Remove legacy linux_blockdevice_[claim,release]() usage (hch assist)
+	*) Fix struct se_mem memory mapping across N struct se_task for
+	   max_sectors=255 backstores
+	*) Conversion of TCM Core to follow mainline convention and use
+	   include/linux/scatterlist.h wrappers wherever possible.
+	*) Add proper 4k -> 512 block_size conversion for TCM/IBLOCK (jaxboe assist)
+	*) New tcm_mod_builder.py script and mini-HOWTO for generating new
+	   TCM fabric modules with functional+runnable configfs skeletons
+	*) TCM level SYNCHRONIZE_CACHE_* emulation w/ support for WriteCache and
+	   FUA WRITE emulation with FILEIO and IBLOCK subsystem plugins. (hch assist)
+	   
+A big thanks (again) to hch, jaxboe, and everyone involved in this release
+for their very gracious help and feedback!
 
-And, I have a patch for #1. Can you please see this? Alternative idea
-is to change rss accounting itself.
+Best,
 
+--nab
 
+Nicholas Bellinger (33):
+  tcm: Add __module_get() and module_put() calls to se_core_add_hba()
+    and se_core_shutdown_hba()
+  tcm_loop: Fix NULL pointer dereference in tcm_loop_queuecommand()
+  tcm: Make se_core_add_hba() use try_module_get() for struct
+    se_subsystem_api->sub_owner
+  tcm: Fix non-existent TPG LUN OOPs in target_fabric_mappedlun_link()
+  tcm: Merge struct se_subsystem_spc into struct se_subsystem_api and
+    convert subsystem plugins
+  tcm/fileio: Remove fd_seek() usage for local scope loff_t usase
+  tcm/pscsi: Remove pscsi_create_virtdevice_from_fd() usage
+  tcm/pscsi: Remove legacy LINUX_VPD_PAGE_CHECK logic
+  tcm/pscsi: Remove internal TYPE_DISK
+    linux_blockdevice_[claim,release]() usage
+  tcm/iblock: Fix NULL struct iblock_dev->ibd_bd case in
+    iblock_free_device()
+  tcm/pscsi: Fix NULL struct pscsi_dev_virt->pdv_bd case for TYPE_DISK
+    in pscsi_free_device()
+  tcm/pscsi: Remove remaining struct scsi_disk references
+  tcm/ramdisk: Fix NULL pointer dereference in rd_DIRECT_free_DMA()
+  tcm: Convert transport_map_sg_to_mem() to use sg_next()
+  tcm: Remove *task_offset_in parameter from
+    transport_generic_get_cdb_count()
+  tcm: Minor naming cleanup for dev_obj_do_se_mem_map()
+  tcm: Remove task_offset parameter from transport_map_sg_to_mem()
+  tcm: Make transport_calc_sg_num() properly handle task_offset
+  tcm: Make transport_map_mem_to_sg() properly handle task_offset
+  tcm: Remove legacy transport_map_mem_to_mem()
+  tcm: Remove remaining code out of target_core_seobj.c
+  tcm: Remove legacy struct se_lun->lun_type_ptr
+  tcm/iblock: Add SCSI LBA -> block_lba conversion for non 512-byte
+    block_size
+  tcm/iblock: Convert iblock_map_task_SG() to use for_each_sg()
+  tcm: Add Documentation/target/tcm_mod_builder.py script and
+    mini-HOWTO
+  tcm: Add WriteCache and FUADPO infrastructure and attributes
+  tcm: Add SYNCHRONIZE_CACHE* CDB infrastructure and emulation
+  tcm: Add WriteCache and DPOFUA emulation bits to MODE_SENSE
+  tcm/fileio: Add WriteCache and Forced Unit Access WRITE emulation
+  tcm/fileio: Remove struct se_subsystem_api->do_sync_cache() usage
+  tcm: Remove struct se_subsystem_api->do_sync_cache()
+  tcm/iblock: Add WriteCache and Forced Unit Access WRITE emulation
+  lio-core v4.0.0-rc3
 
->From d4e114e5d31b14ebfc399d4b1fb142c7dfce0ca4 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 19 Aug 2010 20:40:20 +0900
-Subject: [PATCH] oom: don't ignore temporary rss while execve
-
-execve() makes new mm struct and setup stack and argv vector,
-Unfortunately this new mm is not pointed any tasks, then oom-kill
-can't detect this memory usage. therefore oom-kill may kill incorrect
-task.
-
-This patch added in-exec rss treatness to oom.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- fs/compat.c             |    8 ++++++--
- fs/exec.c               |   19 +++++++++++++++++--
- include/linux/binfmts.h |    1 +
- include/linux/sched.h   |    1 +
- mm/oom_kill.c           |   36 +++++++++++++++++++++++++++---------
- 5 files changed, 52 insertions(+), 13 deletions(-)
-
-diff --git a/fs/compat.c b/fs/compat.c
-index 718c706..643140c 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1527,6 +1527,7 @@ int compat_do_execve(char * filename,
- 	retval = bprm_mm_init(bprm);
- 	if (retval)
- 		goto out_file;
-+	set_exec_mm(bprm->mm);
- 
- 	bprm->argc = compat_count(argv, MAX_ARG_STRINGS);
- 	if ((retval = bprm->argc) < 0)
-@@ -1560,6 +1561,7 @@ int compat_do_execve(char * filename,
- 	/* execve succeeded */
- 	current->fs->in_exec = 0;
- 	current->in_execve = 0;
-+	set_exec_mm(NULL);
- 	acct_update_integrals(current);
- 	free_bprm(bprm);
- 	if (displaced)
-@@ -1567,8 +1569,10 @@ int compat_do_execve(char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
--		mmput(bprm->mm);
-+	if (current->in_exec_mm) {
-+		struct mm_struct *in_exec_mm = set_exec_mm(NULL);
-+		mmput (in_exec_mm);
-+	}
- 
- out_file:
- 	if (bprm->file) {
-diff --git a/fs/exec.c b/fs/exec.c
-index 2d94552..85192e1 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1314,6 +1314,17 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 
- EXPORT_SYMBOL(search_binary_handler);
- 
-+struct mm_struct* set_exec_mm(struct mm_struct *mm)
-+{
-+	struct mm_struct *old = current->in_exec_mm;
-+
-+	task_lock(current);
-+	current->in_exec_mm = mm;
-+	task_unlock(current);
-+
-+	return old;
-+}
-+
- /*
-  * sys_execve() executes a new program.
-  */
-@@ -1361,6 +1372,7 @@ int do_execve(const char * filename,
- 	retval = bprm_mm_init(bprm);
- 	if (retval)
- 		goto out_file;
-+	set_exec_mm(bprm->mm);
- 
- 	bprm->argc = count(argv, MAX_ARG_STRINGS);
- 	if ((retval = bprm->argc) < 0)
-@@ -1395,6 +1407,7 @@ int do_execve(const char * filename,
- 	/* execve succeeded */
- 	current->fs->in_exec = 0;
- 	current->in_execve = 0;
-+	set_exec_mm(NULL);
- 	acct_update_integrals(current);
- 	free_bprm(bprm);
- 	if (displaced)
-@@ -1402,8 +1415,10 @@ int do_execve(const char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
--		mmput (bprm->mm);
-+	if (current->in_exec_mm) {
-+		struct mm_struct *in_exec_mm = set_exec_mm(NULL);
-+		mmput (in_exec_mm);
-+	}
- 
- out_file:
- 	if (bprm->file) {
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index a065612..8cf61eb 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -133,6 +133,7 @@ extern void install_exec_creds(struct linux_binprm *bprm);
- extern void do_coredump(long signr, int exit_code, struct pt_regs *regs);
- extern void set_binfmt(struct linux_binfmt *new);
- extern void free_bprm(struct linux_binprm *);
-+extern struct mm_struct* set_exec_mm(struct mm_struct *mm);
- 
- #endif /* __KERNEL__ */
- #endif /* _LINUX_BINFMTS_H */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..d413757 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1217,6 +1217,7 @@ struct task_struct {
- 	struct plist_node pushable_tasks;
- 
- 	struct mm_struct *mm, *active_mm;
-+	struct mm_struct *in_exec_mm;
- #if defined(SPLIT_RSS_COUNTING)
- 	struct task_rss_stat	rss_stat;
- #endif
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 57c05f7..7fc6916 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -120,6 +120,30 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
- 	return NULL;
- }
- 
-+static unsigned long calculate_rss_swap(struct task_struct *p)
-+{
-+	struct task_struct *t = p;
-+	int mm_accounted = 0;
-+	unsigned long points = 0;
-+
-+	do {
-+		task_lock(t);
-+		if (!mm_accounted && t->mm) {
-+			points += get_mm_rss(t->mm);
-+			points += get_mm_counter(t->mm, MM_SWAPENTS);
-+			mm_accounted = 1;
-+		}
-+		if (t->in_exec_mm) {
-+			points += get_mm_rss(t->in_exec_mm);
-+			points += get_mm_counter(t->in_exec_mm, MM_SWAPENTS);
-+		}
-+		task_unlock(t);
-+	} while_each_thread(p, t);
-+
-+	return points;
-+}
-+
-+
- /* return true if the task is not adequate as candidate victim task. */
- static bool oom_unkillable_task(struct task_struct *p, struct mem_cgroup *mem,
- 			   const nodemask_t *nodemask)
-@@ -157,16 +181,11 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 	if (oom_unkillable_task(p, mem, nodemask))
- 		return 0;
- 
--	p = find_lock_task_mm(p);
--	if (!p)
--		return 0;
--
- 	/*
- 	 * Shortcut check for OOM_SCORE_ADJ_MIN so the entire heuristic doesn't
- 	 * need to be executed for something that cannot be killed.
- 	 */
- 	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
--		task_unlock(p);
- 		return 0;
- 	}
- 
-@@ -175,7 +194,6 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 	 * priority for oom killing.
- 	 */
- 	if (p->flags & PF_OOM_ORIGIN) {
--		task_unlock(p);
- 		return 1000;
- 	}
- 
-@@ -190,9 +208,9 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 	 * The baseline for the badness score is the proportion of RAM that each
- 	 * task's rss and swap space use.
- 	 */
--	points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
--			totalpages;
--	task_unlock(p);
-+	points = calculate_rss_swap(p) * 1000 / totalpages;
-+	if (!points)
-+		return 0;
- 
- 	/*
- 	 * Root processes get 3% bonus, just like the __vm_enough_memory()
--- 
-1.6.5.2
-
-
-
+ Documentation/target/tcm_mod_builder.py          | 1039 ++++++++++++++++++++++
+ Documentation/target/tcm_mod_builder.txt         |  138 +++
+ drivers/target/Kbuild                            |    1 -
+ drivers/target/lio-target/iscsi_target_mib.c     |    8 +-
+ drivers/target/lio-target/iscsi_target_version.h |    2 +-
+ drivers/target/target_core_alua.c                |    6 +-
+ drivers/target/target_core_configfs.c            |   17 +-
+ drivers/target/target_core_device.c              |  170 ++++-
+ drivers/target/target_core_fabric_configfs.c     |   14 +-
+ drivers/target/target_core_file.c                |  249 ++++--
+ drivers/target/target_core_hba.c                 |   29 +
+ drivers/target/target_core_iblock.c              |  219 ++++--
+ drivers/target/target_core_iblock.h              |    1 +
+ drivers/target/target_core_mib.c                 |    8 +-
+ drivers/target/target_core_pscsi.c               |  484 +---------
+ drivers/target/target_core_pscsi.h               |    1 +
+ drivers/target/target_core_rd.c                  |   47 +-
+ drivers/target/target_core_seobj.c               |  215 -----
+ drivers/target/target_core_seobj.h               |   47 -
+ drivers/target/target_core_stgt.c                |   32 +-
+ drivers/target/target_core_tpg.c                 |   15 +-
+ drivers/target/target_core_transport.c           |  758 +++++++++-------
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c   |   11 +-
+ include/target/target_core_base.h                |   14 +-
+ include/target/target_core_device.h              |   10 +
+ include/target/target_core_transport.h           |   99 ++-
+ 26 files changed, 2336 insertions(+), 1298 deletions(-)
+ create mode 100755 Documentation/target/tcm_mod_builder.py
+ create mode 100644 Documentation/target/tcm_mod_builder.txt
+ delete mode 100644 drivers/target/target_core_seobj.c
+ delete mode 100644 drivers/target/target_core_seobj.h
 
 
