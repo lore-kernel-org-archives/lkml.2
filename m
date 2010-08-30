@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab0H3QU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 12:20:27 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:26505 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755866Ab0H3QU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 12:20:26 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: HYbMW3gVM1nPGcGatgDC0CDqJZiqD6iPYcRZAUXqfWOFNAD
- 4lSzY0od0jQmqJ7JO7iWjLpSCRWAFFP4DcHpcMefeShTnN.P4O7Q30A1EKAF
- MECFZE1.k_gsIYKsBDlu_ivr36yLlPqlMLWB1bAYm5LS0isZSCZThQaUTqUr
- FRfRwx4_0HnkklS7vfhzTZKPEe81.CeqM2hkpkQyNS.GvZ1x8hBQmbn_usHU
- JXVBibEZnSIkAa4Nvj28se5Lck7_9
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 30 Aug 2010 11:20:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Nitin Gupta <ngupta@vflare.org>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] Use percpu stats
-In-Reply-To: <1281374816-904-4-git-send-email-ngupta@vflare.org>
-Message-ID: <alpine.DEB.2.00.1008301114460.10316@router.home>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org> <1281374816-904-4-git-send-email-ngupta@vflare.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755896Ab0H3QRp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 12:17:45 -0400
+Received: from claw.goop.org ([74.207.240.146]:54424 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755721Ab0H3QRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 12:17:44 -0400
+Message-ID: <4C7BD9A6.1090108@goop.org>
+Date: Mon, 30 Aug 2010 09:17:42 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Hank Janssen <hjanssen@microsoft.com>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
+Subject: Re: hv block drivers
+References: <201008301643.42253.arnd@arndb.de>
+In-Reply-To: <201008301643.42253.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Aug 2010, Nitin Gupta wrote:
+ On 08/30/2010 07:43 AM, Arnd Bergmann wrote:
+> Hi Hank,
+>
+> I wanted to follow up on the block device driver discussion we had at
+> LinuxCon, based on some other input I got.
+>
+> What most people recommended was to make both the hv scsi and the
+> hv ata code scsi device drivers, *not* make them standalone block
+> drivers as I originally recommended.
+>
+> The main reason for this is consistent naming of the devices. We
+> have a lot of user code that can deal with /dev/sd* devices, but
+> introducing the /dev/vd* devices for virtio caused a lot of pain
+> that you probably shouldn't have to go through.
 
-> -static void zram_stat_inc(u32 *v)
-> +static void zram_add_stat(struct zram *zram,
-> +			enum zram_stats_index idx, s64 val)
->  {
-> -	*v = *v + 1;
-> +	struct zram_stats_cpu *stats;
-> +
-> +	preempt_disable();
-> +	stats = __this_cpu_ptr(zram->stats);
-> +	u64_stats_update_begin(&stats->syncp);
-> +	stats->count[idx] += val;
-> +	u64_stats_update_end(&stats->syncp);
-> +	preempt_enable();
+We're having the same kind of problem with the Xen xvdX device naming. 
+For a fully PV system it doesn't matter to much, but when you've got PV
+drivers taking the place of a regular emulated hardware device it would
+be nice to have a similar device name.
 
-Maybe do
+But there isn't a lot of similarity between the Xen block interface and
+SCSI beyond the basic block transfer bits, so I was wondering how good a
+match it would really be.
 
-#define zram_add_stat(zram, index, val)
-		this_cpu_add(zram->stats->count[index], val)
+Have you investigated making virtio a scsi device?
 
-instead? It creates an add in a single "atomic" per cpu instruction and
-deals with the fallback scenarios for processors that cannot handle 64
-bit adds.
-
+    J
