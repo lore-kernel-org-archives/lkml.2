@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab0H3OVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 10:21:53 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38809 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755577Ab0H3OVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 10:21:52 -0400
-Message-ID: <4C7BBE4E.8080901@kernel.org>
-Date: Mon, 30 Aug 2010 16:21:02 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1755664Ab0H3OXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 10:23:07 -0400
+Received: from x35.xmailserver.org ([64.71.152.41]:42014 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab0H3OXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 10:23:05 -0400
+X-AuthUser: davidel@xmailserver.org
+Date: Mon, 30 Aug 2010 07:22:57 -0700 (PDT)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@Macintosh-3.local
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-api@vger.kernel.org
+Subject: Re: [patch/rfc] eventfd semaphore-like behavior
+In-Reply-To: <AANLkTim_seWr0LZJyC+dPBy-N+_NkzTx21vte7qrwunC@mail.gmail.com>
+Message-ID: <alpine.OSX.2.00.1008300721400.175@Macintosh-3.local>
+References: <alpine.DEB.1.10.0902041349180.6214@alien.or.mcafeemobile.com> <20090204150507.665b5b7c.akpm@linux-foundation.org> <alpine.DEB.1.10.0902041509060.6214@alien.or.mcafeemobile.com> <20090204152434.c8f65d52.akpm@linux-foundation.org>
+ <alpine.DEB.1.10.0902041526590.6214@alien.or.mcafeemobile.com> <20090204155514.6abbdc8f.akpm@linux-foundation.org> <cfd18e0f0902041559l4c40d9b6k704068337a00df7a@mail.gmail.com> <alpine.DEB.1.10.0902041600170.6214@alien.or.mcafeemobile.com>
+ <AANLkTim_seWr0LZJyC+dPBy-N+_NkzTx21vte7qrwunC@mail.gmail.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
 MIME-Version: 1.0
-To: CAI Qian <caiqian@redhat.com>
-CC: kexec <kexec@lists.infradead.org>, linux-next@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kdump regression compared to v2.6.35
-References: <1141332926.1524871283176937097.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1141332926.1524871283176937097.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 14:21:05 +0000 (UTC)
+Content-Type: MULTIPART/MIXED; BOUNDARY="0-561423044-1283178184=:175"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On 08/30/2010 04:02 PM, CAI Qian wrote:
->> Hmm, odd.  So, here's the said debug patch.  It will periodically
->> check all works and report if any work is being delayed for too long.
->> If the max wait goes over 30secs, it will dump all task states and
->> disable itself.  Can you please apply the patch on top of rc2 +
->> wq#for-linus and report the output?  It should tell us who's stuck
->> where.
->
-> Nothing new was printed after around 10 minutes.
+--0-561423044-1283178184=:175
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Eh... that's interesting.  That means no work is stalled on
-workqueues, so it at least is not a workqueue stall.  Can you please
-try the following then?  Or if sysrq wasn't working because your
-keyboard wasn't initialized at that point, you can setup serial
-console and trigger sysrq that way.
+On Mon, 30 Aug 2010, Michael Kerrisk wrote:
 
-Thanks.
+> On Thu, Feb 5, 2009 at 2:02 AM, Davide Libenzi <davidel@xmailserver.org> wrote:
+> > On Thu, 5 Feb 2009, Michael Kerrisk wrote:
+> >
+> >> > Dunno.  Probably try the syscall and see if it returned -EINVAL.  Does
+> >> > that work in this case?
+> >>
+> >> As youll have seen by now, Ulrich and I noted that it works.
+> >>
+> >> > If so, it would be sensible to mention this in
+> >> > the description somewhere as the approved probing method and to
+> >> > maintain it.
+> >>
+> >> I'll add something to the man page, as this patch progresses.
+> >
+> > I see we already have stuff like this inside the man pages:
+> >
+> > O_CLOEXEC (Since Linux 2.6.23)
+> >          Enable the close-on-exec flag for the new file descriptor.
+> >          ...
+> >
+> > Maybe a similar note for the new flag?
+> 
+> It took a while, but here's the new text in the eventfd.2 (will be in
+> man-pages-2.36). Could you please ACK, Davide?
+> 
+>        EFD_SEMAPHORE (since Linux 2.6.30)
+>               Provide semaphore-like semantics  for  reads  from
+>               the new file descriptor.  See below.
+> ...
+>               *  If EFD_SEMAPHORE  was  not  specified  and  the
+>                  eventfd  counter  has  a  nonzero value, then a
+>                  read(2) returns 8 bytes containing that  value,
+>                  and the counter's value is reset to zero.
+> 
+>               *  If  EFD_SEMAPHORE was specified and the eventfd
+>                  counter has a nonzero  value,  then  a  read(2)
+>                  returns 8 bytes containing the value 1, and the
+>                  counter's value is decremented by 1.
 
-diff --git a/init/main.c b/init/main.c
-index 94ab488..e156b8f 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -423,11 +423,19 @@ static void __init setup_command_line(char *command_line)
+Looks fine to me.
 
- static __initdata DECLARE_COMPLETION(kthreadd_done);
 
-+static void show_state_timer_fn(unsigned long data)
-+{
-+	show_state();
-+}
-+static DEFINE_TIMER(show_state_timer, show_state_timer_fn, 0, 0);
-+
- static noinline void __init_refok rest_init(void)
- 	__releases(kernel_lock)
- {
- 	int pid;
+- Davide
 
-+	printk("XXX show_state_timer registered\n");
-+	mod_timer(&show_state_timer, jiffies + 180 * HZ);
- 	rcu_scheduler_starting();
- 	/*
- 	 * We need to spawn init first so that it obtains pid 1, however
+--0-561423044-1283178184=:175--
