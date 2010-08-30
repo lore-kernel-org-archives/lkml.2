@@ -1,155 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab0H3XKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 19:10:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59605 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550Ab0H3XKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 19:10:48 -0400
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: linux-bluetooth@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, marcel@holtmann.org
-Subject: Possible regression with skb_clone() in 2.6.36
-Date: Mon, 30 Aug 2010 20:10:23 -0300
-Message-Id: <1283209824-8795-1-git-send-email-padovan@profusion.mobi>
-X-Mailer: git-send-email 1.7.2.2
+	id S1754666Ab0H3XMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 19:12:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38554 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753809Ab0H3XMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 19:12:22 -0400
+Date: Tue, 31 Aug 2010 09:12:11 +1000
+From: Neil Brown <neilb@suse.de>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, jblunck@suse.de,
+        hch@infradead.org
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+Message-ID: <20100831091211.403e0d06@notabene>
+In-Reply-To: <20100830183843.GB2444@shell>
+References: <20100826183340.027591901@szeredi.hu>
+	<20100827170551.19616048@notabene>
+	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
+	<20100827213502.31af4a4c@notabene>
+	<20100830183843.GB2444@shell>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been experiencing some problems when running the L2CAP Streaming mode in
-2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
-wasn't happening before, so I think we may have a regression here (I didn't find
-where yet). The crash log is below.
+On Mon, 30 Aug 2010 14:38:43 -0400
+Valerie Aurora <vaurora@redhat.com> wrote:
 
-The following patch does not fix the regression, but shows that removing the
-skb_clone() call from l2cap_streaming_send() makes the problem goes away. The
-patch is good anyway since it saves memory and time when sending Streaming mode
-packets.
+> On Fri, Aug 27, 2010 at 09:35:02PM +1000, Neil Brown wrote:
+> > On Fri, 27 Aug 2010 10:47:39 +0200
+> > Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > > > Changes to underlying filesystems
+> > > > ---------------------------------
+> > > > 
+> > > 
+> > > For now I refuse to even think about what happens in this case.
+> > > 
+> > > The easiest way out of this mess might simply be to enforce exclusive
+> > > modification to the underlying filesystems on a local level, same as
+> > > the union mount strategy.  For NFS and other remote filesystems we
+> > > either
+> > > 
+> > >  a) add some way to enforce it,
+> > >  b) live with the consequences if not enforced on the system level, or
+> > >  c) disallow them to be part of the union.
+> > > 
+> > 
+> > I actually think that your approach can work quite will with either the
+> > upper or lower changing independently.  Certainly it can produce some odd
+> > situations, but even NFS can do that (though maybe not quite so odd).
+> 
+> I'm very curious about your thoughts on how to handle the lower layer
+> changing.  Al Viro's comments:
+> 
+> http://lkml.indiana.edu/hypermail/linux/kernel/0802.0/0839.html
+> 
+> Do you see something we're missing?
+> 
 
+That would be:
 
-[ 5066.137533] Bluetooth: L2CAP ver 2.15
-[ 5066.137873] Bluetooth: L2CAP socket layer initialized
-[ 5066.545179] Bluetooth: RFCOMM TTY layer initialized
-[ 5066.545879] Bluetooth: RFCOMM socket layer initialized
-[ 5066.546582] Bluetooth: RFCOMM ver 1.11
-[ 5092.268021] l2test invoked oom-killer: gfp_mask=0x4d0, order=0, oom_adj=0, oom_score_adj=0
-[ 5092.268872] Pid: 3897, comm: l2test Not tainted 2.6.36-rc3 #5
-[ 5092.269863] Call Trace:
-[ 5092.270265]  [<ffffffff8138b6a6>] ? _raw_spin_unlock+0x26/0x30
-[ 5092.270878]  [<ffffffff810c0827>] T.427+0x77/0x1e0
-[ 5092.271874]  [<ffffffff811b85e7>] ? security_real_capable_noaudit+0x37/0x60
-[ 5092.272956]  [<ffffffff810c0e3a>] out_of_memory+0x2ca/0x2f0
-[ 5092.273894]  [<ffffffff810c3d43>] __alloc_pages_nodemask+0x693/0x6b0
-[ 5092.274871]  [<ffffffff810ea3e6>] cache_alloc_refill+0x2d6/0x5c0
-[ 5092.275864]  [<ffffffff810ea805>] __kmalloc+0x135/0x150
-[ 5092.276876]  [<ffffffff8130f2ae>] __alloc_skb+0x6e/0x150
-[ 5092.277865]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.278652]  [<ffffffff8130ace2>] sock_alloc_send_pskb+0x1c2/0x320
-[ 5092.278927]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.279864]  [<ffffffff81312add>] ? memcpy_fromiovec+0x6d/0x90
-[ 5092.280864]  [<ffffffff8130ae50>] sock_alloc_send_skb+0x10/0x20
-[ 5092.281867]  [<ffffffffa00e600f>] l2cap_create_iframe_pdu+0x9f/0x2c0 [l2cap]
-[ 5092.282865]  [<ffffffffa00e84b9>] l2cap_sock_sendmsg+0x5d9/0x910 [l2cap]
-[ 5092.283932]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-[ 5092.284865]  [<ffffffff8130725b>] sock_sendmsg+0xdb/0x100
-[ 5092.285652]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-[ 5092.285864]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-[ 5092.286864]  [<ffffffff813073c0>] sys_sendto+0xf0/0x130
-[ 5092.287864]  [<ffffffff8138b60b>] ? _raw_spin_unlock_irq+0x2b/0x40
-[ 5092.288872]  [<ffffffff81093cfd>] ? trace_hardirqs_on_caller+0x13d/0x180
-[ 5092.289927]  [<ffffffff81093d4d>] ? trace_hardirqs_on+0xd/0x10
-[ 5092.290864]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.291649]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.291864]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.292864]  [<ffffffff8130740f>] sys_send+0xf/0x20
-[ 5092.293870]  [<ffffffff8132ccd6>] compat_sys_socketcall+0x146/0x1f0
-[ 5092.294875]  [<ffffffff81053ee4>] sysenter_dispatch+0x7/0x30
-[ 5092.295673] Mem-Info:
-[ 5092.295863] DMA per-cpu:
-[ 5092.296214] CPU    0: hi:    0, btch:   1 usd:   0
-[ 5092.296925] DMA32 per-cpu:
-[ 5092.297298] CPU    0: hi:   90, btch:  15 usd:  85
-[ 5092.297864] active_anon:504 inactive_anon:543 isolated_anon:0
-[ 5092.297865]  active_file:14 inactive_file:3 isolated_file:0
-[ 5092.297866]  unevictable:0 dirty:0 writeback:3 unstable:0
-[ 5092.297866]  free:728 slab_reclaimable:559 slab_unreclaimable:39895
-[ 5092.297867]  mapped:12 shmem:35 pagetables:84 bounce:0
-[ 5092.299944] DMA free:1064kB min:124kB low:152kB high:184kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15768kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:14916kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-[ 5092.301862] lowmem_reserve[]: 0 236 236 236
-[ 5092.303134] DMA32 free:1848kB min:1904kB low:2380kB high:2856kB active_anon:2016kB inactive_anon:2172kB active_file:56kB inactive_file:12kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:242380kB mlocked:0kB dirty:0kB writeback:12kB mapped:48kB shmem:140kB slab_reclaimable:2236kB slab_unreclaimable:144664kB kernel_stack:456kB pagetables:336kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:103 all_unreclaimable? yes
-[ 5092.304962] lowmem_reserve[]: 0 0 0 0
-[ 5092.306066] DMA: 0*4kB 1*8kB 0*16kB 1*32kB 0*64kB 0*128kB 0*256kB 0*512kB 1*1024kB 0*2048kB 0*4096kB = 1064kB
-[ 5092.307862] DMA32: 10*4kB 2*8kB 0*16kB 0*32kB 0*64kB 0*128kB 1*256kB 1*512kB 1*1024kB 0*2048kB 0*4096kB = 1848kB
-[ 5092.309467] 52 total pagecache pages
-[ 5092.309862] 0 pages in swap cache
-[ 5092.310317] Swap cache stats: add 0, delete 0, find 0/0
-[ 5092.310862] Free swap  = 0kB
-[ 5092.311260] Total swap = 0kB
-[ 5092.313796] 65530 pages RAM
-[ 5092.313868] 22603 pages reserved
-[ 5092.314324] 206 pages shared
-[ 5092.314862] 39353 pages non-shared
-[ 5092.315348] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
-[ 5092.315867] [    1]     0     1      438       19   0       0             0 init
-[ 5092.316871] [ 1018]     0  1018      537       75   0     -17         -1000 udevd
-[ 5092.318867] [ 2217]   101  2217      606       39   0       0             0 dbus-daemon
-[ 5092.319865] [ 2825]     0  2825      481       29   0       0             0 dhcpcd
-[ 5092.320865] [ 3497]     0  3497     1091       83   0       0             0 sshd
-[ 5092.321969] [ 3535]     0  3535      477       31   0       0             0 agetty
-[ 5092.322864] [ 3536]     0  3536      477       30   0       0             0 agetty
-[ 5092.323864] [ 3537]     0  3537      477       29   0       0             0 agetty
-[ 5092.325937] [ 3538]     0  3538      477       31   0       0             0 agetty
-[ 5092.326865] [ 3539]     0  3539      477       31   0       0             0 agetty
-[ 5092.327864] [ 3540]     0  3540      477       31   0       0             0 agetty
-[ 5092.328864] [ 3541]     0  3541     1738      105   0       0             0 sshd
-[ 5092.329865] [ 3545]     0  3545      745       72   0       0             0 bash
-[ 5092.330864] [ 3550]     0  3550      706       43   0       0             0 screen
-[ 5092.331866] [ 3551]     0  3551      772      124   0       0             0 screen
-[ 5092.332965] [ 3552]     0  3552      745       77   0       0             0 bash
-[ 5092.333865] [ 3557]     0  3557      745       77   0       0             0 bash
-[ 5092.334867] [ 3562]     0  3562      536       75   0     -17         -1000 udevd
-[ 5092.336865] [ 3567]     0  3567      536       75   0     -17         -1000 udevd
-[ 5092.337865] [ 3887]     0  3887      935       54   0       0             0 bluetoothd
-[ 5092.338864] [ 3896]     0  3896      458       24   0       0             0 l2test
-[ 5092.339864] [ 3897]     0  3897      458       24   0       0             0 l2test
-[ 5092.340933] [ 3942]     0  3942      458       29   0       0             0 l2test
-[ 5092.341863] Kernel panic - not syncing: Out of memory and no killable processes...
-[ 5092.341864] 
-[ 5092.342864] Pid: 3897, comm: l2test Not tainted 2.6.36-rc3 #5
-[ 5092.343862] Call Trace:
-[ 5092.344934]  [<ffffffff813884d9>] panic+0x8c/0x199
-[ 5092.345621]  [<ffffffff810c0e54>] out_of_memory+0x2e4/0x2f0
-[ 5092.345864]  [<ffffffff810c3d43>] __alloc_pages_nodemask+0x693/0x6b0
-[ 5092.346894]  [<ffffffff810ea3e6>] cache_alloc_refill+0x2d6/0x5c0
-[ 5092.347864]  [<ffffffff810ea805>] __kmalloc+0x135/0x150
-[ 5092.348871]  [<ffffffff8130f2ae>] __alloc_skb+0x6e/0x150
-[ 5092.349865]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.350628]  [<ffffffff8130ace2>] sock_alloc_send_pskb+0x1c2/0x320
-[ 5092.350935]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.351864]  [<ffffffff81312add>] ? memcpy_fromiovec+0x6d/0x90
-[ 5092.352864]  [<ffffffff8130ae50>] sock_alloc_send_skb+0x10/0x20
-[ 5092.353867]  [<ffffffffa00e600f>] l2cap_create_iframe_pdu+0x9f/0x2c0 [l2cap]
-[ 5092.354865]  [<ffffffffa00e84b9>] l2cap_sock_sendmsg+0x5d9/0x910 [l2cap]
-[ 5092.355864]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-[ 5092.356864]  [<ffffffff8130725b>] sock_sendmsg+0xdb/0x100
-[ 5092.357612]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-[ 5092.357931]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-[ 5092.358864]  [<ffffffff813073c0>] sys_sendto+0xf0/0x130
-[ 5092.359864]  [<ffffffff8138b60b>] ? _raw_spin_unlock_irq+0x2b/0x40
-[ 5092.360929]  [<ffffffff81093cfd>] ? trace_hardirqs_on_caller+0x13d/0x180
-[ 5092.361866]  [<ffffffff81093d4d>] ? trace_hardirqs_on+0xd/0x10
-[ 5092.362864]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.363653]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.364868]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-[ 5092.365865]  [<ffffffff8130740f>] sys_send+0xf/0x20
-[ 5092.366945]  [<ffffffff8132ccd6>] compat_sys_socketcall+0x146/0x1f0
-[ 5092.367865]  [<ffffffff81053ee4>] sysenter_dispatch+0x7/0x30
+> If you allow a mix of old and new mappings, you can easily run into the
+> situations when at some moment X1 covers Y1, X2 covers Y2, X2 is a descendent
+> of X1 and Y1 is a descendent of Y2. You *really* don't want to go there -
+> if nothing else, defining behaviour of copyup in face of that insanity
+> will be very painful.
 
+in particular - right?
 
--------
-Gustavo F. Padovan (1):
-	      Bluetooth: Simplify L2CAP Streaming mode sending
+The current proposal doesn't do copy-up of directory trees - or even of
+directories - which is what I assume the reference to copyup refers to, so
+that is a non-issue (i.e. where a tree copy-up might be needed, EXDEV is
+returned).
 
+For the [XY][12] issue, let's try to make it a bit more concrete.
 
+Suppose /L is the lower tree, /U is the upper tree and /O is the overlay
+mount point.
+Suppose further that /U/a/b/c/d/e/f/g exists and (for now) /L/a doesn't.
+
+Then /O/a/b/c/d/e/f/g can appear to 'cover' the above path.
+
+So I open
+    /U/a/b/c  and /U/a/b/c/d/e/f
+and
+    /O/a/b/c  and /O/a/b/c/d/e/f
+
+These are Y1 Y2 X1 X2.  Currently Xn covers Yn.
+
+To get the situation Al describes we would need to perform some manipulations
+in /U e.g.
+   mv /U/a/b/c/d/e  /U/a/e
+   mv /U/a/b /U/a/e/f/g/b
+Now each dir still has the same basename as before and there is only one
+child per dir, and the longest path is
+     /U/a/e/f/g/b/c/d
+So now Y1 (/U/../c) is a descendent of Y2 (/U/../f), and the dentries
+attached to the 4 open fds haven't seen any local change.
+
+So: is this a problem?  It may seem a bit confusing to someone who doesn't
+understand what is happening, but we define that as not being a problem (to
+avoid confusion: don't change U or L).
+The important questions are:  Can it cause corruption, and can it cause a
+deadlock?
+
+If we walk down the directory tree from either X1 or X2, we will see
+  c/d  or f/g/b/c/d
+respectively.  Both paths will terminate - no loops.  The 'd' below X2 will be
+a different dentry than the 'd' above X2 despite the fact that they both
+reference the same 'd' under /U.
+If we try a 'renameat' - the only thing that I can imagine that would cause
+fs corruption, we use the same lock_rename and vfs_rename calls on the /U
+filesystem as a direct syscall would, so any attempt to create a disconnected
+loop will fail.
+It is probable that the upperpath.dentry should be revalidated after getting
+the lock to ensure it is still hashed etc, but that would be part of the
+revalidation code that I would propose to add.  So I fail to see how any
+filesystem corruption could happen.
+
+For locking: we take locks in the /U filesystem while holding locks in the /O
+overlay.  There is a clear ordering here so there should be no room for
+deadlock.
+If the overlay filesystem were to support overlaying a mount-tree on a
+mount-tree rather than just a filesystem on a filesystem I imagine that it
+would not be too hard to create some weird loops.  However the current
+proposal ignores mountpoints and just overlays one filesystem on another, so
+the overlay is certain to be separate from, and well-ordered with respect to,
+the upper and lower filesystems.
+
+If the long path were on /L rather than /U I don't think anything would be
+different.
+If the paths were shorter and you managed to directly swap a parent and a
+child, overlayfs would be able to notice that during revalidate and - if
+necessary due to unpleasant races - would simply return -EBUSY.
+
+It is a fairly key aspect of this proposal that we feel free to return errors
+for situations that are too hard.  -EXDEV for non-opaque directory renames is
+one such case.  -EBUSY when racing with changes in the covered filesystems
+would be another.
+
+I haven't got revalidation code yet, but when {upper,lower}path.dentry were
+non-null, it would check they are still hashed, have the same name as the
+main dentry, and have the correct corresponding parent.  If they are NULL, we
+check that the corresponding parent inode is still NULL.
+If not, we repeat union_lookup - or fail or whatever seems appropriate.
+
+Inside any locks that we take on the upper filesystem to perform some
+directory manipulations we would repeat the checks (on upperpath only) and
+return -EBUSY if the dentries have become 'invalid' since the recent
+revalidate.
+
+So I don't see a problem.  Maybe I'm not seeing something that Al does, or
+maybe the current proposal is sufficiently different from the one Al was
+reviewing that the problems he observed simply don't exist.
+
+I've reviewed your recent discussion with J. R. Okajima and it doesn't help me
+see any locking issues more clearly.  Maybe if you could identify a specific
+vfs_* call which could issue lock requests in a dangerous order and is not
+protected by the revalidation I described above, that might help me see more
+clearly.
+
+Thanks,
+NeilBrown
