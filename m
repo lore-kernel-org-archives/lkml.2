@@ -1,78 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab0H3F4n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 01:56:43 -0400
-Received: from freeflow.nu ([178.79.134.28]:44277 "EHLO freeflow.nu"
+	id S1752622Ab0H3GEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 02:04:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24141 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920Ab0H3F4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 01:56:42 -0400
-Message-ID: <4C7B4818.1090106@kernel.org>
-Date: Mon, 30 Aug 2010 08:56:40 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Brian Gerst <brgerst@gmail.com>
-CC: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/11] x86-64: Simplify constraints for fxsave/fxtstor
-References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>	<1283011478-27237-8-git-send-email-brgerst@gmail.com>	<AANLkTi=+cEywooPp-ERx2+7GL3fs_d-xQ_fX9A7pc9St@mail.gmail.com> <AANLkTim1-nFHQNjiAtcBObz9nX5T=oMQWjN-3m6bt+Ur@mail.gmail.com>
-In-Reply-To: <AANLkTim1-nFHQNjiAtcBObz9nX5T=oMQWjN-3m6bt+Ur@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1750760Ab0H3GEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 02:04:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,290,1280732400"; 
+   d="scan'208";a="652495555"
+Subject: Re: linux-next: build warnings in Linus' tree
+From: Zhang Rui <rui.zhang@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100830114222.3a1f53e6.sfr@canb.auug.org.au>
+References: <20100817112439.18f9d958.sfr@canb.auug.org.au>
+	 <20100830114222.3a1f53e6.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 Aug 2010 14:08:02 +0800
+Message-ID: <1283148482.3707.167.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 8/30/10 2:44 AM, Brian Gerst wrote:
-> On Sun, Aug 29, 2010 at 2:45 PM, Pekka Enberg<penberg@kernel.org>  wrote:
->> On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst<brgerst@gmail.com>  wrote:
->>> Use the "R" constraint (legacy register) instead of listing all the
->>> possible registers.  Clean up the comments as well.
->>>
->>> Signed-off-by: Brian Gerst<brgerst@gmail.com>
->>> ---
->>>   arch/x86/include/asm/i387.h |   44 ++++++++++++++++--------------------------
->>>   1 files changed, 17 insertions(+), 27 deletions(-)
->>>
->>> diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
->>> index 8b40a83..768fcb2 100644
->>> --- a/arch/x86/include/asm/i387.h
->>> +++ b/arch/x86/include/asm/i387.h
->>> @@ -81,6 +81,7 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
->>>   {
->>>         int err;
->>>
->>> +       /* See comment in fxsave() below. */
->>>         asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
->>>                      "2:\n"
->>>                      ".section .fixup,\"ax\"\n"
->>> @@ -89,11 +90,7 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
->>>                      ".previous\n"
->>>                      _ASM_EXTABLE(1b, 3b)
->>>                      : [err] "=r" (err)
->>> -#if 0 /* See comment in fxsave() below. */
->>> -                    : [fx] "r" (fx), "m" (*fx), "0" (0));
->>> -#else
->>> -                    : [fx] "cdaSDb" (fx), "m" (*fx), "0" (0));
->>> -#endif
->>> +                    : [fx] "R" (fx), "m" (*fx), "0" (0));
->> Please correct me if I'm wrong but "legacy registers" also include bp
->> and sp that are not part of the original constraints:
->>
->> http://gcc.gnu.org/onlinedocs/gcc/Machine-Constraints.html
->>
->> So why is it OK to use "R" here?
-> There is no constraint to explicitly request %bp (or %sp), but there
-> is no reason it could not be used.  The compiler would never choose
-> %sp for "R" for the same reason it wouldn't for "r": it's not
-> available as a general purpose register.
-Yeah, if I try to force GCC to use bp or sp, it will complain that it 
-runs out of legacy registers:
+On Mon, 2010-08-30 at 09:42 +0800, Stephen Rothwell wrote:
+> Hi Len,
+> 
+> On Tue, 17 Aug 2010 11:24:39 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > Today's linux-next build (x86_64 allmodconfig) produced these warnings:
+> > 
+> > drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+> > include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+> > 
+> > Introduced by commit 1c8fce27e275fd7c6b75bc6455745f02d3903ee6 ("ACPI:
+> > introduce drivers/acpi/sysfs.c") interacting with commit
+> > 9bbb9e5a33109b2832e2e63dcc7a132924ab374b ("param: use ops in struct
+> > kernel_param, rather than get and set fns directly").
+> 
+> Can we have this fixed, please?
+patch attached. :)
 
-error: can't find a register in class `LEGACY_REGS' while reloading `asm'
+Use module_param_cb instead of the obsoleted module_param_call to fix a build warning.
 
-which makes sense as it knows that sp and bp are used by the function 
-that contains the inline asm.
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/acpi/sysfs.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Index: linux-2.6/drivers/acpi/sysfs.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/sysfs.c
++++ linux-2.6/drivers/acpi/sysfs.c
+@@ -100,7 +100,7 @@ static const struct acpi_dlevel acpi_deb
+ 	ACPI_DEBUG_INIT(ACPI_LV_EVENTS),
+ };
+ 
+-static int param_get_debug_layer(char *buffer, struct kernel_param *kp)
++static int param_get_debug_layer(char *buffer, const struct kernel_param *kp)
+ {
+ 	int result = 0;
+ 	int i;
+@@ -128,7 +128,7 @@ static int param_get_debug_layer(char *b
+ 	return result;
+ }
+ 
+-static int param_get_debug_level(char *buffer, struct kernel_param *kp)
++static int param_get_debug_level(char *buffer, const struct kernel_param *kp)
+ {
+ 	int result = 0;
+ 	int i;
+@@ -149,10 +149,18 @@ static int param_get_debug_level(char *b
+ 	return result;
+ }
+ 
+-module_param_call(debug_layer, param_set_uint, param_get_debug_layer,
+-		  &acpi_dbg_layer, 0644);
+-module_param_call(debug_level, param_set_uint, param_get_debug_level,
+-		  &acpi_dbg_level, 0644);
++static struct kernel_param_ops param_ops_debug_layer = {
++	.set = param_set_uint,
++	.get = param_get_debug_layer,
++};
++
++static struct kernel_param_ops param_ops_debug_level = {
++	.set = param_set_uint,
++	.get = param_get_debug_level,
++};
++
++module_param_cb(debug_layer, &param_ops_debug_layer, &acpi_dbg_layer, 0644);
++module_param_cb(debug_level, &param_ops_debug_level, &acpi_dbg_level, 0644);
+ 
+ static char trace_method_name[6];
+ module_param_string(trace_method_name, trace_method_name, 6, 0644);
 
-             Pekka
+
+
