@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab0H3Vkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 17:40:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35918 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754552Ab0H3Vki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 17:40:38 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Date: Mon, 30 Aug 2010 23:41:13 +0200
-User-Agent: KMail/1.9.10
-Cc: Hedi Berriche <hedi@sgi.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201008271537.35709.ptesarik@suse.cz> <987664A83D2D224EAE907B061CE93D53015D91D6F5@orsmsx505.amr.corp.intel.com> <987664A83D2D224EAE907B061CE93D53015D9B14DC@orsmsx505.amr.corp.intel.com>
-In-Reply-To: <987664A83D2D224EAE907B061CE93D53015D9B14DC@orsmsx505.amr.corp.intel.com>
+	id S1756194Ab0H3VnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 17:43:06 -0400
+Received: from smtp-04.mandic.com.br ([200.225.81.151]:47742 "EHLO
+	smtp-04.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756160Ab0H3VnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 17:43:05 -0400
+Message-ID: <4C7C25DF.3070401@cesarb.net>
+Date: Mon, 30 Aug 2010 18:42:55 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Joe Perches <joe@perches.com>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
+ messages
+References: <1282869660.1836.5.camel@Joe-Laptop>	<4C77171E.6060008@cesarb.net>	<1282894751.1836.41.camel@Joe-Laptop>	<4C784650.2030200@cesarb.net>	<1282962104.1946.179.camel@Joe-Laptop>	<4C78E8EF.1000009@cesarb.net>	<1282994116.1946.226.camel@Joe-Laptop>	<4C790693.1060908@cesarb.net>	<1283002154.1946.268.camel@Joe-Laptop>	<4C791ABA.9070005@cesarb.net>	<20100828152335.GA2212@khazad-dum.debian.net>	<4C795E5C.1080506@cesarb.net> <20100830092958.1c50c8cb@jbarnes-desktop>
+In-Reply-To: <20100830092958.1c50c8cb@jbarnes-desktop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008302341.14312.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 of August 2010 20:17:25 Luck, Tony wrote:
-> > I may tinker with this test a bit to include some short random
-> > amounts of hold-time for the lock, and delays between attempts
-> > to acquire it (to make it look more like a contended kernel lock
-> > and less like a continuous queue of processes trading around a
-> > lock that is never free
->
-> I've been iterating ... adding new bits to try to reproduce the
-> kernel environment:
+Em 30-08-2010 13:29, Jesse Barnes escreveu:
+> It's possible that the main issue here is bad thermal limits.  There's
+> obviously a relationship between power and thermal output, but the
+> driver tries to monitor both.  However it's up to the BIOS to provide
+> the driver with accurate thermal limits, as well as accurate power
+> limits.  The power limits sound reasonable at 25W, thus the
+> informational output about 35W vs 25W (35W is what the MCP can handle,
+> but some platforms are designed to handle less, so they clamp it down a
+> bit).  But the temp limits look all wrong.  I'll see if I can find info
+> on getting better data into the driver...
 
-Hi Tony,
+If you need more information from this laptop (dmidecode, ACPI AML, 
+etc), just ask.
 
-I've been also playing with my test case, and I haven't been able to reproduce 
-it in user-space either. One thing I noticed was the apparently incorrect use 
-of ALAT. The generated code for _spin_lock_irq contains:
-
-invala;;
-ld4.c.nc r11=[r32]
-// Other instructions not affecting r20
-ld4.c.nc r20=[r32]
-
-IIUC, the subsequent compare can use an undefined value (r20 is not modified 
-anywhere in this function, except by the ld4.c.nc, but that happens only on 
-an ALAT miss, right?).
-
-I changed the corresponding code in __ticket_spin_lock to:
-
-   asm volatile ("ld4.c.nc %0=[%1]" : "+r"(serve) : "r"(p) : "memory");
-
-(NB the "+r" constraint instead of "=r")
-
-The generated code now re-uses r15. Unfortunately, Hedi's test case still 
-fails for me. :(
-
-Petr Tesarik
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
