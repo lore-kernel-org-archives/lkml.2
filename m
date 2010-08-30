@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab0H3Jyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 05:54:44 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:58385 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab0H3Jym convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 05:54:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=TUN56htdn5RkZX0dx9zj295r5SJKvRWAhhM3n+i+AQ1bBlX5HI/hrrkGU86O/s1kep
-         hFjIbP7gAEAijtyt5BFYNBxonnLg6+PEJlmgje/WCG6cmK2bB6bdd0vpDy82LiovwpbG
-         Jxb+cYLYJ1kv06uevPRiLj0l6IC0sCvZpV0H4=
+	id S1755053Ab0H3J4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 05:56:40 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55900 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754900Ab0H3J4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 05:56:38 -0400
+Date: Mon, 30 Aug 2010 10:56:23 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH v2 2/2] compaction: fix COMPACTPAGEFAILED counting
+Message-ID: <20100830095623.GH19556@csn.ul.ie>
+References: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
 MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-In-Reply-To: <4AUWBNzTkbD.A.mj.QGueMB@chimera>
-References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
-	<4AUWBNzTkbD.A.mj.QGueMB@chimera>
-Date: Mon, 30 Aug 2010 10:54:41 +0100
-Message-ID: <AANLkTikpoH-_od-SL3=Q7a=xbsraE4rYGicx7mmS92Cw@mail.gmail.com>
-Subject: Re: [Bug #16881] [REGRESSION, Radeon-KMS] 2.6.36-rc1,2 - missing
- textures in 0 A.D.
-From: trapDoor <trapdoor6@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1282664620-4539-1-git-send-email-minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 11:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
->
-> The following bug entry is on the current list of known regressions
-> from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> know (either way).
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16881
-> Subject         : [REGRESSION, Radeon-KMS] 2.6.36-rc1,2 - missing textures in 0 A.D.
-> Submitter       :  <trapdoor6@gmail.com>
-> Date            : 2010-08-24 12:20 (6 days old)
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On Wed, Aug 25, 2010 at 12:43:40AM +0900, Minchan Kim wrote:
+> Now update_nr_listpages doesn't have a role. That's because
+> lists passed is always empty just after calling migrate_pages.
+> The migrate_pages cleans up page list which have failed to migrate
+> before returning by aaa994b3.
+> 
+>  [PATCH] page migration: handle freeing of pages in migrate_pages()
+> 
+>  Do not leave pages on the lists passed to migrate_pages().  Seems that we will
+>  not need any postprocessing of pages.  This will simplify the handling of
+>  pages by the callers of migrate_pages().
+> 
+> At that time, we thought we don't need any postprocessing of pages.
+> But the situation is changed. The compaction need to know the number of
+> failed to migrate for COMPACTPAGEFAILED stat
+> 
+> This patch makes new rule for caller of migrate_pages to call putback_lru_pages.
+> So caller need to clean up the lists so it has a chance to postprocess the pages.
+> [suggested by Christoph Lameter]
+> 
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-There was at least one drm pull between 2.6.36-rc2 and -rc3. So I
-tested on -rc3 and I confirm that the issue is still present.
+Looks good and it passed basic testing.
 
-I was going to update the bugzilla entry but it won't let me log in at
-this moment.
+Reviewed-by: Mel Gorman <mel@csn.ul.ie>
+
+Thanks
 
 -- 
-Regards
-Tomasz
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
