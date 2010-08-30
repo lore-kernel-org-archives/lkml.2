@@ -1,137 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab0H3SII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 14:08:08 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:23451 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756224Ab0H3SIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 14:08:06 -0400
-Message-ID: <4C7BF36F.5080306@siemens.com>
-Date: Mon, 30 Aug 2010 20:07:43 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1756529Ab0H3SPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 14:15:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49066 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756491Ab0H3SPS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 14:15:18 -0400
 MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [KVM timekeeping 17/35] Implement getnsboottime kernel API
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-18-git-send-email-zamsden@redhat.com> <4C77FE57.7050105@siemens.com> <4C784EBF.2010908@redhat.com>
-In-Reply-To: <4C784EBF.2010908@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100830000751.2b845d05@debxo>
+References: <20100628215407.2017bf2f@debian> <20100829235100.6dcedcb8@debxo> <20100830000751.2b845d05@debxo>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 30 Aug 2010 12:14:57 -0600
+X-Google-Sender-Auth: cFpx0b9iTZE4V4c93CIsKph1-gA
+Message-ID: <AANLkTi=EMkZLiAG7-ni8_7K=qtAriv=AfSUZ58661jNY@mail.gmail.com>
+Subject: Re: [PATCH 9/9] x86: OLPC: add OLPC device-tree support
+To: Andres Salomon <dilinger@queued.net>
+Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zachary Amsden wrote:
-> On 08/27/2010 08:05 AM, Jan Kiszka wrote:
->> Zachary Amsden wrote:
->>    
->>> Add a kernel call to get the number of nanoseconds since boot.  This
->>> is generally useful enough to make it a generic call.
->>>
->>> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->>> ---
->>>   include/linux/time.h      |    1 +
->>>   kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
->>>   2 files changed, 28 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/include/linux/time.h b/include/linux/time.h
->>> index ea3559f..5d04108 100644
->>> --- a/include/linux/time.h
->>> +++ b/include/linux/time.h
->>> @@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
->>>   extern void getrawmonotonic(struct timespec *ts);
->>>   extern void getboottime(struct timespec *ts);
->>>   extern void monotonic_to_bootbased(struct timespec *ts);
->>> +extern s64 getnsboottime(void);
->>>
->>>   extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
->>>   extern int timekeeping_valid_for_hres(void);
->>> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
->>> index caf8d4d..d250f0a 100644
->>> --- a/kernel/time/timekeeping.c
->>> +++ b/kernel/time/timekeeping.c
->>> @@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
->>>   }
->>>   EXPORT_SYMBOL_GPL(ktime_get_ts);
->>>
->>> +
->>> +/**
->>> + * getnsboottime - get the bootbased clock in nsec format
->>> + *
->>> + * The function calculates the bootbased clock from the realtime
->>> + * clock and the wall_to_monotonic offset and stores the result
->>> + * in normalized timespec format in the variable pointed to by @ts.
->>> + */
->>>      
->> This thing is not returning anything in some ts variable. And I also had
->> a hard time spotting the key difference to getboottime - the name is
->> really confusing.
->>
->> Besides this, if you have good suggestion how to provide a compat
->> version for older kernels, I'm all ears. Please also have a careful look
->> at kvm-kmod's kvm_getboottime again, right now I'm a bit confused about
->> what it is supposed to return and what it actually does (note that
->> kvm-kmod cannot account for time spent in suspend state).
->>
->> Thanks!
->> Jan
->>
->>    
->>> +s64 getnsboottime(void)
->>> +{
->>> +	unsigned int seq;
->>> +	s64 secs, nsecs;
->>> +
->>> +	WARN_ON(timekeeping_suspended);
->>> +
->>> +	do {
->>> +		seq = read_seqbegin(&xtime_lock);
->>> +		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
->>> +		secs += total_sleep_time.tv_sec;
->>> +		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
->>> +		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
->>> +
->>> +	} while (read_seqretry(&xtime_lock, seq));
->>> +	return nsecs + (secs * NSEC_PER_SEC);
->>> +}
->>> +EXPORT_SYMBOL_GPL(getnsboottime);
->>> +
->>>   /**
->>>    * do_gettimeofday - Returns the time of day in a timeval
->>>    * @tv:		pointer to the timeval to be set
->>>      
->>    
-> 
-> Yes, we should probably change the name before making this an actual 
-> kernel API, John made some better suggestions.
-> 
-> For kvm-kmod, the following conversion should work:
-> 
-> static inline u64 get_kernel_ns(void)
-> {
->      struct timespec ts;
-> 
->      WARN_ON(preemptible());
->      ktime_get_ts(&ts);
->      monotonic_to_bootbased(&ts);
->      return timespec_to_ns(&ts);
-> }
-> 
-> The only real point to getnsboottime is to stop the unnecessary 
-> conversions, but looking at it now, it doesn't appear to actually save 
-> any, does it?  Maybe it is better to just drop the thing all-together.
+On Sun, Aug 29, 2010 at 10:07 PM, Andres Salomon <dilinger@queued.net> wrote:
+>
+> Make use of PROC_DEVICETREE to export the tree, and sparc's PROMTREE code to
+> call into OLPC's Open Firmware to build the tree.
+>
+> This also adds an init hook to proc_device_tree_init so that we can ensure
+> the device tree has been built prior to the proc_root_init stuff attempting
+> to populate /proc/device-tree.
 
-It looks like. Will you post a removal patch kvm.git? I'll better wait
-with updating kvm-kmod then.
+I'm not clear as to why this is needed.  I would expect OLPC platform
+setup code would take care of extracting the device tree well before
+the kernel gets to setting up the representation in /proc/device-tree.
 
-Jan
+g.
+
+>
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  arch/x86/Kconfig                |    2 +
+>  arch/x86/include/asm/olpc_ofw.h |    4 +
+>  arch/x86/include/asm/prom.h     |    1 +
+>  arch/x86/kernel/Makefile        |    1 +
+>  arch/x86/kernel/olpc_ofw.c      |    8 ++
+>  arch/x86/kernel/olpc_prom.c     |  152 +++++++++++++++++++++++++++++++++++++++
+>  drivers/of/pdt.c                |    2 +
+>  fs/proc/proc_devtree.c          |    4 +
+>  include/linux/of_pdt.h          |    1 +
+>  9 files changed, 175 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/include/asm/prom.h
+>  create mode 100644 arch/x86/kernel/olpc_prom.c
+>
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index cea0cd9..7d4ef72 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -2069,6 +2069,8 @@ config OLPC_OPENFIRMWARE
+>        bool "Support for OLPC's Open Firmware"
+>        depends on !X86_64 && !X86_PAE
+>        default y if OLPC
+> +       select OF
+> +       select OF_PROMTREE
+>        help
+>          This option adds support for the implementation of Open Firmware
+>          that is used on the OLPC XO-1 Children's Machine.
+> diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
+> index 08fde47..13075df 100644
+> --- a/arch/x86/include/asm/olpc_ofw.h
+> +++ b/arch/x86/include/asm/olpc_ofw.h
+> @@ -28,4 +28,8 @@ static inline void setup_olpc_ofw_pgd(void) { }
+>
+>  #endif /* !CONFIG_OLPC_OPENFIRMWARE */
+>
+> +#ifdef CONFIG_PROC_DEVICETREE
+> +extern void olpc_prom_build_devicetree(void);
+> +#endif /* CONFIG_PROC_DEVICETREE */
+> +
+>  #endif /* _ASM_X86_OLPC_OFW_H */
+> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
+> new file mode 100644
+> index 0000000..b4ec95f
+> --- /dev/null
+> +++ b/arch/x86/include/asm/prom.h
+> @@ -0,0 +1 @@
+> +/* dummy prom.h; here to make linux/of.h's #includes happy */
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+> index 0925676..3d7e535 100644
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -105,6 +105,7 @@ scx200-y                    += scx200_32.o
+>
+>  obj-$(CONFIG_OLPC)             += olpc.o
+>  obj-$(CONFIG_OLPC_OPENFIRMWARE)        += olpc_ofw.o
+> +obj-$(CONFIG_PROC_DEVICETREE)  += olpc_prom.o
+>  obj-$(CONFIG_X86_MRST)         += mrst.o
+>
+>  microcode-y                            := microcode_core.o
+> diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
+> index 3218aa7..6c4d243 100644
+> --- a/arch/x86/kernel/olpc_ofw.c
+> +++ b/arch/x86/kernel/olpc_ofw.c
+> @@ -1,5 +1,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_pdt.h>
+>  #include <linux/init.h>
+>  #include <asm/page.h>
+>  #include <asm/setup.h>
+> @@ -38,6 +40,12 @@ void __init setup_olpc_ofw_pgd(void)
+>        /* implicit optimization barrier here due to uninline function return */
+>
+>        early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
+> +
+> +#ifdef CONFIG_PROC_DEVICETREE
+> +       /* OFW set up succesfully; use it for the device tree */
+> +       of_pdt_init_devicetree = olpc_prom_build_devicetree;
+> +#endif
+> +
+>  }
+>
+>  int __olpc_ofw(const char *name, int nr_args, const void **args, int nr_res,
+> diff --git a/arch/x86/kernel/olpc_prom.c b/arch/x86/kernel/olpc_prom.c
+> new file mode 100644
+> index 0000000..fb04d8a
+> --- /dev/null
+> +++ b/arch/x86/kernel/olpc_prom.c
+> @@ -0,0 +1,152 @@
+> +/*
+> + * olpc_prom.c: OLPC-specific OFW device tree support code.
+> + *
+> + * Paul Mackerras      August 1996.
+> + * Copyright (C) 1996-2005 Paul Mackerras.
+> + *
+> + *  Adapted for 64bit PowerPC by Dave Engebretsen and Peter Bergner.
+> + *    {engebret|bergner}@us.ibm.com
+> + *
+> + *  Adapted for sparc by David S. Miller davem@davemloft.net
+> + *  Adapted for x86/OLPC by Andres Salomon <dilinger@queued.net>
+> + *
+> + *      This program is free software; you can redistribute it and/or
+> + *      modify it under the terms of the GNU General Public License
+> + *      as published by the Free Software Foundation; either version
+> + *      2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/errno.h>
+> +#include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/of_pdt.h>
+> +#include <asm/olpc_ofw.h>
+> +
+> +static phandle __init olpc_prom_getsibling(phandle node)
+> +{
+> +       const void *args[] = { (void *)node };
+> +       void *res[] = { &node };
+> +
+> +       if (node == -1)
+> +               return 0;
+> +
+> +       if (olpc_ofw("peer", args, res) || node == -1)
+> +               return 0;
+> +
+> +       return node;
+> +}
+> +
+> +static phandle __init olpc_prom_getchild(phandle node)
+> +{
+> +       const void *args[] = { (void *)node };
+> +       void *res[] = { &node };
+> +
+> +       if (node == -1)
+> +               return 0;
+> +
+> +       if (olpc_ofw("child", args, res) || node == -1) {
+> +               pr_err("PROM: %s: fetching child failed!\n", __func__);
+> +               return 0;
+> +       }
+> +
+> +       return node;
+> +}
+> +
+> +static int __init olpc_prom_getproplen(phandle node, const char *prop)
+> +{
+> +       const void *args[] = { (void *)node, prop };
+> +       int len;
+> +       void *res[] = { &len };
+> +
+> +       if (node == -1)
+> +               return -1;
+> +
+> +       if (olpc_ofw("getproplen", args, res)) {
+> +               pr_err("PROM: %s: getproplen failed!\n", __func__);
+> +               return -1;
+> +       }
+> +
+> +       return len;
+> +}
+> +
+> +static int __init olpc_prom_getproperty(phandle node, const char *prop,
+> +               char *buf, int bufsize)
+> +{
+> +       int plen;
+> +
+> +       plen = olpc_prom_getproplen(node, prop);
+> +       if (plen > bufsize || plen < 1)
+> +               return -1;
+> +       else {
+> +               const void *args[] = { (void *)node, prop, buf, (void *)plen };
+> +               void *res[] = { &plen };
+> +
+> +               if (olpc_ofw("getprop", args, res)) {
+> +                       pr_err("PROM: %s: getprop failed!\n", __func__);
+> +                       return -1;
+> +               }
+> +       }
+> +
+> +       return plen;
+> +}
+> +
+> +static int __init olpc_prom_nextprop(phandle node, const char *prev, char *buf)
+> +{
+> +       const void *args[] = { (void *)node, prev, buf };
+> +       int success;
+> +       void *res[] = { &success };
+> +
+> +       buf[0] = '\0';
+> +
+> +       if (node == -1)
+> +               return -1;
+> +
+> +       if (olpc_ofw("nextprop", args, res) || success != 1)
+> +               return -1;
+> +
+> +       return 0;
+> +}
+> +
+> +static int __init olpc_prom_pkg2path(phandle node, char *buf,
+> +               const int buflen, int *len)
+> +{
+> +       const void *args[] = { (void *)node, buf, (void *)buflen };
+> +       void *res[] = { len };
+> +
+> +       if (node == -1)
+> +               return -1;
+> +
+> +       if (olpc_ofw("package-to-path", args, res) || *len < 1)
+> +               return -1;
+> +
+> +       return 0;
+> +}
+> +
+> +void * __init prom_early_alloc(unsigned long size)
+> +{
+> +       /* this is called late enough that we can alloc normally */
+> +       return kzalloc(size, GFP_KERNEL);
+> +}
+> +
+> +static struct of_pdt_ops prom_olpc_ops __initdata = {
+> +       .nextprop = olpc_prom_nextprop,
+> +       .getproplen = olpc_prom_getproplen,
+> +       .getproperty = olpc_prom_getproperty,
+> +       .getchild = olpc_prom_getchild,
+> +       .getsibling = olpc_prom_getsibling,
+> +       .pkg2path = olpc_prom_pkg2path,
+> +};
+> +
+> +void __init olpc_prom_build_devicetree(void)
+> +{
+> +       phandle root;
+> +
+> +       root = olpc_prom_getsibling(0);
+> +       if (root < 0) {
+> +               pr_err("PROM: unable to get root node from OFW!\n");
+> +               return;
+> +       }
+> +       of_pdt_build_devicetree(root, &prom_olpc_ops);
+> +}
+> diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+> index 28295d0..07e3daa 100644
+> --- a/drivers/of/pdt.c
+> +++ b/drivers/of/pdt.c
+> @@ -29,6 +29,8 @@ static struct of_pdt_ops *of_pdt_prom_ops __initdata;
+>  void __initdata (*of_pdt_build_more)(struct device_node *dp,
+>                struct device_node ***nextp);
+>
+> +void __initdata (*of_pdt_init_devicetree)(void);
+> +
+>  #if defined(CONFIG_SPARC)
+>  unsigned int of_pdt_unique_id __initdata;
+>
+> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+> index d9396a4..9779039 100644
+> --- a/fs/proc/proc_devtree.c
+> +++ b/fs/proc/proc_devtree.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/stat.h>
+>  #include <linux/string.h>
+>  #include <linux/of.h>
+> +#include <linux/of_pdt.h>
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <asm/prom.h>
+> @@ -228,6 +229,9 @@ void __init proc_device_tree_init(void)
+>  {
+>        struct device_node *root;
+>
+> +       if (of_pdt_init_devicetree)
+> +               of_pdt_init_devicetree();
+> +
+>        proc_device_tree = proc_mkdir("device-tree", NULL);
+>        if (proc_device_tree == NULL)
+>                return;
+> diff --git a/include/linux/of_pdt.h b/include/linux/of_pdt.h
+> index 9945e58..b4bd0ee 100644
+> --- a/include/linux/of_pdt.h
+> +++ b/include/linux/of_pdt.h
+> @@ -38,6 +38,7 @@ extern void *prom_early_alloc(unsigned long size);
+>
+>  /* for building the device tree */
+>  extern void of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops);
+> +extern void (*of_pdt_init_devicetree)(void);
+>
+>  extern void (*of_pdt_build_more)(struct device_node *dp,
+>                struct device_node ***nextp);
+> --
+> 1.5.6.5
+>
+>
+
+
 
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
