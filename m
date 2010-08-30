@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab0H3G7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 02:59:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab0H3G7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 02:59:12 -0400
-Message-ID: <4C7B56BA.4060306@redhat.com>
-Date: Mon, 30 Aug 2010 09:59:06 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1753069Ab0H3HFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 03:05:16 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:54189 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751392Ab0H3HFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 03:05:15 -0400
+Message-ID: <4C7B5825.6030302@bluewatersys.com>
+Date: Mon, 30 Aug 2010 19:05:09 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/4] KVM: MMU: lower the aduit frequency
-References: <4C78FA00.8090606@cn.fujitsu.com> <4C78FAF4.4070302@cn.fujitsu.com> <4C7A263F.1060407@redhat.com> <4C7B1486.7010502@cn.fujitsu.com>
-In-Reply-To: <4C7B1486.7010502@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Wolfgang_M=FCes?= <wolfgang.mues@auerswald.de>
+CC: Chris Ball <cjb@laptop.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        avictor.za@gmail.com, akpm@linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/7] mmc: at91_mci: fix pointer errors
+References: <9535dc8dfe4476a0314b9513fb9d37862faa731d.1267209149.git.nicolas.ferre@atmel.com> <20100827193303.GB23079@void.printf.net> <4C7AD3A0.40607@bluewatersys.com> <4C7B5601.5060505@auerswald.de>
+In-Reply-To: <4C7B5601.5060505@auerswald.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/30/2010 05:16 AM, Xiao Guangrong wrote:
-> On 08/29/2010 05:19 PM, Avi Kivity wrote:
->>   On 08/28/2010 03:03 PM, Xiao Guangrong wrote:
->>> The audit is very high overhead, so we need lower the frequency to
->>> assure the guest running
->>>
->>>
->>>     */
->>>
->>>    #include<linux/debugfs.h>
->>> +#include<linux/ratelimit.h>
->>>
->>>    static struct dentry *debugfs_file;
->>>    static bool mmu_debug;
->>> @@ -233,6 +234,11 @@ static void audit_vcpu_spte(struct kvm_vcpu *vcpu)
->>>
->>>    static void kvm_mmu_audit(void *ignore, struct kvm_vcpu *vcpu, const
->>> char *msg)
->>>    {
->>> +    static DEFINE_RATELIMIT_STATE(ratelimit_state, 5 * HZ, 10);
->>> +
->>> +    if (!__ratelimit(&ratelimit_state))
->>> +        return;
->>> +
->>>        audit_msg = msg;
->>>        audit_all_active_sps(vcpu->kvm);
->>>        audit_vcpu_spte(vcpu);
->> This means we see a bug long after it happened, so we can't correlate it
->> to the cause.
+Wolfgang Mües wrote:
+> Hi,
+> 
+> Am 29.08.2010 23:39, schrieb Ryan Mallon:
+>> I see this is already applied, but why all the type trickery here? Why
+>> not just:
 >>
->> It's fine as an option (even the default) but I'd like to be able to
->> audit after every operation.  Perhaps a partial audit that only looks at
->> the gfns and vaddrs that were affected in the last operation?
->>
-> Audit checks all the active shadow pages and all vcpu's page table, so the
-> overload is very high :-)
->
-> During my test, if enable the aduit, the guest mostly hung, it means the guest
-> not do anything.
-> (Host: Intel(R) Xeon(R) X3430  @ 2.40GHz * 4 + 4G memory
->   GUest: x2VCPU + 1G memory
-> )
+>>     memcpy(dmabuf, sgbuffer, amount);
+>>     dmabuf += amount / sizeof(dmabuf);
+> 
+> Because this is wrong?
+> 
+> Maybe you mean sizeof(*dmabuf)?
 
-You're right, I remember that from the last time I used audit many years 
-ago.
+Sorry, yes.
 
-> I'll set the 'ratelimit' as a module parameter, then if the user's machine is
-> fast enough, the ratelimit can be disabled.
+> The exact style of the bug fix is not important, it's important that
+> it's fixed.
 
-It's only useful in very special cases - low memory and a very fast 
-reproducer.  I think we can live without the parameter, if someone has 
-this special case they can hack the code.
+I disagree, it's also important that it is fixed in a clear,
+understandable way. I found the fix confusing, especially since there
+are casts to both signed and unsigned char.
 
--- 
-error compiling committee.c: too many arguments to function
+~Ryan
 
