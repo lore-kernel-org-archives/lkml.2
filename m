@@ -1,142 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab0H3FbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 01:31:11 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:57288 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753805Ab0H3FbJ (ORCPT
+	id S1751868Ab0H3Fkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 01:40:52 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:34815 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab0H3Fkv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 01:31:09 -0400
-Message-ID: <4C7B41FB.3020406@snapgear.com>
-Date: Mon, 30 Aug 2010 15:30:35 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Mon, 30 Aug 2010 01:40:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uRDZH94cwYIrErK7c7MDbRzkWlZTxR//xdvkkhkjqKTfQGKcZA88zvpKdS4t2uzEEF
+         2/h3LTx/CoeEmxeQnxTw==
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: uClinux development list <uclinux-dev@uclinux.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [uClinux-dev] [PATCH] m68k{nommu} : Remove unused DEFINE's from
- asm-offsets.c
-References: <1282148854-17103-1-git-send-email-phdm@macqel.be>	<4C775675.4090700@snapgear.com> <AANLkTi=c+brmSOjVQhhTngRFezfyrAooZRhcCg9kFw4m@mail.gmail.com>
-In-Reply-To: <AANLkTi=c+brmSOjVQhhTngRFezfyrAooZRhcCg9kFw4m@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Aug 2010 05:31:07.0577 (UTC) FILETIME=[8BFB6A90:01CB4804]
+In-Reply-To: <AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>
+References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>
+	<AANLkTinCKJw2oaNgAvfm0RawbW4zuJMtMb2pUROeY2ij@mail.gmail.com>
+	<4C7ABD14.9050207@redhat.com>
+	<AANLkTimjVHp1=Fc35xLnyPb2aa+ew7w1P9DC_0GfhZgY@mail.gmail.com>
+	<AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>
+Date: Sun, 29 Aug 2010 22:40:47 -0700
+Message-ID: <AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
+From: Ying Han <yinghan@google.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven wrote:
-> On Fri, Aug 27, 2010 at 08:08, Greg Ungerer <gerg@snapgear.com> wrote:
->> Philippe De Muyter wrote:
->>> m68k{nommu}/asm-offsets.c define many constants which are not used
->>> anymore anywhere; remove IRQ_DEVID, IRQ_HANDLER, IRQ_NEXT, STAT_IRQ,
->>> TASK_ACTIVE_MM, TASK_BLOCKED, TASK_FLAGS, TASK_PTRACE, TASK_STATE,
->>> TASK_THREAD_INFO, TI_CPU, TI_EXECDOMAIN and TI_TASK.
+On Sun, Aug 29, 2010 at 5:18 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> Hi Ying,
+>
+> On Mon, Aug 30, 2010 at 6:23 AM, Ying Han <yinghan@google.com> wrote:
+>> On Sun, Aug 29, 2010 at 1:03 PM, Rik van Riel <riel@redhat.com> wrote:
+>>> On 08/29/2010 01:45 PM, Ying Han wrote:
 >>>
->>> Signed-off-by: Philippe De Muyter <phdm@macqel.be>
->> I have no problem with the m68knommu part. I can push that into
->> the m68knommu git tree. Or if the m68k guys are happy I can put
->> the whole thing there?
-> 
-> The m68k part is fine, too.
-> 
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Thanks Geert. I have pushed this into the m68knommu git tree.
-
-Regards
-Greg
-
-
-
-> 
->>> ---
->>>  arch/m68k/kernel/asm-offsets.c      |   12 ------------
->>>  arch/m68knommu/kernel/asm-offsets.c |    9 ---------
->>>  2 files changed, 0 insertions(+), 21 deletions(-)
+>>>> There are few other places in vmscan where we check nr_swap_pages and
+>>>> inactive_anon_is_low. Are we planning to change them to use
+>>>> total_swap_pages
+>>>> to be consistent ?
 >>>
->>> diff --git a/arch/m68k/kernel/asm-offsets.c
->>> b/arch/m68k/kernel/asm-offsets.c
->>> index 73e5e58..78e59b8 100644
->>> --- a/arch/m68k/kernel/asm-offsets.c
->>> +++ b/arch/m68k/kernel/asm-offsets.c
->>> @@ -22,13 +22,9 @@
->>>  int main(void)
->>>  {
->>>        /* offsets into the task struct */
->>> -       DEFINE(TASK_STATE, offsetof(struct task_struct, state));
->>> -       DEFINE(TASK_FLAGS, offsetof(struct task_struct, flags));
->>> -       DEFINE(TASK_PTRACE, offsetof(struct task_struct, ptrace));
->>>        DEFINE(TASK_THREAD, offsetof(struct task_struct, thread));
->>>        DEFINE(TASK_INFO, offsetof(struct task_struct, thread.info));
->>>        DEFINE(TASK_MM, offsetof(struct task_struct, mm));
->>> -       DEFINE(TASK_ACTIVE_MM, offsetof(struct task_struct, active_mm));
->>>  #ifdef CONFIG_MMU
->>>        DEFINE(TASK_TINFO, offsetof(struct task_struct, thread.info));
->>>  #endif
->>> @@ -64,14 +60,6 @@ int main(void)
->>>        /* bitfields are a bit difficult */
->>>        DEFINE(PT_OFF_FORMATVEC, offsetof(struct pt_regs, pc) + 4);
->>>  -      /* offsets into the irq_handler struct */
->>> -       DEFINE(IRQ_HANDLER, offsetof(struct irq_node, handler));
->>> -       DEFINE(IRQ_DEVID, offsetof(struct irq_node, dev_id));
->>> -       DEFINE(IRQ_NEXT, offsetof(struct irq_node, next));
->>> -
->>> -       /* offsets into the kernel_stat struct */
->>> -       DEFINE(STAT_IRQ, offsetof(struct kernel_stat, irqs));
->>> -
->>>        /* offsets into the irq_cpustat_t struct */
->>>        DEFINE(CPUSTAT_SOFTIRQ_PENDING, offsetof(irq_cpustat_t,
->>> __softirq_pending));
->>>  diff --git a/arch/m68knommu/kernel/asm-offsets.c
->>> b/arch/m68knommu/kernel/asm-offsets.c
->>> index 9a8876f..eca508c 100644
->>> --- a/arch/m68knommu/kernel/asm-offsets.c
->>> +++ b/arch/m68knommu/kernel/asm-offsets.c
->>> @@ -21,14 +21,8 @@
->>>  int main(void)
->>>  {
->>>        /* offsets into the task struct */
->>> -       DEFINE(TASK_STATE, offsetof(struct task_struct, state));
->>> -       DEFINE(TASK_FLAGS, offsetof(struct task_struct, flags));
->>> -       DEFINE(TASK_PTRACE, offsetof(struct task_struct, ptrace));
->>> -       DEFINE(TASK_BLOCKED, offsetof(struct task_struct, blocked));
->>>        DEFINE(TASK_THREAD, offsetof(struct task_struct, thread));
->>> -       DEFINE(TASK_THREAD_INFO, offsetof(struct task_struct, stack));
->>>        DEFINE(TASK_MM, offsetof(struct task_struct, mm));
->>> -       DEFINE(TASK_ACTIVE_MM, offsetof(struct task_struct, active_mm));
->>>        /* offsets into the irq_cpustat_t struct */
->>>        DEFINE(CPUSTAT_SOFTIRQ_PENDING, offsetof(irq_cpustat_t,
->>> __softirq_pending));
->>> @@ -77,11 +71,8 @@ int main(void)
->>>        DEFINE(THREAD_SIZE, THREAD_SIZE);
->>>        /* Offsets in thread_info structure */
->>> -       DEFINE(TI_TASK, offsetof(struct thread_info, task));
->>> -       DEFINE(TI_EXECDOMAIN, offsetof(struct thread_info, exec_domain));
->>>        DEFINE(TI_FLAGS, offsetof(struct thread_info, flags));
->>>        DEFINE(TI_PREEMPTCOUNT, offsetof(struct thread_info,
->>> preempt_count));
->>> -       DEFINE(TI_CPU, offsetof(struct thread_info, cpu));
->>>        return 0;
->>>  }
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
+>>> If that makes sense, maybe the check can just be moved into
+>>> inactive_anon_is_low itself?
+>>
+>> That was the initial patch posted, instead we changed to use
+>> total_swap_pages instead. How this patch looks:
+>>
+>> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
+>> *zone, struct scan_control *sc)
+>>  {
+>>        int low;
+>>
+>> +       if (total_swap_pages <= 0)
+>> +               return 0;
+>> +
+>>        if (scanning_global_lru(sc))
+>>                low = inactive_anon_is_low_global(zone);
+>>        else
+>> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
+>>         * Even if we did not try to evict anon pages at all, we want to
+>>         * rebalance the anon lru active/inactive ratio.
+>>         */
+>> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
+>> +       if (inactive_anon_is_low(zone, sc))
+>>                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+>>
+>>        throttle_vm_writeout(sc->gfp_mask);
+>>
+>> --Ying
+>>
+>>>
+>
+> I did it intentionally since inactive_anon_is_low have been used both
+> direct reclaim and background path. In this point, your patch could
+> make side effect in swap enabled system when swap is full.
+>
+> I think we need aging in only background if system is swap full.
+> That's because if the swap space is full, we don't reclaim anon pages
+> in direct reclaim path with (nr_swap_pages < 0)  and even have been
+> not rebalance it until now.
+> I think direct reclaim path is important about latency as well as
+> reclaim's effectiveness.
+> So if you don't mind, I hope direct reclaim patch would be left just as it is.
+
+Minchan, I would prefer to make kswapd as well as direct reclaim to be
+consistent if possible.
+They both try to reclaim pages when system is under memory pressure,
+and also do not make
+much sense to look at anon lru if no swap space available. Either
+because of no swapon or run
+out of swap space.
+
+I think letting kswapd to age anon lru without free swap space is not
+necessary neither. That leads
+to my initial patch:
+
+@@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
+*zone, struct scan_control *sc)
+ {
+       int low;
+
++       if (nr_swap_pages <= 0)
++               return 0;
++
+       if (scanning_global_lru(sc))
+               low = inactive_anon_is_low_global(zone);
+       else
+@@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
+        * Even if we did not try to evict anon pages at all, we want to
+        * rebalance the anon lru active/inactive ratio.
+        */
+-       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
++       if (inactive_anon_is_low(zone, sc))
+               shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+
+What do you think ?
+
+--Ying
+>
 > --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
-
-
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+> Kind regards,
+> Minchan Kim
+>
