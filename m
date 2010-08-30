@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab0H3Lhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:37:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61892 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab0H3Lhb (ORCPT
+	id S1755431Ab0H3Lix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:38:53 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64897 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755375Ab0H3Liw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:37:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC 0/5] tty: move stuff around
-Date: Mon, 30 Aug 2010 13:37:27 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <20100830001855.1071b6fc@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100830001855.1071b6fc@lxorguk.ukuu.org.uk>
+	Mon, 30 Aug 2010 07:38:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Zd3rR3BaH5VLXEK1ORLu4RYNX9yJ2zBBAEPRfId6cWSQLnCCX5N1QG8bBYDRBSiW/x
+         o512a2eqJ2PgSWHX5wbAocw6v+vKIPG8zEVylR9z1aAuebJ20/PNfO9jXsuhGYp6RopP
+         yHj/8MriIO3/j0hy6K4fkzeWH5nfSW7epmDm4=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008301337.27672.arnd@arndb.de>
-X-Provags-ID: V02:K0:zeQoXAol+nVqQzkHxdiLw543vBxv3LhFbNGirk/MNaz
- sP5VSkZUALagRYp+omkXGL/aMdcCeBtu19QirIAzAdCm6rwJUY
- wtxLBoHkNLOf5UKqVLWgiv/pUxz3QqbTuYQds1yPht6UkAkDvq
- jCSbPktYAI216RCtp2wvjmu3RYCy7dELpJRzIBbX7bVv5AJ6Do
- D9sJEtDUehFobQUPK0DkQ==
+In-Reply-To: <AANLkTikcZ1sWe4+j+Q6nw7ZNy-fi-=ojdvnZP5+N+QQY@mail.gmail.com>
+References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
+	<1283011478-27237-7-git-send-email-brgerst@gmail.com>
+	<AANLkTi=G+=Hc3e8Z+HH6yJPGi4TM3TyYZ6UvdUpHyBsC@mail.gmail.com>
+	<AANLkTinVQFHG1nh5XBd1tJ29fBDjQc=QRThXySiPWd2q@mail.gmail.com>
+	<AANLkTikcZ1sWe4+j+Q6nw7ZNy-fi-=ojdvnZP5+N+QQY@mail.gmail.com>
+Date: Mon, 30 Aug 2010 07:38:51 -0400
+Message-ID: <AANLkTinFbWiu5zuHJJ6OVB8AbsWjgqdiJatrfkT7M6Wk@mail.gmail.com>
+Subject: Re: [PATCH 06/11] x86-64: Fix %cs value in convert_from_fxsr()
+From: Brian Gerst <brgerst@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 August 2010, Alan Cox wrote:
-> > Of course, moving stuff around always has the tendency to
-> > break patches against it, so we might not want to do this after
-> > all.
-> > 
-> > Any other opinions?
-> 
-> Linus actually suggested this should get done in some form a while ago
-> back when I was tty maintainer but about the same time as I decided not
-> to be.
+On Mon, Aug 30, 2010 at 2:44 AM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst <brgerst@gmail.com> wrote:
+>>>> While %ds still contains the userspace selector, %cs is KERNEL_CS
+>>>> at this point.  Always get %cs from pt_regs.
+>>>>
+>>>> It actually is possible to get the correct segments for compat tasks,
+>>>> but that involves using the [f]xsave instruction without a REX.W prefix.
+>>>>
+>>>> Signed-off-by: Brian Gerst <brgerst@gmail.com>
+>
+> On Sun, Aug 29, 2010 at 2:41 PM, Pekka Enberg <penberg@kernel.org> wrote:
+>>> It might be just me but the above description doesn't explain
+>>> anything. What's the problem here? What is this fixing?
+>
+> On Mon, Aug 30, 2010 at 3:25 AM, Brian Gerst <brgerst@gmail.com> wrote:
+>> The %cs segment being reported to a compat task is flat out wrong.  It
+>> is getting KERNEL_CS when it should be some userspace segment.  The
+>> code segment may still be wrong, because the %cs in pt_regs may not
+>> have been the segment where the instruction that flagged the exception
+>> executed from.  That could be fixed by using fxsave without a REX.W
+>> prefix when saving the state of compat tasks, which would save the
+>> segment and 32-bit offset instead of the 64-bit offset for the code
+>> and data pointers.  This is such a corner case that it probably isn't
+>> worth putting much effort into fixing unless someone demonstrates a
+>> real need for it.
+>
+> I sort of was able to deduce most of that from the original
+> description. However, I still don't quite understand what the problem
+> causes. Just a wrong cs reported to a signal handler or something
+> else?
+>
 
-ok.
+The wrong cs value is reported to userspace.  I don't know of any apps
+that actually cares about it, except for possibly wine or dosemu.  In
+any app that doesn't use alternate segments, the above fix will be
+give the correct cs every time (since it never changes).
 
-> >   tty: move tty layer code to drivers/tty
-> 
-> I would be tempted to put the core stuff in /tty as its not drivers
-
-Do you consider vt to be core (I guess yes)? What about hvc (I guess no)?
-
-> >   tty/vt: move files to drivers/tty/vt/
-> >   tty/hvc: move files to drivers/tty/hvc
-> >   tty/hw: move hardware drivers to drivers/tty/hw
-> >   tty: rearrange Kconfig structure
-> 
-> drivers/serial should also walk into tty I think ?
-
-Yes, good point.
-
-> drivers/pcmcia/serial is a bit trickier but I guess should stay as with
-> drivers/usb/serial
-
-I don't see drivers/pcmcia/serial. Are you thinking of the tty drivers
-in drivers/char/pcmcia? I moved both of these to drivers/tty/hw
-in my patch.
-
-> There are several unbuildable ancient drivers. Perhaps if we are having
-> the great rename those should simply get deleted first, as there is no
-> way to test them in their current config ?
-
-These are the drivers I was planning to move:
-+obj-$(CONFIG_MVME147_SCC)      += generic_serial.o vme_scc.o
-+obj-$(CONFIG_MVME162_SCC)      += generic_serial.o vme_scc.o
-+obj-$(CONFIG_BVME6000_SCC)     += generic_serial.o vme_scc.o
-+obj-$(CONFIG_ROCKETPORT)       += rocket.o
-+obj-$(CONFIG_SERIAL167)        += serial167.o
-+obj-$(CONFIG_CYCLADES)         += cyclades.o
-+obj-$(CONFIG_STALLION)         += stallion.o
-+obj-$(CONFIG_ISTALLION)        += istallion.o
-+obj-$(CONFIG_NOZOMI)           += nozomi.o
-+obj-$(CONFIG_DIGIEPCA)         += epca/
-+obj-$(CONFIG_SPECIALIX)        += specialix.o
-+obj-$(CONFIG_MOXA_INTELLIO)    += moxa.o
-+obj-$(CONFIG_A2232)            += ser_a2232.o generic_serial.o
-+obj-$(CONFIG_ATARI_DSP56K)     += dsp56k.o
-+obj-$(CONFIG_MOXA_SMARTIO)     += mxser.o
-+obj-$(CONFIG_COMPUTONE)        += ip2/
-+obj-$(CONFIG_RISCOM8)          += riscom8.o
-+obj-$(CONFIG_ISI)              += isicom.o
-+obj-$(CONFIG_SYNCLINK)         += synclink.o
-+obj-$(CONFIG_SYNCLINKMP)       += synclinkmp.o
-+obj-$(CONFIG_SYNCLINK_GT)      += synclink_gt.o
-+obj-$(CONFIG_SYNCLINK_CS)      += synclink_cs.o
-+obj-$(CONFIG_AMIGA_BUILTIN_SERIAL) += amiserial.o
-+obj-$(CONFIG_BFIN_JTAG_COMM)   += bfin_jtag_comm.o
-+obj-$(CONFIG_SX)               += sx.o generic_serial.o
-+obj-$(CONFIG_RIO)              += rio/ generic_serial.o
-+obj-$(CONFIG_IPWIRELESS)       += ipwireless/
-
-Which of these do you think should get deleted?
-
-AFAICT, the only ones that are getting nontrivial updates once in
-a while are amiserial, bfin_jtag_comm, isicom, cyclades. moxa, mxser,
-nozomi, serial167, stallion and synclink, while the users of
-generic_serial.o seem to be the ones getting the least attention.
-
-	Arnd
+--
+Brian Gerst
