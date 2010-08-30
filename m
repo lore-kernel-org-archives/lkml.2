@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab0H3RfH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:35:07 -0400
-Received: from n10.bullet.mail.ac4.yahoo.com ([76.13.13.238]:23727 "HELO
-	n10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755539Ab0H3RfF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:35:05 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 516907.8962.bm@omp128.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=PTa3C+ah5Wj1ME8wYBDgKw7f6E8uBqDL3eTFR/SEND+WMQctY3Zhcfq+xTAncl7qW8NtVzynl1RbZVpiedLtTMfvt3ntDvyjY5h6QBmTgV79IXjE+PPbojPHJ9LG/eby7JW0pnKR6s3Z29cIO/YsQv6Q5U1EM1KHSO0sHNm7AcI=;
-Message-ID: <838632.57445.qm@web180307.mail.gq1.yahoo.com>
-X-YMail-OSG: vJqsPzAVM1n9uRFn7IdXxGoKaGeMtwPgoS._qrK_zcBOoJN
- 1wZyY8._IigkeTHK_BRw0SSFN3TfED3_4w1ysXfszqVcNqVaRhH9OI0tpOrF
- SEDbPtruBFfqR8HlP3IkxNc380w89hZq6v.JxfCerNR234.CYfbD7RFvklDj
- qIVKVc0SJNqxYDVXJXwOpZd111yAHDEewRlFnVYQBmlof_rIOBI5fjNjjwXQ
- hsQwNAzpaD2IqOfh.lTSKJ3XKdH1zzac_nAHF_2pj_59m_92XzF88YrXKitY
- eDzWj2o_TYDnTR3jj8x9FKB_wYeo7uq96iqb3CxBWK_gdv2vyHtunQiGMWw5
- 3la8Ypf43RTILVHg-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Mon, 30 Aug 2010 10:35:02 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [RFC PATCH] GPIO: add control of powerdown modes and pull-up/down configurations.
-To: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        MyungJoo Ham <myungjoo.ham@gmail.com>
-In-Reply-To: <1283154702-23008-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1756285Ab0H3RfR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:35:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59479 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791Ab0H3RfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 13:35:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [Bug #16505] 2.6.34.2 breaks b43
+Date: Mon, 30 Aug 2010 19:34:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        archman <spermmail001@yahoo.com>
+References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.h7B.DdueMB@chimera> <4C7AFE2C.1080204@lwfinger.net>
+In-Reply-To: <4C7AFE2C.1080204@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008301934.19463.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, August 30, 2010, Larry Finger wrote:
+> On 08/29/2010 06:13 PM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.34 and 2.6.35.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16505
+> > Subject		: 2.6.34.2 breaks b43
+> > Submitter	: archman <spermmail001@yahoo.com>
+> > Date		: 2010-08-03 23:53 (27 days old)
+> > Handled-By	: Larry Finger <Larry.Finger@lwfinger.net>
+> > Patch		: https://bugzilla.kernel.org/attachment.cgi?id=27335
+> 
+> This one was fixed in 2.6.34.3. Mainline was OK - only the patches to stable
+> were affected. The bug should be closed.
 
+Thanks, closing.
 
---- On Mon, 8/30/10, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-
-> From: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Subject: [RFC PATCH] GPIO: add control of powerdown modes and pull-up/down configurations.
-
-NAK.
-
-Note that Documentation/gpio.txt specifies such
-pinmux/configuration as out of scope.  There isn't
-even uniformity of models about such things between
-SOCs (and ASICs etc).
-
-Put these kinds of things in arch-specific code,
-which has good reason to know about all the ways
-each platform differs from others, and to cope.
-
-Look at OMAP and AT91 for some examples of SOCs
-which have addressed these issues cleanly, and
-without committing mayhem on the GPIO framework.
-
+Rafael
