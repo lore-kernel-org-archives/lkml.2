@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab0H3OXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 10:23:07 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:42014 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab0H3OXF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 10:23:05 -0400
-X-AuthUser: davidel@xmailserver.org
-Date: Mon, 30 Aug 2010 07:22:57 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@Macintosh-3.local
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-api@vger.kernel.org
-Subject: Re: [patch/rfc] eventfd semaphore-like behavior
-In-Reply-To: <AANLkTim_seWr0LZJyC+dPBy-N+_NkzTx21vte7qrwunC@mail.gmail.com>
-Message-ID: <alpine.OSX.2.00.1008300721400.175@Macintosh-3.local>
-References: <alpine.DEB.1.10.0902041349180.6214@alien.or.mcafeemobile.com> <20090204150507.665b5b7c.akpm@linux-foundation.org> <alpine.DEB.1.10.0902041509060.6214@alien.or.mcafeemobile.com> <20090204152434.c8f65d52.akpm@linux-foundation.org>
- <alpine.DEB.1.10.0902041526590.6214@alien.or.mcafeemobile.com> <20090204155514.6abbdc8f.akpm@linux-foundation.org> <cfd18e0f0902041559l4c40d9b6k704068337a00df7a@mail.gmail.com> <alpine.DEB.1.10.0902041600170.6214@alien.or.mcafeemobile.com>
- <AANLkTim_seWr0LZJyC+dPBy-N+_NkzTx21vte7qrwunC@mail.gmail.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="0-561423044-1283178184=:175"
+	id S1755706Ab0H3OYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 10:24:14 -0400
+Received: from plane.gmane.org ([80.91.229.3]:55558 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752438Ab0H3OYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 10:24:13 -0400
+Date: Mon, 30 Aug 2010 16:21:50 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Larry Finger 
+	<public-Larry.Finger-tQ5ms3gMjBLk1uMJSBkQmQ@plane.gmane.org>
+Newsgroups: gmane.linux.kernel.kernel-testers,gmane.linux.kernel
+Cc: "Rafael J. Wysocki" <public-rjw-KKrjLPT3xs0@plane.gmane.org>,
+        Linux Kernel Mailing List 
+	<public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org>,
+        Kernel Testers List 
+	<public-kernel-testers-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org>,
+        Maciej Rutecki 
+	<public-maciej.rutecki-Re5JQEeQqe8AvxtiuMwx3w@plane.gmane.org>,
+        archman 
+	<public-spermmail001-/E1597aS9LQAvxtiuMwx3w@plane.gmane.org>
+Subject: Re: [Bug #16505] 2.6.34.2 breaks b43
+Message-ID: <20100830162150.30a73403@schatten.dmk.lab>
+In-Reply-To: <4C7AFE2C.1080204@lwfinger.net>
+References: <c1_O4wHrlB.A.63.mbueMB@chimera>
+	<ByD_7B96czP.A.h7B.DdueMB@chimera>
+	<4C7AFE2C.1080204@lwfinger.net>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---0-561423044-1283178184=:175
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 
-On Mon, 30 Aug 2010, Michael Kerrisk wrote:
+On Sun, 29 Aug 2010 19:41:16 -0500
+Larry Finger <Larry.Finger-tQ5ms3gMjBLk1uMJSBkQmQ@public.gmane.org>
+wrote:
 
-> On Thu, Feb 5, 2009 at 2:02 AM, Davide Libenzi <davidel@xmailserver.org> wrote:
-> > On Thu, 5 Feb 2009, Michael Kerrisk wrote:
-> >
-> >> > Dunno.  Probably try the syscall and see if it returned -EINVAL.  Does
-> >> > that work in this case?
-> >>
-> >> As youll have seen by now, Ulrich and I noted that it works.
-> >>
-> >> > If so, it would be sensible to mention this in
-> >> > the description somewhere as the approved probing method and to
-> >> > maintain it.
-> >>
-> >> I'll add something to the man page, as this patch progresses.
-> >
-> > I see we already have stuff like this inside the man pages:
-> >
-> > O_CLOEXEC (Since Linux 2.6.23)
-> >          Enable the close-on-exec flag for the new file descriptor.
-> >          ...
-> >
-> > Maybe a similar note for the new flag?
+> On 08/29/2010 06:13 PM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.34 and 2.6.35.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16505
+> > Subject		: 2.6.34.2 breaks b43
+> > Submitter	: archman <spermmail001-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+> > Date		: 2010-08-03 23:53 (27 days old)
+> > Handled-By	: Larry Finger <Larry.Finger-tQ5ms3gMjBLk1uMJSBkQmQ@public.gmane.org>
+> > Patch		: https://bugzilla.kernel.org/attachment.cgi?id=27335
 > 
-> It took a while, but here's the new text in the eventfd.2 (will be in
-> man-pages-2.36). Could you please ACK, Davide?
+> This one was fixed in 2.6.34.3. Mainline was OK - only the patches to stable
+> were affected. The bug should be closed.
 > 
->        EFD_SEMAPHORE (since Linux 2.6.30)
->               Provide semaphore-like semantics  for  reads  from
->               the new file descriptor.  See below.
-> ...
->               *  If EFD_SEMAPHORE  was  not  specified  and  the
->                  eventfd  counter  has  a  nonzero value, then a
->                  read(2) returns 8 bytes containing that  value,
->                  and the counter's value is reset to zero.
+> Larry
 > 
->               *  If  EFD_SEMAPHORE was specified and the eventfd
->                  counter has a nonzero  value,  then  a  read(2)
->                  returns 8 bytes containing the value 1, and the
->                  counter's value is decremented by 1.
 
-Looks fine to me.
+In the bugzilla entry someone mentioned that 2.6.32.y need this
+too?
 
+Cheers,
+Flo
 
-- Davide
-
---0-561423044-1283178184=:175--
