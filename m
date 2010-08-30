@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab0H3OKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 10:10:16 -0400
-Received: from mail.acbr.com.vn ([118.69.77.199]:42158 "EHLO acbr.com.vn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755390Ab0H3OKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 10:10:14 -0400
-From: "Mr. Mervyn King" <mervyn.king@yahoo.co.uk>
-Reply-To: mervyn.king0010@hotmail.co.uk
-Subject: N/A
-Date: Mon, 30 Aug 2010 18:35:30 +0700
-Message-Id: <20100830113258.M27613@yahoo.co.uk>
-X-Mailer: OpenWebMail 2.52 20060502
-X-OriginatingIP: 172.191.203.49 (sangkht)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-X-SMTP-Vilter-Version: 1.3.6
-X-SMTP-Vilter-Virus-Backend: clamd
-X-SMTP-Vilter-Status: clean
-X-SMTP-Vilter-clamd-Virus-Status: clean
-X-Spamd-Symbols: ALL_TRUSTED,TO_CC_NONE,US_DOLLARS_3
-X-SMTP-Vilter-Spam-Backend: spamd
-X-Spam-Score: -1.0
-X-Spam-Threshold: 5.0
-X-Spam-Probability: -0.2
-X-Its-A-Nuisance: This is spam
-X-SMTP-Vilter-Unwanted-Backend: attachment
-X-SMTP-Vilter-attachment-Unwanted-Status: clean
-To: unlisted-recipients:; (no To-header on input)
+	id S1755476Ab0H3OMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 10:12:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57133 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab0H3OMn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 10:12:43 -0400
+Subject: Re: [RFC][PATCH 3/5] perf: Add hrtimer code for PMI-less hardware
+ counters
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+In-Reply-To: <20100830132744.GB24828@console-pimps.org>
+References: <cover.1283123521.git.matt@console-pimps.org>
+	 <38d993baf1328403d9a1c4a2f012c4aa0e19feab.1283123521.git.matt@console-pimps.org>
+	 <1283172902.1820.897.camel@laptop>
+	 <20100830132744.GB24828@console-pimps.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 30 Aug 2010 16:12:24 +0200
+Message-ID: <1283177544.1820.992.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day, 
+On Mon, 2010-08-30 at 14:27 +0100, Matt Fleming wrote:
 
- Although you might be apprehensive about my email as we have not met before, 
-I am Mervyn King,I work with Bank Of England, There is the sum of 
-$20,600,000.00 USD in my Bank, There were no beneficiaries stated concerning 
-these funds which means no one would ever come forward to claim it.
+> I'm lost. Is it possible to do this patch entirely in userspace? How do
+> we periodically sample the counters if it's not being done in the
+> kernel?
 
-That is why I ask that we work together to transfered the funds out of my 
-Bank into your Bank Account or any other account of your choice I will be 
-pleased to see if you can help me and also be a good and trusted person. 
-Once the funds have been transferred to your Nominated Bank Account we shall 
-then share in the ratio of 60% for me, 40% for you, do send me email as soon 
-as possible for more details here is my email address: 
-mervyn.king0010@hotmail.co.uk
+perf_event_attr leader = {
+ .type = PERF_TYPE_SOFTWARE,
+ .config = PERF_COUNT_SW_TASK_CLOCK,
+ .sample_period = xxx,
+ .sample_type = PERF_SAMPLE_READ|...,
+ .read_format = PERF_FORMAT_GROUP,
+};
 
-Regards,
-Mr. Mervyn King
+perf_event_attr counter = {
+ .type = PERF_TYPE_HARDWARE,
+ .config = PERF_COUNT_HW_CPU_CYCLES,
+};
+ 
+leader_fd = sys_perf_event_open(&leader, pid, cpu, 0, 0);
+counter_fd = sys_perf_event_open(&counter, pid, cpu, leader_fd, 0);
+
+Which gives you a group of 2 events, one software timer that samples,
+one hardware counter that only counts.
