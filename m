@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab0H3TSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 15:18:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496Ab0H3TSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 15:18:44 -0400
-Date: Mon, 30 Aug 2010 15:18:30 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, j-nomura@ce.jp.nec.com,
-        jamie@shareable.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de
-Subject: Re: [PATCH UPDATED 4/5] dm: implement REQ_FLUSH/FUA support for
- request-based dm
-Message-ID: <20100830191829.GB8458@redhat.com>
-References: <1283162296-13650-1-git-send-email-tj@kernel.org>
- <1283162296-13650-5-git-send-email-tj@kernel.org>
- <20100830132836.GB5283@redhat.com>
- <4C7BB932.1070405@kernel.org>
- <4C7BD202.4040700@kernel.org>
+	id S1754356Ab0H3TT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 15:19:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65343 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab0H3TT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 15:19:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: virtualization@lists.linux-foundation.org
+Subject: Re: hv block drivers
+Date: Mon, 30 Aug 2010 21:18:59 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.5.0; x86_64; ; )
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Hank Janssen <hjanssen@microsoft.com>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+References: <201008301643.42253.arnd@arndb.de> <8AFC7968D54FB448A30D8F38F259C56224274727@TK5EX14MBXC118.redmond.corp.microsoft.com> <4C7BEBE7.8060502@goop.org>
+In-Reply-To: <4C7BEBE7.8060502@goop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7BD202.4040700@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008302119.00069.arnd@arndb.de>
+X-Provags-ID: V02:K0:1UmPnaqnAWBpDUtYlPYQSB7yAtJswXmCt2BiIUxycXE
+ q962tvUVXKyRODQmERfisOmcwSlDh7sWzHB/pIB0kHDRpYieVX
+ 0T+JF1h61ARKxRfanHaeIGXcy8B9kj+ogv2sZWNa+7j1T/Xwmp
+ Nefvx91opqlGfGzT5ssjNqR8rCAIX7tOe9xzmUAytLmjcSlTXR
+ yYs+IgqRXs3zCzPa6fS1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30 2010 at 11:45am -0400,
-Tejun Heo <tj@kernel.org> wrote:
-
-> This patch converts request-based dm to support the new REQ_FLUSH/FUA.
+On Monday 30 August 2010 19:35:35 Jeremy Fitzhardinge wrote:
+>  On 08/30/2010 10:31 AM, Hank Janssen wrote:
+> > For a more general question, When/if we make it out of staging, where should these drivers live?
+> >
+> >       drivers/hyper-v or drivers/scsi and drivers/ide.
+> >
+> > Is there a standard that is being followed?
 > 
-> The original request-based flush implementation depended on
-> request_queue blocking other requests while a barrier sequence is in
-> progress, which is no longer true for the new REQ_FLUSH/FUA.
-> 
-> In general, request-based dm doesn't have infrastructure for cloning
-> one source request to multiple targets, but the original flush
-> implementation had a special mostly independent path which can issue
-> flushes to multiple targets and sequence them.  However, the
-> capability isn't currently in use and adds a lot of complexity.
-> Moreoever, it's unlikely to be useful in its current form as it
-> doesn't make sense to be able to send out flushes to multiple targets
-> when write requests can't be.
-> 
-> This patch rips out special flush code path and deals handles
-> REQ_FLUSH/FUA requests the same way as other requests.  The only
-> special treatment is that REQ_FLUSH requests use the block address 0
-> when finding target, which is enough for now.
-> 
-> * added BUG_ON(!dm_target_is_valid(ti)) in dm_request_fn() as
->   suggested by Mike Snitzer
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> If they're not actually scsi/ide subsystem drivers, then drivers/block
+> would seem like the best place (and drivers/ide is truly ancient stuff,
+> I think).
 
-Looks good.
+Agreed, although I was suggesting to make them SCSI drivers, so they
+would go to drivers/scsi/ or a subdirectory of it in that case.
 
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-
-Junichi and/or Kiyoshi,
-Could you please review this patch and add your Acked-by if it is OK?
-(Alasdair will want to see NEC's Ack to accept this patch).
-
-Thanks,
-Mike
-
+	Arnd
