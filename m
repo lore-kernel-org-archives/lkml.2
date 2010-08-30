@@ -1,103 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab0H3LjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:39:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:32932 "EHLO mx1.suse.de"
+	id S1755465Ab0H3Lki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:40:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:32981 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755375Ab0H3Li6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:38:58 -0400
-Message-ID: <4C7B984E.4070802@suse.de>
-Date: Mon, 30 Aug 2010 13:38:54 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Tejun Heo <tj@kernel.org>,
-        michaelc@cs.wisc.edu, James.Bottomley@suse.de, tytso@mit.edu,
-        linux-scsi@vger.kernel.org, jaxboe@fusionio.com, jack@suse.cz,
-        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
-        vst@vlnb.net, rwheeler@redhat.com, Christoph Hellwig <hch@lst.de>,
-        chris.mason@oracle.com, dm-devel@redhat.com
-Subject: Re: [RFC] training mpath to discern between SCSI errors
-References: <20100825155918.GB8509@redhat.com>
-In-Reply-To: <20100825155918.GB8509@redhat.com>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1755375Ab0H3Lkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 07:40:37 -0400
+Date: Mon, 30 Aug 2010 21:40:27 +1000
+From: Neil Brown <neilb@suse.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vaurora@redhat.com, viro@zeniv.linux.org.uk, jblunck@suse.de,
+        hch@infradead.org
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+Message-ID: <20100830214027.77e197f5@notabene>
+In-Reply-To: <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
+References: <20100826183340.027591901@szeredi.hu>
+	<20100827170551.19616048@notabene>
+	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
+	<20100827213502.31af4a4c@notabene>
+	<E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu>
+	<20100829144207.4fbf2713@notabene>
+	<E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Snitzer wrote:
-> On Wed, Aug 25 2010 at  4:00am -0400,
-> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
-> 
->>> I'm not sure how to proceed here.  How much work would
->>> discerning between transport and IO errors take?  If it can't be done
->>> quickly enough the retry logic can be kept around to keep the old
->>> behavior but that already was a broken behavior, so...  :-(
->> I'm not sure how long will it take.
-> 
-> We first need to understand what direction we want to go with this.  We
-> currently have 2 options.  But any other ideas are obviously welcome.
-> 
-> 1)
-> Mike Christie has a patchset that introduce more specific
-> target/transport/host error codes.  Mike shared these pointers but he'd
-> have to put the work in to refresh them:
-> http://marc.info/?l=linux-scsi&m=112487427230642&w=2
-> http://marc.info/?l=linux-scsi&m=112487427306501&w=2
-> http://marc.info/?l=linux-scsi&m=112487431524436&w=2
-> http://marc.info/?l=linux-scsi&m=112487431524350&w=2
-> 
-> errno.h new EXYZ
-> http://marc.info/?l=linux-kernel&m=107715299008231&w=2
-> 
-> add block layer blkdev.h error values
-> http://marc.info/?l=linux-kernel&m=107961883915068&w=2
-> 
-> add block layer blkdev.h error values (v2 convert more drivers)
-> http://marc.info/?l=linux-scsi&m=112487427230642&w=2
-> 
-> I think that patchset's appoach is fairly disruptive just to be able to
-> train upper layers to differentiate (e.g. mpath).  But in the end maybe
-> that change takes the code in a more desirable direction?
-> 
-> 2)
-> Another option is Hannes' approach of having DM consume req->errors and
-> SCSI sense more directly.
-> 
+On Mon, 30 Aug 2010 12:18:11 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-Actually, I think we have two separate issues here:
-1) The need of having more detailed I/O errors even in the fs layer. This
-   we've already discussed at the LSF, consensus here is to allow other
-   errors than just 'EIO'.
-   Instead of Mike's approach I would rather use existing error codes here;
-   this will make the transition somewhat easier.
-   Initially I would propose to return 'ENOLINK' for a transport failure,
-   'EIO' for a non-retryable failure on the target, and 'ENODEV' for a
-   retryable failure on the target.
+> On Sun, 29 Aug 2010, Neil Brown wrote:
+> > On Fri, 27 Aug 2010 18:53:45 +0200
+> > Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > 
+> > > On Fri, 27 Aug 2010, Neil Brown wrote:
+> > > > I was wondering why you even bothered to fiddle st_ino.  Given
+> > > > that lots of other things come from one fs or the other, having
+> > > > the merged directories appear to be from the upper filesystem
+> > > > doesn't seem like a problem.  I don't really care either way
+> > > > though.
+> > > 
+> > > "rm -rf" complains if st_ino of a directory changes spontaneously.
+> > 
+> > I see...
+> > Doesn't that mean that you must always present a merged-directory if the
+> > lower directory exists.
+> 
+> Directory opens are never "forwarded" to the lower filesystem like
+> other opens.  One reason is that lookups continuing from the file's
+> path need to be on the union filesystem instead on one of the
+> underlying filesystems.
 
-2) The need to differentiate the various error conditions on the multipath
-   layer. Multipath needs to distinguish the three error types as specified
-   in 1)
+You're right - I misread the code there.
 
-Mike has been trying to solve 1) and 2) by introducing separate/new error
-codes, and I have been trying to use 2) by parsing the sense codes directly
-from multipathing.
+> > > I think it's best to leave that stuff until someone actually cares.
+> > > The "people might find it useful" argument is not strong enough to put
+> > > nontrivial effort into thinking about all the weird corner cases.
+> > 
+> > My thought on this is that in order to describe the behaviour of the
+> > filesystem accurately you need to think about all the weird corner cases.
+> > 
+> > Then it becomes a question of: is it easier to document the weird behaviour,
+> > or change the code so the documentation will be easier to understand?
+> > Some cases will go one way, some the other.
+> > 
+> > But as you suggest this isn't urgent.
+> 
+> You didn't mention one possibility: add limitations that prevent the
+> weird corner cases arising.  I believe this is the simplest option.
 
-Given that the fs people have expressed their desire to know about these
-error classes, too, it makes sense to have them exposed to the fs layer.
+Val has been following that approach and asking if it is possible to make an
+NFS filesystem really-truly read-only. i.e. no changes.
+I don't believe it is.
 
-I see if I can come up with a patch.
+But I won't pursue this further without patches.
 
-Cheers,
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+> > My comment about set-theory unions being commutative set me thinking.  I
+> > really don't think "union" is the right name for this thing.  There is
+> > nothing about it which really fits that proper definition of a union.
+> > whiteouts mean that even the list of names in a directory is not the union of
+> > the lists of names in the upper and lower directories.
+> > "overlay" is a much more accurate name.  But union seems to be the name
+> > that is most used.  I wonder if it is too late to change that.
+> 
+> We could call it overlayfs.  People learn new names quickly :)
+
++1
+
+> 
+> > Also, dnotify (and presumably inotifiy) doesn't work reliably in the current
+> > implementation.
+> > It works for opaque directories and those which don't have a namesake in the
+> > lower filesystem, but for others it never notifies of changes to any files in
+> > the directory.
+> > This is because dnotify will set an fsnotifier on the merged-directory in the
+> > union-fs, but the change happens to the file in the upper fs, so
+> > fsnotify_parent will only call notifiers on the parent in the upper fs.
+> 
+> I think *notify will work correctly, every modificaton will be
+> notified on both the union fs and the upper fs.  But I haven't tested
+> this yet.
+
+I tried.  It doesn't.
+To be precise:  directory changes like file creation (even creation of a file
+that already exists) get notified, but purely file-based event like modifying
+the contents of the file don't generate events back to the overlayfs
+directory.
+Because an open (for write) of a file is passed through to the upper
+filesystem, the notifications of modification through that open only go to the
+upper filesystem.
+
+Thanks,
+NeilBrown
