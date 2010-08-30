@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab0H3V1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 17:27:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58785 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab0H3V1g convert rfc822-to-8bit (ORCPT
+	id S1754589Ab0H3V2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 17:28:24 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:57512 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab0H3V2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 17:27:36 -0400
+	Mon, 30 Aug 2010 17:28:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hmoIKux2juvm68vuge5M34oYABjPCbghZ64eOJ7qpR/wDBl5PkwJMaL+rC8tHM5r0P
-         Ep1tw1pqFwNDQVKt6L6vWUX29gGVhWdCbGxrTaTrCZPDd7Bl9Mryo5RnBc7VIRs0B2DC
-         ZE8elEDhF5Fpz3/28e+piNCNe6wuk6UBdrsRI=
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=U3oA3p5n7GJwWAvBexNycT3K8pwy6cIm5UeKTTJk6jDlzjnOPhrznI26dyQYqwJWbl
+         1JV3ax2nkKJ2E3lUaNhtW/i1qrJit2wGlcQinmA29Q6Tgl/xtEuMEVmunBcCPQe/2xmH
+         7b3ArIm6suC/pNBqiTDuZQzh7k2dp+smUGJ/A=
 MIME-Version: 1.0
-In-Reply-To: <20100830102527.17d5e1f1.randy.dunlap@oracle.com>
-References: <AANLkTinRRiW1VUzS+3T82=q8PsoRn78Cgn_X8gSduM0U@mail.gmail.com>
-	<i5fr6h$ih6$1@dough.gmane.org>
-	<4C7BE3AE.8020204@suse.de>
-	<AANLkTi=S3E80edLwAAAOwehrakYVgeKzC+yKptwJJZLc@mail.gmail.com>
-	<20100830102527.17d5e1f1.randy.dunlap@oracle.com>
-Date: Mon, 30 Aug 2010 16:27:34 -0500
-Message-ID: <AANLkTikqKG0Fp=BzXcBW9JCuLF07X6sbD8HVxWxqkRnD@mail.gmail.com>
-Subject: Re: Linux 2.6.36-rc3
-From: Steve French <smfrench@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>, Sage Weil <sage@newdream.net>
-Cc: Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Miguel Calleja <mcalleja1@telecable.es>,
-        LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
-        Shirish S Pargaonkar <shirishp@us.ibm.com>, ceph-devel@vger.kernel.org
+Date: Mon, 30 Aug 2010 23:28:21 +0200
+X-Google-Sender-Auth: q-OJNTw2VW29rev7UBNuFWeNxZc
+Message-ID: <AANLkTi=4k0tc2ofwU0XLUn6Az3FhXrTex_EK4Ny-vJVM@mail.gmail.com>
+Subject: (arch_)get_unmapped_area can be terribly slow due to unnecessary
+ linear search and find_vma
+From: Luca Barbieri <luca@luca-barbieri.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 12:25 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On Mon, 30 Aug 2010 12:14:53 -0500 Shirish Pargaonkar wrote:
->
->> On Mon, Aug 30, 2010 at 12:00 PM, Suresh Jayaraman <sjayaraman@suse.de> wrote:
->> > (Cc linux-cifs@vger.kernel.org)
->> >
->> > Couldn't get a chance to check this, but I guess this is perhaps due to
->> > the recent crypto patches..
->>
->> Suresh, yes, cifs auth and signing code using kernel crypto (shash) apis.
->>
->> fs/cifs/Kconfig
->>
->>         select CRYPTO_MD5
->>         select CRYPTO_ARC4
->>
->
-> Either CIFS should depend on CRYPTO:
-> change
->        depends on INET
-> to
->        depends on INET && CRYPTO
->
-> or it can also select CRYPTO.
->
->>
->> >
->> > On 08/30/2010 02:17 PM, Miguel Calleja wrote:
->> >> CIFS does not build without CRYPTO selected.
+[Sending copy of bug #17531 since the BTS seemingly can't/won't send it to LKML]
 
-OK - will fix this for cifs.   Looks like ecryptfs chose "depends on CRYPTO"
-and ubifs chose "select CRYPTO" - but for network file system seems like
-"select CRYPTO" (rather than depends on) makes more sense.
+Currently most/all versions of get_unmapped_area perform a linear search in the
+process virtual address space to find free space.
 
-The ceph file system seems like it has the same type of problem.
-fs/ceph/Kconfig
-has "select CRYPTO_AES" but not "select CRYPTO"
+Some, like arch_get_unmapped_area_topdown for x86-64 even call find_vma for
+each step, which does a full walk on the rb-tree of vmas.
 
+Instead, they should use, from slower to faster:
+- O(n) but faster: a linked list of virtual address space holes
+- O(log(n)): an rb-tree of virtual address space holes indexed by size
+- O(1): a buddy allocator of virtual address space holes, or another scheme
+with buckets
 
+Is there any reason this issue hasn't been fixed yet? (i.e. any reason none of
+the proposed schemes are feasible?)
 
--- 
-Thanks,
+Workloads doing a lot of mmaps tend to suffer greatly, especially on the
+versions that do a find_vma for each step of the scan.
 
-Steve
+An example are OpenGL drivers using DRM/GEM/TTM who don't employ userspace
+caching and suballocation of TTM allocated buffers.
