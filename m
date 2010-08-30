@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab0H3NGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 09:06:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57930 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab0H3NGf (ORCPT
+	id S1755213Ab0H3NO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 09:14:26 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38675 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab0H3NOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 09:06:35 -0400
+	Mon, 30 Aug 2010 09:14:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=d03iXxuIkn87UquMn4yt3Xl3uuRWpOFdrsIW60goApWwrTBa19QyIbmIn44CA7fmwL
-         cSx7CpuKhi94Ov9fNiTTLGt3+Sp8PJ7AsLW6Sv48l0EBCKG2BQMwcDl/aMg6mKjBIvQe
-         J1KHXm/e5Pw90JC2wPztZ0h0kuoCqedlQGYlE=
-Date: Mon, 30 Aug 2010 21:00:59 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: =?utf-8?B?7KGw7KCV7Jqx?= <jmanbal@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Is there a good documentation about CFS and CGROUP??
-Message-ID: <20100830130059.GA2493@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTinYE1EBR1nJSHcgY4Lu6sNAJYUh6w_cYm+8eydC@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=g9Z2lGXA3Cv0EX8hHCJH3QjJUVSyAs0AKjEY/FSPmHvBBiqGO7jiDp8MI/LZStsdcf
+         XzLUN9eQb0ROaWsbuLPKVWF3NbOpLFWU7w3n8mcTkysPmQE0d4XWaA0YV7iHi1wxsTak
+         oL3jAwwzaVAg68Hw1Lg1CWcrPeg7NxOB2bnHo=
+Subject: Re: [PATCH 3/7] drivers/mtd/nand/mpc5121_nfc.c: Add of_node_put to
+ avoid memory leak
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Julia Lawall <julia@diku.dk>
+Cc: David Woodhouse <dwmw2@infradead.org>, kernel-janitors@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <1283075566-27441-4-git-send-email-julia@diku.dk>
+References: <1283075566-27441-1-git-send-email-julia@diku.dk>
+	 <1283075566-27441-4-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 Aug 2010 16:13:40 +0300
+Message-ID: <1283174020.12995.77.camel@brekeke>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinYE1EBR1nJSHcgY4Lu6sNAJYUh6w_cYm+8eydC@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 07:02:48PM +0900, 조정욱 wrote:
-> Is there a good documentation about CFS and CGROUP??
-
-You can take a look at:
-Documentation/scheduler/
-Documentation/cgroups/
-
-Thanks,
-Yong
-
+On Sun, 2010-08-29 at 11:52 +0200, Julia Lawall wrote:
+> Add a call to of_node_put in the error handling code following a call to
+> of_find_compatible_node.
 > 
-> 
-> end
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+
+Pushed to l2-mtd-2.6.git / master, thanks.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
+
