@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab0H3LFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:05:13 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:36971 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753261Ab0H3LFL (ORCPT
+	id S1755237Ab0H3LGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:06:45 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:48655 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753033Ab0H3LGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:05:11 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] input: bcm5974: Adjust major / minor to scale
-Date: Mon, 30 Aug 2010 13:04:29 +0200
-Message-Id: <1283166269-2302-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1Oq2AO-0006Rj-9r.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Oq2AO-0006Rj-9r 3a9566b8cd19922441d4c21fe71d7932
+	Mon, 30 Aug 2010 07:06:44 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <sameo@linux.intel.com>, <riku.voipio@iki.fi>, <mike@compulab.co.il>
+Cc: <linux-kernel@vger.kernel.org>, <STEricsson_nomadik_linux@list.st.com>,
+        <arun.murthy@stericsson.com>
+Subject: [PATCH v2] u8500: led and backlight driver
+Date: Mon, 30 Aug 2010 16:36:26 +0530
+Message-ID: <1283166387-19296-1-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By visual inspection, the reported touch_major and touch_minor axes
-are a factor of two too small. Presumably the device actually reports
-the semi-major and semi-minor axes. Corrected with this patch.
+Implement a generic pwm driver that makes use of the existing generic led
+and backlight driver based on pwm(drivers/leds/leds-pwm.c and
+drivers/video/backlight/pwm_bl.c ).
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/mouse/bcm5974.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+Arun Murthy (1):
+  u8500: ab8500-pwm: Add pwm driver
 
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index ea67c49..b952317 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -337,10 +337,14 @@ static void report_finger_data(struct input_dev *input,
- 			       const struct bcm5974_config *cfg,
- 			       const struct tp_finger *f)
- {
--	input_report_abs(input, ABS_MT_TOUCH_MAJOR, raw2int(f->force_major));
--	input_report_abs(input, ABS_MT_TOUCH_MINOR, raw2int(f->force_minor));
--	input_report_abs(input, ABS_MT_WIDTH_MAJOR, raw2int(f->size_major));
--	input_report_abs(input, ABS_MT_WIDTH_MINOR, raw2int(f->size_minor));
-+	input_report_abs(input, ABS_MT_TOUCH_MAJOR,
-+			 raw2int(f->force_major) << 1);
-+	input_report_abs(input, ABS_MT_TOUCH_MINOR,
-+			 raw2int(f->force_minor) << 1);
-+	input_report_abs(input, ABS_MT_WIDTH_MAJOR,
-+			 raw2int(f->size_major) << 1);
-+	input_report_abs(input, ABS_MT_WIDTH_MINOR,
-+			 raw2int(f->size_minor) << 1);
- 	input_report_abs(input, ABS_MT_ORIENTATION,
- 			 MAX_FINGER_ORIENTATION - raw2int(f->orientation));
- 	input_report_abs(input, ABS_MT_POSITION_X, raw2int(f->abs_x));
+ drivers/misc/Kconfig      |    9 ++
+ drivers/misc/Makefile     |    1 +
+ drivers/misc/ab8500-pwm.c |  195 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 205 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/ab8500-pwm.c
+
 -- 
-1.7.1
+1.7.2.dirty
 
