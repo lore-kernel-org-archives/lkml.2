@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab0H3JUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 05:20:39 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:24274 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754604Ab0H3JUV (ORCPT
+	id S1755007Ab0H3JZZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 05:25:25 -0400
+Received: from smtp110.sbc.mail.gq1.yahoo.com ([67.195.14.95]:23536 "HELO
+	smtp110.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754933Ab0H3JV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 05:20:21 -0400
+	Mon, 30 Aug 2010 05:21:27 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 34MGzSYVM1mcGy8aexwcpXEPy_KURCtI6zsBygREdLEgH5k
- EiR6UmHdVGzL1kSsbDoxkrPOs_6LnVGolku5ntqyNKxmj9pUGE7tRLDo7EMH
- dK09d09sW.f74rKuss8tzLW_r6Nwy4CImBnDANQhrjZk0BFPwtEbP.NwfWe6
- doBgbikwkiDkB6pR6NSKB94TtHOipruLbZ6WGayeWvtRpFXC42quH204FGhC
- OkWXpxXQWr7hRylRnYmbyDjljsWI0TDkNLJ8fweop6WLuHLjxmm81BBQVYlB
- z96frIxTyYHmCAm9DeCQO5qfi4j0089JWNRVS7rHfWml6hRlWQE6ahOlvV40
- Wv3kfI38cAoc.baDagg--
+X-YMail-OSG: WB1Dd.UVM1mnjIVMypGgcFPU6NHw1PstE5VPvWKnqX.YOal
+ O.bk71GXhB5GlFDjZ6sut.4vGVsWmP2MK_udtuMAN.W3WysNp.9vk6Htn5R3
+ 4nfAl9.S9WX2E9o1t3RNE7EgaM8ArxgoQ1vuBkcZeutaFGgoLpxUY7YOReJj
+ EdBKOHCLz90TY9XiBCxznfk.unVt4IDOFv2xj8eQgsa4I8G4E91Y_fO4EDOK
+ xMOgUZFQHKsFzegOwkf1SZm2NlzwPU.a1rE9qCb4MOq346uqrjgkbItVOuiu
+ tcxM2RBhaGVxMnWgxUidBMgh.7jubxyF2l6cj2sUfBEjArlyykOw2F4dF
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -25,9 +24,9 @@ Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         James Bottomley <James.Bottomley@suse.de>,
         Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC 01/22] scsi: Add missing SPC-4 CDB and MAINTENANCE_[IN,OUT] service action definitions
-Date: Mon, 30 Aug 2010 02:20:18 -0700
-Message-Id: <1283160018-6579-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC 08/22] tcm: Add HBA core infrastructure
+Date: Mon, 30 Aug 2010 02:21:24 -0700
+Message-Id: <1283160084-6715-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,80 +34,257 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds a handful of missing CDBs defs that are used by TCM
-persistent reservation logic in the SPC-4 defined CDB exclusion table for
-registrations and reservations.
-
-This includes a number of missing MI_* and MO_* prefixed service actions defs
-for MAINTENANCE_IN and MAINTENANCE_OUT that are mentioned wrt to persistent
-registration and reservation status for the SCSI Initiator Port.
+This patch adds the core struct se_hba functionality that is used internally by
+target_core_mod to group the same subsystem storage objects types until a single
+/sys/kernel/config/target/core/$HBA directory.  The HBA code supports boths
+physical storage objects (from Linux/SCSI) and virtual storage objects (from Linux/BLOCK,
+Linux/VFS, RAMDISK)
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- include/scsi/scsi.h |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+ drivers/target/target_core_hba.c |  211 ++++++++++++++++++++++++++++++++++++++
+ drivers/target/target_core_hba.h |   14 +++
+ 2 files changed, 225 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/target_core_hba.c
+ create mode 100644 drivers/target/target_core_hba.h
 
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index 8fcb6e0..9c134de 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -107,32 +107,56 @@ struct scsi_cmnd;
- #define PERSISTENT_RESERVE_OUT 0x5f
- #define VARIABLE_LENGTH_CMD   0x7f
- #define REPORT_LUNS           0xa0
-+#define SECURITY_PROTOCOL_IN  0xa2
- #define MAINTENANCE_IN        0xa3
- #define MAINTENANCE_OUT       0xa4
- #define MOVE_MEDIUM           0xa5
- #define EXCHANGE_MEDIUM       0xa6
- #define READ_12               0xa8
- #define WRITE_12              0xaa
-+#define READ_MEDIA_SERIAL_NUMBER 0xab
- #define WRITE_VERIFY_12       0xae
- #define VERIFY_12	      0xaf
- #define SEARCH_HIGH_12        0xb0
- #define SEARCH_EQUAL_12       0xb1
- #define SEARCH_LOW_12         0xb2
-+#define SECURITY_PROTOCOL_OUT 0xb5
- #define READ_ELEMENT_STATUS   0xb8
- #define SEND_VOLUME_TAG       0xb6
- #define WRITE_LONG_2          0xea
-+#define EXTENDED_COPY         0x83
-+#define RECEIVE_COPY_RESULTS  0x84
-+#define ACCESS_CONTROL_IN     0x86
-+#define ACCESS_CONTROL_OUT    0x87
- #define READ_16               0x88
- #define WRITE_16              0x8a
-+#define READ_ATTRIBUTE        0x8c
-+#define WRITE_ATTRIBUTE	      0x8d
- #define VERIFY_16	      0x8f
- #define WRITE_SAME_16	      0x93
- #define SERVICE_ACTION_IN     0x9e
- /* values for service action in */
- #define	SAI_READ_CAPACITY_16  0x10
- #define SAI_GET_LBA_STATUS    0x12
-+/* values for VARIABLE_LENGTH_CMD service action codes
-+ * see spc4r17 Section D.3.5, table D.7 and D.8 */
-+#define VLC_SA_RECEIVE_CREDENTIAL 0x1800
- /* values for maintenance in */
-+#define MI_REPORT_IDENTIFYING_INFORMATION 0x05
- #define MI_REPORT_TARGET_PGS  0x0a
-+#define MI_REPORT_ALIASES     0x0b
-+#define MI_REPORT_SUPPORTED_OPERATION_CODES 0x0c
-+#define MI_REPORT_SUPPORTED_TASK_MANAGEMENT_FUNCTIONS 0x0d
-+#define MI_REPORT_PRIORITY   0x0e
-+#define MI_REPORT_TIMESTAMP  0x0f
-+#define MI_MANAGEMENT_PROTOCOL_IN 0x10
- /* values for maintenance out */
-+#define MO_SET_IDENTIFYING_INFORMATION 0x06
- #define MO_SET_TARGET_PGS     0x0a
-+#define MO_CHANGE_ALIASES     0x0b
-+#define MO_SET_PRIORITY       0x0e
-+#define MO_SET_TIMESTAMP      0x0f
-+#define MO_MANAGEMENT_PROTOCOL_OUT 0x10
- /* values for variable length command */
- #define READ_32		      0x09
- #define VERIFY_32	      0x0a
+diff --git a/drivers/target/target_core_hba.c b/drivers/target/target_core_hba.c
+new file mode 100644
+index 0000000..d9e286c
+--- /dev/null
++++ b/drivers/target/target_core_hba.c
+@@ -0,0 +1,211 @@
++/*******************************************************************************
++ * Filename:  target_core_hba.c
++ *
++ * This file copntains the iSCSI HBA Transport related functions.
++ *
++ * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
++ * Copyright (c) 2005, 2006, 2007 SBE, Inc.
++ * Copyright (c) 2007-2010 Rising Tide Systems
++ * Copyright (c) 2008-2010 Linux-iSCSI.org
++ *
++ * Nicholas A. Bellinger <nab@kernel.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ ******************************************************************************/
++
++#include <linux/net.h>
++#include <linux/string.h>
++#include <linux/timer.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/smp_lock.h>
++#include <linux/in.h>
++#include <net/sock.h>
++#include <net/tcp.h>
++
++#include <target/target_core_base.h>
++#include <target/target_core_device.h>
++#include <target/target_core_device.h>
++#include <target/target_core_tpg.h>
++#include <target/target_core_transport.h>
++
++#include "target_core_hba.h"
++
++int core_get_hba(struct se_hba *hba)
++{
++	return ((mutex_lock_interruptible(&hba->hba_access_mutex) != 0) ?
++		-1 : 0);
++}
++
++struct se_hba *core_alloc_hba(void)
++{
++	struct se_hba *hba;
++
++	hba = kmem_cache_zalloc(se_hba_cache, GFP_KERNEL);
++	if (!(hba)) {
++		printk(KERN_ERR "Unable to allocate struct se_hba\n");
++		return NULL;
++	}
++
++	hba->hba_status |= HBA_STATUS_FREE;
++	INIT_LIST_HEAD(&hba->hba_dev_list);
++	spin_lock_init(&hba->device_lock);
++	spin_lock_init(&hba->hba_queue_lock);
++	mutex_init(&hba->hba_access_mutex);
++	hba->hba_index = scsi_get_new_index(SCSI_INST_INDEX);
++
++	return hba;
++}
++EXPORT_SYMBOL(core_alloc_hba);
++
++void core_put_hba(struct se_hba *hba)
++{
++	mutex_unlock(&hba->hba_access_mutex);
++}
++EXPORT_SYMBOL(core_put_hba);
++
++/*	se_core_add_hba():
++ *
++ *
++ */
++int se_core_add_hba(
++	struct se_hba *hba,
++	const char *plugin_name,
++	u32 plugin_dep_id)
++{
++	struct se_subsystem_api *t;
++	int ret = 0;
++
++	if (hba->hba_status & HBA_STATUS_ACTIVE)
++		return -EEXIST;
++
++	atomic_set(&hba->max_queue_depth, 0);
++	atomic_set(&hba->left_queue_depth, 0);
++
++	t = transport_core_get_sub_by_name(plugin_name);
++	if (!(t))
++		return -EINVAL;
++
++	hba->transport = t;
++	/*
++	 * Get TCM subsystem api struct module reference to struct se_hba
++	 */
++	if (t->external_submod) {
++		if (!(t->sub_owner)) {
++			printk(KERN_ERR "Pointer to struct module does not"
++				" exist for %s\n", t->name);
++			hba->transport = NULL;
++			transport_core_put_sub(t);
++			return -EINVAL;
++		}
++		/*
++		 * Grab a struct module reference count for subsystem plugin
++		 */
++		if (!(try_module_get(t->sub_owner))) {
++			printk(KERN_ERR "try_module_get() failed for"
++				" t->sub_owner\n");
++			hba->transport = NULL;
++			transport_core_put_sub(t);
++			return -EINVAL;
++		}
++	}
++
++	ret = t->attach_hba(hba, plugin_dep_id);
++	if (ret < 0) {
++		hba->transport = NULL;
++		if (t->external_submod)
++			module_put(t->sub_owner);
++		transport_core_put_sub(t);
++		return ret;
++	}
++
++	hba->hba_status &= ~HBA_STATUS_FREE;
++	hba->hba_status |= HBA_STATUS_ACTIVE;
++
++	spin_lock(&se_global->hba_lock);
++	hba->hba_id = se_global->g_hba_id_counter++;
++	list_add_tail(&hba->hba_list, &se_global->g_hba_list);
++	spin_unlock(&se_global->hba_lock);
++
++	printk(KERN_INFO "CORE_HBA[%d] - Attached HBA to Generic Target"
++			" Core\n", hba->hba_id);
++
++	return 0;
++}
++EXPORT_SYMBOL(se_core_add_hba);
++
++static int se_core_shutdown_hba(
++	struct se_hba *hba)
++{
++	struct se_subsystem_api *t = hba->transport;;
++
++	if (t->detach_hba(hba) < 0)
++		return -1;
++	/*
++	 * Release TCM subsystem api struct module reference from struct se_hba
++	 */
++	if (t->external_submod)
++		module_put(t->sub_owner);
++
++	return 0;
++}
++
++/*	se_core_del_hba():
++ *
++ *
++ */
++int se_core_del_hba(
++	struct se_hba *hba)
++{
++	struct se_device *dev, *dev_tmp;
++
++	if (!(hba->hba_status & HBA_STATUS_ACTIVE)) {
++		printk(KERN_ERR "HBA ID: %d Status: INACTIVE, ignoring"
++			" delhbafromtarget request\n", hba->hba_id);
++		return -EINVAL;
++	}
++
++	spin_lock(&hba->device_lock);
++	list_for_each_entry_safe(dev, dev_tmp, &hba->hba_dev_list, dev_list) {
++
++		se_clear_dev_ports(dev);
++		spin_unlock(&hba->device_lock);
++
++		se_release_device_for_hba(dev);
++
++		spin_lock(&hba->device_lock);
++	}
++	spin_unlock(&hba->device_lock);
++
++	se_core_shutdown_hba(hba);
++	if (!(hba->hba_flags & HBA_FLAGS_INTERNAL_USE))
++		transport_core_put_sub(hba->transport);
++
++	spin_lock(&se_global->hba_lock);
++	list_del(&hba->hba_list);
++	spin_unlock(&se_global->hba_lock);
++
++	hba->transport = NULL;
++	hba->hba_status &= ~HBA_STATUS_ACTIVE;
++	hba->hba_status |= HBA_STATUS_FREE;
++
++	printk(KERN_INFO "CORE_HBA[%d] - Detached HBA from Generic Target"
++			" Core\n", hba->hba_id);
++
++	kmem_cache_free(se_hba_cache, hba);
++	return 0;
++}
++EXPORT_SYMBOL(se_core_del_hba);
+diff --git a/drivers/target/target_core_hba.h b/drivers/target/target_core_hba.h
+new file mode 100644
+index 0000000..01cf4fe
+--- /dev/null
++++ b/drivers/target/target_core_hba.h
+@@ -0,0 +1,14 @@
++#ifndef TARGET_CORE_HBA_H
++#define TARGET_CORE_HBA_H
++
++extern struct se_global *se_global;
++
++extern struct kmem_cache *se_hba_cache;
++
++extern int core_get_hba(struct se_hba *);
++extern struct se_hba *core_alloc_hba(void);
++extern void core_put_hba(struct se_hba *);
++extern int se_core_add_hba(struct se_hba *, const char *, u32);
++extern int se_core_del_hba(struct se_hba *);
++
++#endif /* TARGET_CORE_HBA_H */
 -- 
 1.7.2.2
 
