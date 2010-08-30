@@ -1,340 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab0H3HNw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 03:13:52 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:19304 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751565Ab0H3HNv (ORCPT
+	id S1753540Ab0H3H0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 03:26:30 -0400
+Received: from fw2.winet.de ([84.17.96.48]:59876 "EHLO fw2.winet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752404Ab0H3H02 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 03:13:51 -0400
-Message-ID: <4C7B59E1.6010904@snapgear.com>
-Date: Mon, 30 Aug 2010 17:12:33 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Mon, 30 Aug 2010 03:26:28 -0400
+Message-ID: <4C7B5601.5060505@auerswald.de>
+Date: Mon, 30 Aug 2010 08:56:01 +0200
+From: =?ISO-8859-1?Q?Wolfgang_M=FCes?= <wolfgang.mues@auerswald.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/22] Fix M68K irqflags
-References: <20100827015905.27277.39167.stgit@warthog.procyon.org.uk> <20100827020038.27277.27239.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100827020038.27277.27239.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Aug 2010 07:13:03.0667 (UTC) FILETIME=[C974B030:01CB4812]
+To: Ryan Mallon <ryan@bluewatersys.com>
+CC: Chris Ball <cjb@laptop.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <avictor.za@gmail.com>, <akpm@linux-foundation.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/7] mmc: at91_mci: fix pointer errors
+References: <9535dc8dfe4476a0314b9513fb9d37862faa731d.1267209149.git.nicolas.ferre@atmel.com> <20100827193303.GB23079@void.printf.net> <4C7AD3A0.40607@bluewatersys.com>
+In-Reply-To: <4C7AD3A0.40607@bluewatersys.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hi,
 
-David Howells wrote:
-> ---
-> 
->  arch/m68k/include/asm/irqflags.h    |    5 ++
->  arch/m68k/include/asm/irqflags_mm.h |   57 +++++++++++++++++++++++
->  arch/m68k/include/asm/irqflags_no.h |   86 +++++++++++++++++++++++++++++++++++
->  arch/m68k/include/asm/system_mm.h   |   25 ----------
->  arch/m68k/include/asm/system_no.h   |   49 --------------------
+Am 29.08.2010 23:39, schrieb Ryan Mallon:
+> I see this is already applied, but why all the type trickery here? Why
+> not just:
+>
+> 	memcpy(dmabuf, sgbuffer, amount);
+> 	dmabuf += amount / sizeof(dmabuf);
 
-I have no problem with the changes as such. But I would rather
-not have separate mm and no headers if we can avoid it.
+Because this is wrong?
 
-Regards
-Greg
+Maybe you mean sizeof(*dmabuf)?
 
+The exact style of the bug fix is not important, it's important that 
+it's fixed.
 
+best regards
 
->  5 files changed, 150 insertions(+), 72 deletions(-)
->  create mode 100644 arch/m68k/include/asm/irqflags.h
->  create mode 100644 arch/m68k/include/asm/irqflags_mm.h
->  create mode 100644 arch/m68k/include/asm/irqflags_no.h
-> 
-> diff --git a/arch/m68k/include/asm/irqflags.h b/arch/m68k/include/asm/irqflags.h
-> new file mode 100644
-> index 0000000..868c405
-> --- /dev/null
-> +++ b/arch/m68k/include/asm/irqflags.h
-> @@ -0,0 +1,5 @@
-> +#ifdef __uClinux__
-> +#include "irqflags_no.h"
-> +#else
-> +#include "irqflags_mm.h"
-> +#endif
-> diff --git a/arch/m68k/include/asm/irqflags_mm.h b/arch/m68k/include/asm/irqflags_mm.h
-> new file mode 100644
-> index 0000000..d00716d
-> --- /dev/null
-> +++ b/arch/m68k/include/asm/irqflags_mm.h
-> @@ -0,0 +1,57 @@
-> +#ifndef _M68K_IRQFLAGS_MM_H
-> +#define _M68K_IRQFLAGS_MM_H
-> +
-> +#include <linux/types.h>
-> +#include <linux/hardirq.h>
-> +#include <asm/thread_info.h>
-> +#include <asm/entry_mm.h>
-> +
-> +static inline unsigned long arch_local_save_flags(void)
-> +{
-> +	unsigned long flags;
-> +	asm volatile ("movew %%sr,%0": "=d" (flags) : : "memory");
-> +	return flags;
-> +}
-> +
-> +static inline void arch_local_irq_disable(void)
-> +{
-> +	asm volatile ("oriw  #0x0700,%%sr" : : : "memory");
-> +}
-> +
-> +#if 0
-> +static inline void arch_local_irq_enable(void)
-> +{
-> +		asm volatile ("andiw %0,%%sr" : : "i" (ALLOWINT) : "memory");
-> +}
-> +#else
-> +#define arch_local_irq_enable()						\
-> +	do {								\
-> +		if (MACH_IS_Q40 || !hardirq_count())			\
-> +			asm volatile ("andiw %0,%%sr"			\
-> +				      : : "i" (ALLOWINT) : "memory");	\
-> +	} while (0)
-> +#endif
-> +
-> +static inline unsigned long arch_local_irq_save(void)
-> +{
-> +	unsigned long flags = arch_local_save_flags();
-> +	arch_local_irq_disable();
-> +	return flags;
-> +}
-> +
-> +static inline void arch_local_irq_restore(unsigned long flags)
-> +{
-> +	asm volatile ("movew %0,%%sr": : "d" (flags) : "memory");
-> +}
-> +
-> +static inline bool arch_irqs_disabled_flags(unsigned long flags)
-> +{
-> +	return (flags & ~ALLOWINT) != 0;
-> +}
-> +
-> +static inline bool arch_irqs_disabled(void)
-> +{
-> +	return arch_irqs_disabled_flags(arch_local_save_flags());
-> +}
-> +
-> +#endif /* _M68K_IRQFLAGS_MM_H */
-> diff --git a/arch/m68k/include/asm/irqflags_no.h b/arch/m68k/include/asm/irqflags_no.h
-> new file mode 100644
-> index 0000000..6f6c217
-> --- /dev/null
-> +++ b/arch/m68k/include/asm/irqflags_no.h
-> @@ -0,0 +1,86 @@
-> +#ifndef _M68KNOMMU_IRQFLAGS_H
-> +#define _M68KNOMMU_IRQFLAGS_H
-> +
-> +#include <linux/types.h>
-> +
-> +
-> +#ifndef CONFIG_COLDFIRE
-> +/* portable version */ /* FIXME - see entry.h*/
-> +#define ALLOWINT 0xf8ff
-> +#endif
-> +
-> +static inline unsigned long arch_local_save_flags(void)
-> +{
-> +	unsigned long flags;
-> +	asm volatile ("movew %%sr,%0" : "=d" (flags) : : "memory");
-> +	return flags;
-> +}
-> +
-> +static inline void arch_local_irq_disable(void)
-> +{
-> +#ifdef CONFIG_COLDFIRE
-> +	asm volatile (
-> +		"move	%/sr,%%d0	\n\t"
-> +		"ori.l	#0x0700,%%d0	\n\t"
-> +		"move	%%d0,%/sr	\n"
-> +		: /* no outputs */
-> +		:
-> +		: "cc", "%d0", "memory");
-> +#else
-> +	asm volatile (
-> +		"oriw  #0x0700,%%sr" : : : "memory");
-> +#endif
-> +}
-> +
-> +static inline void arch_local_irq_enable(void)
-> +{
-> +#ifdef CONFIG_COLDFIRE
-> +	asm volatile (
-> +		"move	%/sr,%%d0	\n\t"
-> +		"andi.l	#0xf8ff,%%d0	\n\t"
-> +		"move	%%d0,%/sr	\n"
-> +		: /* no outputs */
-> +		:
-> +		: "cc", "%d0", "memory");
-> +#else
-> +	asm volatile (
-> +		"andiw %0,%%sr"
-> +		:
-> +		: "i" (ALLOWINT)
-> +		: "memory")
-> +#endif
-> +}
-> +
-> +static inline unsigned long arch_local_irq_save(void)
-> +{
-> +	unsigned long flags = arch_local_save_flags();
-> +#ifdef CONFIG_COLDFIRE
-> +	asm volatile (
-> +		"movew	#0x0700,%%d0	\n\t"
-> +		"or.l	%0,%%d0		\n\t"
-> +		"movew	%%d0,%/sr"
-> +		:
-> +		: "d" (flags)
-> +		: "cc", "%d0", "memory")
-> +#else
-> +	arch_local_irq_disable();
-> +#endif
-> +	return flags;
-> +}
-> +
-> +static inline void arch_local_irq_restore(unsigned long flags)
-> +{
-> +	asm volatile ("movew %0,%%sr" : : "d" (flags) : "memory");
-> +}
-> +
-> +static inline bool arch_irqs_disabled_flags(unsigned long flags)
-> +{
-> +	return (flags & 0x0700) == 0x0700;
-> +}
-> +
-> +static inline bool arch_irqs_disabled(void)
-> +{
-> +	return arch_irqs_disabled_flags(arch_local_save_flags());
-> +}
-> +
-> +#endif /* _M68KNOMMU_IRQFLAGS_H */
-> diff --git a/arch/m68k/include/asm/system_mm.h b/arch/m68k/include/asm/system_mm.h
-> index dbb6515..12053c4 100644
-> --- a/arch/m68k/include/asm/system_mm.h
-> +++ b/arch/m68k/include/asm/system_mm.h
-> @@ -3,6 +3,7 @@
->  
->  #include <linux/linkage.h>
->  #include <linux/kernel.h>
-> +#include <linux/irqflags.h>
->  #include <asm/segment.h>
->  #include <asm/entry.h>
->  
-> @@ -62,30 +63,6 @@ asmlinkage void resume(void);
->  #define smp_wmb()	barrier()
->  #define smp_read_barrier_depends()	((void)0)
->  
-> -/* interrupt control.. */
-> -#if 0
-> -#define local_irq_enable() asm volatile ("andiw %0,%%sr": : "i" (ALLOWINT) : "memory")
-> -#else
-> -#include <linux/hardirq.h>
-> -#define local_irq_enable() ({							\
-> -	if (MACH_IS_Q40 || !hardirq_count())					\
-> -		asm volatile ("andiw %0,%%sr": : "i" (ALLOWINT) : "memory");	\
-> -})
-> -#endif
-> -#define local_irq_disable() asm volatile ("oriw  #0x0700,%%sr": : : "memory")
-> -#define local_save_flags(x) asm volatile ("movew %%sr,%0":"=d" (x) : : "memory")
-> -#define local_irq_restore(x) asm volatile ("movew %0,%%sr": :"d" (x) : "memory")
-> -
-> -static inline int irqs_disabled(void)
-> -{
-> -	unsigned long flags;
-> -	local_save_flags(flags);
-> -	return flags & ~ALLOWINT;
-> -}
-> -
-> -/* For spinlocks etc */
-> -#define local_irq_save(x)	({ local_save_flags(x); local_irq_disable(); })
-> -
->  #define xchg(ptr,x) ((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
->  
->  struct __xchg_dummy { unsigned long a[100]; };
-> diff --git a/arch/m68k/include/asm/system_no.h b/arch/m68k/include/asm/system_no.h
-> index 3c0718d..52ca8da 100644
-> --- a/arch/m68k/include/asm/system_no.h
-> +++ b/arch/m68k/include/asm/system_no.h
-> @@ -2,6 +2,7 @@
->  #define _M68KNOMMU_SYSTEM_H
->  
->  #include <linux/linkage.h>
-> +#include <linux/irqflags.h>
->  #include <asm/segment.h>
->  #include <asm/entry.h>
->  
-> @@ -46,54 +47,6 @@ asmlinkage void resume(void);
->    (last) = _last;						\
->  }
->  
-> -#ifdef CONFIG_COLDFIRE
-> -#define local_irq_enable() __asm__ __volatile__ (		\
-> -	"move %/sr,%%d0\n\t"					\
-> -	"andi.l #0xf8ff,%%d0\n\t"				\
-> -	"move %%d0,%/sr\n"					\
-> -	: /* no outputs */					\
-> -	:							\
-> -        : "cc", "%d0", "memory")
-> -#define local_irq_disable() __asm__ __volatile__ (		\
-> -	"move %/sr,%%d0\n\t"					\
-> -	"ori.l #0x0700,%%d0\n\t"				\
-> -	"move %%d0,%/sr\n"					\
-> -	: /* no outputs */					\
-> -	:							\
-> -	: "cc", "%d0", "memory")
-> -/* For spinlocks etc */
-> -#define local_irq_save(x) __asm__ __volatile__ (		\
-> -	"movew %%sr,%0\n\t"					\
-> -	"movew #0x0700,%%d0\n\t"				\
-> -	"or.l  %0,%%d0\n\t"					\
-> -	"movew %%d0,%/sr"					\
-> -	: "=d" (x)						\
-> -	:							\
-> -	: "cc", "%d0", "memory")
-> -#else
-> -
-> -/* portable version */ /* FIXME - see entry.h*/
-> -#define ALLOWINT 0xf8ff
-> -
-> -#define local_irq_enable() asm volatile ("andiw %0,%%sr": : "i" (ALLOWINT) : "memory")
-> -#define local_irq_disable() asm volatile ("oriw  #0x0700,%%sr": : : "memory")
-> -#endif
-> -
-> -#define local_save_flags(x) asm volatile ("movew %%sr,%0":"=d" (x) : : "memory")
-> -#define local_irq_restore(x) asm volatile ("movew %0,%%sr": :"d" (x) : "memory")
-> -
-> -/* For spinlocks etc */
-> -#ifndef local_irq_save
-> -#define local_irq_save(x) do { local_save_flags(x); local_irq_disable(); } while (0)
-> -#endif
-> -
-> -#define	irqs_disabled()			\
-> -({					\
-> -	unsigned long flags;		\
-> -	local_save_flags(flags);	\
-> -	((flags & 0x0700) == 0x0700);	\
-> -})
-> -
->  #define iret() __asm__ __volatile__ ("rte": : :"memory", "sp", "cc")
->  
->  /*
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+i. A. Wolfgang Muees
 
-
+Hardware-Entwicklung
+Leiter Pruefen & Layout
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Auerswald Gesellschaft fuer Datensysteme mbH
+
+Phone: +49 5306-9219-562
+Fax:   +49 5306-9200-94
+--------------------------------------------------------------
+Auerswald Gesellschaft fuer Datensysteme mbH,
+Vor den Grashoefen 1, 38162 Cremlingen
+
+Registriert beim AG Braunschweig HRB 7499
+Geschäftsführer: Dipl-Ing. Gerhard Auerswald
