@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab0H3QEk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 12:04:40 -0400
-Received: from ns1.siteground211.com ([209.62.36.12]:32824 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab0H3QEi (ORCPT
+	id S1755876Ab0H3QGA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 12:06:00 -0400
+Received: from mail128.messagelabs.com ([216.82.250.131]:25291 "EHLO
+	mail128.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab0H3QF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 12:04:38 -0400
-MIME-Version: 1.0
-Date: Mon, 30 Aug 2010 11:04:39 -0500
-From: Felipe Balbi <me@felipebalbi.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Hemanth V <hemanthv@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <igor.stoppa@nokia.com>, <kai.svahn@nokia.com>,
-        <matthias.nyman@nokia.com>
-Subject: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2] input: CMA3000
- Accelerometer driver)
-In-Reply-To: <20100829184904.GC26209@core.coreip.homeip.net>
-References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com> <20100829184904.GC26209@core.coreip.homeip.net>
-Message-ID: <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
+	Mon, 30 Aug 2010 12:05:59 -0400
+X-VirusChecked: Checked
+X-Env-Sender: jcarlyle@motorola.com
+X-Msg-Ref: server-6.tower-128.messagelabs.com!1283184358!8120198!1
+X-StarScan-Version: 6.2.4; banners=-,-,-
+X-Originating-IP: [129.188.136.8]
+In-Reply-To: <20100830160147.DE515603843@il93ubuntu.localdomain>
+References: <20100830160147.DE515603843@il93ubuntu.localdomain>
+From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+To: Tejun Heo <tj@kernel.org>
+Date: Mon, 30 Aug 2010 11:04:15 -0500
+Subject: [PATCH v4] scatterlist: prevent invalid free when alloc fails
+Cc: OLUSANYA SOYANNWO <olusanya.soyannwo@motorola.com>,
+        <linux-kernel@vger.kernel.org>, Hu Tao <taohu@motorola.com>,
+        <jaxboe@fusionio.com>, <torvalds@osdl.org>,
+        Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Message-Id: <20100830160556.7F840603843@il93ubuntu.localdomain>
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+When alloc fails, free_table is being called. Depending on the number of
+bytes requested, we determine if we are going to call _get_free_page()
+or kmalloc(). When alloc fails, our math is wrong (due to sg_size - 1),
+and the last buffer is wrongfully assumed to have been allocated by
+kmalloc. Hence, kfree gets called and a panic occurs.
 
-When we tried to push N900's accelerometer driver as an
-input device you commented you didn't want sensors such
-as accelerometers, magnetometers, proximity, etc on the
-input layer because "they are not user input", although
-I didn't fully agree with you, we had to modify the drivers
-and, I believe, one of them is sitting in staging under
-the industrial i/o subsystem.
+Signed-off-by: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Signed-off-by: Olusanya Soyannwo <c23746@motorola.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+---
+ lib/scatterlist.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-Are you now accepting sensor drivers on the input layer ?
-that will make our life a lot easier but we need some
-definition to avoid having to re-work drivers when we
-want to push them to mainline.
-
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index a5ec428..a654897 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -248,8 +248,18 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
+ 		left -= sg_size;
+ 
+ 		sg = alloc_fn(alloc_size, gfp_mask);
+-		if (unlikely(!sg))
++		if (unlikely(!sg)) {
++			/*
++			 * Adjust entry count to reflect that the last
++			 * entry of the previous table won't be used for
++			 * linkage.  Without this, sg_kfree() may get
++			 * confused.
++			 */
++			if(pvr)
++				table->nents = ++table->orig_nents;
++
+ 			return -ENOMEM;
++		}
+ 
+ 		sg_init_table(sg, alloc_size);
+ 		table->nents = table->orig_nents += sg_size;
 -- 
-balbi
+1.6.3.3
+
