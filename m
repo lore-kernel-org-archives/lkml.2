@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab0H3QaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 12:30:04 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:47728 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755936Ab0H3QaB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 12:30:01 -0400
+	id S1755989Ab0H3QbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 12:31:11 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:57539 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754676Ab0H3QbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 12:31:10 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=ddIekra4dO33NbrtHIpktg0vroRFp6P/4X3OgG7yXk/ak2SLjPRpPZ4TXaa2QTuTPFeSZY+4pJdu0Wqa91MlJX+aLoY6QM7v3F5lEZNyFNHdfLukOmhgQuUUcVLSHnr4;
-Date: Mon, 30 Aug 2010 09:29:58 -0700
+	b=leI2G5jqt1Q8kRRMwVflTT0LqBSrixktYPTdz/9aFZuWR/2dybNp8igQy+ViVPc2tuuIHzyv1t8nOIZIzggd0Zol9RQLLNerhZSYhA5FUObIVo+ce9wUq3dnwmMu4dqb;
+Date: Mon, 30 Aug 2010 09:31:04 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Joe Perches <joe@perches.com>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
- messages
-Message-ID: <20100830092958.1c50c8cb@jbarnes-desktop>
-In-Reply-To: <4C795E5C.1080506@cesarb.net>
-References: <1282869660.1836.5.camel@Joe-Laptop>
-	<4C77171E.6060008@cesarb.net>
-	<1282894751.1836.41.camel@Joe-Laptop>
-	<4C784650.2030200@cesarb.net>
-	<1282962104.1946.179.camel@Joe-Laptop>
-	<4C78E8EF.1000009@cesarb.net>
-	<1282994116.1946.226.camel@Joe-Laptop>
-	<4C790693.1060908@cesarb.net>
-	<1283002154.1946.268.camel@Joe-Laptop>
-	<4C791ABA.9070005@cesarb.net>
-	<20100828152335.GA2212@khazad-dum.debian.net>
-	<4C795E5C.1080506@cesarb.net>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] drm, video: fix use-before-NULL-check
+Message-ID: <20100830093104.5aa22a0a@jbarnes-desktop>
+In-Reply-To: <20100827210719.GD4703@outflux.net>
+References: <20100827210719.GD4703@outflux.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Aug 2010 16:07:08 -0300
-Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+On Fri, 27 Aug 2010 14:07:19 -0700
+Kees Cook <kees.cook@canonical.com> wrote:
 
-> Em 28-08-2010 12:23, Henrique de Moraes Holschuh escreveu:
-> > On Sat, 28 Aug 2010, Cesar Eduardo Barros wrote:
-> >> The solution here probably is not less logging. The best solution
-> >> IMO would be to do some sanity checking when loading the module, and
-> >> if the values do not make sense, print something to the log and
-> >> return -ENODEV.
-> >
-> > As long as your sanity checking won't make the module fail to load in the
-> > following scenario:
-> >
-> > 1. environment temperature control fails, room starts to heat up
-> > 2. things go south, server reboots due to exceeded temperature limits
-> > 3. OS boots in an overheat situation
-> > 4. module refuse to load because it expects to never start in a overheating
-> >     situation.
-> >
-> > If the sanity checks will cause (4), then don't add them.  rate-limit the
-> > thermal alarms (issue them only once every T, and only if temperature has
-> > increased more than, say, 5°C from the last alarm).
+> Fix potential crashes due to use-before-NULL situations.
 > 
-> I have not read the datasheet (I do not even know if it is available to 
-> the public; I have not looked), but I would not expect to see a power 
-> limit of 0 even if the CPU is on fire. Of course, you have to be more 
-> cautious when validating the current temperature (and even then, if it 
-> says the CPU is encased in a block of ice, something odd is going on).
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> ---
+>  drivers/gpu/drm/drm_fb_helper.c           |    3 ++-
+>  drivers/media/video/em28xx/em28xx-video.c |    3 ++-
+>  2 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> > If a given platform is buggy crap (or just el-cheapo trash that overheats
-> > all the time) to the point that the module is useless, blacklist it by DMI
-> > and inform the user.
-> >
-> >> I expect that, when it works as it should, the first read while
-> >> loading the module already returns sane values, so a sanity check
-> >
-> > well, as long as "sane" does include server-is-too-hot situations...
-> 
-> Of course. (But you most probably will want to s/server/laptop/ here.)
-> 
-> >> there should not have many false positives. OTOH, it is best to not
-> >> load the module when you think things are strange.
-> >
-> > What good is an alarm module that refuses to load when there is an alarm
-> > condition happening already?
-> 
-> This is not an alarm module; AFAIK it is a module for the feature in 
-> recent Intel CPU/GPU chips which allow you to overclock it a bit as long 
-> as the thermal and power limit has not been exceeded:
-> 
-> config INTEL_IPS
-> 	tristate "Intel Intelligent Power Sharing"
-> 	depends on ACPI
-> 	---help---
-> 	  Intel Calpella platforms support dynamic power sharing between the
-> 	  CPU and GPU, maximizing performance in a given TDP.  This driver,
-> 	  along with the CPU frequency and i915 drivers, provides that
-> 	  functionality.  If in doubt, say Y here; it will only load on
-> 	  supported platforms.
-> 
-> If the module is not loaded, it simply will not be able to go above its 
-> nominal clock, so refusing to load it is not that much of a problem.
+> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+> index de82e20..8dd7e6f 100644
+> --- a/drivers/gpu/drm/drm_fb_helper.c
+> +++ b/drivers/gpu/drm/drm_fb_helper.c
+> @@ -94,10 +94,11 @@ static bool drm_fb_helper_connector_parse_command_line(struct drm_fb_helper_conn
+>  	int i;
+>  	enum drm_connector_force force = DRM_FORCE_UNSPECIFIED;
+>  	struct drm_fb_helper_cmdline_mode *cmdline_mode;
+> -	struct drm_connector *connector = fb_helper_conn->connector;
+> +	struct drm_connector *connector;
+>  
+>  	if (!fb_helper_conn)
+>  		return false;
+> +	connector = fb_helper_conn->connector;
+>  
+>  	cmdline_mode = &fb_helper_conn->cmdline_mode;
+>  	if (!mode_option)
+> diff --git a/drivers/media/video/em28xx/em28xx-video.c b/drivers/media/video/em28xx/em28xx-video.c
+> index 7b9ec6e..95a4b60 100644
+> --- a/drivers/media/video/em28xx/em28xx-video.c
+> +++ b/drivers/media/video/em28xx/em28xx-video.c
+> @@ -277,12 +277,13 @@ static void em28xx_copy_vbi(struct em28xx *dev,
+>  {
+>  	void *startwrite, *startread;
+>  	int  offset;
+> -	int bytesperline = dev->vbi_width;
+> +	int bytesperline;
+>  
+>  	if (dev == NULL) {
+>  		em28xx_isocdbg("dev is null\n");
+>  		return;
+>  	}
+> +	bytesperline = dev->vbi_width;
+>  
+>  	if (dma_q == NULL) {
+>  		em28xx_isocdbg("dma_q is null\n");
 
-It sounds like either your BIOS values are wrong or the driver isn't
-fetching them correctly on your platform.
+Look fine to me.
 
-It's possible that the main issue here is bad thermal limits.  There's
-obviously a relationship between power and thermal output, but the
-driver tries to monitor both.  However it's up to the BIOS to provide
-the driver with accurate thermal limits, as well as accurate power
-limits.  The power limits sound reasonable at 25W, thus the
-informational output about 35W vs 25W (35W is what the MCP can handle,
-but some platforms are designed to handle less, so they clamp it down a
-bit).  But the temp limits look all wrong.  I'll see if I can find info
-on getting better data into the driver...
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Thanks,
+
 -- 
 Jesse Barnes, Intel Open Source Technology Center
