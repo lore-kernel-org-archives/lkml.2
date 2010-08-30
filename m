@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab0H3QBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 12:01:55 -0400
-Received: from mail128.messagelabs.com ([216.82.250.131]:16978 "EHLO
-	mail128.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab0H3QBy (ORCPT
+	id S1755869Ab0H3QEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 12:04:46 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:45413 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715Ab0H3QEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 12:01:54 -0400
-X-VirusChecked: Checked
-X-Env-Sender: jcarlyle@motorola.com
-X-Msg-Ref: server-8.tower-128.messagelabs.com!1283184112!22841894!1
-X-StarScan-Version: 6.2.4; banners=-,-,-
-X-Originating-IP: [136.182.1.15]
-In-Reply-To: <20100830154825.E4E2560255F@il93ubuntu.localdomain>
-References: <20100830154825.E4E2560255F@il93ubuntu.localdomain>
-From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
-To: Tejun Heo <tj@kernel.org>
-Date: Mon, 30 Aug 2010 10:58:30 -0500
-Subject: [PATCH v3] scatterlist: prevent invalid free when alloc fails
-Cc: OLUSANYA SOYANNWO <olusanya.soyannwo@motorola.com>,
-        <linux-kernel@vger.kernel.org>, Hu Tao <taohu@motorola.com>,
-        <jaxboe@fusionio.com>, <torvalds@osdl.org>,
-        Jeffrey Carlyle <jeff.carlyle@motorola.com>
-Message-Id: <20100830160147.DE515603843@il93ubuntu.localdomain>
-X-CFilter-Loop: Reflected
+	Mon, 30 Aug 2010 12:04:40 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] fs/9p: Use the correct dentry operations
+Date: Mon, 30 Aug 2010 21:34:35 +0530
+Message-Id: <1283184275-23650-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When alloc fails, free_table is being called. Depending on the number of
-bytes requested, we determine if we are going to call _get_free_page()
-or kmalloc(). When alloc fails, our math is wrong (due to sg_size - 1),
-and the last buffer is wrongfully assumed to have been allocated by
-kmalloc. Hence, kfree gets called and a panic occurs.
+We should use the cached dentry operation only if caching mode is enabled
 
-Signed-off-by: Jeffrey Carlyle <jeff.carlyle@motorola.com>
-Signed-off-by: Olusanya Soyannwo <c23746@motorola.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- lib/scatterlist.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ fs/9p/vfs_inode.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index a5ec428..daaab2f 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -248,8 +248,16 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
- 		left -= sg_size;
- 
- 		sg = alloc_fn(alloc_size, gfp_mask);
--		if (unlikely(!sg))
-+		if (unlikely(!sg)) {
-+			/*
-+			 * Adjust entry count so that proper free function is
-+			 * used in sg_kfree.
-+			 */
-+			if(pvr)
-+				table->nents = ++table->orig_nents;
-+
- 			return -ENOMEM;
-+		}
- 
- 		sg_init_table(sg, alloc_size);
- 		table->nents = table->orig_nents += sg_size;
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index d5c4867..5acee50 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -730,7 +730,10 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int mode,
+ 		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
+ 		goto error;
+ 	}
+-	dentry->d_op = &v9fs_cached_dentry_operations;
++	if (v9ses->cache)
++		dentry->d_op = &v9fs_cached_dentry_operations;
++	else
++		dentry->d_op = &v9fs_dentry_operations;
+ 	d_instantiate(dentry, inode);
+ 	err = v9fs_fid_add(dentry, fid);
+ 	if (err < 0)
 -- 
-1.6.3.3
+1.7.0.4
 
