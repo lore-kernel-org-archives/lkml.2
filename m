@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab0H3JUm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 05:20:42 -0400
-Received: from smtp101.sbc.mail.gq1.yahoo.com ([67.195.15.60]:41693 "HELO
-	smtp101.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754768Ab0H3JU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 05:20:28 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 5fXWZsgVM1m9VPVkDHiVbcTVZFZJRsmlcnVn1Ef.CkjeA5U
- 8EMGj3CaRFCqo_Lulha0.ZCgwCoDiSLrXJhq1R2Bywly.5Y6zLRkTXV0peAR
- 8Dq6MTBP43uKOMd5S0osvmZYH8UXjqWP1WP6gJ34M8rSsWqVM6LDjheDDXlj
- tW3L8hGoGH3PdxWF_BFXGgBZDwiKA6FQympbZwUIBRJxszEPWseRW5K5DcvV
- yhdLM_6M2.vZkIWyf..tsn4qu6JV_U56TgQqzR.gPVEJXVEdWHQBqcWLMxjk
- EuuKPYwF5GlMImmheY9w1h6lX.rqNdWS5JauX.9bASWcTRG61_E47s5o4kCW
- pjaHVjHJduvow2oANJw--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC 02/22] configfs: Add struct configfs_item_operations->check_link() in configfs_unlink()
-Date: Mon, 30 Aug 2010 02:20:25 -0700
-Message-Id: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1755039Ab0H3JZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 05:25:57 -0400
+Received: from mx.ij.cx ([212.13.201.15]:60606 "EHLO wes.ijneb.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754906Ab0H3JZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 05:25:55 -0400
+Date: Mon, 30 Aug 2010 10:25:53 +0100 (BST)
+From: Mark Hills <mark@pogo.org.uk>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: cgroup: rmdir() does not complete
+In-Reply-To: <20100827102507.dc3a5ac6.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.LNX.2.01.1008301013340.4381@fgnk.ybpnyqbznva>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz> <20100827102507.dc3a5ac6.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SA-Exim-Connect-IP: 82.28.218.61
+X-SA-Exim-Mail-From: mark@pogo.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Fri, 27 Aug 2010, KAMEZAWA Hiroyuki wrote:
 
-This patch adds a optional struct configfs_item_operations->check_link() check
-called in fs/configfs/symlink.c:configfs_unlink() that can be used by configfs
-consumers to check for an explict struct config_group dependence with active
-symlink and fail with -EPERM before the unlink(2) syscall is allowed to occur.
+> On Thu, 26 Aug 2010 16:51:55 +0100 (BST)
+> Mark Hills <mark@pogo.org.uk> wrote:
+> 
+> > I am experiencing hung tasks when trying to rmdir() on a cgroup. One task 
+> > spins, others queue up behind it with the following:
+> > 
+> >   INFO: task soaked-cgroup:27257 blocked for more than 120 seconds.
+> >   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> >   soaked-cgrou D ffff8800058157c0     0 27257  29411 0x00000000
+> >   ffff88004ffffdd8 0000000000000086 ffff88004ffffda8 ffff88004ffffeb8
+> >   0000000000000010 ffff880119813780 ffff88004ffffd48 ffff88004fffffd8
+> >   ffff88004fffffd8 000000000000f9b0 00000000000157c0 ffff880137693268
+> >   Call Trace:
+> >   [<ffffffff81115edb>] ? mntput_no_expire+0x24/0xe7
+> >   [<ffffffff81427acd>] __mutex_lock_common+0x14d/0x1b4
+> >   [<ffffffff81108a7c>] ? path_put+0x1d/0x22
+> >   [<ffffffff81427b48>] __mutex_lock_slowpath+0x14/0x16
+> >   [<ffffffff81427c4f>] mutex_lock+0x31/0x4b
+> >   [<ffffffff8110bdf8>] do_rmdir+0x74/0x102
+> >   [<ffffffff8110bebd>] sys_rmdir+0x11/0x13
+> >   [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
+> > 
+> > Kernel is from Fedora, 2.6.33.6. In all cases the cgroup contains no 
+> > tasks.
+> > 
+> > Commit ec64f5 ("fix frequent -EBUSY at rmdir") adds a busy wait loop to 
+> > the rmdir. It looks like what I am seeing here and indicates that some 
+> > cgroup subsystem is busy, indefinitely.
+> > 
+> 
+> Hmm. really spin ? sleeping-forever-no-wake-up ?
 
-Currently without this patch, there is not a method that a consumer can tell
-configfs_unlink() that it needs to fail for this particular case.  Allowing
-->check_link() to propigate up the errno to VFS is also another option for the
-call, but currently for TCM using the existing -EPERM in configfs_unlink() is fine here.
+It sleeps in D state, but enters interruptable state periodically which is 
+why my attention was drawn to that loop.
 
-Note this patch is used by TCM v4 generic configfs fabric module infrastructure to
-allow  explict Initiator Port MappedLUNs symlinks to create a dependency for
-the fabric TPG Port LUNs living in a configfs group that is not a direct
-struct config_group parent.
+> > I have not worked out how to reproduce it quickly. My only way is to 
+> > complete a 'dd' command in the cgroup, but then the problem is so rare it 
+> > is slow progress.
+> > 
+> please show how-to-reproduce in your way.
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- fs/configfs/symlink.c    |   13 +++++++++++++
- include/linux/configfs.h |    1 +
- 2 files changed, 14 insertions(+), 0 deletions(-)
+I use a C program which creates a container and places itself in the 
+container, then forks a dd process.
 
-diff --git a/fs/configfs/symlink.c b/fs/configfs/symlink.c
-index 0f3eb41..b8010de 100644
---- a/fs/configfs/symlink.c
-+++ b/fs/configfs/symlink.c
-@@ -205,6 +205,19 @@ int configfs_unlink(struct inode *dir, struct dentry *dentry)
- 	parent_item = configfs_get_config_item(dentry->d_parent);
- 	type = parent_item->ci_type;
- 
-+	/*
-+	 * See if the underlying struct config_item has dependent
-+	 * symlinks, and should return -EPERM here.
-+	 */
-+	if (type && type->ct_item_ops &&
-+	    type->ct_item_ops->check_link) {
-+		if (type->ct_item_ops->check_link(parent_item,
-+					sl->sl_target) != 0) {
-+			config_item_put(parent_item);
-+			goto out;
-+		}
-+	}
-+
- 	spin_lock(&configfs_dirent_lock);
- 	list_del_init(&sd->s_sibling);
- 	spin_unlock(&configfs_dirent_lock);
-diff --git a/include/linux/configfs.h b/include/linux/configfs.h
-index ddb7a97..7c01d86 100644
---- a/include/linux/configfs.h
-+++ b/include/linux/configfs.h
-@@ -226,6 +226,7 @@ struct configfs_item_operations {
- 	ssize_t	(*show_attribute)(struct config_item *, struct configfs_attribute *,char *);
- 	ssize_t	(*store_attribute)(struct config_item *,struct configfs_attribute *,const char *, size_t);
- 	int (*allow_link)(struct config_item *src, struct config_item *target);
-+	int (*check_link)(struct config_item *src, struct config_item *target);
- 	int (*drop_link)(struct config_item *src, struct config_item *target);
- };
- 
+But it seems you found an easier test case; I hope to test that soon.
+
+> And what cgroup is mounted ? memory cgroup only ?
+
+Quite a few: memory, blkio, cpuacct, cpuset.
+
+Until I can get a more reproducable test case (see my previous mail), I 
+can't really reduce this.
+
+> > Documentation/cgroup.memory.txt describes how force_empty can be required 
+> > in some cases. 
+> 
+> Ah, maybe that's wrong text. rmdir() calls force-empty automatically.
+> 
+> > Does this mean that with the patch above, these cases will 
+> > now spin on rmdir(), instead of returning -EBUSY? How can produce a 
+> > reliable test case requiring memory.force_empty to be used, to test this?
+> > 
+> 
+> Hmm. I'm not sure fedora-kernel has other (its own) featrues than stock kernel.
+> I'm grad if you can check it can happen in stock kernel, 2.6.35.
+> 
+> > Or is it likely to be some other cause, and how best to find it?
+> > 
+> 
+> At the first look, above mutex is the mutex in do_rmdir(), not kernel/cgroup.c
+> Then, rmdir doesn't seem to reach cgroup code...
+
+Interesting, I checked for that but not sure how I missed it. There is 
+clearly a mutex lock in do_rmdir() in fs/namei.c.
+
+> Do you do another operation on the directory while rmdir is called ?
+
+In one case I did an 'ls -l' on the filesystem which coencided with a lock 
+up, but I was not able to reproduce this.
+
 -- 
-1.7.2.2
-
+Mark
