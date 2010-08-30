@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab0H3KFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 06:05:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39377 "EHLO mx2.suse.de"
+	id S1755256Ab0H3KFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 06:05:33 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59451 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173Ab0H3KE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 06:04:58 -0400
-Message-ID: <4C7B8248.5070602@suse.de>
-Date: Mon, 30 Aug 2010 12:04:56 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "chris.mason@oracle.com" <chris.mason@oracle.com>,
-        "swhiteho@redhat.com" <swhiteho@redhat.com>,
-        "konishi.ryusuke@lab.ntt.co.jp" <konishi.ryusuke@lab.ntt.co.jp>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "vst@vlnb.net" <vst@vlnb.net>, "jack@suse.cz" <jack@suse.cz>
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100820132214.GA6184@lst.de> <4C6E9CAF.5010202@redhat.com> <4C7269E9.9070304@kernel.org> <20100823124815.GA20095@lst.de> <4C727E96.5020801@redhat.com> <4C727F2B.6060501@fusionio.com> <20100823140823.GA23490@lst.de>
-In-Reply-To: <20100823140823.GA23490@lst.de>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1755148Ab0H3KFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 06:05:24 -0400
+From: Tejun Heo <tj@kernel.org>
+To: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, snitzer@redhat.com,
+        j-nomura@ce.jp.nec.com, jamie@shareable.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/5] block: make __blk_rq_prep_clone() copy most command flags
+Date: Mon, 30 Aug 2010 11:58:12 +0200
+Message-Id: <1283162296-13650-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283162296-13650-1-git-send-email-tj@kernel.org>
+References: <1283162296-13650-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 10:04:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig wrote:
-> On Mon, Aug 23, 2010 at 04:01:15PM +0200, Jens Axboe wrote:
->> The problem purely exists on arrays that report write back cache enabled
->> AND don't implement SYNC_CACHE as a noop. Do any of them exist, or are
->> they purely urban legend?
-> 
-> I haven't seen it.  I don't care particularly about this case, but once
-> it a while people want to disable flushing for testing or because they
-> really don't care.
-> 
-aacraid for one falls into this category.
-SYNC_CACHE is no-oped in the driver. Otherwise you get a _HUGE_
-performance loss.
+Currently __blk_rq_prep_clone() copies only REQ_WRITE and REQ_DISCARD.
+There's no reason to omit other command flags and REQ_FUA needs to be
+copied to implement FUA support in request-based dm.
 
-Cheers,
+REQ_COMMON_MASK which specifies flags to be copied from bio to request
+already identifies all the command flags.  Define REQ_CLONE_MASK to be
+the same as REQ_COMMON_MASK for clarity and make __blk_rq_prep_clone()
+copy all flags in the mask.
 
-Hannes
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/blk-core.c          |    4 +---
+ include/linux/blk_types.h |    1 +
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 495bdc4..2a5b192 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2505,9 +2505,7 @@ EXPORT_SYMBOL_GPL(blk_rq_unprep_clone);
+ static void __blk_rq_prep_clone(struct request *dst, struct request *src)
+ {
+ 	dst->cpu = src->cpu;
+-	dst->cmd_flags = (rq_data_dir(src) | REQ_NOMERGE);
+-	if (src->cmd_flags & REQ_DISCARD)
+-		dst->cmd_flags |= REQ_DISCARD;
++	dst->cmd_flags = (src->cmd_flags & REQ_CLONE_MASK) | REQ_NOMERGE;
+ 	dst->cmd_type = src->cmd_type;
+ 	dst->__sector = blk_rq_pos(src);
+ 	dst->__data_len = blk_rq_bytes(src);
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 1797994..36edadf 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -168,6 +168,7 @@ enum rq_flag_bits {
+ #define REQ_COMMON_MASK \
+ 	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_HARDBARRIER | REQ_SYNC | \
+ 	 REQ_META | REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
++#define REQ_CLONE_MASK		REQ_COMMON_MASK
+ 
+ #define REQ_UNPLUG		(1 << __REQ_UNPLUG)
+ #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+1.7.1
+
