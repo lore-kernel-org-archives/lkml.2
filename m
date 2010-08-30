@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab0H3Lix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:38:53 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64897 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755375Ab0H3Liw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:38:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Zd3rR3BaH5VLXEK1ORLu4RYNX9yJ2zBBAEPRfId6cWSQLnCCX5N1QG8bBYDRBSiW/x
-         o512a2eqJ2PgSWHX5wbAocw6v+vKIPG8zEVylR9z1aAuebJ20/PNfO9jXsuhGYp6RopP
-         yHj/8MriIO3/j0hy6K4fkzeWH5nfSW7epmDm4=
+	id S1755463Ab0H3LjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:39:00 -0400
+Received: from cantor.suse.de ([195.135.220.2]:32932 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755375Ab0H3Li6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 07:38:58 -0400
+Message-ID: <4C7B984E.4070802@suse.de>
+Date: Mon, 30 Aug 2010 13:38:54 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikcZ1sWe4+j+Q6nw7ZNy-fi-=ojdvnZP5+N+QQY@mail.gmail.com>
-References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
-	<1283011478-27237-7-git-send-email-brgerst@gmail.com>
-	<AANLkTi=G+=Hc3e8Z+HH6yJPGi4TM3TyYZ6UvdUpHyBsC@mail.gmail.com>
-	<AANLkTinVQFHG1nh5XBd1tJ29fBDjQc=QRThXySiPWd2q@mail.gmail.com>
-	<AANLkTikcZ1sWe4+j+Q6nw7ZNy-fi-=ojdvnZP5+N+QQY@mail.gmail.com>
-Date: Mon, 30 Aug 2010 07:38:51 -0400
-Message-ID: <AANLkTinFbWiu5zuHJJ6OVB8AbsWjgqdiJatrfkT7M6Wk@mail.gmail.com>
-Subject: Re: [PATCH 06/11] x86-64: Fix %cs value in convert_from_fxsr()
-From: Brian Gerst <brgerst@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Tejun Heo <tj@kernel.org>,
+        michaelc@cs.wisc.edu, James.Bottomley@suse.de, tytso@mit.edu,
+        linux-scsi@vger.kernel.org, jaxboe@fusionio.com, jack@suse.cz,
+        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
+        vst@vlnb.net, rwheeler@redhat.com, Christoph Hellwig <hch@lst.de>,
+        chris.mason@oracle.com, dm-devel@redhat.com
+Subject: Re: [RFC] training mpath to discern between SCSI errors
+References: <20100825155918.GB8509@redhat.com>
+In-Reply-To: <20100825155918.GB8509@redhat.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 2:44 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst <brgerst@gmail.com> wrote:
->>>> While %ds still contains the userspace selector, %cs is KERNEL_CS
->>>> at this point.  Always get %cs from pt_regs.
->>>>
->>>> It actually is possible to get the correct segments for compat tasks,
->>>> but that involves using the [f]xsave instruction without a REX.W prefix.
->>>>
->>>> Signed-off-by: Brian Gerst <brgerst@gmail.com>
->
-> On Sun, Aug 29, 2010 at 2:41 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>> It might be just me but the above description doesn't explain
->>> anything. What's the problem here? What is this fixing?
->
-> On Mon, Aug 30, 2010 at 3:25 AM, Brian Gerst <brgerst@gmail.com> wrote:
->> The %cs segment being reported to a compat task is flat out wrong.  It
->> is getting KERNEL_CS when it should be some userspace segment.  The
->> code segment may still be wrong, because the %cs in pt_regs may not
->> have been the segment where the instruction that flagged the exception
->> executed from.  That could be fixed by using fxsave without a REX.W
->> prefix when saving the state of compat tasks, which would save the
->> segment and 32-bit offset instead of the 64-bit offset for the code
->> and data pointers.  This is such a corner case that it probably isn't
->> worth putting much effort into fixing unless someone demonstrates a
->> real need for it.
->
-> I sort of was able to deduce most of that from the original
-> description. However, I still don't quite understand what the problem
-> causes. Just a wrong cs reported to a signal handler or something
-> else?
->
+Mike Snitzer wrote:
+> On Wed, Aug 25 2010 at  4:00am -0400,
+> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
+> 
+>>> I'm not sure how to proceed here.  How much work would
+>>> discerning between transport and IO errors take?  If it can't be done
+>>> quickly enough the retry logic can be kept around to keep the old
+>>> behavior but that already was a broken behavior, so...  :-(
+>> I'm not sure how long will it take.
+> 
+> We first need to understand what direction we want to go with this.  We
+> currently have 2 options.  But any other ideas are obviously welcome.
+> 
+> 1)
+> Mike Christie has a patchset that introduce more specific
+> target/transport/host error codes.  Mike shared these pointers but he'd
+> have to put the work in to refresh them:
+> http://marc.info/?l=linux-scsi&m=112487427230642&w=2
+> http://marc.info/?l=linux-scsi&m=112487427306501&w=2
+> http://marc.info/?l=linux-scsi&m=112487431524436&w=2
+> http://marc.info/?l=linux-scsi&m=112487431524350&w=2
+> 
+> errno.h new EXYZ
+> http://marc.info/?l=linux-kernel&m=107715299008231&w=2
+> 
+> add block layer blkdev.h error values
+> http://marc.info/?l=linux-kernel&m=107961883915068&w=2
+> 
+> add block layer blkdev.h error values (v2 convert more drivers)
+> http://marc.info/?l=linux-scsi&m=112487427230642&w=2
+> 
+> I think that patchset's appoach is fairly disruptive just to be able to
+> train upper layers to differentiate (e.g. mpath).  But in the end maybe
+> that change takes the code in a more desirable direction?
+> 
+> 2)
+> Another option is Hannes' approach of having DM consume req->errors and
+> SCSI sense more directly.
+> 
 
-The wrong cs value is reported to userspace.  I don't know of any apps
-that actually cares about it, except for possibly wine or dosemu.  In
-any app that doesn't use alternate segments, the above fix will be
-give the correct cs every time (since it never changes).
+Actually, I think we have two separate issues here:
+1) The need of having more detailed I/O errors even in the fs layer. This
+   we've already discussed at the LSF, consensus here is to allow other
+   errors than just 'EIO'.
+   Instead of Mike's approach I would rather use existing error codes here;
+   this will make the transition somewhat easier.
+   Initially I would propose to return 'ENOLINK' for a transport failure,
+   'EIO' for a non-retryable failure on the target, and 'ENODEV' for a
+   retryable failure on the target.
 
---
-Brian Gerst
+2) The need to differentiate the various error conditions on the multipath
+   layer. Multipath needs to distinguish the three error types as specified
+   in 1)
+
+Mike has been trying to solve 1) and 2) by introducing separate/new error
+codes, and I have been trying to use 2) by parsing the sense codes directly
+from multipathing.
+
+Given that the fs people have expressed their desire to know about these
+error classes, too, it makes sense to have them exposed to the fs layer.
+
+I see if I can come up with a patch.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 N�rnberg
+GF: Markus Rex, HRB 16746 (AG N�rnberg)
