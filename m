@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab0H3PjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 11:39:03 -0400
-Received: from wsip-70-167-241-26.dc.dc.cox.net ([70.167.241.26]:47964 "EHLO
-	firewall1" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751590Ab0H3PjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 11:39:01 -0400
-From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm-ppc@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Liu Yu <yu.liu@freescale.com>, Kyle Moffett <kyle@moffetthome.net>,
-        Kyle Moffett <Kyle.D.Moffett@boeing.com>
-Subject: [PATCH] powerpc/kvm/e500_tlb: Fix a minor copy-paste tracing bug
-Date: Mon, 30 Aug 2010 11:38:39 -0400
-Message-Id: <1283182719-4621-1-git-send-email-Kyle.D.Moffett@boeing.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1282936005-17078-1-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1282936005-17078-1-git-send-email-Kyle.D.Moffett@boeing.com>
+	id S1755753Ab0H3Pn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 11:43:58 -0400
+Received: from exprod7og105.obsmtp.com ([64.18.2.163]:33768 "EHLO
+	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755733Ab0H3Pn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 11:43:56 -0400
+Message-ID: <4C7BD189.9000008@genband.com>
+Date: Mon, 30 Aug 2010 09:43:05 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: Og dreams of kernels
+References: <20100826235552.GA13527@kroah.com>
+In-Reply-To: <20100826235552.GA13527@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Aug 2010 15:43:07.0829 (UTC) FILETIME=[0AF53650:01CB485A]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17606.000
+X-TM-AS-Result: No--19.845000-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kvmppc_e500_stlbe_invalidate() function was trying to pass too many
-parameters to trace_kvm_stlb_inval().  This appears to be a bad
-copy-paste from a call to trace_kvm_stlb_write().
+On 08/26/2010 05:55 PM, Greg KH wrote:
+> {pound} {pound} {pound}
+> 
+> Og woke up to the loud noise of the villagers pounding on his cave door.
+> He stumbled toward it, grabbing the four numbered bags that he knew were
+> needed at this time.
+> 
+> Opening the door, Og looked at the villagers, all expectant, wondering
+> where this week's kernels were, what was delaying them, as they needed
+> their weekly fix.
+> 
+> Reaching into the first bag, quite worn out with a faded "27" on the
+> outside of it, he grabbed one of the remaining kernels in there and
+> tossed it into the group.  A few small people at the back of the crowd
+> caught the kernel, and slowly walked off toward the village.  Og
+> wondered about these people, constantly relying on the old kernels to
+> save them for another day, while resisting the change to move on,
+> harboring some kind of strange reverence for this specific brand that Og
+> just could not understand.
 
-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+Count me in with Willy as one of these small people, and for similar
+reasons.  In an ideal world things might be different, but we do what we
+can.
 
----
-Alex,
+Thanks for keeping 2.6.27 going a while longer.
 
-This is the rebased patch to re-enable the tracepoint.
+Chris
 
-I also pushed a tree with this patch on top of kvm-ppc-next out to:
-  git://opensource.exmeritus.com/hww-1u-1a/linux.git kvm-ppc-patches
-  http://opensource.exmeritus.com/git/hww-1u-1a/linux.git/kvm-ppc-patches
-
-Thanks again!
-
-Cheers,
-Kyle Moffett
-
----
- arch/powerpc/kvm/e500_tlb.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
-
-diff --git a/arch/powerpc/kvm/e500_tlb.c b/arch/powerpc/kvm/e500_tlb.c
-index 66845a5..a413883 100644
---- a/arch/powerpc/kvm/e500_tlb.c
-+++ b/arch/powerpc/kvm/e500_tlb.c
-@@ -226,11 +226,7 @@ static void kvmppc_e500_stlbe_invalidate(struct kvmppc_vcpu_e500 *vcpu_e500,
- 
- 	kvmppc_e500_shadow_release(vcpu_e500, tlbsel, esel);
- 	stlbe->mas1 = 0;
--	/* XXX doesn't compile */
--#if 0
--	trace_kvm_stlb_inval(index_of(tlbsel, esel), stlbe->mas1, stlbe->mas2,
--			     stlbe->mas3, stlbe->mas7);
--#endif
-+	trace_kvm_stlb_inval(index_of(tlbsel, esel));
- }
- 
- static void kvmppc_e500_tlb1_invalidate(struct kvmppc_vcpu_e500 *vcpu_e500,
 -- 
-1.7.1
-
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
