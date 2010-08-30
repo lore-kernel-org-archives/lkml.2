@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab0H3AkF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 20:40:05 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55313 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab0H3AkD (ORCPT
+	id S1754237Ab0H3AoI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 20:44:08 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34109 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab0H3AoH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 20:40:03 -0400
+	Sun, 29 Aug 2010 20:44:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=gZvfEX1USxnHpMrTo17dQCZa9fIGlXu2el1KMHnid6sO8PLWOj4UOLFQmcyPwJAEoi
-         96P2Li55AsXrKi3BnPRFd014+NlbbkCwpcHsetLvdiLQsVtPmtCDZvl8sk9agOolKq/N
-         gQJHkgej/5F6A1IccDnoN7WFswAKWWfz6FSTg=
-Message-ID: <4C7AFE2C.1080204@lwfinger.net>
-Date: Sun, 29 Aug 2010 19:41:16 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Z6VXWvgBj9tulItNRJhQAyKO/eBF6k9CnRZJzHzaZ6fOrni0/Po0AEVRGfwSsCDfOY
+         sXYhYQ7B0L+jL+WNCvWiirYUD8l2wxlpCLtyY+1rn2yc621lYSMoPvgCaLT7DevsGcQW
+         6JwcFN3fYvZ+eNirEFQYgWTMWroWtZukUC90g=
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        archman <spermmail001@yahoo.com>
-Subject: Re: [Bug #16505] 2.6.34.2 breaks b43
-References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.h7B.DdueMB@chimera>
-In-Reply-To: <ByD_7B96czP.A.h7B.DdueMB@chimera>
+In-Reply-To: <AANLkTinReUPW4auBZCHVZcHfZfMxEOa1qmaY+npV=UPY@mail.gmail.com>
+References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
+	<1283011478-27237-3-git-send-email-brgerst@gmail.com>
+	<AANLkTinReUPW4auBZCHVZcHfZfMxEOa1qmaY+npV=UPY@mail.gmail.com>
+Date: Sun, 29 Aug 2010 20:44:06 -0400
+Message-ID: <AANLkTin6pZq_JquweSMrWfZsCM79v=1TqUConNa85rFN@mail.gmail.com>
+Subject: Re: [PATCH 02/11] x86: Merge fpu_init()
+From: Brian Gerst <brgerst@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2010 06:13 PM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16505
-> Subject		: 2.6.34.2 breaks b43
-> Submitter	: archman <spermmail001@yahoo.com>
-> Date		: 2010-08-03 23:53 (27 days old)
-> Handled-By	: Larry Finger <Larry.Finger@lwfinger.net>
-> Patch		: https://bugzilla.kernel.org/attachment.cgi?id=27335
+On Sun, Aug 29, 2010 at 2:29 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst <brgerst@gmail.com> wrote:
+>> @@ -80,7 +80,6 @@ static void __cpuinit init_thread_xstate(void)
+>>  #endif
+>>  }
+>>
+>> -#ifdef CONFIG_X86_64
+>>  /*
+>>  * Called at bootup to set up the initial FPU state that is later cloned
+>>  * into all processes.
+>> @@ -88,12 +87,20 @@ static void __cpuinit init_thread_xstate(void)
+>>
+>>  void __cpuinit fpu_init(void)
+>>  {
+>> -       unsigned long oldcr0 = read_cr0();
+>> +       unsigned long cr0;
+>> +       unsigned long cr4_mask = 0;
+>>
+>> -       set_in_cr4(X86_CR4_OSFXSR);
+>> -       set_in_cr4(X86_CR4_OSXMMEXCPT);
+>> +       if (cpu_has_fxsr)
+>> +               cr4_mask |= X86_CR4_OSFXSR;
+>> +       if (cpu_has_xmm)
+>> +               cr4_mask |= X86_CR4_OSXMMEXCPT;
+>> +       set_in_cr4(cr4_mask);
+>
+> Is calling set_in_cr4() unconditionally safe for 32-bit CPUs that
+> don't have cr4? AFAICT, no, because it uses read_cr4().
+>
 
-This one was fixed in 2.6.34.3. Mainline was OK - only the patches to stable
-were affected. The bug should be closed.
-
-Larry
-
+Good catch, will fix.
+--
+Brian Gerst
