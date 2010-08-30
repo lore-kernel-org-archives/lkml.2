@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab0H3XcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 19:32:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:54366 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab0H3XcV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 19:32:21 -0400
-X-Authority-Analysis: v=1.1 cv=u9yrfc8dX8+D+pHqGYUzxVYM/oVXAp/JCIDMGESp0LA= c=1 sm=0 a=AYXAra_8yX0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=omOdbC7AAAAA:8 a=-DOvqGfya218eARkalQA:9 a=uSVmx391JH4S5LWGd1UA:7 a=5MC1Gi9qIzdk6dGYEpCPyXnsdM0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] tracing: Fix a race in function profile
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C723644.4040708@cn.fujitsu.com>
-References: <4C723644.4040708@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 30 Aug 2010 19:32:18 -0400
-Message-ID: <1283211138.3656.65.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1754621Ab0H3XnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 19:43:07 -0400
+Received: from n4-vm0.bullet.mail.gq1.yahoo.com ([67.195.9.7]:27966 "HELO
+	n4-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753999Ab0H3XnG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 19:43:06 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 1616.21495.bm@omp128.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=DTzZuwnLqfbgPdkOdzyPSclLr79k/LoXmL5vJ90UxEoe0xqbf38lRSjNOU8l7LMeOs7wMR/QHXJTEZPbFDnSlOkEBez6hfPvcsnRCReJkXazxA8f3EJjg5ljqzvs7LPxsSVMv0zEoADRkJ0Psh+daXbOWatqENSiIEa5vQE7q40=;
+Message-ID: <887649.75421.qm@web180316.mail.gq1.yahoo.com>
+X-YMail-OSG: CBPSNygVM1kQGMdZ0kk_ya6zlLKTKVBys9pdlIQ7buoGbX8
+ LQptaOTTAK0K5htYPb64c1XZfe711U3mCpFOa5bkgz2f8w1foFT_PeV80xm4
+ Rc9e_RXhEuYHcXFRgf.yDDLX8sIqxxQQNDNN2fAUXc2MLQzoRLU5qR5DlJu8
+ FYhaa34MSLP3i0EFLDdVBofYRfDDmevqhIGRnz6nUCQcRgEnWblB.ug6X4Mu
+ b7vmmr09rZXrb7kSOjFD9L4M0vPdhD5CdlZTORJvO_0yf8J52pj3JHagC0uo
+ otHwa26E7C.25Kgb94HlzD5YvGyAF.YgnT3cxGHuW5DPrhrlI9mfvjw--
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Mon, 30 Aug 2010 16:43:04 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH v2] GPIO: add support for 74HC164 serial-in/parallel-out 8-bit shift register
+To: Willy Tarreau <w@1wt.eu>, Florian Fainelli <florian@openwrt.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>,
+        dbrownell@users.sourceforge.net
+In-Reply-To: <201008291737.32433.florian@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-23 at 16:50 +0800, Li Zefan wrote:
-> While we are reading trace_stat/functionX and someone just
-> disabled function_profile at that time, we can trigger this:
-> 
-> 	divide error: 0000 [#1] PREEMPT SMP
-> 	...
-> 	EIP is at function_stat_show+0x90/0x230
-> 	...
-> 
-> This fix just takes the ftrace_profile_lock and checks if
-> rec->counter is 0. If it's 0, we know the profile buffer
-> has been reset.
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+generic to all
+> 74HC164 chips
 
-Thanks Li!
+Not just HC-series logic, also HCT, AC, etc (as
+I noted previously).
 
-I'll add this to my queue, test it, and then push it up as a -rc and
-stable fix.
+I'm glad you took NXP (one of the N vendors)
+out of the name, but I think you should also
+ take the logic series out; "74x164 might be sufficiently generic.
+           
+> pdata->gpio_pin_clk, err);
 
--- Steve
-
-> ---
->  kernel/trace/ftrace.c |   15 +++++++++++----
->  1 files changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 0d88ce9..7cb1f45 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -381,12 +381,19 @@ static int function_stat_show(struct seq_file *m, void *v)
->  {
->  	struct ftrace_profile *rec = v;
->  	char str[KSYM_SYMBOL_LEN];
-> +	int ret = 0;
->  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> -	static DEFINE_MUTEX(mutex);
->  	static struct trace_seq s;
->  	unsigned long long avg;
->  	unsigned long long stddev;
->  #endif
-> +	mutex_lock(&ftrace_profile_lock);
-> +
-> +	/* we raced with function_profile_reset() */
-> +	if (unlikely(rec->counter == 0)) {
-> +		ret = -EBUSY;
-> +		goto out;
-> +	}
->  
->  	kallsyms_lookup(rec->ip, NULL, NULL, NULL, str);
->  	seq_printf(m, "  %-30.30s  %10lu", str, rec->counter);
-> @@ -408,7 +415,6 @@ static int function_stat_show(struct seq_file *m, void *v)
->  		do_div(stddev, (rec->counter - 1) * 1000);
->  	}
->  
-> -	mutex_lock(&mutex);
->  	trace_seq_init(&s);
->  	trace_print_graph_duration(rec->time, &s);
->  	trace_seq_puts(&s, "    ");
-> @@ -416,11 +422,12 @@ static int function_stat_show(struct seq_file *m, void *v)
->  	trace_seq_puts(&s, "    ");
->  	trace_print_graph_duration(stddev, &s);
->  	trace_print_seq(m, &s);
-> -	mutex_unlock(&mutex);
->  #endif
->  	seq_putc(m, '\n');
-> +out:
-> +	mutex_unlock(&ftrace_profile_lock);
->  
-> -	return 0;
-> +	return ret;
->  }
->  
->  static void ftrace_profile_reset(struct ftrace_profile_stat *stat)
-
+I'm a bit puzzled why you don't just hook the
+chip up using standard SPI signals... ISTR they
+matched up directly to what the chip needs, so
+no GPIOs were needed for interface glue.
+>
 
