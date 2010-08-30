@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab0H3Nc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 09:32:56 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58075 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab0H3Ncz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 09:32:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=O++hHsPiyhQFF3R829HOPUbDl2glsy1c5tXyHhs82Mw2d5LThQ4q1RcJ2BsZ0mF3Vo
-         zAax74EsbWDRuhiWwbM7m3wBoKnbT0VD7cn5TNsrNfNez16RDKrRawmJ9bOATwRigYQx
-         EiQyRugM1mICb08LK7SGPfN2/t1NGe1DtRRJc=
-MIME-Version: 1.0
-In-Reply-To: <1283173173.12995.75.camel@brekeke>
-References: <1283028125-6027-1-git-send-email-vapier@gentoo.org>
- <1283173086.12995.74.camel@brekeke> <1283173173.12995.75.camel@brekeke>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 30 Aug 2010 09:32:15 -0400
-X-Google-Sender-Auth: a8LTq5j8u38wkHimE3NHXLnwN2Y
-Message-ID: <AANLkTikE93Uqnf7_8p72rEhcRydmx0LdBVCM_z3tNr-z@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH] mtd: Blackfin NFC: fix invalid free
- in remove()
-To: dedekind1@gmail.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754761Ab0H3NdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 09:33:15 -0400
+Received: from hanwang.com.cn ([221.122.51.51]:58682 "EHLO mail.hanwang.com.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754540Ab0H3NdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 09:33:13 -0400
+Date: Mon, 30 Aug 2010 21:33:12 +0800
+From: "Xing Wei" <weixing@hanwang.com.cn>
+To: "jkosina" <jkosina@suse.cz>
+Cc: "linux-input" <linux-input@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "dmitry.torokhov" <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v2] input: Add support for Hanwang tablet
+Message-ID: <201008302133119064558@hanwang.com.cn>
+X-mailer: Foxmail 6, 15, 201, 23 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 08:59, Artem Bityutskiy wrote:
-> On Mon, 2010-08-30 at 15:58 +0300, Artem Bityutskiy wrote:
->> On Sat, 2010-08-28 at 16:42 -0400, Mike Frysinger wrote:
->> > Since info->mtd isn't dynamically allocated, we shouldn't attempt to
->> > kfree() it.  Otherwise we get random fun corruption when unloading
->> > the driver built as a module.
->> >
->> > Signed-off-by: Mike Frysinger <vapier@gentoo.org>
->> > ---
->> > note: this should be merged for 2.6.36 and probably sent to stable trees
->>
->> You send the same patch 2 times once with this note and the other time
->> without this note. Which one should be ignored?
->
-> I guess it is 2.6.36 material. Also, if you want this in -stable, add
-> corresponding CC please.
+On Mon, 30 Aug 2010, Jiri Kosina Wrote: 
+> > On Mon, 30 Aug 2010, Xing Wei wrote:
+> >  
+> > +config TABLET_USB_HANWANG
+> > +	tristate "Hanwang Art Master III tablet support (USB)"
+> > +	depends on USB_ARCH_HAS_HCD
+> > +	select USB
+> > +	help
+> > +	  Say Y here if you want to use the USB version of the Hanwang Art
+> > +	  Master III tablet.  Make sure to say Y to "Mouse support"
+> > +	  (CONFIG_INPUT_MOUSEDEV) and/or "Event interface support"
+> > +	  (CONFIG_INPUT_EVDEV) as well.
+> 
+> Is there any reason why you don't have these (MOUSEDEV and EVDEV) as 
+> explicit Kconfig dependencies?
+> 
+> Thanks,
+> 
 
-once it gets merged, then i can notify the stable guys
--mike
+I just reference the other USB tablet on this Kconfig,like aiptek,acecad,wacom.
+Actually it depends on EVDEV at least now.
+I can submit another patch if necessarry.
+
+Thanks Jiri. 
+
