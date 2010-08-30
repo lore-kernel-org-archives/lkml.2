@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab0H3VEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 17:04:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63264 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752192Ab0H3VEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 17:04:07 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, rwheeler@redhat.com, hare@suse.de,
-        neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com, jeremy@goop.org,
-        snitzer@redhat.com, k-ueda@ct.jp.nec.com,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 26/30] ext4: do not send discards as barriers
-References: <1282751267-3530-1-git-send-email-tj@kernel.org>
-	<1282751267-3530-27-git-send-email-tj@kernel.org>
-	<20100825155842.GA3229@lst.de> <20100825160032.GC3229@lst.de>
-	<4C753D75.2010305@kernel.org> <20100825200223.GE2738@quack.suse.cz>
-	<4C76250B.6060800@kernel.org> <20100827173147.GA12374@quack.suse.cz>
-	<x4939tv98n8.fsf@segfault.boston.devel.redhat.com>
-	<20100830202034.GB12226@quack.quadriga.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 30 Aug 2010 17:01:19 -0400
-In-Reply-To: <20100830202034.GB12226@quack.quadriga.com> (Jan Kara's message
-	of "Mon, 30 Aug 2010 22:20:34 +0200")
-Message-ID: <x49y6bn7r34.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754480Ab0H3VE4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 17:04:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59581 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab0H3VEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 17:04:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC 0/5] tty: move stuff around
+Date: Mon, 30 Aug 2010 23:04:45 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.5.0; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <201008301415.56934.arnd@arndb.de> <20100830140054.294a15f1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100830140054.294a15f1@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008302304.45157.arnd@arndb.de>
+X-Provags-ID: V02:K0:5+cCVkxI2/G2+G5a5kYnK8B6fnPRmCtQBxxJ5WqNzlQ
+ nlbY7Nm6JLA3ga8T7J1C/YRqRpfMjRIHCGvtdphUbETcFdkS0s
+ YSXxY121J+B5wr9v0Sl9x6YQst5RtFzLJFbcLXWGjpB93BX1HD
+ 8l9b9EsWET3V4REHzQIky5MCGefAkLqUvYtSKth9Svwn/eknZ3
+ hZNWCS3lNTy22V/6n+XFg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+On Monday 30 August 2010 15:00:54 Alan Cox wrote:
+> > 
+> > Are they all candidates for a conversion to serial_core then?
+> > Or are they not sufficiently 8250-like?
+> 
+> Please don't convert stuff to serial_core - it's got some horrible
+> problems with adapting to the new locking model, its buffering model
+> pre-dates kfifo and all in all serial_core needs a rewrite not more users.
 
-> On Mon 30-08-10 15:56:43, Jeff Moyer wrote:
->> Jan Kara <jack@suse.cz> writes:
->> 
->> >   An update: I've set up an ext4 barrier testing in KVM - run fsstress,
->> > kill KVM at some random moment and check that the filesystem is consistent
->> > (kvm is run in cache=writeback mode to simulate disk cache). About 70 runs
->> 
->> But doesn't your "disk cache" survive the "power cycle" of your guest?
->   Yes, you're right. Thinking about it now the test setup was wrong because
-> it didn't refuse writes to the VM's data partition after the moment I
-> killed KVM. Thanks for catching this. I will probably have to use the fault
-> injection on the host to disallow writing the device at a certain moment.
-> Or does somebody have a better option?
->   My setup is that I have a dedicated partition / drive for a filesystem
-> which is written to from a guest kernel running under KVM. I have set it up
-> using virtio driver with cache=writeback so that the host caches the writes
-> in a similar way disk caches them. At some point I just kill the qemu-kvm
-> process and at that point I'd like to also throw away data cached by the
-> host...
+Ok. I was under the illusion that drivers/serial contained the good
+stuff while drivers/char/ had all the bad serial drivers that nobody
+cared to convert. Do I understand you correctly that there is actually
+not a single serial driver that can serve as a good example for other
+drivers then?
 
-I've used ilo to power off the system under test from remote.  I have a
-tool to automate the testing.  It works as follows:
-
-There's a client and a server.  The server listens on an ip/port for
-connections.  A client will connect, tell the server it's configuration
-(including what disk it's writing to, what block size it's using, and
-the total amount of I/O to be done), and then start doing I/O.  The I/O
-is done using the AIO api, and the data written includes a block number,
-a generation number, fill, and a crc.  As each completion comes in, the
-completed sectors are communicated to the server program.  Upon
-completion of an entire series of writes (writing the entire data set
-once), the server waits some amount of time and then power cycles the
-client.  The client comes back up and is run in check mode to verify
-that all of the data it reported as completed to the server is actually
-in tact.
-
-I recently updated the code to run against a file on a file system
-(previously it would only work on a block device).  It makes use of
-stonith modules to do the power cycling.  It works, but it isn't the
-most elegant bit of engineering I've ever done.  ;-)
-
-Anyway, that code is available here:
-  http://people.redhat.com/jmoyer/dainto-0.99.4.tar.bz2
-
-Cheers,
-Jeff
+	Arnd
