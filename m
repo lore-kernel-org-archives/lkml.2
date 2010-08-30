@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab0H3Rky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:40:54 -0400
-Received: from madara.hpl.hp.com ([192.6.19.124]:50348 "EHLO madara.hpl.hp.com"
+	id S1756355Ab0H3Rl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:41:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59520 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755439Ab0H3Rkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:40:53 -0400
-Date: Mon, 30 Aug 2010 10:40:19 -0700
-From: Jean Tourrilhes <jt@hpl.hp.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Joe Perches <joe@perches.com>,
-        Tejun Heo <tj@kernel.org>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] wireless: fix 64K kernel heap content leak via ioctl
-Message-ID: <20100830174018.GA3639@bougret.hpl.hp.com>
-Reply-To: jt@hpl.hp.com
-References: <20100827210240.GC4703@outflux.net> <20100827212254.GB32275@bougret.hpl.hp.com> <1283158058.3691.10.camel@jlt3.sipsolutions.net> <1283158704.3691.11.camel@jlt3.sipsolutions.net> <1283162341.3691.45.camel@jlt3.sipsolutions.net>
+	id S1755450Ab0H3Rl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 13:41:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Subject: Re: [Bug #17041] 2.6.36-rc1 hangs during XFS barrier test for /
+Date: Mon, 30 Aug 2010 19:40:30 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera> <4AUWBNzTkbD.A.FI.7FueMB@chimera> <AANLkTikzDgHsPsUQMdb87R8dG61CBBekxBfhbuguLEPX@mail.gmail.com>
+In-Reply-To: <AANLkTikzDgHsPsUQMdb87R8dG61CBBekxBfhbuguLEPX@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283162341.3691.45.camel@jlt3.sipsolutions.net>
-Organisation: HP Labs Palo Alto
-Address: HP Labs, 1U-17, 1501 Page Mill road, Palo Alto, CA 94304, USA.
-E-mail: jt@hpl.hp.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008301940.30362.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 11:59:01AM +0200, Johannes Berg wrote:
+On Monday, August 30, 2010, Torsten Kaiser wrote:
+> On Mon, Aug 30, 2010 at 12:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.35.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=17041
+> > Subject         : 2.6.36-rc1 hangs during XFS barrier test for /
+> > Submitter       : Torsten Kaiser <just.for.lkml@googlemail.com>
+> > Date            : 2010-08-20 (10 days old)
+> > Message-ID      : <AANLkTim1PXibiY98GUdMj-UZLTav+n7GAnJ0Mjn6_5a3@mail.gmail.com>
+> > References      : http://marc.info/?l=linux-kernel&m=128231691708710&w=2
 > 
-> Ok I finally fully understood the issue.
+> As noted in comment #1 in this Bug, this was the same Bug as
+> http://marc.info/?l=linux-kernel&m=128208298507451&w=2
+> It is fixed as of 2.6.36-rc2.
 > 
-> This will fix the problem, but the comment is completely bogus, which I
-> guess means you didn't actually understand the problem.
+> You can close this Bug as fixed.
 
-	Correct, Kees pointed out that my comment was bogus and the
-e-mail I sent after the patch corrected myself on that point :
+Thanks, closed.
 
-------------------------------------
-> The comment should probably be clarified -- it's the caller's iwp->length
-> that may be causing problems
-
-        Ha ! I see. It would be for regular iwpoint queries, not for
-extended NOMAX queries (scan is a extended NOMAX query).
-------------------------------------
-
-> My patch also didn't fix the problem, I didn't understand the problem
-> correctly and was continuously wondering how drivers would ever fill the
-> buffer with more than max_tokens (which would be a more serious bug,
-> since they'd overwrite a slab object after "extra").
-
-	Yes, I had arrived at the same conclusion (not that my patch
-did fix the issue).
-
-> What really fixes the problem is the patch below though. Had to realise
-> that the path where the driver didn't do ANYTHING AT ALL was the
-> problem....
-
-	I actually like your patch better than mine, it's closer to
-the original intent of the API. Go for it ;-)
-
-> johannes
-
-	Thanks a lot for the second pair of eyes.
-
-	Jean
+Rafael
