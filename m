@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab0H3Cml (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 22:42:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64542 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368Ab0H3Cmj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 22:42:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=IfakRAqhaZ5XXOGJF2uijVU7eSuRGci1c0APtD5owTDxdhaNbcVdm0bVUC6x8umwWb
-         i6c9cJZDZadlL2/WXsERFTHhqZG0RhjzsJoON0imUtPMnXC2FwyH+PEIofTdn2cemBbw
-         kSfaQy1qXnbXuVUQOXm8eoQn+0TR2ySSfQMAk=
-MIME-Version: 1.0
-In-Reply-To: <1282936206-17288-1-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1282936206-17288-1-git-send-email-Kyle.D.Moffett@boeing.com>
-Date: Sun, 29 Aug 2010 19:42:39 -0700
-X-Google-Sender-Auth: UJOb0lFWNkPb46QhS69q97uSVLc
-Message-ID: <AANLkTimr8-hZYtQyYTTPmvRaNr-upRtVdddtoRbRbQ_y@mail.gmail.com>
-Subject: Re: [PATCH] e1000e: Intel 82571EB: Don't wait for MNG cycle on
- unmanaged chips
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, Kyle Moffett <kyle@moffetthome.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754558Ab0H3Cv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 22:51:26 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49738 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754015Ab0H3CvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 22:51:25 -0400
+Date: Mon, 30 Aug 2010 12:51:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the drivers-x86 tree
+Message-Id: <20100830125119.b6a6cb22.sfr@canb.auug.org.au>
+In-Reply-To: <20100827074048.GB9120@core.coreip.homeip.net>
+References: <20100827115950.dd942b90.sfr@canb.auug.org.au>
+	<20100827025148.GA25469@srcf.ucam.org>
+	<20100827074048.GB9120@core.coreip.homeip.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 12:10, Kyle Moffett <Kyle.D.Moffett@boeing.com> wrote:
-> The Intel 82571EB chipset can be used in an unmanaged configuration as a
-> fast dual-port Gig-E controller.  Unfortunately a board constructed that
-> way would fail to correctly come up because the driver polls for the
-> completion of a management cycle that will never occur.
->
-> To resolve this problem, we disable the poll and error return on chips
-> whose EEPROMs indicate no management.  As a protection against
-> misconfigured chipsets, we still delay for the entire management poll
-> timeout.
->
-> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-> ---
->  drivers/net/e1000e/82571.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
->
+Hi all,
 
-Thanks Kyle, I have added the patch to my queue.
+On Fri, 27 Aug 2010 00:40:48 -0700 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+>
+> On Fri, Aug 27, 2010 at 03:51:48AM +0100, Matthew Garrett wrote:
+> > On Fri, Aug 27, 2010 at 11:59:50AM +1000, Stephen Rothwell wrote:
+> > 
+> > > After merging the drivers-x86 tree, today's linux-next build (powerpc
+> > > ppc64_defconfig and x86_64 allmodconfig) produced this warning:
+> > 
+> > Oh Lordy. I should stop merging anything that contains "select". I'll 
+> > take a look at this tomorrow, but I'm about to head away for a week - if 
+> > anyone has a fix, feel free to find a way to get it merged.
+> > 
+> > (Dmitry, there was a Kconfig issue when I merged your patch, so it's 
+> > entirely plausible that you're a completely innocent bystander here)
+> 
+> Yeah, I think I am innocent here. My patch was adding "select
+> INPUT_SPARCEKMAP" which is a library module and which I ensure to be
+> selectable as long as INPUT is enabled. I do not want to switch it
+> around into "depends on" since it is implementation detail and user
+> should not care.
+
+I applied this patch for today ...
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 30 Aug 2010 12:47:51 +1000
+Subject: [PATCH] Fix Kconfig mistaken update
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/platform/x86/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index b96db80..55579f1 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -497,7 +497,6 @@ config ACPI_TOSHIBA
+ 	depends on RFKILL || RFKILL = n
+ 	select INPUT_POLLDEV
+ 	select INPUT_SPARSEKMAP
+-	select BACKLIGHT_CLASS_DEVICE
+ 	---help---
+ 	  This driver adds support for access to certain system settings
+ 	  on "legacy free" Toshiba laptops.  These laptops can be recognized by
+-- 
+1.7.1
+
 
 -- 
 Cheers,
-Jeff
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
