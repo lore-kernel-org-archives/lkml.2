@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab0H3NZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 09:25:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46908 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab0H3NZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 09:25:43 -0400
-Date: Mon, 30 Aug 2010 15:25:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Rafi Rubin <rafi@seas.upenn.edu>
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
-        chatty@enac.fr, micki@n-trig.com
-Subject: Re: [PATCH 1/4] Adding documention
-In-Reply-To: <4C7ABA64.50005@seas.upenn.edu>
-Message-ID: <alpine.LNX.2.00.1008301525240.1019@pobox.suse.cz>
-References: <1282798497-19791-1-git-send-email-rafi@seas.upenn.edu> <1282798497-19791-2-git-send-email-rafi@seas.upenn.edu> <4C77AA45.4030805@euromail.se> <4C7ABA64.50005@seas.upenn.edu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753673Ab0H3N1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 09:27:49 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46221 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753536Ab0H3N1s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 09:27:48 -0400
+Date: Mon, 30 Aug 2010 14:27:44 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [RFC][PATCH 3/5] perf: Add hrtimer code for PMI-less hardware
+ counters
+Message-ID: <20100830132744.GB24828@console-pimps.org>
+References: <cover.1283123521.git.matt@console-pimps.org>
+ <38d993baf1328403d9a1c4a2f012c4aa0e19feab.1283123521.git.matt@console-pimps.org>
+ <1283172902.1820.897.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283172902.1820.897.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 Aug 2010, Rafi Rubin wrote:
-
-> >> +----------
-> >> +
-> >> +Note: values set at load time are global and will apply to all applicable
-> >> +devices.  Adjusting parameters with sysfs will override the load time values,
-> >> +but only for that one device.
-> >> +
-> >> +The following parameters are used to configure filters to reduce noise:
-> >> +
-> >> +activate_slack		number of fingers to ignore before processing events
-> >> +
-> >> +activation_height	size threshold to activate immediately
-> >> +activation_width
-> >> +
-> >> +min_height		size threshold bellow which fingers are ignored
-> >> +min_width		both to decide activation and during activity
-> >> +
-> >> +deactivate_slack	the number of "no contact" frames to ignore before
-> >> +			propagating the end of activity events
-> >> +
-> >> +When the last finger is removed from the device, it sends a number of empty
-> >> +frames.  By holding off on deactivation for a few frames we can tolerate false
-> >> +erroneous disconnects, where the sensor may mistakenly not detect a finger that
-> >> +is still present.  Thus deactivate_slack addresses problems where a users might
-> >> +see breaks in lines during drawing, or drop an object during a long drag.
+On Mon, Aug 30, 2010 at 02:55:02PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-08-30 at 13:13 +0100, Matt Fleming wrote:
+> > Currently, it's impossible to periodically sample hardware counters that
+> > lack performance monitoring interrupt (PMI) support. In order to sample
+> > these counters we can create an event group which is backed by a
+> > hrtimer, thereby simulating a PMI.
 > > 
+> > When the hrtimer goes off we sample the values in the hardware
+> > counters. Because we obviously can't rely on the hrtimer going off at
+> > exactly the sample period (say, every 1000 cache misses) the values need
+> > to be weighted by the variable period since the last hrtimer went
+> > off. This is so that we can compensate for the variability in hrtimer
+> > period.
 > > 
-> > Without contact tracking, it is hard to imagine activation filtering to work
-> > properly. I would advocate to remove this functionality from the driver, and add
-> > it in userspace instead.
-> > 
-> > Henrik
+> > If perf record tries to create a sampling counter and the hardware
+> > doesn't support it then we'll fall back to creating an event group with
+> > a hrtimer.
 > 
-> I don't think its quite time to remove these filters.  There still isn't a
-> proper replacement that's readily accessible to most users.  From what I've
-> heard many still use the wacom driver to support touch in X.
 > 
-> Tracking only helps if you increase the activation slack to more than 1 contact
-> (the current default), and only if you assume the you will see ghosts span
-> multiple frames in two different locations, which may be even less likely than
-> seeing a ghost in one spot for two frames.
+> Why is this changing kernel code?
 > 
-> Maybe in a few more months or another year, it will make more sense to remove
-> the filters from this driver.  In the mean time, is it really preferable to
-> leave them undocumented?
+> You can create those groups in userspace..
 
-Agreed. I have now applied the patch, thanks Rafi.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I'm lost. Is it possible to do this patch entirely in userspace? How do
+we periodically sample the counters if it's not being done in the
+kernel?
