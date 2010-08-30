@@ -1,140 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab0H3AWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 20:22:20 -0400
-Received: from smtp107.sbc.mail.gq1.yahoo.com ([67.195.14.110]:36195 "HELO
-	smtp107.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753587Ab0H3AWT (ORCPT
+	id S1754175Ab0H3AZS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 20:25:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45576 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab0H3AZR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 20:22:19 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: lhPjC9gVM1lrjhOn_sqlhwZ72msBUK1XF7OzV.rKND2ExLv
- e1qTMOG8SOROs9IszLWiIa05f7nrDMqn3Y3nRDdLmk9VXCidCdp2pyfJoRD_
- cx0aEoprYRtV0ymmjczd3ni_Qbvu3hPX0et_Iq_531eukaVP7fXEVu9oEURV
- JLR0i5u7lKnWC9ucqOP_b1JzHJpEMo2MloiBR1yT9W8Drsb3YVD80qr06yrM
- IrPgLHdtwfl1wk6y9TWyEa1a8fl.rIGxHU_bWyZBgDh5JI9uh3Yf6Kq1cO2l
- tB4sVoWVPG9ohHWLLHH5xnm0lBPlt72T9azMJhaSzUnT2Dkki4soUrHd8KJN
- t.MtZFF7RD5ji0dvY
-X-Yahoo-Newman-Property: ymail-3
-Subject: [ANNOUNCE] TCM/LIO v4.0.0-rc3 for 2.6.36-rc3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-Content-Type: text/plain
-Date: Sun, 29 Aug 2010 17:18:27 -0700
-Message-Id: <1283127507.32007.403.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Sun, 29 Aug 2010 20:25:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wapMNPrjXIBbSMNnAyz0s8TsUR98Qs4EYHgXGChi4WdEp3DV/1AyZR8Kls8VqWK3z4
+         ND17LcYFE3l3RWsyPO+hgQVYf9JS90dHlQHc8PgY3lylMqWf9XdmjXx4qhERXLwkBg+x
+         NvyPDt7Gty7avzYOZp+q/WjT31tbOGjk3IHB0=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=G+=Hc3e8Z+HH6yJPGi4TM3TyYZ6UvdUpHyBsC@mail.gmail.com>
+References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
+	<1283011478-27237-7-git-send-email-brgerst@gmail.com>
+	<AANLkTi=G+=Hc3e8Z+HH6yJPGi4TM3TyYZ6UvdUpHyBsC@mail.gmail.com>
+Date: Sun, 29 Aug 2010 20:25:16 -0400
+Message-ID: <AANLkTinVQFHG1nh5XBd1tJ29fBDjQc=QRThXySiPWd2q@mail.gmail.com>
+Subject: Re: [PATCH 06/11] x86-64: Fix %cs value in convert_from_fxsr()
+From: Brian Gerst <brgerst@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings all,
+On Sun, Aug 29, 2010 at 2:41 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst <brgerst@gmail.com> wrote:
+>> While %ds still contains the userspace selector, %cs is KERNEL_CS
+>> at this point.  Always get %cs from pt_regs.
+>>
+>> It actually is possible to get the correct segments for compat tasks,
+>> but that involves using the [f]xsave instruction without a REX.W prefix.
+>>
+>> Signed-off-by: Brian Gerst <brgerst@gmail.com>
+>
+> It might be just me but the above description doesn't explain
+> anything. What's the problem here? What is this fixing?
 
-I am very pleased to announce that TCM/LIO v4.0.0-rc3 for the 2.6.36-rc3 kernel
-has been pushed into lio-core-2.6.git/lio-4.0.  Along with the numerous bugfixes
-listed in the shortlog below, the main cleanups and features since v4.0.0-rc2
-was released earlier this month include:
+The %cs segment being reported to a compat task is flat out wrong.  It
+is getting KERNEL_CS when it should be some userspace segment.  The
+code segment may still be wrong, because the %cs in pt_regs may not
+have been the segment where the instruction that flagged the exception
+executed from.  That could be fixed by using fxsave without a REX.W
+prefix when saving the state of compat tasks, which would save the
+segment and 32-bit offset instead of the 64-bit offset for the code
+and data pointers.  This is such a corner case that it probably isn't
+worth putting much effort into fixing unless someone demonstrates a
+real need for it.
 
-	*) Major cleanups of TCM/pSCSI struct scsi_device registration code (hch assist)
-	*) Remove legacy linux_blockdevice_[claim,release]() usage (hch assist)
-	*) Fix struct se_mem memory mapping across N struct se_task for
-	   max_sectors=255 backstores
-	*) Conversion of TCM Core to follow mainline convention and use
-	   include/linux/scatterlist.h wrappers wherever possible.
-	*) Add proper 4k -> 512 block_size conversion for TCM/IBLOCK (jaxboe assist)
-	*) New tcm_mod_builder.py script and mini-HOWTO for generating new
-	   TCM fabric modules with functional+runnable configfs skeletons
-	*) TCM level SYNCHRONIZE_CACHE_* emulation w/ support for WriteCache and
-	   FUA WRITE emulation with FILEIO and IBLOCK subsystem plugins. (hch assist)
-	   
-A big thanks (again) to hch, jaxboe, and everyone involved in this release
-for their very gracious help and feedback!
-
-Best,
-
---nab
-
-Nicholas Bellinger (33):
-  tcm: Add __module_get() and module_put() calls to se_core_add_hba()
-    and se_core_shutdown_hba()
-  tcm_loop: Fix NULL pointer dereference in tcm_loop_queuecommand()
-  tcm: Make se_core_add_hba() use try_module_get() for struct
-    se_subsystem_api->sub_owner
-  tcm: Fix non-existent TPG LUN OOPs in target_fabric_mappedlun_link()
-  tcm: Merge struct se_subsystem_spc into struct se_subsystem_api and
-    convert subsystem plugins
-  tcm/fileio: Remove fd_seek() usage for local scope loff_t usase
-  tcm/pscsi: Remove pscsi_create_virtdevice_from_fd() usage
-  tcm/pscsi: Remove legacy LINUX_VPD_PAGE_CHECK logic
-  tcm/pscsi: Remove internal TYPE_DISK
-    linux_blockdevice_[claim,release]() usage
-  tcm/iblock: Fix NULL struct iblock_dev->ibd_bd case in
-    iblock_free_device()
-  tcm/pscsi: Fix NULL struct pscsi_dev_virt->pdv_bd case for TYPE_DISK
-    in pscsi_free_device()
-  tcm/pscsi: Remove remaining struct scsi_disk references
-  tcm/ramdisk: Fix NULL pointer dereference in rd_DIRECT_free_DMA()
-  tcm: Convert transport_map_sg_to_mem() to use sg_next()
-  tcm: Remove *task_offset_in parameter from
-    transport_generic_get_cdb_count()
-  tcm: Minor naming cleanup for dev_obj_do_se_mem_map()
-  tcm: Remove task_offset parameter from transport_map_sg_to_mem()
-  tcm: Make transport_calc_sg_num() properly handle task_offset
-  tcm: Make transport_map_mem_to_sg() properly handle task_offset
-  tcm: Remove legacy transport_map_mem_to_mem()
-  tcm: Remove remaining code out of target_core_seobj.c
-  tcm: Remove legacy struct se_lun->lun_type_ptr
-  tcm/iblock: Add SCSI LBA -> block_lba conversion for non 512-byte
-    block_size
-  tcm/iblock: Convert iblock_map_task_SG() to use for_each_sg()
-  tcm: Add Documentation/target/tcm_mod_builder.py script and
-    mini-HOWTO
-  tcm: Add WriteCache and FUADPO infrastructure and attributes
-  tcm: Add SYNCHRONIZE_CACHE* CDB infrastructure and emulation
-  tcm: Add WriteCache and DPOFUA emulation bits to MODE_SENSE
-  tcm/fileio: Add WriteCache and Forced Unit Access WRITE emulation
-  tcm/fileio: Remove struct se_subsystem_api->do_sync_cache() usage
-  tcm: Remove struct se_subsystem_api->do_sync_cache()
-  tcm/iblock: Add WriteCache and Forced Unit Access WRITE emulation
-  lio-core v4.0.0-rc3
-
- Documentation/target/tcm_mod_builder.py          | 1039 ++++++++++++++++++++++
- Documentation/target/tcm_mod_builder.txt         |  138 +++
- drivers/target/Kbuild                            |    1 -
- drivers/target/lio-target/iscsi_target_mib.c     |    8 +-
- drivers/target/lio-target/iscsi_target_version.h |    2 +-
- drivers/target/target_core_alua.c                |    6 +-
- drivers/target/target_core_configfs.c            |   17 +-
- drivers/target/target_core_device.c              |  170 ++++-
- drivers/target/target_core_fabric_configfs.c     |   14 +-
- drivers/target/target_core_file.c                |  249 ++++--
- drivers/target/target_core_hba.c                 |   29 +
- drivers/target/target_core_iblock.c              |  219 ++++--
- drivers/target/target_core_iblock.h              |    1 +
- drivers/target/target_core_mib.c                 |    8 +-
- drivers/target/target_core_pscsi.c               |  484 +---------
- drivers/target/target_core_pscsi.h               |    1 +
- drivers/target/target_core_rd.c                  |   47 +-
- drivers/target/target_core_seobj.c               |  215 -----
- drivers/target/target_core_seobj.h               |   47 -
- drivers/target/target_core_stgt.c                |   32 +-
- drivers/target/target_core_tpg.c                 |   15 +-
- drivers/target/target_core_transport.c           |  758 +++++++++-------
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c   |   11 +-
- include/target/target_core_base.h                |   14 +-
- include/target/target_core_device.h              |   10 +
- include/target/target_core_transport.h           |   99 ++-
- 26 files changed, 2336 insertions(+), 1298 deletions(-)
- create mode 100755 Documentation/target/tcm_mod_builder.py
- create mode 100644 Documentation/target/tcm_mod_builder.txt
- delete mode 100644 drivers/target/target_core_seobj.c
- delete mode 100644 drivers/target/target_core_seobj.h
-
-
+--
+Brian Gerst
