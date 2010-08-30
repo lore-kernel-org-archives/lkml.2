@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab0H3V4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 17:56:31 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:44335 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756273Ab0H3V4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 17:56:21 -0400
-Message-ID: <4C7C279C.507@simon.arlott.org.uk>
-Date: Mon, 30 Aug 2010 22:50:20 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
+	id S1756221Ab0H3V4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 17:56:04 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45900 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab0H3V4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 17:56:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kLwvgh91qRydtcM3Ciy44EcuEzKvMKKBSWuztAESKdb+fl75er4COwBPj3m0auYC+Q
+         kuCQi7+nlVNGjheER2pw71FToxi8UUkZ3kLJVpGcHQmjuR7VFgAlR5SdJkpZUVG4rG9L
+         5iwP9EeWpt8P3vzTmhQnAiBoOKPJBXZCY8bwY=
+Date: Mon, 30 Aug 2010 14:55:56 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Neil Leeder <nleeder@codeaurora.org>
+Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Horace Fu <horace.fu@quantatw.com>, Hsin.Wu@quantatw.com,
+        mcuos.com@gmail.com
+Subject: Re: [PATCH 0/1] input: keyboard: add qci keyboard driver
+Message-ID: <20100830215556.GC28865@core.coreip.homeip.net>
+References: <4C7838DD.1020004@codeaurora.org>
+ <201008271533.01542.dmitry.torokhov@gmail.com>
+ <4C7BF6D2.5080501@codeaurora.org>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: [PATCH] USB: output an error message when the pipe type doesn't match
- the endpoint type
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C7BF6D2.5080501@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f661c6f8c67bd55e93348f160d590ff9edf08904 adds a check of the pipe type if
-CONFIG_USB_DEBUG is enabled, but it doesn't output anything if this scenario
-occurs.
+On Mon, Aug 30, 2010 at 02:22:10PM -0400, Neil Leeder wrote:
+> On 8/27/2010 6:33 PM, Dmitry Torokhov wrote:
+> >No, this is crazy... This is a twin-brother of the touchpad driver and
+> >I really do not understand why chip claiming to have PS/2 interface
+> >(3 ports if I were to believe the diagram) would not allow us talk to
+> >the devices...
+> 
+> I didn't provide a key bit of information, sorry. The keyboard is
+> not attached to the EC's PS/2 port. It is on a matrix of GPIOs.
 
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
-Cc: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/core/urb.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+And still you are using only one GPIO in your driver? While WPCE775x
+does seem to have matrix keypad support I think that you are using one
+of the 3 PS/2 ports, like your touchpad does.
 
-diff --git a/drivers/usb/core/urb.c b/drivers/usb/core/urb.c
-index 419e6b3..c14fc08 100644
---- a/drivers/usb/core/urb.c
-+++ b/drivers/usb/core/urb.c
-@@ -401,8 +401,11 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
- 	};
- 
- 	/* Check that the pipe's type matches the endpoint's type */
--	if (usb_pipetype(urb->pipe) != pipetypes[xfertype])
-+	if (usb_pipetype(urb->pipe) != pipetypes[xfertype]) {
-+		dev_err(&dev->dev, "BOGUS urb xfer, pipe %x != type %x\n",
-+			usb_pipetype(urb->pipe), pipetypes[xfertype]);
- 		return -EPIPE;		/* The most suitable error code :-) */
-+	}
- 
- 	/* enforce simple/standard policy */
- 	allowed = (URB_NO_TRANSFER_DMA_MAP | URB_NO_INTERRUPT | URB_DIR_MASK |
+> 
+> I was trying to explain that even though the firmware on the EC uses
+> 0xF4 written over i2c to initialize it, it doesn't appear to support
+> other PS/2 commands directed to the keyboard on the GPIO matrix.
+> 
+
+The device is initialized with 0xf4; the device is supposed to respond
+with 0xfa; I wonder what scancodes the device reports... It smells
+strongly of PS/2.
+
+Also, it is not controller that supports PS/2 commands but rather the
+device itself so I am still hopeful that we could make use of the
+standard drivers.
+
+Wan, you worked at Nuvoton, do you know if wpce775 fully supports PS/2
+interface? 
+
 -- 
-1.7.0.4
--- 
-Simon Arlott
+Dmitry
