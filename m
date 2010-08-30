@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab0H3McV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 08:32:21 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:47276 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755414Ab0H3McU (ORCPT
+	id S1752519Ab0H3Mdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 08:33:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41297 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709Ab0H3Mdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 08:32:20 -0400
-Date: Mon, 30 Aug 2010 08:32:15 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: [RELEASE] LTTng 0.226 for kernel 2.6.35.4
-Message-ID: <20100830123215.GA30031@Krystal>
-References: <20100830121335.GA17882@Krystal>
+	Mon, 30 Aug 2010 08:33:42 -0400
+Date: Mon, 30 Aug 2010 14:33:05 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Neil Brown <neilb@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
+Subject: Re: [REGRESSION PATCH] NFS: let NFS_V4 and NFSD_V4 enforce CRYPTO
+Message-ID: <20100830123305.GB14459@pengutronix.de>
+References: <20100825084912.GA10293@pengutronix.de> <1282727119-8295-1-git-send-email-u.kleine-koenig@pengutronix.de> <20100827061139.GA27851@pengutronix.de> <20100830082618.GA24402@pengutronix.de> <20100830203659.3b9884f6@notabene> <20100830121022.GA14459@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100830121335.GA17882@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:31:28 up 219 days, 15:08,  4 users,  load average: 0.10, 0.08,
-	0.06
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100830121022.GA14459@pengutronix.de>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And LTTng 0.226 is a cleanup version removing the psrwlock patches, which were
-unused.
+On Mon, Aug 30, 2010 at 02:10:22PM +0200, Uwe Kleine-König wrote:
+> On Mon, Aug 30, 2010 at 08:36:59PM +1000, Neil Brown wrote:
+> > On Mon, 30 Aug 2010 10:26:18 +0200
+> > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> > 
+> > > [extending Cc: to contain Neil and linux-nfs]
+> > > 
+> > > On Fri, Aug 27, 2010 at 08:11:39AM +0200, Uwe Kleine-König wrote:
+> > > > On Wed, Aug 25, 2010 at 11:05:19AM +0200, Uwe Kleine-König wrote:
+> > 
+> > I would tend to wait more than 2 days between pings..
+> 
+> 	ukl@octopus:~/gsrc/linux-2.6$ git rev-parse linus/master
+> 	2bfc96a127bc1cc94d26bfaa40159966064f9c8c
+> 	ukl@octopus:~/gsrc/linux-2.6$ git grep -E CRYPTO= linus/master arch/arm/configs/ | wc -l
+> 	6
+> 	ukl@octopus:~/gsrc/linux-2.6$ git grep -E NFSD?_V4 linus/master arch/arm/configs/ | wc -l
+> 	37
+This is wrong, because the last line counts configs having both NFSD_V4
+and NFS_V4 twice.  There are "only" 31 that have at least one of NFSD_V4
+and NFS_V4.  But only one of these (at572d940hfek_defconfig) has CRYPTO
+set, too.
+ 
+> So I think that at least 31 arm-defconfigs don't build because of this
+> issue.  And as this kind of error greatly hurts automatic bisection I
+> thought this to be critical enough to be a bit impatient.
+To extend the test to non-ARM land:
 
-Thanks,
+ukl@octopus:~/gsrc/linux-2.6$ git ls-tree -r --name-only linus/master | grep defconfig | xargs grep -l -E 'CONFIG_NFSD?_V4=' | xargs grep -L CONFIG_CRYPTO= | wc -l
+108
 
-Mathieu
+(Thinking about it again probably not all of them are broken, because
+there might be other symbols selecting CRYPTO.)
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Hi,
-> 
-> I just rebased LTTng on top of 2.6.35.4, and pulled v11 of "generic alignment"
-> into the tree.
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+Best regards
+Uwe
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
