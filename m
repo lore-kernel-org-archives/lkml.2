@@ -1,144 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab0H3Da2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 23:30:28 -0400
-Received: from mother.openwall.net ([195.42.179.200]:44085 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754556Ab0H3Da0 (ORCPT
+	id S1754691Ab0H3DnR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 23:43:17 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:41994 "EHLO
+	mx02.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754616Ab0H3DnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 23:30:26 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Aug 2010 23:30:26 EDT
-Date: Mon, 30 Aug 2010 07:23:31 +0400
-From: Solar Designer <solar@openwall.com>
-To: Roland McGrath <roland@redhat.com>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        oss-security@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] exec argument expansion can inappropriately trigger OOM-killer
-Message-ID: <20100830032331.GA22773@openwall.com>
-References: <20100827220258.GF4703@outflux.net> <20100830005648.431B7400D9@magilla.sf.frob.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100830005648.431B7400D9@magilla.sf.frob.com>
-User-Agent: Mutt/1.4.2.3i
+	Sun, 29 Aug 2010 23:43:15 -0400
+Date: Sun, 29 Aug 2010 23:42:53 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: kexec <kexec@lists.infradead.org>, linux-next@vger.kernel.org,
+        torvalds@linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Message-ID: <1888320510.1487031283139773505.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4C7A5455.7060905@kernel.org>
+Subject: Re: kdump regression compared to v2.6.35
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 05:56:48PM -0700, Roland McGrath wrote:
-> IMHO unlimited should mean unlimited.
 
-In general, I'd agree, however let's recall that back in 2.2 days we
-introduced strnlen_user() and the "max" argument to count() to prevent a
-userspace program from making the kernel loop busily for too long.
-IIRC, prior to that fix, I was able to cause the kernel to loop for tens
-of minutes in a single execve() call on an Alpha with 128 MB RAM, by
-using repeated mappings of the same pages (almost 200 GB total).
+----- "Tejun Heo" <tj@kernel.org> wrote:
 
-Now it appears that, besides the issue that started this thread, the
-same problem I mentioned above got re-introduced.  We still have
-strnlen_user() and the "max" argument to count(), but we no longer have
-hard limits for "max".  Someone set MAX_ARG_STRINGS to 0x7FFFFFFF, and
-this is just too much.  MAX_ARG_STRLEN is set to 32 pages, and these two
-combined allow a userspace program to make the kernel loop for days.
-
-So I think that we should re-introduce some artificial limit(s), maybe
-adjustable by root (by the host system's real root only when container
-virtualization is involved).  Maybe we should lower MAX_ARG_STRINGS
-and/or maybe we should limit the portion of stack space usable for argv
-to, say, 0.75 GB (or even less).
-
-> So, on that score, I'd leave this
-> constraint out and just say whatever deficiencies in the OOM killer (or in
-> whatever should make a manifestly too-large allocation get ENOMEM) should
-> just be fixed separately.
-
-I think the "OOM killer problem" should be fixed too.
-
-> But that aside, I'll just consider the intent stated in the comment in
-> get_arg_page:
-> 		 * Limit to 1/4-th the stack size for the argv+env strings.
-> 		 * This ensures that:
-> 		 *  - the remaining binfmt code will not run out of stack space,
-> 		 *  - the program will have a reasonable amount of stack left
-> 		 *    to work from.
-> To effect "1/4th the stack size", a cap at TASK_SIZE/4 does make some sense,
-> since TASK_SIZE is less than RLIM_INFINITY even in the pure 32-bit world,
-> and that is the true theoretical limit on stack size.
+> Hello,
 > 
-> The trouble here, both for that stated intent, and for this "exploit",
-> is which TASK_SIZE that is on a biarch machine.  In fact, it's the
-> TASK_SIZE of the process that called execve.  (get_arg_page is called
-> from copy_strings, from do_execve before search_binary_handler--i.e.,
-> before anything has looked at the file to decide whether it's going to
-> be a 32-bit or 64-bit task on exec.)  If it's a 32-bit process exec'ing
-> a 64-bit program, it's the 32-bit TASK_SIZE (perhaps as little as 3GB).
-> So that's a limit of 0.75GB on a 64-bit program, which might actually do
-> just fine with 2 or 3GB.  If it's a 64-bit process exec'ing a 32-bit
-> program, it's the 64-bit TASK_SIZE (128TB on x86-64).  So that's a limit
-> of 32TB, which is perhaps not that helpfully less than 2PB minus 1 byte
-> (RLIM_INFINITY/4) as far as preventing any over-allocation DoS in practice.
-
-That's a very good point!
-
-> If you want to constrain it this way, it's probably simpler just to use
-> a smaller hard limit for RLIM_STACK at boot time (and hence system-wide).
-
-Right.
-
-> But it sounds like all you really need is to fix the OOM/allocation
-> behavior for huge stack allocations.
-
-No, we need both.
-
-Additionally, 64bit_dos.c mentions that "it triggers a BUG() as the
-stack tries to expand around the address space when shifted".  Perhaps
-limiting the stack size would deal with that, but maybe the "bug" needs
-to be patched elsewhere as well.  grsecurity has the following hunk:
-
-@@ -505,7 +520,8 @@ static int shift_arg_pages(struct vm_are
- 	unsigned long new_end = old_end - shift;
- 	struct mmu_gather *tlb;
- 
--	BUG_ON(new_start > new_end);
-+	if (new_start >= new_end || new_start < mmap_min_addr)
-+		return -EFAULT;
- 
- 	/*
- 	 * ensure there are no vmas between where we want to go
-
-which is likely part of a fix (but not the entire fix) for what the
-comment in 64bit_dos.c refers to.  However, I was not able to trigger
-the BUG_ON() on RHEL5'ish kernels by simply running the 64bit_dos
-program (64-bit to 32-bit exec) on two systems, one with 2 GB RAM, the
-other with 4 GB.  Of course, I set "ulimit -s unlimited" first.
-
-On the 2 GB system, I saw the OOM killer problem (several other
-processes got killed before 64bit_dos was killed as well).  On the 4 GB
-system, exec succeeded (after looping in the kernel for a few seconds,
-and then the newly started program failed because of its address space
-exhaustion).  Maybe the BUG is only triggerable on certain other kernel
-versions, or maybe I didn't try hard enough (I certainly did not try
-very hard - I did not review the code closely).
-
-Someone could want to look into this aspect as well.
-
-grsecurity's added check against mmap_min_addr (and the reference to it
-in the "exploit's" comment) is also very curious.  It can be just a way
-to avoid triggering another BUG() elsewhere, or it can be just an extra
-hardening measure - but it could also be "for real".  We could want to
-double-check that there wasn't an mmap_min_addr bypass possible here.
-
-Overall, there are multiple issues here (maybe up to four?) and multiple
-things to review the code for.
-
-Does anyone (with more time than me) want to look into these for real?
-(I sure hope so.)
-
-Thanks,
-
-Alexander
+> On 08/29/2010 02:03 PM, CAI Qian wrote:
+> > 
+> > ----- "Tejun Heo" <tj@kernel.org> wrote:
+> > 
+> >> On 08/29/2010 01:56 PM, CAI Qian wrote:
+> >>> It is easy to reproduce by passing maxcpus=1 to the first kernel.
+> >>
+> >> Do you mean booting w/ maxcpus=1 hangs the first kernel even w/o
+> >> kdump?
+> > Yes, here was the log,
+> 
+> Hmmm... I can't reproduce it here.  I wonder what the difference is.
+> Can you please trigger sysrq-t after the boot is hung and post the
+> result?
+Sysrq keys did not work at this early stage of booting for me even adding sysrq_always_enabled.
+> Thanks.
+> 
+> -- 
+> tejun
