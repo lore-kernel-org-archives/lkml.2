@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0H3MzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 08:55:25 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36902 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab0H3MzY convert rfc822-to-8bit (ORCPT
+	id S1755096Ab0H3M4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 08:56:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38456 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab0H3M4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 08:55:24 -0400
-Subject: Re: [RFC][PATCH 3/5] perf: Add hrtimer code for PMI-less hardware
- counters
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-In-Reply-To: <38d993baf1328403d9a1c4a2f012c4aa0e19feab.1283123521.git.matt@console-pimps.org>
-References: <cover.1283123521.git.matt@console-pimps.org>
-	 <38d993baf1328403d9a1c4a2f012c4aa0e19feab.1283123521.git.matt@console-pimps.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 30 Aug 2010 14:55:02 +0200
-Message-ID: <1283172902.1820.897.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 30 Aug 2010 08:56:03 -0400
+Date: Mon, 30 Aug 2010 14:55:56 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 3/3 v2] dmaengine: Add Freescale i.MX SDMA support
+Message-ID: <20100830125556.GL1473@pengutronix.de>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de> <20100823174852.GB26928@pengutronix.de> <AANLkTimmEKfErV17RWNBO-pVCfFtFw=yJL2v92UBN0=2@mail.gmail.com> <201008281727.10913.marek.vasut@gmail.com> <20100828161858.GI1473@pengutronix.de> <AANLkTimhFAhR3sSJWo3b8_rMk5GCQfOwG0T36uEs=DjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimhFAhR3sSJWo3b8_rMk5GCQfOwG0T36uEs=DjA@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 14:45:20 up 58 days,  3:56, 31 users,  load average: 0.21, 0.30,
+	0.34
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-30 at 13:13 +0100, Matt Fleming wrote:
-> Currently, it's impossible to periodically sample hardware counters that
-> lack performance monitoring interrupt (PMI) support. In order to sample
-> these counters we can create an event group which is backed by a
-> hrtimer, thereby simulating a PMI.
+On Sun, Aug 29, 2010 at 02:35:01PM +0200, Linus Walleij wrote:
+> 2010/8/28 Sascha Hauer <s.hauer@pengutronix.de>:
 > 
-> When the hrtimer goes off we sample the values in the hardware
-> counters. Because we obviously can't rely on the hrtimer going off at
-> exactly the sample period (say, every 1000 cache misses) the values need
-> to be weighted by the variable period since the last hrtimer went
-> off. This is so that we can compensate for the variability in hrtimer
-> period.
+> > Peripherals integrated into a SoC like the SDMA engine here are
+> > normally accessible in native endianess and thus need the __raw_*
+> > functions.
 > 
-> If perf record tries to create a sampling counter and the hardware
-> doesn't support it then we'll fall back to creating an event group with
-> a hrtimer.
+> So the SDMA actually switch and twist around the endianness of
+> its registers if it's synthesized into a bigendian version of the system?
+> 
+> Or hardware-dynamically even depending on the setting of the
+> endianness bit in the ARM core?
 
+I think it's the bus between the ARM core and the periherals which
+changes the endianess. I have never tried running an i.MX in big endian
+mode, so I can only guess how the system really behaves in BE mode.
 
-Why is this changing kernel code?
+Sascha
 
-You can create those groups in userspace..
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
