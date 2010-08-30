@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab0H3GOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 02:14:00 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:59323 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab0H3GN7 (ORCPT
+	id S1752194Ab0H3GPP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 02:15:15 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:54066 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab0H3GPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 02:13:59 -0400
-Message-ID: <4C7B4C1F.7010003@linux.vnet.ibm.com>
-Date: Mon, 30 Aug 2010 11:43:51 +0530
-From: divya <dipraksh@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Mon, 30 Aug 2010 02:15:13 -0400
+Message-ID: <4C7B4C23.8020100@ct.jp.nec.com>
+Date: Mon, 30 Aug 2010 15:13:55 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: linuxppc-dev@ozlabs.org, mikey@neuling.org, linux-next@vger.kernel.org
-Subject: Re: Power machines fail to boot after build being successful
-References: <4C764F52.5050707@linux.vnet.ibm.com> <2311.1282871746@neuling.org> <20100827120144.1736a2f6.sfr@canb.auug.org.au>
-In-Reply-To: <20100827120144.1736a2f6.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Mike Snitzer <snitzer@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Hannes Reinecke <hare@suse.de>, tytso@mit.edu,
+        linux-scsi@vger.kernel.org, jaxboe@fusionio.com, jack@suse.cz,
+        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
+        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
+        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
+        dm-devel@redhat.com
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com> <4C739DE9.5070803@ct.jp.nec.com> <4C73FA8F.5080800@kernel.org> <4C74CD95.1000208@ct.jp.nec.com> <20100825152831.GA8509@redhat.com> <4C7789BE.1060609@ct.jp.nec.com> <20100827134940.GA22504@redhat.com>
+In-Reply-To: <20100827134940.GA22504@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 August 2010 07:31 AM, Stephen Rothwell wrote:
-> Hi Mikey,
->
-> On Fri, 27 Aug 2010 11:15:46 +1000 Michael Neuling<mikey@neuling.org>  wrote:
->    
->>      
->>> After successfully building the kernel version
->>> 2.6.36-rc2-git4(commitid d4348c678977c) with the config file
->>> attached(used make oldconfig), P5 and P6 power machines fails to
->>> reboot with the following logs
+Hi Mike,
+
+On 08/27/2010 10:49 PM +0900, Mike Snitzer wrote:
+> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
+>> On 08/26/2010 12:28 AM +0900, Mike Snitzer wrote:
+>>> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
+>>>> Anyway, as you said, the flush error handling of dm-mpath is already
+>>>> broken if data loss really happens on any storage used by dm-mpath.
+>>>> Although it's a serious issue and quick fix is required, I think
+>>>> you may leave the old behavior in your patch-set, since it's
+>>>> a separate issue.
+>>> 
+>>> I'm not seeing where anything is broken with current mpath.  If a
+>>> multipathed LUN is WCE=1 then it should be fair to assume the cache is
+>>> mirrored or shared across ports.  Therefore retrying the SYNCHRONIZE
+>>> CACHE is needed.
 >>>
->>> Logs collected while rebooting into today next, same occurs with the
->>> upstream kernel too.
->>>        
->> This will fix your problem:
->> http://patchwork.ozlabs.org/patch/62757/
->>      
-> I have seen something similar in my linux-next boot tests, so I will add
-> this patch to linux-next for today.
->    
-Hi,
+>>> Do we still have fear that SYNCHRONIZE CACHE can silently drop data?
+>>> Seems unlikely especially given what Tejun shared from SBC.
+>> 
+>> Do we have any proof to wipe that fear?
+>>
+>> If retrying on flush failure is safe on all storages used with multipath
+>> (e.g. SCSI, CCISS, DASD, etc), then current dm-mpath should be fine in
+>> the real world.
+>> But I'm afraid if there is a storage where something like below can happen:
+>>     - a flush command is returned as error to mpath because a part of
+>>       cache has physically broken at the time or so, then that part of
+>>       data loses and the size of the cache is shrunk by the storage.
+>>     - mpath retries the flush command using other path.
+>>     - the flush command is returned as success to mpath.
+>>     - mpath passes the result, success, to upper layer, but some of
+>>       the data already lost.
+> 
+> That does seem like a valid concern.  But I'm not seeing why its unique
+> to SYNCHRONIZE CACHE.  Any IO that fails on the target side should be
+> passed up once the error gets to DM.
 
-The same problem occurs on the linux-tree , now that since the patch is integrated into linux-next,
-im not able to find the problem with linux-next-20100827.
+See the Tejun's explanation again:
+    http://marc.info/?l=linux-kernel&m=128267361813859&w=2
+What I'm concerning is whether the same thing as Tejun explained
+for ATA can happen on other types of devices.
 
-When will the patch be integrated with the linux-tree.
 
-Thanks
-Divya
+Normal write command has data and no data loss happens on error.
+So it can be retried cleanly, and if the result of the retry is
+success, it's really success, no implicit data loss.
 
+Normal read command has a sector to read.  If the sector is broken,
+all retries will fail and the error will be reported upwards.
+So it can be retried cleanly as well.
+
+Thanks,
+Kiyoshi Ueda
