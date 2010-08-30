@@ -1,83 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab0H3D3q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 23:29:46 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:49319 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616Ab0H3D3p (ORCPT
+	id S1754686Ab0H3Da2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 23:30:28 -0400
+Received: from mother.openwall.net ([195.42.179.200]:44085 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754556Ab0H3Da0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 23:29:45 -0400
-Date: Mon, 30 Aug 2010 12:29:39 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-Message-ID: <20100830032935.GA18072@verge.net.au>
-References: <20100830130453.d810b086.sfr@canb.auug.org.au>
-MIME-Version: 1.0
+	Sun, 29 Aug 2010 23:30:26 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Aug 2010 23:30:26 EDT
+Date: Mon, 30 Aug 2010 07:23:31 +0400
+From: Solar Designer <solar@openwall.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        oss-security@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] exec argument expansion can inappropriately trigger OOM-killer
+Message-ID: <20100830032331.GA22773@openwall.com>
+References: <20100827220258.GF4703@outflux.net> <20100830005648.431B7400D9@magilla.sf.frob.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100830130453.d810b086.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100830005648.431B7400D9@magilla.sf.frob.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 01:04:53PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
-> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
-> 
-> Caused by commit 8870f8427b8fe30b2684b9e569e5ce038faf41ac ("IPVS: ICMPv6
-> checksum calculation").  I added the following patch:
-> [I think we have seen this before :-(]
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 30 Aug 2010 13:01:20 +1000
-> Subject: [PATCH] IPVS: include net/ip6_checksum.h for csum_ipv6_magic
-> 
-> Fixes this build error:
-> 
-> net/netfilter/ipvs/ip_vs_core.c: In function 'ip_vs_nat_icmp_v6':
-> net/netfilter/ipvs/ip_vs_core.c:640: error: implicit declaration of function 'csum_ipv6_magic'
+On Sun, Aug 29, 2010 at 05:56:48PM -0700, Roland McGrath wrote:
+> IMHO unlimited should mean unlimited.
 
-Sorry about that, I didn't notice it because it doesn't show up on x86.
+In general, I'd agree, however let's recall that back in 2.2 days we
+introduced strnlen_user() and the "max" argument to count() to prevent a
+userspace program from making the kernel loop busily for too long.
+IIRC, prior to that fix, I was able to cause the kernel to loop for tens
+of minutes in a single execve() call on an Alpha with 128 MB RAM, by
+using repeated mappings of the same pages (almost 200 GB total).
 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Now it appears that, besides the issue that started this thread, the
+same problem I mentioned above got re-introduced.  We still have
+strnlen_user() and the "max" argument to count(), but we no longer have
+hard limits for "max".  Someone set MAX_ARG_STRINGS to 0x7FFFFFFF, and
+this is just too much.  MAX_ARG_STRLEN is set to 32 pages, and these two
+combined allow a userspace program to make the kernel loop for days.
 
-> ---
->  net/netfilter/ipvs/ip_vs_core.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+So I think that we should re-introduce some artificial limit(s), maybe
+adjustable by root (by the host system's real root only when container
+virtualization is involved).  Maybe we should lower MAX_ARG_STRINGS
+and/or maybe we should limit the portion of stack space usable for argv
+to, say, 0.75 GB (or even less).
+
+> So, on that score, I'd leave this
+> constraint out and just say whatever deficiencies in the OOM killer (or in
+> whatever should make a manifestly too-large allocation get ENOMEM) should
+> just be fixed separately.
+
+I think the "OOM killer problem" should be fixed too.
+
+> But that aside, I'll just consider the intent stated in the comment in
+> get_arg_page:
+> 		 * Limit to 1/4-th the stack size for the argv+env strings.
+> 		 * This ensures that:
+> 		 *  - the remaining binfmt code will not run out of stack space,
+> 		 *  - the program will have a reasonable amount of stack left
+> 		 *    to work from.
+> To effect "1/4th the stack size", a cap at TASK_SIZE/4 does make some sense,
+> since TASK_SIZE is less than RLIM_INFINITY even in the pure 32-bit world,
+> and that is the true theoretical limit on stack size.
 > 
-> diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
-> index 69661db..edbfb96 100644
-> --- a/net/netfilter/ipvs/ip_vs_core.c
-> +++ b/net/netfilter/ipvs/ip_vs_core.c
-> @@ -40,6 +40,7 @@
->  #include <net/udp.h>
->  #include <net/icmp.h>                   /* for icmp_send */
->  #include <net/route.h>
-> +#include <net/ip6_checksum.h>
->  
->  #include <linux/netfilter.h>
->  #include <linux/netfilter_ipv4.h>
-> -- 
-> 1.7.1
-> 
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> The trouble here, both for that stated intent, and for this "exploit",
+> is which TASK_SIZE that is on a biarch machine.  In fact, it's the
+> TASK_SIZE of the process that called execve.  (get_arg_page is called
+> from copy_strings, from do_execve before search_binary_handler--i.e.,
+> before anything has looked at the file to decide whether it's going to
+> be a 32-bit or 64-bit task on exec.)  If it's a 32-bit process exec'ing
+> a 64-bit program, it's the 32-bit TASK_SIZE (perhaps as little as 3GB).
+> So that's a limit of 0.75GB on a 64-bit program, which might actually do
+> just fine with 2 or 3GB.  If it's a 64-bit process exec'ing a 32-bit
+> program, it's the 64-bit TASK_SIZE (128TB on x86-64).  So that's a limit
+> of 32TB, which is perhaps not that helpfully less than 2PB minus 1 byte
+> (RLIM_INFINITY/4) as far as preventing any over-allocation DoS in practice.
+
+That's a very good point!
+
+> If you want to constrain it this way, it's probably simpler just to use
+> a smaller hard limit for RLIM_STACK at boot time (and hence system-wide).
+
+Right.
+
+> But it sounds like all you really need is to fix the OOM/allocation
+> behavior for huge stack allocations.
+
+No, we need both.
+
+Additionally, 64bit_dos.c mentions that "it triggers a BUG() as the
+stack tries to expand around the address space when shifted".  Perhaps
+limiting the stack size would deal with that, but maybe the "bug" needs
+to be patched elsewhere as well.  grsecurity has the following hunk:
+
+@@ -505,7 +520,8 @@ static int shift_arg_pages(struct vm_are
+ 	unsigned long new_end = old_end - shift;
+ 	struct mmu_gather *tlb;
+ 
+-	BUG_ON(new_start > new_end);
++	if (new_start >= new_end || new_start < mmap_min_addr)
++		return -EFAULT;
+ 
+ 	/*
+ 	 * ensure there are no vmas between where we want to go
+
+which is likely part of a fix (but not the entire fix) for what the
+comment in 64bit_dos.c refers to.  However, I was not able to trigger
+the BUG_ON() on RHEL5'ish kernels by simply running the 64bit_dos
+program (64-bit to 32-bit exec) on two systems, one with 2 GB RAM, the
+other with 4 GB.  Of course, I set "ulimit -s unlimited" first.
+
+On the 2 GB system, I saw the OOM killer problem (several other
+processes got killed before 64bit_dos was killed as well).  On the 4 GB
+system, exec succeeded (after looping in the kernel for a few seconds,
+and then the newly started program failed because of its address space
+exhaustion).  Maybe the BUG is only triggerable on certain other kernel
+versions, or maybe I didn't try hard enough (I certainly did not try
+very hard - I did not review the code closely).
+
+Someone could want to look into this aspect as well.
+
+grsecurity's added check against mmap_min_addr (and the reference to it
+in the "exploit's" comment) is also very curious.  It can be just a way
+to avoid triggering another BUG() elsewhere, or it can be just an extra
+hardening measure - but it could also be "for real".  We could want to
+double-check that there wasn't an mmap_min_addr bypass possible here.
+
+Overall, there are multiple issues here (maybe up to four?) and multiple
+things to review the code for.
+
+Does anyone (with more time than me) want to look into these for real?
+(I sure hope so.)
+
+Thanks,
+
+Alexander
