@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab0H3QJV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 12:09:21 -0400
-Received: from m209-5.dsl.rawbw.com ([198.144.209.5]:44151 "EHLO
-	kyoto.noir.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475Ab0H3QJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 12:09:20 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Aug 2010 12:09:19 EDT
-Message-ID: <4C7BD569.9000702@noir.com>
-Date: Mon, 30 Aug 2010 08:59:37 -0700
-From: "K. Richard Pixley" <rich@noir.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.8) Gecko/20100802 Lightning/1.0b2 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Josef Bacik <josef@redhat.com>
-CC: Tomasz Chmielewski <mangoo@wpkg.org>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, hch@infradead.org, gg.mariotti@gmail.com,
-        "Justin P. Mattock" <justinmattock@gmail.com>, mjt@tls.msk.ru,
-        tytso@mit.edu
-Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
-References: <4C7AB645.5090804@wpkg.org> <20100830001441.GA838@dhcp231-156.rdu.redhat.com>
-In-Reply-To: <20100830001441.GA838@dhcp231-156.rdu.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755814Ab0H3QL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 12:11:27 -0400
+Received: from mail153.messagelabs.com ([216.82.253.51]:64967 "EHLO
+	mail153.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab0H3QL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 12:11:26 -0400
+X-VirusChecked: Checked
+X-Env-Sender: jcarlyle@motorola.com
+X-Msg-Ref: server-7.tower-153.messagelabs.com!1283184684!13033288!1
+X-StarScan-Version: 6.2.4; banners=-,-,-
+X-Originating-IP: [136.182.1.13]
+In-Reply-To: <20100830160556.7F840603843@il93ubuntu.localdomain>
+References: <20100830160556.7F840603843@il93ubuntu.localdomain>
+From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+To: Tejun Heo <tj@kernel.org>
+Date: Mon, 30 Aug 2010 11:08:53 -0500
+Subject: [PATCH v5] scatterlist: prevent invalid free when alloc fails
+Cc: OLUSANYA SOYANNWO <olusanya.soyannwo@motorola.com>,
+        <linux-kernel@vger.kernel.org>, Hu Tao <taohu@motorola.com>,
+        <jaxboe@fusionio.com>, <torvalds@osdl.org>,
+        Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Message-Id: <20100830161116.999F1603843@il93ubuntu.localdomain>
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 8/29/10 17:14 , Josef Bacik wrote:
-> On Sun, Aug 29, 2010 at 09:34:29PM +0200, Tomasz Chmielewski wrote:
->> Christoph Hellwig wrote:
->>> There are a lot of variables when using qemu.
->>>
->>> The most important one are:
->>>
->>>   - the cache mode on the device.  The default is cache=writethrough,
->>>     which is not quite optimal.  You generally do want to use cache=none
->>>     which uses O_DIRECT in qemu.
->>>   - if the backing image is sparse or not.
->>>   - if you use barrier - both in the host and the guest.
->> I noticed that when btrfs is mounted with default options, when writing
->> i.e. 10 GB on the KVM guest using qcow2 image, 20 GB are written on the
->> host (as measured with "iostat -m -p").
->>
->> With ext4 (or btrfs mounted with nodatacow), 10 GB write on a guest
->> produces 10 GB write on the host
-> Whoa 20gb?  That doesn't sound right, COW should just mean we get quite a bit of
-> fragmentation, not write everything twice.  What exactly is qemu doing?  Thanks,
-Make sure you build your file system with "mkfs.btrfs -m single -d 
-single /dev/whatever".  You may well be writing duplicate copies of 
-everything.
+When alloc fails, free_table is being called. Depending on the number of
+bytes requested, we determine if we are going to call _get_free_page()
+or kmalloc(). When alloc fails, our math is wrong (due to sg_size - 1),
+and the last buffer is wrongfully assumed to have been allocated by
+kmalloc. Hence, kfree gets called and a panic occurs.
 
---rich
+Signed-off-by: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Signed-off-by: Olusanya Soyannwo <c23746@motorola.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+---
+ lib/scatterlist.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
+
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index a5ec428..4dfdca2 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -248,8 +248,18 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
+ 		left -= sg_size;
+ 
+ 		sg = alloc_fn(alloc_size, gfp_mask);
+-		if (unlikely(!sg))
++		if (unlikely(!sg)) {
++			/*
++			 * Adjust entry count to reflect that the last
++			 * entry of the previous table won't be used for
++			 * linkage.  Without this, sg_kfree() may get
++			 * confused.
++			 */
++			if (pvr)
++				table->nents = ++table->orig_nents;
++
+ 			return -ENOMEM;
++		}
+ 
+ 		sg_init_table(sg, alloc_size);
+ 		table->nents = table->orig_nents += sg_size;
+-- 
+1.6.3.3
+
