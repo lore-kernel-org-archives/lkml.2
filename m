@@ -1,325 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab0H3OCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 10:02:36 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:39264 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753944Ab0H3OCf (ORCPT
+	id S1755540Ab0H3OEW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 10:04:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42233 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab0H3OEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 10:02:35 -0400
-Date: Mon, 30 Aug 2010 10:02:17 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: kexec <kexec@lists.infradead.org>, linux-next@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Message-ID: <1141332926.1524871283176937097.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <4C7BA918.60707@kernel.org>
-Subject: Re: kdump regression compared to v2.6.35
+	Mon, 30 Aug 2010 10:04:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=hvl8n0S0h/OtiQjD9cNiNRlk22s04eXtKc7z2ANVmINwXCYKPsO7sFtJXWjxIBdvuZ
+         38LYYKW/H+YiO7kJuqMxxrQZ5UzScL/F1HRpRG3DS1V21rpksy1CZbxxaLMAWcAANcCU
+         0BLwk2/xJMjkBkGXhLZoYEIctVeBUT64ckaSw=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 00/43] ptrace cleanups
+References: <1282902149-12991-1-git-send-email-namhyung@gmail.com>
+	<20100830001454.DC8FD400D9@magilla.sf.frob.com>
+Date: Mon, 30 Aug 2010 23:02:48 +0900
+In-Reply-To: <20100830001454.DC8FD400D9@magilla.sf.frob.com> (Roland McGrath's
+	message of "Sun, 29 Aug 2010 17:14:54 -0700 (PDT)")
+Message-ID: <87aao4mc53.fsf@NHK-XNOTE.i-did-not-set--mail-host-address--so-tickle-me>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Roland McGrath <roland@redhat.com> writes:
 
------ "Tejun Heo" <tj@kernel.org> wrote:
+> I am fine with the s/long/unsigned long/ signature changes.  Adding
+> temporaries to avoid the repeated casts is fine too.  All that will
+> compile away to the same code we have now.  But please do it without
+> changing put_user/get_user calls to copy_{to,from}_user.  With a
+> temporary or two you'll still have fewer casts than before.  IMHO you
+> should at least do a separate follow-on patch for anything that actually
+> changes the compiled code vs just the cosmetic type cleanups.
+>
 
-> On 08/30/2010 12:24 PM, CAI Qian wrote:
-> > Can't see any difference with hangcheck timer enabled.
-> 
-> Hmm, odd.  So, here's the said debug patch.  It will periodically
-> check all works and report if any work is being delayed for too long.
-> If the max wait goes over 30secs, it will dump all task states and
-> disable itself.  Can you please apply the patch on top of rc2 +
-> wq#for-linus and report the output?  It should tell us who's stuck
-> where.
-Nothing new was printed after around 10 minutes.
-> Thanks.
-> 
-> diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-> index f11100f..282322c 100644
-> --- a/include/linux/workqueue.h
-> +++ b/include/linux/workqueue.h
-> @@ -83,6 +83,8 @@ struct work_struct {
->  #ifdef CONFIG_LOCKDEP
->  	struct lockdep_map lockdep_map;
->  #endif
-> +	unsigned long queued_on;
-> +	unsigned long activated_on;
->  };
-> 
->  #define WORK_DATA_INIT()	ATOMIC_LONG_INIT(WORK_STRUCT_NO_CPU)
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index a2dccfc..9f95169 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -913,6 +913,8 @@ static void insert_work(struct
-> cpu_workqueue_struct *cwq,
->  {
->  	struct global_cwq *gcwq = cwq->gcwq;
-> 
-> +	work->queued_on = work->activated_on = jiffies;
-> +
->  	/* we own @work, set data and link */
->  	set_work_cwq(work, cwq, extra_flags);
-> 
-> @@ -996,13 +998,14 @@ static void __queue_work(unsigned int cpu,
-> struct workqueue_struct *wq,
->  	if (likely(cwq->nr_active < cwq->max_active)) {
->  		cwq->nr_active++;
->  		worklist = gcwq_determine_ins_pos(gcwq, cwq);
-> +		insert_work(cwq, work, worklist, work_flags);
->  	} else {
->  		work_flags |= WORK_STRUCT_DELAYED;
->  		worklist = &cwq->delayed_works;
-> +		insert_work(cwq, work, worklist, work_flags);
-> +		work->activated_on--;
->  	}
-> 
-> -	insert_work(cwq, work, worklist, work_flags);
-> -
->  	spin_unlock_irqrestore(&gcwq->lock, flags);
->  }
-> 
-> @@ -1669,6 +1672,7 @@ static void cwq_activate_first_delayed(struct
-> cpu_workqueue_struct *cwq)
->  						    struct work_struct, entry);
->  	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
-> 
-> +	work->activated_on = jiffies;
->  	move_linked_works(work, pos, NULL);
->  	__clear_bit(WORK_STRUCT_DELAYED_BIT, work_data_bits(work));
->  	cwq->nr_active++;
-> @@ -2810,7 +2814,7 @@ struct workqueue_struct
-> *__alloc_workqueue_key(const char *name,
->  	 * list.  Grab it, set max_active accordingly and add the new
->  	 * workqueue to workqueues list.
->  	 */
-> -	spin_lock(&workqueue_lock);
-> +	spin_lock_irq(&workqueue_lock);
-> 
->  	if (workqueue_freezing && wq->flags & WQ_FREEZEABLE)
->  		for_each_cwq_cpu(cpu, wq)
-> @@ -2818,7 +2822,7 @@ struct workqueue_struct
-> *__alloc_workqueue_key(const char *name,
-> 
->  	list_add(&wq->list, &workqueues);
-> 
-> -	spin_unlock(&workqueue_lock);
-> +	spin_unlock_irq(&workqueue_lock);
-> 
->  	return wq;
->  err:
-> @@ -2849,9 +2853,9 @@ void destroy_workqueue(struct workqueue_struct
-> *wq)
->  	 * wq list is used to freeze wq, remove from list after
->  	 * flushing is complete in case freeze races us.
->  	 */
-> -	spin_lock(&workqueue_lock);
-> +	spin_lock_irq(&workqueue_lock);
->  	list_del(&wq->list);
-> -	spin_unlock(&workqueue_lock);
-> +	spin_unlock_irq(&workqueue_lock);
-> 
->  	/* sanity check */
->  	for_each_cwq_cpu(cpu, wq) {
-> @@ -2891,23 +2895,23 @@ void workqueue_set_max_active(struct
-> workqueue_struct *wq, int max_active)
-> 
->  	max_active = wq_clamp_max_active(max_active, wq->flags, wq->name);
-> 
-> -	spin_lock(&workqueue_lock);
-> +	spin_lock_irq(&workqueue_lock);
-> 
->  	wq->saved_max_active = max_active;
-> 
->  	for_each_cwq_cpu(cpu, wq) {
->  		struct global_cwq *gcwq = get_gcwq(cpu);
-> 
-> -		spin_lock_irq(&gcwq->lock);
-> +		spin_lock(&gcwq->lock);
-> 
->  		if (!(wq->flags & WQ_FREEZEABLE) ||
->  		    !(gcwq->flags & GCWQ_FREEZING))
->  			get_cwq(gcwq->cpu, wq)->max_active = max_active;
-> 
-> -		spin_unlock_irq(&gcwq->lock);
-> +		spin_unlock(&gcwq->lock);
->  	}
-> 
-> -	spin_unlock(&workqueue_lock);
-> +	spin_unlock_irq(&workqueue_lock);
->  }
->  EXPORT_SYMBOL_GPL(workqueue_set_max_active);
-> 
-> @@ -3419,7 +3423,7 @@ void freeze_workqueues_begin(void)
->  {
->  	unsigned int cpu;
-> 
-> -	spin_lock(&workqueue_lock);
-> +	spin_lock_irq(&workqueue_lock);
-> 
->  	BUG_ON(workqueue_freezing);
->  	workqueue_freezing = true;
-> @@ -3428,7 +3432,7 @@ void freeze_workqueues_begin(void)
->  		struct global_cwq *gcwq = get_gcwq(cpu);
->  		struct workqueue_struct *wq;
-> 
-> -		spin_lock_irq(&gcwq->lock);
-> +		spin_lock(&gcwq->lock);
-> 
->  		BUG_ON(gcwq->flags & GCWQ_FREEZING);
->  		gcwq->flags |= GCWQ_FREEZING;
-> @@ -3440,10 +3444,10 @@ void freeze_workqueues_begin(void)
->  				cwq->max_active = 0;
->  		}
-> 
-> -		spin_unlock_irq(&gcwq->lock);
-> +		spin_unlock(&gcwq->lock);
->  	}
-> 
-> -	spin_unlock(&workqueue_lock);
-> +	spin_unlock_irq(&workqueue_lock);
->  }
-> 
->  /**
-> @@ -3464,7 +3468,7 @@ bool freeze_workqueues_busy(void)
->  	unsigned int cpu;
->  	bool busy = false;
-> 
-> -	spin_lock(&workqueue_lock);
-> +	spin_lock_irq(&workqueue_lock);
-> 
->  	BUG_ON(!workqueue_freezing);
-> 
-> @@ -3488,7 +3492,7 @@ bool freeze_workqueues_busy(void)
->  		}
->  	}
->  out_unlock:
-> -	spin_unlock(&workqueue_lock);
-> +	spin_unlock_irq(&workqueue_lock);
->  	return busy;
->  }
-> 
-> @@ -3505,7 +3509,7 @@ void thaw_workqueues(void)
->  {
->  	unsigned int cpu;
-> 
-> -	spin_lock(&workqueue_lock);
-> +	spin_lock_irq(&workqueue_lock);
-> 
->  	if (!workqueue_freezing)
->  		goto out_unlock;
-> @@ -3514,7 +3518,7 @@ void thaw_workqueues(void)
->  		struct global_cwq *gcwq = get_gcwq(cpu);
->  		struct workqueue_struct *wq;
-> 
-> -		spin_lock_irq(&gcwq->lock);
-> +		spin_lock(&gcwq->lock);
-> 
->  		BUG_ON(!(gcwq->flags & GCWQ_FREEZING));
->  		gcwq->flags &= ~GCWQ_FREEZING;
-> @@ -3535,15 +3539,82 @@ void thaw_workqueues(void)
-> 
->  		wake_up_worker(gcwq);
-> 
-> -		spin_unlock_irq(&gcwq->lock);
-> +		spin_unlock(&gcwq->lock);
->  	}
-> 
->  	workqueue_freezing = false;
->  out_unlock:
-> -	spin_unlock(&workqueue_lock);
-> +	spin_unlock_irq(&workqueue_lock);
->  }
->  #endif /* CONFIG_FREEZER */
-> 
-> +#define WQ_CHECK_INTERVAL	(10 * HZ)
-> +static void workqueue_check_timer_fn(unsigned long data);
-> +static DEFINE_TIMER(workqueue_check_timer, workqueue_check_timer_fn,
-> 0, 0);
-> +
-> +static void workqueue_check_timer_fn(unsigned long data)
-> +{
-> +	unsigned long now = jiffies;
-> +	unsigned long wait, max_wait = 0;
-> +	unsigned int cpu;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&workqueue_lock, flags);
-> +
-> +	for_each_gcwq_cpu(cpu) {
-> +		struct global_cwq *gcwq = get_gcwq(cpu);
-> +		struct workqueue_struct *wq;
-> +		struct work_struct *work;
-> +
-> +		spin_lock(&gcwq->lock);
-> +
-> +		list_for_each_entry(wq, &workqueues, list) {
-> +			struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
-> +
-> +			if (!cwq)
-> +				continue;
-> +
-> +			list_for_each_entry(work, &cwq->delayed_works, entry) {
-> +				WARN_ON_ONCE(!time_before(work->activated_on,
-> +							  work->queued_on));
-> +				wait = now - work->queued_on;
-> +				if (wait < WQ_CHECK_INTERVAL)
-> +					continue;
-> +				max_wait = max(max_wait, wait);
-> +				printk("XXX %s/%d %p:%pf delayed for %ums\n",
-> +				       wq->name,
-> +				       gcwq->cpu != WORK_CPU_UNBOUND ? gcwq->cpu : -1,
-> +				       work, work->func, jiffies_to_msecs(wait));
-> +			}
-> +		}
-> +
-> +		list_for_each_entry(work, &gcwq->worklist, entry) {
-> +			WARN_ON_ONCE(time_before(work->activated_on,
-> +						 work->queued_on));
-> +			wait = now - work->activated_on;
-> +			if (wait < WQ_CHECK_INTERVAL)
-> +				continue;
-> +			max_wait = max(max_wait, wait);
-> +			printk("XXX %s/%d %p:%pf pending for %ums after delayed %ums\n",
-> +			       get_work_cwq(work)->wq->name,
-> +			       gcwq->cpu != WORK_CPU_UNBOUND ? gcwq->cpu : -1,
-> +			       work, work->func,
-> +			       jiffies_to_msecs(wait),
-> +			       jiffies_to_msecs(work->activated_on - work->queued_on));
-> +		}
-> +
-> +		spin_unlock(&gcwq->lock);
-> +	}
-> +
-> +	spin_unlock_irqrestore(&workqueue_lock, flags);
-> +
-> +	if (max_wait > 20 * HZ) {
-> +		printk("XXX max_wait over 30secs, dumping tasks\n");
-> +		show_state();
-> +	} else
-> +		mod_timer(&workqueue_check_timer, now + WQ_CHECK_INTERVAL / 2);
-> +}
-> +
->  static int __init init_workqueues(void)
->  {
->  	unsigned int cpu;
-> @@ -3596,6 +3667,7 @@ static int __init init_workqueues(void)
->  	system_unbound_wq = alloc_workqueue("events_unbound", WQ_UNBOUND,
->  					    WQ_UNBOUND_MAX_ACTIVE);
->  	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq);
-> +	mod_timer(&workqueue_check_timer, jiffies + WQ_CHECK_INTERVAL / 2);
->  	return 0;
->  }
->  early_initcall(init_workqueues);
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+OK. I'll do that on next round.
+Thanks.
+
+-- 
+Regards,
+Namhyung Kim
