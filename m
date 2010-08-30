@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab0H3Sq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 14:46:29 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46917 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab0H3Sq2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 14:46:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=kHleQq4j+wX+lMiipLGfQoGkTff77Qr+X96qliYzMUvlTSnIpaOnJ9j9ilmEZqctBc
-         HwePle2+0Bv5ENfQwp/YOKFf+FyPkc9qlZUNEirFZUJXMnZOwTMY1pWjIh9+ctPywCW/
-         zViZE5mUjDldUd6PEONaZuVKnaAKK9kLhKiIU=
-Date: Mon, 30 Aug 2010 21:46:20 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        James.Bottomley@suse.de
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: 2.6.36-rc3: EIP is at scsi_init_io+...
-Message-ID: <20100830184620.GA4818@core2.telecom.by>
+	id S1756134Ab0H3SsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 14:48:10 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:52984 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab0H3SsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 14:48:09 -0400
+Date: Mon, 30 Aug 2010 11:48:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Doug Nazar <nazard.lkml@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: WARN with 3c905 boomerang NIC
+Message-ID: <20100830184805.GI2420@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4C70C516.5020404@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4C70C516.5020404@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not much of a calltrace, it scrolled away because of hardlockup detector.
-On the bright side, radeon KMS worked correctly and actually showed it.
+On Sun, Aug 22, 2010 at 02:35:02AM -0400, Doug Nazar wrote:
+>  Since de85d99eb7b595f6751550184b94c1e2f74a828b (netpoll: Fix RCU
+> usage) I've been getting the follow warning:
 
-$ addr2line -e vmlinux ffffffff812d207b 
-drivers/scsi/scsi_lib.c:1015 
+This one is on my list, thank you for checking!
 
+							Thanx, Paul
 
-   969	int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
-   970	{
-   971		int error = scsi_init_sgtable(cmd->request, &cmd->sdb, gfp_mask);
-   972		if (error)
-   973			goto err_exit;
-   974	
-   975		if (blk_bidi_rq(cmd->request)) {
-   976			struct scsi_data_buffer *bidi_sdb = kmem_cache_zalloc(
-   977				scsi_sdb_cache, GFP_ATOMIC);
-   978			if (!bidi_sdb) {
-   979				error = BLKPREP_DEFER;
-   980				goto err_exit;
-   981			}
-   982	
-   983			cmd->request->next_rq->special = bidi_sdb;
-   984			error = scsi_init_sgtable(cmd->request->next_rq, bidi_sdb,
-   985									    GFP_ATOMIC);
-   986			if (error)
-   987				goto err_exit;
-   988		}
-   989	
-   990		if (blk_integrity_rq(cmd->request)) {
-   991			struct scsi_data_buffer *prot_sdb = cmd->prot_sdb;
-   992			int ivecs, count;
-   993	
-   994			BUG_ON(prot_sdb == NULL);
-   995			ivecs = blk_rq_count_integrity_sg(cmd->request);
-   996	
-   997			if (scsi_alloc_sgtable(prot_sdb, ivecs, gfp_mask)) {
-   998				error = BLKPREP_DEFER;
-   999				goto err_exit;
-  1000			}
-  1001	
-  1002			count = blk_rq_map_integrity_sg(cmd->request,
-  1003							prot_sdb->table.sgl);
-  1004			BUG_ON(unlikely(count > ivecs));
-  1005	
-  1006			cmd->prot_sdb = prot_sdb;
-  1007			cmd->prot_sdb->table.nents = count;
-  1008		}
-  1009	
-  1010		return BLKPREP_OK ;
-  1011	
-  1012	err_exit:
-  1013		scsi_release_buffers(cmd);
-  1014		scsi_put_command(cmd);
-  1015	===>	cmd->request->special = NULL; <===
-  1016		return error;
-  1017	}
-  1018	EXPORT_SYMBOL(scsi_init_io);
+> Aug 20 22:33:26 dryad kernel: [   64.263065] ------------[ cut here
+> ]------------
+> Aug 20 22:33:26 dryad kernel: [   64.263089] WARNING: at
+> /usr/src/linux/kernel/softirq.c:143 local_bh_enable+0x58/0x82()
+> Aug 20 22:33:26 dryad kernel: [   64.263095] Hardware name: OptiPlex GX240
+> Aug 20 22:33:26 dryad kernel: [   64.263099] Modules linked in:
+> rpcsec_gss_krb5 softdog snd_intel8x0 snd_ac97_codec 8250_pnp ac97_bu
+> Aug 20 22:33:26 dryad kernel: [   64.263234] Pid: 5892, comm:
+> runscript.sh Not tainted 2.6.36-rc1-00133-g47ade1d #43
+> Aug 20 22:33:26 dryad kernel: [   64.263238] Call Trace:
+> Aug 20 22:33:26 dryad kernel: [   64.263251]  [<c12a492e>] ?
+> printk+0x18/0x1a
+> Aug 20 22:33:26 dryad kernel: [   64.263263]  [<c102a015>]
+> warn_slowpath_common+0x67/0x8e
+> Aug 20 22:33:26 dryad kernel: [   64.263271]  [<c102ee76>] ?
+> local_bh_enable+0x58/0x82
+> Aug 20 22:33:26 dryad kernel: [   64.263277]  [<c102ee76>] ?
+> local_bh_enable+0x58/0x82
+> Aug 20 22:33:26 dryad kernel: [   64.263285]  [<c102a059>]
+> warn_slowpath_null+0x1d/0x1f
+> Aug 20 22:33:26 dryad kernel: [   64.263292]  [<c102ee76>]
+> local_bh_enable+0x58/0x82
+> Aug 20 22:33:26 dryad kernel: [   64.263301]  [<c12399e5>]
+> netif_rx+0x14f/0x172
+> Aug 20 22:33:26 dryad kernel: [   64.263315]  [<e20e8f0f>]
+> boomerang_rx+0x27a/0x42f [3c59x]
+> Aug 20 22:33:26 dryad kernel: [   64.263328]  [<c10a369b>] ?
+> path_put+0x20/0x23
+> Aug 20 22:33:26 dryad kernel: [   64.263342]  [<e20eadfb>]
+> boomerang_interrupt+0xd9/0x2b7 [3c59x]
+> Aug 20 22:33:26 dryad kernel: [   64.263361]  [<c105651c>]
+> handle_IRQ_event+0x3e/0x13e
+> Aug 20 22:33:26 dryad kernel: [   64.263369]  [<c1057c6e>]
+> handle_fasteoi_irq+0x3c/0x89
+> Aug 20 22:33:26 dryad kernel: [   64.263378]  [<c1004e58>]
+> handle_irq+0x18/0x30
+> Aug 20 22:33:26 dryad kernel: [   64.263385]  [<c10048cb>] do_IRQ+0x34/0x97
+> Aug 20 22:33:26 dryad kernel: [   64.263392]  [<c10037a9>]
+> common_interrupt+0x29/0x30
+> Aug 20 22:33:26 dryad kernel: [   64.263398] ---[ end trace
+> 511646352388ce9c ]---
+> 
+> The card is an:
+> 02:0c.0 Ethernet controller: 3Com Corporation 3c905C-TX/TX-M
+> [Tornado] (rev 78)
+> 
+> Doug
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
