@@ -1,40 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0H3Rfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:35:38 -0400
-Received: from claw.goop.org ([74.207.240.146]:53263 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756295Ab0H3Rfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:35:37 -0400
-Message-ID: <4C7BEBE7.8060502@goop.org>
-Date: Mon, 30 Aug 2010 10:35:35 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1756289Ab0H3Rgh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:36:37 -0400
+Received: from eazy.amigager.de ([213.239.192.238]:58580 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049Ab0H3Rgf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 13:36:35 -0400
+Date: Mon, 30 Aug 2010 19:37:02 +0200
+From: Tino Keitel <tino.keitel+xorg@tikei.de>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: 2.6.36-rc2 regression: Wrong screen resolution (1024x768
+ instead of 1680x1050)
+Message-ID: <20100830173702.GA5006@mac.home>
+Mail-Followup-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
+	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+References: <20100826073039.GA4567@mac.home>
+ <201008291519.20734.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
-To: Hank Janssen <hjanssen@microsoft.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
-Subject: Re: hv block drivers
-References: <201008301643.42253.arnd@arndb.de> <4C7BD9A6.1090108@goop.org> <201008301908.51521.arnd@arndb.de> <8AFC7968D54FB448A30D8F38F259C56224274727@TK5EX14MBXC118.redmond.corp.microsoft.com>
-In-Reply-To: <8AFC7968D54FB448A30D8F38F259C56224274727@TK5EX14MBXC118.redmond.corp.microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="rwEMma7ioTxnRzrJ"
+Content-Disposition: inline
+In-Reply-To: <201008291519.20734.maciej.rutecki@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 08/30/2010 10:31 AM, Hank Janssen wrote:
-> For a more general question, When/if we make it out of staging, where should these drivers live?
->
-> 	drivers/hyper-v or drivers/scsi and drivers/ide.
->
-> Is there a standard that is being followed?
 
-If they're not actually scsi/ide subsystem drivers, then drivers/block
-would seem like the best place (and drivers/ide is truly ancient stuff,
-I think).
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-    J
+On Sun, Aug 29, 2010 at 15:19:20 +0200, Maciej Rutecki wrote:
+> > TV1 connected 1024x768+0+0 (normal left inverted right x axis y axis)
+> > 0mm x 0mm
+> >    848x480        30.0 +
+> >    640x480        30.0 +
+> >    1024x768       30.0*
+> >    800x600        30.0
+> > 
+> > This is a Mac mini Core 2 Duo with Intel i945 graphics.
+> > 
+> 
+> Seems be similar to:
+> https://bugzilla.kernel.org/show_bug.cgi?id=17301
+
+Maybe. I don't know if this is connected, but after disabling TV out
+using the attached patch, the screen has no signal after suspend to
+RAM. However, the patch helped to get back the native LCD resolution
+after boot.
+
+Regards,
+Tino
+
+--rwEMma7ioTxnRzrJ
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="disable_tv_out.diff"
+
+diff --git a/drivers/gpu/drm/i915/intel_overlay.c b/drivers/gpu/drm/i915/intel_overlay.c
+index 4f00390..1d306a4 100644
+--- a/drivers/gpu/drm/i915/intel_overlay.c
++++ b/drivers/gpu/drm/i915/intel_overlay.c
+@@ -25,6 +25,8 @@
+  *
+  * Derived from Xorg ddx, xf86-video-intel, src/i830_video.c
+  */
++
++#include <linux/seq_file.h>
+ #include "drmP.h"
+ #include "drm.h"
+ #include "i915_drm.h"
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index d2029ef..f71e488 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1279,6 +1279,8 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
+ 	 *  1 0 X svideo
+ 	 *  0 0 0 Component
+ 	 */
++	type = -1;
++	goto out;
+ 	if ((tv_dac & TVDAC_SENSE_MASK) == (TVDAC_B_SENSE | TVDAC_C_SENSE)) {
+ 		DRM_DEBUG_KMS("Detected Composite TV connection\n");
+ 		type = DRM_MODE_CONNECTOR_Composite;
+@@ -1292,7 +1294,7 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
+ 		DRM_DEBUG_KMS("No TV connection detected\n");
+ 		type = -1;
+ 	}
+-
++out:
+ 	/* Restore interrupt config */
+ 	spin_lock_irqsave(&dev_priv->user_irq_lock, irqflags);
+ 	i915_enable_pipestat(dev_priv, 0, PIPE_HOTPLUG_INTERRUPT_ENABLE |
+
+--rwEMma7ioTxnRzrJ--
