@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0H3KFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 06:05:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59451 "EHLO hera.kernel.org"
+	id S1755238Ab0H3KFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 06:05:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59452 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755148Ab0H3KFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755151Ab0H3KFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Aug 2010 06:05:24 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, snitzer@redhat.com,
         j-nomura@ce.jp.nec.com, jamie@shareable.org,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-raid@vger.kernel.org, hch@lst.de
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/5] block: make __blk_rq_prep_clone() copy most command flags
-Date: Mon, 30 Aug 2010 11:58:12 +0200
-Message-Id: <1283162296-13650-2-git-send-email-tj@kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/5] block: remove the WRITE_BARRIER flag
+Date: Mon, 30 Aug 2010 11:58:16 +0200
+Message-Id: <1283162296-13650-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283162296-13650-1-git-send-email-tj@kernel.org>
 References: <1283162296-13650-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 10:04:57 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 10:05:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently __blk_rq_prep_clone() copies only REQ_WRITE and REQ_DISCARD.
-There's no reason to omit other command flags and REQ_FUA needs to be
-copied to implement FUA support in request-based dm.
+From: Christoph Hellwig <hch@infradead.org>
 
-REQ_COMMON_MASK which specifies flags to be copied from bio to request
-already identifies all the command flags.  Define REQ_CLONE_MASK to be
-the same as REQ_COMMON_MASK for clarity and make __blk_rq_prep_clone()
-copy all flags in the mask.
+It's unused now.
 
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-core.c          |    4 +---
- include/linux/blk_types.h |    1 +
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ include/linux/fs.h |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 495bdc4..2a5b192 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2505,9 +2505,7 @@ EXPORT_SYMBOL_GPL(blk_rq_unprep_clone);
- static void __blk_rq_prep_clone(struct request *dst, struct request *src)
- {
- 	dst->cpu = src->cpu;
--	dst->cmd_flags = (rq_data_dir(src) | REQ_NOMERGE);
--	if (src->cmd_flags & REQ_DISCARD)
--		dst->cmd_flags |= REQ_DISCARD;
-+	dst->cmd_flags = (src->cmd_flags & REQ_CLONE_MASK) | REQ_NOMERGE;
- 	dst->cmd_type = src->cmd_type;
- 	dst->__sector = blk_rq_pos(src);
- 	dst->__data_len = blk_rq_bytes(src);
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 1797994..36edadf 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -168,6 +168,7 @@ enum rq_flag_bits {
- #define REQ_COMMON_MASK \
- 	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_HARDBARRIER | REQ_SYNC | \
- 	 REQ_META | REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
-+#define REQ_CLONE_MASK		REQ_COMMON_MASK
- 
- #define REQ_UNPLUG		(1 << __REQ_UNPLUG)
- #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 32703a9..6b0f6e9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -135,7 +135,6 @@ struct inodes_stat_t {
+  *			immediately after submission. The write equivalent
+  *			of READ_SYNC.
+  * WRITE_ODIRECT_PLUG	Special case write for O_DIRECT only.
+- * WRITE_BARRIER	DEPRECATED. Always fails. Use FLUSH/FUA instead.
+  * WRITE_FLUSH		Like WRITE_SYNC but with preceding cache flush.
+  * WRITE_FUA		Like WRITE_SYNC but data is guaranteed to be on
+  *			non-volatile media on completion.
+@@ -157,8 +156,6 @@ struct inodes_stat_t {
+ #define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG)
+ #define WRITE_ODIRECT_PLUG	(WRITE | REQ_SYNC)
+ #define WRITE_META		(WRITE | REQ_META)
+-#define WRITE_BARRIER		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
+-				 REQ_HARDBARRIER)
+ #define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
+ 				 REQ_FLUSH)
+ #define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
 -- 
 1.7.1
 
