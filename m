@@ -1,87 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab0H3GPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 02:15:15 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:54066 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab0H3GPN (ORCPT
+	id S1752213Ab0H3GQh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 02:16:37 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59204 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab0H3GQg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 02:15:13 -0400
-Message-ID: <4C7B4C23.8020100@ct.jp.nec.com>
-Date: Mon, 30 Aug 2010 15:13:55 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Mon, 30 Aug 2010 02:16:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JeOCSVG747cg/PeuCfJdRN6+SN6xLILRNT4f+6mK0eHFCgPTCqYAihSD22SQkbd5p3
+         9IDTTA3AxDV71/2cM49XeJA032wNPMqk8FmUTyhgDmDdjrDkDrQLdyG50tEtMQyZPamU
+         4wVT5pnTm2iyR4XN15oqQ34Axd+QvBbAIVTZc=
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Hannes Reinecke <hare@suse.de>, tytso@mit.edu,
-        linux-scsi@vger.kernel.org, jaxboe@fusionio.com, jack@suse.cz,
-        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
-        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
-        dm-devel@redhat.com
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com> <4C739DE9.5070803@ct.jp.nec.com> <4C73FA8F.5080800@kernel.org> <4C74CD95.1000208@ct.jp.nec.com> <20100825152831.GA8509@redhat.com> <4C7789BE.1060609@ct.jp.nec.com> <20100827134940.GA22504@redhat.com>
-In-Reply-To: <20100827134940.GA22504@redhat.com>
+In-Reply-To: <AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>
+References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>
+	<AANLkTinCKJw2oaNgAvfm0RawbW4zuJMtMb2pUROeY2ij@mail.gmail.com>
+	<4C7ABD14.9050207@redhat.com>
+	<AANLkTimjVHp1=Fc35xLnyPb2aa+ew7w1P9DC_0GfhZgY@mail.gmail.com>
+	<AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>
+	<AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>
+Date: Mon, 30 Aug 2010 15:16:35 +0900
+Message-ID: <AANLkTikbs9sUVLhE4sWWVw8uEqY=v6SCdJ_6FLhXY6HW@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Ying Han <yinghan@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-
-On 08/27/2010 10:49 PM +0900, Mike Snitzer wrote:
-> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
->> On 08/26/2010 12:28 AM +0900, Mike Snitzer wrote:
->>> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
->>>> Anyway, as you said, the flush error handling of dm-mpath is already
->>>> broken if data loss really happens on any storage used by dm-mpath.
->>>> Although it's a serious issue and quick fix is required, I think
->>>> you may leave the old behavior in your patch-set, since it's
->>>> a separate issue.
->>> 
->>> I'm not seeing where anything is broken with current mpath.  If a
->>> multipathed LUN is WCE=1 then it should be fair to assume the cache is
->>> mirrored or shared across ports.  Therefore retrying the SYNCHRONIZE
->>> CACHE is needed.
->>>
->>> Do we still have fear that SYNCHRONIZE CACHE can silently drop data?
->>> Seems unlikely especially given what Tejun shared from SBC.
->> 
->> Do we have any proof to wipe that fear?
+On Mon, Aug 30, 2010 at 2:40 PM, Ying Han <yinghan@google.com> wrote:
+> On Sun, Aug 29, 2010 at 5:18 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>> Hi Ying,
 >>
->> If retrying on flush failure is safe on all storages used with multipath
->> (e.g. SCSI, CCISS, DASD, etc), then current dm-mpath should be fine in
->> the real world.
->> But I'm afraid if there is a storage where something like below can happen:
->>     - a flush command is returned as error to mpath because a part of
->>       cache has physically broken at the time or so, then that part of
->>       data loses and the size of the cache is shrunk by the storage.
->>     - mpath retries the flush command using other path.
->>     - the flush command is returned as success to mpath.
->>     - mpath passes the result, success, to upper layer, but some of
->>       the data already lost.
-> 
-> That does seem like a valid concern.  But I'm not seeing why its unique
-> to SYNCHRONIZE CACHE.  Any IO that fails on the target side should be
-> passed up once the error gets to DM.
+>> On Mon, Aug 30, 2010 at 6:23 AM, Ying Han <yinghan@google.com> wrote:
+>>> On Sun, Aug 29, 2010 at 1:03 PM, Rik van Riel <riel@redhat.com> wrote:
+>>>> On 08/29/2010 01:45 PM, Ying Han wrote:
+>>>>
+>>>>> There are few other places in vmscan where we check nr_swap_pages and
+>>>>> inactive_anon_is_low. Are we planning to change them to use
+>>>>> total_swap_pages
+>>>>> to be consistent ?
+>>>>
+>>>> If that makes sense, maybe the check can just be moved into
+>>>> inactive_anon_is_low itself?
+>>>
+>>> That was the initial patch posted, instead we changed to use
+>>> total_swap_pages instead. How this patch looks:
+>>>
+>>> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
+>>> *zone, struct scan_control *sc)
+>>>  {
+>>>        int low;
+>>>
+>>> +       if (total_swap_pages <= 0)
+>>> +               return 0;
+>>> +
+>>>        if (scanning_global_lru(sc))
+>>>                low = inactive_anon_is_low_global(zone);
+>>>        else
+>>> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
+>>>         * Even if we did not try to evict anon pages at all, we want to
+>>>         * rebalance the anon lru active/inactive ratio.
+>>>         */
+>>> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
+>>> +       if (inactive_anon_is_low(zone, sc))
+>>>                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+>>>
+>>>        throttle_vm_writeout(sc->gfp_mask);
+>>>
+>>> --Ying
+>>>
+>>>>
+>>
+>> I did it intentionally since inactive_anon_is_low have been used both
+>> direct reclaim and background path. In this point, your patch could
+>> make side effect in swap enabled system when swap is full.
+>>
+>> I think we need aging in only background if system is swap full.
+>> That's because if the swap space is full, we don't reclaim anon pages
+>> in direct reclaim path with (nr_swap_pages < 0)  and even have been
+>> not rebalance it until now.
+>> I think direct reclaim path is important about latency as well as
+>> reclaim's effectiveness.
+>> So if you don't mind, I hope direct reclaim patch would be left just as it is.
+>
+> Minchan, I would prefer to make kswapd as well as direct reclaim to be
+> consistent if possible.
+> They both try to reclaim pages when system is under memory pressure,
+> and also do not make
+> much sense to look at anon lru if no swap space available. Either
+> because of no swapon or run
+> out of swap space.
 
-See the Tejun's explanation again:
-    http://marc.info/?l=linux-kernel&m=128267361813859&w=2
-What I'm concerning is whether the same thing as Tejun explained
-for ATA can happen on other types of devices.
+In out of swap space, The few swap space would become more precious.
+So I think we still need background aging to protect hot page swap out.
+But I admit it's hard to measure it so I can't insist on.
+But I wanted to maintain it as it is to avoid _unexpected_ side effect.
 
+And your patch can't compile out inactive_anon_is_low call in non swap
+configurable system. It makes unnecessary call. So I want to use
+nr_swap_pages && inactive_anon_is_low.
 
-Normal write command has data and no data loss happens on error.
-So it can be retried cleanly, and if the result of the retry is
-success, it's really success, no implicit data loss.
+For it, I sended following patch at last version
 
-Normal read command has a sector to read.  If the sector is broken,
-all retries will fail and the error will be reported upwards.
-So it can be retried cleanly as well.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 1b145e6..0b8a3ce 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1747,7 +1747,7 @@ static void shrink_zone(int priority, struct zone *zone,
+         * Even if we did not try to evict anon pages at all, we want to
+         * rebalance the anon lru active/inactive ratio.
+         */
+-       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
++       if (nr_swap_pges > 0 && inactive_anon_is_low(zone, sc))
+                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
 
-Thanks,
-Kiyoshi Ueda
+        throttle_vm_writeout(sc->gfp_mask);
+
+But Andrew merged middle version.
+I will send this patch again.
+
+Thanks.
+
+-- 
+Kind regards,
+Minchan Kim
