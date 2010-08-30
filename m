@@ -1,248 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab0H3Nki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 09:40:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38135 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab0H3Nkf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 09:40:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=THRIdDA5XcE1t6JFyJN1HJIbUUjYzDMwsh8XCbCHPmFDmdsG+TpQbNbMi+kg2IQT83
-         dD3FlOas+oJBjAx5VRIjfVJWEBO60A6HX56ir+3iUkLi+HmVVm9GUJNsKwQNULsWXaLL
-         OQV2hkDZ41aqTNswHmqZ8Tq1Qx42gELq+DoVo=
+	id S1755000Ab0H3Nmj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 09:42:39 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:49336 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752917Ab0H3Nmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 09:42:37 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1+/7EkyMa2/GC2i+S6pQNr47dLnMKI2q0Zx3PE78C
+	rVpjE+6Hh6RvvS
+From: Sven Joachim <svenjoac@gmx.de>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Ivan Bulatovic <combuster@gmx.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: i915: wrong framebuffer size in 2.6.36-rc3
+References: <87wrr8cui7.fsf@turtle.gmx.de>
+	<AANLkTi=SHwkFFNEUsbJR-eJnyWcDFXcWD-CRPN8uiSHK@mail.gmail.com>
+Date: Mon, 30 Aug 2010 15:42:32 +0200
+In-Reply-To: <AANLkTi=SHwkFFNEUsbJR-eJnyWcDFXcWD-CRPN8uiSHK@mail.gmail.com>
+	(Pekka Enberg's message of "Mon, 30 Aug 2010 12:57:20 +0300")
+Message-ID: <87hbiccj3r.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <006301cb483c$434f76f0$c9ee64d0$%kim@samsung.com>
-References: <20100830114729.GA13150@july>
-	<006301cb483c$434f76f0$c9ee64d0$%kim@samsung.com>
-Date: Mon, 30 Aug 2010 22:40:33 +0900
-X-Google-Sender-Auth: cqGHNL3kq3zJuqKoHHnI7QMraTQ
-Message-ID: <AANLkTimxhFtfB8G-z=04zj7ZRq+f7GDaVX5mzgCENuvx@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: Samsung S3C: Move/use the S3C common GPIO IRQ type
-From: Kyungmin Park <kmpark@infradead.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jy0922.shim@samsung.com, m.szyprowski@samsung.com, ben-linux@fluff.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 9:09 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Kyungmin Park wrote:
->>
->> From: Kyungmin Park <kyungmin.park@samsung.com>
->>
->> Samsung S3C series have the common GPIO IRQ type for all S3C series.
->>
-> I can't agree with your changing name. Why do you want to change the name?
-> If you want to move S3C2410_EXTINT_XXX from regs-irqtype.h, just move
-> without any changes.
-As S5P series change the name conversion. I will also modify the s3c series.
+On 2010-08-30 11:57 +0200, Pekka Enberg wrote:
 
+> On Mon, Aug 30, 2010 at 12:36 PM, Sven Joachim <svenjoac@gmx.de> wrote:
+>> On my laptop which has a 1280x800 display, only the upper left 848x480
+>> pixels are used on the console in 2.6.36-rc3.  The resolution is
+>> correct, but /sys/class/graphics/fb0/modes looks like this:
+>>
+>> U:848x480p-0
+>>
+>> This is a regression from 2.6.35.  The graphics card according to lspci:
+>>
+>> 00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS,
+>> 943/940GML Express Integrated Graphics Controller (rev 03)
 >
-> But I'm still thinking why should we move the external interrupt definitions
-> to plat/gpio-core.h...
+> Yeah, you're not alone on this:
+>
+> http://lkml.org/lkml/2010/8/23/452
 
-To use the GPIO interrupt. these definitions are used both external
-interrupt and GPIO interrupt.
->
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  arch/arm/mach-s3c64xx/irq-eint.c                  |   12 ++++++------
->>  arch/arm/plat-s3c24xx/irq.c                       |   14 +++++++-------
->>  arch/arm/plat-s5p/irq-eint.c                      |    2 --
->>  arch/arm/plat-samsung/include/plat/gpio-core.h    |    6 ++++++
->>  arch/arm/plat-samsung/include/plat/regs-irqtype.h |   21
-> ---------------------
->>  5 files changed, 19 insertions(+), 36 deletions(-)
->>  delete mode 100644 arch/arm/plat-samsung/include/plat/regs-irqtype.h
->>
->> diff --git a/arch/arm/mach-s3c64xx/irq-eint.c
-> b/arch/arm/mach-s3c64xx/irq-eint.c
->> index 5682d6a..c079147 100644
->> --- a/arch/arm/mach-s3c64xx/irq-eint.c
->> +++ b/arch/arm/mach-s3c64xx/irq-eint.c
->> @@ -21,8 +21,8 @@
->>
->>  #include <asm/hardware/vic.h>
->>
->> -#include <plat/regs-irqtype.h>
->>  #include <mach/regs-gpio.h>
->> +#include <plat/gpio-core.h>
->>  #include <plat/gpio-cfg.h>
->>
->>  #include <mach/map.h>
->> @@ -85,23 +85,23 @@ static int s3c_irq_eint_set_type(unsigned int irq,
-> unsigned
->> int type)
->>               break;
->>
->>       case IRQ_TYPE_EDGE_RISING:
->> -             newvalue = S3C2410_EXTINT_RISEEDGE;
->> +             newvalue = S3C_GPIO_EDGE_RISING;
->>               break;
->>
->>       case IRQ_TYPE_EDGE_FALLING:
->> -             newvalue = S3C2410_EXTINT_FALLEDGE;
->> +             newvalue = S3C_GPIO_EDGE_FALLING;
->>               break;
->>
->>       case IRQ_TYPE_EDGE_BOTH:
->> -             newvalue = S3C2410_EXTINT_BOTHEDGE;
->> +             newvalue = S3C_GPIO_EDGE_BOTH;
->>               break;
->>
->>       case IRQ_TYPE_LEVEL_LOW:
->> -             newvalue = S3C2410_EXTINT_LOWLEV;
->> +             newvalue = S3C_GPIO_LEVEL_LOW;
->>               break;
->>
->>       case IRQ_TYPE_LEVEL_HIGH:
->> -             newvalue = S3C2410_EXTINT_HILEV;
->> +             newvalue = S3C_GPIO_LEVEL_HIGH;
->>               break;
->>
->>       default:
->> diff --git a/arch/arm/plat-s3c24xx/irq.c b/arch/arm/plat-s3c24xx/irq.c
->> index ad0d44e..e1a6fe5 100644
->> --- a/arch/arm/plat-s3c24xx/irq.c
->> +++ b/arch/arm/plat-s3c24xx/irq.c
->> @@ -23,12 +23,12 @@
->>  #include <linux/interrupt.h>
->>  #include <linux/ioport.h>
->>  #include <linux/sysdev.h>
->> +#include <linux/gpio.h>
->>
-> Why need this inclusion?
->
->>  #include <asm/irq.h>
->>  #include <asm/mach/irq.h>
->>
->> -#include <plat/regs-irqtype.h>
->> -
->> +#include <plat/gpio-core.h>
->>  #include <plat/cpu.h>
->>  #include <plat/pm.h>
->>  #include <plat/irq.h>
->> @@ -201,23 +201,23 @@ s3c_irqext_type(unsigned int irq, unsigned int type)
->>                       break;
->>
->>               case IRQ_TYPE_EDGE_RISING:
->> -                     newvalue = S3C2410_EXTINT_RISEEDGE;
->> +                     newvalue = S3C_GPIO_EDGE_RISING;
->>                       break;
->>
->>               case IRQ_TYPE_EDGE_FALLING:
->> -                     newvalue = S3C2410_EXTINT_FALLEDGE;
->> +                     newvalue = S3C_GPIO_EDGE_FALLING;
->>                       break;
->>
->>               case IRQ_TYPE_EDGE_BOTH:
->> -                     newvalue = S3C2410_EXTINT_BOTHEDGE;
->> +                     newvalue = S3C_GPIO_EDGE_BOTH;
->>                       break;
->>
->>               case IRQ_TYPE_LEVEL_LOW:
->> -                     newvalue = S3C2410_EXTINT_LOWLEV;
->> +                     newvalue = S3C_GPIO_LEVEL_LOW;
->>                       break;
->>
->>               case IRQ_TYPE_LEVEL_HIGH:
->> -                     newvalue = S3C2410_EXTINT_HILEV;
->> +                     newvalue = S3C_GPIO_LEVEL_HIGH;
->>                       break;
->>
->>               default:
->> diff --git a/arch/arm/plat-s5p/irq-eint.c b/arch/arm/plat-s5p/irq-eint.c
->> index 4e0d94b..02d6ea2 100644
->> --- a/arch/arm/plat-s5p/irq-eint.c
->> +++ b/arch/arm/plat-s5p/irq-eint.c
->> @@ -19,8 +19,6 @@
->>
->>  #include <asm/hardware/vic.h>
->>
->> -#include <plat/regs-irqtype.h>
->> -
->>  #include <mach/map.h>
->>  #include <plat/cpu.h>
->>  #include <plat/pm.h>
->> diff --git a/arch/arm/plat-samsung/include/plat/gpio-core.h
-> b/arch/arm/plat-
->> samsung/include/plat/gpio-core.h
->> index c8681e0..2aef589 100644
->> --- a/arch/arm/plat-samsung/include/plat/gpio-core.h
->> +++ b/arch/arm/plat-samsung/include/plat/gpio-core.h
->> @@ -14,6 +14,12 @@
->>  #define GPIOCON_OFF  (0x00)
->>  #define GPIODAT_OFF  (0x04)
->>
->> +#define S3C_GPIO_LEVEL_LOW           (0x00)
->> +#define S3C_GPIO_LEVEL_HIGH          (0x01)
->> +#define S3C_GPIO_EDGE_FALLING                (0x02)
->> +#define S3C_GPIO_EDGE_RISING         (0x04)
->> +#define S3C_GPIO_EDGE_BOTH           (0x06)
->> +
-> GPIO_LELVEL? GPIO_EDGE?...
->
-> I think EXTINT_LEVEL_XXX and EXTINT_EDGE_XXX are more clear.
+Incidentally, I did not notice the problem initially described in this
+thread, and 2.6.36-rc2 actually seems OK for me.  But after this commit:
 
-       case IRQ_TYPE_EDGE_BOTH:
-             newvalue = S3C_GPIO_EDGE_BOTH;
+commit 9559fcdbff4f93d29af04478bbc48294519424f5
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Tue Aug 24 11:31:16 2010 -0700
 
-Don't you it's more clear?
+    drm/i915: fix vblank wait test condition
+    
+    When converting this to the new wait_for macro I inverted the wait
+    condition, which causes all sorts of problems.  So correct it to fix
+    several failures caused by the bad wait (flickering, bad output
+    detection, tearing, etc.).
+    
+    Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
->
->>  #define S5P_GPIO_LEVEL_LOW           (0x00)
->>  #define S5P_GPIO_LEVEL_HIGH          (0x01)
->>  #define S5P_GPIO_EDGE_FALLING                (0x02)
->> diff --git a/arch/arm/plat-samsung/include/plat/regs-irqtype.h
-> b/arch/arm/plat-
->> samsung/include/plat/regs-irqtype.h
->> deleted file mode 100644
->> index c63cd3f..0000000
->> --- a/arch/arm/plat-samsung/include/plat/regs-irqtype.h
->> +++ /dev/null
->> @@ -1,21 +0,0 @@
->> -/* arch/arm/plat-s3c/include/plat/regs-irqtype.h
->> - *
->> - * Copyright 2008 Simtec Electronics
->> - *      Ben Dooks <ben@simtec.co.uk>
->> - *      http://armlinux.simtec.co.uk/
->> - *
->> - * S3C - IRQ detection types.
->> - *
->> - * This program is free software; you can redistribute it and/or modify
->> - * it under the terms of the GNU General Public License version 2 as
->> - * published by the Free Software Foundation.
->> - */
->> -
->> -/* values for S3C2410_EXTINT0/1/2 and other cpus in the series, including
->> - * the S3C64XX
->> -*/
->> -#define S3C2410_EXTINT_LOWLEV         (0x00)
->> -#define S3C2410_EXTINT_HILEV  (0x01)
->> -#define S3C2410_EXTINT_FALLEDGE       (0x02)
->> -#define S3C2410_EXTINT_RISEEDGE       (0x04)
->> -#define S3C2410_EXTINT_BOTHEDGE       (0x06)
->> --
->
-> Thanks.
->
-> Best regards,
-> Kgene.
-> --
-> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+@ -992,7 +992,7 @@ void intel_wait_for_vblank(struct drm_device *dev, int pipe)
+ 
+ 	/* Wait for vblank interrupt bit to set */
+ 	if (wait_for((I915_READ(pipestat_reg) &
+-		      PIPE_VBLANK_INTERRUPT_STATUS) == 0,
++		      PIPE_VBLANK_INTERRUPT_STATUS),
+ 		     50, 0))
+ 		DRM_DEBUG_KMS("vblank wait timed out\n");
+ }
+
+
+only the upper left 848x480 pixels of the display are used for the
+framebuffer.  Booting with the video=1280x800 commandline option works
+around this problem.
+
+Sven
