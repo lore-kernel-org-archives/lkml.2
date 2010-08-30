@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0H3IeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 04:34:00 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.28]:45010 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab0H3Id6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 04:33:58 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Aug 2010 04:33:58 EDT
-Message-ID: <4C7B6B86.3080502@ladisch.de>
-Date: Mon, 30 Aug 2010 10:27:50 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754706Ab0H3IeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 04:34:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54088 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751124Ab0H3IeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 04:34:22 -0400
+Date: Mon, 30 Aug 2010 08:33:52 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        fweisbec@gmail.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, efault@gmx.de,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf hists: Fix hist_entry__init_have_children
+Message-ID: <tip-18b308d7994e0e2a360b979f159fa7d2b91a26b1@git.kernel.org>
+Git-Commit-ID: 18b308d7994e0e2a360b979f159fa7d2b91a26b1
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-References: <cover.1282286941.git.m.nazarewicz@samsung.com>	<1282310110.2605.976.camel@laptop> <20100825155814.25c783c7.akpm@linux-foundation.org>
-In-Reply-To: <20100825155814.25c783c7.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 30 Aug 2010 08:33:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> It would help (a lot) if we could get more attention and buyin and
-> fedback from the potential clients of this code.  rmk's feedback is
-> valuable.  Have we heard from the linux-media people?  What other
-> subsystems might use it?  ieee1394 perhaps?
+Commit-ID:  18b308d7994e0e2a360b979f159fa7d2b91a26b1
+Gitweb:     http://git.kernel.org/tip/18b308d7994e0e2a360b979f159fa7d2b91a26b1
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 25 Aug 2010 12:47:44 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 25 Aug 2010 14:39:09 -0300
 
-All FireWire controllers are OHCI and use scatter-gather lists.
+perf hists: Fix hist_entry__init_have_children
 
-Most USB controllers require continuous memory for USB packets; the USB
-framework has its own DMA buffer cache.
+It wasn't setting the ms.has_children for the hist_entry itself, just
+for the callchain
 
-Some sound cards have no IOMMU; the ALSA framework preallocates buffers
-for those.
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/hists.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-
-Regards,
-Clemens
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index b13b978..39ba230 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -168,6 +168,7 @@ static void callchain__init_have_children(struct rb_root *self)
+ static void hist_entry__init_have_children(struct hist_entry *self)
+ {
+ 	if (!self->init_have_children) {
++		self->ms.has_children = !RB_EMPTY_ROOT(&self->sorted_chain);
+ 		callchain__init_have_children(&self->sorted_chain);
+ 		self->init_have_children = true;
+ 	}
