@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab0H3Kx1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 06:53:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53548 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab0H3KxY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 06:53:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=VNJ59KxDvdULZ6I9dH7LSU7WOjgTiJ5Dv/0Bfw16Vkhbqj0zDUpLyPDxIvRaTSLhdi
-         OwY6FEf6gRDfeidhkKGQtfqC9/uvweKhIvVDY+0ijtpcwHlsZkguvMff9iF20yasL05F
-         m3cBCTSl4aJZbVGkwUDA7BB8wYB6GCw/hrMJs=
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH 2/2] mtd: sm_ftl: cosmetic, use bool when possible
-Date: Mon, 30 Aug 2010 13:53:09 +0300
-Message-Id: <1283165589-10334-3-git-send-email-maximlevitsky@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1283165589-10334-1-git-send-email-maximlevitsky@gmail.com>
-References: <1283165589-10334-1-git-send-email-maximlevitsky@gmail.com>
+	id S1755338Ab0H3K4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 06:56:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20501 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754784Ab0H3K4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 06:56:38 -0400
+Message-ID: <4C7B8E5F.6090106@redhat.com>
+Date: Mon, 30 Aug 2010 13:56:31 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Alexander Graf <agraf@suse.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Marcelo Tosatti <mtosatti@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the kvm tree
+References: <20100830113523.28e6fa9e.sfr@canb.auug.org.au> <0568D973-31CA-4E44-8583-D39A58FCEDD8@suse.de>
+In-Reply-To: <0568D973-31CA-4E44-8583-D39A58FCEDD8@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't know that kernel allows use of that typedef.
+  On 08/30/2010 01:03 PM, Alexander Graf wrote:
+> On 30.08.2010, at 03:35, Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> After merging the kvm tree, today's linux-next build (powerpc
+>> ppc64_defconfig) failed like this:
+>>
+>> arch/powerpc/kernel/asm-offsets.c: In function 'main':
+>> arch/powerpc/kernel/asm-offsets.c:470: error: invalid use of undefined type 'struct kvm_vcpu_arch_shared'
+>> arch/powerpc/kernel/asm-offsets.c:472: error: invalid use of undefined type 'struct kvm_vcpu_arch_shared'
+>> arch/powerpc/kernel/asm-offsets.c:474: error: invalid use of undefined type 'struct kvm_vcpu_arch_shared'
+>> arch/powerpc/kernel/asm-offsets.c:476: error: invalid use of undefined type 'struct kvm_vcpu_arch_shared'
+>> arch/powerpc/kernel/asm-offsets.c:478: error: invalid use of undefined type 'struct kvm_vcpu_arch_shared'
+>> arch/powerpc/kernel/asm-offsets.c:479: error: invalid use of undefined type 'struct kvm_vcpu_arch_shared'
+>>
+>> Caused by commits 3623fdb1aa54678f73da95e797eb6e4756d4bd0e ("KVM: PPC:
+>> Convert MSR to shared page") and 158a244474a6620715c626d4647fec4d61aaeee7
+>> ("KVM: PPC: Generic KVM PV guest support").
+>>
+>> I have used the kvm tree from next-20100827 for today.
+> I sent a fix out to the ML. Avi or Marcelo, could you please merge that one in quickly? The !CONFIG_KVM but CONFIG_KVM_GUEST case was the one combination I didn't try out :(.
+>
 
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
----
- drivers/mtd/sm_ftl.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Done, next linux-next should have the fix.
 
-diff --git a/drivers/mtd/sm_ftl.h b/drivers/mtd/sm_ftl.h
-index e30e48e..43bb730 100644
---- a/drivers/mtd/sm_ftl.h
-+++ b/drivers/mtd/sm_ftl.h
-@@ -20,7 +20,7 @@
- 
- 
- struct ftl_zone {
--	int initialized;
-+	bool initialized;
- 	int16_t *lba_to_phys_table;		/* LBA to physical table */
- 	struct kfifo free_sectors;	/* queue of free sectors */
- };
-@@ -37,8 +37,8 @@ struct sm_ftl {
- 	int zone_count;			/* number of zones */
- 	int max_lba;			/* maximum lba in a zone */
- 	int smallpagenand;		/* 256 bytes/page nand */
--	int readonly;			/* is FS readonly */
--	int unstable;
-+	bool readonly;			/* is FS readonly */
-+	bool unstable;
- 	int cis_block;			/* CIS block location */
- 	int cis_boffset;		/* CIS offset in the block */
- 	int cis_page_offset;		/* CIS offset in the page */
-@@ -49,7 +49,7 @@ struct sm_ftl {
- 	int cache_zone;			/* zone of cached block */
- 	unsigned char *cache_data;	/* cached block data */
- 	long unsigned int cache_data_invalid_bitmap;
--	int cache_clean;
-+	bool cache_clean;
- 	struct work_struct flush_work;
- 	struct timer_list timer;
- 
 -- 
-1.7.0.4
+error compiling committee.c: too many arguments to function
 
