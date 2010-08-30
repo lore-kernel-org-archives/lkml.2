@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab0H3FYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 01:24:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38531 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754466Ab0H3FYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 01:24:05 -0400
-Date: Mon, 30 Aug 2010 07:23:58 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jean-Denis Girard <jd.girard@sysnux.pf>
-Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        Eric Anholt <eric@anholt.net>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Xiang Hai hao <haihao.xiang@intel.com>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: Linux 2.6.36-rc3
-Message-ID: <20100830052358.GA3506@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jean-Denis Girard <jd.girard@sysnux.pf>,
-	linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-	Eric Anholt <eric@anholt.net>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Xiang Hai hao <haihao.xiang@intel.com>,
-	dri-devel@lists.freedesktop.org
-References: <AANLkTinRRiW1VUzS+3T82=q8PsoRn78Cgn_X8gSduM0U@mail.gmail.com>
- <loom.20100830T003135-767@post.gmane.org>
+	id S1754640Ab0H3FZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 01:25:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64575 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868Ab0H3FZQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 01:25:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type;
+        b=bfFW1fmhWAjH1kWs4/kGFUN8x6hC6v8sGAAK0/MESx3bQE7EonSp+zBuxEArsfK1ia
+         iMsXHIV6awpr1e6zN95nru9OoxeoLQnf58AFnUql2BlDIgYi1PHXgNuWrB7TH3Z4Mr2i
+         /MBMlJPE++HKp5On5LrX9cBpPOsIgVz0W6DnI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <loom.20100830T003135-767@post.gmane.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <AANLkTim_seWr0LZJyC+dPBy-N+_NkzTx21vte7qrwunC@mail.gmail.com>
+References: <alpine.DEB.1.10.0902041349180.6214@alien.or.mcafeemobile.com>
+ <20090204150507.665b5b7c.akpm@linux-foundation.org> <alpine.DEB.1.10.0902041509060.6214@alien.or.mcafeemobile.com>
+ <20090204152434.c8f65d52.akpm@linux-foundation.org> <alpine.DEB.1.10.0902041526590.6214@alien.or.mcafeemobile.com>
+ <20090204155514.6abbdc8f.akpm@linux-foundation.org> <cfd18e0f0902041559l4c40d9b6k704068337a00df7a@mail.gmail.com>
+ <alpine.DEB.1.10.0902041600170.6214@alien.or.mcafeemobile.com> <AANLkTim_seWr0LZJyC+dPBy-N+_NkzTx21vte7qrwunC@mail.gmail.com>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Mon, 30 Aug 2010 07:24:48 +0200
+Message-ID: <AANLkTi=h0roGfS6PBMk=0D_ZqC5h9OxX-QdTe9pK1Sk-@mail.gmail.com>
+Subject: Re: [patch/rfc] eventfd semaphore-like behavior
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-api@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Denis Girard <jd.girard@sysnux.pf>
-Date: Sun, Aug 29, 2010 at 10:40:47PM +0000
+On Mon, Aug 30, 2010 at 7:21 AM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
 
->   CC      drivers/gpu/drm/i915/intel_overlay.o
-> drivers/gpu/drm/i915/intel_overlay.c: In function 
-> ‘intel_overlay_print_error_state’:
-> drivers/gpu/drm/i915/intel_overlay.c:1467: erreur: implicit declaration 
-> of function ‘seq_printf’
-> make[4]: *** [drivers/gpu/drm/i915/intel_overlay.o] Erreur 1
-> make[3]: *** [drivers/gpu/drm/i915] Erreur 2
-> make[2]: *** [drivers/gpu/drm] Erreur 2
-> make[1]: *** [drivers/gpu] Erreur 2
-> make: *** [drivers] Erreur 2
-> Command exited with non-zero status 2
+> It took a while, but here's the new text in the eventfd.2 (will be in
+> man-pages-2.36). Could you please ACK, Davide?
 
-This should fix it:
-
----
-From: Borislav Petkov <bp@alien8.de>
-
-Add a missing include fixing driver build.
-
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- drivers/gpu/drm/i915/intel_overlay.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_overlay.c b/drivers/gpu/drm/i915/intel_overlay.c
-index 4f00390..4eaf08e 100644
---- a/drivers/gpu/drm/i915/intel_overlay.c
-+++ b/drivers/gpu/drm/i915/intel_overlay.c
-@@ -25,6 +25,8 @@
-  *
-  * Derived from Xorg ddx, xf86-video-intel, src/i830_video.c
-  */
-+#include <linux/seq_file.h>
-+
- #include "drmP.h"
- #include "drm.h"
- #include "i915_drm.h"
--- 
-1.7.1
+Oops: s/2.36/3.26/
 
 -- 
-Regards/Gruss,
-    Boris.
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
