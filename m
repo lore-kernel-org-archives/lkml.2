@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab0H3Qp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 12:45:56 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41226 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab0H3Qpz (ORCPT
+	id S1756026Ab0H3Qqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 12:46:42 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45416 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab0H3Qql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 12:45:55 -0400
+	Mon, 30 Aug 2010 12:46:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=rQNFLC5Q359CM8WvLZ1YA+WN/Ea5PGhNru4hCtTBCyTxzcqR8/4gWAiJou1Tk32jbg
+         SaDB5jEryf3t/npaVXXjHJGaEpx2EbOCvzs00EtQiQngVLTTHQmCP3WGM819IPS+Kkz5
+         2LgyrXc0jWXZOmZeVwZeLt78G02w++RdIcjNk=
 MIME-Version: 1.0
-X-Originating-IP: [192.94.94.105]
-Date: Mon, 30 Aug 2010 11:45:53 -0500
-Message-ID: <AANLkTi==im4bxnn9Ga2-ukUCiKdzQETHahcgvEj0Sef6@mail.gmail.com>
-Subject: usage of kill_pid and family
-From: Pavan Savoy <pavan_savoy@sify.com>
+Date: Mon, 30 Aug 2010 10:46:39 -0600
+Message-ID: <AANLkTi=KrqaC6=H43-fFi-D8Zq3ePBocXYF0-XmNKcFr@mail.gmail.com>
+Subject: [ANNOUNCE] MDB Merkey's Linux Kernel Debugger 2.6.35.4 x86_64 08-30-2010
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+CURRENT
+http://merkeydebugger.googlecode.com/files/mdb-2.6.35.4-x86_64-08-30-2010.patch
 
-I use kill_pid in one of our drivers to signal a user-space daemon to
-perform a particular action (open-UART for instance), I recently ran
-into problems with permissions as to when a user with stranger UID
-started open up a device, which internally calls the kill_pid in that
-context, could not send the signal and returned with "permission
-denied".
+REPOSITORY
+http://code.google.com/p/merkeydebugger/
+http://sourceforge.net/projects/merkeydebugger/
 
-I started using kill_pid_info_as_uid and sent signals as UID 0 to
-solve the problem, it did solve the problem, but is this the right
-approach?
 
-Also why is not suggested to use kill_pid and family to communicate
-with user-space? (namespace issues??- what do they mean?)
+FIXES:
+- port to 2.6.35.4 and test
+- fix patch delta changes and Fuzz warnings.
 
-Note:
-I get the PID of the process which receives signal from one of the
-sysfs entries created by driver, but filled up by the daemon...
+Jeff Merkey
