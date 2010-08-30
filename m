@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab0H3Wxb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 18:53:31 -0400
-Received: from claw.goop.org ([74.207.240.146]:60735 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787Ab0H3Wx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 18:53:29 -0400
-Message-ID: <4C7C3666.2080601@goop.org>
-Date: Mon, 30 Aug 2010 15:53:26 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-        joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, ngupta@vflare.org, JBeulich@novell.com,
-        kurt.hackel@oracle.com, npiggin@kernel.dk, dave.mccracken@oracle.com,
-        riel@redhat.com, avi@redhat.com, konrad.wilk@oracle.com, mel@csn.ul.ie,
-        yinghan@google.com, gthelen@google.com
-Subject: Re: [PATCH V4 5/8] Cleancache: ext3 hook for cleancache
-References: <20100830223233.GA1317@ca-server1.us.oracle.com>
-In-Reply-To: <20100830223233.GA1317@ca-server1.us.oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754503Ab0H3XEb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 19:04:31 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63111 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab0H3XEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 19:04:30 -0400
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: linux-bluetooth@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, marcel@holtmann.org
+Subject: [PATCH] Bluetooth: Simplify L2CAP Streaming mode sending
+Date: Mon, 30 Aug 2010 20:04:22 -0300
+Message-Id: <1283209462-8572-1-git-send-email-padovan@profusion.mobi>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 08/30/2010 03:32 PM, Dan Magenheimer wrote:
-> [PATCH V4 5/8] Cleancache: ext3 hook for cleancache
->
-> Filesystems must explicitly enable cleancache by calling
-> cleancache_init_fs anytime a instance of the filesystem
-> is mounted and must save the returned poolid.  For ext3,
-> all other cleancache hooks are in the VFS layer including
-> the matching cleancache_flush_fs hook which must be
-> called on unmount.
->
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Acked-by: Andreas Dilger <adilger@sun.com>
->
-> Diffstat:
->  super.c                                  |    2 ++
->  1 file changed, 2 insertions(+)
->
-> --- linux-2.6.36-rc3/fs/ext3/super.c	2010-08-29 09:36:04.000000000 -0600
-> +++ linux-2.6.36-rc3-cleancache/fs/ext3/super.c	2010-08-30 09:20:42.000000000 -0600
-> @@ -37,6 +37,7 @@
->  #include <linux/quotaops.h>
->  #include <linux/seq_file.h>
->  #include <linux/log2.h>
-> +#include <linux/cleancache.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -1349,6 +1350,7 @@ static int ext3_setup_super(struct super
->  	} else {
->  		ext3_msg(sb, KERN_INFO, "using internal journal");
->  	}
-> +	sb->cleancache_poolid = cleancache_init_fs(PAGE_SIZE);
+As we don't have any error control on the Streaming mode, i.e., we don't
+need to keep a copy of the skb for later resending we don't need to
+call skb_clone() on it.
+Then we can go one further here, and dequeue the skb before sending it,
+that also means we don't need to look to sk->sk_send_head anymore.
 
-Do you really need to pass in the page size?  What about just
-"cleancache_init_fs(sb)" rather than exposing the
-"sb->cleancache_poolid"?  In other words, what if you want to do
-more/other per-filesystem init at some point?
+This patch fixes a bug in Streaming mode sending procedure, the call to
+skb_clone() was making the system run into OOM condition. I never got
+that before 2.6.36, so I'm think that we acctually have regression
+there.
 
-    J
+Anyway, the patch saves memory and time when sending Streaming mode
+data, so it is good to mainline.
+
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+---
+ net/bluetooth/l2cap.c |   24 +++++++-----------------
+ 1 files changed, 7 insertions(+), 17 deletions(-)
+
+diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
+index fadf26b..80e98cd 100644
+--- a/net/bluetooth/l2cap.c
++++ b/net/bluetooth/l2cap.c
+@@ -1441,33 +1441,23 @@ static inline void l2cap_do_send(struct sock *sk, struct sk_buff *skb)
+ 
+ static void l2cap_streaming_send(struct sock *sk)
+ {
+-	struct sk_buff *skb, *tx_skb;
++	struct sk_buff *skb;
+ 	struct l2cap_pinfo *pi = l2cap_pi(sk);
+ 	u16 control, fcs;
+ 
+-	while ((skb = sk->sk_send_head)) {
+-		tx_skb = skb_clone(skb, GFP_ATOMIC);
+-
+-		control = get_unaligned_le16(tx_skb->data + L2CAP_HDR_SIZE);
++	while ((skb = skb_dequeue(TX_QUEUE(sk)))) {
++		control = get_unaligned_le16(skb->data + L2CAP_HDR_SIZE);
+ 		control |= pi->next_tx_seq << L2CAP_CTRL_TXSEQ_SHIFT;
+-		put_unaligned_le16(control, tx_skb->data + L2CAP_HDR_SIZE);
++		put_unaligned_le16(control, skb->data + L2CAP_HDR_SIZE);
+ 
+ 		if (pi->fcs == L2CAP_FCS_CRC16) {
+-			fcs = crc16(0, (u8 *)tx_skb->data, tx_skb->len - 2);
+-			put_unaligned_le16(fcs, tx_skb->data + tx_skb->len - 2);
++			fcs = crc16(0, (u8 *)skb->data, skb->len - 2);
++			put_unaligned_le16(fcs, skb->data + skb->len - 2);
+ 		}
+ 
+-		l2cap_do_send(sk, tx_skb);
++		l2cap_do_send(sk, skb);
+ 
+ 		pi->next_tx_seq = (pi->next_tx_seq + 1) % 64;
+-
+-		if (skb_queue_is_last(TX_QUEUE(sk), skb))
+-			sk->sk_send_head = NULL;
+-		else
+-			sk->sk_send_head = skb_queue_next(TX_QUEUE(sk), skb);
+-
+-		skb = skb_dequeue(TX_QUEUE(sk));
+-		kfree_skb(skb);
+ 	}
+ }
+ 
+-- 
+1.7.2.2
+
