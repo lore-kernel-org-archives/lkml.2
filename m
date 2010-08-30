@@ -1,128 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab0H3LVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 07:21:43 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:55789 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305Ab0H3LUp (ORCPT
+	id S1755446Ab0H3LVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 07:21:47 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37978 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab0H3LVp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 07:20:45 -0400
-X-IronPort-AV: E=Sophos;i="4.56,292,1280721600"; 
-   d="scan'208";a="111744721"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 2/7] xen: get the maximum number of pirqs from xen
-Date: Mon, 30 Aug 2010 12:21:11 +0100
-Message-Id: <1283167276-7364-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop>
-References: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop>
-X-OriginalArrivalTime: 30 Aug 2010 11:20:40.0611 (UTC) FILETIME=[60E26F30:01CB4835]
+	Mon, 30 Aug 2010 07:21:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TthJRIezlgIveMN8LOhji+EVCI1RLQqLbYBpiyEzPJrnIr7dlyVc7qkWkl/srGxtYo
+         ZrN1pVOpEXILyakmzYmu8K1pM4qdH7sl787bXPhZm8UUiIfxN875b8Vfr4w80lUMenBH
+         7pGAVxyesGPplLflJTRQPyeGJdMbB5Fknjhlw=
+MIME-Version: 1.0
+In-Reply-To: <4C7B454A.7050101@kernel.org>
+References: <1283011478-27237-1-git-send-email-brgerst@gmail.com>
+	<1283011478-27237-11-git-send-email-brgerst@gmail.com>
+	<AANLkTinnhht86aKkmHKypmgmThJP8a1rGEXFkwyW7dc3@mail.gmail.com>
+	<AANLkTik7Gv3xoZphR0VRkHdr3Z1tvO484S-zkYncC2K7@mail.gmail.com>
+	<4C7B454A.7050101@kernel.org>
+Date: Mon, 30 Aug 2010 07:21:43 -0400
+Message-ID: <AANLkTimO4xHJ5AwZNjctYRDU6jqrY6mkVfkaG1u_LnTx@mail.gmail.com>
+Subject: Re: [PATCH 10/11] x86: Remove unnecessary ifdefs from i387 code.
+From: Brian Gerst <brgerst@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On Mon, Aug 30, 2010 at 1:44 AM, Pekka Enberg <penberg@kernel.org> wrote:
+>  Hi Brian,
+>
+> On 8/30/10 2:38 AM, Brian Gerst wrote:
+>>
+>> On Sun, Aug 29, 2010 at 3:00 PM, Pekka Enberg<penberg@kernel.org>  wrote:
+>>>
+>>> On Sat, Aug 28, 2010 at 7:04 PM, Brian Gerst<brgerst@gmail.com>  wrote:
+>>>>
+>>>> Remove ifdefs for code that the compiler can optimize away on 64-bit.
+>>>>
+>>>> Signed-off-by: Brian Gerst<brgerst@gmail.com>
+>>>> @@ -74,10 +74,8 @@ static void __cpuinit init_thread_xstate(void)
+>>>>
+>>>>        if (cpu_has_fxsr)
+>>>>                xstate_size = sizeof(struct i387_fxsave_struct);
+>>>> -#ifdef CONFIG_X86_32
+>>>>        else
+>>>>                xstate_size = sizeof(struct i387_fsave_struct);
+>>>> -#endif
+>>>>  }
+>>>
+>>> I guess this is OK but keep in mind that cpu_has_fsxr is _not_
+>>> optimized by the compiler on 64-bit so the change probably increases
+>>> kernel text by few bytes.
+>>
+>> FXSR is a required feature on 64-bit, therefore cpu_has_fxsr is always
+>> true.
+>
+> Yes, I realize that but it will still read boot_cpu_data at runtime, no?
 
-Use PHYSDEVOP_get_nr_pirqs to get the maximum number of pirqs from xen.
+Look at cpu_has().  It checks REQUIRED_MASK* if the feature bit is a
+constant, and returns true without testing the actual bit in
+boot_cpu_data for required features.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/events.c            |   31 +++++++++++++++++++++++++++----
- include/xen/interface/physdev.h |    6 ++++++
- 2 files changed, 33 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index a5c30db..aca7230 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -102,6 +102,7 @@ struct irq_info
- 
- static struct irq_info *irq_info;
- static int *pirq_to_irq;
-+static int nr_pirqs;
- 
- static int *evtchn_to_irq;
- struct cpu_evtchn_s {
-@@ -377,10 +378,12 @@ static int get_nr_hw_irqs(void)
- 	return ret;
- }
- 
-+/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
-+ * succeeded otherwise nr_pirqs won't hold the right value */
- static int find_unbound_pirq(void)
- {
- 	int i;
--	for (i = 0; i < nr_irqs; i++) {
-+	for (i = nr_pirqs-1; i >= 0; i--) {
- 		if (pirq_to_irq[i] < 0)
- 			return i;
- 	}
-@@ -596,6 +599,14 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
- 
- 	spin_lock(&irq_mapping_update_lock);
- 
-+	if ((pirq > nr_pirqs) || (gsi > nr_irqs)) {
-+		printk(KERN_WARN "%s: %s %s is incorrect!\n",
-+			__function__,
-+			pirq > nr_pirqs : "nr_pirqs" :"",
-+			gsi > nr_irqs : "nr_irqs" : "");
-+		goto out;
-+	}
-+
- 	irq = find_irq_by_gsi(gsi);
- 	if (irq != -1) {
- 		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
-@@ -1334,14 +1345,26 @@ void xen_callback_vector(void) {}
- 
- void __init xen_init_IRQ(void)
- {
--	int i;
-+	int i, rc;
-+	struct physdev_nr_pirqs op_nr_pirqs;
- 
- 	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
- 				    GFP_KERNEL);
- 	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
- 
--	pirq_to_irq = kcalloc(nr_irqs, sizeof(*pirq_to_irq), GFP_KERNEL);
--	for (i = 0; i < nr_irqs; i++)
-+	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
-+	if (rc < 0) {
-+		nr_pirqs = nr_irqs;
-+		if (rc != -ENOSYS)
-+			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
-+	} else {
-+		if (xen_pv_domain() && !xen_intial_domain())
-+			nr_pirqs = max(op_nr_pirqs.nr_pirqs, nr_irqs);
-+		else
-+			nr_pirqs = op_nr_pirqs.nr_pirqs;
-+	}
-+	pirq_to_irq = kcalloc(nr_pirqs, sizeof(*pirq_to_irq), GFP_KERNEL);
-+	for (i = 0; i < nr_pirqs; i++)
- 		pirq_to_irq[i] = -1;
- 
- 	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index cd69391..fbb5883 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -121,6 +121,12 @@ struct physdev_op {
- 	} u;
- };
- 
-+#define PHYSDEVOP_get_nr_pirqs    22
-+struct physdev_nr_pirqs {
-+    /* OUT */
-+    uint32_t nr_pirqs;
-+};
-+
- /*
-  * Notify that some PIRQ-bound event channels have been unmasked.
-  * ** This command is obsolete since interface version 0x00030202 and is **
--- 
-1.5.6.5
-
+--
+Brian Gerst
