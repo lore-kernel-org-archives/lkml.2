@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab0H3Mob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 08:44:31 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53522 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab0H3Mo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 08:44:28 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(ze80izbb2cK1432N98dNzz1202hzzz32i2a8h5bem5bfn61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7YTXX-01-F8S-02
-X-M-MSG: 
-Date: Mon, 30 Aug 2010 14:41:58 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 2/4] sh: Accessor functions for the sh_pmu state
-Message-ID: <20100830124158.GY22783@erda.amd.com>
-References: <cover.1282848651.git.matt@console-pimps.org>
- <f259830dbccb084d27d127676b979d9cb502e36f.1282848651.git.matt@console-pimps.org>
- <20100827134301.GL22783@erda.amd.com>
- <20100827191745.GA7258@console-pimps.org>
+	id S1754908Ab0H3Mpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 08:45:32 -0400
+Received: from www.tglx.de ([62.245.132.106]:40217 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754364Ab0H3Mpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 08:45:31 -0400
+Date: Mon, 30 Aug 2010 14:44:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+cc: Grant Likely <grant.likely@secretlab.ca>, meego-dev@meego.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
+        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        arjan@linux.intel.com, gregkh@suse.de,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+In-Reply-To: <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com>
+Message-ID: <alpine.LFD.2.00.1008301442290.9874@localhost6.localdomain6>
+References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com>
+ <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100827191745.GA7258@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.08.10 15:17:45, Matt Fleming wrote:
-
-> > > --- a/arch/sh/kernel/perf_event.c
-> > > +++ b/arch/sh/kernel/perf_event.c
-> > > @@ -60,6 +60,19 @@ static inline int sh_pmu_initialized(void)
-> > >  }
-> > >  
-> > >  /*
-> > > + * Return the number of events for the current sh_pmu.
-> > > + */
-> > > +int sh_pmu_num_events(void)
-> > > +{
-> > > +	return sh_pmu->num_events;
-> > > +}
-> > > +
-> > > +const char *sh_pmu_name(void)
-> > > +{
-> > > +	return sh_pmu->name;
-> > > +}
-
-> > This accessor functions should be generic for all architectures.
+On Mon, 30 Aug 2010, Masayuki Ohtake wrote:
+> > Indeed.  BTW, Ohtak-san, is this spi bus device something brand new,
+> > or is it derived from an existing spi device?
 > 
-> This isn't going to work. ARM uses an integer ID whereas SH uses a
-> string name. This is specific to an architecture and making it generic
-> would probably involve some abstraction layer.
+> Yes, Intel Topcliff is new concept device.
 
-Perf should provide the interface to detect the number of counters
-(btw. *num_events is wrong) and the name of the pmu. The information
-is part of perf and thus the functions accessing it should be part of
-perf too, not oprofile.
+Thats right, but the question was whether the SPI peripheral is a new
+IP design or similar to some already supported AMBA SPI peripheral.
 
-We also need generic functions, because we want to have a generic
-oprofile-perf driver.
+Maybe the Intel folks can shed some light on that.
 
-I don't see that this is hard to implement. We could add function
-stubs returning an error or invalid value using the __weak attribute
-and implement it for those architectures where we need it.
+Thanks,
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+	tglx
