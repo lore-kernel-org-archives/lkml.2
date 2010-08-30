@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab0H3Bma (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Aug 2010 21:42:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53446 "EHLO smtps.tip.net.au"
+	id S1754549Ab0H3BrW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Aug 2010 21:47:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56586 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab0H3Bm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Aug 2010 21:42:29 -0400
-Date: Mon, 30 Aug 2010 11:42:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: linux-next: build warnings in Linus' tree
-Message-Id: <20100830114222.3a1f53e6.sfr@canb.auug.org.au>
-In-Reply-To: <20100817112439.18f9d958.sfr@canb.auug.org.au>
-References: <20100817112439.18f9d958.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__30_Aug_2010_11_42_22_+1000_bg+xvqMihjQNRumZ"
+	id S1754489Ab0H3BrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Aug 2010 21:47:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,289,1280732400"; 
+   d="scan'208";a="601684950"
+Message-ID: <4C7B0DA6.2070204@intel.com>
+Date: Mon, 30 Aug 2010 09:47:18 +0800
+From: Weidong Han <weidong.han@intel.com>
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+MIME-Version: 1.0
+To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [patch 1/3] x86, intr-remap: set redirection hint in the IRTE
+References: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__30_Aug_2010_11_42_22_+1000_bg+xvqMihjQNRumZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Len,
-
-On Tue, 17 Aug 2010 11:24:39 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+Siddha, Suresh B wrote:
+> Currently the redirection hint in the interrupt-remapping table entry
+> is set to 0, which means the remapped interrupt is directed to the
+> processors listed in the destination. So in logical flat mode
+> in the presence of intr-remapping, this results in a single
+> interrupt multi-casted to multiple cpu's as specified by the destination
+> bit mask. But what we really want is to send that interrupt to one of the cpus
+> based on the lowest priority delivery mode.
 >
-> Today's linux-next build (x86_64 allmodconfig) produced these warnings:
->=20
-> drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
-> drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
-> drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
-> drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
-> drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
-> drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
-> drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
-> drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set=
-_param' from incompatible pointer type
-> include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, st=
-ruct kernel_param *)' but argument is of type 'int (*)(const char *, const =
-struct kernel_param *)'
->=20
-> Introduced by commit 1c8fce27e275fd7c6b75bc6455745f02d3903ee6 ("ACPI:
-> introduce drivers/acpi/sysfs.c") interacting with commit
-> 9bbb9e5a33109b2832e2e63dcc7a132924ab374b ("param: use ops in struct
-> kernel_param, rather than get and set fns directly").
+> Set the redirection hint in the IRTE to '1' to indicate that we want
+> the remapped interrupt to be directed to only one of the processors
+> listed in the destination.
+>
+> This fixes the issue of same interrupt getting delivered to multiple cpu's
+> in the logical flat mode in the presence of interrupt-remapping. While
+> there is no functional issue observed with this behavior, this will
+> impact performance of such configurations (<=8 cpu's using logical flat
+> mode in the presence of interrupt-remapping)
+>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: Weidong Han <weidong.han@intel.com>
+> Cc: <stable@kernel.org> # [v2.6.32+]
+> ---
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index f1efeba..90f8a75 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -1392,6 +1392,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+>  		irte.dlvry_mode = apic->irq_delivery_mode;
+>  		irte.vector = vector;
+>  		irte.dest_id = IRTE_DEST(destination);
+> +		irte.redir_hint = 1;
+>  
+>  		/* Set source-id of interrupt request */
+>  		set_ioapic_sid(&irte, apic_id);
+> @@ -3343,6 +3344,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+>  		irte.dlvry_mode = apic->irq_delivery_mode;
+>  		irte.vector = cfg->vector;
+>  		irte.dest_id = IRTE_DEST(dest);
+> +		irte.redir_hint = 1;
+>  
+>  		/* Set source-id of interrupt request */
+>  		if (pdev)
+>
+>
+>   
+hi Suresh,
 
-Can we have this fixed, please?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I think it needs to set redir_hint only for lowest priority delivery 
+mode. Why set it for all delivery modes?
 
---Signature=_Mon__30_Aug_2010_11_42_22_+1000_bg+xvqMihjQNRumZ
-Content-Type: application/pgp-signature
+Regards,
+Weidong
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMewx+AAoJEDMEi1NhKgbs9EIH/0WxZDbk/LYWggbKb4ZlKttN
-WhgSorr+E1hfkJqs92nKb09aGArvgjHPnwHKPBmy0QQ8uBbctrWcuBnf1XiPFfFc
-FPS9eA7ADP/SIn7Hu9viAKj8Ut6+5iPc5vdxMUWQLgwbGZaOkg66YWRAja1UjudN
-KcTtu5ic7k/O/cKrB8A7Q9JqG4wHcRGM9rvQx9MYt3CNcgG3E5GXy/CwRc1B2QeG
-JBwzKQf2fT/QlSgP6+PVC0BxzGSUGmmQ5wFA3FwHLYg0bLK+PNF6lwEvhFBgSffg
-KAIDxae0BP+KJT0V6Dy+tgHuqp8HUBY1ZFvl7pC4uw+oOEivB8YvUIt77SInjwU=
-=OMZ8
------END PGP SIGNATURE-----
-
---Signature=_Mon__30_Aug_2010_11_42_22_+1000_bg+xvqMihjQNRumZ--
