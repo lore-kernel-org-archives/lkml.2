@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab0H3RzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:55:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39623 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756445Ab0H3RzC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:55:02 -0400
+	id S1756480Ab0H3R4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:56:25 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43939 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755674Ab0H3R4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 13:56:24 -0400
+Message-ID: <4C7BF0C8.8070505@fusionio.com>
+Date: Mon, 30 Aug 2010 19:56:24 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <838632.57445.qm@web180307.mail.gq1.yahoo.com>
-References: <1283154702-23008-1-git-send-email-myungjoo.ham@samsung.com> <838632.57445.qm@web180307.mail.gq1.yahoo.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 30 Aug 2010 11:54:41 -0600
-X-Google-Sender-Auth: Ji4XxrSIBaIpyeSVoqDTVA2AWeo
-Message-ID: <AANLkTikpRcqPJay-7zjDiZg3w=+gUk3kks=payPazxxj@mail.gmail.com>
-Subject: Re: [RFC PATCH] GPIO: add control of powerdown modes and pull-up/down configurations.
-To: David Brownell <david-b@pacbell.net>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        MyungJoo Ham <myungjoo.ham@gmail.com>
+To: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+CC: Tejun Heo <tj@kernel.org>,
+        OLUSANYA SOYANNWO <olusanya.soyannwo@motorola.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hu Tao <taohu@motorola.com>, "torvalds@osdl.org" <torvalds@osdl.org>
+Subject: Re: [PATCH v6] scatterlist: prevent invalid free when alloc fails
+References: <4C7BD8BE.7050600@kernel.org> <20100830165022.96032603843@il93ubuntu.localdomain>
+In-Reply-To: <20100830165022.96032603843@il93ubuntu.localdomain>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 11:35 AM, David Brownell <david-b@pacbell.net> wrote:
->
->
-> --- On Mon, 8/30/10, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
->
->> From: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Subject: [RFC PATCH] GPIO: add control of powerdown modes and pull-up/down configurations.
->
-> NAK.
+On 2010-08-30 18:19, Jeffrey Carlyle wrote:
+> When alloc fails, free_table is being called. Depending on the number of
+> bytes requested, we determine if we are going to call _get_free_page()
+> or kmalloc(). When alloc fails, our math is wrong (due to sg_size - 1),
+> and the last buffer is wrongfully assumed to have been allocated by
+> kmalloc. Hence, kfree gets called and a panic occurs.
 
-Seconded.  I completely agree with David's comments.
-
-g.
-
->
-> Note that Documentation/gpio.txt specifies such
-> pinmux/configuration as out of scope.  There isn't
-> even uniformity of models about such things between
-> SOCs (and ASICs etc).
->
-> Put these kinds of things in arch-specific code,
-> which has good reason to know about all the ways
-> each platform differs from others, and to cope.
->
-> Look at OMAP and AT91 for some examples of SOCs
-> which have addressed these issues cleanly, and
-> without committing mayhem on the GPIO framework.
->
->
-
-
+That's a lot of revs, thanks for getting it done (and Tejun for
+the careful reviews).
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Jens Axboe
+
