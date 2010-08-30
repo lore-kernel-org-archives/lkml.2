@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab0H3RZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 13:25:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59414 "EHLO ogre.sisk.pl"
+	id S1756168Ab0H3R0h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 13:26:37 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34380 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751531Ab0H3RZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 13:25:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [Bug #16173] After uncompressing the kernel, at boot time, the server hangs.
-Date: Mon, 30 Aug 2010 19:24:06 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "David Hill" <hilld@binarystorm.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-References: <c1_O4wHrlB.A.63.mbueMB@chimera> <201008300128.34970.rjw@sisk.pl> <m1wrr9asjx.fsf@fess.ebiederm.org>
-In-Reply-To: <m1wrr9asjx.fsf@fess.ebiederm.org>
+	id S1756136Ab0H3R0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 13:26:36 -0400
+Date: Mon, 30 Aug 2010 10:26:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        jslaby@suse.cz, jmorris@namei.org
+Subject: [PATCH RFC] pid: make setpgid() system call use RCU read-side
+ critical section
+Message-ID: <20100830172631.GA11868@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008301924.06603.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 30, 2010, Eric W. Biederman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > On Monday, August 30, 2010, Eric W. Biederman wrote:
-> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> >> 
-> >> > This message has been generated automatically as a part of a report
-> >> > of regressions introduced between 2.6.34 and 2.6.35.
-> >> >
-> >> > The following bug entry is on the current list of known regressions
-> >> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> >> > be listed and let the tracking team know (either way).
-> >> >
-> >> 
-> >> Looks like it's fixed.
-> >
-> > Good.  What mainlne commit is that?
-> 
-> commit 910081322bf9c4ed392dc8f2ecbc33fdb42a2958
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Wed Aug 4 12:51:11 2010 -0700
-> 
->     x86/apic: Map the local apic when parsing the MP table.
->     
->     This fixes a regression in 2.6.35 from 2.6.34, that is
->     present for select models of Intel cpus when people are
->     using an MP table.
->     
->     The commit cf7500c0ea133d66f8449d86392d83f840102632
->     "x86, ioapic: In mpparse use mp_register_ioapic" started
->     calling mp_register_ioapic from MP_ioapic_info.  An extremely
->     simple change that was obviously correct.  Unfortunately
->     mp_register_ioapic did just a little more than the previous
->     hand crafted code and so we gained this call path.
->     
->     The problem call path is:
->     MP_ioapic_info()
->       mp_register_ioapic()
->        io_apic_unique_id()
->          io_apic_get_unique_id()
->            get_physical_broadcast()
->              modern_apic()
->                lapic_get_version()
->                  apic_read(APIC_LVR)
->     
->     Which turned out to be a problem because the local apic
->     was not mapped, at that point, unlike the similar point
->     in the ACPI parsing code.
->     
->     This problem is fixed by mapping the local apic when
->     parsing the mptable as soon as we reasonably can.
->     
->     Looking at the number of places we setup the fixmap for
->     the local apic, I see some serious simplification opportunities.
->     For the moment except for not duplicating the setting up of the
->     fixmap in init_apic_mappings, I have not acted on them.
->     
->     The regression from 2.6.34 is tracked in bug
->     https://bugzilla.kernel.org/show_bug.cgi?id=16173
->     
->     Cc: stable@kernel.org
->     Reported-by: David Hill <hilld@binarystorm.net>
->     Reported-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
->     Tested-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
->     Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+[   23.584719]
+[   23.584720] ===================================================
+[   23.585059] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   23.585176] ---------------------------------------------------
+[   23.585176] kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+[   23.585176]
+[   23.585176] other info that might help us debug this:
+[   23.585176]
+[   23.585176]
+[   23.585176] rcu_scheduler_active = 1, debug_locks = 1
+[   23.585176] 1 lock held by rc.sysinit/728:
+[   23.585176]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff8104771f>] sys_setpgid+0x5f/0x193
+[   23.585176]
+[   23.585176] stack backtrace:
+[   23.585176] Pid: 728, comm: rc.sysinit Not tainted 2.6.36-rc2 #2
+[   23.585176] Call Trace:
+[   23.585176]  [<ffffffff8105b436>] lockdep_rcu_dereference+0x99/0xa2
+[   23.585176]  [<ffffffff8104c324>] find_task_by_pid_ns+0x50/0x6a
+[   23.585176]  [<ffffffff8104c35b>] find_task_by_vpid+0x1d/0x1f
+[   23.585176]  [<ffffffff81047727>] sys_setpgid+0x67/0x193
+[   23.585176]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
+[   24.959669] type=1400 audit(1282938522.956:4): avc:  denied  { module_request } for  pid=766 comm="hwclock" kmod="char-major-10-135" scontext=system_u:system_r:hwclock_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclas
 
-Thanks, closed.
+It turns out that the setpgid() system call fails to enter an RCU
+read-side critical section before doing a PID-to-task_struct translation.
+This commit therefore does rcu_read_lock() before the translation, and
+also does rcu_read_unlock() after the last use of the returned pointer.
 
-Rafael
+Located-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+
+ sys.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e9ad444..05a4b0c 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -938,6 +938,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
+ 	write_lock_irq(&tasklist_lock);
+ 
+ 	err = -ESRCH;
++	rcu_read_lock();
+ 	p = find_task_by_vpid(pid);
+ 	if (!p)
+ 		goto out;
+@@ -983,6 +984,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
+ 	err = 0;
+ out:
+ 	/* All paths lead to here, thus we are safe. -DaveM */
++	rcu_read_unlock();
+ 	write_unlock_irq(&tasklist_lock);
+ 	return err;
+ }
