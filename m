@@ -1,57 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab0H3XnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 19:43:07 -0400
-Received: from n4-vm0.bullet.mail.gq1.yahoo.com ([67.195.9.7]:27966 "HELO
-	n4-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753999Ab0H3XnG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 19:43:06 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 1616.21495.bm@omp128.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=DTzZuwnLqfbgPdkOdzyPSclLr79k/LoXmL5vJ90UxEoe0xqbf38lRSjNOU8l7LMeOs7wMR/QHXJTEZPbFDnSlOkEBez6hfPvcsnRCReJkXazxA8f3EJjg5ljqzvs7LPxsSVMv0zEoADRkJ0Psh+daXbOWatqENSiIEa5vQE7q40=;
-Message-ID: <887649.75421.qm@web180316.mail.gq1.yahoo.com>
-X-YMail-OSG: CBPSNygVM1kQGMdZ0kk_ya6zlLKTKVBys9pdlIQ7buoGbX8
- LQptaOTTAK0K5htYPb64c1XZfe711U3mCpFOa5bkgz2f8w1foFT_PeV80xm4
- Rc9e_RXhEuYHcXFRgf.yDDLX8sIqxxQQNDNN2fAUXc2MLQzoRLU5qR5DlJu8
- FYhaa34MSLP3i0EFLDdVBofYRfDDmevqhIGRnz6nUCQcRgEnWblB.ug6X4Mu
- b7vmmr09rZXrb7kSOjFD9L4M0vPdhD5CdlZTORJvO_0yf8J52pj3JHagC0uo
- otHwa26E7C.25Kgb94HlzD5YvGyAF.YgnT3cxGHuW5DPrhrlI9mfvjw--
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Mon, 30 Aug 2010 16:43:04 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH v2] GPIO: add support for 74HC164 serial-in/parallel-out 8-bit shift register
-To: Willy Tarreau <w@1wt.eu>, Florian Fainelli <florian@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>,
-        dbrownell@users.sourceforge.net
-In-Reply-To: <201008291737.32433.florian@openwrt.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754714Ab0H3XuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 19:50:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59378 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab0H3XuN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 19:50:13 -0400
+X-Authority-Analysis: v=1.1 cv=PwepQEbt00S2KBGxbslVOIF+r0Mv8f+EI4NDy2BEsUE= c=1 sm=0 a=ayaMxwcVwCAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=FFexinRR_o2_3qfMm4QA:9 a=fGz4An_N-k-2J1Oyfc0A:7 a=DmMwYThgl2XBXr91niTxQRCCrcoA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v4 0/5] netdev: show a process of packets
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+In-Reply-To: <4C72422C.5070102@jp.fujitsu.com>
+References: <4C72422C.5070102@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 30 Aug 2010 19:50:10 -0400
+Message-ID: <1283212210.3656.84.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-generic to all
-> 74HC164 chips
+On Mon, 2010-08-23 at 18:41 +0900, Koki Sanagi wrote:
+> Rebase to the latest net-next.
+> 
+> CHANGE-LOG since v3:
+>     1) change arguments of softirq tracepoint into original one.
+>     2) remove tracepoint of dev_kfree_skb_irq and skb_free_datagram_locked
+>        and add trace_kfree_skb before __kfree_skb instead of them.
+>     3) add tracepoint to netif_rx and display it by netdev-times script.
+> 
+> These patch-set adds tracepoints to show us a process of packets.
+> Using these tracepoints and existing points, we can get the time when
+> packet passes through some points in transmit or receive sequence.
+> For example, this is an output of perf script which is attached by patch 5/5.
+> 
+> 106133.171439sec cpu=0
+>   irq_entry(+0.000msec irq=24:eth4)
+>          |
+>   softirq_entry(+0.006msec)
+>          |
+>          |---netif_receive_skb(+0.010msec skb=f2d15900 len=100)
+>          |            |
+>          |      skb_copy_datagram_iovec(+0.039msec 10291::10291)
+>          |
+>   napi_poll_exit(+0.022msec eth4)
+> 
+> 106134.175634sec cpu=1
+>   irq_entry(+0.000msec irq=28:eth1)
+>          |
+>          |---netif_rx(+0.009msec skb=f3ef0a00)
+>          |
+>   softirq_entry(+0.018msec)
+>          |
+>          |---netif_receive_skb(+0.021msec skb=f3ef0a00 len=84)
+>          |            |
+>          |      skb_copy_datagram_iovec(+0.033msec 0:swapper)
+>          |
+>   napi_poll_exit(+0.035msec (no_device))
+> 
+> The above is a receive side(eth4 is NAPI. eth1 is non-NAPI). Like this, it can
+> show receive sequence frominterrupt(irq_entry) to application
+> (skb_copy_datagram_iovec). 
+> This script shows one NET_RX softirq and events related to it. All relative
+> time bases on first irq_entry which raise NET_RX softirq.
+> 
+>    dev    len      Qdisc               netdevice             free
+>    eth4    74 106125.030004sec        0.006msec             0.009msec
+>    eth4    87 106125.041020sec        0.007msec             0.023msec
+>    eth4    66 106125.042291sec        0.003msec             0.012msec
+>    eth4    66 106125.043274sec        0.006msec             0.004msec
+>    eth4   850 106125.044283sec        0.007msec             0.018msec
+> 
+> The above is a transmit side. There are three check-time-points.
+> Point1 is before putting a packet to Qdisc. point2 is after ndo_start_xmit in
+> dev_hard_start_xmit. It indicates finishing putting a packet to driver.
+> point3 is in consume_skb and kfree_skb. It indicates freeing a transmitted packet.
+> Values of this script are, from left, device name, length of a packet, a time of
+> point1, an interval time between point1 and point2 and an interval time between
+> point2 and point3.
+> 
+> These times are useful to analyze a performance or to detect a point where
+> packet delays. For example,
+> - NET_RX softirq calling is late.
+> - Application is late to take a packet.
+> - It takes much time to put a transmitting packet to driver
+>   (It may be caused by packed queue)
+> 
+> And also, these tracepoint help us to investigate a network driver's trouble
+> from memory dump because ftrace records it to memory. And ftrace is so light
+> even if always trace on. So, in a case investigating a problem which doesn't
+> reproduce, it is useful.
+> 
 
-Not just HC-series logic, also HCT, AC, etc (as
-I noted previously).
+The entire series:
 
-I'm glad you took NXP (one of the N vendors)
-out of the name, but I think you should also
- take the logic series out; "74x164 might be sufficiently generic.
-           
-> pdata->gpio_pin_clk, err);
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-I'm a bit puzzled why you don't just hook the
-chip up using standard SPI signals... ISTR they
-matched up directly to what the chip needs, so
-no GPIOs were needed for interface glue.
->
+-- Steve
+
 
