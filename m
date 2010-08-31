@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab0HaI1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 04:27:36 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:48541 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab0HaI0r (ORCPT
+	id S1753153Ab0HaIhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 04:37:24 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38309 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab0HaIhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 04:26:47 -0400
-Message-Id: <20100831082814.501484459@de.ibm.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 31 Aug 2010 10:28:14 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>
-Subject: [PATCH V2 0/4] sched: add new 'book' scheduling domain
+	Tue, 31 Aug 2010 04:37:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=mwtILFBQIBdjKCz6jjuS8qJPDLMFhLA8DgQvwu7D2aDp8oRB6+ifpJmSbQj2v/qkcl
+         zX67rfRKHh6t979LN1aRR4lANMkAZnd5Q+J0TIfOTej9w/v1KlW2vu4mgA/piUrpKnlP
+         SdT8RWruYBhBjnQs3QUU7hUpsEbnga73K13Pw=
+Date: Tue, 31 Aug 2010 12:37:16 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Benjamin Herrenschmidt <benh@au1.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Brownell <david-b@pacbell.net>, linux-kernel@vger.kernel.org,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH] gpiolib: Add 'struct gpio_chip' forward declaration
+ for !GPIOLIB case
+Message-ID: <20100831083716.GA28362@oksana.dev.rtsoft.ru>
+References: <1282631168.22370.517.camel@pasglop>
+ <20100824092623.GA20334@oksana.dev.rtsoft.ru>
+ <20100831080344.GA20515@angua.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100831080344.GA20515@angua.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds (yet) another scheduling domain to the scheduler. The
-reason for this is that the recent (s390) z196 architecture has four cache
-levels and uniform memory access (sort of -- see below).
-The cpu/cache/memory hierarchy is as follows:
+On Tue, Aug 31, 2010 at 02:03:44AM -0600, Grant Likely wrote:
+> On Tue, Aug 24, 2010 at 01:26:23PM +0400, Anton Vorontsov wrote:
+> > With CONFIG_GPIOLIB=n, the 'struct gpio_chip' is not declared,
+> > so the following pops up on PowerPC:
+> > 
+> >   cc1: warnings being treated as errors
+> >   In file included from arch/powerpc/platforms/52xx/mpc52xx_common.c:19:
+> >   include/linux/of_gpio.h:74: warning: 'struct gpio_chip' declared
+> >                               inside parameter list
+> >   include/linux/of_gpio.h:74: warning: its scope is only this definition
+> >                               or declaration, which is probably not what
+> > 			      you want
+> >   include/linux/of_gpio.h:75: warning: 'struct gpio_chip' declared
+> >                               inside parameter list
+> >   make[2]: *** [arch/powerpc/platforms/52xx/mpc52xx_common.o] Error 1
+> > 
+> > This patch fixes the issue by providing the proper forward declaration.
+> > 
+> > Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> 
+> This doesn't actually solve the problem, and gpiochip should 
+> remain undefined when CONFIG_GPIOLIB=n to catch exactly these
+> build failures.  The real problem is that I merged a change
+> into the mpc5200 code that required CONFIG_GPIOLIB be enabled
+> without reflecting that requirement in Kconfig.
 
-Each cpu has its private L1 (64KB I-cache + 128KB D-cache) and L2 (1.5MB)
-cache.
-A core consists of four cpus with a 24MB shared L3 cache.
-A book consists of six cores with a 192MB shared L4 cache.
+No, look closer. The error is in of_gpio.h, and it's perfectly
+fine to include it w/o GPIOLIB=y.
 
-The z196 architecture has no SMT.
-Also the statement that we have uniform memory access is not entirely
-correct. Actually the machine uses memory striping, so it "looks" like
-we have UMA until the next slice of memory gets accessed.
-However there is no interface which tells us which piece of memory is local
-or remote. So we (have to) simplify and assume that the cost of each memory
-access with L4 cache miss is the same.
+> > ---
+> > 
+> > On Tue, Aug 24, 2010 at 04:26:08PM +1000, Benjamin Herrenschmidt wrote:
+> > > I get that with my current stuff:
+> > > 
+> > > cc1: warnings being treated as errors
+> > > In file included from [..]/mpc52xx_common.c:19:
+> > > of_gpio.h:74: error: ‘struct gpio_chip’ declared inside parameter list
+> > [...]
+> > > make[3]: *** Waiting for unfinished jobs....
+> > 
+> > That's because with GPIOCHIP=n no one declares struct gpio_chip.
+> > 
+> > It should be either of_gpio.h or gpio.h. Let's make it gpio.h, as
+> > this feels more generic, and we already have some !GPIOLIB handling
+> > in there.
+> > 
+> >  include/linux/gpio.h |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+> > index 03f616b..85207d2 100644
+> > --- a/include/linux/gpio.h
+> > +++ b/include/linux/gpio.h
+> > @@ -15,6 +15,12 @@
+> >  struct device;
+> >  
+> >  /*
+> > + * Some code might rely on the declaration. Still, it is illegal
+> > + * to dereference it for !GPIOLIB case.
+> > + */
+> > +struct gpio_chip;
+> > +
+> > +/*
+> >   * Some platforms don't support the GPIO programming interface.
+> >   *
+> >   * In case some driver uses it anyway (it should normally have
+> > -- 
+> > 1.7.0.5
+> > 
 
-In order to somehow use the information about the cache hierarchy so that
-the scheduler can make some decisions that improves cache hits I added the
-'BOOK' scheduling domain between the MC and CPU domains.
-
-Also please note that the s390 arch scheduling domain initializers need
-tuning:
-The line
-#define SD_BOOK_INIT SD_CPU_INIT
-within the arch support patch is just there so it compiles and until we have
-something that really works.
-
-
-Changes since V1:
-
-Removed powersavings sysfs knob for the new scheduling domain since Peter
-objected to it ;)
-Actually adding a third sysfs powersavings knob would increase the config
-space to 27 possible settings. That's simply too much and indeed no admin
-would care about fine tuning that.
-What is needed is a single knob which configures the scheduler to do the
-'right thing'.
-It's up to the powersavings guys to come up with a viable solution here ;)
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
