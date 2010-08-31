@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab0HaDrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 23:47:43 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42657 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab0HaDrm convert rfc822-to-8bit (ORCPT
+	id S932107Ab0HaDyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 23:54:14 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:55815 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086Ab0HaDyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 23:47:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pK256yqbhzB+bHUpIoMosRTJ1ilGtIaUJrTvhV0MAxaFbbQ6sGqjpkGvk2KAbhQm26
-         bkhfElJS73kfRhxqZfoYWCljxAxZ3yw/eza3PygFZ1ruXnjCJZZkmvN1jV+0v63ytoJX
-         +AQPAQd0YKpA3GMLQ8hbatsyPhD45MgZ5uq2s=
-MIME-Version: 1.0
-In-Reply-To: <20100831110815.87D9.A69D9226@jp.fujitsu.com>
-References: <20100831102557.87D3.A69D9226@jp.fujitsu.com>
-	<AANLkTinhVnMW8f7+jQdDyEzD=O2YPLSyTuGRE2JnRVzm@mail.gmail.com>
-	<20100831110815.87D9.A69D9226@jp.fujitsu.com>
-Date: Tue, 31 Aug 2010 12:47:41 +0900
-Message-ID: <AANLkTi=FA=m_OqfY6LaX2dXfiHWoa9-70B=uKiuXYg4y@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Ying Han <yinghan@google.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Aug 2010 23:54:12 -0400
+Date: Tue, 31 Aug 2010 12:51:18 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "menage@google.com" <menage@google.com>,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 4/5] memcg: lockless update of file stat with
+ move-account safe method
+Message-Id: <20100831125118.fa01f0c2.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100825171050.1574ba7c.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100825171050.1574ba7c.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 11:09 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> How about this?
->>
->> (Not formal patch. If we agree, I will post it later when I have a SMTP).
->>
->>
->> Signed-off-by: Ying Han <yinghan@google.com>
->> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 3109ff7..c3c44a8 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1579,7 +1579,7 @@ static void shrink_active_list(unsigned long
->> nr_pages, struct zone *zone,
->>         __mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
->>         spin_unlock_irq(&zone->lru_lock);
->>  }
->> -
->> +#if CONFIG_SWAP
->>  static int inactive_anon_is_low_global(struct zone *zone)
->>  {
->>         unsigned long active, inactive;
->> @@ -1605,12 +1605,21 @@ static int inactive_anon_is_low(struct zone
->> *zone, struct scan_control *sc)
->>  {
->>         int low;
->>
->> +       if (nr_swap_pages)
->> +               return 0;
->
-> !nr_swap_pages ?
+On Wed, 25 Aug 2010 17:10:50 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Yes. :)
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> At accounting file events per memory cgroup, we need to find memory cgroup
+> via page_cgroup->mem_cgroup. Now, we use lock_page_cgroup().
+> 
+> But, considering the context which page-cgroup for files are accessed,
+> we can use alternative light-weight mutual execusion in the most case.
+> At handling file-caches, the only race we have to take care of is "moving"
+> account, IOW, overwriting page_cgroup->mem_cgroup. Because file status
+> update is done while the page-cache is in stable state, we don't have to
+> take care of race with charge/uncharge.
+> 
+> Unlike charge/uncharge, "move" happens not so frequently. It happens only when
+> rmdir() and task-moving (with a special settings.)
+> This patch adds a race-checker for file-cache-status accounting v.s. account
+> moving. The new per-cpu-per-memcg counter MEM_CGROUP_ON_MOVE is added.
+> The routine for account move 
+>   1. Increment it before start moving
+>   2. Call synchronize_rcu()
+>   3. Decrement it after the end of moving.
+> By this, file-status-counting routine can check it needs to call
+> lock_page_cgroup(). In most case, I doesn't need to call it.
+> 
+> Changelog: 20100825
+>  - added a comment about mc.lock
+>  - fixed bad lock.
+> Changelog: 20100804
+>  - added a comment for possible optimization hint.
+> Changelog: 20100730
+>  - some cleanup.
+> Changelog: 20100729
+>  - replaced __this_cpu_xxx() with this_cpu_xxx
+>    (because we don't call spinlock)
+>  - added VM_BUG_ON().
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
->
->
->
->> +
->>         if (scanning_global_lru(sc))
->>                 low = inactive_anon_is_low_global(zone);
->>         else
->>                 low = mem_cgroup_inactive_anon_is_low(sc->mem_cgroup);
->>         return low;
->>  }
->> +#else
->> +static inline int inactive_anon_is_low(struct zone *zone, struct
->> scan_control *sc)
->> +{
->> +       return 0;
->> +}
->> +#endif
->
-> Yup. I prefer this explicit #ifdef :)
->
+(snip)
 
-Thanks.
+> @@ -1505,29 +1551,36 @@ void mem_cgroup_update_file_mapped(struc
+>  {
+>  	struct mem_cgroup *mem;
+>  	struct page_cgroup *pc;
+> +	bool need_lock = false;
+>  
+>  	pc = lookup_page_cgroup(page);
+>  	if (unlikely(!pc))
+>  		return;
+> -
+> -	lock_page_cgroup(pc);
+> +	rcu_read_lock();
+>  	mem = id_to_memcg(pc->mem_cgroup, true);
+It doesn't cause any problem, but I think it would be better to change this to
+"id_to_memcg(..., false)". It's just under rcu_read_lock(), not under page_cgroup
+lock anymore.
 
--- 
-Kind regards,
-Minchan Kim
+Otherwise, it looks good to me.
+
+Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+
+Thanks,
+Daisuke Nishimura.
