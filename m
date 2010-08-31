@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab0HaEfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 00:35:32 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:39876 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab0HaEfc (ORCPT
+	id S1754695Ab0HaElz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 00:41:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55200
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750913Ab0HaElx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 00:35:32 -0400
-Date: Tue, 31 Aug 2010 13:33:29 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "menage@google.com" <menage@google.com>,
-        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 5/5] memcg: generic file stat accounting interface
-Message-Id: <20100831133329.3c54b214.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100825171140.69c1661a.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100825171140.69c1661a.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 31 Aug 2010 00:41:53 -0400
+Date: Mon, 30 Aug 2010 21:42:09 -0700 (PDT)
+Message-Id: <20100830.214209.45878329.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, joe@perches.com, gregkh@suse.de,
+        James.Bottomley@suse.de
+Subject: Re: linux-next: build warning after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100831125738.7f18610b.sfr@canb.auug.org.au>
+References: <20100706142542.d723903f.sfr@canb.auug.org.au>
+	<20100831125738.7f18610b.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 17:11:40 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 31 Aug 2010 12:57:38 +1000
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Can we have a fix for these please?  They make too much noise in the builds.
+
+See below:
+
+--------------------
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+ linux-kernel@vger.kernel.org
+Date: Wed, 04 Aug 2010 13:41:15 -0700 (PDT)
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 4 Aug 2010 12:06:47 -0700
+
+> On Tue, Aug 3, 2010 at 8:38 PM, David Miller <davem@davemloft.net> wrote:
+>>
+>> Another release, another merge window, another set of networking
+>> changes to merge :-)
 > 
-> Preparing for adding new status arounf file caches.(dirty, writeback,etc..)
-> Using a unified macro and more generic names.
-> All counters will have the same rule for updating.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Ok, merged. But you should double-check my merge resolution fixes,
 
-Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Will do, thanks a lot.
 
-one nitpick.
+> I'm also a bit unhappy about how it introduces new warnings in very
+> subtle ways.
 
-> @@ -2042,17 +2031,20 @@ static void __mem_cgroup_commit_charge(s
->  static void __mem_cgroup_move_account(struct page_cgroup *pc,
->  	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
->  {
-> +	int i;
->  	VM_BUG_ON(from == to);
->  	VM_BUG_ON(PageLRU(pc->page));
->  	VM_BUG_ON(!PageCgroupLocked(pc));
->  	VM_BUG_ON(!PageCgroupUsed(pc));
->  	VM_BUG_ON(id_to_memcg(pc->mem_cgroup, true) != from);
->  
-> -	if (PageCgroupFileMapped(pc)) {
-> +	for (i = MEM_CGROUP_FSTAT_BASE; i < MEM_CGROUP_FSTAT_END; ++i) {
-> +		if (!test_bit(fflag_idx(MEMCG_FSTAT_IDX(i)), &pc->flags))
-> +			continue;
->  		/* Update mapped_file data for mem_cgroup */
-It might be better to update this comment too.
+Joe Perches presented patches to fix this (arguably always broken)
+issue to James Bottomley and co. several weeks ago:
 
-	/* Update file-stat data for mem_cgroup */
+	http://marc.info/?l=linux-next&m=127882494322533&w=2
 
-or something ?
+And it's been, in typical SCSI subsystem maintainer fastion, in
+"stall" mode ever since.
 
-Thanks,
-Daisuke Nishimura.
+In fact, when we noticed this problem, Joe Perches said he would only
+post the patches to the SCSI folks if I would "deal" with James
+Bottomley.  If it's to that point, well... I don't know what to say.
+
+I know the warning is introduced by changes in my tree, but I
+figured with weeks until the merge window James would be OK with
+Joe's fix for the warning by then.  Perhaps I was wrong.
+
+If under my control, I would never _ever_ let something like that
+linger for weeks upon weeks in my tree.  24 hour resolution, tops.
+
+And the same goes for Joe Perches, which is why I trust him and merged
+his changes which triggered the warning in the first place.  I can
+always count on him to do something immediately to try and fix
+fallout, or in the worst case say "ok we can't resolve this just
+revert my original change".
+
+So I'm sorry, I'll never create a situation again where the SCSI
+maintainer is in the critical path for getting a warning fixed. :-)
