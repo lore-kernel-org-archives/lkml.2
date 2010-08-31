@@ -1,146 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab0HaG0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:26:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61640 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab0HaG0g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:26:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dCHqjmx+iF1MwFu3u0aaWPvRNcu6vjOZy5KLgANUTg4SN8QEuqkXipekcUulgOVZ91
-         vDQ5LJ45KdxHO8fSnbxhWNJEQOxq5QMBqN76gpzZTj5YMDuZzJhr/0VHnRXPoNlT0kGn
-         KYGjTDp13TX84/e/0jx3N6P3rV/GLCTaC7//A=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik3cnE4HQ3hq3wfuxcept4BeTh+zZvNDbZ_b3O7@mail.gmail.com>
-References: <1282813649-8332-1-git-send-email-mark.brown314@gmail.com>
-	<1282813649-8332-2-git-send-email-mark.brown314@gmail.com>
-	<AANLkTi=GZ1p3MzibOEzhyD=Mv6d2x2nRh93D4bmtgcYE@mail.gmail.com>
-	<AANLkTimwU17YS5Yk7y+13Dj9Ww4oPG0g4v5ZbvOVuQV6@mail.gmail.com>
-	<AANLkTikxOQnj=vKD8b0aZqZHNe4m-Y+o+620TBzMJCAW@mail.gmail.com>
-	<AANLkTik3cnE4HQ3hq3wfuxcept4BeTh+zZvNDbZ_b3O7@mail.gmail.com>
-Date: Tue, 31 Aug 2010 14:26:34 +0800
-Message-ID: <AANLkTinjyJvMRt8OovZBJD+-xU6KXH5WAfqz9Epok+=g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ARM: pxa168: fix corrected reset vector
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: "Mark F. Brown" <mark.brown314@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756810Ab0HaG2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 02:28:11 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43786 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756024Ab0HaG2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 02:28:06 -0400
+Subject: Re: [PATCH 08/20] powerpc: Preemptible mmu_gather
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@suse.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <20100828142455.960494507@chello.nl>
+References: <20100828141637.421594670@chello.nl>
+	 <20100828142455.960494507@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 16:26:44 +1000
+Message-ID: <1283236004.2151.33.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 2:08 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
-> On Tue, Aug 31, 2010 at 2:04 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
->> On Tue, Aug 31, 2010 at 2:02 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
->>> On Tue, Aug 31, 2010 at 1:48 AM, Eric Miao <eric.y.miao@gmail.com> wrote:
->>>> On Thu, Aug 26, 2010 at 5:07 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
->>>>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
->>>>> ---
->>>>>  arch/arm/mach-mmp/include/mach/system.h |    2 +-
->>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>>>
->>>>> diff --git a/arch/arm/mach-mmp/include/mach/system.h b/arch/arm/mach-mmp/include/mach/system.h
->>>>> index 4f5b0e0..926e9c0 100644
->>>>> --- a/arch/arm/mach-mmp/include/mach/system.h
->>>>> +++ b/arch/arm/mach-mmp/include/mach/system.h
->>>>> @@ -16,6 +16,6 @@ static inline void arch_idle(void)
->>>>>
->>>>>  static inline void arch_reset(char mode, const char *cmd)
->>>>>  {
->>>>> -       cpu_reset(0);
->>>>> +       cpu_reset(0xffff0000);
->>>>
->>>> Not sure if this correct. But normally reset jump happens after we turn
->>>> off the MMU and so on. Ain't the BootROM starts from 0 ?
->>>>
->>>>>  }
->>>>>  #endif /* __ASM_MACH_SYSTEM_H */
->>>>> --
->>>>> 1.7.0.4
->>>>>
->>>>>
->>>>
->>>
->>> Eric, the boot-rom for pxa168 starts at 0xffff_0000. I am pretty sure
->>> about that! If you set the reset vector to 0x0 it will crash during
->>> reboot. I will send you xdb snapshots if you need me to.
->>>
->>
->> OK, you are expert on this :-)
->>
->> Applied to 'fix'.
->>
->
-> One moment. Since this is really global to pxa910 and mmp2, so I
-> suggest this being fixed for pxa168 only first. How about this:
->
->    ARM: pxa168: fix corrected reset vector
->
->    Reset vector for pxa168 is 0xffff_0000 not 0x0. This fix allows
->    reboot to work
->
->    Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
->
-> diff --git a/arch/arm/mach-mmp/include/mach/system.h
-> b/arch/arm/mach-mmp/include/mach/system.h
-> index 4f5b0e0..1a8a25e 100644
-> --- a/arch/arm/mach-mmp/include/mach/system.h
-> +++ b/arch/arm/mach-mmp/include/mach/system.h
-> @@ -9,6 +9,8 @@
->  #ifndef __ASM_MACH_SYSTEM_H
->  #define __ASM_MACH_SYSTEM_H
->
-> +#include <mach/cputype.h>
+On Sat, 2010-08-28 at 16:16 +0200, Peter Zijlstra wrote:
+> Fix up powerpc to the new mmu_gather stuffs.
+
+Unfortunately, I think this is broken...
+
+First there's an actual bug here:
+
+>  	last = _switch(old_thread, new_thread);
+>  
+> +#ifdef CONFIG_PPC64
+> +	if (task_thread_info(new)->local_flags & _TLF_LAZY_MMU) {
+> +		task_thread_info(new)->local_flags &= ~_TLF_LAZY_MMU;
+> +		batch = &__get_cpu_var(ppc64_tlb_batch);
+> +		batch->active = 1;
+> +	}
+> +#endif
 > +
->  static inline void arch_idle(void)
->  {
->        cpu_do_idle();
-> @@ -16,6 +18,9 @@ static inline void arch_idle(void)
->
->  static inline void arch_reset(char mode, const char *cmd)
->  {
-> -       cpu_reset(0);
-> +       if (cpu_is_pxa168())
-> +               cpu_reset(0xffff0000);
-> +       else
-> +               cpu_reset(0);
->  }
->  #endif /* __ASM_MACH_SYSTEM_H */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-The reset code is in below.
 
-	.align	5
-ENTRY(cpu_mohawk_reset)
-	mov	ip, #0
-	mcr	p15, 0, ip, c7, c7, 0		@ invalidate I,D caches
-	mcr	p15, 0, ip, c7, c10, 4		@ drain WB
-	mcr	p15, 0, ip, c8, c7, 0		@ invalidate I & D TLBs
-	mrc	p15, 0, ip, c1, c0, 0		@ ctrl register
-	bic	ip, ip, #0x0007			@ .............cam
-	bic	ip, ip, #0x1100			@ ...i...s........
-	mcr	p15, 0, ip, c1, c0, 0		@ ctrl register
-	mov	pc, r0
+Here, you are coming out of _switch() which will have swapped the
+stack and non-volatile registers to the state they were in when the
+new task was originally switched-out. Thus "new" which is a local variable
+(either on stack or in a non-volatile register) will now refer to whatever
+was the next task back then.
 
-MMU is disabled at here and replace PC with r0 value. I doubt code
-executed correctly at here. While MMU is disabled, the PC should be
-continue in the range of 0xCxxx_xxxx (kernel space). "mov pc, r0"
-shouldn't be executed. Instruction fetch failure should occurs since
-there's no physical address in 0xCxxx_xxxx.
+I suppose that's what's causing the similar patch you have in -rt to
+fail btw. This could be fixed easily by using "current" instead.
 
-Correct me if I'm wrong.
+However, there I have another concern.
 
-Thanks
-Haojian
+> PPC has an extra batching queue to RCU free the actual pagetable
+> allocations, use the ARCH extentions for that for now.
+
+Right, so far that looks fine (at least after a quick look).
+
+> For the ppc64_tlb_batch, which tracks the vaddrs to unhash from the
+> hardware hash-table, keep using per-cpu arrays but flush on context
+> switch and use a TLF bit to track the laxy_mmu state.
+
+However, that doesn't seem necessary at all, at least not for !-rt, or
+unless you broke something that I would need to look at very closely
+then :-)
+
+IE. Enable/disable the batch only within "lazy_mmu_mode" sections. We do
+that in large part because we do not want non-flushed pages to exist
+outside of the pte spinlock.
+
+The reason is that if we let that happen, a small possibility exist for
+our MMU hash page handling to try to insert a duplicate entry for a
+given PTE into the hash table, which is basically fatal.
+
+Thus, we only exist during that lazy period, which means with a lock
+held. Hence we can't schedule and the changes you do regarding
+get/put_cpu_var are unnecessary.
+
+Another "trick" here btw is that fork() is currently not using a batch,
+but with our technique, we do get batching there too.
+
+So unless something else is broken that makes the above not true
+anymore, which would be a concern, most of the changes you did to the
+flush batch are unnecessary for your preemptible mmu_gather on non-rt
+kernels.
+
+Of course, with -rt and the pte lock becoming a mutex, all of your
+changes do become necessary (and I suppose that's where they come from).
+
+Now, those changes won't technically hurt on a non-rt kernel, tho they
+will add a tiny bit of overhead. I'll see if I can measure it.
+
+Cheers,
+Ben.
+
+
