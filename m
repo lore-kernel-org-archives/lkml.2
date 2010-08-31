@@ -1,83 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab0HaAzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 20:55:16 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53186 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab0HaAzO (ORCPT
+	id S1756428Ab0HaA4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 20:56:44 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60954 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346Ab0HaA4m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 20:55:14 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4C7C5314.7090404@np.css.fujitsu.com>
-Date: Tue, 31 Aug 2010 09:55:48 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	Mon, 30 Aug 2010 20:56:42 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Ying Han <yinghan@google.com>
+Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
+Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>
+References: <AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com> <AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>
+Message-Id: <20100831095140.87C7.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: "Yu, Fenghua" <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
-CC: "Brown, Len" <len.brown@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@linux.jf.intel.com>,
-        LKLM <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        mingo Redhat <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [Patch-next] Trival fixes in thermal_throttle_add_dev().
-References: <4C75D3C4.6040802@np.css.fujitsu.com>	<20100826060822.GA15021@fenghua-desk.sc.intel.com>	<4C7625D1.4060201@np.css.fujitsu.com> <20100827152007.27636fa5@hyperion.delvare> <4C7B64A8.2030208@np.css.fujitsu.com> <493994B35A117E4F832F97C4719C4C04A111EEDF@orsmsx505.amr.corp.intel.com>
-In-Reply-To: <493994B35A117E4F832F97C4719C4C04A111EEDF@orsmsx505.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 31 Aug 2010 09:56:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixed the following two problems.
-  1. When the feature PTS is not supported by CPU, the sysfile
-     package_power_limit_count for package should not be generated.
-  2. No matter whether a sysfile is failed to be created or not,
-     the next one will be created.
+> On Sun, Aug 29, 2010 at 5:18 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> > Hi Ying,
+> >
+> > On Mon, Aug 30, 2010 at 6:23 AM, Ying Han <yinghan@google.com> wrote:
+> >> On Sun, Aug 29, 2010 at 1:03 PM, Rik van Riel <riel@redhat.com> wrote:
+> >>> On 08/29/2010 01:45 PM, Ying Han wrote:
+> >>>
+> >>>> There are few other places in vmscan where we check nr_swap_pages and
+> >>>> inactive_anon_is_low. Are we planning to change them to use
+> >>>> total_swap_pages
+> >>>> to be consistent ?
+> >>>
+> >>> If that makes sense, maybe the check can just be moved into
+> >>> inactive_anon_is_low itself?
+> >>
+> >> That was the initial patch posted, instead we changed to use
+> >> total_swap_pages instead. How this patch looks:
+> >>
+> >> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
+> >> *zone, struct scan_control *sc)
+> >>  {
+> >>        int low;
+> >>
+> >> +       if (total_swap_pages <= 0)
+> >> +               return 0;
+> >> +
+> >>        if (scanning_global_lru(sc))
+> >>                low = inactive_anon_is_low_global(zone);
+> >>        else
+> >> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
+> >>         * Even if we did not try to evict anon pages at all, we want to
+> >>         * rebalance the anon lru active/inactive ratio.
+> >>         */
+> >> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
+> >> +       if (inactive_anon_is_low(zone, sc))
+> >>                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+> >>
+> >>        throttle_vm_writeout(sc->gfp_mask);
+> >>
+> >> --Ying
+> >>
+> >>>
+> >
+> > I did it intentionally since inactive_anon_is_low have been used both
+> > direct reclaim and background path. In this point, your patch could
+> > make side effect in swap enabled system when swap is full.
+> >
+> > I think we need aging in only background if system is swap full.
+> > That's because if the swap space is full, we don't reclaim anon pages
+> > in direct reclaim path with (nr_swap_pages < 0)  and even have been
+> > not rebalance it until now.
+> > I think direct reclaim path is important about latency as well as
+> > reclaim's effectiveness.
+> > So if you don't mind, I hope direct reclaim patch would be left just as it is.
+> 
+> Minchan, I would prefer to make kswapd as well as direct reclaim to be
+> consistent if possible.
+> They both try to reclaim pages when system is under memory pressure,
+> and also do not make
+> much sense to look at anon lru if no swap space available. Either
+> because of no swapon or run
+> out of swap space.
+> 
+> I think letting kswapd to age anon lru without free swap space is not
+> necessary neither. That leads
+> to my initial patch:
+> 
+> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
+> *zone, struct scan_control *sc)
+>  {
+>        int low;
+> 
+> +       if (nr_swap_pages <= 0)
+> +               return 0;
+> +
+>        if (scanning_global_lru(sc))
+>                low = inactive_anon_is_low_global(zone);
+>        else
+> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
+>         * Even if we did not try to evict anon pages at all, we want to
+>         * rebalance the anon lru active/inactive ratio.
+>         */
+> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
+> +       if (inactive_anon_is_low(zone, sc))
+>                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+> 
+> What do you think ?
 
-As the resolving methods:
-  1. Add missing { and } after checking PTS feature.
-  2. Fix the error handling.
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Reviewed-by: Fenghua Yu <fenghua.yu@initel.com>
----
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index d9368ee..79d563a 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -216,14 +216,27 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_core_power_limit_count.attr,
- 					      thermal_attr_group.name);
--	if (cpu_has(c, X86_FEATURE_PTS))
-+	if (err)
-+		goto error;
-+
-+	if (cpu_has(c, X86_FEATURE_PTS)) {
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_package_throttle_count.attr,
- 					      thermal_attr_group.name);
-+		if (err)
-+			goto error;
-+
- 		if (cpu_has(c, X86_FEATURE_PLN))
- 			err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					&attr_package_power_limit_count.attr,
- 					thermal_attr_group.name);
-+		if (err)
-+			goto error;
-+	}
-+
-+	return 0;
-+error:
-+	sysfs_remove_group(&sys_dev->kobj, &thermal_attr_group);
- 
- 	return err;
- }
--- 
-1.7.1.1
+I think both Ying's and Minchan's opnion are right and makes sense.  however I _personally_
+like Ying version because 1) this version is simpler 2) swap full is very rarely event 3)
+no swap mounting is very common on HPC. so this version could have a chance to 
+improvement hpc workload too.
+
+In the other word, both avoiding unnecessary TLB flush and keeping proper page aging are
+performance matter. so when we are talking performance, we always need to think frequency
+of the event.
+
+Anyway I'm very glad minchan who embedded developer pay attention server workload
+carefully. Very thanks.
+
+
+
 
