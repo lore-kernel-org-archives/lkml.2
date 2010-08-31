@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab0HaBAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 21:00:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17669 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756364Ab0HaBAM convert rfc822-to-8bit (ORCPT
+	id S1756492Ab0HaBFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 21:05:40 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1454 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756130Ab0HaBFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 21:00:12 -0400
-MIME-Version: 1.0
-Message-ID: <91408f0c-0135-427f-b148-446f54b232eb@default>
-Date: Mon, 30 Aug 2010 17:57:04 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, adilger@sun.com, tytso@mit.edu,
-        mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@kernel.dk, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>,
-        mel@csn.ul.ie, yinghan@google.com, gthelen@google.com
-Subject: RE: [PATCH V4 5/8] Cleancache: ext3 hook for cleancache
-References: <20100830223233.GA1317@ca-server1.us.oracle.com
- 4C7C3666.2080601@goop.org>
-In-Reply-To: <4C7C3666.2080601@goop.org>
+	Mon, 30 Aug 2010 21:05:39 -0400
+Message-ID: <000801cb48a8$9f907060$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Thomas Gleixner" <tglx@linutronix.de>
+Cc: "Grant Likely" <grant.likely@secretlab.ca>, <meego-dev@meego.com>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com> <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com> <alpine.LFD.2.00.1008301442290.9874@localhost6.localdomain6>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+Date: Tue, 31 Aug 2010 10:05:30 +0900
 X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6535.5005]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > @@ -1349,6 +1350,7 @@ static int ext3_setup_super(struct super
-> >  	} else {
-> >  		ext3_msg(sb, KERN_INFO, "using internal journal");
-> >  	}
-> > +	sb->cleancache_poolid = cleancache_init_fs(PAGE_SIZE);
-> 
-> Do you really need to pass in the page size?  What about just
-> "cleancache_init_fs(sb)" rather than exposing the
-> "sb->cleancache_poolid"?  In other words, what if you want to do
-> more/other per-filesystem init at some point?
+Hi Thomas
 
-IIRC, I think I was trying to stay away from including
-fs.h in cleancache.h (or one of its predecessors).  I
-agree that that no longer makes sense and it is cleaner
-as you suggest.  Will change.
+> > Yes, Intel Topcliff is new concept device.
+>
+> Thats right, but the question was whether the SPI peripheral is a new
+> IP design or similar to some already supported AMBA SPI peripheral.
+>
+> Maybe the Intel folks can shed some light on that.
 
-Thanks,
-Dan
+My answer was not appropriate.
+Though the Topcliff is new concept LSI, SPI in Topcliff is not a new design hardware but a reuse from other AMBA-based
+products.
+
+Thanks, Ohtake(OKISemi)
+----- Original Message ----- 
+From: "Thomas Gleixner" <tglx@linutronix.de>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Grant Likely" <grant.likely@secretlab.ca>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
+Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
+<morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Sent: Monday, August 30, 2010 9:44 PM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+
+
+> On Mon, 30 Aug 2010, Masayuki Ohtake wrote:
+> > > Indeed.  BTW, Ohtak-san, is this spi bus device something brand new,
+> > > or is it derived from an existing spi device?
+> >
+> > Yes, Intel Topcliff is new concept device.
+>
+> Thats right, but the question was whether the SPI peripheral is a new
+> IP design or similar to some already supported AMBA SPI peripheral.
+>
+> Maybe the Intel folks can shed some light on that.
+>
+> Thanks,
+>
+> tglx
+>
+
+
