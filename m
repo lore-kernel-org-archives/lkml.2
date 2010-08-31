@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab0HaA55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 20:57:57 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36729 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756187Ab0HaA54 (ORCPT
+	id S1756486Ab0HaBAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 21:00:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17669 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756364Ab0HaBAM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 20:57:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=irFxI9MWXFiwFtqKoxnHkeCBkAiAL0fC3afqpcIyfBk2h0RLB4Ddjrb8iWZPxakAGs
-         O5w2mFZuMw1OSgdmDmOCcFJV9/dcVY2DnPmCaDVfJpPi1LYyhS/FK5kZ8clYYocuLGxm
-         O5Ot2H6oCHC/dNInDmfYwxjcDSkLw0lHm/nI8=
-Subject: Re: [Question] How to test (DRAM) memory location.
-From: Calvin Walton <calvin.walton@gmail.com>
-To: santosh <santosh.iitg@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTinYuck4yEGpFDKZp-R3N2dtoQ68cLHQY6EW6sr-@mail.gmail.com>
-References: <AANLkTinYuck4yEGpFDKZp-R3N2dtoQ68cLHQY6EW6sr-@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 Aug 2010 20:57:49 -0400
-Message-ID: <1283216269.3738.6.camel@ayu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Aug 2010 21:00:12 -0400
+MIME-Version: 1.0
+Message-ID: <91408f0c-0135-427f-b148-446f54b232eb@default>
+Date: Mon, 30 Aug 2010 17:57:04 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, adilger@sun.com, tytso@mit.edu,
+        mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
+        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
+        npiggin@kernel.dk, Dave Mccracken <dave.mccracken@oracle.com>,
+        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>,
+        mel@csn.ul.ie, yinghan@google.com, gthelen@google.com
+Subject: RE: [PATCH V4 5/8] Cleancache: ext3 hook for cleancache
+References: <20100830223233.GA1317@ca-server1.us.oracle.com
+ 4C7C3666.2080601@goop.org>
+In-Reply-To: <4C7C3666.2080601@goop.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
+ 12.0.6535.5005]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-28 at 16:57 +0530, santosh wrote:
-> Hi,
+> > @@ -1349,6 +1350,7 @@ static int ext3_setup_super(struct super
+> >  	} else {
+> >  		ext3_msg(sb, KERN_INFO, "using internal journal");
+> >  	}
+> > +	sb->cleancache_poolid = cleancache_init_fs(PAGE_SIZE);
 > 
-> I need to write a memory diagnosis  program which will test each and
-> every location of SDRAM
-> to know whether its working properly or a bad location
-> 
-> What would be the best approach ??
+> Do you really need to pass in the page size?  What about just
+> "cleancache_init_fs(sb)" rather than exposing the
+> "sb->cleancache_poolid"?  In other words, what if you want to do
+> more/other per-filesystem init at some point?
 
-If you can, it's best to just use code other people have already
-written :)
+IIRC, I think I was trying to stay away from including
+fs.h in cleancache.h (or one of its predecessors).  I
+agree that that no longer makes sense and it is cleaner
+as you suggest.  Will change.
 
-If you can reboot the computer to test the memory, Memtest86+ is a
-well-known and very reliable tool which does just what you ask. You can
-obtain it from http://www.memtest.org/
-
-There's some work done on an in-kernel memory tester, but testing memory
-while Linux is running is somewhat limited as there are sections of
-memory that you can't overwrite during testing. Take a look at
-CONFIG_MEMTEST and arch/x86/mm/memtest.c (which is currently only
-capable of testing memory in early boot).
-
--- 
-Calvin Walton <calvin.walton@gmail.com>
-
+Thanks,
+Dan
