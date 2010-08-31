@@ -1,64 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab0HaG5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:57:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64505 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932230Ab0HaG5O (ORCPT
+	id S932209Ab0HaHCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 03:02:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55109 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176Ab0HaHCI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:57:14 -0400
-Message-ID: <4C7CA7E4.8010005@steinhoff.de>
-Date: Tue, 31 Aug 2010 08:57:40 +0200
-From: Armin Steinhoff <armin@steinhoff.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
+	Tue, 31 Aug 2010 03:02:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tTJteGwlDJIOR9FzfN1mmoUcJBXvGP9MqUWQMzxKL2SpPVtyEYFCRSoE91y9flMxX0
+         xK35inbVM6d6Lr1K5Ls4ck4EdonSZBAVdhrlt5qdUUQOJphv2YHgg7v0U3r8MUv1hp7d
+         vgA1o740K6OmtOFAkp+kYxF0TQnbjVHAzAaao=
 MIME-Version: 1.0
-To: "Hans J. Koch" <hjk@linutronix.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: UIO and Fedora 13  (kernel 33.6)
-References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com> <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de> <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com> <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com> <4C7B8CA6.4010504@steinhoff.de> <20100830162435.GB2566@local>
-In-Reply-To: <20100830162435.GB2566@local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:/SvKTNsEJmajDq9gLKuMXNGmQjrKyQTZRCWNOriV/XY
- VX/uWQwUwN6PFU6mETzHUrgft5xMUCBA279PuYnhCKe/782yCK
- 9reFGER7jU8Wv4HV0k4gH7w1QbBOy2Xpa93VVFyTUKJW3+3BZB
- JXUqjhVjARZfBcQyU21lLPqjnbxr0dCZxMsaS922XC7hJNtegG
- mjxaaLan5VTAnqxJvCqZQ==
+In-Reply-To: <AANLkTikrp0i_U_eKaAbUOop6U4Un6-ASTKuXU1HOzoc7@mail.gmail.com>
+References: <1282813649-8332-1-git-send-email-mark.brown314@gmail.com>
+	<1282813649-8332-2-git-send-email-mark.brown314@gmail.com>
+	<AANLkTi=GZ1p3MzibOEzhyD=Mv6d2x2nRh93D4bmtgcYE@mail.gmail.com>
+	<AANLkTimwU17YS5Yk7y+13Dj9Ww4oPG0g4v5ZbvOVuQV6@mail.gmail.com>
+	<AANLkTikxOQnj=vKD8b0aZqZHNe4m-Y+o+620TBzMJCAW@mail.gmail.com>
+	<AANLkTik3cnE4HQ3hq3wfuxcept4BeTh+zZvNDbZ_b3O7@mail.gmail.com>
+	<AANLkTinjyJvMRt8OovZBJD+-xU6KXH5WAfqz9Epok+=g@mail.gmail.com>
+	<AANLkTikrp0i_U_eKaAbUOop6U4Un6-ASTKuXU1HOzoc7@mail.gmail.com>
+Date: Tue, 31 Aug 2010 15:02:07 +0800
+Message-ID: <AANLkTinq8wFGmYKzBrEY1d3FadN+55urxLxQCFTcpcrM@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: pxa168: fix corrected reset vector
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hans J. Koch wrote:
-> On Mon, Aug 30, 2010 at 12:49:10PM +0200, Armin Steinhoff wrote:
->>   Hi,
+On Tue, Aug 31, 2010 at 2:48 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> On Tue, Aug 31, 2010 at 2:26 AM, Haojian Zhuang
+> <haojian.zhuang@gmail.com> wrote:
+>> On Tue, Aug 31, 2010 at 2:08 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
+>>> On Tue, Aug 31, 2010 at 2:04 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
+>>>> On Tue, Aug 31, 2010 at 2:02 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>>>>> On Tue, Aug 31, 2010 at 1:48 AM, Eric Miao <eric.y.miao@gmail.com> wrote:
+>>>>>> On Thu, Aug 26, 2010 at 5:07 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>>>>>>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>>>>>>> ---
+>>>>>>>  arch/arm/mach-mmp/include/mach/system.h |    2 +-
+>>>>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/arch/arm/mach-mmp/include/mach/system.h b/arch/arm/mach-mmp/include/mach/system.h
+>>>>>>> index 4f5b0e0..926e9c0 100644
+>>>>>>> --- a/arch/arm/mach-mmp/include/mach/system.h
+>>>>>>> +++ b/arch/arm/mach-mmp/include/mach/system.h
+>>>>>>> @@ -16,6 +16,6 @@ static inline void arch_idle(void)
+>>>>>>>
+>>>>>>>  static inline void arch_reset(char mode, const char *cmd)
+>>>>>>>  {
+>>>>>>> -       cpu_reset(0);
+>>>>>>> +       cpu_reset(0xffff0000);
+>>>>>>
+>>>>>> Not sure if this correct. But normally reset jump happens after we turn
+>>>>>> off the MMU and so on. Ain't the BootROM starts from 0 ?
+>>>>>>
+>>>>>>>  }
+>>>>>>>  #endif /* __ASM_MACH_SYSTEM_H */
+>>>>>>> --
+>>>>>>> 1.7.0.4
+>>>>>>>
+>>>>>>>
+>>>>>>
+>>>>>
+>>>>> Eric, the boot-rom for pxa168 starts at 0xffff_0000. I am pretty sure
+>>>>> about that! If you set the reset vector to 0x0 it will crash during
+>>>>> reboot. I will send you xdb snapshots if you need me to.
+>>>>>
+>>>>
+>>>> OK, you are expert on this :-)
+>>>>
+>>>> Applied to 'fix'.
+>>>>
+>>>
+>>> One moment. Since this is really global to pxa910 and mmp2, so I
+>>> suggest this being fixed for pxa168 only first. How about this:
+>>>
+>>>    ARM: pxa168: fix corrected reset vector
+>>>
+>>>    Reset vector for pxa168 is 0xffff_0000 not 0x0. This fix allows
+>>>    reboot to work
+>>>
+>>>    Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>>>
+>>> diff --git a/arch/arm/mach-mmp/include/mach/system.h
+>>> b/arch/arm/mach-mmp/include/mach/system.h
+>>> index 4f5b0e0..1a8a25e 100644
+>>> --- a/arch/arm/mach-mmp/include/mach/system.h
+>>> +++ b/arch/arm/mach-mmp/include/mach/system.h
+>>> @@ -9,6 +9,8 @@
+>>>  #ifndef __ASM_MACH_SYSTEM_H
+>>>  #define __ASM_MACH_SYSTEM_H
+>>>
+>>> +#include <mach/cputype.h>
+>>> +
+>>>  static inline void arch_idle(void)
+>>>  {
+>>>        cpu_do_idle();
+>>> @@ -16,6 +18,9 @@ static inline void arch_idle(void)
+>>>
+>>>  static inline void arch_reset(char mode, const char *cmd)
+>>>  {
+>>> -       cpu_reset(0);
+>>> +       if (cpu_is_pxa168())
+>>> +               cpu_reset(0xffff0000);
+>>> +       else
+>>> +               cpu_reset(0);
+>>>  }
+>>>  #endif /* __ASM_MACH_SYSTEM_H */
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>> The reset code is in below.
 >>
->> I'm writing an UIO driver for a plain PC/104 board (ISA bus).
->> After insmod<my_driver_mod>  I don't see an entry of uio0 in /dev
->> and also no entries in /sys/class. There are no error messages at
->> module load.
-> Are you sure your probe() function is called?
-   That's the case.
+>>        .align  5
+>> ENTRY(cpu_mohawk_reset)
+>>        mov     ip, #0
+>>        mcr     p15, 0, ip, c7, c7, 0           @ invalidate I,D caches
+>>        mcr     p15, 0, ip, c7, c10, 4          @ drain WB
+>>        mcr     p15, 0, ip, c8, c7, 0           @ invalidate I & D TLBs
+>>        mrc     p15, 0, ip, c1, c0, 0           @ ctrl register
+>>        bic     ip, ip, #0x0007                 @ .............cam
+>>        bic     ip, ip, #0x1100                 @ ...i...s........
+>>        mcr     p15, 0, ip, c1, c0, 0           @ ctrl register
+>>        mov     pc, r0
+>>
+>> MMU is disabled at here and replace PC with r0 value. I doubt code
+>> executed correctly at here. While MMU is disabled, the PC should be
+>> continue in the range of 0xCxxx_xxxx (kernel space). "mov pc, r0"
+>> shouldn't be executed. Instruction fetch failure should occurs since
+>> there's no physical address in 0xCxxx_xxxx.
+>>
+>> Correct me if I'm wrong.
+>>
+>> Thanks
+>> Haojian
+>>
+>
+> Haojian,
+>
+> I think there is a pipeline execution of the mov pc, r0 instruction.
+> If I remember correctly you need to do a similar jump when you turn
+> the MMU on in early boot code. If it makes any difference I did test
+> this code on pxa168 before submitting it. I will double check the mmp2
+> and the pxa910 reset vectors with the Boot ROM developers.
+>
 
->   After a successfull
-> uio_register_device() there is both a /dev/uioX and a directory
-> /sys/class/uio/uioX/.
-   Seems not be possible after a kernel ooops ...
->> The same happens after loading the module uio.ko and uio_pdrv.ko ...
->> no entries at all, no error messages.
->> uio_pdrv needs platform data set up somewhere, did you do that?
->> See docs in Documentation/DocBook/ for more details.
+In early boot code, 1:1 (physical:virtual) mapping is used. It means
+that physical address is same as virtual address. So you can operature
+mmu as you wish.
 
-   uio_pdrv.ko was provided unmodified and precompiles by the Fedora 
-distro.
-   This example seems more or less incomplete ... it seems also the case 
-with the uio_pdrv_genirq example
-
-   However, it seems so I have to go back 2 steps and restart after 
-reading  more details of the concept of platform devices ...
-
-   Thanks
-
-   --Armin
-
-
-
+By the way, I don't suggest to reset CPU by this way. Reset is not
+only make code running from the head, it should also clear registers
+and RTL logic in CPU.
