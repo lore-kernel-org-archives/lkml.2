@@ -1,547 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab0HaWs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 18:48:59 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:36653 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753033Ab0HaWs5 (ORCPT
+	id S1755600Ab0HaXAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 19:00:35 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38737 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab0HaXAd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 18:48:57 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Simon Arlott <simon@fire.lp0.eu>
-Subject: Re: cxacru: USB ethernet port of CX82310-based ADSL routers?
-Date: Wed, 1 Sep 2010 00:48:41 +0200
-User-Agent: KMail/1.9.10
-Cc: accessrunner-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201008312313.39171.linux@rainbow-software.org> <4C7D7F15.9040402@simon.arlott.org.uk>
-In-Reply-To: <4C7D7F15.9040402@simon.arlott.org.uk>
+	Tue, 31 Aug 2010 19:00:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=jXoGIxjXu6T4rGzRTtlOZNLP5v1NlNQSVAiz3cidHP1WKkyATkkrhY9CANGDjh1SwJ
+         98aT/0aBBBfH0oLxGUc2iLRlA5WeRfTp10OB7cfSN3PP9fsmldwRosPQetTA0YUaolJO
+         mr7qlD4Kg6g6is0Pma4a6SgPk+nWDlbhyfZj0=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201009010048.44644.linux@rainbow-software.org>
+In-Reply-To: <AANLkTinmWzTBPEsicB-AWv9-=mA8HE2qqEoYqhbV39t8@mail.gmail.com>
+References: <AANLkTinmWzTBPEsicB-AWv9-=mA8HE2qqEoYqhbV39t8@mail.gmail.com>
+Date: Tue, 31 Aug 2010 16:00:32 -0700
+Message-ID: <AANLkTimzMcydUF-8fK+L-Lkp3HMZ=8jLp+NdjrJuV+kx@mail.gmail.com>
+Subject: Re: [PATCH] watchdog: Enable NXP LPC32XX support in Kconfig (resend)
+From: Kevin Wells <wellsk40@gmail.com>
+To: Wim Van Sebroeck <wim@iguana.be>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vitaly Wool <vitalywool@gmail.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 September 2010 00:15:49 Simon Arlott wrote:
-> On 31/08/10 22:13, Ondrej Zary wrote:
-> > Hello,
-> > I have an ADSL router based on Conexant CX82310 chip. This chip provides
-> > both ethernet and USB interfaces. The ethernet interface is often
-> > internally connected to a 5-port switch (in my case too). The USB
-> > interface works as an ethernet card in Windows (using proprietary
-> > driver). In Linux, the cxacru driver binds to the device but does not
-> > work (no wonder - it's doing firmware things in an attempt to bring an
-> > ADSL modem up).
-> >
-> > I captured a log from Windows (device connect, DHCP and disconnect):
-> > http://www.rainbow-software.org/linux_files/cx82310/cx-run-dhcp.log
-> >
-> > The commands seem to match the enums in cxacru
-> > driver (and go to endpoint 1):
-> > 0x84, 0x85, 0x90, 0x91, 0x92, 0x99 (unknown)
-> > Data goes to/from endpoint 2 as ethernet frames (with something at the
-> > beginning).
-> >
-> > I wonder how to implement support for this device in cxacru driver. Or
-> > would be a separate driver better?
+Hi,
+
+It's been a few weeks on this one, can you please get this into the
+watchdog tree?
+
+thanks,
+Kevin
+
+> The NXP LPC32XX processor use the same watchdog as the Philips
+> PNX4008 processor.
 >
-> Support for this shouldn't really go into the cxacru driver, as that's
-> for an USB ATM interface (it depends on usbatm for actual ATM traffic)
-> not ethernet.
-
-That's what I was afraid of...
-
-> Unfortunately it doesn't look like a trivial task to auto-detect which
-> driver should handle it... your device itself claims to be an "ADSL
-> Modem".
-
-In fact, it does not. The idProduct text is from usb.ids file (which is often 
-incorrect). The device says that it's "USB NET CARD" (iProduct). But I don't 
-know if Linux can match drivers by iProduct string.
-
-> You'd need to know what type of device it was before loading the
-> firmware, which would further complicate auto-detection as some custom
-> firmware may be required that attempts to probe the device and then
-> accepts new firmware. I have no way of testing this on all the types of
-> existing hardware: http://accessrunner.sourceforge.net/modems.shtml
+> Signed-off-by: Kevin Wells <wellsk40@gmail.com>
+> Tested-by: Wolfram Sang <w.sang@pengutronix.de>
+> ---
+>  drivers/watchdog/Kconfig |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 >
-> Does it happen to work as an ADSL modem too if you load the right
-> firmware?
-> d275d0fef591e2233654ea591eccb0d15211eb82  cxacru-fw.bin  624192
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index b04b184..c442b2a 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -206,11 +206,11 @@ config OMAP_WATCHDOG
+>          here to enable the OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430
+> watchdog timer.
 >
-> There should be some flash memory you could try reading, however it
-> may not contain anything useful.
+>  config PNX4008_WATCHDOG
+> -       tristate "PNX4008 Watchdog"
+> -       depends on ARCH_PNX4008
+> +       tristate "PNX4008 and LPC32XX Watchdog"
+> +       depends on ARCH_PNX4008 || ARCH_LPC32XX
+>        help
+>          Say Y here if to include support for the watchdog timer
+> -         in the PNX4008 processor.
+> +         in the PNX4008 or LPC32XX processors.
+>          This driver can be built as a module by choosing M. The module
+>          will be called pnx4008_wdt.
 >
-> See "commands for interaction with the flash memory" in cxacru.c and
-> http://simon.arlott.org/pub/cxacru/raw.c
-
-Thanks, I'll try that, although I doubt that it will help.
-
-> One possibility is to rewrite the flash to indicate that it's an
-> ethernet class device, or just handle class 255 differently. It would
-> be interesting to know what the windows driver does when the device
-> class is changed. (I don't know which bytes in the flash memory
-> correspond to that value as mine are all 00, hopefully if you can read
-> yours you'll have an FF in that area.)
+> --
+> 1.7.1.1
 >
-> Ignoring 0572:cb01 class 255 in the cxacru probe function would be an
-> option... but I don't know how many existing users that would affect.
-
-Maybe ignoring the device if class is 255 and iProduct is "USB NET CARD" (or 
-does not contain "MODEM"?). 
-
-> > lsusb output:
-> >
-> > Bus 001 Device 003: ID 0572:cb01 Conexant Systems (Rockwell), Inc.
-> > GeekADSL Promax Q31 ADSL Modem Device Descriptor:
-> >   bLength                18
-> >   bDescriptorType         1
-> >   bcdUSB               1.10
-> >   bDeviceClass          255 Vendor Specific Class
-> >   bDeviceSubClass         0
-> >   bDeviceProtocol         0
-> >   bMaxPacketSize0        64
-> >   idVendor           0x0572 Conexant Systems (Rockwell), Inc.
-> >   idProduct          0xcb01 GeekADSL Promax Q31 ADSL Modem
-This is from usb.ids            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(random string entered by someone on the internet)
-
-> >   bcdDevice            1.00
-> >   iManufacturer           1 -
-> >   iProduct                2 USB NET CARD
-This is from the device         ^^^^^^^^^^^^
-
-> >   iSerial                 3 00000060
-> >   bNumConfigurations      1
-> >   Configuration Descriptor:
-> >     bLength                 9
-> >     bDescriptorType         2
-> >     wTotalLength           67
-> >     bNumInterfaces          1
-> >     bConfigurationValue     1
-> >     iConfiguration          0
-> >     bmAttributes         0xc0
-> >       Self Powered
-> >     MaxPower               80mA
-> >     Interface Descriptor:
-> >       bLength                 9
-> >       bDescriptorType         4
-> >       bInterfaceNumber        0
-> >       bAlternateSetting       0
-> >       bNumEndpoints           7
-> >       bInterfaceClass         0 (Defined at Interface level)
-> >       bInterfaceSubClass      0
-> >       bInterfaceProtocol      0
-> >       iInterface              0
-> >       Endpoint Descriptor:
-> >         bLength                 7
-> >         bDescriptorType         5
-> >         bEndpointAddress     0x81  EP 1 IN
-> >         bmAttributes            3
-> >           Transfer Type            Interrupt
-> >           Synch Type               None
-> >           Usage Type               Data
-> >         wMaxPacketSize     0x0040  1x 64 bytes
-> >         bInterval               4
-> >       Endpoint Descriptor:
-> >         bLength                 7
-> >         bDescriptorType         5
-> >         bEndpointAddress     0x01  EP 1 OUT
-> >         bmAttributes            3
-> >           Transfer Type            Interrupt
-> >           Synch Type               None
-> >           Usage Type               Data
-> >         wMaxPacketSize     0x0040  1x 64 bytes
-> >         bInterval               4
-> >       Endpoint Descriptor:
-> >         bLength                 7
-> >         bDescriptorType         5
-> >         bEndpointAddress     0x82  EP 2 IN
-> >         bmAttributes            2
-> >           Transfer Type            Bulk
-> >           Synch Type               None
-> >           Usage Type               Data
-> >         wMaxPacketSize     0x0040  1x 64 bytes
-> >         bInterval               1
-> >       Endpoint Descriptor:
-> >         bLength                 7
-> >         bDescriptorType         5
-> >         bEndpointAddress     0x02  EP 2 OUT
-> >         bmAttributes            2
-> >           Transfer Type            Bulk
-> >           Synch Type               None
-> >           Usage Type               Data
-> >         wMaxPacketSize     0x0040  1x 64 bytes
-> >         bInterval               1
-> >       Endpoint Descriptor:
-> >         bLength                 7
-> >         bDescriptorType         5
-> >         bEndpointAddress     0x83  EP 3 IN
-> >         bmAttributes            2
-> >           Transfer Type            Bulk
-> >           Synch Type               None
-> >           Usage Type               Data
-> >         wMaxPacketSize     0x0040  1x 64 bytes
-> >         bInterval               1
-> >       Endpoint Descriptor:
-> >         bLength                 7
-> >         bDescriptorType         5
-> >         bEndpointAddress     0x03  EP 3 OUT
-> >         bmAttributes            2
-> >           Transfer Type            Bulk
-> >           Synch Type               None
-> >           Usage Type               Data
-> >         wMaxPacketSize     0x0040  1x 64 bytes
-> >         bInterval               1
-> >       Endpoint Descriptor:
-> >         bLength                 7
-> >         bDescriptorType         5
-> >         bEndpointAddress     0x84  EP 4 IN
-> >         bmAttributes            3
-> >           Transfer Type            Interrupt
-> >           Synch Type               None
-> >           Usage Type               Data
-> >         wMaxPacketSize     0x0008  1x 8 bytes
-> >         bInterval               4
-> > Device Status:     0x0001
-> >   Self Powered
->
-> The three versions of the hardware I have are below:
->
-> Bus 002 Device 002: ID 0572:cafe Conexant Systems (Rockwell), Inc.
-> AccessRunner ADSL Modem Device Descriptor:
->   bLength                18
->   bDescriptorType         1
->   bcdUSB               1.10
->   bDeviceClass            0 (Defined at Interface level)
->   bDeviceSubClass         0
->   bDeviceProtocol         0
->   bMaxPacketSize0        64
->   idVendor           0x0572 Conexant Systems (Rockwell), Inc.
->   idProduct          0xcafe AccessRunner ADSL Modem
->   bcdDevice            0.01
->   iManufacturer           1 -
->   iProduct                2 ADSL USB MODEM
->   iSerial                 3 28217989
->   bNumConfigurations      1
->   Configuration Descriptor:
->     bLength                 9
->     bDescriptorType         2
->     wTotalLength           67
->     bNumInterfaces          1
->     bConfigurationValue     1
->     iConfiguration          0
->     bmAttributes         0xa0
->       (Bus Powered)
->       Remote Wakeup
->     MaxPower              500mA
->     Interface Descriptor:
->       bLength                 9
->       bDescriptorType         4
->       bInterfaceNumber        0
->       bAlternateSetting       0
->       bNumEndpoints           7
->       bInterfaceClass         0 (Defined at Interface level)
->       bInterfaceSubClass      0
->       bInterfaceProtocol      0
->       iInterface              0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x81  EP 1 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x01  EP 1 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x82  EP 2 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x02  EP 2 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x83  EP 3 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x03  EP 3 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x84  EP 4 IN
->         bmAttributes            3
->           Transfer Type            Interrupt
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0008  1x 8 bytes
->         bInterval             200
-> Device Status:     0x0001
->   Self Powered
->
-> Bus 002 Device 002: ID 0eb0:3457
-> Device Descriptor:
->   bLength                18
->   bDescriptorType         1
->   bcdUSB               1.10
->   bDeviceClass            0 (Defined at Interface level)
->   bDeviceSubClass         0
->   bDeviceProtocol         0
->   bMaxPacketSize0        64
->   idVendor           0x0eb0
->   idProduct          0x3457
->   bcdDevice           90.06
->   iManufacturer           1 -
->   iProduct                2 ADSL USB MODEM
->   iSerial                 3 08298061
->   bNumConfigurations      1
->   Configuration Descriptor:
->     bLength                 9
->     bDescriptorType         2
->     wTotalLength           67
->     bNumInterfaces          1
->     bConfigurationValue     1
->     iConfiguration          0
->     bmAttributes         0xa0
->       (Bus Powered)
->       Remote Wakeup
->     MaxPower              500mA
->     Interface Descriptor:
->       bLength                 9
->       bDescriptorType         4
->       bInterfaceNumber        0
->       bAlternateSetting       0
->       bNumEndpoints           7
->       bInterfaceClass         0 (Defined at Interface level)
->       bInterfaceSubClass      0
->       bInterfaceProtocol      0
->       iInterface              0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x81  EP 1 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x01  EP 1 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x82  EP 2 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x02  EP 2 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x83  EP 3 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x03  EP 3 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x84  EP 4 IN
->         bmAttributes            3
->           Transfer Type            Interrupt
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0008  1x 8 bytes
->         bInterval             200
-> Device Status:     0x0001
->   Self Powered
->
-> Bus 002 Device 005: ID 0572:cb00 Conexant Systems (Rockwell), Inc. E-Tech
-> ADSL Modem v2 Device Descriptor:
->   bLength                18
->   bDescriptorType         1
->   bcdUSB               1.10
->   bDeviceClass            0 (Defined at Interface level)
->   bDeviceSubClass         0
->   bDeviceProtocol         0
->   bMaxPacketSize0        64
->   idVendor           0x0572 Conexant Systems (Rockwell), Inc.
->   idProduct          0xcb00 E-Tech ADSL Modem v2
->   bcdDevice            0.01
->   iManufacturer           1 -
->   iProduct                2 ADSL USB MODEM
->   iSerial                 3 08298061
->   bNumConfigurations      1
->   Configuration Descriptor:
->     bLength                 9
->     bDescriptorType         2
->     wTotalLength           67
->     bNumInterfaces          1
->     bConfigurationValue     1
->     iConfiguration          0
->     bmAttributes         0x80
->       (Bus Powered)
->     MaxPower              500mA
->     Interface Descriptor:
->       bLength                 9
->       bDescriptorType         4
->       bInterfaceNumber        0
->       bAlternateSetting       0
->       bNumEndpoints           7
->       bInterfaceClass         0 (Defined at Interface level)
->       bInterfaceSubClass      0
->       bInterfaceProtocol      0
->       iInterface              0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x81  EP 1 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x01  EP 1 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x82  EP 2 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x02  EP 2 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x83  EP 3 IN
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x03  EP 3 OUT
->         bmAttributes            2
->           Transfer Type            Bulk
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0040  1x 64 bytes
->         bInterval               0
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x84  EP 4 IN
->         bmAttributes            3
->           Transfer Type            Interrupt
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0008  1x 8 bytes
->         bInterval             200
-> Device Status:     0x0001
->   Self Powered
-
-All these devices seem to use bDeviceClass 0 and iProduct "ADSL USB MODEM".
-
--- 
-Ondrej Zary
