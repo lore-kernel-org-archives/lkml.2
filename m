@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab0HaQQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 12:16:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42634 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab0HaQQt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 12:16:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dJtYvA0mfA9YhtStyr6yVKlb0FHie5Ks7HjRHplvZsUKdSTqOyrCLIBorzGuS+YREZ
-         KDgThZ6AewME+dX2xUPIK67RCIULlDAD/EBfQFzTqKauadPVkRZF2P3v3SZeKzb4TgXU
-         QbGHlHMPgnf3/lT3Hy+4YmQHNw9138rgZQgnw=
-Date: Tue, 31 Aug 2010 20:16:44 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: walter harms <wharms@bfs.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        kernel-janitors@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/7] drivers/macintosh/via-pmu-led.c: Add of_node_put
- to avoid memory leak
-Message-ID: <20100831161644.GA14505@albatros>
-References: <1283075566-27441-1-git-send-email-julia@diku.dk>
- <1283075566-27441-2-git-send-email-julia@diku.dk>
- <4C7D247F.4060500@bfs.de>
- <Pine.LNX.4.64.1008311807470.2668@ask.diku.dk>
+	id S1752968Ab0HaQRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 12:17:38 -0400
+Received: from ns2.cypress.com ([157.95.67.5]:59801 "EHLO ns2.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750909Ab0HaQRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 12:17:37 -0400
+Reply-To: <david.cross@cypress.com>
+From: "David Cross" <david.cross@cypress.com>
+To: "'Greg KH'" <greg@kroah.com>
+Cc: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+References: <1281140943.4035.7.camel@odc-laptop> <20100831002756.GA8304@kroah.com>
+Subject: RE: [PATCH] West Bridge Astoria Driver 2.6.35
+Date: Tue, 31 Aug 2010 09:17:18 -0700
+Organization: Cypress Semiconductor
+Message-ID: <DA59ECC057A74C138BDCDA5E93771F77@stanford.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1008311807470.2668@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20100831002756.GA8304@kroah.com>
+Thread-Index: ActIpCFBHPDb/OkAQCOJ63QlE55XcwAg5GPw
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+X-Brightmail-Tracker: AAAAAA==
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 18:08 +0200, Julia Lawall wrote:
-> On Tue, 31 Aug 2010, walter harms wrote:
-> 
-> > 
-> > 
-> > Julia Lawall schrieb:
-> > > Add a call to of_node_put in the error handling code following a call to
-> > > of_find_node_by_path.
-[...]
-> > > --- a/drivers/macintosh/via-pmu-led.c
-> > > +++ b/drivers/macintosh/via-pmu-led.c
-> > > @@ -92,8 +92,10 @@ static int __init via_pmu_led_init(void)
-> > >  	if (dt == NULL)
-> > >  		return -ENODEV;
-> > >  	model = of_get_property(dt, "model", NULL);
-> > > -	if (model == NULL)
-> > > +	if (model == NULL) {
-> > > +		of_node_put(dt);
-> > >  		return -ENODEV;
-> > > +	}
-> > >  	if (strncmp(model, "PowerBook", strlen("PowerBook")) != 0 &&
-> > >  	    strncmp(model, "iBook", strlen("iBook")) != 0 &&
-> > >  	    strcmp(model, "PowerMac7,2") != 0 &&
-> > > 
-> > 
-> > is there any rule that says when to use strncmp ? it seems perfecly valid to use strcpy here
-> > (what is done in the last cmp).
-> 
-> Perhaps there are some characters after eg PowerBook that one doesn't want 
-> to compare with?
 
-It seems to me that model has no '\0' in the end. If model is got from
-the hardware then we should double check it - maybe harware is buggy.
-Otherwise we'll overflow model.
+> I get a build error when I try to build this driver:
+>
+drivers/staging/westbridge/astoria/block/../include/linux/westbridge/c>
+yasmisc.h:521:2: error: expected declaration specifiers or '...' before  >
+'cy_as_hal_device_tag'
 
-But why strcmp(model, "PowerMac7,2")? IMO it should be replaced
-with strncmp().
+> It looks like the #include mess isn't working quite properly.
 
--- 
-Vasiliy
+> Also note that this driver is building on an x86-64 platform, which is
+> something that you probably don't want :)
+
+> So, for now, I'll just mark the driver as CONFIG_BROKEN and can you send
+> me some Kconfig patches against the next linux-next release which should
+> have this driver in it, so that it will build properly?
+
+Sure, I can do that. I have since changed the Kconfig structure a bit. It
+actually will build properly with the correct .config as it is though. I can
+send you the .config if you would like.
+
+Thanks,
+David
+
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
