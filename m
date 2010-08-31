@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab0HaXAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 19:00:35 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38737 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab0HaXAd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 19:00:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=jXoGIxjXu6T4rGzRTtlOZNLP5v1NlNQSVAiz3cidHP1WKkyATkkrhY9CANGDjh1SwJ
-         98aT/0aBBBfH0oLxGUc2iLRlA5WeRfTp10OB7cfSN3PP9fsmldwRosPQetTA0YUaolJO
-         mr7qlD4Kg6g6is0Pma4a6SgPk+nWDlbhyfZj0=
+	id S1756068Ab0HaXCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 19:02:17 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40181 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753999Ab0HaXCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 19:02:16 -0400
+Date: Tue, 31 Aug 2010 16:02:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arjan van de Ven <arjan@infradead.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Joe Perches <joe@perches.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org,
+        ksummit-2010-discuss@lists.linux-foundation.org
+Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
+ todo list, add RCU todo list
+Message-ID: <20100831230213.GG2421@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100826154537.GA4874@linux.vnet.ibm.com>
+ <1282837904.1875.64.camel@Joe-Laptop>
+ <20100826161451.GB2367@linux.vnet.ibm.com>
+ <1282839933.8133.11.camel@mulgrave.site>
+ <20100826092923.4bdbea69.rdunlap@xenotime.net>
+ <20100826093838.74ab9958@infradead.org>
+ <1283275388.1377.216.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinmWzTBPEsicB-AWv9-=mA8HE2qqEoYqhbV39t8@mail.gmail.com>
-References: <AANLkTinmWzTBPEsicB-AWv9-=mA8HE2qqEoYqhbV39t8@mail.gmail.com>
-Date: Tue, 31 Aug 2010 16:00:32 -0700
-Message-ID: <AANLkTimzMcydUF-8fK+L-Lkp3HMZ=8jLp+NdjrJuV+kx@mail.gmail.com>
-Subject: Re: [PATCH] watchdog: Enable NXP LPC32XX support in Kconfig (resend)
-From: Kevin Wells <wellsk40@gmail.com>
-To: Wim Van Sebroeck <wim@iguana.be>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vitaly Wool <vitalywool@gmail.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283275388.1377.216.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Aug 31, 2010 at 01:23:08PM -0400, Steven Rostedt wrote:
+> On Thu, 2010-08-26 at 09:38 -0700, Arjan van de Ven wrote:
+> 
+> > I have to say that I'm not yet convinced that keeping a todo list in a
+> > place that's not with the actual source code does not give me warm
+> > fuzzy feelings. Every time we've kept information about the source code
+> > separate from our source code it's been a failure; it gets out of sync
+> > fast and it just adds to the maintenance.
+> > 
+> > A git commit that both fixes an issue and removed the line from the
+> > todo file (or moves it to a "done" section, whatever) is the ultimate
+> > goal obviously... having a U: seems to go in exactly the opposite
+> > direction.
+> > 
+> > otoh having a kernel-doc type (eg structured, parsable) way of
+> > gathering todo items throughout the tree.... that I can see as useful.
+> 
+> We could add a toplevel "todo/" directory, with each project file in it
+> and a list of things todo. When the todo is done, that same commit could
+> remove the todo item.
+> 
+> Just a worthless thought ;-)
 
-It's been a few weeks on this one, can you please get this into the
-watchdog tree?
+I am with Dmitry on this one.  I really don't want to be prevented from
+updating my todo items outside of the merge window.
 
-thanks,
-Kevin
+Different people have different needs, so we need to accommodate todo
+lists both within and outside the kernel source tree.
 
-> The NXP LPC32XX processor use the same watchdog as the Philips
-> PNX4008 processor.
->
-> Signed-off-by: Kevin Wells <wellsk40@gmail.com>
-> Tested-by: Wolfram Sang <w.sang@pengutronix.de>
-> ---
->  drivers/watchdog/Kconfig |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index b04b184..c442b2a 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -206,11 +206,11 @@ config OMAP_WATCHDOG
->          here to enable the OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430
-> watchdog timer.
->
->  config PNX4008_WATCHDOG
-> -       tristate "PNX4008 Watchdog"
-> -       depends on ARCH_PNX4008
-> +       tristate "PNX4008 and LPC32XX Watchdog"
-> +       depends on ARCH_PNX4008 || ARCH_LPC32XX
->        help
->          Say Y here if to include support for the watchdog timer
-> -         in the PNX4008 processor.
-> +         in the PNX4008 or LPC32XX processors.
->          This driver can be built as a module by choosing M. The module
->          will be called pnx4008_wdt.
->
-> --
-> 1.7.1.1
->
+							Thanx, Paul
