@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0HaUVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 16:21:18 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34728 "EHLO ogre.sisk.pl"
+	id S1755447Ab0HaU2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 16:28:19 -0400
+Received: from swm.pp.se ([212.247.200.143]:37843 "EHLO uplift.swm.pp.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab0HaUVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 16:21:16 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "M. Vefa Bicakci" <bicave@superonline.com>
-Subject: Re: [Bug #16771] [Bisected Regression in 2.6.35] A full tmpfs filesystemcauses hibernationto hang
-Date: Tue, 31 Aug 2010 22:19:39 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.oHB.0bueMB@chimera> <4C7D146E.8020601@superonline.com>
-In-Reply-To: <4C7D146E.8020601@superonline.com>
+	id S1754243Ab0HaU2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 16:28:17 -0400
+Date: Tue, 31 Aug 2010 22:28:13 +0200 (CEST)
+From: Mikael Abrahamsson <swmike@swm.pp.se>
+To: Pekka Enberg <penberg@kernel.org>
+cc: Stan Hoeppner <stan@hardwarefreak.com>, Christoph Lameter <cl@linux.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Mel Gorman <mel@csn.ul.ie>, Linux Netdev List <netdev@vger.kernel.org>
+Subject: Re: 2.6.34.1 page allocation failure
+In-Reply-To: <alpine.DEB.1.10.1008291736170.8562@uplift.swm.pp.se>
+Message-ID: <alpine.DEB.1.10.1008311655450.8562@uplift.swm.pp.se>
+References: <4C70BFF3.8030507@hardwarefreak.com> <alpine.DEB.1.10.1008220842400.8562@uplift.swm.pp.se> <AANLkTin48SJ58HvFqjrOnQBMqLcbECtqXokweV00dNgv@mail.gmail.com> <alpine.DEB.2.00.1008221734410.21916@router.home> <4C724141.8060000@kernel.org>
+ <4C72F7C6.3020109@hardwarefreak.com> <4C74097A.5020504@kernel.org> <alpine.DEB.1.10.1008242114120.8562@uplift.swm.pp.se> <4C7A3B1D.7050500@kernel.org> <alpine.DEB.1.10.1008291433420.8562@uplift.swm.pp.se> <4C7A5DDE.8030106@kernel.org>
+ <alpine.DEB.1.10.1008291736170.8562@uplift.swm.pp.se>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+Organization: People's Front Against WWW
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008312219.39694.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 31, 2010, M. Vefa Bicakci wrote:
-> On 30/08/10 02:13 AM, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.34 and 2.6.35.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16771
-> > Subject		: [Bisected Regression in 2.6.35] A full tmpfs filesystem causes hibernationto hang
-> > Submitter	: M. Vefa Bicakci <bicave@superonline.com>
-> > Date		: 2010-08-15 5:25 (15 days old)
-> > First-Bad-Commit: http://git.kernel.org/linus/bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
-> > Message-ID	: <4C677A49.4030904@superonline.com>
-> > References	: http://marc.info/?l=linux-kernel&m=128184995401968&w=2
-> > 
-> 
-> Dear Rafael Wysocki,
-> 
-> This regression still exists in 2.6.35.4. (I haven't tested 2.6.36-rcX
-> series.) Kosaki Motohiro has kindly helped me with this issue and found
-> a fix for the regression. Today I have successfully tested his patch,
-> but I don't know whether the patch needs to be further refined and tested.
+On Sun, 29 Aug 2010, Mikael Abrahamsson wrote:
 
-Thanks for the information.  Do you have a pointer to the patch?
+> On Sun, 29 Aug 2010, Pekka Enberg wrote:
+>
+>> There aren't any debug options that need to be enabled. The reason I'm 
+>> asking is because we had a bunch of similar issues being reported earlier 
+>> that got fixed and it's been calm for a while. That's why it would be 
+>> interesting to know if 2.6.35 or 2.6.36-rc2 (if it's not too unstable to 
+>> test) fixes things.
+>
+> Oki, I have installed 2.6.35 now (found backport from ubuntu 10.10 for 
+> 10.04), just need to do a reboot at some convenient time.
 
-Rafael
+I just rebooted and ran a similar load of network+disk load that made the 
+machine give "swapper allocation failure" messages before, and I couldn't 
+reproduce it with 2.6.35:
+
+2.6.35-19-generic #25~lucid1-Ubuntu SMP Wed Aug 25 03:50:05 UTC 2010 x86_64 GNU/Linux
+
+Doing "sync" in the middle made sync take more than 5+ minutes to complete 
+(2 hung-task messages in dmesg), but at least nothing ran out of memory.
+
+Considering the amount of people running 2.6.32 and who will be running it 
+in the future, it still worries me that this is present in 2.6.32 (and 
+earlier kernels as well).
+
+-- 
+Mikael Abrahamsson    email: swmike@swm.pp.se
