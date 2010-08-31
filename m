@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab0HaInm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 04:43:42 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52879 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab0HaInj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 04:43:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4C7CC08A.9010302@jp.fujitsu.com>
-Date: Tue, 31 Aug 2010 17:42:50 +0900
-From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753986Ab0HaIpC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 04:45:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753004Ab0HaIpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 04:45:00 -0400
+Message-ID: <4C7CC107.1050304@redhat.com>
+Date: Tue, 31 Aug 2010 10:44:55 +0200
+From: Harald Hoyer <harald@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
 MIME-Version: 1.0
-To: Andreas Dilger <adilger@sun.com>, Chris Mason <chris.mason@oracle.com>,
-        Jiri Olsa <jolsa@redhat.com>, John Stultz <johnstul@us.ibm.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH] make file's timestamp more accurate
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Eric Paris <eparis@redhat.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, greg@kroah.com, sds@tycho.nsa.gov,
+        dwalsh@redhat.com
+Subject: Re: selinux vs devtmpfs (vs udev)
+References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>	 <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com> <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com>
+In-Reply-To: <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 08/31/2010 01:14 AM, Eric Paris wrote:
+> On Sat, 2010-08-28 at 11:57 +0200, Kay Sievers wrote:
+>> On Sat, Aug 28, 2010 at 01:00, Eric Paris<eparis@redhat.com>  wrote:
+>
+>>> In the new new days of devtmpfs things aren't as nice.  The kernel is
+>>> magically creating files in /dev.  These are getting created with the
+>>> 'default' SELinux context.  So herein lies the problem.
+>>>
+>>> The first program that tries to access these files get denied by
+>>> SELinux.  Now udev actually has logic in it to fix the label on any
+>>> closed device file, so udev will at that point swoop in, fix the label,
+>>> and the next program that tries to use the file will work just fine.  Oh
+>>> fun!
+>
+>> Udev should still label all device nodes, even when they are created
+>> by the kernel. Devtmpfs or not should not make a difference here.
+>>
+>> I guess it's a udev bug introduced with:
+>>    http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=578cc8a8085a47c963b5940459e475ac5f07219c
+>>
+>> and we just need to fix that.
+>
+> Looks like the likely cause.  I see a note in one of the bugzillas that
+> says:
+>
+> Aug 30 14:03:09 pippin udevd-work[347]: preserve file '/dev/dri/card0',
+> because it has correct dev_t
+>
+> Which is certainly the part of code in question.  Do you have a quick
+> fix in mind that you plan to push upstream or should I ask the RH udev
+> guy to come up with something?
+>
+> -Eric
+>
 
-linux has supported nanosecond order file's timestamp since 2.5.48.
-However current file timestamp is got by current_fs_time() and
-is only updated once a tick. It can't say true nanosecond accuracy.
-In addition, gettimeofday() before a file operation updating
-{a,c,m}time would outstrip file's timestamp because of the difference
-about time source between gettimeofday() and file's timestamp.
-A certain kind of application would corrupted by this problem.
+The RH udev guy says:
 
-I attached a most simple patch fixing this problem here. However
-it has several problems and I don't say it can be applied as is.
-The most big two problems is the following:
+This patch was introduced, because Red Hat engineers requested, that the selinux 
+context should not be modified, after they set their own custom context (virtual 
+machine management).
 
- - It would cause performance regression, especially in
-   not TSC capable system.
- - Is gettimeofday()'s monotonicity reliable on all systems?
-
-The relative discussion:
-http://lkml.org/lkml/2010/7/13/443
-
-Does anybody have good idea? Should it be tunable, for example?
-
-Thanks,
-Satoru
-
-Index: linux-2.6.36-rc3/kernel/time.c
-===================================================================
---- linux-2.6.36-rc3.orig/kernel/time.c 2010-08-31 16:07:43.000000000 +0900
-+++ linux-2.6.36-rc3/kernel/time.c      2010-08-31 16:08:11.000000000 +0900
-@@ -227,7 +227,8 @@ SYSCALL_DEFINE1(adjtimex, struct timex _
-  */
- struct timespec current_fs_time(struct super_block *sb)
- {
--       struct timespec now = current_kernel_time();
-+       struct timespec now;
-+       getnstimeofday(&now);
-        return timespec_trunc(now, sb->s_time_gran);
- }
- EXPORT_SYMBOL(current_fs_time);
+So, either we differentiate between "add" and "change" events, or we should 
+check against the "kernel default" selinux context, before we call 
+udev_selinux_lsetfilecon().
 
