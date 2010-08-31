@@ -1,107 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab0HaG2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:28:11 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43786 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756024Ab0HaG2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:28:06 -0400
-Subject: Re: [PATCH 08/20] powerpc: Preemptible mmu_gather
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@suse.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <20100828142455.960494507@chello.nl>
-References: <20100828141637.421594670@chello.nl>
-	 <20100828142455.960494507@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 16:26:44 +1000
-Message-ID: <1283236004.2151.33.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756828Ab0HaG3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 02:29:03 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:57604 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756024Ab0HaG3B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 02:29:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=iAx7j3xj7CU9W5tt4qvdfW0twgY+CgYgf7zpTKFavWXpA4ghn54jI8m1hFzqufwJ4e
+         oQftsoob5gDiILpemwMlIdJaS1wiVUruzOiVxA387VgMyftNFBpS2XNpYutn3ruYQBlz
+         kERxuiBgT3jn+ys0Xb7pl/yjbvG2mdkJ1SlNA=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimvudYv4fwyGWjL5c10QrM9GtC2SXjPZzcV20_s@mail.gmail.com>
+References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
+	<1282814339-10934-5-git-send-email-mark.brown314@gmail.com>
+	<AANLkTimvudYv4fwyGWjL5c10QrM9GtC2SXjPZzcV20_s@mail.gmail.com>
+Date: Tue, 31 Aug 2010 02:28:59 -0400
+Message-ID: <AANLkTinEtFhC6kB3asuBXLxCgYf9yOTLTTwRQJXKcu2n@mail.gmail.com>
+Subject: Re: [PATCH 4/5] ARM: pxa168: added special case handler for keypad interrupts
+From: "Mark F. Brown" <mark.brown314@gmail.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-28 at 16:16 +0200, Peter Zijlstra wrote:
-> Fix up powerpc to the new mmu_gather stuffs.
+On Tue, Aug 31, 2010 at 12:53 AM, Haojian Zhuang
+<haojian.zhuang@gmail.com> wrote:
+> On Thu, Aug 26, 2010 at 5:18 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>> ---
+>>  arch/arm/mach-mmp/irq-pxa168.c |   23 ++++++++++++++++++++++-
+>>  1 files changed, 22 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-mmp/irq-pxa168.c b/arch/arm/mach-mmp/irq-pxa168.c
+>> index 52ff2f0..bfb0984 100644
+>> --- a/arch/arm/mach-mmp/irq-pxa168.c
+>> +++ b/arch/arm/mach-mmp/irq-pxa168.c
+>> @@ -17,6 +17,8 @@
+>>  #include <linux/io.h>
+>>
+>>  #include <mach/regs-icu.h>
+>> +#include <mach/regs-apmu.h>
+>> +#include <mach/cputype.h>
+>>
+>>  #include "common.h"
+>>
+>> @@ -42,6 +44,19 @@ static struct irq_chip icu_irq_chip = {
+>>        .unmask = icu_unmask_irq,
+>>  };
+>>
+>> +void handle_pxa168_keypad_irq(unsigned int irq, struct irq_desc *desc)
+>> +{
+>> +       uint32_t val;
+>> +       uint32_t mask = APMU_PXA168_KP_WAKE_CLR;
+>> +
+>> +       /* clear keypad wake event */
+>> +       val = __raw_readl(APMU_WAKE_CLR);
+>> +       __raw_writel(val |  mask, APMU_WAKE_CLR);
+>> +
+>> +       /* handle irq */
+>> +       handle_level_irq(irq, desc);
+>> +}
+>> +
+>
+> Why should you clear wakeup event status in IRQ handler? If system is
+> resumed by keypad event, you should clear this wakeup source in resume
+> code. I think that IRQ code should not be binded with wakeup event at
+> here.
+>
+>>  void __init icu_init_irq(void)
+>>  {
+>>        int irq;
+>> @@ -49,7 +64,13 @@ void __init icu_init_irq(void)
+>>        for (irq = 0; irq < 64; irq++) {
+>>                icu_mask_irq(irq);
+>>                set_irq_chip(irq, &icu_irq_chip);
+>> -               set_irq_handler(irq, handle_level_irq);
+>> +
+>> +               /* special handler for keypad */
+>> +               if (cpu_is_pxa168() && irq == IRQ_PXA168_KEYPAD)
+>> +                       set_irq_handler(irq, handle_pxa168_keypad_irq);
+>> +               else
+>> +                       set_irq_handler(irq, handle_level_irq);
+>> +
+>>                set_irq_flags(irq, IRQF_VALID);
+>>        }
+>>  }
+>> --
+>> 1.7.0.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
 
-Unfortunately, I think this is broken...
+Haojian, this is an usual case, but without that clear wake event you
+will not be able to clear the keypad interrupt. For my push to open
+source I re-wrote the workaround code and added it as a special case
+IRQ handler. In the Marvell pxa168 code base it is actually located in
+the keypad interrupt handler as the function clear_wakeup(). I felt it
+was better to isolate this code in the mmp common code base instead.
 
-First there's an actual bug here:
-
->  	last = _switch(old_thread, new_thread);
->  
-> +#ifdef CONFIG_PPC64
-> +	if (task_thread_info(new)->local_flags & _TLF_LAZY_MMU) {
-> +		task_thread_info(new)->local_flags &= ~_TLF_LAZY_MMU;
-> +		batch = &__get_cpu_var(ppc64_tlb_batch);
-> +		batch->active = 1;
-> +	}
-> +#endif
-> +
-
-Here, you are coming out of _switch() which will have swapped the
-stack and non-volatile registers to the state they were in when the
-new task was originally switched-out. Thus "new" which is a local variable
-(either on stack or in a non-volatile register) will now refer to whatever
-was the next task back then.
-
-I suppose that's what's causing the similar patch you have in -rt to
-fail btw. This could be fixed easily by using "current" instead.
-
-However, there I have another concern.
-
-> PPC has an extra batching queue to RCU free the actual pagetable
-> allocations, use the ARCH extentions for that for now.
-
-Right, so far that looks fine (at least after a quick look).
-
-> For the ppc64_tlb_batch, which tracks the vaddrs to unhash from the
-> hardware hash-table, keep using per-cpu arrays but flush on context
-> switch and use a TLF bit to track the laxy_mmu state.
-
-However, that doesn't seem necessary at all, at least not for !-rt, or
-unless you broke something that I would need to look at very closely
-then :-)
-
-IE. Enable/disable the batch only within "lazy_mmu_mode" sections. We do
-that in large part because we do not want non-flushed pages to exist
-outside of the pte spinlock.
-
-The reason is that if we let that happen, a small possibility exist for
-our MMU hash page handling to try to insert a duplicate entry for a
-given PTE into the hash table, which is basically fatal.
-
-Thus, we only exist during that lazy period, which means with a lock
-held. Hence we can't schedule and the changes you do regarding
-get/put_cpu_var are unnecessary.
-
-Another "trick" here btw is that fork() is currently not using a batch,
-but with our technique, we do get batching there too.
-
-So unless something else is broken that makes the above not true
-anymore, which would be a concern, most of the changes you did to the
-flush batch are unnecessary for your preemptible mmu_gather on non-rt
-kernels.
-
-Of course, with -rt and the pte lock becoming a mutex, all of your
-changes do become necessary (and I suppose that's where they come from).
-
-Now, those changes won't technically hurt on a non-rt kernel, tho they
-will add a tiny bit of overhead. I'll see if I can measure it.
-
-Cheers,
-Ben.
-
-
+Regards,
+-- Mark
