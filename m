@@ -1,158 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab0HaLOd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 07:14:33 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57244 "EHLO mx3.mail.elte.hu"
+	id S1757212Ab0HaLWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 07:22:00 -0400
+Received: from lucidpixels.com ([75.144.35.66]:44414 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757179Ab0HaLOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 07:14:32 -0400
-Date: Tue, 31 Aug 2010 13:14:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>
-Subject: Re: vhost_dev_cleanup() crash: BUG: unable to handle kernel NULL
- pointer dereference
-Message-ID: <20100831111413.GB12853@elte.hu>
-References: <20100831075705.GA4710@elte.hu>
- <1283251801.2550.53.camel@edumazet-laptop>
+	id S1756973Ab0HaLV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 07:21:58 -0400
+Date: Tue, 31 Aug 2010 07:21:57 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: adam radford <aradford@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+ timed out, resetting card.
+In-Reply-To: <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1008310717260.4858@p34.internal.lan>
+References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan> <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1283251801.2550.53.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-> Le mardi 31 août 2010 à 09:57 +0200, Ingo Molnar a écrit :
-> > FYI, there's a new crash in the vnet driver that occasionally triggers 
-> > on ordinary host bootups as well, when (non-virtualized) networking 
-> > initializes:
-> > 
-> >  [   86.563889]  [<ffffffff81b05655>] page_fault+0x25/0x30
-> >  [   86.569065]  [<ffffffff8186d899>] ? vhost_poll_flush+0x11a/0x156
-> >  [   86.575119]  [<ffffffff8105f511>] ? kthread_stop+0xa/0x57
-> >  [   86.580544]  [<ffffffff8186e535>] vhost_dev_cleanup+0x269/0x271
-> >  [   86.586528]  [<ffffffff8186e974>] vhost_net_release+0x48/0x7f
-> >  [   86.592359]  [<ffffffff810c5419>] fput+0x120/0x1d4
-> >  [   86.597185]  [<ffffffff810c2a1d>] filp_close+0x63/0x6d
-> >  [   86.602353]  [<ffffffff810c2acf>] sys_close+0xa8/0xe2
-> >  [   86.607429]  [<ffffffff81008602>] system_call_fastpath+0x16/0x1b
-> > 
-> > See the full crashlog below. Config attached.
-> > 
-> > AFAICT this bug probably went upstream during the merge window.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
-> > [   86.262123] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-> > [   86.265200] IP:ntry for device- [<ffffffff8105f511>] kthread_stop+0xa/0x57
-> > [   86.265200] PGD 3ad75067 PUD 3b352067 PMD 0 
-> > [   86.265200] Oops: 0002 [#1] SMP 
-> > [   86.265200] last sysfs file: /sys/devices/pnp0/00:0d/id
-> > [   86.265200] CPU 0 mapper found
-> > Is
-> > [   86.265200] Pid: 1254, comm: multipath.stati Not tainted 2.6.36-rc3-tip+ #31158 A8N-E/System Product Name
-> >  device-mapper d[   86.265200] RIP: 0010:[<ffffffff8105f511>]  [<ffffffff8105f511>] kthread_stop+0xa/0x57
-> > river missing fr[   86.265200] RSP: 0018:ffff88003ae83e58  EFLAGS: 00010246
-> > [   86.265200] RAX: ffff88003d1dc170 RBX: 0000000000000000 RCX: 0000000000000000
-> > [   86.265200] RDX: ffff88003aa82030 RSI: 0000000000000001 RDI: 0000000000000000
-> > om kernel?
-> > devi[   86.265200] RBP: ffff88003ae83e68 R08: ffff88003ae83e68 R09: 0000000000000001
-> > [   86.265200] R10: ffffffff8186d899 R11: 0000000000000246 R12: ffff88003d1dc8f0
-> > [   86.265200] R13: 0000000000000002 R14: ffff88003b2a1000 R15: ffff88003aa82030
-> > [   86.265200] FS:  0000000001fc5880(0063) GS:ffff88003fc00000(0000) knlGS:0000000000000000
-> > ce-mapper: versi[   86.265200] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [   86.265200] CR2: 0000000000000010 CR3: 000000003b377000 CR4: 00000000000006f0
-> > on ioctl failed:[   86.265200] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [   86.265200] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > [   86.265200] Process multipath.stati (pid: 1254, threadinfo ffff88003ae82000, task ffff88003b3e8000)
-> > [   86.265200] Stack:
-> > [   86.265200]  ffff88003d1dc090 ffff88003d1dc8f0 ffff88003ae83e98 ffffffff8186e535
-> > [   86.265200] <0> ffff88003ae83e98 ffff88003d1dc090 0000000000000000 0000000000000000
-> > [   86.265200] <0> ffff88003ae83ec8 ffffffff8186e974 0000000000000008 ffff88003b3a6180
-> > [   86.265200] Call Trace:
-> > [   86.265200]  [<ffffffff8186e535>] vhost_dev_cleanup+0x269/0x271
-> >  Operation not p[   86.265200]  [<ffffffff8186e974>] vhost_net_release+0x48/0x7f
-> > [   86.265200]  [<ffffffff810c5419>] fput+0x120/0x1d4
-> > ermitted
-> > [   86.265200]  [<ffffffff810c2a1d>] filp_close+0x63/0x6d
-> > [   86.265200]  [<ffffffff810c2acf>] sys_close+0xa8/0xe2
-> > [   86.265200]  [<ffffffff81008602>] system_call_fastpath+0x16/0x1b
-> > [   86.265200] Code: 4c 8b 25 83 b4 16 01 49 81 fc 70 a9 1c 82 75 94 48 c7 c7 80 a9 1c 82 e8 99 5b aa 00 e9 50 ff ff ff 55 48 89 e5 41 54 53 48 89 fb <f0> ff 47 10 4c 8b a7 00 05 00 00 48 83 bf 00 05 00 00 00 74 16 
-> > [   86.265200] RIP  [<ffffffff8105f511>] kthread_stop+0xa/0x57
-> > [   86.265200]  RSP <ffff88003ae83e58>
-> > [   86.265200] CR2: 0000000000000010
-> > [   86.499743] ---[ end trace 433623c38ffeb225 ]---
-> > [   86.504397] Kernel panic - not syncing: Fatal exception
-> > [   86.509633] Pid: 1254, comm: multipath.stati Tainted: G      D     2.6.36-rc3-tip+ #31158
-> > [   86.517858] Call Trace:
-> > [   86.520343]  [<ffffffff81b01c87>] panic+0x8c/0x196
-> > [   86.525181]  [<ffffffff81048405>] ? kmsg_dump+0x126/0x140
-> > [   86.530606]  [<ffffffff8100c43d>] oops_end+0x8f/0x9c
-> > [   86.535611]  [<ffffffff8102d93d>] no_context+0x1f7/0x206
-> > [   86.540948]  [<ffffffff8102dacb>] __bad_area_nosemaphore+0x17f/0x1a2
-> > [   86.547334]  [<ffffffff8102db40>] bad_area+0x42/0x49
-> > [   86.552329]  [<ffffffff8102de84>] do_page_fault+0x1fe/0x363
-> > [   86.557925]  [<ffffffff81352dff>] ? do_raw_spin_lock+0x6b/0x122
-> > [   86.563889]  [<ffffffff81b05655>] page_fault+0x25/0x30
-> > [   86.569065]  [<ffffffff8186d899>] ? vhost_poll_flush+0x11a/0x156
-> > [   86.575119]  [<ffffffff8105f511>] ? kthread_stop+0xa/0x57
-> > [   86.580544]  [<ffffffff8186e535>] vhost_dev_cleanup+0x269/0x271
-> > [   86.586528]  [<ffffffff8186e974>] vhost_net_release+0x48/0x7f
-> > [   86.592359]  [<ffffffff810c5419>] fput+0x120/0x1d4
-> > [   86.597185]  [<ffffffff810c2a1d>] filp_close+0x63/0x6d
-> > [   86.602353]  [<ffffffff810c2acf>] sys_close+0xa8/0xe2
-> > [   86.607429]  [<ffffffff81008602>] system_call_fastpath+0x16/0x1b
-> > [   86.613516] Rebooting in 1 seconds..Press any key to enter the menu
-> 
-> Hi Ingo
-> 
-> Seems to be commit c23f3445e68e1
-> (vhost: replace vhost_workqueue with per-vhost kthread)
-> 
-> following patch should cure it ?
-> 
-> Thanks
-> 
-> [PATCH] vhost: stop worker only if created
-> 
-> Its illegal to call kthread_stop(NULL)
-> 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index e05557d..0a00121 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -323,7 +323,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
->  	dev->mm = NULL;
->  
->  	WARN_ON(!list_empty(&dev->work_list));
-> -	kthread_stop(dev->worker);
-> +	if (dev->worker)
-> +		kthread_stop(dev->worker);
+On Sun, 29 Aug 2010, Justin Piszcz wrote:
 
-Btw., i think this check should be pushed into kthread_stop() instead - 
-just like kfree(NULL) is possible as well - it simplifies cleanup 
-sequences.
+>
+>
+> On Fri, 27 Aug 2010, Justin Piszcz wrote:
 
-Thanks,
 
-	Ingo
+Problem persists during heavy I/O, different error this time:
+
+[152904.636062] 3w-9xxx: scsi1: ERROR: (0x06:0x0036): Response queue (large) empty failed during reset sequence.
+[152917.721865] 3w-9xxx: scsi1: AEN: INFO (0x04:0x0001): Controller reset occurred:resets=2.
+
+--
+
+syslog:Aug  6 05:58:19 p34 kernel: [    1.763002] 3w-9xxx: scsi1: AEN: INFO (0x04:0x0001): Controller reset occurred:resets=1.
+syslog:Aug 20 07:30:41 p34 kernel: [1171646.371290] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
+syslog:Aug 24 09:04:11 p34 kernel: [246703.526388] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
+syslog:Aug 24 09:14:04 p34 kernel: [247295.662461] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
+syslog:Aug 26 21:05:22 p34 kernel: [462727.945313] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
+syslog:Aug 27 00:39:43 p34 kernel: [475586.575030] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
+syslog:Aug 31 05:53:03 p34 kernel: [152904.636062] 3w-9xxx: scsi1: ERROR: (0x06:0x0036): Response queue (large) empty failed during reset sequence.
+syslog:Aug 31 05:53:03 p34 kernel: [152917.721865] 3w-9xxx: scsi1: AEN: INFO (0x04:0x0001): Controller reset occurred:resets=2.
+
+--
+
+It started happening on August 6th, this is around the same time I upgraded
+to the 2.6.35 kernel, the 2.6.35 kernel according to kernelnewbies was
+released on August 1, 2010:
+
+http://kernelnewbies.org/LinuxChanges
+Linux 2.6.35 has been released on 1 Aug, 2010.
+
+http://marc.info/?l=linux-kernel&m=127419418304483&w=2
+
+Adam Radford (2):
+       3ware maintainers update
+       3w-xxxx, 3w-9xxx: force 60 second timeout
+
+I will go back to 2.6.34 and see if the problems persists.
+
+Justin.
+
