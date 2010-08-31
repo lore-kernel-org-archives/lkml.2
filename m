@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab0HaVv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 17:51:56 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51272 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750909Ab0HaVvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 17:51:54 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: guenter.roeck@ericsson.com
-Subject: [PATCH v2] [RFC] isofs: work-around for Rock Ridge+Joliet CDs with empty ISO root directory
-Date: Tue, 31 Aug 2010 23:51:47 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201008312010.10667.linux@rainbow-software.org> <1283287495.9850.17.camel@groeck-laptop>
-In-Reply-To: <1283287495.9850.17.camel@groeck-laptop>
+	id S1755947Ab0HaVzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 17:55:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752147Ab0HaVzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 17:55:44 -0400
+Message-ID: <4C7D7A62.8000207@redhat.com>
+Date: Tue, 31 Aug 2010 23:55:46 +0200
+From: Harald Hoyer <harald@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Eric Paris <eparis@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
+        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, greg@kroah.com,
+        sds@tycho.nsa.gov
+Subject: Re: selinux vs devtmpfs (vs udev)
+References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com> <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com> <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com> <4C7CC107.1050304@redhat.com> <4C7D0DAD.9030505@redhat.com> <4C7D141A.9060102@redhat.com> <4C7D1868.3090701@redhat.com> <1283267765.3284.150.camel@dhcp231-106.rdu.redhat.com> <4C7D1E1B.4020700@redhat.com> <1283268367.3284.154.camel@dhcp231-106.rdu.redhat.com> <4C7D248A.2080507@redhat.com> <AANLkTikhc1Nu5PsQqzKL0PXY3juOxwuPOsu0ZKvzfCJ3@mail.gmail.com>
+In-Reply-To: <AANLkTikhc1Nu5PsQqzKL0PXY3juOxwuPOsu0ZKvzfCJ3@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008312351.49035.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a CD has both Rock Ridge and Joliet extensions and the ISO root directory
-is empty, no files are visible. Disable Rock Ridge extensions in this case and
-use Joliet root directory instead.
+On 08/31/2010 09:32 PM, Kay Sievers wrote:
+> On Tue, Aug 31, 2010 at 17:49, Harald Hoyer<harald@redhat.com>  wrote:
+>> https://bugzilla.redhat.com/show_bug.cgi?id=575128#c14
+>> https://bugzilla.redhat.com/attachment.cgi?id=442223&format=raw
+>>
+>> udev/udev-node.c
+>>
+>> +                       /* set selinux file context on add events */
+>> +                       if (strcmp(udev_device_get_action(dev), "add") == 0)
+>> +                               udev_selinux_lsetfilecon(udev, file, mode);
+>
+> I can't access these bugs.
+>
+> Does that makes sense/work for you?
+>    http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=326c5fc3ea684825629eccaf33a548759162a539
+>
+> Kay
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
-This is v2 with variable initialization.
-
---- linux-2.6.35-rc2/fs/isofs/inode.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc3/fs/isofs/inode.c	2010-08-31 23:43:46.000000000 +0200
-@@ -549,6 +549,34 @@ static unsigned int isofs_get_last_sessi
- }
- 
- /*
-+ * Check if root directory is empty (has less than 3 files).
-+ *
-+ * Used to detect broken CDs where ISO root directory is empty but Joliet root
-+ * directory is OK. If such CD has Rock Ridge extensions, they will be disabled
-+ * (and Joliet used instead) or else no files would be visible.
-+ */
-+static bool rootdir_empty(struct super_block *sb, unsigned long block)
-+{
-+	int offset = 0, files = 0, de_len;
-+	struct iso_directory_record *de;
-+	struct buffer_head *bh;
-+
-+	bh = sb_bread(sb, block);
-+	if (!bh)
-+		return true;
-+	while (files < 3) {
-+		de = (struct iso_directory_record *) (bh->b_data + offset);
-+		de_len = *(unsigned char *) de;
-+		if (de_len == 0)
-+			break;
-+		files++;
-+		offset += de_len;
-+	}
-+	brelse(bh);
-+	return files < 3;
-+}
-+
-+/*
-  * Initialize the superblock and read the root inode.
-  *
-  * Note: a check_disk_change() has been done immediately prior
-@@ -842,6 +870,18 @@ root_found:
- 		goto out_no_root;
- 
- 	/*
-+	 * Fix for broken CDs with Rock Ridge and empty ISO root directory but
-+	 * correct Joliet root directory.
-+	 */
-+	if (sbi->s_rock == 1 && joliet_level &&
-+				rootdir_empty(s, sbi->s_firstdatazone)) {
-+		printk(KERN_NOTICE
-+			"ISOFS: primary root directory is empty. "
-+			"Disabling Rock Ridge and switching to Joliet.");
-+		sbi->s_rock = 0;
-+	}
-+
-+	/*
- 	 * If this disk has both Rock Ridge and Joliet on it, then we
- 	 * want to use Rock Ridge by default.  This can be overridden
- 	 * by using the norock mount option.  There is still one other
-
-
--- 
-Ondrej Zary
+Exactly my patch :)
