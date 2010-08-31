@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab0HaWG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 18:06:27 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:38694 "EHLO proxima.lp0.eu"
+	id S1755939Ab0HaWHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 18:07:11 -0400
+Received: from kroah.org ([198.145.64.141]:47744 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755240Ab0HaWG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 18:06:26 -0400
-Message-ID: <4C7D7CE0.4080308@simon.arlott.org.uk>
-Date: Tue, 31 Aug 2010 23:06:24 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
+	id S1751700Ab0HaWHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 18:07:10 -0400
+Date: Tue, 31 Aug 2010 15:05:06 -0700
+From: Greg KH <greg@kroah.com>
+To: Gunnar Gudvardarson <gunni@wave.is>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: crystalhd: crystalhd_cmds: fixed a brace issue
+Message-ID: <20100831220506.GA21191@kroah.com>
+References: <1282162206-9524-1-git-send-email-gunni@wave.is>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cxacru: Use a bulk URB to access the command endpoint
-References: <4C7C27B5.5080904@simon.arlott.org.uk>
-In-Reply-To: <4C7C27B5.5080904@simon.arlott.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282162206-9524-1-git-send-email-gunni@wave.is>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please drop this patch, I'll make a version that detects which type of
-endpoint it is and uses an interrupt or bulk URB as appropriate. Some
-devices which may/may not be compatible appear to have interrupt
-command endpoints as referenced in the original comment.
-
-On 30/08/10 22:50, Simon Arlott wrote:
-> The command endpoint is a bulk endpoint, but interrupt transfers
-> are used to access it when checking status, load firmware or alter
-> the configuration.
+On Wed, Aug 18, 2010 at 08:10:06PM +0000, Gunnar Gudvardarson wrote:
+> Fixed a brace issue.
 > 
-> This causes an error if CONFIG_USB_DEBUG is enabled after commit
-> f661c6f8c67bd55e93348f160d590ff9edf08904, which checks for this
-> mismatch.
-> 
-> Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+> Signed-off-by: Gunnar Gudvardarson <gunni@wave.is>
 > ---
->  drivers/usb/atm/cxacru.c |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
+>  drivers/staging/crystalhd/crystalhd_cmds.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/usb/atm/cxacru.c b/drivers/usb/atm/cxacru.c
-> index 593fc5e..3b45f57 100644
-> --- a/drivers/usb/atm/cxacru.c
-> +++ b/drivers/usb/atm/cxacru.c
-> @@ -49,7 +49,7 @@
+> diff --git a/drivers/staging/crystalhd/crystalhd_cmds.c b/drivers/staging/crystalhd/crystalhd_cmds.c
+> index 1429608..d423775 100644
+> --- a/drivers/staging/crystalhd/crystalhd_cmds.c
+> +++ b/drivers/staging/crystalhd/crystalhd_cmds.c
+> @@ -309,9 +309,9 @@ static enum BC_STATUS bc_cproc_download_fw(struct crystalhd_cmd *ctx,
+>  	sts = crystalhd_download_fw(ctx->adp, (uint8_t *)idata->add_cdata,
+>  				  idata->add_cdata_sz);
 >  
->  static const char cxacru_driver_name[] = "cxacru";
->  
-> -#define CXACRU_EP_CMD		0x01	/* Bulk/interrupt in/out */
-> +#define CXACRU_EP_CMD		0x01	/* Bulk in/out */
->  #define CXACRU_EP_DATA		0x02	/* Bulk in/out */
->  
->  #define CMD_PACKET_SIZE		64	/* Should be maxpacket(ep)? */
-> @@ -1171,15 +1171,15 @@ static int cxacru_bind(struct usbatm_data *usbatm_instance,
->  		goto fail;
->  	}
->  
-> -	usb_fill_int_urb(instance->rcv_urb,
-> -			usb_dev, usb_rcvintpipe(usb_dev, CXACRU_EP_CMD),
-> +	usb_fill_bulk_urb(instance->rcv_urb,
-> +			usb_dev, usb_rcvbulkpipe(usb_dev, CXACRU_EP_CMD),
->  			instance->rcv_buf, PAGE_SIZE,
-> -			cxacru_blocking_completion, &instance->rcv_done, 1);
-> +			cxacru_blocking_completion, &instance->rcv_done);
->  
-> -	usb_fill_int_urb(instance->snd_urb,
-> -			usb_dev, usb_sndintpipe(usb_dev, CXACRU_EP_CMD),
-> +	usb_fill_bulk_urb(instance->snd_urb,
-> +			usb_dev, usb_sndbulkpipe(usb_dev, CXACRU_EP_CMD),
->  			instance->snd_buf, PAGE_SIZE,
-> -			cxacru_blocking_completion, &instance->snd_done, 4);
-> +			cxacru_blocking_completion, &instance->snd_done);
->  
->  	mutex_init(&instance->cm_serialize);
->  
+> -	if (sts != BC_STS_SUCCESS) {
+> +	if (sts != BC_STS_SUCCESS)
+>  		BCMLOG_ERR("Firmware Download Failure!! - %d\n", sts);
+> -	} else
+> +	else
 
+This breaks the build, are you sure you tested it after making the
+patch?
 
--- 
-Simon Arlott
+thanks,
+
+greg k-h
