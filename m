@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab0HaBpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 21:45:13 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37179 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756426Ab0HaBpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 21:45:12 -0400
-Message-ID: <001501cb48ae$262d8d60$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Grant Likely" <grant.likely@secretlab.ca>
-Cc: "Thomas Gleixner" <tglx@linutronix.de>, <meego-dev@meego.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "David Brownell" <dbrownell@users.sourceforge.net>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
-        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com> <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com> <AANLkTikpj6Q6QjFn4S9cYfBiKbMNQB_N2ptHEAvfW0wb@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-Date: Tue, 31 Aug 2010 10:45:07 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 2
+	id S1756609Ab0HaBzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 21:55:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39273 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756544Ab0HaBzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 21:55:16 -0400
+Date: Tue, 31 Aug 2010 11:55:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Subject: linux-next: build warnings after merge of the net tree
+Message-Id: <20100831115508.078eb2fa.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__31_Aug_2010_11_55_08_+1000_a2BO.BmthvtArIjo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----- 
-> From: "Grant Likely" <grant.likely@secretlab.ca>
-> To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-> Cc: "Thomas Gleixner" <tglx@linutronix.de>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
-Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
-<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
-<morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-> Sent: Tuesday, August 31, 2010 3:23 AM
-> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
->
->
-> On Mon, Aug 30, 2010 at 1:28 AM, Masayuki Ohtake
-> <masa-korg@dsn.okisemi.com> wrote:
-> > ----- Original Message -----
-> > From: "Grant Likely" <grant.likely@secretlab.ca>
-> > To: "Thomas Gleixner" <tglx@linutronix.de>
-> > Cc: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>;
-"David
-> > Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
-> > <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
-> > <morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-> > Sent: Saturday, August 28, 2010 4:20 AM
-> > Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-> >
-> >
-> >> On Fri, Aug 27, 2010 at 12:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> > B1;2401;0cOn Fri, 27 Aug 2010, Grant Likely wrote:
-> >> >> [cc'ing Thomas Gleixner and David Woodhouse since this driver needs to
-> >> >> get some data about the platform (to know what spi_devices are
-> >> >> present) and I don't know how that is handled for x86 SoCs.]
-> >> >
-> >> > The best way to do all this platform specific configuration is to use
-> >> > device tree. I really don't want to have x86/mach-xyz/board[A-Z]
-> >> > horror, which is unavoidable when we don't get a sensible way to
-> >> > configure the boards.
-> >>
-> >> I knew you were going to say that! :-)
-> >>
-> >> Ohtak-san, for this patch I'd like you to drop the separate driver
-> >> that only registers the spi_devices and just submit the core driver.
-> >
-> > Sorry, I can't follow your discussion by lack of SPI knowledge.
-> > Which the above mean that "spi_register_board_info" moves to our spi_pch or
-> > delete for our driver ?
->
-> I mean remove drivers/spi/spi_pch_device.c and the related Kconfig
-> bits from this patch.
-> The spi_device registration is a separate task
-> which should be submitted in a separate patch, and would be better
-> handled in either platform support code or with a device tree.
+--Signature=_Tue__31_Aug_2010_11_55_08_+1000_a2BO.BmthvtArIjo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How should we register spi_device information ?
-Could you show reference driver ?
+Hi all,
 
->
-> >> (You can of course keep the spi_device registration in your own tree
-> >> for debug purposes). I'll expect that the device will get
-> >> instantiated using a device tree to determine which spi_devices are
-> >> present. The parsing of spi device tree data will be moving into the
-> >> core spi subsystem code in the next merge window most likely, so it
-> >> can all be handled transparently.
-> >>
-> >> > SFI was meant to provide a lightweight ACPI, but
-> >> > now that device tree is generic and more platforms are using it, I
-> >> > really want to standartize on that and forget SFI.
-> >> >
-> >> > That makes even more sense, as all these AMBA peripherals which are
-> >> > duct-taped to a x86 core can be found in other SoCs with different
-> >> > cores as well.
-> >>
-> >> Indeed. BTW, Ohtak-san, is this spi bus device something brand new,
-> >> or is it derived from an existing spi device?
-> >
-> > Yes, Intel Topcliff is new concept device.
->
-> As Thomas already commented, what I'm really interested in is whether
-> or not this spi controller is based on an older SPI controller.  If it
-> is, then it may be possible to add support for this chip to an
-> existing driver instead of writing a whole new one.
->
+After merging the net tree, today's linux-next build (x86_64
+allmodconfig) produced these warnings:
 
+In file included from drivers/net/stmmac/stmmac_ethtool.c:30:
+drivers/net/stmmac/stmmac.h:111: warning: 'struct platform_device' declared=
+ inside parameter list
+drivers/net/stmmac/stmmac.h:111: warning: its scope is only this definition=
+ or declaration, which is probably not what you want
+drivers/net/stmmac/stmmac_main.c: In function 'stmmac_dvr_probe':
+drivers/net/stmmac/stmmac_main.c:1744: warning: cast from pointer to intege=
+r of different size
+In file included from drivers/net/stmmac/stmmac_mdio.c:31:
+drivers/net/stmmac/stmmac.h:111: warning: 'struct platform_device' declared=
+ inside parameter list
+drivers/net/stmmac/stmmac.h:111: warning: its scope is only this definition=
+ or declaration, which is probably not what you want
+drivers/net/stmmac/dwmac1000_core.c: In function 'dwmac1000_dump_regs':
+drivers/net/stmmac/dwmac1000_core.c:56: warning: cast from pointer to integ=
+er of different size
 
+Probably all revealed by commit ac75791aa943c7953521cb4fa7728bf51f9abd2d
+("stmmac: remove dead option in the driver's Kconfig") which allowed this
+driver to be built on most platforms.
 
-Thanks, Ohtake(OKISemi)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__31_Aug_2010_11_55_08_+1000_a2BO.BmthvtArIjo
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMfGD8AAoJEDMEi1NhKgbsOpUIAJNj39RLYV2OWawNup622XVs
+BfG760DbZtMcWQv8f75GbOJEumVAcvqv9UA0DJLA19QaYdfsRbSF2d7c/hfdAmSo
+u9rakcTMtxRfeLqGeSLr1uz4ClSNbf01M0q5n2OYn3+C4Hq+aRGcrfrnJy5dZoDE
+qvWG/1WiMQ96DB2yrXpSlWhGYZxaEuHicbgk0lUvOdqLkoiqYJKBMlY7KzKM/k85
+LKKjTZxtRjq6OxWs993JVmqdwTMwRJr8DFcJmq42rDpAMvDtlka2g1EHb0NRFfQJ
+Bxswp+h+JBn2sq69j/5mWrrJKF0sXhvOf5XZtRY8TKdX6Tvy1FlR4L39lIUIBsQ=
+=O0NB
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__31_Aug_2010_11_55_08_+1000_a2BO.BmthvtArIjo--
