@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0HaROa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 13:14:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19523 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754656Ab0HaRO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 13:14:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,299,1280732400"; 
-   d="scan'208";a="652969373"
-Date: Tue, 31 Aug 2010 10:04:43 -0700
-From: Fenghua Yu <fenghua.yu@intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@linux.jf.intel.com>,
-        LKLM <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        mingo Redhat <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Patch-next] Trival fixes in thermal_throttle_add_dev().
-Message-ID: <20100831170443.GA30454@fenghua-desk.sc.intel.com>
-References: <4C75D3C4.6040802@np.css.fujitsu.com> <20100826060822.GA15021@fenghua-desk.sc.intel.com> <4C7625D1.4060201@np.css.fujitsu.com> <20100827152007.27636fa5@hyperion.delvare> <4C7B64A8.2030208@np.css.fujitsu.com> <493994B35A117E4F832F97C4719C4C04A111EEDF@orsmsx505.amr.corp.intel.com> <4C7C5314.7090404@np.css.fujitsu.com> <20100831010251.GA28885@fenghua-desk.sc.intel.com> <20100831090725.5d83eedb@hyperion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100831090725.5d83eedb@hyperion.delvare>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754709Ab0HaRXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 13:23:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42826 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab0HaRXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 13:23:12 -0400
+X-Authority-Analysis: v=1.1 cv=h9FjAN2ougM9pVhvDq3M6+cWFo1DP5/t8S/Ny2XAPyw= c=1 sm=0 a=MSnKhT_c3jYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=I128M_0NUVUE20tNh-AA:9 a=aiyffvmgtOSrluYnstcA:7 a=CQ5UrElhmgQdPM4pF1JOgiD1l3MA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
+ todo list, add RCU todo list
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Joe Perches <joe@perches.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org,
+        ksummit-2010-discuss@lists.linux-foundation.org
+In-Reply-To: <20100826093838.74ab9958@infradead.org>
+References: <20100826154537.GA4874@linux.vnet.ibm.com>
+	 <1282837904.1875.64.camel@Joe-Laptop>
+	 <20100826161451.GB2367@linux.vnet.ibm.com>
+	 <1282839933.8133.11.camel@mulgrave.site>
+	 <20100826092923.4bdbea69.rdunlap@xenotime.net>
+	 <20100826093838.74ab9958@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 Aug 2010 13:23:08 -0400
+Message-ID: <1283275388.1377.216.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 12:07:25AM -0700, Jean Delvare wrote:
-> On Mon, 30 Aug 2010 18:02:52 -0700, Fenghua Yu wrote:
-> > On Mon, Aug 30, 2010 at 05:55:48PM -0700, Jin Dongming wrote:
-> > > diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > > index d9368ee..79d563a 100644
-> > > --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > > +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > > @@ -216,14 +216,27 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
-> > >  		err = sysfs_add_file_to_group(&sys_dev->kobj,
-> > >  					      &attr_core_power_limit_count.attr,
-> > >  					      thermal_attr_group.name);
-> > > -	if (cpu_has(c, X86_FEATURE_PTS))
-> > > +	if (err)
-> > > +		goto error;
-> > > +
-> > > +	if (cpu_has(c, X86_FEATURE_PTS)) {
-> > >  		err = sysfs_add_file_to_group(&sys_dev->kobj,
-> > >  					      &attr_package_throttle_count.attr,
-> > >  					      thermal_attr_group.name);
-> > > +		if (err)
-> > > +			goto error;
-> > > +
-> > >  		if (cpu_has(c, X86_FEATURE_PLN))
-> > >  			err = sysfs_add_file_to_group(&sys_dev->kobj,
-> > >  					&attr_package_power_limit_count.attr,
-> > >  					thermal_attr_group.name);
-> > > +		if (err)
-> > > +			goto error;
-> > > +	}
-> > > +
-> > > +	return 0;
-> > > +error:
-> > > +	sysfs_remove_group(&sys_dev->kobj, &thermal_attr_group);
-> > >  
-> > >  	return err;
-> > >  }
-> > 
-> > This fix is incorrect. In this patch, a previous error prevents from adding any
-> > further devices. There shouldn't be such dependency among the devices.
+On Thu, 2010-08-26 at 09:38 -0700, Arjan van de Ven wrote:
+
+> I have to say that I'm not yet convinced that keeping a todo list in a
+> place that's not with the actual source code does not give me warm
+> fuzzy feelings. Every time we've kept information about the source code
+> separate from our source code it's been a failure; it gets out of sync
+> fast and it just adds to the maintenance.
 > 
-> I don't quite follow you. Did you mean to write that a previous error
-> prevents from creating further _attributes_ for the same device? This
-> would be true.
+> A git commit that both fixes an issue and removed the line from the
+> todo file (or moves it to a "done" section, whatever) is the ultimate
+> goal obviously... having a U: seems to go in exactly the opposite
+> direction.
 > 
-> Now I don't think this is a problem because 1* such errors should never
-> happen anyway and 2* if they do happen then further attempts to create
-> the other attributes are unlikely to succeed either.
+> otoh having a kernel-doc type (eg structured, parsable) way of
+> gathering todo items throughout the tree.... that I can see as useful.
 
-I don't think there is dependency among the count files, i.e. failure to add a
-count file to the group shouldn't impact other files. Other filles can still be
-added to the group. In this case, user application only sees part of count
-numbers. And kernel may just warn on the failure instead of providing nothing
-to user.
+We could add a toplevel "todo/" directory, with each project file in it
+and a list of things todo. When the todo is done, that same commit could
+remove the todo item.
 
-In the patch, any failure to add a file will remove the whole group. This is
-too strict. Kernel doesn't provide any count number to user application.
+Just a worthless thought ;-)
 
-Agree with you that such errors should never happen anyway. So original code
-works fine.
+-- Steve
 
-If to be picky to the error handling, a patch may just ignore returning errors
-from sysfs_add_file_to_group. Or use err |= sysfs_add_file_to_group to collect
-all errors and return err but without calling sysfs_remove_group.
 
-Thanks.
-
--Fenghua
