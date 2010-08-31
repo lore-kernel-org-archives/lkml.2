@@ -1,347 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab0HaKxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 06:53:05 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61068 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757083Ab0HaKxC (ORCPT
+	id S1757172Ab0HaLA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 07:00:58 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:38009 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756886Ab0HaLA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 06:53:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
-         :organization:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=s4pmQLHWdRImf4SDVqCWnbqofpoDdi0I26g6x0NZhbCQ2CDojsQwNyZX5HCYt70PEK
-         J8yuE2uOaKt6oxD4nQ5jTmChdvN4FoxaNdR7mXPakci1VTte6dDAb6bi/5yn08oj8aYJ
-         eV9vAAMo7+r1TsG2UEEunke9iMGEu42VziTwA=
-From: Florian Fainelli <florian@openwrt.org>
-To: David Brownell <david-b@pacbell.net>
-Subject: [PATCH v3] GPIO: add support for 74x164 serial-in/parallel-out 8-bit shift register
-Date: Tue, 31 Aug 2010 12:44:07 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-server; KDE/4.4.2; x86_64; ; )
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>,
-        dbrownell@users.sourceforge.net
-References: <887649.75421.qm@web180316.mail.gq1.yahoo.com> <201008311017.30445.florian@openwrt.org>
-In-Reply-To: <201008311017.30445.florian@openwrt.org>
-Organization: OpenWrt
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008311244.07567.florian@openwrt.org>
+	Tue, 31 Aug 2010 07:00:57 -0400
+To: Neil Brown <neilb@suse.de>
+CC: vaurora@redhat.com, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, jblunck@suse.de,
+        hch@infradead.org
+In-reply-to: <20100831091211.403e0d06@notabene> (message from Neil Brown on
+	Tue, 31 Aug 2010 09:12:11 +1000)
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+References: <20100826183340.027591901@szeredi.hu>
+	<20100827170551.19616048@notabene>
+	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
+	<20100827213502.31af4a4c@notabene>
+	<20100830183843.GB2444@shell> <20100831091211.403e0d06@notabene>
+Message-Id: <E1OqOa5-000677-BN@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 31 Aug 2010 13:00:45 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miguel Gaio <miguel.gaio@efixo.com>
+On Tue, 31 Aug 2010, Neil Brown wrote:
+> So: is this a problem?  It may seem a bit confusing to someone who doesn't
+> understand what is happening, but we define that as not being a problem (to
+> avoid confusion: don't change U or L).
+> The important questions are:  Can it cause corruption, and can it cause a
+> deadlock?
 
-This patch adds support for generic 74x164 serial-in/parallel-out 8-bits
-shift register. This driver can be used as a GPIO output expander.
+No, I don't think this design will do that.  So it might be enough
+just to document that online modification of upper or lower
+filesystems results in undefined behavior.
 
-Signed-off-by: Miguel Gaio <miguel.gaio@efixo.com>
-Signed-off-by: Juhos Gabor <juhosg@openwrt.org>
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
----
-Changes since v1:
-- renamed nxp_ to gen_ since this driver is generic to all 74HC164 chips
-- added comment on this driver not handling the 74HC164 daisy-chaining
-- renamed misused GPIO expanders to Shift registers
+But to prevent accidental damage, it's prudent (at least by default)
+to enforce the no-modification policy.
 
-Changes since v2:
-- rename 74hc164 to 74x164
+Why do you think this feature of allowing modification is important?
+Lets take some typical use cases:
 
-diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
-new file mode 100644
-index 0000000..9adeed4
---- /dev/null
-+++ b/drivers/gpio/74x164.c
-@@ -0,0 +1,228 @@
-+/*
-+ *  74Hx164 - Generic serial-in/parallel-out 8-bits shift register GPIO driver
-+ *
-+ *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
-+ *  Copyright (C) 2010 Miguel Gaio <miguel.gaio@efixo.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  Note: this driver does not support the way 74x164 chips can be
-+ *  daisy-chained.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/gpio.h>
-+#include <linux/bitops.h>
-+#include <linux/platform_device.h>
-+#include <linux/74x164.h>
-+
-+#define GEN_74X164_NUM_GPIOS	8
-+
-+struct gen_74x164_chip {
-+	struct device		*parent;
-+	struct gpio_chip	gpio_chip;
-+	struct mutex		lock;
-+	long			mask;
-+};
-+
-+static void gen_74x164_set_value(struct gpio_chip *, unsigned, int);
-+
-+static struct gen_74x164_chip *gpio_to_chip(struct gpio_chip *gc)
-+{
-+	return container_of(gc, struct gen_74x164_chip, gpio_chip);
-+}
-+
-+static int gen_74x164_direction_input(struct gpio_chip *gc, unsigned offset)
-+{
-+	WARN_ON(1);
-+	return -EINVAL;
-+}
-+
-+static int gen_74x164_direction_output(struct gpio_chip *gc,
-+					unsigned offset, int val)
-+{
-+	gen_74x164_set_value(gc, offset, val);
-+	return 0;
-+}
-+
-+static int gen_74x164_get_value(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct gen_74x164_chip *chip = gpio_to_chip(gc);
-+	int ret;
-+
-+	mutex_lock(&chip->lock);
-+	ret = test_bit(offset, &chip->mask);
-+	mutex_unlock(&chip->lock);
-+
-+	return ret;
-+}
-+
-+static void gen_74x164_set_value(struct gpio_chip *gc,
-+				  unsigned offset, int val)
-+{
-+	struct gen_74x164_chip *chip;
-+	struct gen_74x164_platform_data *pdata;
-+	long mask;
-+	int refresh;
-+	int i;
-+
-+	chip = gpio_to_chip(gc);
-+	pdata = chip->parent->platform_data;
-+
-+	mutex_lock(&chip->lock);
-+	if (val)
-+		refresh = (test_and_set_bit(offset, &chip->mask) != val);
-+	else
-+		refresh = (test_and_clear_bit(offset, &chip->mask) != val);
-+
-+	if (refresh) {
-+		mask = chip->mask;
-+		for (i = 8; i > 0; --i, mask <<= 1) {
-+			gpio_set_value(pdata->gpio_pin_data, mask & 0x80);
-+			gpio_set_value(pdata->gpio_pin_clk, 1);
-+			gpio_set_value(pdata->gpio_pin_clk, 0);
-+		}
-+	}
-+	mutex_unlock(&chip->lock);
-+}
-+
-+static int __devinit gen_74x164_probe(struct platform_device *pdev)
-+{
-+	struct gen_74x164_platform_data *pdata;
-+	struct gen_74x164_chip *chip;
-+	struct gpio_chip *gc;
-+	int err;
-+
-+	pdata = pdev->dev.platform_data;
-+	if (pdata == NULL) {
-+		dev_dbg(&pdev->dev, "no platform data specified\n");
-+		return -EINVAL;
-+	}
-+
-+	chip = kzalloc(sizeof(struct gen_74x164_chip), GFP_KERNEL);
-+	if (chip == NULL) {
-+		dev_err(&pdev->dev, "no memory for private data\n");
-+		return -ENOMEM;
-+	}
-+
-+	err = gpio_request(pdata->gpio_pin_clk, dev_name(&pdev->dev));
-+	if (err) {
-+		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
-+			pdata->gpio_pin_clk, err);
-+		goto err_free_chip;
-+	}
-+
-+	err = gpio_request(pdata->gpio_pin_data, dev_name(&pdev->dev));
-+	if (err) {
-+		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
-+			pdata->gpio_pin_data, err);
-+		goto err_free_clk;
-+	}
-+
-+	err = gpio_direction_output(pdata->gpio_pin_clk, 0);
-+	if (err) {
-+		dev_err(&pdev->dev,
-+			"unable to set direction of gpio %u, err=%d\n",
-+			pdata->gpio_pin_clk, err);
-+		goto err_free_data;
-+	}
-+
-+	err = gpio_direction_output(pdata->gpio_pin_data, 0);
-+	if (err) {
-+		dev_err(&pdev->dev,
-+			"unable to set direction of gpio %u, err=%d\n",
-+			pdata->gpio_pin_data, err);
-+		goto err_free_data;
-+	}
-+
-+	chip->parent = &pdev->dev;
-+	mutex_init(&chip->lock);
-+
-+	gc = &chip->gpio_chip;
-+
-+	gc->direction_input  = gen_74x164_direction_input;
-+	gc->direction_output = gen_74x164_direction_output;
-+	gc->get = gen_74x164_get_value;
-+	gc->set = gen_74x164_set_value;
-+	gc->can_sleep = 1;
-+
-+	gc->base = pdata->gpio_base;
-+	gc->ngpio = GEN_74X164_NUM_GPIOS;
-+	gc->label = dev_name(chip->parent);
-+	gc->dev = chip->parent;
-+	gc->owner = THIS_MODULE;
-+
-+	err = gpiochip_add(&chip->gpio_chip);
-+	if (err) {
-+		dev_err(&pdev->dev, "unable to add gpio chip, err=%d\n", err);
-+		goto err_free_data;
-+	}
-+
-+	platform_set_drvdata(pdev, chip);
-+	return 0;
-+
-+err_free_data:
-+	gpio_free(pdata->gpio_pin_data);
-+err_free_clk:
-+	gpio_free(pdata->gpio_pin_clk);
-+err_free_chip:
-+	kfree(chip);
-+	return err;
-+}
-+
-+static int gen_74x164_remove(struct platform_device *pdev)
-+{
-+	struct gen_74x164_chip *chip = platform_get_drvdata(pdev);
-+	struct gen_74x164_platform_data *pdata = pdev->dev.platform_data;
-+
-+	if (chip) {
-+		int err;
-+
-+		err = gpiochip_remove(&chip->gpio_chip);
-+		if (err) {
-+			dev_err(&pdev->dev,
-+				"unable to remove gpio chip, err=%d\n",
-+				err);
-+			return err;
-+		}
-+
-+		gpio_free(pdata->gpio_pin_clk);
-+		gpio_free(pdata->gpio_pin_data);
-+
-+		kfree(chip);
-+		platform_set_drvdata(pdev, NULL);
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver gen_74x164_driver = {
-+	.probe		= gen_74x164_probe,
-+	.remove		= __devexit_p(gen_74x164_remove),
-+	.driver = {
-+		.name	= GEN_74X164_DRIVER_NAME,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init gen_74x164_init(void)
-+{
-+	return platform_driver_register(&gen_74x164_driver);
-+}
-+subsys_initcall(gen_74x164_init);
-+
-+static void __exit gen_74x164_exit(void)
-+{
-+	platform_driver_unregister(&gen_74x164_driver);
-+}
-+module_exit(gen_74x164_exit);
-+
-+MODULE_AUTHOR("Gabor Juhos <juhosg@openwrt.org>");
-+MODULE_AUTHOR("Miguel Gaio <miguel.gaio@efixo.com>");
-+MODULE_DESCRIPTION("GPIO expander driver for 74X164 8-bits shift register");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:" GEN_74X164_DRIVER_NAME);
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 510aa20..fc82c23 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -361,4 +361,13 @@ config GPIO_JANZ_TTL
- 	  This driver provides support for driving the pins in output
- 	  mode only. Input mode is not supported.
- 
-+comment "Shift registers:"
-+
-+config GPIO_74X164
-+       tristate "74x164 serial-in/parallel-out 8-bits shift register"
-+       help
-+         Platform driver for 74x164 compatible serial-in/parallel-out
-+	 8-outputs shift registers. This driver can be used to provide access
-+	 to more gpio outputs.
-+
- endif
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index fc6019d..60456a4 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_GPIO_MAX7301)	+= max7301.o
- obj-$(CONFIG_GPIO_MAX732X)	+= max732x.o
- obj-$(CONFIG_GPIO_MC33880)	+= mc33880.o
- obj-$(CONFIG_GPIO_MCP23S08)	+= mcp23s08.o
-+obj-$(CONFIG_GPIO_74X164)	+= 74x164.o
- obj-$(CONFIG_GPIO_PCA953X)	+= pca953x.o
- obj-$(CONFIG_GPIO_PCF857X)	+= pcf857x.o
- obj-$(CONFIG_GPIO_PL061)	+= pl061.o
-diff --git a/include/linux/74x164.h b/include/linux/74x164.h
-new file mode 100644
-index 0000000..1705732
---- /dev/null
-+++ b/include/linux/74x164.h
-@@ -0,0 +1,22 @@
-+/*
-+ *  74x164 - Serial-in/parallel-out 8-bits shift register
-+ *
-+ *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+
-+#ifndef __74X164_H
-+#define __74X164_H
-+
-+#define GEN_74X164_DRIVER_NAME "74x164"
-+
-+struct gen_74x164_platform_data {
-+	unsigned	gpio_base;
-+	unsigned	gpio_pin_data;
-+	unsigned	gpio_pin_clk;
-+};
-+
-+#endif /* __74x164_H */
+ - live cd: lower layer is hard r/o, upper layer makes no sense to
+   modify online
+
+ - thin client: lower layer is static except upgrades, which need
+   special tools to support and is done offline, upper layer makes no
+   sense to modify online
+
+Do you have some cases in mind where it makes at least a little sense
+to allow online modification of the underlying filesystems?
+
+Thanks,
+Miklos
