@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab0HaSVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 14:21:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38282 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754073Ab0HaSVx (ORCPT
+	id S1754854Ab0HaSVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 14:21:55 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:40194 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754657Ab0HaSVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 14:21:53 -0400
-Date: Tue, 31 Aug 2010 19:21:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: David Brownell <david-b@pacbell.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] gpio: Add driver for basic memory-mapped GPIO
- controllers
-Message-ID: <20100831182151.GD30599@rakim.wolfsonmicro.main>
-References: <20100829212857.GA25592@oksana.dev.rtsoft.ru>
- <373151.77032.qm@web180311.mail.gq1.yahoo.com>
- <20100831175839.GA32468@oksana.dev.rtsoft.ru>
+	Tue, 31 Aug 2010 14:21:54 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: GnxQt6kVM1kxJadOm1EGfxa6jsW4ge7C8i0wVe55aZH8rPu
+ xmGwUyov5LVDxfeiU5.vyEY6NHzFdZpTF5aZyHY8fsADWRYV4luwCl38DaGm
+ uMbMdxgZHjlJlsGuiTePEJY11HYAwcfWw_t9Px7IZnsjS1ADqXU4zGHTpjDB
+ ZIMu0X2NGovpDMXOG8O8TKg7SSH7.4lXG.7WR7gzmbk_pbFzlMF83vlfDs.r
+ VPN0i.Ey32cCcqhawxl.HH9dfhBzbtm8U7i0GOw8HOVQDloaJiUZIAx7BsfF
+ 7_dzq8A--
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 31 Aug 2010 13:20:45 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
+ NR_FREE_PAGES when memory is low and kswapd is awake
+In-Reply-To: <1283276257-1793-3-git-send-email-mel@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1008311320340.867@router.home>
+References: <1283276257-1793-1-git-send-email-mel@csn.ul.ie> <1283276257-1793-3-git-send-email-mel@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100831175839.GA32468@oksana.dev.rtsoft.ru>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 09:58:39PM +0400, Anton Vorontsov wrote:
-> The basic GPIO controllers may be found in various on-board FPGA
-> and ASIC solutions that are used to control board's switches, LEDs,
-> chip-selects, Ethernet/USB PHY power, etc.
-> 
-> Usually these controllers do not privide any means of pin setup
-> (in/out/open drain).
-> 
-> The driver provides:
-> - Support for 8/16/32/64 bits registers;
-> - Support for GPIO controllers with clear/set registers;
-> - Support for GPIO controllers with a single "data" register;
-> - Support for big endian bits/GPIOs ordering (mostly used on PowerPC).
-> 
-> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+
+
