@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab0HaPLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 11:11:21 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38695 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359Ab0HaPLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 11:11:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=OV/TGAUTAvknALwJ5YrXxdxgmb/+6VLGhDgHe1W3u14PgNXasyw8smDZp0Y/bRwvPL
-         UNoO91bePTVAkGODJZ2h4QsELqBbW5MMEE8LGt7Q0BYVPTjwPUIoMlcGqMdx2JVCAzbH
-         ZbQh6OijHV+FCvnd50gaVjzkhFndg0VPM418k=
+	id S932418Ab0HaPND (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 11:13:03 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:51540 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932359Ab0HaPNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 11:13:01 -0400
+Date: Tue, 31 Aug 2010 08:12:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com,
+        jslaby@suse.cz, jmorris@namei.org
+Subject: Re: [PATCH RFC] pid: make setpgid() system call use RCU read-side
+ critical section
+Message-ID: <20100831151212.GB2421@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100830172631.GA11868@linux.vnet.ibm.com>
+ <7899.1283259751@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4c7cd856.cb71df0a.1986.ffffad0f@mx.google.com>
-References: <4c7cd856.cb71df0a.1986.ffffad0f@mx.google.com>
-Date: Tue, 31 Aug 2010 23:11:16 +0800
-Message-ID: <AANLkTi=k_NdUjFHPD8=s1TaY6YW_EEZKo9ZOyYW1nCKK@mail.gmail.com>
-Subject: Re: [PATCH] MIPS: Calculate VMLINUZ_LOAD_ADDRESS based on the length
- of vmlinux.bin
-From: wu zhangjin <wuzhangjin@gmail.com>
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: ralf@linux-mips.org, linux-mips@linux-mips.org, alex@digriz.org.uk,
-        manuel.lauss@googlemail.com, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7899.1283259751@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Aug 31, 2010 at 02:02:31PM +0100, David Howells wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> >  	write_lock_irq(&tasklist_lock);
+> >  
+> >  	err = -ESRCH;
+> > +	rcu_read_lock();
+> > ...
+> > +	rcu_read_unlock();
+> >  	write_unlock_irq(&tasklist_lock);
+> 
+> I would generally put the rcu lock outside the IRQ disabled section on the
+> basis that it's better to keep the amount of time we have interrupts disabled
+> shortest.
+> 
+> > Located-by: Andrew Morton <akpm@linux-foundation.org>
+> 
+> 'Reported-by' might be more consistent with what others use.
+> 
+> David
 
-This is a very good fix:
+Good points, how about the following?
 
-$ ls -sh arch/mips/boot/compressed/vmlinux.bin vmlinux
-5.4M arch/mips/boot/compressed/vmlinux.bin  6.9M vmlinux
+							Thanx, Paul
 
-Thanks very much.
+------------------------------------------------------------------------
 
-Acked-by: Wu Zhangjin <wuzhangjin@gmail.com>
+pid: make setpgid() system call use RCU read-side critical section
 
-Regards,
-Wu Zhangjin
+[   23.584719]
+[   23.584720] ===================================================
+[   23.585059] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   23.585176] ---------------------------------------------------
+[   23.585176] kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+[   23.585176]
+[   23.585176] other info that might help us debug this:
+[   23.585176]
+[   23.585176]
+[   23.585176] rcu_scheduler_active = 1, debug_locks = 1
+[   23.585176] 1 lock held by rc.sysinit/728:
+[   23.585176]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff8104771f>] sys_setpgid+0x5f/0x193
+[   23.585176]
+[   23.585176] stack backtrace:
+[   23.585176] Pid: 728, comm: rc.sysinit Not tainted 2.6.36-rc2 #2
+[   23.585176] Call Trace:
+[   23.585176]  [<ffffffff8105b436>] lockdep_rcu_dereference+0x99/0xa2
+[   23.585176]  [<ffffffff8104c324>] find_task_by_pid_ns+0x50/0x6a
+[   23.585176]  [<ffffffff8104c35b>] find_task_by_vpid+0x1d/0x1f
+[   23.585176]  [<ffffffff81047727>] sys_setpgid+0x67/0x193
+[   23.585176]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
+[   24.959669] type=1400 audit(1282938522.956:4): avc:  denied  { module_request } for  pid=766 comm="hwclock" kmod="char-major-10-135" scontext=system_u:system_r:hwclock_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclas
 
-On 8/31/10, Shmulik Ladkani <shmulik.ladkani@gmail.com> wrote:
-> Fix VMLINUZ_LOAD_ADDRESS calculation to be based on the length of
-> vmlinux.bin,
-> the actual uncompressed kernel binary.
->
-> Previously it was based on the length of KBUILD_IMAGE (the unstripped ELF
-> vmlinux), which is bigger than vmlinux.bin.
-> As a result, vmlinuz was loaded into a memory address higher then actually
-> needed - a problem for small memory platforms.
->
-> Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-> ---
-> diff --git a/arch/mips/boot/compressed/Makefile
-> b/arch/mips/boot/compressed/Makefile
-> index ed9bb70..5fd7f7a 100644
-> --- a/arch/mips/boot/compressed/Makefile
-> +++ b/arch/mips/boot/compressed/Makefile
-> @@ -59,7 +59,7 @@ $(obj)/piggy.o: $(obj)/dummy.o $(obj)/vmlinux.bin.z FORCE
->  hostprogs-y := calc_vmlinuz_load_addr
->
->  VMLINUZ_LOAD_ADDRESS = $(shell $(obj)/calc_vmlinuz_load_addr \
-> -		$(objtree)/$(KBUILD_IMAGE) $(VMLINUX_LOAD_ADDRESS))
-> +		$(obj)/vmlinux.bin $(VMLINUX_LOAD_ADDRESS))
->
->  vmlinuzobjs-y += $(obj)/piggy.o
->
-> --
-> Shmulik Ladkani
->
+It turns out that the setpgid() system call fails to enter an RCU
+read-side critical section before doing a PID-to-task_struct translation.
+This commit therefore does rcu_read_lock() before the translation, and
+also does rcu_read_unlock() after the last use of the returned pointer.
+
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e9ad444..7f5a0cd 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -931,6 +931,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
+ 		pgid = pid;
+ 	if (pgid < 0)
+ 		return -EINVAL;
++	rcu_read_lock();
+ 
+ 	/* From this point forward we keep holding onto the tasklist lock
+ 	 * so that our parent does not change from under us. -DaveM
+@@ -984,6 +985,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
+ out:
+ 	/* All paths lead to here, thus we are safe. -DaveM */
+ 	write_unlock_irq(&tasklist_lock);
++	rcu_read_unlock();
+ 	return err;
+ }
+ 
