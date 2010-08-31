@@ -1,112 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab0HaKaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 06:30:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59808 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756658Ab0HaKaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 06:30:23 -0400
-Message-ID: <4C7CD9A7.4030901@kernel.org>
-Date: Tue, 31 Aug 2010 12:29:59 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1757014Ab0HaKfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 06:35:12 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:47240 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab0HaKfJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 06:35:09 -0400
+X-SpamScore: 3
+X-BigFish: VPS3(zzbb2cK1431J1432N98dNzz1202hzz8275bh8275dhz32i2a8h5bep5bfs)
+X-WSS-ID: 0L80II0-02-42S-02
+X-M-MSG: 
+Date: Tue, 31 Aug 2010 12:30:01 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] oprofile, x86: fix init_sysfs error handling
+Message-ID: <20100831103001.GC22783@erda.amd.com>
+References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-2-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-3-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-4-git-send-email-will.deacon@arm.com>
+ <20100830090929.GU22783@erda.amd.com>
+ <1283244880.645.17.camel@e102144-lin.cambridge.arm.com>
+ <20100831090518.GZ22783@erda.amd.com>
+ <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, j-nomura@ce.jp.nec.com,
-        jamie@shareable.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        dm-devel@redhat.com
-Subject: Re: [PATCH 4/5] dm: implement REQ_FLUSH/FUA support for request-based
- dm
-References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org> <4C7BC942.7070703@kernel.org> <20100830190835.GA8458@redhat.com> <20100830212819.GA12522@redhat.com>
-In-Reply-To: <20100830212819.GA12522@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 31 Aug 2010 10:30:02 +0000 (UTC)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2010 11:28 PM, Mike Snitzer wrote:
-> On Mon, Aug 30 2010 at  3:08pm -0400,
-> Mike Snitzer <snitzer@redhat.com> wrote:
-> 
->> On Mon, Aug 30 2010 at 11:07am -0400,
->> Tejun Heo <tj@kernel.org> wrote:
->>
->>> On 08/30/2010 03:59 PM, Tejun Heo wrote:
->>>> Ah... that's probably from "if (!elv_queue_empty(q))" check below,
->>>> flushes are on a separate queue but I forgot to update
->>>> elv_queue_empty() to check the flush queue.  elv_queue_empty() can
->>>> return %true spuriously in which case the queue won't be plugged and
->>>> restarted later leading to queue hang.  I'll fix elv_queue_empty().
->>>
->>> I think I was too quick to blame elv_queue_empty().  Can you please
->>> test whether the following patch fixes the hang?
->>
->> It does, thanks!
-> 
-> Hmm, but unfortunately I was too quick to say the patch fixed the hang.
-> 
-> It is much more rare, but I can still get a hang.  I just got the
-> following running vgcreate against an DM mpath (rq-based) device:
+On 31.08.10 05:31:29, Will Deacon wrote:
+> > For x86 wont change the code (actually I found a bug in the init_sysfs
+> > error handler for which I will send a fix). Just wanted to get your
+> > confirmation in case I was missing something that x86 is not affected.
+> > I will apply the first 2 patches, no need to resubmit.
 
-Can you please try this one instead?
+This is the patch, applied to:
 
-Thanks.
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
 
+-Robert
+
+--
+
+>From 10f0412f57f2a76a90eff4376f59cbb0a39e4e18 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Mon, 30 Aug 2010 10:56:18 +0200
+Subject: [PATCH] oprofile, x86: fix init_sysfs error handling
+
+On failure init_sysfs() might not properly free resources. The error
+code of the function is not checked. And, when reinitializing the exit
+function might be called twice. This patch fixes all this.
+
+Cc: stable@kernel.org
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- block/blk-flush.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ arch/x86/oprofile/nmi_int.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
-Index: block/block/blk-flush.c
-===================================================================
---- block.orig/block/blk-flush.c
-+++ block/block/blk-flush.c
-@@ -56,22 +56,38 @@ static struct request *blk_flush_complet
- 	return next_rq;
- }
-
-+static void blk_flush_complete_seq_end_io(struct request_queue *q,
-+					  unsigned seq, int error)
-+{
-+	bool was_empty = elv_queue_empty(q);
-+	struct request *next_rq;
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index f6b48f6..73a41d3 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -568,8 +568,13 @@ static int __init init_sysfs(void)
+ 	int error;
+ 
+ 	error = sysdev_class_register(&oprofile_sysclass);
+-	if (!error)
+-		error = sysdev_register(&device_oprofile);
++	if (error)
++		return error;
 +
-+	next_rq = blk_flush_complete_seq(q, seq, error);
++	error = sysdev_register(&device_oprofile);
++	if (error)
++		sysdev_class_unregister(&oprofile_sysclass);
 +
-+	/*
-+	 * Moving a request silently to empty queue_head may stall the
-+	 * queue.  Kick the queue in those cases.
-+	 */
-+	if (next_rq && was_empty)
-+		__blk_run_queue(q);
-+}
+ 	return error;
+ }
+ 
+@@ -695,6 +700,8 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 	char *cpu_type = NULL;
+ 	int ret = 0;
+ 
++	using_nmi = 0;
 +
- static void pre_flush_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_PREFLUSH, error);
-+	blk_flush_complete_seq_end_io(rq->q, QUEUE_FSEQ_PREFLUSH, error);
- }
+ 	if (!cpu_has_apic)
+ 		return -ENODEV;
+ 
+@@ -774,7 +781,10 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 
+ 	mux_init(ops);
+ 
+-	init_sysfs();
++	ret = init_sysfs();
++	if (ret)
++		return ret;
++
+ 	using_nmi = 1;
+ 	printk(KERN_INFO "oprofile: using NMI interrupt.\n");
+ 	return 0;
+-- 
+1.7.1.1
 
- static void flush_data_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_DATA, error);
-+	blk_flush_complete_seq_end_io(rq->q, QUEUE_FSEQ_DATA, error);
- }
-
- static void post_flush_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_POSTFLUSH, error);
-+	blk_flush_complete_seq_end_io(rq->q, QUEUE_FSEQ_POSTFLUSH, error);
- }
-
- static void init_flush_request(struct request *rq, struct gendisk *disk)
 
 
 -- 
-tejun
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
