@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab0HaH2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 03:28:11 -0400
+	id S1756885Ab0HaH2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 03:28:16 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:60112 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096Ab0HaH2J convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755992Ab0HaH2O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 03:28:09 -0400
+	Tue, 31 Aug 2010 03:28:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=wKk7bBobxvBFPrsVdai9gqJb1myHkejxnvGyoowcsE165DfYCnmS8W9HY3S1WgT3HV
-         wPhkbmGp5hCycwEldSLbM2o9GiYr1yIUKLGAqq5jrdutXyPEfWWRb0Mzy20/k4YLMFgj
-         UYJcTgI99kgY47xKu4IPVjBqdeSpMHVBjY6pA=
+        b=rDxT5j5vV32XjwCjDPYNjCuDuuN2YnE/4WjRA6ZxQEVQiV88g53o4Pnk6FhiZNC11O
+         MH2GPN8FxCOg8nSXNvVRWxeQEthMBFh93EH6bV1U8jZ79hZUiRbf7/ZAMr0npOSRdf5K
+         XinKJpUFaaibFnC/zYt2VTYv0EgMURlHfHpQM=
 MIME-Version: 1.0
 In-Reply-To: <AANLkTi=NGyKtVPH2UgbR_Y2rBcFX7hzDAFkZw5KKetKT@mail.gmail.com>
 References: <1282813649-8332-1-git-send-email-mark.brown314@gmail.com>
- <1282813649-8332-2-git-send-email-mark.brown314@gmail.com>
- <AANLkTi=GZ1p3MzibOEzhyD=Mv6d2x2nRh93D4bmtgcYE@mail.gmail.com>
- <AANLkTimwU17YS5Yk7y+13Dj9Ww4oPG0g4v5ZbvOVuQV6@mail.gmail.com>
- <AANLkTikxOQnj=vKD8b0aZqZHNe4m-Y+o+620TBzMJCAW@mail.gmail.com>
- <AANLkTik3cnE4HQ3hq3wfuxcept4BeTh+zZvNDbZ_b3O7@mail.gmail.com>
- <AANLkTinjyJvMRt8OovZBJD+-xU6KXH5WAfqz9Epok+=g@mail.gmail.com>
- <AANLkTikrp0i_U_eKaAbUOop6U4Un6-ASTKuXU1HOzoc7@mail.gmail.com>
- <AANLkTinq8wFGmYKzBrEY1d3FadN+55urxLxQCFTcpcrM@mail.gmail.com>
- <AANLkTimAkhcSuBotE2eN=ETkFBmgMS6L=97wo+-woLHN@mail.gmail.com> <AANLkTi=NGyKtVPH2UgbR_Y2rBcFX7hzDAFkZw5KKetKT@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 31 Aug 2010 15:27:48 +0800
-Message-ID: <AANLkTikUEav5Jo9rCFw7hTs8U3anpDZhSF_jtGKKMma7@mail.gmail.com>
+	<1282813649-8332-2-git-send-email-mark.brown314@gmail.com>
+	<AANLkTi=GZ1p3MzibOEzhyD=Mv6d2x2nRh93D4bmtgcYE@mail.gmail.com>
+	<AANLkTimwU17YS5Yk7y+13Dj9Ww4oPG0g4v5ZbvOVuQV6@mail.gmail.com>
+	<AANLkTikxOQnj=vKD8b0aZqZHNe4m-Y+o+620TBzMJCAW@mail.gmail.com>
+	<AANLkTik3cnE4HQ3hq3wfuxcept4BeTh+zZvNDbZ_b3O7@mail.gmail.com>
+	<AANLkTinjyJvMRt8OovZBJD+-xU6KXH5WAfqz9Epok+=g@mail.gmail.com>
+	<AANLkTikrp0i_U_eKaAbUOop6U4Un6-ASTKuXU1HOzoc7@mail.gmail.com>
+	<AANLkTinq8wFGmYKzBrEY1d3FadN+55urxLxQCFTcpcrM@mail.gmail.com>
+	<AANLkTimAkhcSuBotE2eN=ETkFBmgMS6L=97wo+-woLHN@mail.gmail.com>
+	<AANLkTi=NGyKtVPH2UgbR_Y2rBcFX7hzDAFkZw5KKetKT@mail.gmail.com>
+Date: Tue, 31 Aug 2010 03:28:13 -0400
+Message-ID: <AANLkTinN4w=P7oferD35bBMkPE+9z+2OyYsBcy3ptBzL@mail.gmail.com>
 Subject: Re: [PATCH 1/1] ARM: pxa168: fix corrected reset vector
+From: "Mark F. Brown" <mark.brown314@gmail.com>
 To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: "Mark F. Brown" <mark.brown314@gmail.com>,
+Cc: Eric Miao <eric.y.miao@gmail.com>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
         linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 3:21 PM, Haojian Zhuang
+On Tue, Aug 31, 2010 at 3:21 AM, Haojian Zhuang
 <haojian.zhuang@gmail.com> wrote:
 > On Tue, Aug 31, 2010 at 3:08 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
 >> On Tue, Aug 31, 2010 at 3:02 PM, Haojian Zhuang
@@ -56,8 +57,8 @@ On Tue, Aug 31, 2010 at 3:21 PM, Haojian Zhuang
 >>>>>>>>> On Thu, Aug 26, 2010 at 5:07 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
 >>>>>>>>>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
 >>>>>>>>>> ---
->>>>>>>>>> Â arch/arm/mach-mmp/include/mach/system.h | Â  Â 2 +-
->>>>>>>>>> Â 1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>>>>>>>  arch/arm/mach-mmp/include/mach/system.h |    2 +-
+>>>>>>>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
 >>>>>>>>>>
 >>>>>>>>>> diff --git a/arch/arm/mach-mmp/include/mach/system.h b/arch/arm/mach-mmp/include/mach/system.h
 >>>>>>>>>> index 4f5b0e0..926e9c0 100644
@@ -65,16 +66,16 @@ On Tue, Aug 31, 2010 at 3:21 PM, Haojian Zhuang
 >>>>>>>>>> +++ b/arch/arm/mach-mmp/include/mach/system.h
 >>>>>>>>>> @@ -16,6 +16,6 @@ static inline void arch_idle(void)
 >>>>>>>>>>
->>>>>>>>>> Â static inline void arch_reset(char mode, const char *cmd)
->>>>>>>>>> Â {
->>>>>>>>>> - Â  Â  Â  cpu_reset(0);
->>>>>>>>>> + Â  Â  Â  cpu_reset(0xffff0000);
+>>>>>>>>>>  static inline void arch_reset(char mode, const char *cmd)
+>>>>>>>>>>  {
+>>>>>>>>>> -       cpu_reset(0);
+>>>>>>>>>> +       cpu_reset(0xffff0000);
 >>>>>>>>>
 >>>>>>>>> Not sure if this correct. But normally reset jump happens after we turn
 >>>>>>>>> off the MMU and so on. Ain't the BootROM starts from 0 ?
 >>>>>>>>>
->>>>>>>>>> Â }
->>>>>>>>>> Â #endif /* __ASM_MACH_SYSTEM_H */
+>>>>>>>>>>  }
+>>>>>>>>>>  #endif /* __ASM_MACH_SYSTEM_H */
 >>>>>>>>>> --
 >>>>>>>>>> 1.7.0.4
 >>>>>>>>>>
@@ -94,12 +95,12 @@ On Tue, Aug 31, 2010 at 3:21 PM, Haojian Zhuang
 >>>>>> One moment. Since this is really global to pxa910 and mmp2, so I
 >>>>>> suggest this being fixed for pxa168 only first. How about this:
 >>>>>>
->>>>>> Â  Â ARM: pxa168: fix corrected reset vector
+>>>>>>    ARM: pxa168: fix corrected reset vector
 >>>>>>
->>>>>> Â  Â Reset vector for pxa168 is 0xffff_0000 not 0x0. This fix allows
->>>>>> Â  Â reboot to work
+>>>>>>    Reset vector for pxa168 is 0xffff_0000 not 0x0. This fix allows
+>>>>>>    reboot to work
 >>>>>>
->>>>>> Â  Â Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>>>>>>    Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
 >>>>>>
 >>>>>> diff --git a/arch/arm/mach-mmp/include/mach/system.h
 >>>>>> b/arch/arm/mach-mmp/include/mach/system.h
@@ -107,44 +108,44 @@ On Tue, Aug 31, 2010 at 3:21 PM, Haojian Zhuang
 >>>>>> --- a/arch/arm/mach-mmp/include/mach/system.h
 >>>>>> +++ b/arch/arm/mach-mmp/include/mach/system.h
 >>>>>> @@ -9,6 +9,8 @@
->>>>>> Â #ifndef __ASM_MACH_SYSTEM_H
->>>>>> Â #define __ASM_MACH_SYSTEM_H
+>>>>>>  #ifndef __ASM_MACH_SYSTEM_H
+>>>>>>  #define __ASM_MACH_SYSTEM_H
 >>>>>>
 >>>>>> +#include <mach/cputype.h>
 >>>>>> +
->>>>>> Â static inline void arch_idle(void)
->>>>>> Â {
->>>>>> Â  Â  Â  Â cpu_do_idle();
+>>>>>>  static inline void arch_idle(void)
+>>>>>>  {
+>>>>>>        cpu_do_idle();
 >>>>>> @@ -16,6 +18,9 @@ static inline void arch_idle(void)
 >>>>>>
->>>>>> Â static inline void arch_reset(char mode, const char *cmd)
->>>>>> Â {
->>>>>> - Â  Â  Â  cpu_reset(0);
->>>>>> + Â  Â  Â  if (cpu_is_pxa168())
->>>>>> + Â  Â  Â  Â  Â  Â  Â  cpu_reset(0xffff0000);
->>>>>> + Â  Â  Â  else
->>>>>> + Â  Â  Â  Â  Â  Â  Â  cpu_reset(0);
->>>>>> Â }
->>>>>> Â #endif /* __ASM_MACH_SYSTEM_H */
+>>>>>>  static inline void arch_reset(char mode, const char *cmd)
+>>>>>>  {
+>>>>>> -       cpu_reset(0);
+>>>>>> +       if (cpu_is_pxa168())
+>>>>>> +               cpu_reset(0xffff0000);
+>>>>>> +       else
+>>>>>> +               cpu_reset(0);
+>>>>>>  }
+>>>>>>  #endif /* __ASM_MACH_SYSTEM_H */
 >>>>>> --
 >>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 >>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
->>>>>> Please read the FAQ at Â http://www.tux.org/lkml/
+>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>> Please read the FAQ at  http://www.tux.org/lkml/
 >>>>>>
 >>>>> The reset code is in below.
 >>>>>
->>>>> Â  Â  Â  Â .align Â 5
+>>>>>        .align  5
 >>>>> ENTRY(cpu_mohawk_reset)
->>>>> Â  Â  Â  Â mov Â  Â  ip, #0
->>>>> Â  Â  Â  Â mcr Â  Â  p15, 0, ip, c7, c7, 0 Â  Â  Â  Â  Â  @ invalidate I,D caches
->>>>> Â  Â  Â  Â mcr Â  Â  p15, 0, ip, c7, c10, 4 Â  Â  Â  Â  Â @ drain WB
->>>>> Â  Â  Â  Â mcr Â  Â  p15, 0, ip, c8, c7, 0 Â  Â  Â  Â  Â  @ invalidate I & D TLBs
->>>>> Â  Â  Â  Â mrc Â  Â  p15, 0, ip, c1, c0, 0 Â  Â  Â  Â  Â  @ ctrl register
->>>>> Â  Â  Â  Â bic Â  Â  ip, ip, #0x0007 Â  Â  Â  Â  Â  Â  Â  Â  @ .............cam
->>>>> Â  Â  Â  Â bic Â  Â  ip, ip, #0x1100 Â  Â  Â  Â  Â  Â  Â  Â  @ ...i...s........
->>>>> Â  Â  Â  Â mcr Â  Â  p15, 0, ip, c1, c0, 0 Â  Â  Â  Â  Â  @ ctrl register
->>>>> Â  Â  Â  Â mov Â  Â  pc, r0
+>>>>>        mov     ip, #0
+>>>>>        mcr     p15, 0, ip, c7, c7, 0           @ invalidate I,D caches
+>>>>>        mcr     p15, 0, ip, c7, c10, 4          @ drain WB
+>>>>>        mcr     p15, 0, ip, c8, c7, 0           @ invalidate I & D TLBs
+>>>>>        mrc     p15, 0, ip, c1, c0, 0           @ ctrl register
+>>>>>        bic     ip, ip, #0x0007                 @ .............cam
+>>>>>        bic     ip, ip, #0x1100                 @ ...i...s........
+>>>>>        mcr     p15, 0, ip, c1, c0, 0           @ ctrl register
+>>>>>        mov     pc, r0
 >>>>>
 >>>>> MMU is disabled at here and replace PC with r0 value. I doubt code
 >>>>> executed correctly at here. While MMU is disabled, the PC should be
@@ -185,5 +186,9 @@ On Tue, Aug 31, 2010 at 3:21 PM, Haojian Zhuang
 > I think that watchdog reset could be better.
 >
 
-Haojian, note we have a reboot mode, so possibly will have to implement
-all of them if capable.
+Haojian,
+
+That is true, I am planning to send an update to support watchdog
+timer reset soon. The problem is I need to test pxa910 and mmp2 as
+well and determine if the watchdog reset code is consistent. It was
+simpler for me to just fix this at the moment.
