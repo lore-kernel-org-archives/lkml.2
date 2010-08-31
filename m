@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab0HaO5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:57:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932281Ab0HaO5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:57:47 -0400
-Message-ID: <4C7D1868.3090701@redhat.com>
-Date: Tue, 31 Aug 2010 10:57:44 -0400
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
-MIME-Version: 1.0
-To: Harald Hoyer <harald@redhat.com>
-CC: Eric Paris <eparis@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, greg@kroah.com,
-        sds@tycho.nsa.gov
-Subject: Re: selinux vs devtmpfs (vs udev)
-References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>	 <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com> <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com> <4C7CC107.1050304@redhat.com> <4C7D0DAD.9030505@redhat.com> <4C7D141A.9060102@redhat.com>
-In-Reply-To: <4C7D141A.9060102@redhat.com>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=UTF-8
+	id S932357Ab0HaO6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:58:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45515 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab0HaO6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 10:58:45 -0400
+X-Authority-Analysis: v=1.1 cv=PwepQEbt00S2KBGxbslVOIF+r0Mv8f+EI4NDy2BEsUE= c=1 sm=0 a=fCqi14YzsQAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=hGzw-44bAAAA:8 a=kjFs-KGKNYa_KYX7xukA:9 a=rt0vMKGqOxe9pG7VLQwA:7 a=CbKKcx_fiPoCCD1Av-9uAjzCqwIA:4 a=PUjeQqilurYA:10 a=dowx1zmaLagA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] tracing/trace_stack: Fix stack trace on ppc64
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Anton Blanchard <anton@samba.org>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100831142111.GA5259@nowhere>
+References: <20100825013238.GE28360@kryten>
+	 <1283218310.1377.50.camel@gandalf.stny.rr.com>
+	 <20100831142111.GA5259@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 Aug 2010 10:58:42 -0400
+Message-ID: <1283266722.1377.80.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 08/31/2010 10:39 AM, Harald Hoyer wrote:
-> On 08/31/2010 04:11 PM, Daniel J Walsh wrote:
->> -----BEGIN PGP SIGNED MESSAGE-----
->> Hash: SHA1
->>
->> On 08/31/2010 04:44 AM, Harald Hoyer wrote:
->>> On 08/31/2010 01:14 AM, Eric Paris wrote:
->>>> On Sat, 2010-08-28 at 11:57 +0200, Kay Sievers wrote:
->>>>> On Sat, Aug 28, 2010 at 01:00, Eric Paris<eparis@redhat.com>   wrote:
->>>>
->>>>>> In the new new days of devtmpfs things aren't as nice.  The kernel is
->>>>>> magically creating files in /dev.  These are getting created with the
->>>>>> 'default' SELinux context.  So herein lies the problem.
->>>>>>
->>>>>> The first program that tries to access these files get denied by
->>>>>> SELinux.  Now udev actually has logic in it to fix the label on any
->>>>>> closed device file, so udev will at that point swoop in, fix the
->>>>>> label,
->>>>>> and the next program that tries to use the file will work just
->>>>>> fine.  Oh
->>>>>> fun!
->>>>
->>>>> Udev should still label all device nodes, even when they are created
->>>>> by the kernel. Devtmpfs or not should not make a difference here.
->>>>>
->>>>> I guess it's a udev bug introduced with:
->>>>>
->>>>> http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=578cc8a8085a47c963b5940459e475ac5f07219c
->>>>>
->>>>>
->>>>>
->>>>> and we just need to fix that.
->>>>
->>>> Looks like the likely cause.  I see a note in one of the bugzillas that
->>>> says:
->>>>
->>>> Aug 30 14:03:09 pippin udevd-work[347]: preserve file '/dev/dri/card0',
->>>> because it has correct dev_t
->>>>
->>>> Which is certainly the part of code in question.  Do you have a quick
->>>> fix in mind that you plan to push upstream or should I ask the RH udev
->>>> guy to come up with something?
->>>>
->>>> -Eric
->>>>
->>>
->>> The RH udev guy says:
->>>
->>> This patch was introduced, because Red Hat engineers requested, that the
->>> selinux context should not be modified, after they set their own custom
->>> context (virtual machine management).
->>>
->>> So, either we differentiate between "add" and "change" events, or we
->>> should check against the "kernel default" selinux context, before we
->>> call udev_selinux_lsetfilecon().
->>>
->> So the problem is happening because the kernel creates the device rather
->> then udev, and then udev does not change the context because it can not
->> differentiate between this and libvirt putting down a label.
+On Tue, 2010-08-31 at 16:21 +0200, Frederic Weisbecker wrote:
+> On Mon, Aug 30, 2010 at 09:31:50PM -0400, Steven Rostedt wrote:
+> > On Wed, 2010-08-25 at 11:32 +1000, Anton Blanchard wrote:
+> > > save_stack_trace() stores the instruction pointer, not the function
+> > > descriptor. On ppc64 the trace stack code currently dereferences the
+> > > instruction pointer and shows 8 bytes of instructions in our backtraces:
+> > > 
+> > > # cat /sys/kernel/debug/tracing/stack_trace
+> > >         Depth    Size   Location    (26 entries)
+> > >         -----    ----   --------
+> > >   0)     5424     112   0x6000000048000004
+> > >   1)     5312     160   0x60000000ebad01b0
+> > >   2)     5152     160   0x2c23000041c20030
+> > >   3)     4992     240   0x600000007c781b79
+> > >   4)     4752     160   0xe84100284800000c
+> > >   5)     4592     192   0x600000002fa30000
+> > >   6)     4400     256   0x7f1800347b7407e0
+> > >   7)     4144     208   0xe89f0108f87f0070
+> > >   8)     3936     272   0xe84100282fa30000
+> > > 
+> > > Since we aren't dealing with function descriptors, use %pS instead of %pF
+> > > to fix it:
+> > > 
+> > > # cat /sys/kernel/debug/tracing/stack_trace
+> > >         Depth    Size   Location    (26 entries)
+> > >         -----    ----   --------
+> > >   0)     5424     112   ftrace_call+0x4/0x8
+> > >   1)     5312     160   .current_io_context+0x28/0x74
+> > >   2)     5152     160   .get_io_context+0x48/0xa0
+> > >   3)     4992     240   .cfq_set_request+0x94/0x4c4
+> > >   4)     4752     160   .elv_set_request+0x60/0x84
+> > >   5)     4592     192   .get_request+0x2d4/0x468
+> > >   6)     4400     256   .get_request_wait+0x7c/0x258
+> > >   7)     4144     208   .__make_request+0x49c/0x610
+> > >   8)     3936     272   .generic_make_request+0x390/0x434
+> > > 
+> > > Signed-off-by: Anton Blanchard <anton@samba.org>
+> > 
+> > Thanks, I'll test this to make sure it doesn't break x86, and then push
+> > it into a stable/-rc patch queue.
+> > 
+> > -- Steve
 > 
-> Is there an easy test to differentiate?
 > 
-Another option would be to check the label of the containing directory
-and if they match run the lsetfilecon,  If they don't then leave it be.
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+> Ingo has applied it already in perf/urgent.
 
-iEYEARECAAYFAkx9GGgACgkQrlYvE4MpobNwkgCgvzHFWYTZND+xMSukZXc1M+a0
-fC4AoNaVap4UfoOoq1U+8X7JWYqktNHy
-=TljD
------END PGP SIGNATURE-----
+Hmm, I never saw the tip-bot reply :-(
+
+I guess it only sends to the Cc tags.
+
+-- Steve
+
+
