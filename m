@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452Ab0HaOJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:09:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61079 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab0HaOJZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:09:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Q3ZIAcxQFx3vQs/iVx+I0CfbRyTDGVHTNN4nyVBAWI1S5O37/gcyC628gSrzhra2Gs
-         Fr3g78sfH16TNbVb17S5TNaa+JScs0sX9iIVPynBCAYqYikgWr4p1b+ThHLitG78GkOb
-         mY8AHf9nUZrS9FuhUMkozSnfF8HqTTotJd2C4=
+	id S1757455Ab0HaOMB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:12:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26348 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754109Ab0HaOMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 10:12:00 -0400
+Message-ID: <4C7D0DAD.9030505@redhat.com>
+Date: Tue, 31 Aug 2010 10:11:57 -0400
+From: Daniel J Walsh <dwalsh@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
 MIME-Version: 1.0
-In-Reply-To: <m3pqwykhiz.fsf@hase.home>
-References: <1282019131-30813-1-git-send-email-avar@v.nix.is>
-	<20100817054000.GB5095@cr0.nay.redhat.com>
-	<AANLkTinwaFzcHauAXqDdAVEWWxHsMmfVt8mBYgBV72mg@mail.gmail.com>
-	<m3pqwykhiz.fsf@hase.home>
-Date: Tue, 31 Aug 2010 14:09:24 +0000
-X-Google-Sender-Auth: rBol05b5NN4peEbgRo8ap7DTYqI
-Message-ID: <AANLkTi=wuBRLMERjq_fCWu95=QmhNkt-HxpDa1LMQcc9@mail.gmail.com>
-Subject: Re: [PATCH] .gitignore: Ignore generated files in lib/raid6
-From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avar@v.nix.is>
-To: Andreas Schwab <schwab@redhat.com>
-Cc: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        torvalds@linux-foundation.org,
-        David Woodhouse <dwmw2@tylersburg.infradead.org>,
-        Linux is full of bugs <linux-kernel@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>
+To: Harald Hoyer <harald@redhat.com>
+CC: Eric Paris <eparis@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, greg@kroah.com,
+        sds@tycho.nsa.gov
+Subject: Re: selinux vs devtmpfs (vs udev)
+References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>	 <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com> <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com> <4C7CC107.1050304@redhat.com>
+In-Reply-To: <4C7CC107.1050304@redhat.com>
+X-Enigmail-Version: 1.1
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 14:01, Andreas Schwab <schwab@redhat.com> wrote:
-> Ævar Arnfjörð Bjarmason <avar@v.nix.is> writes:
->
->> On Tue, Aug 17, 2010 at 05:40, Américo Wang <xiyou.wangcong@gmail.com> wrote:
->>> On Tue, Aug 17, 2010 at 04:25:31AM +0000, Ævar Arnfjörð Bjarmason wrote:
->>>>The Makefile in lib/raid6 will generate these files, and the clean
->>>>target will remove them, but they weren't being ignored by git.
->>>>
->>>>Signed-off-by: Ævar Arnfjörð Bjarmason <avar@v.nix.is>
->>>
->>> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
->>>
->>> Thanks!
->>
->> In case this fell through: Could you pick this up Linus. It's still
->> causing a dirty tree under "git status". Thanks.
->
-> It's already on its way, see
-> <http://permalink.gmane.org/gmane.linux.raid/29357>.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Thanks. I didn't spot that since it came after my report and didn't
-reference it (so it didn't appear in my searches).
+On 08/31/2010 04:44 AM, Harald Hoyer wrote:
+> On 08/31/2010 01:14 AM, Eric Paris wrote:
+>> On Sat, 2010-08-28 at 11:57 +0200, Kay Sievers wrote:
+>>> On Sat, Aug 28, 2010 at 01:00, Eric Paris<eparis@redhat.com>  wrote:
+>>
+>>>> In the new new days of devtmpfs things aren't as nice.  The kernel is
+>>>> magically creating files in /dev.  These are getting created with the
+>>>> 'default' SELinux context.  So herein lies the problem.
+>>>>
+>>>> The first program that tries to access these files get denied by
+>>>> SELinux.  Now udev actually has logic in it to fix the label on any
+>>>> closed device file, so udev will at that point swoop in, fix the label,
+>>>> and the next program that tries to use the file will work just
+>>>> fine.  Oh
+>>>> fun!
+>>
+>>> Udev should still label all device nodes, even when they are created
+>>> by the kernel. Devtmpfs or not should not make a difference here.
+>>>
+>>> I guess it's a udev bug introduced with:
+>>>   
+>>> http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=578cc8a8085a47c963b5940459e475ac5f07219c
+>>>
+>>>
+>>> and we just need to fix that.
+>>
+>> Looks like the likely cause.  I see a note in one of the bugzillas that
+>> says:
+>>
+>> Aug 30 14:03:09 pippin udevd-work[347]: preserve file '/dev/dri/card0',
+>> because it has correct dev_t
+>>
+>> Which is certainly the part of code in question.  Do you have a quick
+>> fix in mind that you plan to push upstream or should I ask the RH udev
+>> guy to come up with something?
+>>
+>> -Eric
+>>
+> 
+> The RH udev guy says:
+> 
+> This patch was introduced, because Red Hat engineers requested, that the
+> selinux context should not be modified, after they set their own custom
+> context (virtual machine management).
+> 
+> So, either we differentiate between "add" and "change" events, or we
+> should check against the "kernel default" selinux context, before we
+> call udev_selinux_lsetfilecon().
+> 
+So the problem is happening because the kernel creates the device rather
+then udev, and then udev does not change the context because it can not
+differentiate between this and libvirt putting down a label.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkx9Da0ACgkQrlYvE4MpobOYKwCeK1IcX1z/B1lqMbkhYRTVNGsc
+o3gAn02Q+xVyfmRysEqvLT36ea3EUeHZ
+=3H/v
+-----END PGP SIGNATURE-----
