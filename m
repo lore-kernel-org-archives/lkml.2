@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab0HaRXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 13:23:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42826 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab0HaRXM (ORCPT
+	id S1754778Ab0HaRYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 13:24:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42790 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab0HaRYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 13:23:12 -0400
-X-Authority-Analysis: v=1.1 cv=h9FjAN2ougM9pVhvDq3M6+cWFo1DP5/t8S/Ny2XAPyw= c=1 sm=0 a=MSnKhT_c3jYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=I128M_0NUVUE20tNh-AA:9 a=aiyffvmgtOSrluYnstcA:7 a=CQ5UrElhmgQdPM4pF1JOgiD1l3MA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
- todo list, add RCU todo list
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Joe Perches <joe@perches.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org,
-        ksummit-2010-discuss@lists.linux-foundation.org
-In-Reply-To: <20100826093838.74ab9958@infradead.org>
-References: <20100826154537.GA4874@linux.vnet.ibm.com>
-	 <1282837904.1875.64.camel@Joe-Laptop>
-	 <20100826161451.GB2367@linux.vnet.ibm.com>
-	 <1282839933.8133.11.camel@mulgrave.site>
-	 <20100826092923.4bdbea69.rdunlap@xenotime.net>
-	 <20100826093838.74ab9958@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 31 Aug 2010 13:23:08 -0400
-Message-ID: <1283275388.1377.216.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Aug 2010 13:24:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=sbQM824LRAiCQuSfRx6LX6lTrTP3Xw2486mFuFOKstoKCiabT3m3eYsGdLraYMpDMX
+         384fp7J1Ml6Bb6Ldl67DLRdxfXOENHVpefPvUIQfhH3jNOe8KwXZGFTkxIc5y/gixKyq
+         Jh8MED5mvqhPSJfr2TlV/2OPLFYe577+YSSyA=
+MIME-Version: 1.0
+In-Reply-To: <20100831170923.GB30947@core.coreip.homeip.net>
+References: <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com>
+ <20100830214025.2f9677a1@lxorguk.ukuu.org.uk> <20100830204412.GA28711@core.coreip.homeip.net>
+ <AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com>
+ <20100830214355.GB28865@core.coreip.homeip.net> <AANLkTinPConD62Ky7mvMn2ZgS=V9+Q5YUdaF5Vma8mn+@mail.gmail.com>
+ <20100830224352.GF28865@core.coreip.homeip.net> <20100831104446.321fd4f4@lxorguk.ukuu.org.uk>
+ <20100831161730.GA30947@core.coreip.homeip.net> <20100831175937.70a59a91@lxorguk.ukuu.org.uk>
+ <20100831170923.GB30947@core.coreip.homeip.net>
+From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
+Date: Tue, 31 Aug 2010 19:24:20 +0200
+Message-ID: <AANLkTi=G0m-kdET6PevFmw4DBkha1yG+FiqmiXUvdSnK@mail.gmail.com>
+Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2] input:
+ CMA3000 Accelerometer driver)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Felipe Balbi <me@felipebalbi.com>, Hemanth V <hemanthv@ti.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "igor.stoppa@nokia.com" <igor.stoppa@nokia.com>,
+        "kai.svahn@nokia.com" <kai.svahn@nokia.com>,
+        "matthias.nyman@nokia.com" <matthias.nyman@nokia.com>,
+        =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-26 at 09:38 -0700, Arjan van de Ven wrote:
+IMHO I think sensors no more can be considered as non-input-devices.
+Things changed too much in recent years. Input "sources" have now a
+very different use as before (smartphones, Tablets and handheld
+devices...)
+They all have much inputs that come mostly from sensors.
 
-> I have to say that I'm not yet convinced that keeping a todo list in a
-> place that's not with the actual source code does not give me warm
-> fuzzy feelings. Every time we've kept information about the source code
-> separate from our source code it's been a failure; it gets out of sync
-> fast and it just adds to the maintenance.
-> 
-> A git commit that both fixes an issue and removed the line from the
-> todo file (or moves it to a "done" section, whatever) is the ultimate
-> goal obviously... having a U: seems to go in exactly the opposite
-> direction.
-> 
-> otoh having a kernel-doc type (eg structured, parsable) way of
-> gathering todo items throughout the tree.... that I can see as useful.
+So the definition of an input device is something that the user can
+interact on it ?
+Maybe we should consider input devices to be made from 1 to N sensors
+with some filtering blocks which only expose the useful data.
 
-We could add a toplevel "todo/" directory, with each project file in it
-and a list of things todo. When the todo is done, that same commit could
-remove the todo item.
+If we think like this an input device can be made from sub parts which
+can be bare sensors. (Many sensors are exposed as
+Human.Interface.Devices which are mainly input devices)
 
-Just a worthless thought ;-)
-
--- Steve
-
-
+i
