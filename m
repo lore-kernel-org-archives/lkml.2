@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab0HaAAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 20:00:06 -0400
-Received: from kroah.org ([198.145.64.141]:50054 "EHLO coco.kroah.org"
+	id S1755607Ab0HaAEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 20:04:43 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:48528 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437Ab0HaAAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 20:00:04 -0400
-Date: Mon, 30 Aug 2010 16:49:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Hank Janssen <hjanssen@microsoft.com>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "'gregkh@suse.de'" <gregkh@suse.de>
-Subject: Re: [PATCH 2/5] staging: hv: Fixed lockup problem with
- bounce_buffer scatter list
-Message-ID: <20100830234902.GA22941@kroah.com>
-References: <8AFC7968D54FB448A30D8F38F259C56223FEC88B@TK5EX14MBXC114.redmond.corp.microsoft.com>
+	id S1753219Ab0HaAEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 20:04:42 -0400
+Date: Mon, 30 Aug 2010 17:04:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Brian Swetland <swetland@google.com>, Theodore Tso <tytso@mit.edu>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100831000437.GS2420@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100812034435.GA7403@linux.vnet.ibm.com>
+ <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+ <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+ <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+ <20100812174303.GD2524@linux.vnet.ibm.com>
+ <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+ <AANLkTinNxZoMab=tG9KXJ9n_nxB1dXHkfk-7xUMWXACW@mail.gmail.com>
+ <AANLkTin3H0o+WQocUYjUcPGRpkRqK9H2LJ0OwHXFNBdj@mail.gmail.com>
+ <20100813144236.GB2511@linux.vnet.ibm.com>
+ <20100828085135.GA2711@ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8AFC7968D54FB448A30D8F38F259C56223FEC88B@TK5EX14MBXC114.redmond.corp.microsoft.com>
+In-Reply-To: <20100828085135.GA2711@ucw.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 07:29:53PM +0000, Hank Janssen wrote:
-> From: Hank Janssen <hjanssen@microsoft.com>
+On Sat, Aug 28, 2010 at 10:51:35AM +0200, Pavel Machek wrote:
+> Hi!
 > 
-> Fixed lockup problem with bounce_buffer scatter list which caused
-> crashes in heavy loads. Under heavy loads with many clients we this
-> problem appear, it causes a kernel Panic.
+> > > You are *one* user of the kernel. Let's suppose Android wasn't using
+> > > suspend-blockers, and there was another equally successful linux
+> > > mobile platform, Foobingo, and they were using them, and they were the
+> > > only ones interested on implementing them.
+> > > 
+> > > What does that change? Nothing. They still need to convince the
+> > > community that what they are proposing to be merged is actually
+> > > useful, and somebody will use it. If not, they can just keep the patch
+> > > for themselves until they do. I don't see the big deal.
+> > 
+> > So the current users of the Linux kernel are the following?
+> > 
+> > o	GNU/Linux
+> > o	Android
+> > 
+> > Do any other distributions or devices with unusual user-space layouts
+> > qualify?
 > 
-> Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
-> Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
-> Cc: stable <stable@kernel.org>
-> ---
->  drivers/staging/hv/storvsc_drv.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
+> QTembedded distros are somehow similar to android (one big binary).
 > 
-> diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-> index 3b9ccb0..169d701 100644
-> --- a/drivers/staging/hv/storvsc_drv.c
-> +++ b/drivers/staging/hv/storvsc_drv.c
-> @@ -615,6 +615,7 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
->  	unsigned int request_size = 0;
->  	int i;
->  	struct scatterlist *sgl;
-> +	unsigned int sg_count = 0;
->  
->  	DPRINT_DBG(STORVSC_DRV, "scmnd %p dir %d, use_sg %d buf %p len %d "
->  		   "queue depth %d tagged %d", scmnd, scmnd->sc_data_direction, @@ -697,6 +698,7 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
->  	request->DataBuffer.Length = scsi_bufflen(scmnd);
+> Then there's minor stuff, like webOS and Motorola A1200...
 
+It does sounds like there is some variety, then.  Thank you for the info!
 
-This patch is corrupted.  It applies, but doesn't do what you want it to
-do :(
-
-Care to resend?
-
-thanks,
-
-greg k-h
+							Thanx, Paul
