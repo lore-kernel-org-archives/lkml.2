@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab0HaSl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 14:41:59 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:51897 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab0HaSlW (ORCPT
+	id S1755037Ab0HaSmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 14:42:47 -0400
+Received: from cblmdm72-240-119-60.buckeyecom.net ([72.240.119.60]:60940 "EHLO
+	holly2.adsllc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751790Ab0HaSmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 14:41:22 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Michael Poole <mdpoole@troilus.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6 v2] HID: magicmouse: simplify touch data bit manipulation
-Date: Tue, 31 Aug 2010 14:41:05 -0400
-Message-Id: <1283280068-12285-3-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
-References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+	Tue, 31 Aug 2010 14:42:45 -0400
+X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Aug 2010 14:42:45 EDT
+From: Dave Ludlow <dave.ludlow@bay.ws>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Ludlow <dave.ludlow@bay.ws>
+Subject: [PATCH] usb: serial: mos7840: Add USB ID to support the B&B Electronics USOPTL4-2P.
+Date: Tue, 31 Aug 2010 14:26:17 -0400
+Message-Id: <1283279177-14379-1-git-send-email-dave.ludlow@bay.ws>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new format should be easier to read to determine which bits
-correspond to which data. It also brings all the manipulation logic to
-the top of the function. This makes size and orientation reading more
-clear.
+Add the USB ID needed to support B&B Electronic's 2-port, optically-isolated,
+powered, USB to RS485 converter.
 
-Note that the impetus for this change is the forthcoming support for the
-Magic Trackpad, which has a different touch data protocol.
-
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-Acked-by: Michael Poole <mdpoole@troilus.org>
+Signed-off-by: Dave Ludlow <dave.ludlow@bay.ws>
 ---
- drivers/hid/hid-magicmouse.c |   25 +++++++++++++------------
- 1 files changed, 13 insertions(+), 12 deletions(-)
+ drivers/usb/serial/mos7840.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index 3a2147d..98bbc53 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -166,18 +166,21 @@ static void magicmouse_emit_buttons(struct magicmouse_sc *msc, int state)
- static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tdata)
- {
- 	struct input_dev *input = msc->input;
--	__s32 x_y = tdata[0] << 8 | tdata[1] << 16 | tdata[2] << 24;
--	int misc = tdata[5] | tdata[6] << 8;
--	int id = (misc >> 6) & 15;
--	int x = x_y << 12 >> 20;
--	int y = -(x_y >> 20);
--	int down = (tdata[7] & TOUCH_STATE_MASK) != TOUCH_STATE_NONE;
-+	int id = (tdata[6] << 2 | tdata[5] >> 6) & 0xf;
-+	int x = (tdata[1] << 28 | tdata[0] << 20) >> 20;
-+	int y = -((tdata[2] << 24 | tdata[1] << 16) >> 20);
-+	int size = tdata[5] & 0x3f;
-+	int orientation = (tdata[6] >> 2) - 32;
-+	int touch_major = tdata[3];
-+	int touch_minor = tdata[4];
-+	int state = tdata[7] & TOUCH_STATE_MASK;
-+	int down = state != TOUCH_STATE_NONE;
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 585b7e6..9a5ea9d 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -129,6 +129,7 @@
+ #define BANDB_DEVICE_ID_USOPTL4_2	0xAC42
+ #define BANDB_DEVICE_ID_USOPTL4_4	0xAC44
+ #define BANDB_DEVICE_ID_USOPTL2_4	0xAC24
++#define BANDB_DEVICE_ID_USOPTL4_2P      0xBC02
  
- 	/* Store tracking ID and other fields. */
- 	msc->tracking_ids[raw_id] = id;
- 	msc->touches[id].x = x;
- 	msc->touches[id].y = y;
--	msc->touches[id].size = misc & 63;
-+	msc->touches[id].size = size;
- 
- 	/* If requested, emulate a scroll wheel by detecting small
- 	 * vertical touch motions.
-@@ -188,7 +191,7 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 		int step_y = msc->touches[id].scroll_y - y;
- 
- 		/* Calculate and apply the scroll motion. */
--		switch (tdata[7] & TOUCH_STATE_MASK) {
-+		switch (state) {
- 		case TOUCH_STATE_START:
- 			msc->touches[id].scroll_x = x;
- 			msc->touches[id].scroll_y = y;
-@@ -224,13 +227,11 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 
- 	/* Generate the input events for this touch. */
- 	if (report_touches && down) {
--		int orientation = (misc >> 10) - 32;
--
- 		msc->touches[id].down = 1;
- 
- 		input_report_abs(input, ABS_MT_TRACKING_ID, id);
--		input_report_abs(input, ABS_MT_TOUCH_MAJOR, tdata[3]);
--		input_report_abs(input, ABS_MT_TOUCH_MINOR, tdata[4]);
-+		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major);
-+		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor);
- 		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
- 		input_report_abs(input, ABS_MT_POSITION_X, x);
- 		input_report_abs(input, ABS_MT_POSITION_Y, y);
+ /* This driver also supports
+  * ATEN UC2324 device using Moschip MCS7840
+@@ -192,6 +193,7 @@ static const struct usb_device_id moschip_port_id_table[] = {
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
+ 	{}			/* terminating entry */
+@@ -209,6 +211,7 @@ static const struct usb_device_id moschip_id_table_combined[] __devinitconst = {
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
+ 	{}			/* terminating entry */
 -- 
-1.7.1
+1.7.2.2
 
