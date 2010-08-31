@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab0HaKY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 06:24:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60565 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008Ab0HaKY1 (ORCPT
+	id S1756903Ab0HaK1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 06:27:15 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:34128 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752855Ab0HaK1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 06:24:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:to:cc:subject:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=IL2tbyCxOfdeGNU9DjYArUbUz92UhozGzLbTDxYZkWEbcr0L+99dXHsmkSGqTOZvsR
-         LeOdXYR6qG9SGAmfoRfX9TOnPK5htLStM+1W7aeMl3u2TMOgHoTfV69wRQwdtKCoAy99
-         6kikw0hnHO89GEGKPBd4cauqTTc6N8o3yPGTg=
-Message-ID: <4c7cd856.cb71df0a.1986.ffffad0f@mx.google.com>
-Date: Tue, 31 Aug 2010 13:24:19 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: ralf@linux-mips.org, wuzhangjin@gmail.com, linux-mips@linux-mips.org
-Cc: alex@digriz.org.uk, manuel.lauss@googlemail.com, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] MIPS: Calculate VMLINUZ_LOAD_ADDRESS based on the length of
- vmlinux.bin
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.18.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 31 Aug 2010 06:27:13 -0400
+Message-ID: <4C7CD8F8.4050409@panasas.com>
+Date: Tue, 31 Aug 2010 13:27:04 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, jeremy@goop.org,
+        snitzer@redhat.com, k-ueda@ct.jp.nec.com,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 26/30] ext4: do not send discards as barriers
+References: <1282751267-3530-1-git-send-email-tj@kernel.org> <1282751267-3530-27-git-send-email-tj@kernel.org> <20100825155842.GA3229@lst.de> <20100825160032.GC3229@lst.de> <4C753D75.2010305@kernel.org> <20100825200223.GE2738@quack.suse.cz> <4C76250B.6060800@kernel.org> <20100827173147.GA12374@quack.suse.cz> <x4939tv98n8.fsf@segfault.boston.devel.redhat.com> <20100830202034.GB12226@quack.quadriga.com> <4C7CB936.8010509@kernel.org> <4C7CD47B.1050409@panasas.com> <4C7CD5D0.40007@kernel.org>
+In-Reply-To: <4C7CD5D0.40007@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 31 Aug 2010 10:27:12.0366 (UTC) FILETIME=[1308D8E0:01CB48F7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix VMLINUZ_LOAD_ADDRESS calculation to be based on the length of vmlinux.bin,
-the actual uncompressed kernel binary.
+On 08/31/2010 01:13 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On 08/31/2010 12:07 PM, Boaz Harrosh wrote:
+>> I don't know all the specifics of the virtio driver and the KVM backend but
+>> don't the KVM target io is eventually directed to a local file or device?
+>> If so the scsi device has disappeard but the bulk of the data is in host cache
+>> at the backstore (file or bdev). Once all files are closed the data is synced
+>> to disk.
+>>
+>> Is it not the same as Ric's problem of disconnecting the sata cable but
+>> not dropping power to the drive. The main of the cache is still intact.
+> 
+> There are two layers of caching there.
+> 
+>  drive cache - host page cache - guest
+> 
+> When guest issues FLUSH, qemu will translate it into fdatasync which
+> will flush the host page cache followed by FLUSH to the drive which
+> will flush the drive cache to the media.  If you delete the host disk
+> device, it will be detached w/o host page cache flushed.  So, although
+> it's not complete, it will lose good part of cache.  With out write
+> out timeout increased and/or with laptop mode enabled, it will
+> probably lose most of cache.
+> 
 
-Previously it was based on the length of KBUILD_IMAGE (the unstripped ELF
-vmlinux), which is bigger than vmlinux.bin.
-As a result, vmlinuz was loaded into a memory address higher then actually
-needed - a problem for small memory platforms.
+Ha, ok you meant that device. So if you have a dedicated physical device
+for backstore that would be a very nice scriptable way.
 
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
----
-diff --git a/arch/mips/boot/compressed/Makefile b/arch/mips/boot/compressed/Makefile
-index ed9bb70..5fd7f7a 100644
---- a/arch/mips/boot/compressed/Makefile
-+++ b/arch/mips/boot/compressed/Makefile
-@@ -59,7 +59,7 @@ $(obj)/piggy.o: $(obj)/dummy.o $(obj)/vmlinux.bin.z FORCE
- hostprogs-y := calc_vmlinuz_load_addr
- 
- VMLINUZ_LOAD_ADDRESS = $(shell $(obj)/calc_vmlinuz_load_addr \
--		$(objtree)/$(KBUILD_IMAGE) $(VMLINUX_LOAD_ADDRESS))
-+		$(obj)/vmlinux.bin $(VMLINUX_LOAD_ADDRESS))
- 
- vmlinuzobjs-y += $(obj)/piggy.o
- 
--- 
-Shmulik Ladkani
+Thanks, that's a much better automated test than pulling drives out of
+sockets.
+
+> Thanks.
+> 
+
+Boaz
