@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab0HaMVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 08:21:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56055 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755828Ab0HaMVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 08:21:13 -0400
-Message-ID: <4C7CF3A6.5060200@kernel.org>
-Date: Tue, 31 Aug 2010 14:20:54 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1757260Ab0HaMWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 08:22:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48608 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754438Ab0HaMWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 08:22:07 -0400
+Date: Tue, 31 Aug 2010 13:22:05 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Daniel Mack <daniel@caiaq.de>,
+        Pierre Ossman <pierre@ossman.eu>,
+        Matt Fleming <matt@console-pimps.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Bengt Jonsson <bengt.jonsson@stericsson.com>,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] MMC: move regulator handling closer to core
+Message-ID: <20100831122205.GI20849@rakim.wolfsonmicro.main>
+References: <1283102159-25804-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: vhost_dev_cleanup() crash: BUG: unable to handle kernel NULL
- pointer dereference
-References: <20100831075705.GA4710@elte.hu>	 <1283251801.2550.53.camel@edumazet-laptop> <20100831111413.GB12853@elte.hu> <1283256357.2550.61.camel@edumazet-laptop>
-In-Reply-To: <1283256357.2550.61.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 31 Aug 2010 12:20:56 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283102159-25804-1-git-send-email-linus.walleij@stericsson.com>
+X-Cookie: glibido:
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2010 02:05 PM, Eric Dumazet wrote:
-> Just in case, I resubmit the patch, clearing dev->worker, because I am
-> not sure if vhost_dev_cleanup() can be run several times on same struct
-> vhost_dev. Patch is needed even if you add this check in kthread_stop()
+On Sun, Aug 29, 2010 at 07:15:59PM +0200, Linus Walleij wrote:
+> After discovering a problem in regulator reference counting I
+> took Mark Brown's advice to move the reference count into the
+> MMC core by making the regulator status a member of
+> struct mmc_host.
 > 
-> [PATCH v2] vhost: stop worker only if created
-> 
-> Its currently illegal to call kthread_stop(NULL)
-> 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> I took this opportunity to also implement NULL versions of
+> the regulator functions so as to rid the driver code from
+> some ugly #ifdef CONFIG_REGULATOR clauses.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Thanks.
+A few small comments below.
 
--- 
-tejun
+> +		if (host->vcc) {
+> +			ret = mmc_regulator_set_ocr(mmc, host->vcc, ios->vdd);
+> +			if (ret)
+> +				dev_err(mmc_dev(mmc),
+> +					"could not set regulator OCR\n");
+> +		}
+
+It'd be nice to display the error code as well.  I do tend to agree with
+Adrian that it might be nice to have the noop functions in the header to
+allow the optimiser to play with them as well but it's unlikely to be a
+big deal.
