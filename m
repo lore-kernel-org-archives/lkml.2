@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab0HaO6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:58:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45515 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281Ab0HaO6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:58:45 -0400
-X-Authority-Analysis: v=1.1 cv=PwepQEbt00S2KBGxbslVOIF+r0Mv8f+EI4NDy2BEsUE= c=1 sm=0 a=fCqi14YzsQAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=hGzw-44bAAAA:8 a=kjFs-KGKNYa_KYX7xukA:9 a=rt0vMKGqOxe9pG7VLQwA:7 a=CbKKcx_fiPoCCD1Av-9uAjzCqwIA:4 a=PUjeQqilurYA:10 a=dowx1zmaLagA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] tracing/trace_stack: Fix stack trace on ppc64
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Anton Blanchard <anton@samba.org>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100831142111.GA5259@nowhere>
-References: <20100825013238.GE28360@kryten>
-	 <1283218310.1377.50.camel@gandalf.stny.rr.com>
-	 <20100831142111.GA5259@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 31 Aug 2010 10:58:42 -0400
-Message-ID: <1283266722.1377.80.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S932365Ab0HaO7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:59:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:24366 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932281Ab0HaO7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 10:59:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,298,1280732400"; 
+   d="scan'208";a="319186418"
+Date: Tue, 31 Aug 2010 22:59:22 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Make is_mem_section_removable more conformable with
+ offlining code
+Message-ID: <20100831145922.GA32444@localhost>
+References: <20100820141400.GD4636@tiehlicka.suse.cz>
+ <20100822004232.GA11007@localhost>
+ <20100823092246.GA25772@tiehlicka.suse.cz>
+ <20100831141942.GA30353@localhost>
+ <20100831143649.GA31730@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100831143649.GA31730@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 16:21 +0200, Frederic Weisbecker wrote:
-> On Mon, Aug 30, 2010 at 09:31:50PM -0400, Steven Rostedt wrote:
-> > On Wed, 2010-08-25 at 11:32 +1000, Anton Blanchard wrote:
-> > > save_stack_trace() stores the instruction pointer, not the function
-> > > descriptor. On ppc64 the trace stack code currently dereferences the
-> > > instruction pointer and shows 8 bytes of instructions in our backtraces:
+On Tue, Aug 31, 2010 at 10:36:49PM +0800, Wu Fengguang wrote:
+> On Tue, Aug 31, 2010 at 10:19:42PM +0800, Wu Fengguang wrote:
+> > On Mon, Aug 23, 2010 at 05:22:46PM +0800, Michal Hocko wrote:
+> > > On Sun 22-08-10 08:42:32, Wu Fengguang wrote:
+> > > > Hi Michal,
 > > > 
-> > > # cat /sys/kernel/debug/tracing/stack_trace
-> > >         Depth    Size   Location    (26 entries)
-> > >         -----    ----   --------
-> > >   0)     5424     112   0x6000000048000004
-> > >   1)     5312     160   0x60000000ebad01b0
-> > >   2)     5152     160   0x2c23000041c20030
-> > >   3)     4992     240   0x600000007c781b79
-> > >   4)     4752     160   0xe84100284800000c
-> > >   5)     4592     192   0x600000002fa30000
-> > >   6)     4400     256   0x7f1800347b7407e0
-> > >   7)     4144     208   0xe89f0108f87f0070
-> > >   8)     3936     272   0xe84100282fa30000
+> > > Hi,
 > > > 
-> > > Since we aren't dealing with function descriptors, use %pS instead of %pF
-> > > to fix it:
+> > > > 
+> > > > It helps to explain in changelog/code
+> > > > 
+> > > > - in what situation a ZONE_MOVABLE will contain !MIGRATE_MOVABLE
+> > > >   pages? 
 > > > 
-> > > # cat /sys/kernel/debug/tracing/stack_trace
-> > >         Depth    Size   Location    (26 entries)
-> > >         -----    ----   --------
-> > >   0)     5424     112   ftrace_call+0x4/0x8
-> > >   1)     5312     160   .current_io_context+0x28/0x74
-> > >   2)     5152     160   .get_io_context+0x48/0xa0
-> > >   3)     4992     240   .cfq_set_request+0x94/0x4c4
-> > >   4)     4752     160   .elv_set_request+0x60/0x84
-> > >   5)     4592     192   .get_request+0x2d4/0x468
-> > >   6)     4400     256   .get_request_wait+0x7c/0x258
-> > >   7)     4144     208   .__make_request+0x49c/0x610
-> > >   8)     3936     272   .generic_make_request+0x390/0x434
-> > > 
-> > > Signed-off-by: Anton Blanchard <anton@samba.org>
+> > > page can be MIGRATE_RESERVE IIUC.
 > > 
-> > Thanks, I'll test this to make sure it doesn't break x86, and then push
-> > it into a stable/-rc patch queue.
-> > 
-> > -- Steve
+> > Yup, it may also be set to MIGRATE_ISOLATE by soft_offline_page().
 > 
+> Ah a non-movable page allocation could fall back into the movable
+> zone. See __rmqueue_fallback() and the fallbacks[][] array. So the
 > 
-> Ingo has applied it already in perf/urgent.
+>         if (type != MIGRATE_MOVABLE && !pageblock_free(page))
+> 
+> check in is_mem_section_removable() is correct. It is
+> set_migratetype_isolate() that should be fixed to use the same check.
 
-Hmm, I never saw the tip-bot reply :-(
+Mel, I'm not familiar with the code, but it seems that in
+__rmqueue_fallback(), set_pageblock_migratetype() is not always called
+after move_freepages_block() successfully moved some pages. Then it's
+possible a MIGRATE_MOVABLE page block will end up containing
+non-movable pages?
 
-I guess it only sends to the Cc tags.
-
--- Steve
-
-
+Thanks,
+Fengguang
