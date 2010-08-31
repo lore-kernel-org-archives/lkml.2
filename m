@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab0HaFt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 01:49:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33037 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab0HaFt6 convert rfc822-to-8bit (ORCPT
+	id S1755901Ab0HaFvJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 01:51:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50241 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab0HaFvI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 01:49:58 -0400
+	Tue, 31 Aug 2010 01:51:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=X7R5QNbJ9Lc+icAhHj4LkS7SUUDf0fCH/AutWkGy02kUFOZ0T0qdKeUPtULtJ6J6/f
+         X0/M7bXglI3EvLW2jsriLcDtW76onv9+FoDGSlX+VcTxJ60kgC2WbEE7+Rz1kWdeiA+d
+         kOK8Q6qOHHtkmsq3YIZiTiJL3j6cTQL6gYpkM=
 MIME-Version: 1.0
-In-Reply-To: <20100830144946.5c0bce22@debxo>
-References: <20100628215407.2017bf2f@debian> <20100829235100.6dcedcb8@debxo>
- <20100830000751.2b845d05@debxo> <AANLkTi=EMkZLiAG7-ni8_7K=qtAriv=AfSUZ58661jNY@mail.gmail.com>
- <20100830144946.5c0bce22@debxo>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 30 Aug 2010 23:49:36 -0600
-X-Google-Sender-Auth: e2wq-Ufm4KPy7xE_vd8so4r1Oj8
-Message-ID: <AANLkTi=VZeYmBfp+0P+=Y8bV_zKW7bSU5PfXGM43SAa4@mail.gmail.com>
-Subject: Re: [PATCH 9/9] x86: OLPC: add OLPC device-tree support
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+In-Reply-To: <1282813011-6187-2-git-send-email-mark.brown314@gmail.com>
+References: <1282813011-6187-1-git-send-email-mark.brown314@gmail.com>
+	<1282813011-6187-2-git-send-email-mark.brown314@gmail.com>
+Date: Tue, 31 Aug 2010 13:51:06 +0800
+Message-ID: <AANLkTinn_Yb+jGOcpc139X2cW0ax5Ev23ovjpp9NrPJC@mail.gmail.com>
+Subject: Re: [PATCH] ARM: pxa3xx: fix build error when CONFIG_MTD_PARTITIONS
+ is not defined
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: "Mark F. Brown" <mark.brown314@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, dedekind1 <dedekind1@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 12:49 PM, Andres Salomon <dilinger@queued.net> wrote:
-> On Mon, 30 Aug 2010 12:14:57 -0600
-> Grant Likely <grant.likely@secretlab.ca> wrote:
+On Thu, Aug 26, 2010 at 4:56 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> ---
+>  drivers/mtd/nand/pxa3xx_nand.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 >
->> On Sun, Aug 29, 2010 at 10:07 PM, Andres Salomon
->> <dilinger@queued.net> wrote:
->> >
->> > Make use of PROC_DEVICETREE to export the tree, and sparc's
->> > PROMTREE code to call into OLPC's Open Firmware to build the tree.
->> >
->> > This also adds an init hook to proc_device_tree_init so that we can
->> > ensure the device tree has been built prior to the proc_root_init
->> > stuff attempting to populate /proc/device-tree.
->>
->> I'm not clear as to why this is needed.  I would expect OLPC platform
->> setup code would take care of extracting the device tree well before
->> the kernel gets to setting up the representation in /proc/device-tree.
->>
->> g.
->>
+> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+> index 4d89f37..4d01cda 100644
+> --- a/drivers/mtd/nand/pxa3xx_nand.c
+> +++ b/drivers/mtd/nand/pxa3xx_nand.c
+> @@ -1320,6 +1320,7 @@ static int pxa3xx_nand_probe(struct platform_device *pdev)
+>                goto fail_free_irq;
+>        }
 >
-> For simplicity; the OLPC platform setup code runs very early during
-> boot.  I preferred to keep that as minimal as possible, and defer
-> device tree allocation until the x86 mm code has finished initializing
-> (this skipping all the fun bootmem/etc work that'll be happening for
-> x86 soon).
+> +#ifdef CONFIG_MTD_PARTITIONS
+>        if (mtd_has_cmdlinepart()) {
+>                static const char *probes[] = { "cmdlinepart", NULL };
+>                struct mtd_partition *parts;
+> @@ -1332,6 +1333,9 @@ static int pxa3xx_nand_probe(struct platform_device *pdev)
+>        }
 >
-> Of course, once it's done initializing, one can either hardcode an
-> olpc_init_devtree call at the end of x86's setup_arch, or we can add a
-> generic hook for late devtree initialization right before proc
-> populates /proc/device-tree.  I chose the latter, but it could easily
-> be changed to the former if folks feel strongly about it.
+>        return add_mtd_partitions(mtd, pdata->parts, pdata->nr_parts);
+> +#else
+> +       return 0;
+> +#endif
 >
-> I would've normally just used an initcall for it, but the proc_devtree
-> code runs prior to any of the initcall hooks.
+>  fail_free_irq:
+>        free_irq(irq, info);
+> @@ -1364,7 +1368,9 @@ static int pxa3xx_nand_remove(struct platform_device *pdev)
+>        platform_set_drvdata(pdev, NULL);
+>
+>        del_mtd_device(mtd);
+> +#ifdef CONFIG_MTD_PARTITIONS
+>        del_mtd_partitions(mtd);
+> +#endif
+>        irq = platform_get_irq(pdev, 0);
+>        if (irq >= 0)
+>                free_irq(irq, info);
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Hmmm.  I wonder if proc_devtree initialization could be deferred to an
-initcall.  That would make the problem go away.
+Hi Mark,
 
-g.
+Don't forget to cc maintainer of mtd tree. I loop them now.
+
+Thanks
+Haojian
