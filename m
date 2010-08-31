@@ -1,46 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab0HaBmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 21:42:25 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42583
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756544Ab0HaBmY (ORCPT
+	id S1756593Ab0HaBpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 21:45:13 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37179 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756426Ab0HaBpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 21:42:24 -0400
-Date: Mon, 30 Aug 2010 18:42:40 -0700 (PDT)
-Message-Id: <20100830.184240.58442478.davem@davemloft.net>
-To: jengelh@medozas.de
-Cc: agruen@suse.de, netfilter@vger.kernel.org, eparis@redhat.com,
-        linux-kernel@vger.kernel.org, schwab@redhat.com, laforge@netfilter.org,
-        andi@firstfloor.org
-Subject: Re: aligned_{u64,be64,le64} defined in #ifdef __KERNEL__
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.01.1008301502280.19931@obet.zrqbmnf.qr>
-References: <20100829.212156.229740543.davem@davemloft.net>
-	<201008301258.33113.agruen@suse.de>
-	<alpine.LNX.2.01.1008301502280.19931@obet.zrqbmnf.qr>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Aug 2010 21:45:12 -0400
+Message-ID: <001501cb48ae$262d8d60$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Grant Likely" <grant.likely@secretlab.ca>
+Cc: "Thomas Gleixner" <tglx@linutronix.de>, <meego-dev@meego.com>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com> <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com> <AANLkTikpj6Q6QjFn4S9cYfBiKbMNQB_N2ptHEAvfW0wb@mail.gmail.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+Date: Tue, 31 Aug 2010 10:45:07 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Engelhardt <jengelh@medozas.de>
-Date: Mon, 30 Aug 2010 15:02:55 +0200 (CEST)
+----- Original Message ----- 
+> From: "Grant Likely" <grant.likely@secretlab.ca>
+> To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+> Cc: "Thomas Gleixner" <tglx@linutronix.de>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
+Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
+<morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+> Sent: Tuesday, August 31, 2010 3:23 AM
+> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+>
+>
+> On Mon, Aug 30, 2010 at 1:28 AM, Masayuki Ohtake
+> <masa-korg@dsn.okisemi.com> wrote:
+> > ----- Original Message -----
+> > From: "Grant Likely" <grant.likely@secretlab.ca>
+> > To: "Thomas Gleixner" <tglx@linutronix.de>
+> > Cc: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>;
+"David
+> > Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+> > <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
+> > <morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+> > Sent: Saturday, August 28, 2010 4:20 AM
+> > Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+> >
+> >
+> >> On Fri, Aug 27, 2010 at 12:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >> > B1;2401;0cOn Fri, 27 Aug 2010, Grant Likely wrote:
+> >> >> [cc'ing Thomas Gleixner and David Woodhouse since this driver needs to
+> >> >> get some data about the platform (to know what spi_devices are
+> >> >> present) and I don't know how that is handled for x86 SoCs.]
+> >> >
+> >> > The best way to do all this platform specific configuration is to use
+> >> > device tree. I really don't want to have x86/mach-xyz/board[A-Z]
+> >> > horror, which is unavoidable when we don't get a sensible way to
+> >> > configure the boards.
+> >>
+> >> I knew you were going to say that! :-)
+> >>
+> >> Ohtak-san, for this patch I'd like you to drop the separate driver
+> >> that only registers the spi_devices and just submit the core driver.
+> >
+> > Sorry, I can't follow your discussion by lack of SPI knowledge.
+> > Which the above mean that "spi_register_board_info" moves to our spi_pch or
+> > delete for our driver ?
+>
+> I mean remove drivers/spi/spi_pch_device.c and the related Kconfig
+> bits from this patch.
+> The spi_device registration is a separate task
+> which should be submitted in a separate patch, and would be better
+> handled in either platform support code or with a device tree.
 
-> 
-> On Monday 2010-08-30 12:58, Andreas Gruenbacher wrote:
->>
->>> If we want a version of this type visible to userspace, it needs to,
->>> for example, have double underscores prepended to the type name just
->>> as we do for things like __u16 and __u32.
->>
->>How about something like this?
-> 
-> 
-> I like that approach:
-> 
+How should we register spi_device information ?
+Could you show reference driver ?
 
-Me too.
+>
+> >> (You can of course keep the spi_device registration in your own tree
+> >> for debug purposes). I'll expect that the device will get
+> >> instantiated using a device tree to determine which spi_devices are
+> >> present. The parsing of spi device tree data will be moving into the
+> >> core spi subsystem code in the next merge window most likely, so it
+> >> can all be handled transparently.
+> >>
+> >> > SFI was meant to provide a lightweight ACPI, but
+> >> > now that device tree is generic and more platforms are using it, I
+> >> > really want to standartize on that and forget SFI.
+> >> >
+> >> > That makes even more sense, as all these AMBA peripherals which are
+> >> > duct-taped to a x86 core can be found in other SoCs with different
+> >> > cores as well.
+> >>
+> >> Indeed. BTW, Ohtak-san, is this spi bus device something brand new,
+> >> or is it derived from an existing spi device?
+> >
+> > Yes, Intel Topcliff is new concept device.
+>
+> As Thomas already commented, what I'm really interested in is whether
+> or not this spi controller is based on an older SPI controller.  If it
+> is, then it may be possible to add support for this chip to an
+> existing driver instead of writing a whole new one.
+>
+
+
+
+Thanks, Ohtake(OKISemi)
+
+
+
