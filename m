@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab0HaRkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 13:40:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30655 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab0HaRkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 13:40:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,299,1280732400"; 
-   d="scan'208";a="550433710"
-Date: Tue, 31 Aug 2010 10:30:23 -0700
-From: Fenghua Yu <fenghua.yu@intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKLM <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        mingo Redhat <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.jf.intel.com>
-Subject: Re: [Patch-next -v2]therm_throt.c: Trival fix for a unsuitable
-	abbreviation  of thermal.
-Message-ID: <20100831173022.GB30454@fenghua-desk.sc.intel.com>
-References: <4C7B6358.3040703@np.css.fujitsu.com> <20100830095753.6724bc89@hyperion.delvare> <4C7C492D.5020704@np.css.fujitsu.com> <20100831085653.711c38eb@hyperion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100831085653.711c38eb@hyperion.delvare>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753590Ab0HaRn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 13:43:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62458 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab0HaRn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 13:43:28 -0400
+X-Authority-Analysis: v=1.1 cv=tmcEYLAoDqwcE/92ninAvjUMbWeHvL1caymGjnMU8Ns= c=1 sm=0 a=kqxJoFsqNMcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=da-vh-ESf4kec7Yx9T8A:9 a=mwKU9AM7fvunhmKafx6SNMIdNcgA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [Patch] ext4: avoid null dereference
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Li Zefan <lizf@cn.fujitsu.com>
+In-Reply-To: <4C777C04.7080906@cn.fujitsu.com>
+References: <4C777C04.7080906@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 Aug 2010 13:43:26 -0400
+Message-ID: <1283276606.1377.244.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 11:56:53PM -0700, Jean Delvare wrote:
-> On Tue, 31 Aug 2010 09:13:33 +0900, Jin Dongming wrote:
-> > In unexpected_thermal_interrupt(), "LVT TMR interrupt" is used
-> > in error message.
-> > 
-> > I don't think TMR is a suitable abbreviation for thermal.
-> >   1.TMR has been used in IA32 Architectures Software Developer's
-> >     Manual, and is the abbreviation for Trigger Mode Register.
-> >   2.There is not an standard abbreviation "TMR" defined for thermal
-> >     in IA32 Architectures Software Developer's Manual.
-> >   3.Though we could understand it as Thermal Monitor Register, it is
-> >     easy to be misunderstood as a *TIMER* interrupt also.
-> > 
-> > I think this patch will fix it.
-> > 
-> > Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-> 
-> Reviewed-by: Jean Delvare <khali@linux-fr.org>
- Reviewed-by: Fenghua Yu <fenghua.yu@intel.com>
-> 
-> > ---
-> >  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > index d9368ee..ba52598 100644
-> > --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > @@ -349,7 +349,7 @@ static void intel_thermal_interrupt(void)
-> >  
-> >  static void unexpected_thermal_interrupt(void)
-> >  {
-> > -	printk(KERN_ERR "CPU%d: Unexpected LVT TMR interrupt!\n",
-> > +	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
-> >  			smp_processor_id());
-> >  	add_taint(TAINT_MACHINE_CHECK);
-> >  }
-> 
-> 
-> -- 
-> Jean Delvare
+On Fri, 2010-08-27 at 16:49 +0800, Wen Congyang wrote:
+> ac->inode is set to null in function ext4_mb_release_group_pa(),
+> and then trace_ext4_mballoc_discard(ac) is called, the kernel
+> will panic.
+
+> diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+> index 01e9e00..6a1fcff 100644
+> --- a/include/trace/events/ext4.h
+> +++ b/include/trace/events/ext4.h
+> @@ -796,8 +796,9 @@ DECLARE_EVENT_CLASS(ext4__mballoc,
+>  	),
+>  
+>  	TP_fast_assign(
+> -		__entry->dev		= ac->ac_inode->i_sb->s_dev;
+> -		__entry->ino		= ac->ac_inode->i_ino;
+> +		__entry->dev		= ac->ac_sb->s_dev;
+> +		__entry->ino		= ac->ac_inode ?
+> +						ac->ac_inode->i_ino : 0;
+
+Is i_ino == 0 a valid inode number?
+
+If not, then
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+>  		__entry->result_logical	= ac->ac_b_ex.fe_logical;
+>  		__entry->result_start	= ac->ac_b_ex.fe_start;
+>  		__entry->result_group	= ac->ac_b_ex.fe_group;
+
+
