@@ -1,154 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab0HaWXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 18:23:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44843 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab0HaWXc convert rfc822-to-8bit (ORCPT
+	id S1755440Ab0HaWaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 18:30:06 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47041 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158Ab0HaWaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 18:23:32 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Date: Wed, 1 Sep 2010 03:53:19 +0530
-Subject: RE: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-Thread-Topic: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-Thread-Index: ActIwor7HDGtl64RSamdOB1SfmAoIwAmEm/g
-Message-ID: <19F8576C6E063C45BE387C64729E7394046836CE5C@dbde02.ent.ti.com>
-References: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com>
- <4C6D6A9A.3010409@oracle.com>
- <19F8576C6E063C45BE387C64729E7394044F124F7B@dbde02.ent.ti.com>
- <4C6D6BCB.2090307@oracle.com>
- <AANLkTi==HVhXcS0Mxv4GJL1rB0nLc3YQ=b5RbzM0iFwG@mail.gmail.com>
- <20100822033248.GA4886@suse.de>
- <19F8576C6E063C45BE387C64729E7394046836CB57@dbde02.ent.ti.com>
- <20100831041114.GA16009@suse.de>
-In-Reply-To: <20100831041114.GA16009@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 31 Aug 2010 18:30:04 -0400
+Subject: Re: [PATCH 4/6 v2] HID: magicmouse: remove axis data filtering
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4C7D7CB7.90709@euromail.se>
+References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+	 <1283280068-12285-4-git-send-email-chase.douglas@canonical.com>
+	 <4C7D6739.5000601@euromail.se> <1283288319.2255.103.camel@mini>
+	 <4C7D6ECB.2000308@euromail.se> <1283289360.2255.113.camel@mini>
+	 <4C7D71B8.4020408@euromail.se> <1283290078.2255.119.camel@mini>
+	 <4C7D767C.8040607@euromail.se>  <1283291469.2255.129.camel@mini>
+	 <1283291819.2255.134.camel@mini>  <4C7D7CB7.90709@euromail.se>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 18:29:56 -0400
+Message-ID: <1283293796.2255.164.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Greg,
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Monday, August 30, 2010 11:11 PM
-> To: Savoy, Pavan
-> Cc: linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
-> Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
+On Wed, 2010-09-01 at 00:05 +0200, Henrik Rydberg wrote:
+> On 08/31/2010 11:56 PM, Chase Douglas wrote:
 > 
-> On Tue, Aug 31, 2010 at 03:39:00AM +0530, Savoy, Pavan wrote:
-> > Greg,
-> >
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@suse.de]
-> > > Sent: Saturday, August 21, 2010 10:33 PM
-> > > To: Savoy, Pavan
-> > > Cc: Randy Dunlap; alan@lxorguk.ukuu.org.uk; linux-kernel@vger.kernel.org;
-> > > devel@driverdev.osuosl.org; Jain, Naveen
-> > > Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-> > >
-> > > On Sun, Aug 22, 2010 at 07:20:00AM +0530, Pavan Savoy wrote:
-> > > > Greg,
-> > > >
-> > > > On Thu, Aug 19, 2010 at 11:07 PM, Randy Dunlap <randy.dunlap@oracle.com>
-> > > wrote:
-> > > > > On 08/19/10 10:35, Savoy, Pavan wrote:
-> > > > >> Randy,
-> > > > >>
-> > > > >>
-> > > > >>> -----Original Message-----
-> > > > >>> From: Randy Dunlap [mailto:randy.dunlap@oracle.com]
-> > > > >>> Sent: Thursday, August 19, 2010 12:32 PM
-> > > > >>> To: Savoy, Pavan
-> > > > >>> Cc: gregkh@suse.de; alan@lxorguk.ukuu.org.uk; linux-
-> > > kernel@vger.kernel.org;
-> > > > >>> devel@driverdev.osuosl.org; Jain, Naveen
-> > > > >>> Subject: Re: [PATCH] drivers:staging:ti-st: remove
-> st_get_plat_device
-> > > > >>>
-> > > > >>> On 08/19/10 11:08, pavan_savoy@ti.com wrote:
-> > > > >>>> From: Pavan Savoy <pavan_savoy@ti.com>
-> > > > >>>>
-> > > > >>>> In order to support multiple ST platform devices, a new symbol
-> > > > >>>> 'st_get_plat_device' earlier needed to be exported by the
-> arch/XX/brd-
-> > > XX.c
-> > > > >>>> file which intends to add the ST platform device.
-> > > > >>>>
-> > > > >>>> On removing this dependency, now inside ST driver maintain the
-> array of
-> > > > >>>> ST platform devices that would be registered.
-> > > > >>>> As of now let id=0, as and when we end up having such platforms
-> > > > >>>> where mutliple ST devices can exist, id would come from
-> > > > >>>> protocol drivers (BT, FM and GPS) as to on which platform device
-> > > > >>>> they want to register to.
-> > > > >>>>
-> > > > >>>> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> > > > >>>
-> > > > >>> Thanks, that builds cleanly. ??I'm OK with it if you are comfortable
-> > > with a
-> > > > >>> hard limit on the fixed number of devices that can be supported:
-> > > > >>
-> > > > >> Yep, Thanks for pointing out, sort of cleaned up the code.
-> > > > >>
-> > > > >>> +#define MAX_ST_DEVICES ?? ?? ??3 ?? ?? ?? /* Imagine 1 on each UART
-> for
-> > > now */
-> > > > >>> +struct platform_device *st_kim_devices[MAX_ST_DEVICES];
-> > > > >>>
-> > > > >>> We usually try not to have such limits nor use arrays like that,
-> > > > >>> but if the nature of the device and its platform/environment is like
-> > > > >>> that, so be it.
-> > > > >>>
-> > > > >>
-> > > > >> Actually on all platforms that I have seen there's only 1 such
-> device.
-> > > > >> The device is basically a connectivity chip (with Bluetooth, FM and
-> GPS
-> > > working
-> > > > >> on a single UART)
-> > > > >>
-> > > > >> The number which I mentioned was out of imagination.
-> > > > >> I don't think we are ever going to have multiple of them either...
-> > > > >
-> > > > > OK, thanks.
-> > > > >
-> > > > > Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> > > >
-> > > >
-> > > > Can you please merge this patch ? Also please have a look at the driver
-> and
-> > > > suggest what needs to be done to move it out of staging.
-> > >
-> > > Yes, I will work on it, sorry, been swamped with other work lately.
-> > >
-> > > Don't worry, this patch is in my "to-apply" queue.
-> >
-> > Any update on this?
+> > On Tue, 2010-08-31 at 17:51 -0400, Chase Douglas wrote:
+> >> On Tue, 2010-08-31 at 23:39 +0200, Henrik Rydberg wrote:
+> >>> On 08/31/2010 11:27 PM, Chase Douglas wrote:
+> >>>
+> >>>> On Tue, 2010-08-31 at 23:18 +0200, Henrik Rydberg wrote:
+> >>>>> On 08/31/2010 11:16 PM, Chase Douglas wrote:
+> >>>>>
+> >>>>>> On Tue, 2010-08-31 at 23:06 +0200, Henrik Rydberg wrote:
+> >>>>>>> On 08/31/2010 10:58 PM, Chase Douglas wrote:
+> >>>>>>>
+> >>>>>>>> On Tue, 2010-08-31 at 22:34 +0200, Henrik Rydberg wrote:
+> >>>>>>>>> On 08/31/2010 08:41 PM, Chase Douglas wrote:
+> >>>>>>>>>
+> >>>>>>>>>> The Magic Mouse device is very precise. No driver filtering of input
+> >>>>>>>>>> data needs to be performed.
+> >>>>>>>>>>
+> >>>>>>>>>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> >>>>>>>>>> Acked-by: Michael Poole <mdpoole@troilus.org>
+> >>>>>>>>>> ---
+> >>>>>>>>>
+> >>>>>>>>>
+> >>>>>>>>> I am still not sure this is a good idea. Bandwidth from MT devices is a big
+> >>>>>>>>> deal. A statement roughly how much data comes out of mtdev (which does the
+> >>>>>>>>> filtering for type A devices) before and after this change would be reassuring.
+> >>>>>>>>
+> >>>>>>>> As it is right now, hid-magicmouse doesn't support MT slots. I think all
+> >>>>>>>> the fuzz code ends up comparing in the MT case is between one touch and
+> >>>>>>>> another touch, not between one touch's current location and its previous
+> >>>>>>>> location. If I'm correct, then it means a fuzz > 0 is incorrect for
+> >>>>>>>> non-slotted MT devices.
+> >>>>>>>>
+> >>>>>>>> In fact, the code in drivers/input/input.c around line 194 looks like it
+> >>>>>>>> discards defuzzing in this case, so one could say this patch is making
+> >>>>>>>> things more correct :).
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> For type A devices, the filtering is performed in userspace, in mtdev, in the
+> >>>>>>> same manner as it would have been performed in the kernel in the MT slot case.
+> >>>>>>> Therefore, knowing the amount of messages coming out of mtdev is a direct
+> >>>>>>> measurement of the effect of filtering.
+> >>>>>>
+> >>>>>> Yes, but we're only interested in the kernel driver when reviewing this
+> >>>>>> patch. Leaving the fuzz in as it is has no effect right now on ABS_MT_*
+> >>>>>> axes. On the other axes, such as the touch orientation, it's probably
+> >>>>>> more harmful than good.
+> >>>>>
+> >>>>>
+> >>>>> "We" are interested in knowing if this patch makes any sense, given that
+> >>>>> filtering is in actuality performed in userspace, and thus modifying this code
+> >>>>> changes the stream rate into userspace applications, thank you.
+> >>>>
+> >>>> Because in-kernel defuzzing is turned off for ABS_MT_* axes on
+> >>>> non-slotted MT devices, there will be no change in the number of events
+> >>>> sent to the userspace due to this patch.
+> >>>>
+> >>>> Maybe I'm missing something more fundamental. In which case, I'll need
+> >>>> more details to get it through my dense skull :).
+> >>>
+> >>>
+> >>> All events passes through to mtdev, yes, but mtdev filters a considerable amount
+> >>> of events from passing through to X drivers like evdev. Thus, the fuzz values
+> >>> reported in the kernel driver impacts the performance in userspace, even if
+> >>> filtering is not done in the kernel.
+> >>
+> >> My disconnect was that I didn't understand that the fuzz value in the
+> >> kernel is exported to userspace. I thought the defuzzing in mtdev was
+> >> independent of the defuzzing in the kernel.
+> >>
+> >> Basically, I don't feel I have the time to do the analysis you want
+> >> right now. If you really want, I can just remove this change.
+> > 
+> > On second thought, if there's no jitter from the device, the only reason
+> > to filter is to save bandwidth. The magicmouse devices are very verbose
+> > strictly because they have a higher resolution than most devices. If
+> > that's an issue for userspace, then the filtering should be based on the
+> > resolution. In fact, I see that's what you do in mtdev when the
+> > in-kernel fuzz is 0.
+> > 
+> > This separates the kernel fuzz into a removal of jitter, and the mtdev
+> > fuzz into a dampening of the number of events passed to clients. Since
+> > magicmouse devices have no discernable jitter, shouldn't we set the
+> > in-kernel fuzz to 0 and let mtdev do its thing as appropriate?
 > 
-> Nope, sorry.  I got sick and combined with vacation requirements from
-> the family, and my "real job" and other things lately, I hope to get to
-> it by the end of this week.  If not, kick me, I'll have time on a
-> trans-continent flight next week that should give me plenty of time to
-> do this...
-
-Gzee Thanks, so since you added the patch now, I guess you will be reviewing
-The ti-st driver and sketch out plans to move it out of staging on your long trans-Continent flight?
-
-
-> thanks,
 > 
-> greg k-h
+> Per-driver data is more precise than a generic value for all devices. This
+> thread has documented the details of why there is an interest in the fuzz
+> values. Skipping the patch until MT slots are implemented or measurements can be
+> done might be the most sensible thing to do.
+
+Yes, there's still per-driver fuzz data. If a device is jittery it makes
+sense to set the in-kernel fuzz factor to a reasonable value. If a
+device is not jittery, I don't see a need to do any defuzzing of the
+values in the driver itself. If we think it's necessary to reduce
+bandwidth, then the kernel should be defuzzing uniformly across devices
+to compensate. mtdev could do this defuzzing for bandwidth uniformly
+too.
+
+As it is, this driver just has an arbitrary value that is not used in
+the kernel and likely hasn't ever been used anywhere outside of mtdev. I
+think it makes sense to reset the fuzz to the baseline of 0 and fix it
+later if we find it's necessary. Otherwise we're just codifying an
+arbitrary value.
+
+-- Chase
+
