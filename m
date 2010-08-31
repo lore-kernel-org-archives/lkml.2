@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab0HaUPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 16:15:55 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54783 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab0HaUPy convert rfc822-to-8bit (ORCPT
+	id S1755451Ab0HaUQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 16:16:22 -0400
+Received: from www17.your-server.de ([213.133.104.17]:38457 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab0HaUQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 16:15:54 -0400
+	Tue, 31 Aug 2010 16:16:20 -0400
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.36-rc3: WARNING: at net/mac80211/scan.c:269 ieee80211_scan_completed
+Date: Tue, 31 Aug 2010 22:14:51 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-00001-g02d9a9b; KDE/4.4.5; i686; ; )
 MIME-Version: 1.0
-In-Reply-To: <4C7D5D60.1070203@am.sony.com>
-References: <AANLkTimJkPD=shB9oi3ASocaLEpG=C7oDJMbq8BEy2Fe@mail.gmail.com>
-	<4C7D5D60.1070203@am.sony.com>
-Date: Tue, 31 Aug 2010 21:15:53 +0100
-Message-ID: <AANLkTin0EYzHAXBOeyAPxMXkskRXY-Lqj3ND+gsnH8E9@mail.gmail.com>
-Subject: Re: [RFC] Kernel 'boot cache' to reduce boot time
-From: Andrew Murray <amurray@mpcdata.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008312214.52473.thomas@m3y3r.de>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi.
 
-On 31 August 2010 20:52, Tim Bird <tim.bird@am.sony.com> wrote:
-> Having said that, I don't think that probing of static
-> hardware is a solved problem, by any means.
->
-> For the boot cache data, you are going to need to figure
-> out how to make the data persistent.  Doing something
-> in a regular fashion (rather than ad-hoc via command line
-> options) should help with this.
-Yes I wanted to see if the community was interested in the general
-idea before I considered the implementation in too much detail. Though
-the two obvious choices spring to mind. 1) Simply serialise and print
-any suitable values to the console - these can be parsed with a
-bootscript much like the way you parse initcall_debug. 2) Output these
-values to a proc file which the use can extract.
+Very rarely I get this warning in my kernel log:
 
-The difficult part as I see it - is passing it back to the kernel - as
-you suggested they may be some common ground with the device tree
-models. Any suggestions?
+[ 9224.980599] ------------[ cut here ]------------
+[ 9224.980622] WARNING: at net/mac80211/scan.c:269 ieee80211_scan_completed+0x19e/0x1a0 [mac80211]()
+[ 9224.980627] Hardware name: Aspire 1810T
+[ 9224.980630] Modules linked in: fuse coretemp hwmon cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables ipv6 kvm_intel kvm uinput snd_hda_codec_intelhdmi snd_hda_codec_realtek arc4 snd_hda_intel ecb snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer iwlagn snd soundcore iwlcore snd_page_alloc mac80211 iTCO_wdt cfg80211 uvcvideo rfkill iTCO_vendor_support wmi joydev i2c_i801 serio_raw videodev v4l1_compat pcspkr sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded:scsi_wait_scan]
+[ 9224.980691] Pid: 5676, comm: kworker/u:1 Tainted: G        W I 2.6.36-rc3-00001-g02d9a9b #181
+[ 9224.980695] Call Trace:
+[ 9224.980704]  [<c042c2a8>] ? warn_slowpath_common+0x78/0xb0
+[ 9224.980720]  [<f8c71f6e>] ? ieee80211_scan_completed+0x19e/0x1a0 [mac80211]
+[ 9224.980735]  [<f8c71f6e>] ? ieee80211_scan_completed+0x19e/0x1a0 [mac80211]
+[ 9224.980744]  [<c042c2fb>] ? warn_slowpath_null+0x1b/0x20
+[ 9224.980760]  [<f8c71f6e>] ? ieee80211_scan_completed+0x19e/0x1a0 [mac80211]
+[ 9224.980768]  [<c043d3d4>] ? process_one_work+0xf4/0x320
+[ 9224.980774]  [<c085433a>] ? schedule+0x1aa/0x4c0
+[ 9224.980791]  [<f911a830>] ? iwl_bg_scan_completed+0x0/0x210 [iwlcore]
+[ 9224.980799]  [<c043ebd6>] ? worker_thread+0x106/0x330
+[ 9224.980806]  [<c043ead0>] ? worker_thread+0x0/0x330
+[ 9224.980814]  [<c0441f14>] ? kthread+0x74/0x80
+[ 9224.980821]  [<c0441ea0>] ? kthread+0x0/0x80
+[ 9224.980828]  [<c04032be>] ? kernel_thread_helper+0x6/0x18
+[ 9224.980832] ---[ end trace a7919e7f17c0a728 ]---
 
-I anticipate seeing name/value string pairs (or a small number of
-types, e.g. int) - and leave it up to the driver to determine the best
-way to serialise the data into the supported types. For example a
-driver you may see the following pairs in a 'bootcache' file:
-lpj=12313,drivers.media.video.decoder.ver=14,drivers.media.video.camera.type=pal
-etc. I think the information encoded in this way would be a much
-higher level that the typical register values used in suspend/resume
-code.
-
->
-> To some degree this might end up looking very similar
-> to the "resume" path in the driver, where a particular
-> device state is entered into from cold start.
-I anticipated perhaps a simpler approach where instead of completely
-getting rid of the probe - the probe simply skips time consuming paths
-via this framework - I though this would make it easier for device
-drivers to use the framework.
-
-> Sorry for rambling.  Anyway - I'm all for the boot cache idea.
-> But acceptability would, of course, be dependent on the
-> details of the implementation.
->
-> The best thing to get started, IMHO, would be to identify
-> a few drivers which have long probe times, and see
-> how they could reduce these with the proposed boot cache.
-> If you find that each new device adds some new wrinkle
-> in the cache requirements, that would be a bad sign.  But
-> if different drivers, especially drivers in different functional
-> areas, are found to be able to use a consistent API, then
-> this could be a nice feature.
-I agree.
-
->
-> BTW - I could see this tying into the flattened device
-> tree work by Grant Likely.
->  -- Tim
->
-> P.S.  Also, I would recommend cross-posting to LKML
-> to get wider visibility of your proposal.  I'm doing
-> so in this response - I hope that's OK.
-
-Thanks for the useful information - I'll read up on those slides.
-
-Andrew Murray
+Should I be worried?
