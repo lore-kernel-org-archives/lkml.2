@@ -1,102 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab0HaD3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 23:29:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60225 "EHLO mga11.intel.com"
+	id S932088Ab0HaDdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 23:33:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60379 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756739Ab0HaD3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 23:29:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,296,1280732400"; 
-   d="scan'208";a="602086184"
-Message-ID: <4C7C771A.2040603@intel.com>
-Date: Tue, 31 Aug 2010 11:29:30 +0800
-From: Weidong Han <weidong.han@intel.com>
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
-MIME-Version: 1.0
-To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [patch 1/3] x86, intr-remap: set redirection hint in the IRTE
-References: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>	 <4C7B0DA6.2070204@intel.com> <1283188670.2695.13.camel@sbsiddha-MOBL3.sc.intel.com>
-In-Reply-To: <1283188670.2695.13.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932067Ab0HaDdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 23:33:12 -0400
+Date: Tue, 31 Aug 2010 13:33:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for August 31
+Message-Id: <20100831133304.90b6f1f3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__31_Aug_2010_13_33_04_+1000_NqaWypm74RNlku+9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Siddha, Suresh B wrote:
-> On Sun, 2010-08-29 at 18:47 -0700, Han, Weidong wrote:
->   
->> Siddha, Suresh B wrote:
->>     
->>> Currently the redirection hint in the interrupt-remapping table entry
->>> is set to 0, which means the remapped interrupt is directed to the
->>> processors listed in the destination. So in logical flat mode
->>> in the presence of intr-remapping, this results in a single
->>> interrupt multi-casted to multiple cpu's as specified by the destination
->>> bit mask. But what we really want is to send that interrupt to one of the cpus
->>> based on the lowest priority delivery mode.
->>>
->>> Set the redirection hint in the IRTE to '1' to indicate that we want
->>> the remapped interrupt to be directed to only one of the processors
->>> listed in the destination.
->>>
->>> This fixes the issue of same interrupt getting delivered to multiple cpu's
->>> in the logical flat mode in the presence of interrupt-remapping. While
->>> there is no functional issue observed with this behavior, this will
->>> impact performance of such configurations (<=8 cpu's using logical flat
->>> mode in the presence of interrupt-remapping)
->>>
->>> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
->>> Cc: Weidong Han <weidong.han@intel.com>
->>> Cc: <stable@kernel.org> # [v2.6.32+]
->>> ---
->>>
->>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
->>> index f1efeba..90f8a75 100644
->>> --- a/arch/x86/kernel/apic/io_apic.c
->>> +++ b/arch/x86/kernel/apic/io_apic.c
->>> @@ -1392,6 +1392,7 @@ int setup_ioapic_entry(int apic_id, int irq,
->>>  		irte.dlvry_mode = apic->irq_delivery_mode;
->>>  		irte.vector = vector;
->>>  		irte.dest_id = IRTE_DEST(destination);
->>> +		irte.redir_hint = 1;
->>>  
->>>  		/* Set source-id of interrupt request */
->>>  		set_ioapic_sid(&irte, apic_id);
->>> @@ -3343,6 +3344,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
->>>  		irte.dlvry_mode = apic->irq_delivery_mode;
->>>  		irte.vector = cfg->vector;
->>>  		irte.dest_id = IRTE_DEST(dest);
->>> +		irte.redir_hint = 1;
->>>  
->>>  		/* Set source-id of interrupt request */
->>>  		if (pdev)
->>>
->>>
->>>   
->>>       
->> hi Suresh,
->>
->> I think it needs to set redir_hint only for lowest priority delivery 
->> mode. Why set it for all delivery modes?
->>     
->
-> Weidong, For all the IRQ types (irrespective of lowest priority/fixed
-> mode etc) x86 linux kernel doesn't use irq multi-cast model (which is
-> what irte.redir_hint == 0 means). So as it is not particularly tied with
-> lowest priority mode (irte.redir_hint is equally applicable for fixed
-> mode though we don't use it currently), it makes sense to set it
-> unconditionally for the current usages.
->
->
->   
-Thanks for your explanation. It's ok.
+--Signature=_Tue__31_Aug_2010_13_33_04_+1000_NqaWypm74RNlku+9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Weidong
+Hi all,
 
+Changes since 20100830:
+
+My fixes tree contains:
+	powerpc: don't use kernel stack with translation off
+
+The kvm tree lost its build failure.
+
+The net tree lost its build failure but gained another so I reverted a
+commit.
+
+I still have a patch to the drivers-x86 tree to remove a Kconfig warning.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 171 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+CONFLICT (content): Merge conflict in arch/arm/plat-samsung/Kconfig
+CONFLICT (content): Merge conflict in drivers/input/touchscreen/s3c2410_ts.c
+Merging s5p/for-next
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-raw-event.c
+CONFLICT (add/add): Merge conflict in drivers/media/video/s5p-fimc/fimc-cor=
+e.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging swiotlb-xen/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in net/mac80211/main.c
+Merging mtd/master
+Merging crypto/master
+Merging sound-asoc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+Merging rcu/rcu/next
+Merging tip/auto-latest
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Applying: Fix Kconfig mistaken update
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging staging-next/staging-next
+Merging slabh/slabh
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+[master 1a669c4] Revert "starfire: use BUILD_BUG_ON for netdrv_addr_t"
+
+--Signature=_Tue__31_Aug_2010_13_33_04_+1000_NqaWypm74RNlku+9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMfHfwAAoJEDMEi1NhKgbsRBsH/3qW4pJLRNa3wM2FPtQHy0TV
+jbneqY93MCKFBAe+r9N0ZPG+ZVhwkK5Rp6LFShoAlPNYJ98SvgQhtiaspmOJQp9x
++Fdqc7Mb90CCC1f4sAkjSKtpIEZyMUI4S1KpVXPZKi6Sedq5aVNfkkX1TFNYCw0M
+t2CGC7svf0+l0GB7mfCciIOr7j3oXII5RIpmD+sAgImJxH+dE2NdLZ/TiIHpVJAH
+M5AWUz5yFCcSDdfb9HZFyine9NakPqmzlfzB4u1qXl5L1sQbTXikO0fXpH5PiwKZ
+Op+pGUTmG9RFUjvOeLpjecb8/RB4Qc5OO+6kQ+dnlKHWr14Bh8nBF1W+F2aakQ0=
+=MoJy
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__31_Aug_2010_13_33_04_+1000_NqaWypm74RNlku+9--
