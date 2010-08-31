@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab0HaG5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:57:05 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:34905 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab0HaG5D (ORCPT
+	id S932226Ab0HaG5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 02:57:10 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:9248 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932209Ab0HaG5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:57:03 -0400
-Date: Tue, 31 Aug 2010 08:56:53 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, "Brown, Len" <len.brown@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKLM <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        mingo Redhat <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [Patch-next -v2]therm_throt.c: Trival fix for a unsuitable 
- abbreviation  of thermal.
-Message-ID: <20100831085653.711c38eb@hyperion.delvare>
-In-Reply-To: <4C7C492D.5020704@np.css.fujitsu.com>
-References: <4C7B6358.3040703@np.css.fujitsu.com>
-	<20100830095753.6724bc89@hyperion.delvare>
-	<4C7C492D.5020704@np.css.fujitsu.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Aug 2010 02:57:08 -0400
+Message-ID: <004a01cb48d9$b9eed010$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Grant Likely" <grant.likely@secretlab.ca>
+Cc: "Thomas Gleixner" <tglx@linutronix.de>, <meego-dev@meego.com>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com> <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com> <AANLkTikpj6Q6QjFn4S9cYfBiKbMNQB_N2ptHEAvfW0wb@mail.gmail.com> <001501cb48ae$262d8d60$66f8800a@maildom.okisemi.com> <AANLkTi=Q_16S4+AGk=BjiKHZjjeon=-OmPz4QKmRZ+h2@mail.gmail.com> <004101cb48d8$67e1acd0$66f8800a@maildom.okisemi.com> <AANLkTimmOdiAdjxix_JQUG21bYRU2bKw7OD=0HJDWwLy@mail.gmail.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+Date: Tue, 31 Aug 2010 15:57:05 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Aug 2010 09:13:33 +0900, Jin Dongming wrote:
-> In unexpected_thermal_interrupt(), "LVT TMR interrupt" is used
-> in error message.
-> 
-> I don't think TMR is a suitable abbreviation for thermal.
->   1.TMR has been used in IA32 Architectures Software Developer's
->     Manual, and is the abbreviation for Trigger Mode Register.
->   2.There is not an standard abbreviation "TMR" defined for thermal
->     in IA32 Architectures Software Developer's Manual.
->   3.Though we could understand it as Thermal Monitor Register, it is
->     easy to be misunderstood as a *TIMER* interrupt also.
-> 
-> I think this patch will fix it.
-> 
-> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-
-> ---
->  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> index d9368ee..ba52598 100644
-> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> @@ -349,7 +349,7 @@ static void intel_thermal_interrupt(void)
->  
->  static void unexpected_thermal_interrupt(void)
->  {
-> -	printk(KERN_ERR "CPU%d: Unexpected LVT TMR interrupt!\n",
-> +	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
->  			smp_processor_id());
->  	add_taint(TAINT_MACHINE_CHECK);
->  }
+----- Original Message ----- 
+From: "Grant Likely" <grant.likely@secretlab.ca>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Thomas Gleixner" <tglx@linutronix.de>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
+Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
+<morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Sent: Tuesday, August 31, 2010 3:53 PM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
 
 
--- 
-Jean Delvare
+> On Tue, Aug 31, 2010 at 12:47 AM, Masayuki Ohtake
+> <masa-korg@dsn.okisemi.com> wrote:
+> >> Regardless, the topcliff spi driver can still be merged into mainline
+> >> without the spi_device registration code, and you can keep your
+> >> personal copy of spi_pch_device.c for testing while the details about
+> >> device tree support for x86 get worked out.
+> >>
+> >> g.
+> >>
+> > Hi Grant,
+> >
+> > Thank you very much.
+> > I could understand well.
+> >
+> > Can I post our SPI patch for Topcliff without 'of_node' code and spi_device registration code?
+>
+> yes.
+>
+> g.
+>
+
+OK!
+
+I will post our modified SPI patch soon.
+
+Thanks, Ohtake(OKISemi)
+
+
