@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab0HaXUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 19:20:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35046 "EHLO ogre.sisk.pl"
+	id S1756159Ab0HaXZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 19:25:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41355 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754637Ab0HaXUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 19:20:13 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of todo list, add RCU todo list
-Date: Wed, 1 Sep 2010 01:19:18 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: paulmck@linux.vnet.ibm.com, Arjan van de Ven <arjan@infradead.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
+	id S1750721Ab0HaXZJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 19:25:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,301,1280732400"; 
+   d="scan'208";a="833679167"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Joe Perches <joe@perches.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org,
-        ksummit-2010-discuss@lists.linux-foundation.org
-References: <20100826154537.GA4874@linux.vnet.ibm.com> <20100831230213.GG2421@linux.vnet.ibm.com> <1283296622.1377.765.camel@gandalf.stny.rr.com>
+        "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>,
+        Joe Perches <joe@perches.com>, "mingo@elte.hu" <mingo@elte.hu>
+Date: Tue, 31 Aug 2010 16:25:06 -0700
+Subject: RE: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
+ todo list, add RCU todo list
+Thread-Topic: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
+ todo list, add RCU todo list
+Thread-Index: ActJYtNnDxi9K3zoRMKuTUylIsTc4gAAGaPw
+Message-ID: <987664A83D2D224EAE907B061CE93D53015D9B2445@orsmsx505.amr.corp.intel.com>
+References: <20100826154537.GA4874@linux.vnet.ibm.com>
+	<1282837904.1875.64.camel@Joe-Laptop>
+	<20100826161451.GB2367@linux.vnet.ibm.com>
+	<1282839933.8133.11.camel@mulgrave.site>
+	<20100826092923.4bdbea69.rdunlap@xenotime.net>
+	<20100826093838.74ab9958@infradead.org>
+	<1283275388.1377.216.camel@gandalf.stny.rr.com>
+	<20100831230213.GG2421@linux.vnet.ibm.com>
+ <1283296622.1377.765.camel@gandalf.stny.rr.com>
 In-Reply-To: <1283296622.1377.765.camel@gandalf.stny.rr.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009010119.18748.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 01, 2010, Steven Rostedt wrote:
-> On Tue, 2010-08-31 at 16:02 -0700, Paul E. McKenney wrote:
-> 
-> > > We could add a toplevel "todo/" directory, with each project file in it
-> > > and a list of things todo. When the todo is done, that same commit could
-> > > remove the todo item.
-> > > 
-> > > Just a worthless thought ;-)
-> > 
-> > I am with Dmitry on this one.  I really don't want to be prevented from
-> > updating my todo items outside of the merge window.
-> > 
-> > Different people have different needs, so we need to accommodate todo
-> > lists both within and outside the kernel source tree.
-> 
-> Actually, that would probably happen automatically.
-> 
-> If you are working on a subsystem, you should probably be working
-> against the git tree for that subsystem. When something is done in the
-> todo list, the subsystem tree would be updated with the commit that does
-> said change.
-> 
-> Then, the list is maintained outside of mainline (in the subsystem git
-> tree) and will automatically update mainline in the next merge window
-> when the tree is pulled.
+>Then, the list is maintained outside of mainline (in the subsystem git
+>tree) and will automatically update mainline in the next merge window
+>when the tree is pulled.
 
-Seriously, given the known history of Documentation/feature-removal-schedule.txt,
-I don't think this is going to work.
+But this would mean that the version of the todo list in Linus' tree
+is usually a release (3 months) out of date.  It would be a good idea
+for a list maintained this way to include instructions on how to find
+the current version, lest some unsuspecting person waste time working
+on items that are already fixed and waiting for the next merge.
 
-Thanks,
-Rafael
+-Tony
