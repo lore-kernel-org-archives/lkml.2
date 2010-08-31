@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab0HaLYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 07:24:19 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:32646 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756973Ab0HaLYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 07:24:16 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzbb2cK1432N98dN4015Lzz1202hzz8275dhz32i5bep5bfs61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L80K4R-02-5JS-02
-X-M-MSG: 
-Date: Tue, 31 Aug 2010 13:05:17 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH V2 0/4] Generalise ARM perf-events backend for oprofile
-Message-ID: <20100831110517.GE22783@erda.amd.com>
-References: <cover.1282848651.git.matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1282848651.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S932125Ab0HaLZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 07:25:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47210 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756973Ab0HaLZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 07:25:00 -0400
+Date: Tue, 31 Aug 2010 21:24:50 +1000
+From: Neil Brown <neilb@suse.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: vaurora@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, jblunck@suse.de,
+        hch@infradead.org
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+Message-ID: <20100831212450.6729ddd7@notabene>
+In-Reply-To: <E1OqOa5-000677-BN@pomaz-ex.szeredi.hu>
+References: <20100826183340.027591901@szeredi.hu>
+	<20100827170551.19616048@notabene>
+	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
+	<20100827213502.31af4a4c@notabene>
+	<20100830183843.GB2444@shell>
+	<20100831091211.403e0d06@notabene>
+	<E1OqOa5-000677-BN@pomaz-ex.szeredi.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.10 15:09:15, Matt Fleming wrote:
-> The perf-events backend for OProfile that Will Deacon wrote in
-> 8c1fc96f6fd1f361428ba805103af0d0eee65179 ("ARM: 6072/1: oprofile: use
-> perf-events framework as backend") is of use to more architectures
-> than just ARM. Move the code into drivers/oprofile/ so that SH can use
-> it instead of the nearly identical copy of its OProfile code.
-> 
-> The benefit of the backend is that it becomes necessary to only
-> maintain one copy of the PMU accessor functions for each architecture,
-> with bug fixes and new features benefiting both OProfile and perf.
-> 
-> Note that I haven't been able to test these patches on an ARM board to
-> see if I've caused any regressions. If anyone else could do that I'd
-> appreciate it. Though, I have been able to compile this version of the
-> series.
-> 
-> This patch series is based on tip/master.
+On Tue, 31 Aug 2010 13:00:45 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-Matt,
-
-please rebase your next version of this patch set to
-
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
-
-It contains Will's patches.
-
-Thanks,
-
--Robert
-
+> On Tue, 31 Aug 2010, Neil Brown wrote:
+> > So: is this a problem?  It may seem a bit confusing to someone who doesn't
+> > understand what is happening, but we define that as not being a problem (to
+> > avoid confusion: don't change U or L).
+> > The important questions are:  Can it cause corruption, and can it cause a
+> > deadlock?
 > 
-> Changes from v1:
->  - Prefix the new functons with "oprofile_" instead of "op_".
->  - Fix ARM compilation errors
->  - Move all the oprofile-perf logic into oprofile_perf.c
->  - Include cleanup patch from Will
+> No, I don't think this design will do that.  So it might be enough
+> just to document that online modification of upper or lower
+> filesystems results in undefined behavior.
 > 
-> Matt Fleming (3):
->   sh: Accessor functions for the sh_pmu state
->   oprofile: Abstract the perf-events backend
->   sh: Use the perf-events backend for oprofile
+> But to prevent accidental damage, it's prudent (at least by default)
+> to enforce the no-modification policy.
 > 
-> Will Deacon (1):
->   oprofile: Handle initialisation failure more gracefully
+> Why do you think this feature of allowing modification is important?
+> Lets take some typical use cases:
 > 
->  arch/arm/oprofile/Makefile       |    4 +
->  arch/arm/oprofile/common.c       |  228 ++++----------------------------------
->  arch/sh/include/asm/perf_event.h |    2 +
->  arch/sh/kernel/perf_event.c      |   13 ++
->  arch/sh/oprofile/Makefile        |    2 +-
->  arch/sh/oprofile/common.c        |   96 +++-------------
->  arch/sh/oprofile/op_impl.h       |   33 ------
->  drivers/oprofile/oprofile_perf.c |  209 ++++++++++++++++++++++++++++++++++
->  include/linux/oprofile.h         |   12 ++
->  9 files changed, 283 insertions(+), 316 deletions(-)
->  delete mode 100644 arch/sh/oprofile/op_impl.h
->  create mode 100644 drivers/oprofile/oprofile_perf.c
+>  - live cd: lower layer is hard r/o, upper layer makes no sense to
+>    modify online
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  - thin client: lower layer is static except upgrades, which need
+>    special tools to support and is done offline, upper layer makes no
+>    sense to modify online
 > 
+> Do you have some cases in mind where it makes at least a little sense
+> to allow online modification of the underlying filesystems?
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+No, I don't have a particular use case in mind that would take advantage of
+the layers being directly modifiable.  But I know that sys-admins can be very
+ingenious and may well come up with something clever.
 
+My point is more that I don't think that is it *possible* to prevent changes
+to the underlying filesystem (NFS being the prime example) so if there are
+easy steps we can take to make the behaviour of overlayfs more predictable in
+those cases, we should.
+
+Further I think that insisting that the underlying filesystems remain
+unchangeable is overly restrictive.  If I were not allowed to perform an
+overlay mount on a read/write lower filesystem, that would make it
+significantly harder to explore the possibilities of overlayfs and experiment
+with it.
+
+I certainly don't think we should put a lot of work or a lot of code into
+making it work "perfectly" in any sense at all.  But if there are *easy*
+things to do that allow us to avoid some weird behaviours, then I think it is
+worth that effort to do it.
+
+NeilBrown
