@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab0HaDSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 23:18:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54274 "EHLO smtps.tip.net.au"
+	id S932079Ab0HaD3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 23:29:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60225 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756698Ab0HaDSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 23:18:18 -0400
-Date: Tue, 31 Aug 2010 13:18:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: linux-next: build failure after merge of the final tree (net tree
- related)
-Message-Id: <20100831131812.1b8eb758.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__31_Aug_2010_13_18_12_+1000_CPuavcD+cMDqTMXK"
+	id S1756739Ab0HaD3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 23:29:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,296,1280732400"; 
+   d="scan'208";a="602086184"
+Message-ID: <4C7C771A.2040603@intel.com>
+Date: Tue, 31 Aug 2010 11:29:30 +0800
+From: Weidong Han <weidong.han@intel.com>
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+MIME-Version: 1.0
+To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [patch 1/3] x86, intr-remap: set redirection hint in the IRTE
+References: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>	 <4C7B0DA6.2070204@intel.com> <1283188670.2695.13.camel@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <1283188670.2695.13.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__31_Aug_2010_13_18_12_+1000_CPuavcD+cMDqTMXK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Siddha, Suresh B wrote:
+> On Sun, 2010-08-29 at 18:47 -0700, Han, Weidong wrote:
+>   
+>> Siddha, Suresh B wrote:
+>>     
+>>> Currently the redirection hint in the interrupt-remapping table entry
+>>> is set to 0, which means the remapped interrupt is directed to the
+>>> processors listed in the destination. So in logical flat mode
+>>> in the presence of intr-remapping, this results in a single
+>>> interrupt multi-casted to multiple cpu's as specified by the destination
+>>> bit mask. But what we really want is to send that interrupt to one of the cpus
+>>> based on the lowest priority delivery mode.
+>>>
+>>> Set the redirection hint in the IRTE to '1' to indicate that we want
+>>> the remapped interrupt to be directed to only one of the processors
+>>> listed in the destination.
+>>>
+>>> This fixes the issue of same interrupt getting delivered to multiple cpu's
+>>> in the logical flat mode in the presence of interrupt-remapping. While
+>>> there is no functional issue observed with this behavior, this will
+>>> impact performance of such configurations (<=8 cpu's using logical flat
+>>> mode in the presence of interrupt-remapping)
+>>>
+>>> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+>>> Cc: Weidong Han <weidong.han@intel.com>
+>>> Cc: <stable@kernel.org> # [v2.6.32+]
+>>> ---
+>>>
+>>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+>>> index f1efeba..90f8a75 100644
+>>> --- a/arch/x86/kernel/apic/io_apic.c
+>>> +++ b/arch/x86/kernel/apic/io_apic.c
+>>> @@ -1392,6 +1392,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+>>>  		irte.dlvry_mode = apic->irq_delivery_mode;
+>>>  		irte.vector = vector;
+>>>  		irte.dest_id = IRTE_DEST(destination);
+>>> +		irte.redir_hint = 1;
+>>>  
+>>>  		/* Set source-id of interrupt request */
+>>>  		set_ioapic_sid(&irte, apic_id);
+>>> @@ -3343,6 +3344,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+>>>  		irte.dlvry_mode = apic->irq_delivery_mode;
+>>>  		irte.vector = cfg->vector;
+>>>  		irte.dest_id = IRTE_DEST(dest);
+>>> +		irte.redir_hint = 1;
+>>>  
+>>>  		/* Set source-id of interrupt request */
+>>>  		if (pdev)
+>>>
+>>>
+>>>   
+>>>       
+>> hi Suresh,
+>>
+>> I think it needs to set redir_hint only for lowest priority delivery 
+>> mode. Why set it for all delivery modes?
+>>     
+>
+> Weidong, For all the IRQ types (irrespective of lowest priority/fixed
+> mode etc) x86 linux kernel doesn't use irq multi-cast model (which is
+> what irte.redir_hint == 0 means). So as it is not particularly tied with
+> lowest priority mode (irte.redir_hint is equally applicable for fixed
+> mode though we don't use it currently), it makes sense to set it
+> unconditionally for the current usages.
+>
+>
+>   
+Thanks for your explanation. It's ok.
 
-Hi ,
+Regards,
+Weidong
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
-
-drivers/net/starfire.c: In function 'starfire_init':
-drivers/net/starfire.c:2081: error: negative width in bit-field '<anonymous=
->'
-
-This is:
-	BUILD_BUG_ON(sizeof(dma_addr_t) !=3D sizeof(netdrv_addr_t));
-in starfire_init().
-
-Immediate cause is commit 56543af9563d91c1c5596a7980b416389bdea071
-("starfire: use BUILD_BUG_ON for netdrv_addr_t").
-
-The real cause is the complete mess at the start of starfire.c that
-tries to determine if dma_addr_t is 64 bits or not ...
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__31_Aug_2010_13_18_12_+1000_CPuavcD+cMDqTMXK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMfHR0AAoJEDMEi1NhKgbs/uMH/1OY+6NldYt2vDwCQ8oGx6nh
-XtBcXoCpMVKqzXgdL5qJXtGDmrKZRezx8JXUX2HrHGb4QjRZaMm5iCwTQI4V63/D
-tcthEf14nlvpA0YsWtGCjZDj/KXZoIrixVmy1gWLp8tb/gXnLOkCfqeTCw9gyGiW
-ZXGcwrERhzVU/aOUyXJ/COcfCtCAjns2wa7ay6wx79itokHyiNaVMhhyC7OrPILe
-4BZpjH7ElXtHq3qSnBd752ReoSEglPJrRW8Y27m/evGZNWZdVk/EHdHwFUifFJDk
-MnxjpDElZVygWLn6v+paUPqd6RDE//VF8nqtGlyFSXfAwwez8vmyDvbW1hnXC2s=
-=bBvr
------END PGP SIGNATURE-----
-
---Signature=_Tue__31_Aug_2010_13_18_12_+1000_CPuavcD+cMDqTMXK--
