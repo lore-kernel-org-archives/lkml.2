@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab0HaVtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 17:49:49 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:47582 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753556Ab0HaVtr (ORCPT
+	id S1755954Ab0HaVvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 17:51:12 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:30985 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab0HaVvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 17:49:47 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: guenter.roeck@ericsson.com
-Subject: Re: [PATCH] [RFC] [resend] isofs: work-around for Rock Ridge+Joliet CDs with empty ISO root directory
-Date: Tue, 31 Aug 2010 23:49:38 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201008312010.10667.linux@rainbow-software.org> <1283287495.9850.17.camel@groeck-laptop>
-In-Reply-To: <1283287495.9850.17.camel@groeck-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008312349.40274.linux@rainbow-software.org>
+	Tue, 31 Aug 2010 17:51:10 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6091"; a="52792024"
+Subject: Re: [PATCH 1/2] msm: Install the Google-Android gpio driver.
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
+In-Reply-To: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
+References: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 14:50:55 -0700
+Message-ID: <1283291455.11790.38.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 August 2010 22:44:55 Guenter Roeck wrote:
-> On Tue, 2010-08-31 at 14:10 -0400, Ondrej Zary wrote:
-> > If a CD has both Rock Ridge and Joliet extensions and the ISO root
-> > directory is empty, no files are visible. Disable Rock Ridge extensions
-> > in this case and use Joliet root directory instead.
-> >
-> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> >
-> > --- linux-2.6.35-rc2/fs/isofs/inode.c	2010-06-06 05:43:24.000000000 +0200
-> > +++ linux-2.6.35-rc3/fs/isofs/inode.c	2010-08-24 22:43:26.000000000 +0200
-> > @@ -549,6 +549,34 @@ static unsigned int isofs_get_last_sessi
-> >  }
-> >
-> >  /*
-> > + * Check if root directory is empty (has less than 3 files).
-> > + *
-> > + * Used to detect broken CDs where ISO root directory is empty but
-> > Joliet root + * directory is OK. If such CD has Rock Ridge extensions,
-> > they will be disabled + * (and Joliet used instead) or else no files
-> > would be visible. + */
-> > +static bool rootdir_empty(struct super_block *sb, unsigned long block)
-> > +{
-> > +	int offset, files, de_len;
-> > +	struct iso_directory_record *de;
-> > +	struct buffer_head *bh;
-> > +
-> > +	bh = sb_bread(sb, block);
-> > +	if (!bh)
-> > +		return true;
-> > +	while (files < 3) {
->
-> files is uninitialized.
->
-> > +		de = (struct iso_directory_record *) (bh->b_data + offset);
->
-> offset is uninitialized.
->
-> Did you test this patch ?
+On Mon, 2010-08-30 at 17:18 -0700, Gregory Bean wrote:
+> From: Arve Hjønnevåg <arve@android.com>
+> 
+> As part of the ongoing effort to converge on a common code base,
+> adopt the Google-Android msmgpio driver, as it has a stronger pedigree
+> than the previous submission from codeaurora.
+> 
+> Cc: Arve Hjønnevåg <arve@android.com>
 
-Oops... I tested it and it seemed to work fine. Even gcc did not complain...
+Arve, Are you planning to move this forward or is Greg going to? I've
+asked Greg (or you) for some changes to this.. If you have a problem
+with the changes please speak up ..
+
+The signed-off is wrong on this commit also, You need to sign off on the
+commit (and Greg if needed).
+
+Daniel
+
 
 -- 
-Ondrej Zary
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
