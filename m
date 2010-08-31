@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab0HaA4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 20:56:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53237 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab0HaA4x (ORCPT
+	id S1756390Ab0HaA55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 20:57:57 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:36729 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756187Ab0HaA54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 20:56:53 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
-Cc: kosaki.motohiro@jp.fujitsu.com, Ying Han <yinghan@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <AANLkTikbs9sUVLhE4sWWVw8uEqY=v6SCdJ_6FLhXY6HW@mail.gmail.com>
-References: <AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com> <AANLkTikbs9sUVLhE4sWWVw8uEqY=v6SCdJ_6FLhXY6HW@mail.gmail.com>
-Message-Id: <20100831095542.87CA.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 30 Aug 2010 20:57:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=irFxI9MWXFiwFtqKoxnHkeCBkAiAL0fC3afqpcIyfBk2h0RLB4Ddjrb8iWZPxakAGs
+         O5w2mFZuMw1OSgdmDmOCcFJV9/dcVY2DnPmCaDVfJpPi1LYyhS/FK5kZ8clYYocuLGxm
+         O5Ot2H6oCHC/dNInDmfYwxjcDSkLw0lHm/nI8=
+Subject: Re: [Question] How to test (DRAM) memory location.
+From: Calvin Walton <calvin.walton@gmail.com>
+To: santosh <santosh.iitg@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinYuck4yEGpFDKZp-R3N2dtoQ68cLHQY6EW6sr-@mail.gmail.com>
+References: <AANLkTinYuck4yEGpFDKZp-R3N2dtoQ68cLHQY6EW6sr-@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 Aug 2010 20:57:49 -0400
+Message-ID: <1283216269.3738.6.camel@ayu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 31 Aug 2010 09:56:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 1b145e6..0b8a3ce 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1747,7 +1747,7 @@ static void shrink_zone(int priority, struct zone *zone,
->          * Even if we did not try to evict anon pages at all, we want to
->          * rebalance the anon lru active/inactive ratio.
->          */
-> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
-> +       if (nr_swap_pges > 0 && inactive_anon_is_low(zone, sc))
-
-Sorry, I don't find any difference. What is your intention?
-
-
->                 shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+On Sat, 2010-08-28 at 16:57 +0530, santosh wrote:
+> Hi,
 > 
->         throttle_vm_writeout(sc->gfp_mask);
+> I need to write a memory diagnosis  program which will test each and
+> every location of SDRAM
+> to know whether its working properly or a bad location
 > 
-> But Andrew merged middle version.
-> I will send this patch again.
-> 
-> Thanks.
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
+> What would be the best approach ??
 
+If you can, it's best to just use code other people have already
+written :)
 
+If you can reboot the computer to test the memory, Memtest86+ is a
+well-known and very reliable tool which does just what you ask. You can
+obtain it from http://www.memtest.org/
+
+There's some work done on an in-kernel memory tester, but testing memory
+while Linux is running is somewhat limited as there are sections of
+memory that you can't overwrite during testing. Take a look at
+CONFIG_MEMTEST and arch/x86/mm/memtest.c (which is currently only
+capable of testing memory in early boot).
+
+-- 
+Calvin Walton <calvin.walton@gmail.com>
 
