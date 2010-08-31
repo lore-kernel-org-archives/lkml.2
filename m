@@ -1,976 +1,875 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab0HaASc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 20:18:32 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53596 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692Ab0HaASa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 20:18:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6090"; a="52801943"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 1/2] msm: Install the Google-Android gpio driver.
-Date: Mon, 30 Aug 2010 17:18:25 -0700
-Message-Id: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755885Ab0HaA3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 20:29:06 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60513 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755469Ab0HaA3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 20:29:05 -0400
+Message-ID: <4C7C4CE0.5080402@cn.fujitsu.com>
+Date: Tue, 31 Aug 2010 08:29:20 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        Divyesh Shah <dpshah@google.com>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Nauman Rafique <nauman@google.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] cfq-iosched: add cfq group hierarchical scheduling
+ support
+References: <4C7B54C0.7080008@cn.fujitsu.com> <20100830203644.GA15903@redhat.com>
+In-Reply-To: <20100830203644.GA15903@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hjønnevåg <arve@android.com>
+Vivek Goyal wrote:
+> On Mon, Aug 30, 2010 at 02:50:40PM +0800, Gui Jianfeng wrote:
+>> Hi All,
+>>
+>> This patch enables cfq group hierarchical scheduling.
+>>
+>> With this patch, you can create a cgroup directory deeper than level 1.
+>> Now, I/O Bandwidth is distributed in a hierarchy way. For example:
+>> We create cgroup directories as following(the number represents weight):
+>>
+>>             Root grp
+>>            /       \
+>>        grp_1(100) grp_2(400)
+>>        /    \ 
+>>   grp_3(200) grp_4(300)
+>>
+>> If grp_2 grp_3 and grp_4 are contending for I/O Bandwidth,
+>> grp_2 will share 80% of total bandwidth.
+>> For sub_groups, grp_3 shares 8%(20% * 40%), grp_4 shares 12%(20% * 60%)
+>>
+>> Design:
+>>   o Each cfq group has its own group service tree. 
+>>   o Each cfq group contains a "group schedule entity" (gse) that 
+>>     schedules on parent cfq group's service tree.
+>>   o Each cfq group contains a "queue schedule entity"(qse), it
+>>     represents all cfqqs located on this cfq group. It schedules
+>>     on this group's service tree. For the time being, root group
+>>     qse's weight is 1000, and subgroup qse's weight is 500.
+>>   o All gses and qse which belones to a same cfq group schedules
+>>     on the same group service tree.
+> 
+> Hi Gui,
+> 
+> Thanks for the patch. I have few questions.
+> 
+> - So how does the hierarchy look like, w.r.t root group. Something as
+>   follows?
+> 
+> 
+> 			root
+> 		       / | \
+> 		     q1  q2 G1
+> 
+> Assume there are two processes doin IO in root group and q1 and q2 are
+> cfqq queues for those processes and G1 is the cgroup created by user.
+> 
+> If yes, then what algorithm do you use to do scheduling between q1, q2
+> and G1? IOW, currently we have two algorithms operating in CFQ. One for
+> cfqq and other for groups. Group algorithm does not use the logic of
+> cfq_slice_offset().
 
-As part of the ongoing effort to converge on a common code base,
-adopt the Google-Android msmgpio driver, as it has a stronger pedigree
-than the previous submission from codeaurora.
+Hi Vivek,
 
-Cc: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/Makefile  |    3 +
- arch/arm/mach-msm/gpio.c    |  627 +++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/gpio_hw.h |  277 +++++++++++++++++++
- 3 files changed, 907 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/gpio.c
- create mode 100644 arch/arm/mach-msm/gpio_hw.h
+This patch doesn't break the original sheduling logic. That is cfqg => st => cfqq.
+If q1 and q2 in root group, I treat q1 and q2 bundle as a queue sched entity, and
+it will schedule on root group service with G1, as following:
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 2263b8f..c95d19a 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -22,3 +22,6 @@ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
- obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-7x30.o gpiomux-v1.o gpiomux.o
- obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
- obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o gpiomux-v2.o gpiomux.o
-+ifndef CONFIG_MSM_V2_TLMM
-+obj-y	+= gpio.o
-+endif
-diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
-new file mode 100644
-index 0000000..fd899a1
---- /dev/null
-+++ b/arch/arm/mach-msm/gpio.c
-@@ -0,0 +1,627 @@
-+/* linux/arch/arm/mach-msm/gpio.c
-+ *
-+ * Copyright (C) 2007 Google, Inc.
-+ * Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/gpio.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/module.h>
-+#include "gpio_hw.h"
-+#include "proc_comm.h"
-+#include "smd_private.h"
-+
-+#define FIRST_GPIO_IRQ MSM_GPIO_TO_INT(0)
-+
-+enum {
-+	GPIO_DEBUG_SLEEP = 1U << 0,
-+};
-+static int msm_gpio_debug_mask;
-+module_param_named(debug_mask, msm_gpio_debug_mask, int,
-+		   S_IRUGO | S_IWUSR | S_IWGRP);
-+
-+#define MSM_GPIO_BROKEN_INT_CLEAR 1
-+
-+struct msm_gpio_regs {
-+	void __iomem *out;
-+	void __iomem *in;
-+	void __iomem *int_status;
-+	void __iomem *int_clear;
-+	void __iomem *int_en;
-+	void __iomem *int_edge;
-+	void __iomem *int_pos;
-+	void __iomem *oe;
-+};
-+
-+struct msm_gpio_chip {
-+	spinlock_t		lock;
-+	struct gpio_chip	chip;
-+	struct msm_gpio_regs	regs;
-+#if MSM_GPIO_BROKEN_INT_CLEAR
-+	unsigned                int_status_copy;
-+#endif
-+	unsigned int            both_edge_detect;
-+	unsigned int            int_enable[2]; /* 0: awake, 1: sleep */
-+};
-+
-+static int msm_gpio_write(struct msm_gpio_chip *msm_chip,
-+			  unsigned offset, unsigned on)
-+{
-+	unsigned b = 1U << offset;
-+	unsigned v;
-+
-+	v = readl(msm_chip->regs.out);
-+	if (on)
-+		writel(v | b, msm_chip->regs.out);
-+	else
-+		writel(v & (~b), msm_chip->regs.out);
-+	return 0;
-+}
-+
-+static void msm_gpio_update_both_edge_detect(struct msm_gpio_chip *msm_chip)
-+{
-+	int loop_limit = 100;
-+	unsigned pol, val, val2, intstat;
-+	do {
-+		val = readl(msm_chip->regs.in);
-+		pol = readl(msm_chip->regs.int_pos);
-+		pol = (pol & ~msm_chip->both_edge_detect) |
-+		      (~val & msm_chip->both_edge_detect);
-+		writel(pol, msm_chip->regs.int_pos);
-+		intstat = readl(msm_chip->regs.int_status);
-+		val2 = readl(msm_chip->regs.in);
-+		if (((val ^ val2) & msm_chip->both_edge_detect & ~intstat) == 0)
-+			return;
-+	} while (loop_limit-- > 0);
-+	printk(KERN_ERR "msm_gpio_update_both_edge_detect, "
-+	       "failed to reach stable state %x != %x\n", val, val2);
-+}
-+
-+static int msm_gpio_clear_detect_status(struct msm_gpio_chip *msm_chip,
-+					unsigned offset)
-+{
-+	unsigned b = BIT(offset);
-+
-+#if MSM_GPIO_BROKEN_INT_CLEAR
-+	/* Save interrupts that already triggered before we loose them. */
-+	/* Any interrupt that triggers between the read of int_status */
-+	/* and the write to int_clear will still be lost though. */
-+	msm_chip->int_status_copy |= readl(msm_chip->regs.int_status);
-+	msm_chip->int_status_copy &= ~b;
-+#endif
-+	writel(b, msm_chip->regs.int_clear);
-+	msm_gpio_update_both_edge_detect(msm_chip);
-+	return 0;
-+}
-+
-+static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+	unsigned long irq_flags;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	writel(readl(msm_chip->regs.oe) & ~BIT(offset), msm_chip->regs.oe);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static int
-+msm_gpio_direction_output(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+	unsigned long irq_flags;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	msm_gpio_write(msm_chip, offset, value);
-+	writel(readl(msm_chip->regs.oe) | BIT(offset), msm_chip->regs.oe);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static int msm_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	return (readl(msm_chip->regs.in) & (1U << offset)) ? 1 : 0;
-+}
-+
-+static void msm_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+	unsigned long irq_flags;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	msm_gpio_write(msm_chip, offset, value);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	return MSM_GPIO_TO_INT(chip->base + offset);
-+}
-+
-+struct msm_gpio_chip msm_gpio_chips[] = {
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_0,
-+			.in =          GPIO_IN_0,
-+			.int_status =  GPIO_INT_STATUS_0,
-+			.int_clear =   GPIO_INT_CLEAR_0,
-+			.int_en =      GPIO_INT_EN_0,
-+			.int_edge =    GPIO_INT_EDGE_0,
-+			.int_pos =     GPIO_INT_POS_0,
-+			.oe =          GPIO_OE_0,
-+		},
-+		.chip = {
-+			.base = 0,
-+			.ngpio = 16,
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_1,
-+			.in =          GPIO_IN_1,
-+			.int_status =  GPIO_INT_STATUS_1,
-+			.int_clear =   GPIO_INT_CLEAR_1,
-+			.int_en =      GPIO_INT_EN_1,
-+			.int_edge =    GPIO_INT_EDGE_1,
-+			.int_pos =     GPIO_INT_POS_1,
-+			.oe =          GPIO_OE_1,
-+		},
-+		.chip = {
-+			.base = 16,
-+#if defined(CONFIG_ARCH_MSM7X30)
-+			.ngpio = 28,
-+#else
-+			.ngpio = 27,
-+#endif
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_2,
-+			.in =          GPIO_IN_2,
-+			.int_status =  GPIO_INT_STATUS_2,
-+			.int_clear =   GPIO_INT_CLEAR_2,
-+			.int_en =      GPIO_INT_EN_2,
-+			.int_edge =    GPIO_INT_EDGE_2,
-+			.int_pos =     GPIO_INT_POS_2,
-+			.oe =          GPIO_OE_2,
-+		},
-+		.chip = {
-+#if defined(CONFIG_ARCH_MSM7X30)
-+			.base = 44,
-+			.ngpio = 24,
-+#else
-+			.base = 43,
-+			.ngpio = 25,
-+#endif
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_3,
-+			.in =          GPIO_IN_3,
-+			.int_status =  GPIO_INT_STATUS_3,
-+			.int_clear =   GPIO_INT_CLEAR_3,
-+			.int_en =      GPIO_INT_EN_3,
-+			.int_edge =    GPIO_INT_EDGE_3,
-+			.int_pos =     GPIO_INT_POS_3,
-+			.oe =          GPIO_OE_3,
-+		},
-+		.chip = {
-+			.base = 68,
-+			.ngpio = 27,
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_4,
-+			.in =          GPIO_IN_4,
-+			.int_status =  GPIO_INT_STATUS_4,
-+			.int_clear =   GPIO_INT_CLEAR_4,
-+			.int_en =      GPIO_INT_EN_4,
-+			.int_edge =    GPIO_INT_EDGE_4,
-+			.int_pos =     GPIO_INT_POS_4,
-+			.oe =          GPIO_OE_4,
-+		},
-+		.chip = {
-+			.base = 95,
-+#if defined(CONFIG_ARCH_QSD8X50)
-+			.ngpio = 9,
-+#else
-+			.ngpio = 12,
-+#endif
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_5,
-+			.in =          GPIO_IN_5,
-+			.int_status =  GPIO_INT_STATUS_5,
-+			.int_clear =   GPIO_INT_CLEAR_5,
-+			.int_en =      GPIO_INT_EN_5,
-+			.int_edge =    GPIO_INT_EDGE_5,
-+			.int_pos =     GPIO_INT_POS_5,
-+			.oe =          GPIO_OE_5,
-+		},
-+		.chip = {
-+#if defined(CONFIG_ARCH_QSD8X50)
-+			.base = 104,
-+			.ngpio = 18,
-+#elif defined(CONFIG_ARCH_MSM7X30)
-+			.base = 107,
-+			.ngpio = 27,
-+#elif defined(CONFIG_ARCH_MSM7X27)
-+			.base = 107,
-+			.ngpio = 26,
-+#else
-+			.base = 107,
-+			.ngpio = 15,
-+#endif
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+#if defined(CONFIG_ARCH_QSD8X50) || defined(CONFIG_ARCH_MSM7X30)
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_6,
-+			.in =          GPIO_IN_6,
-+			.int_status =  GPIO_INT_STATUS_6,
-+			.int_clear =   GPIO_INT_CLEAR_6,
-+			.int_en =      GPIO_INT_EN_6,
-+			.int_edge =    GPIO_INT_EDGE_6,
-+			.int_pos =     GPIO_INT_POS_6,
-+			.oe =          GPIO_OE_6,
-+		},
-+		.chip = {
-+#if defined(CONFIG_ARCH_MSM7X30)
-+			.base = 134,
-+			.ngpio = 17,
-+#else
-+			.base = 122,
-+			.ngpio = 31,
-+#endif
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+	{
-+		.regs = {
-+			.out =         GPIO_OUT_7,
-+			.in =          GPIO_IN_7,
-+			.int_status =  GPIO_INT_STATUS_7,
-+			.int_clear =   GPIO_INT_CLEAR_7,
-+			.int_en =      GPIO_INT_EN_7,
-+			.int_edge =    GPIO_INT_EDGE_7,
-+			.int_pos =     GPIO_INT_POS_7,
-+			.oe =          GPIO_OE_7,
-+		},
-+		.chip = {
-+#if defined(CONFIG_ARCH_MSM7X30)
-+			.base = 151,
-+			.ngpio = 31,
-+#else
-+			.base = 153,
-+			.ngpio = 12,
-+#endif
-+			.get = msm_gpio_get,
-+			.set = msm_gpio_set,
-+			.direction_input = msm_gpio_direction_input,
-+			.direction_output = msm_gpio_direction_output,
-+			.to_irq = msm_gpio_to_irq,
-+		}
-+	},
-+#endif
-+};
-+
-+static void msm_gpio_irq_ack(unsigned int irq)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	msm_gpio_clear_detect_status(msm_chip,
-+				     irq - gpio_to_irq(msm_chip->chip.base));
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static void msm_gpio_irq_mask(unsigned int irq)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	/* level triggered interrupts are also latched */
-+	if (!(readl(msm_chip->regs.int_edge) & BIT(offset)))
-+		msm_gpio_clear_detect_status(msm_chip, offset);
-+	msm_chip->int_enable[0] &= ~BIT(offset);
-+	writel(msm_chip->int_enable[0], msm_chip->regs.int_en);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static void msm_gpio_irq_unmask(unsigned int irq)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	/* level triggered interrupts are also latched */
-+	if (!(readl(msm_chip->regs.int_edge) & BIT(offset)))
-+		msm_gpio_clear_detect_status(msm_chip, offset);
-+	msm_chip->int_enable[0] |= BIT(offset);
-+	writel(msm_chip->int_enable[0], msm_chip->regs.int_en);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static int msm_gpio_irq_set_wake(unsigned int irq, unsigned int on)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+
-+	if (on)
-+		msm_chip->int_enable[1] |= BIT(offset);
-+	else
-+		msm_chip->int_enable[1] &= ~BIT(offset);
-+
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static int msm_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+	unsigned v, b = BIT(offset);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	v = readl(msm_chip->regs.int_edge);
-+	if (flow_type & IRQ_TYPE_EDGE_BOTH) {
-+		writel(v | b, msm_chip->regs.int_edge);
-+		irq_desc[irq].handle_irq = handle_edge_irq;
-+	} else {
-+		writel(v & ~b, msm_chip->regs.int_edge);
-+		irq_desc[irq].handle_irq = handle_level_irq;
-+	}
-+	if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH) {
-+		msm_chip->both_edge_detect |= b;
-+		msm_gpio_update_both_edge_detect(msm_chip);
-+	} else {
-+		msm_chip->both_edge_detect &= ~b;
-+		v = readl(msm_chip->regs.int_pos);
-+		if (flow_type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_HIGH))
-+			writel(v | b, msm_chip->regs.int_pos);
-+		else
-+			writel(v & ~b, msm_chip->regs.int_pos);
-+	}
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static void msm_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
-+{
-+	int i, j, m;
-+	unsigned v;
-+
-+	for (i = 0; i < ARRAY_SIZE(msm_gpio_chips); i++) {
-+		struct msm_gpio_chip *msm_chip = &msm_gpio_chips[i];
-+		v = readl(msm_chip->regs.int_status);
-+		v &= msm_chip->int_enable[0];
-+		while (v) {
-+			m = v & -v;
-+			j = fls(m) - 1;
-+			/* printk("%s %08x %08x bit %d gpio %d irq %d\n",
-+				__func__, v, m, j, msm_chip->chip.start + j,
-+				FIRST_GPIO_IRQ + msm_chip->chip.start + j); */
-+			v &= ~m;
-+			generic_handle_irq(FIRST_GPIO_IRQ +
-+					   msm_chip->chip.base + j);
-+		}
-+	}
-+	desc->chip->ack(irq);
-+}
-+
-+static struct irq_chip msm_gpio_irq_chip = {
-+	.name      = "msmgpio",
-+	.ack       = msm_gpio_irq_ack,
-+	.mask      = msm_gpio_irq_mask,
-+	.unmask    = msm_gpio_irq_unmask,
-+	.set_wake  = msm_gpio_irq_set_wake,
-+	.set_type  = msm_gpio_irq_set_type,
-+};
-+
-+#define NUM_GPIO_SMEM_BANKS 6
-+#define GPIO_SMEM_NUM_GROUPS 2
-+#define GPIO_SMEM_MAX_PC_INTERRUPTS 8
-+struct tramp_gpio_smem {
-+	uint16_t num_fired[GPIO_SMEM_NUM_GROUPS];
-+	uint16_t fired[GPIO_SMEM_NUM_GROUPS][GPIO_SMEM_MAX_PC_INTERRUPTS];
-+	uint32_t enabled[NUM_GPIO_SMEM_BANKS];
-+	uint32_t detection[NUM_GPIO_SMEM_BANKS];
-+	uint32_t polarity[NUM_GPIO_SMEM_BANKS];
-+};
-+
-+static void msm_gpio_sleep_int(unsigned long arg)
-+{
-+	int i, j;
-+	struct tramp_gpio_smem *smem_gpio;
-+
-+	BUILD_BUG_ON(NR_GPIO_IRQS > NUM_GPIO_SMEM_BANKS * 32);
-+
-+	smem_gpio = smem_alloc(SMEM_GPIO_INT, sizeof(*smem_gpio));
-+	if (smem_gpio == NULL)
-+		return;
-+
-+	local_irq_disable();
-+	for (i = 0; i < GPIO_SMEM_NUM_GROUPS; i++) {
-+		int count = smem_gpio->num_fired[i];
-+		for (j = 0; j < count; j++) {
-+			/* TODO: Check mask */
-+			generic_handle_irq(
-+				MSM_GPIO_TO_INT(smem_gpio->fired[i][j]));
-+		}
-+	}
-+	local_irq_enable();
-+}
-+
-+static DECLARE_TASKLET(msm_gpio_sleep_int_tasklet, msm_gpio_sleep_int, 0);
-+
-+void msm_gpio_enter_sleep(int from_idle)
-+{
-+	int i;
-+	struct tramp_gpio_smem *smem_gpio;
-+
-+	smem_gpio = smem_alloc(SMEM_GPIO_INT, sizeof(*smem_gpio));
-+
-+	if (smem_gpio) {
-+		for (i = 0; i < ARRAY_SIZE(smem_gpio->enabled); i++) {
-+			smem_gpio->enabled[i] = 0;
-+			smem_gpio->detection[i] = 0;
-+			smem_gpio->polarity[i] = 0;
-+		}
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(msm_gpio_chips); i++) {
-+		writel(msm_gpio_chips[i].int_enable[!from_idle],
-+		       msm_gpio_chips[i].regs.int_en);
-+		if (smem_gpio) {
-+			uint32_t tmp;
-+			int start, index, shiftl, shiftr;
-+			start = msm_gpio_chips[i].chip.base;
-+			index = start / 32;
-+			shiftl = start % 32;
-+			shiftr = 32 - shiftl;
-+			tmp = msm_gpio_chips[i].int_enable[!from_idle];
-+			smem_gpio->enabled[index] |= tmp << shiftl;
-+			smem_gpio->enabled[index+1] |= tmp >> shiftr;
-+			smem_gpio->detection[index] |=
-+				readl(msm_gpio_chips[i].regs.int_edge) <<
-+				shiftl;
-+			smem_gpio->detection[index+1] |=
-+				readl(msm_gpio_chips[i].regs.int_edge) >>
-+				shiftr;
-+			smem_gpio->polarity[index] |=
-+				readl(msm_gpio_chips[i].regs.int_pos) << shiftl;
-+			smem_gpio->polarity[index+1] |=
-+				readl(msm_gpio_chips[i].regs.int_pos) >> shiftr;
-+		}
-+	}
-+
-+	if (smem_gpio) {
-+		if (msm_gpio_debug_mask & GPIO_DEBUG_SLEEP)
-+			for (i = 0; i < ARRAY_SIZE(smem_gpio->enabled); i++) {
-+				printk("msm_gpio_enter_sleep gpio %d-%d: enable"
-+				       " %08x, edge %08x, polarity %08x\n",
-+				       i * 32, i * 32 + 31,
-+				       smem_gpio->enabled[i],
-+				       smem_gpio->detection[i],
-+				       smem_gpio->polarity[i]);
-+			}
-+		for (i = 0; i < GPIO_SMEM_NUM_GROUPS; i++)
-+			smem_gpio->num_fired[i] = 0;
-+	}
-+}
-+
-+void msm_gpio_exit_sleep(void)
-+{
-+	int i;
-+	struct tramp_gpio_smem *smem_gpio;
-+
-+	smem_gpio = smem_alloc(SMEM_GPIO_INT, sizeof(*smem_gpio));
-+
-+	for (i = 0; i < ARRAY_SIZE(msm_gpio_chips); i++) {
-+		writel(msm_gpio_chips[i].int_enable[0],
-+		       msm_gpio_chips[i].regs.int_en);
-+	}
-+
-+	if (smem_gpio && (smem_gpio->num_fired[0] || smem_gpio->num_fired[1])) {
-+		if (msm_gpio_debug_mask & GPIO_DEBUG_SLEEP)
-+			printk(KERN_INFO "gpio: fired %x %x\n",
-+			      smem_gpio->num_fired[0], smem_gpio->num_fired[1]);
-+		tasklet_schedule(&msm_gpio_sleep_int_tasklet);
-+	}
-+}
-+
-+static int __init msm_init_gpio(void)
-+{
-+	int i, j = 0;
-+
-+	for (i = FIRST_GPIO_IRQ; i < FIRST_GPIO_IRQ + NR_GPIO_IRQS; i++) {
-+		if (i - FIRST_GPIO_IRQ >=
-+			msm_gpio_chips[j].chip.base +
-+			msm_gpio_chips[j].chip.ngpio)
-+			j++;
-+		set_irq_chip_data(i, &msm_gpio_chips[j]);
-+		set_irq_chip(i, &msm_gpio_irq_chip);
-+		set_irq_handler(i, handle_edge_irq);
-+		set_irq_flags(i, IRQF_VALID);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(msm_gpio_chips); i++) {
-+		spin_lock_init(&msm_gpio_chips[i].lock);
-+		writel(0, msm_gpio_chips[i].regs.int_en);
-+		gpiochip_add(&msm_gpio_chips[i].chip);
-+	}
-+
-+	set_irq_chained_handler(INT_GPIO_GROUP1, msm_gpio_irq_handler);
-+	set_irq_chained_handler(INT_GPIO_GROUP2, msm_gpio_irq_handler);
-+	set_irq_wake(INT_GPIO_GROUP1, 1);
-+	set_irq_wake(INT_GPIO_GROUP2, 2);
-+	return 0;
-+}
-+
-+postcore_initcall(msm_init_gpio);
-diff --git a/arch/arm/mach-msm/gpio_hw.h b/arch/arm/mach-msm/gpio_hw.h
-new file mode 100644
-index 0000000..74c22cf
---- /dev/null
-+++ b/arch/arm/mach-msm/gpio_hw.h
-@@ -0,0 +1,277 @@
-+/* arch/arm/mach-msm/gpio_hw.h
-+ *
-+ * Copyright (C) 2007 Google, Inc.
-+ * Author: Brian Swetland <swetland@google.com>
-+ * Copyright (c) 2008-2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __ARCH_ARM_MACH_MSM_GPIO_HW_H
-+#define __ARCH_ARM_MACH_MSM_GPIO_HW_H
-+
-+#include <mach/msm_iomap.h>
-+
-+/* see 80-VA736-2 Rev C pp 695-751
-+**
-+** These are actually the *shadow* gpio registers, since the
-+** real ones (which allow full access) are only available to the
-+** ARM9 side of the world.
-+**
-+** Since the _BASE need to be page-aligned when we're mapping them
-+** to virtual addresses, adjust for the additional offset in these
-+** macros.
-+*/
-+
-+#if defined(CONFIG_ARCH_MSM7X30)
-+#define GPIO1_REG(off) (MSM_GPIO1_BASE + (off))
-+#define GPIO2_REG(off) (MSM_GPIO2_BASE + 0x400 + (off))
-+#else
-+#define GPIO1_REG(off) (MSM_GPIO1_BASE + 0x800 + (off))
-+#define GPIO2_REG(off) (MSM_GPIO2_BASE + 0xC00 + (off))
-+#endif
-+
-+#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27)
-+
-+/* output value */
-+#define GPIO_OUT_0         GPIO1_REG(0x00)  /* gpio  15-0  */
-+#define GPIO_OUT_1         GPIO2_REG(0x00)  /* gpio  42-16 */
-+#define GPIO_OUT_2         GPIO1_REG(0x04)  /* gpio  67-43 */
-+#define GPIO_OUT_3         GPIO1_REG(0x08)  /* gpio  94-68 */
-+#define GPIO_OUT_4         GPIO1_REG(0x0C)  /* gpio 106-95 */
-+#define GPIO_OUT_5         GPIO1_REG(0x50)  /* gpio 107-121 */
-+
-+/* same pin map as above, output enable */
-+#define GPIO_OE_0          GPIO1_REG(0x10)
-+#define GPIO_OE_1          GPIO2_REG(0x08)
-+#define GPIO_OE_2          GPIO1_REG(0x14)
-+#define GPIO_OE_3          GPIO1_REG(0x18)
-+#define GPIO_OE_4          GPIO1_REG(0x1C)
-+#define GPIO_OE_5          GPIO1_REG(0x54)
-+
-+/* same pin map as above, input read */
-+#define GPIO_IN_0          GPIO1_REG(0x34)
-+#define GPIO_IN_1          GPIO2_REG(0x20)
-+#define GPIO_IN_2          GPIO1_REG(0x38)
-+#define GPIO_IN_3          GPIO1_REG(0x3C)
-+#define GPIO_IN_4          GPIO1_REG(0x40)
-+#define GPIO_IN_5          GPIO1_REG(0x44)
-+
-+/* same pin map as above, 1=edge 0=level interrup */
-+#define GPIO_INT_EDGE_0    GPIO1_REG(0x60)
-+#define GPIO_INT_EDGE_1    GPIO2_REG(0x50)
-+#define GPIO_INT_EDGE_2    GPIO1_REG(0x64)
-+#define GPIO_INT_EDGE_3    GPIO1_REG(0x68)
-+#define GPIO_INT_EDGE_4    GPIO1_REG(0x6C)
-+#define GPIO_INT_EDGE_5    GPIO1_REG(0xC0)
-+
-+/* same pin map as above, 1=positive 0=negative */
-+#define GPIO_INT_POS_0     GPIO1_REG(0x70)
-+#define GPIO_INT_POS_1     GPIO2_REG(0x58)
-+#define GPIO_INT_POS_2     GPIO1_REG(0x74)
-+#define GPIO_INT_POS_3     GPIO1_REG(0x78)
-+#define GPIO_INT_POS_4     GPIO1_REG(0x7C)
-+#define GPIO_INT_POS_5     GPIO1_REG(0xBC)
-+
-+/* same pin map as above, interrupt enable */
-+#define GPIO_INT_EN_0      GPIO1_REG(0x80)
-+#define GPIO_INT_EN_1      GPIO2_REG(0x60)
-+#define GPIO_INT_EN_2      GPIO1_REG(0x84)
-+#define GPIO_INT_EN_3      GPIO1_REG(0x88)
-+#define GPIO_INT_EN_4      GPIO1_REG(0x8C)
-+#define GPIO_INT_EN_5      GPIO1_REG(0xB8)
-+
-+/* same pin map as above, write 1 to clear interrupt */
-+#define GPIO_INT_CLEAR_0   GPIO1_REG(0x90)
-+#define GPIO_INT_CLEAR_1   GPIO2_REG(0x68)
-+#define GPIO_INT_CLEAR_2   GPIO1_REG(0x94)
-+#define GPIO_INT_CLEAR_3   GPIO1_REG(0x98)
-+#define GPIO_INT_CLEAR_4   GPIO1_REG(0x9C)
-+#define GPIO_INT_CLEAR_5   GPIO1_REG(0xB4)
-+
-+/* same pin map as above, 1=interrupt pending */
-+#define GPIO_INT_STATUS_0  GPIO1_REG(0xA0)
-+#define GPIO_INT_STATUS_1  GPIO2_REG(0x70)
-+#define GPIO_INT_STATUS_2  GPIO1_REG(0xA4)
-+#define GPIO_INT_STATUS_3  GPIO1_REG(0xA8)
-+#define GPIO_INT_STATUS_4  GPIO1_REG(0xAC)
-+#define GPIO_INT_STATUS_5  GPIO1_REG(0xB0)
-+
-+#endif
-+
-+#if defined(CONFIG_ARCH_QSD8X50)
-+/* output value */
-+#define GPIO_OUT_0         GPIO1_REG(0x00)  /* gpio  15-0   */
-+#define GPIO_OUT_1         GPIO2_REG(0x00)  /* gpio  42-16  */
-+#define GPIO_OUT_2         GPIO1_REG(0x04)  /* gpio  67-43  */
-+#define GPIO_OUT_3         GPIO1_REG(0x08)  /* gpio  94-68  */
-+#define GPIO_OUT_4         GPIO1_REG(0x0C)  /* gpio 103-95  */
-+#define GPIO_OUT_5         GPIO1_REG(0x10)  /* gpio 121-104 */
-+#define GPIO_OUT_6         GPIO1_REG(0x14)  /* gpio 152-122 */
-+#define GPIO_OUT_7         GPIO1_REG(0x18)  /* gpio 164-153 */
-+
-+/* same pin map as above, output enable */
-+#define GPIO_OE_0          GPIO1_REG(0x20)
-+#define GPIO_OE_1          GPIO2_REG(0x08)
-+#define GPIO_OE_2          GPIO1_REG(0x24)
-+#define GPIO_OE_3          GPIO1_REG(0x28)
-+#define GPIO_OE_4          GPIO1_REG(0x2C)
-+#define GPIO_OE_5          GPIO1_REG(0x30)
-+#define GPIO_OE_6          GPIO1_REG(0x34)
-+#define GPIO_OE_7          GPIO1_REG(0x38)
-+
-+/* same pin map as above, input read */
-+#define GPIO_IN_0          GPIO1_REG(0x50)
-+#define GPIO_IN_1          GPIO2_REG(0x20)
-+#define GPIO_IN_2          GPIO1_REG(0x54)
-+#define GPIO_IN_3          GPIO1_REG(0x58)
-+#define GPIO_IN_4          GPIO1_REG(0x5C)
-+#define GPIO_IN_5          GPIO1_REG(0x60)
-+#define GPIO_IN_6          GPIO1_REG(0x64)
-+#define GPIO_IN_7          GPIO1_REG(0x68)
-+
-+/* same pin map as above, 1=edge 0=level interrup */
-+#define GPIO_INT_EDGE_0    GPIO1_REG(0x70)
-+#define GPIO_INT_EDGE_1    GPIO2_REG(0x50)
-+#define GPIO_INT_EDGE_2    GPIO1_REG(0x74)
-+#define GPIO_INT_EDGE_3    GPIO1_REG(0x78)
-+#define GPIO_INT_EDGE_4    GPIO1_REG(0x7C)
-+#define GPIO_INT_EDGE_5    GPIO1_REG(0x80)
-+#define GPIO_INT_EDGE_6    GPIO1_REG(0x84)
-+#define GPIO_INT_EDGE_7    GPIO1_REG(0x88)
-+
-+/* same pin map as above, 1=positive 0=negative */
-+#define GPIO_INT_POS_0     GPIO1_REG(0x90)
-+#define GPIO_INT_POS_1     GPIO2_REG(0x58)
-+#define GPIO_INT_POS_2     GPIO1_REG(0x94)
-+#define GPIO_INT_POS_3     GPIO1_REG(0x98)
-+#define GPIO_INT_POS_4     GPIO1_REG(0x9C)
-+#define GPIO_INT_POS_5     GPIO1_REG(0xA0)
-+#define GPIO_INT_POS_6     GPIO1_REG(0xA4)
-+#define GPIO_INT_POS_7     GPIO1_REG(0xA8)
-+
-+/* same pin map as above, interrupt enable */
-+#define GPIO_INT_EN_0      GPIO1_REG(0xB0)
-+#define GPIO_INT_EN_1      GPIO2_REG(0x60)
-+#define GPIO_INT_EN_2      GPIO1_REG(0xB4)
-+#define GPIO_INT_EN_3      GPIO1_REG(0xB8)
-+#define GPIO_INT_EN_4      GPIO1_REG(0xBC)
-+#define GPIO_INT_EN_5      GPIO1_REG(0xC0)
-+#define GPIO_INT_EN_6      GPIO1_REG(0xC4)
-+#define GPIO_INT_EN_7      GPIO1_REG(0xC8)
-+
-+/* same pin map as above, write 1 to clear interrupt */
-+#define GPIO_INT_CLEAR_0   GPIO1_REG(0xD0)
-+#define GPIO_INT_CLEAR_1   GPIO2_REG(0x68)
-+#define GPIO_INT_CLEAR_2   GPIO1_REG(0xD4)
-+#define GPIO_INT_CLEAR_3   GPIO1_REG(0xD8)
-+#define GPIO_INT_CLEAR_4   GPIO1_REG(0xDC)
-+#define GPIO_INT_CLEAR_5   GPIO1_REG(0xE0)
-+#define GPIO_INT_CLEAR_6   GPIO1_REG(0xE4)
-+#define GPIO_INT_CLEAR_7   GPIO1_REG(0xE8)
-+
-+/* same pin map as above, 1=interrupt pending */
-+#define GPIO_INT_STATUS_0  GPIO1_REG(0xF0)
-+#define GPIO_INT_STATUS_1  GPIO2_REG(0x70)
-+#define GPIO_INT_STATUS_2  GPIO1_REG(0xF4)
-+#define GPIO_INT_STATUS_3  GPIO1_REG(0xF8)
-+#define GPIO_INT_STATUS_4  GPIO1_REG(0xFC)
-+#define GPIO_INT_STATUS_5  GPIO1_REG(0x100)
-+#define GPIO_INT_STATUS_6  GPIO1_REG(0x104)
-+#define GPIO_INT_STATUS_7  GPIO1_REG(0x108)
-+
-+#endif
-+
-+#if defined(CONFIG_ARCH_MSM7X30)
-+
-+/* output value */
-+#define GPIO_OUT_0         GPIO1_REG(0x00)   /* gpio  15-0   */
-+#define GPIO_OUT_1         GPIO2_REG(0x00)   /* gpio  43-16  */
-+#define GPIO_OUT_2         GPIO1_REG(0x04)   /* gpio  67-44  */
-+#define GPIO_OUT_3         GPIO1_REG(0x08)   /* gpio  94-68  */
-+#define GPIO_OUT_4         GPIO1_REG(0x0C)   /* gpio 106-95  */
-+#define GPIO_OUT_5         GPIO1_REG(0x50)   /* gpio 133-107 */
-+#define GPIO_OUT_6         GPIO1_REG(0xC4)   /* gpio 150-134 */
-+#define GPIO_OUT_7         GPIO1_REG(0x214)  /* gpio 181-151 */
-+
-+/* same pin map as above, output enable */
-+#define GPIO_OE_0          GPIO1_REG(0x10)
-+#define GPIO_OE_1          GPIO2_REG(0x08)
-+#define GPIO_OE_2          GPIO1_REG(0x14)
-+#define GPIO_OE_3          GPIO1_REG(0x18)
-+#define GPIO_OE_4          GPIO1_REG(0x1C)
-+#define GPIO_OE_5          GPIO1_REG(0x54)
-+#define GPIO_OE_6          GPIO1_REG(0xC8)
-+#define GPIO_OE_7          GPIO1_REG(0x218)
-+
-+/* same pin map as above, input read */
-+#define GPIO_IN_0          GPIO1_REG(0x34)
-+#define GPIO_IN_1          GPIO2_REG(0x20)
-+#define GPIO_IN_2          GPIO1_REG(0x38)
-+#define GPIO_IN_3          GPIO1_REG(0x3C)
-+#define GPIO_IN_4          GPIO1_REG(0x40)
-+#define GPIO_IN_5          GPIO1_REG(0x44)
-+#define GPIO_IN_6          GPIO1_REG(0xCC)
-+#define GPIO_IN_7          GPIO1_REG(0x21C)
-+
-+/* same pin map as above, 1=edge 0=level interrup */
-+#define GPIO_INT_EDGE_0    GPIO1_REG(0x60)
-+#define GPIO_INT_EDGE_1    GPIO2_REG(0x50)
-+#define GPIO_INT_EDGE_2    GPIO1_REG(0x64)
-+#define GPIO_INT_EDGE_3    GPIO1_REG(0x68)
-+#define GPIO_INT_EDGE_4    GPIO1_REG(0x6C)
-+#define GPIO_INT_EDGE_5    GPIO1_REG(0xC0)
-+#define GPIO_INT_EDGE_6    GPIO1_REG(0xD0)
-+#define GPIO_INT_EDGE_7    GPIO1_REG(0x240)
-+
-+/* same pin map as above, 1=positive 0=negative */
-+#define GPIO_INT_POS_0     GPIO1_REG(0x70)
-+#define GPIO_INT_POS_1     GPIO2_REG(0x58)
-+#define GPIO_INT_POS_2     GPIO1_REG(0x74)
-+#define GPIO_INT_POS_3     GPIO1_REG(0x78)
-+#define GPIO_INT_POS_4     GPIO1_REG(0x7C)
-+#define GPIO_INT_POS_5     GPIO1_REG(0xBC)
-+#define GPIO_INT_POS_6     GPIO1_REG(0xD4)
-+#define GPIO_INT_POS_7     GPIO1_REG(0x228)
-+
-+/* same pin map as above, interrupt enable */
-+#define GPIO_INT_EN_0      GPIO1_REG(0x80)
-+#define GPIO_INT_EN_1      GPIO2_REG(0x60)
-+#define GPIO_INT_EN_2      GPIO1_REG(0x84)
-+#define GPIO_INT_EN_3      GPIO1_REG(0x88)
-+#define GPIO_INT_EN_4      GPIO1_REG(0x8C)
-+#define GPIO_INT_EN_5      GPIO1_REG(0xB8)
-+#define GPIO_INT_EN_6      GPIO1_REG(0xD8)
-+#define GPIO_INT_EN_7      GPIO1_REG(0x22C)
-+
-+/* same pin map as above, write 1 to clear interrupt */
-+#define GPIO_INT_CLEAR_0   GPIO1_REG(0x90)
-+#define GPIO_INT_CLEAR_1   GPIO2_REG(0x68)
-+#define GPIO_INT_CLEAR_2   GPIO1_REG(0x94)
-+#define GPIO_INT_CLEAR_3   GPIO1_REG(0x98)
-+#define GPIO_INT_CLEAR_4   GPIO1_REG(0x9C)
-+#define GPIO_INT_CLEAR_5   GPIO1_REG(0xB4)
-+#define GPIO_INT_CLEAR_6   GPIO1_REG(0xDC)
-+#define GPIO_INT_CLEAR_7   GPIO1_REG(0x230)
-+
-+/* same pin map as above, 1=interrupt pending */
-+#define GPIO_INT_STATUS_0  GPIO1_REG(0xA0)
-+#define GPIO_INT_STATUS_1  GPIO2_REG(0x70)
-+#define GPIO_INT_STATUS_2  GPIO1_REG(0xA4)
-+#define GPIO_INT_STATUS_3  GPIO1_REG(0xA8)
-+#define GPIO_INT_STATUS_4  GPIO1_REG(0xAC)
-+#define GPIO_INT_STATUS_5  GPIO1_REG(0xB0)
-+#define GPIO_INT_STATUS_6  GPIO1_REG(0xE0)
-+#define GPIO_INT_STATUS_7  GPIO1_REG(0x234)
-+
-+#endif
-+
-+#endif
--- 
-1.7.0.4
+                         root group
+                        /         \
+                    qse(q1,q2)    gse(G1)
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
+Gui
+
+> 
+> The reason being they are different because CFQ wanted to provide ioprio
+> service differentiation on SSD where slice idle is effectively zero. But
+> that slice_offset() logic is approximate at best and is not suitable
+> for group scheduling.
+> 
+> I have yet to go through the patches in detail, so thought will ask you
+> that how have you handeled above.
+> 
+> Vivek
+> 
+>>   o cfq group allocates in a recursive manner, that means when a cfq 
+>>     group needs to be allocated, the upper level cfq groups are also
+>>     allocated.
+>>   o When a cfq group served, not only charge this cfq group but also
+>>     charge its ancestors.
+>>
+>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+>> ---
+>>  block/blk-cgroup.c  |    4 -
+>>  block/cfq-iosched.c |  477 +++++++++++++++++++++++++++++++++++++-------------
+>>  2 files changed, 353 insertions(+), 128 deletions(-)
+>>
+>> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+>> index 2fef1ef..aa06cb3 100644
+>> --- a/block/blk-cgroup.c
+>> +++ b/block/blk-cgroup.c
+>> @@ -964,10 +964,6 @@ blkiocg_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+>>  		goto done;
+>>  	}
+>>  
+>> -	/* Currently we do not support hierarchy deeper than two level (0,1) */
+>> -	if (parent != cgroup->top_cgroup)
+>> -		return ERR_PTR(-EPERM);
+>> -
+>>  	blkcg = kzalloc(sizeof(*blkcg), GFP_KERNEL);
+>>  	if (!blkcg)
+>>  		return ERR_PTR(-ENOMEM);
+>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>> index f65c6f0..4660d89 100644
+>> --- a/block/cfq-iosched.c
+>> +++ b/block/cfq-iosched.c
+>> @@ -73,7 +73,8 @@ static DEFINE_IDA(cic_index_ida);
+>>  #define cfq_class_rt(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_RT)
+>>  
+>>  #define sample_valid(samples)	((samples) > 80)
+>> -#define rb_entry_cfqg(node)	rb_entry((node), struct cfq_group, rb_node)
+>> +#define rb_entry_se(node)	\
+>> +	rb_entry((node), struct io_sched_entity, rb_node)
+>>  
+>>  /*
+>>   * Most of our rbtree usage is for sorting with min extraction, so
+>> @@ -171,19 +172,40 @@ enum wl_type_t {
+>>  	SYNC_WORKLOAD = 2
+>>  };
+>>  
+>> -/* This is per cgroup per device grouping structure */
+>> -struct cfq_group {
+>> +/* 
+>> + * This's the schedule entity which is scheduled on group service tree.
+>> + * It represents shedule structure of a cfq group, or a bundle of cfq
+>> + * queues that locate in a cfq group.
+>> + */
+>> +struct io_sched_entity {
+>> +	struct cfq_rb_root *st;
+>> +
+>>  	/* group service_tree member */
+>>  	struct rb_node rb_node;
+>> -
+>> -	/* group service_tree key */
+>>  	u64 vdisktime;
+>>  	unsigned int weight;
+>>  	bool on_st;
+>> +	bool is_group_se;
+>> +	struct io_sched_entity *parent;
+>> +};
+>> +
+>> +/* This is per cgroup per device grouping structure */
+>> +struct cfq_group {
+>> +	/* cfq group sched entity */
+>> +	struct io_sched_entity group_se;
+>> +
+>> +	/* sched entity for cfqqs */
+>> +	struct io_sched_entity queue_se;
+>> +
+>> +	/* Service tree for cfq_groups and cfqqs set*/
+>> +	struct cfq_rb_root grp_service_tree;
+>>  
+>>  	/* number of cfqq currently on this group */
+>>  	int nr_cfqq;
+>>  
+>> +	/* number of sub cfq groups */
+>> +	int nr_subgp;
+>> +
+>>  	/* Per group busy queus average. Useful for workload slice calc. */
+>>  	unsigned int busy_queues_avg[2];
+>>  	/*
+>> @@ -210,8 +232,6 @@ struct cfq_group {
+>>   */
+>>  struct cfq_data {
+>>  	struct request_queue *queue;
+>> -	/* Root service tree for cfq_groups */
+>> -	struct cfq_rb_root grp_service_tree;
+>>  	struct cfq_group root_group;
+>>  
+>>  	/*
+>> @@ -399,6 +419,22 @@ static inline bool iops_mode(struct cfq_data *cfqd)
+>>  		return false;
+>>  }
+>>  
+>> +static inline struct cfq_group *cfqg_of_gse(struct io_sched_entity *se)
+>> +{
+>> +	if (se->is_group_se)
+>> +		return container_of(se, struct cfq_group, group_se);
+>> +	else
+>> +		return NULL;
+>> +}
+>> +
+>> +static inline struct cfq_group *cfqg_of_qse(struct io_sched_entity *se)
+>> +{
+>> +	if (!se->is_group_se)
+>> +		return container_of(se, struct cfq_group, queue_se);
+>> +	else
+>> +		return NULL;
+>> +}
+>> +
+>>  static inline enum wl_prio_t cfqq_prio(struct cfq_queue *cfqq)
+>>  {
+>>  	if (cfq_class_idle(cfqq))
+>> @@ -522,12 +558,13 @@ cfq_prio_to_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>>  	return cfq_prio_slice(cfqd, cfq_cfqq_sync(cfqq), cfqq->ioprio);
+>>  }
+>>  
+>> -static inline u64 cfq_scale_slice(unsigned long delta, struct cfq_group *cfqg)
+>> +static inline u64 cfq_scale_slice(unsigned long delta,
+>> +				  struct io_sched_entity *se)
+>>  {
+>>  	u64 d = delta << CFQ_SERVICE_SHIFT;
+>>  
+>>  	d = d * BLKIO_WEIGHT_DEFAULT;
+>> -	do_div(d, cfqg->weight);
+>> +	do_div(d, se->weight);
+>>  	return d;
+>>  }
+>>  
+>> @@ -552,16 +589,16 @@ static inline u64 min_vdisktime(u64 min_vdisktime, u64 vdisktime)
+>>  static void update_min_vdisktime(struct cfq_rb_root *st)
+>>  {
+>>  	u64 vdisktime = st->min_vdisktime;
+>> -	struct cfq_group *cfqg;
+>> +	struct io_sched_entity *se;
+>>  
+>>  	if (st->active) {
+>> -		cfqg = rb_entry_cfqg(st->active);
+>> -		vdisktime = cfqg->vdisktime;
+>> +		se = rb_entry_se(st->active);
+>> +		vdisktime = se->vdisktime;
+>>  	}
+>>  
+>>  	if (st->left) {
+>> -		cfqg = rb_entry_cfqg(st->left);
+>> -		vdisktime = min_vdisktime(vdisktime, cfqg->vdisktime);
+>> +		se = rb_entry_se(st->left);
+>> +		vdisktime = min_vdisktime(vdisktime, se->vdisktime);
+>>  	}
+>>  
+>>  	st->min_vdisktime = max_vdisktime(st->min_vdisktime, vdisktime);
+>> @@ -591,9 +628,10 @@ static inline unsigned cfq_group_get_avg_queues(struct cfq_data *cfqd,
+>>  static inline unsigned
+>>  cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>>  {
+>> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+>> +	struct io_sched_entity *gse = &cfqg->queue_se;
+>> +	struct cfq_rb_root *st = gse->st;
+>>  
+>> -	return cfq_target_latency * cfqg->weight / st->total_weight;
+>> +	return cfq_target_latency * gse->weight / st->total_weight;
+>>  }
+>>  
+>>  static inline void
+>> @@ -756,13 +794,13 @@ static struct cfq_queue *cfq_rb_first(struct cfq_rb_root *root)
+>>  	return NULL;
+>>  }
+>>  
+>> -static struct cfq_group *cfq_rb_first_group(struct cfq_rb_root *root)
+>> +static struct io_sched_entity *cfq_rb_first_se(struct cfq_rb_root *root)
+>>  {
+>>  	if (!root->left)
+>>  		root->left = rb_first(&root->rb);
+>>  
+>>  	if (root->left)
+>> -		return rb_entry_cfqg(root->left);
+>> +		return rb_entry_se(root->left);
+>>  
+>>  	return NULL;
+>>  }
+>> @@ -819,25 +857,25 @@ static unsigned long cfq_slice_offset(struct cfq_data *cfqd,
+>>  }
+>>  
+>>  static inline s64
+>> -cfqg_key(struct cfq_rb_root *st, struct cfq_group *cfqg)
+>> +se_key(struct cfq_rb_root *st, struct io_sched_entity *se)
+>>  {
+>> -	return cfqg->vdisktime - st->min_vdisktime;
+>> +	return se->vdisktime - st->min_vdisktime;
+>>  }
+>>  
+>>  static void
+>> -__cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+>> +__io_sched_entity_add(struct cfq_rb_root *st, struct io_sched_entity *se)
+>>  {
+>>  	struct rb_node **node = &st->rb.rb_node;
+>>  	struct rb_node *parent = NULL;
+>> -	struct cfq_group *__cfqg;
+>> -	s64 key = cfqg_key(st, cfqg);
+>> +	struct io_sched_entity *__se;
+>> +	s64 key = se_key(st, se);
+>>  	int left = 1;
+>>  
+>>  	while (*node != NULL) {
+>>  		parent = *node;
+>> -		__cfqg = rb_entry_cfqg(parent);
+>> +		__se = rb_entry_se(parent);
+>>  
+>> -		if (key < cfqg_key(st, __cfqg))
+>> +		if (key < se_key(st, __se))
+>>  			node = &parent->rb_left;
+>>  		else {
+>>  			node = &parent->rb_right;
+>> @@ -846,47 +884,80 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+>>  	}
+>>  
+>>  	if (left)
+>> -		st->left = &cfqg->rb_node;
+>> +		st->left = &se->rb_node;
+>>  
+>> -	rb_link_node(&cfqg->rb_node, parent, node);
+>> -	rb_insert_color(&cfqg->rb_node, &st->rb);
+>> +	rb_link_node(&se->rb_node, parent, node);
+>> +	rb_insert_color(&se->rb_node, &st->rb);
+>>  }
+>>  
+>> -static void
+>> -cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>> +static void io_sched_entity_add(struct cfq_rb_root *st,
+>> +				struct io_sched_entity *se)
+>>  {
+>> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+>> -	struct cfq_group *__cfqg;
+>>  	struct rb_node *n;
+>> +	struct io_sched_entity *__se;
+>>  
+>> -	cfqg->nr_cfqq++;
+>> -	if (cfqg->on_st)
+>> -		return;
+>>  
+>> +	if (se->on_st)
+>> +		return;
+>>  	/*
+>>  	 * Currently put the group at the end. Later implement something
+>>  	 * so that groups get lesser vtime based on their weights, so that
+>>  	 * if group does not loose all if it was not continously backlogged.
+>>  	 */
+>> -	n = rb_last(&st->rb);
+>> +	n = rb_last(&se->st->rb);
+>>  	if (n) {
+>> -		__cfqg = rb_entry_cfqg(n);
+>> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+>> +		__se = rb_entry_se(n);
+>> +		se->vdisktime = __se->vdisktime + CFQ_IDLE_DELAY;
+>>  	} else
+>> -		cfqg->vdisktime = st->min_vdisktime;
+>> +		se->vdisktime = st->min_vdisktime;
+>>  
+>> -	__cfq_group_service_tree_add(st, cfqg);
+>> -	cfqg->on_st = true;
+>> -	st->total_weight += cfqg->weight;
+>> +	__io_sched_entity_add(se->st, se);
+>> +	se->on_st = true;
+>> +	st->total_weight += se->weight;
+>> +}
+>> +
+>> +static void
+>> +cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>> +{
+>> +	struct io_sched_entity *gse = &cfqg->group_se;
+>> +	struct io_sched_entity *qse = &cfqg->queue_se;
+>> +	struct cfq_group *__cfqg;
+>> +
+>> +	cfqg->nr_cfqq++;
+>> +
+>> +	io_sched_entity_add(qse->st, qse);
+>> +
+>> +	while (gse && gse->parent) {
+>> +		if (gse->on_st)
+>> +			return;
+>> +		io_sched_entity_add(gse->st, gse);
+>> +		gse = gse->parent;
+>> +		__cfqg = cfqg_of_gse(gse);
+>> +		__cfqg->nr_subgp++;
+>> +	}
+>> +}
+>> +
+>> +static void io_sched_entity_del(struct io_sched_entity *se)
+>> +{
+>> +	if (!RB_EMPTY_NODE(&se->rb_node))
+>> +		cfq_rb_erase(&se->rb_node, se->st);
+>> +
+>> +	se->on_st = false;
+>> +	se->st->total_weight -= se->weight;
+>>  }
+>>  
+>>  static void
+>>  cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>>  {
+>> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+>> +	struct io_sched_entity *gse = &cfqg->group_se;
+>> +	struct io_sched_entity *qse = &cfqg->queue_se;
+>> +	struct cfq_group *__cfqg, *p_cfqg;
+>> +
+>> +	if (gse->st && gse->st->active == &gse->rb_node)
+>> +		gse->st->active = NULL;
+>>  
+>> -	if (st->active == &cfqg->rb_node)
+>> -		st->active = NULL;
+>> +	if (qse->st && qse->st->active == &qse->rb_node)
+>> +		qse->st->active = NULL;
+>>  
+>>  	BUG_ON(cfqg->nr_cfqq < 1);
+>>  	cfqg->nr_cfqq--;
+>> @@ -895,13 +966,25 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>>  	if (cfqg->nr_cfqq)
+>>  		return;
+>>  
+>> -	cfq_log_cfqg(cfqd, cfqg, "del_from_rr group");
+>> -	cfqg->on_st = false;
+>> -	st->total_weight -= cfqg->weight;
+>> -	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>> -		cfq_rb_erase(&cfqg->rb_node, st);
+>> -	cfqg->saved_workload_slice = 0;
+>> -	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+>> +	/* dequeue queue se from group */
+>> +	io_sched_entity_del(qse);
+>> +
+>> +	if (cfqg->nr_subgp)
+>> +		return;
+>> +
+>> +	/* prevent from dequeuing root group */
+>> +	while (gse && gse->parent) {
+>> +		__cfqg = cfqg_of_gse(gse);
+>> +		p_cfqg = cfqg_of_gse(gse->parent);
+>> +		io_sched_entity_del(gse);
+>> +		cfq_blkiocg_update_dequeue_stats(&__cfqg->blkg, 1);
+>> +		cfq_log_cfqg(cfqd, __cfqg, "del_from_rr group");
+>> +		__cfqg->saved_workload_slice = 0;
+>> +		gse = gse->parent;
+>> +		p_cfqg->nr_subgp--;
+>> +		if (p_cfqg->nr_cfqq || p_cfqg->nr_subgp)
+>> +			return;
+>> +	}
+>>  }
+>>  
+>>  static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>> @@ -933,7 +1016,8 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>>  static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>>  				struct cfq_queue *cfqq)
+>>  {
+>> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+>> +	struct io_sched_entity *gse = &cfqg->group_se;
+>> +	struct io_sched_entity *qse = &cfqg->queue_se;
+>>  	unsigned int used_sl, charge;
+>>  	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
+>>  			- cfqg->service_tree_idle.count;
+>> @@ -946,10 +1030,25 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>>  	else if (!cfq_cfqq_sync(cfqq) && !nr_sync)
+>>  		charge = cfqq->allocated_slice;
+>>  
+>> -	/* Can't update vdisktime while group is on service tree */
+>> -	cfq_rb_erase(&cfqg->rb_node, st);
+>> -	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
+>> -	__cfq_group_service_tree_add(st, cfqg);
+>> +	/*
+>> +	 *  update queue se's vdisktime.
+>> +	 *  Can't update vdisktime while group is on service tree.
+>> +	 */
+>> +
+>> +	cfq_rb_erase(&qse->rb_node, qse->st);
+>> +	qse->vdisktime += cfq_scale_slice(charge, qse);
+>> +	__io_sched_entity_add(qse->st, qse);
+>> +	if (&qse->rb_node == qse->st->active)
+>> +		qse->st->active = NULL;
+>> +
+>> +	while (gse && gse->parent) {
+>> +		cfq_rb_erase(&gse->rb_node, gse->st);
+>> +		gse->vdisktime += cfq_scale_slice(charge, gse);
+>> +		__io_sched_entity_add(gse->st, gse);
+>> +		if (&gse->rb_node == gse->st->active)
+>> +			gse->st->active = NULL;
+>> +		gse = gse->parent;
+>> +	}
+>>  
+>>  	/* This group is being expired. Save the context */
+>>  	if (time_after(cfqd->workload_expires, jiffies)) {
+>> @@ -960,8 +1059,9 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>>  	} else
+>>  		cfqg->saved_workload_slice = 0;
+>>  
+>> -	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>> -					st->min_vdisktime);
+>> +	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", gse->vdisktime,
+>> +		     gse->st->min_vdisktime);
+>> +
+>>  	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
+>>  			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
+>>  			iops_mode(cfqd), cfqq->nr_sectors);
+>> @@ -977,39 +1077,84 @@ static inline struct cfq_group *cfqg_of_blkg(struct blkio_group *blkg)
+>>  	return NULL;
+>>  }
+>>  
+>> +static void cfq_put_cfqg(struct cfq_group *cfqg)
+>> +{
+>> +	struct cfq_rb_root *st;
+>> +	int i, j;
+>> +	struct io_sched_entity *gse;
+>> +	struct cfq_group *p_cfqg;
+>> +
+>> +	BUG_ON(atomic_read(&cfqg->ref) <= 0);
+>> +	if (!atomic_dec_and_test(&cfqg->ref))
+>> +		return;
+>> +	for_each_cfqg_st(cfqg, i, j, st)
+>> +		BUG_ON(!RB_EMPTY_ROOT(&st->rb) || st->active != NULL);
+>> +
+>> +	gse = &cfqg->group_se;
+>> +	if (gse->parent) {
+>> +		p_cfqg = cfqg_of_gse(gse->parent);
+>> +		/* Drop the reference taken by children */
+>> +		atomic_dec(&p_cfqg->ref);
+>> +	}
+>> +
+>> +	kfree(cfqg);
+>> +}
+>> +
+>> +static void cfq_destroy_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>> +{
+>> +	/* Something wrong if we are trying to remove same group twice */
+>> +	BUG_ON(hlist_unhashed(&cfqg->cfqd_node));
+>> +
+>> +	hlist_del_init(&cfqg->cfqd_node);
+>> +
+>> +	/*
+>> +	 * Put the reference taken at the time of creation so that when all
+>> +	 * queues are gone, group can be destroyed.
+>> +	 */
+>> +	cfq_put_cfqg(cfqg);
+>> +}
+>> +
+>>  void
+>>  cfq_update_blkio_group_weight(struct blkio_group *blkg, unsigned int weight)
+>>  {
+>> -	cfqg_of_blkg(blkg)->weight = weight;
+>> +	struct cfq_group *cfqg;
+>> +	struct io_sched_entity *gse;
+>> +
+>> +	cfqg = cfqg_of_blkg(blkg);
+>> +	gse = &cfqg->group_se;
+>> +	gse->weight = weight;
+>>  }
+>>  
+>> -static struct cfq_group *
+>> -cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+>> +static void init_group_queue_entity(struct blkio_cgroup *blkcg,
+>> +				   struct cfq_group *cfqg)
+>> +{
+>> +	struct io_sched_entity *gse = &cfqg->group_se;
+>> +	struct io_sched_entity *qse = &cfqg->queue_se;
+>> +
+>> +	gse->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
+>> +	RB_CLEAR_NODE(&gse->rb_node);
+>> +	gse->is_group_se = true;
+>> +	gse->on_st = false;
+>> +
+>> +	/* Set to 500 for the time being */
+>> +	qse->weight = 500;
+>> +	RB_CLEAR_NODE(&qse->rb_node);
+>> +	qse->is_group_se = false;
+>> +	qse->on_st = false;
+>> +}
+>> +
+>> +static void init_cfqg(struct cfq_data *cfqd, struct blkio_cgroup *blkcg,
+>> +		      struct cfq_group *cfqg)
+>>  {
+>> -	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+>> -	struct cfq_group *cfqg = NULL;
+>> -	void *key = cfqd;
+>>  	int i, j;
+>>  	struct cfq_rb_root *st;
+>> -	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+>>  	unsigned int major, minor;
+>> +	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+>>  
+>> -	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+>> -	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+>> -		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+>> -		cfqg->blkg.dev = MKDEV(major, minor);
+>> -		goto done;
+>> -	}
+>> -	if (cfqg || !create)
+>> -		goto done;
+>> -
+>> -	cfqg = kzalloc_node(sizeof(*cfqg), GFP_ATOMIC, cfqd->queue->node);
+>> -	if (!cfqg)
+>> -		goto done;
+>> +	cfqg->grp_service_tree = CFQ_RB_ROOT;
+>>  
+>>  	for_each_cfqg_st(cfqg, i, j, st)
+>>  		*st = CFQ_RB_ROOT;
+>> -	RB_CLEAR_NODE(&cfqg->rb_node);
+>>  
+>>  	/*
+>>  	 * Take the initial reference that will be released on destroy
+>> @@ -1023,11 +1168,102 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+>>  	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+>>  	cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+>>  					MKDEV(major, minor));
+>> -	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
+>> -
+>> +	init_group_queue_entity(blkcg, cfqg);
+>>  	/* Add group on cfqd list */
+>>  	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
+>> +}
+>> +
+>> +static void uninit_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>> +{
+>> +	if (!cfq_blkiocg_del_blkio_group(&cfqg->blkg))
+>> +		cfq_destroy_cfqg(cfqd, cfqg);
+>> +}
+>> +
+>> +static void cfqg_set_parent(struct cfq_group *cfqg, struct cfq_group *p_cfqg)
+>> +{
+>> +	struct io_sched_entity *gse = &cfqg->group_se;
+>> +	struct io_sched_entity *qse = &cfqg->queue_se;
+>> +	struct io_sched_entity *p_gse = &p_cfqg->group_se;
+>> +
+>> +	gse->parent = p_gse;
+>> +	gse->st = &p_cfqg->grp_service_tree;
+>> +
+>> +	qse->parent = gse;
+>> +	qse->st = &cfqg->grp_service_tree;
+>> +
+>> +	/* child reference */
+>> +	atomic_inc(&p_cfqg->ref);
+>> +}
+>> +
+>> +int cfqg_chain_alloc(struct cfq_data *cfqd, struct cgroup *cgroup)
+>> +{
+>> +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+>> +	struct blkio_cgroup *p_blkcg;
+>> +	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+>> +	unsigned int major, minor;
+>> +	struct cfq_group *cfqg, *p_cfqg;
+>> +	void *key = cfqd;
+>> +	int ret;
+>> +
+>> +	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+>> +	if (cfqg) {
+>> +		if (!cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+>> +			sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+>> +			cfqg->blkg.dev = MKDEV(major, minor);
+>> +		}
+>> +		/* chain has already been built */
+>> +		return 0;
+>> +	}
+>> +
+>> +	cfqg = kzalloc_node(sizeof(*cfqg), GFP_ATOMIC, cfqd->queue->node);
+>> +	if (!cfqg)
+>> +		return -1;
+>> +
+>> +	init_cfqg(cfqd, blkcg, cfqg);
+>> +
+>> +	/* Already to the top group */
+>> +	if (!cgroup->parent)
+>> +		return 0;
+>> +
+>> +	ret = cfqg_chain_alloc(cfqd, cgroup->parent);
+>> +	if (ret == -1) {
+>> +		uninit_cfqg(cfqd, cfqg);
+>> +		return -1;
+>> +	}
+>> +
+>> +	p_blkcg = cgroup_to_blkio_cgroup(cgroup->parent);
+>> +	p_cfqg = cfqg_of_blkg(blkiocg_lookup_group(p_blkcg, key));
+>> +	BUG_ON(p_cfqg == NULL);
+>> +
+>> +	cfqg_set_parent(cfqg, p_cfqg);
+>> +	return 0;
+>> +}
+>> +
+>> +static struct cfq_group *
+>> +cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+>> +{
+>> +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+>> +	struct cfq_group *cfqg = NULL;
+>> +	void *key = cfqd;
+>> +	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+>> +	unsigned int major, minor;
+>> +	int ret;
+>>  
+>> +	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+>> +	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+>> +		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+>> +		cfqg->blkg.dev = MKDEV(major, minor);
+>> +		goto done;
+>> +	}
+>> +	if (cfqg || !create)
+>> +		goto done;
+>> +
+>> +	ret = cfqg_chain_alloc(cfqd, cgroup);
+>> +	if (!ret) {
+>> +		cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+>> +		BUG_ON(cfqg == NULL);
+>> +		goto done;
+>> +	}
+>>  done:
+>>  	return cfqg;
+>>  }
+>> @@ -1067,33 +1303,6 @@ static void cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg)
+>>  	atomic_inc(&cfqq->cfqg->ref);
+>>  }
+>>  
+>> -static void cfq_put_cfqg(struct cfq_group *cfqg)
+>> -{
+>> -	struct cfq_rb_root *st;
+>> -	int i, j;
+>> -
+>> -	BUG_ON(atomic_read(&cfqg->ref) <= 0);
+>> -	if (!atomic_dec_and_test(&cfqg->ref))
+>> -		return;
+>> -	for_each_cfqg_st(cfqg, i, j, st)
+>> -		BUG_ON(!RB_EMPTY_ROOT(&st->rb) || st->active != NULL);
+>> -	kfree(cfqg);
+>> -}
+>> -
+>> -static void cfq_destroy_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>> -{
+>> -	/* Something wrong if we are trying to remove same group twice */
+>> -	BUG_ON(hlist_unhashed(&cfqg->cfqd_node));
+>> -
+>> -	hlist_del_init(&cfqg->cfqd_node);
+>> -
+>> -	/*
+>> -	 * Put the reference taken at the time of creation so that when all
+>> -	 * queues are gone, group can be destroyed.
+>> -	 */
+>> -	cfq_put_cfqg(cfqg);
+>> -}
+>> -
+>>  static void cfq_release_cfq_groups(struct cfq_data *cfqd)
+>>  {
+>>  	struct hlist_node *pos, *n;
+>> @@ -1668,9 +1877,6 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>>  	if (cfqq == cfqd->active_queue)
+>>  		cfqd->active_queue = NULL;
+>>  
+>> -	if (&cfqq->cfqg->rb_node == cfqd->grp_service_tree.active)
+>> -		cfqd->grp_service_tree.active = NULL;
+>> -
+>>  	if (cfqd->active_cic) {
+>>  		put_io_context(cfqd->active_cic->ioc);
+>>  		cfqd->active_cic = NULL;
+>> @@ -2173,17 +2379,26 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>>  	cfqd->noidle_tree_requires_idle = false;
+>>  }
+>>  
+>> +
+>>  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd)
+>>  {
+>> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+>> +	struct cfq_group *root_group = &cfqd->root_group;
+>> +	struct cfq_rb_root *st = &root_group->grp_service_tree;
+>>  	struct cfq_group *cfqg;
+>> +	struct io_sched_entity *se;
+>>  
+>> -	if (RB_EMPTY_ROOT(&st->rb))
+>> -		return NULL;
+>> -	cfqg = cfq_rb_first_group(st);
+>> -	st->active = &cfqg->rb_node;
+>> -	update_min_vdisktime(st);
+>> -	return cfqg;
+>> +	do {
+>> +		se = cfq_rb_first_se(st);
+>> +		if (!se)
+>> +			return NULL;
+>> +		st->active = &se->rb_node;
+>> +		update_min_vdisktime(st);
+>> +		cfqg = cfqg_of_qse(se);
+>> +		if (cfqg)
+>> +			return cfqg;
+>> +		cfqg = cfqg_of_gse(se);
+>> +		st = &cfqg->grp_service_tree;
+>> +	} while (1);
+>>  }
+>>  
+>>  static void cfq_choose_cfqg(struct cfq_data *cfqd)
+>> @@ -2215,15 +2430,18 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>>  	if (!cfqq)
+>>  		goto new_queue;
+>>  
+>> +
+>>  	if (!cfqd->rq_queued)
+>>  		return NULL;
+>>  
+>> +
+>>  	/*
+>>  	 * We were waiting for group to get backlogged. Expire the queue
+>>  	 */
+>>  	if (cfq_cfqq_wait_busy(cfqq) && !RB_EMPTY_ROOT(&cfqq->sort_list))
+>>  		goto expire;
+>>  
+>> +
+>>  	/*
+>>  	 * The active queue has run out of time, expire it and select new.
+>>  	 */
+>> @@ -2245,6 +2463,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>>  			goto check_group_idle;
+>>  	}
+>>  
+>> +
+>>  	/*
+>>  	 * The active queue has requests and isn't expired, allow it to
+>>  	 * dispatch.
+>> @@ -2252,6 +2471,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>>  	if (!RB_EMPTY_ROOT(&cfqq->sort_list))
+>>  		goto keep_queue;
+>>  
+>> +
+>>  	/*
+>>  	 * If another queue has a request waiting within our mean seek
+>>  	 * distance, let it run.  The expire code will check for close
+>> @@ -2505,6 +2725,7 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
+>>  	}
+>>  
+>>  	cfq_log_cfqq(cfqd, cfqq, "dispatched a request");
+>> +
+>>  	return 1;
+>>  }
+>>  
+>> @@ -3854,17 +4075,25 @@ static void *cfq_init_queue(struct request_queue *q)
+>>  
+>>  	cfqd->cic_index = i;
+>>  
+>> -	/* Init root service tree */
+>> -	cfqd->grp_service_tree = CFQ_RB_ROOT;
+>> -
+>>  	/* Init root group */
+>>  	cfqg = &cfqd->root_group;
+>> +	cfqg->grp_service_tree = CFQ_RB_ROOT;
+>>  	for_each_cfqg_st(cfqg, i, j, st)
+>>  		*st = CFQ_RB_ROOT;
+>> -	RB_CLEAR_NODE(&cfqg->rb_node);
+>> -
+>> +	cfqg->group_se.is_group_se = true;
+>> +	RB_CLEAR_NODE(&cfqg->group_se.rb_node);
+>> +	cfqg->group_se.on_st = false;
+>>  	/* Give preference to root group over other groups */
+>> -	cfqg->weight = 2*BLKIO_WEIGHT_DEFAULT;
+>> +	cfqg->group_se.weight = 2*BLKIO_WEIGHT_DEFAULT;
+>> +	cfqg->group_se.parent = NULL;
+>> +	cfqg->group_se.st = NULL;
+>> +
+>> +	cfqg->queue_se.is_group_se = false;
+>> +	RB_CLEAR_NODE(&cfqg->queue_se.rb_node);
+>> +	cfqg->queue_se.on_st = false;
+>> +	cfqg->queue_se.weight = 2*BLKIO_WEIGHT_DEFAULT;
+>> +	cfqg->queue_se.parent = &cfqg->group_se;
+>> +	cfqg->queue_se.st = &cfqg->grp_service_tree;
+>>  
+>>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
+>>  	/*
+>> -- 
+>> 1.6.5.2
+>>
+>>
+> 
