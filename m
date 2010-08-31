@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab0HaOIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:08:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55177 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754109Ab0HaOIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:08:31 -0400
-Message-ID: <4C7D0CDB.6030903@suse.cz>
-Date: Tue, 31 Aug 2010 16:08:27 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
+	id S1757452Ab0HaOJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:09:26 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61079 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754109Ab0HaOJZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 10:09:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Q3ZIAcxQFx3vQs/iVx+I0CfbRyTDGVHTNN4nyVBAWI1S5O37/gcyC628gSrzhra2Gs
+         Fr3g78sfH16TNbVb17S5TNaa+JScs0sX9iIVPynBCAYqYikgWr4p1b+ThHLitG78GkOb
+         mY8AHf9nUZrS9FuhUMkozSnfF8HqTTotJd2C4=
 MIME-Version: 1.0
-To: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
-Subject: Re: [PATCH 0/2] initramfs: Cleanup and fix initramfs size calculation
-References: <20100831082307.064687027@linux.vnet.ibm.com>
-In-Reply-To: <20100831082307.064687027@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <m3pqwykhiz.fsf@hase.home>
+References: <1282019131-30813-1-git-send-email-avar@v.nix.is>
+	<20100817054000.GB5095@cr0.nay.redhat.com>
+	<AANLkTinwaFzcHauAXqDdAVEWWxHsMmfVt8mBYgBV72mg@mail.gmail.com>
+	<m3pqwykhiz.fsf@hase.home>
+Date: Tue, 31 Aug 2010 14:09:24 +0000
+X-Google-Sender-Auth: rBol05b5NN4peEbgRo8ap7DTYqI
+Message-ID: <AANLkTi=wuBRLMERjq_fCWu95=QmhNkt-HxpDa1LMQcc9@mail.gmail.com>
+Subject: Re: [PATCH] .gitignore: Ignore generated files in lib/raid6
+From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avar@v.nix.is>
+To: Andreas Schwab <schwab@redhat.com>
+Cc: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        torvalds@linux-foundation.org,
+        David Woodhouse <dwmw2@tylersburg.infradead.org>,
+        Linux is full of bugs <linux-kernel@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.8.2010 10:23, Hendrik Brueckner wrote:
-> Hello Michal, Sam,
-> 
-> I did not see any further comments on the patch series about the
-> initramfs cleanup and new size calculation.
+On Tue, Aug 31, 2010 at 14:01, Andreas Schwab <schwab@redhat.com> wrote:
+> Ævar Arnfjörð Bjarmason <avar@v.nix.is> writes:
+>
+>> On Tue, Aug 17, 2010 at 05:40, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+>>> On Tue, Aug 17, 2010 at 04:25:31AM +0000, Ævar Arnfjörð Bjarmason wrote:
+>>>>The Makefile in lib/raid6 will generate these files, and the clean
+>>>>target will remove them, but they weren't being ignored by git.
+>>>>
+>>>>Signed-off-by: Ævar Arnfjörð Bjarmason <avar@v.nix.is>
+>>>
+>>> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+>>>
+>>> Thanks!
+>>
+>> In case this fell through: Could you pick this up Linus. It's still
+>> causing a dirty tree under "git status". Thanks.
+>
+> It's already on its way, see
+> <http://permalink.gmane.org/gmane.linux.raid/29357>.
 
-Sorry about that, I don't always have as much time for kbuild as I would
-like to have :(.
-
-
-> This is a resend and now I am asking you for your review and ack.
-> Please let me know if you have questions or comments.
-
-I like the cleanup patch and the thing still survives (very basic)
-testing, so
-Acked-by: Michal Marek <mmarek@suse.cz>
-
-I'm wondering which tree should these patches go through... Peter, will
-you apply them to some branch of tip.git or should I apply them to
-kbuild-2.6.git?
-
-Michal
+Thanks. I didn't spot that since it came after my report and didn't
+reference it (so it didn't appear in my searches).
