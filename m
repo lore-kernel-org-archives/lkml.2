@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560Ab0HaUsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 16:48:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40801 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab0HaUsF (ORCPT
+	id S1755645Ab0HaUsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 16:48:16 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53634 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594Ab0HaUsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 16:48:05 -0400
+	Tue, 31 Aug 2010 16:48:13 -0400
 From: Will Drewry <wad@chromium.org>
 To: "Andrew Morton" <akpm@linux-foundation.org>,
         <linux-kernel@vger.kernel.org>
@@ -16,9 +16,9 @@ Cc: "Kay Sievers" <kay.sievers@vrfy.org>, "Jens Axboe" <axboe@kernel.dk>,
         "Andrew Morton" <akpm@linux-foundation.org>,
         "Joe Perches" <joe@perches.com>, "Jan Blunck" <jblunck@suse.de>,
         "Greg Kroah-Hartman" <gregkh@suse.de>, Will Drewry <wad@chromium.org>
-Subject: [PATCH v4 1/3] block, partition: add partition_meta_info to hd_struct
-Date: Tue, 31 Aug 2010 15:47:05 -0500
-Message-Id: <1283287627-13842-1-git-send-email-wad@chromium.org>
+Subject: [PATCH v4 3/3] init: add support for root devices specified by partition UUID
+Date: Tue, 31 Aug 2010 15:47:07 -0500
+Message-Id: <1283287627-13842-3-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1280946126-19587-3-git-send-email-wad@chromium.org>
 References: <1280946126-19587-3-git-send-email-wad@chromium.org>
@@ -26,256 +26,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm reposting this patch series as v4 since there have been no additional
-comments, and I cleaned up one extra bit of unneeded code (in 3/3). The patches
-are against Linus's tree: 2bfc96a127bc1cc94d26bfaa40159966064f9c8c
-(2.6.36-rc3).
+This is the third patch in a series which adds support for
+storing partition metadata, optionally, off of the hd_struct.
 
-Would this patchset be suitable for inclusion in an mm branch?
+One major use for that data is being able to resolve partition
+by other identities than just the index on a block device.  Device
+enumeration varies by platform and there's a benefit to being able
+to use something like EFI GPT's GUIDs to determine the correct
+block device and partition to mount as the root.
 
+This change adds that support to root= by adding support for
+the following syntax:
 
-This changes adds a partition_meta_info struct which itself contains a
-union of structures that provide partition table specific metadata.
-
-This change leaves the union empty. The subsequent patch includes an
-implementation for CONFIG_EFI_PARTITION-based metadata.
+  root=PARTUUID=hex-uuid
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 
 ---
-v2: move assignment of p->info after copy
-v3: make partition_meta_info part of parsed_partitions (not a ptr)
-    get rid of extended partition-format specific information
-    add generic pack/unpack uuid helpers
-v4: include genhd.h in check.h
+v2: added to patch series
+v3: adds uuids to printk_all_partitions
+    simplifies matching to a uniform uuid packed format (big endian)
+v4: no changes
 
- block/genhd.c         |    1 +
- block/ioctl.c         |    2 +-
- fs/partitions/check.c |   23 ++++++++++++++++++--
- fs/partitions/check.h |    3 ++
- include/linux/genhd.h |   53 +++++++++++++++++++++++++++++++++++++++++++++++-
- 5 files changed, 76 insertions(+), 6 deletions(-)
+ block/genhd.c    |    9 +++++-
+ init/do_mounts.c |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 2 deletions(-)
 
 diff --git a/block/genhd.c b/block/genhd.c
-index 59a2db6..c8da120 100644
+index c8da120..5c9c503 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -1004,6 +1004,7 @@ static void disk_release(struct device *dev)
- 	kfree(disk->random);
- 	disk_replace_part_tbl(disk, NULL);
- 	free_part_stats(&disk->part0);
-+	free_part_info(&disk->part0);
- 	kfree(disk);
- }
- struct class block_class = {
-diff --git a/block/ioctl.c b/block/ioctl.c
-index d8052f0..2c15fe0 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -62,7 +62,7 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
+@@ -642,6 +642,7 @@ void __init printk_all_partitions(void)
+ 		struct hd_struct *part;
+ 		char name_buf[BDEVNAME_SIZE];
+ 		char devt_buf[BDEVT_SIZE];
++		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
  
- 			/* all seems OK */
- 			part = add_partition(disk, partno, start, length,
--					     ADDPART_FLAG_NONE);
-+					     ADDPART_FLAG_NONE, NULL);
- 			mutex_unlock(&bdev->bd_mutex);
- 			return IS_ERR(part) ? PTR_ERR(part) : 0;
- 		case BLKPG_DEL_PARTITION:
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index 79fbf3f..6dfbee0 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -352,6 +352,7 @@ static void part_release(struct device *dev)
- {
- 	struct hd_struct *p = dev_to_part(dev);
- 	free_part_stats(p);
-+	free_part_info(p);
- 	kfree(p);
- }
+ 		/*
+ 		 * Don't show empty devices or things that have been
+@@ -660,10 +661,14 @@ void __init printk_all_partitions(void)
+ 		while ((part = disk_part_iter_next(&piter))) {
+ 			bool is_part0 = part == &disk->part0;
  
-@@ -401,7 +402,8 @@ static DEVICE_ATTR(whole_disk, S_IRUSR | S_IRGRP | S_IROTH,
- 		   whole_disk_show, NULL);
- 
- struct hd_struct *add_partition(struct gendisk *disk, int partno,
--				sector_t start, sector_t len, int flags)
-+				sector_t start, sector_t len, int flags,
-+				struct partition_meta_info *info)
- {
- 	struct hd_struct *p;
- 	dev_t devt = MKDEV(0, 0);
-@@ -438,6 +440,14 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
- 	p->partno = partno;
- 	p->policy = get_disk_ro(disk);
- 
-+	if (info) {
-+		struct partition_meta_info *pinfo = alloc_part_info(disk);
-+		if (!pinfo)
-+			goto out_free_stats;
-+		memcpy(pinfo, info, sizeof(*info));
-+		p->info = pinfo;
-+	}
+-			printk("%s%s %10llu %s", is_part0 ? "" : "  ",
++			uuid[0] = 0;
++			if (part->info)
++				part_unpack_uuid(part->info->uuid, uuid);
 +
- 	dname = dev_name(ddev);
- 	if (isdigit(dname[strlen(dname) - 1]))
- 		dev_set_name(pdev, "%sp%d", dname, partno);
-@@ -451,7 +461,7 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
++			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
+ 			       bdevt_str(part_devt(part), devt_buf),
+ 			       (unsigned long long)part->nr_sects >> 1,
+-			       disk_name(disk, part->partno, name_buf));
++			       disk_name(disk, part->partno, name_buf), uuid);
+ 			if (is_part0) {
+ 				if (disk->driverfs_dev != NULL &&
+ 				    disk->driverfs_dev->driver != NULL)
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 02e3ca4..804f9c6 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -58,6 +58,60 @@ static int __init readwrite(char *str)
+ __setup("ro", readonly);
+ __setup("rw", readwrite);
  
- 	err = blk_alloc_devt(p, &devt);
- 	if (err)
--		goto out_free_stats;
-+		goto out_free_info;
- 	pdev->devt = devt;
- 
- 	/* delay uevent until 'holders' subdir is created */
-@@ -481,6 +491,8 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
- 
- 	return p;
- 
-+out_free_info:
-+	free_part_info(p);
- out_free_stats:
- 	free_part_stats(p);
- out_free:
-@@ -642,6 +654,7 @@ rescan:
- 	/* add partitions */
- 	for (p = 1; p < state->limit; p++) {
- 		sector_t size, from;
-+		struct partition_meta_info *info = NULL;
- 
- 		size = state->parts[p].size;
- 		if (!size)
-@@ -675,8 +688,12 @@ rescan:
- 				size = get_capacity(disk) - from;
- 			}
- 		}
++/**
++ * match_dev_by_uuid - callback for finding a partition using its uuid
++ * @dev:	device passed in by the caller
++ * @data:	opaque pointer to a 36 byte char array with a UUID
++ *
++ * Returns 1 if the device matches, and 0 otherwise.
++ */
++static int __init match_dev_by_uuid(struct device *dev, void *data)
++{
++	u8 *uuid = data;
++	struct hd_struct *part = dev_to_part(dev);
 +
-+		if (state->parts[p].has_info)
-+			info = &state->parts[p].info;
- 		part = add_partition(disk, p, from, size,
--				     state->parts[p].flags);
-+				     state->parts[p].flags,
-+				     &state->parts[p].info);
- 		if (IS_ERR(part)) {
- 			printk(KERN_ERR " %s: p%d could not be added: %ld\n",
- 			       disk->disk_name, p, -PTR_ERR(part));
-diff --git a/fs/partitions/check.h b/fs/partitions/check.h
-index 8e4e103..d68bf4d 100644
---- a/fs/partitions/check.h
-+++ b/fs/partitions/check.h
-@@ -1,5 +1,6 @@
- #include <linux/pagemap.h>
- #include <linux/blkdev.h>
-+#include <linux/genhd.h>
- 
++	if (!part->info)
++		goto no_match;
++
++	if (memcmp(uuid, part->info->uuid, sizeof(part->info->uuid)))
++			goto no_match;
++
++	return 1;
++no_match:
++	return 0;
++}
++
++
++/**
++ * devt_from_partuuid - looks up the dev_t of a partition by its UUID
++ * @uuid:	36 byte char array containing a hex ascii UUID
++ *
++ * The function will return the first partition which contains a matching
++ * UUID value in its partition_meta_info struct.  This does not search
++ * by filesystem UUIDs.
++ *
++ * Returns the matching dev_t on success or 0 on failure.
++ */
++static dev_t __init devt_from_partuuid(char *uuid_str)
++{
++	dev_t res = 0;
++	struct device *dev = NULL;
++	u8 uuid[16];
++
++	/* Pack the requested UUID in the expected format. */
++	part_pack_uuid(uuid_str, uuid);
++
++	dev = class_find_device(&block_class, NULL, uuid, &match_dev_by_uuid);
++	if (!dev)
++		goto done;
++
++	res = dev->devt;
++	put_device(dev);
++
++done:
++	return res;
++}
++
  /*
-  * add_gd_partition adds a partitions details to the devices partition
-@@ -12,6 +13,8 @@ struct parsed_partitions {
- 		sector_t from;
- 		sector_t size;
- 		int flags;
-+		bool has_info;
-+		struct partition_meta_info info;
- 	} parts[DISK_MAX_PARTS];
- 	int next;
- 	int limit;
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 5f2f4c4..66e26b5 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -12,6 +12,7 @@
- #include <linux/types.h>
- #include <linux/kdev_t.h>
- #include <linux/rcupdate.h>
-+#include <linux/slab.h>
+  *	Convert a name into device number.  We accept the following variants:
+  *
+@@ -68,6 +122,8 @@ __setup("rw", readwrite);
+  *         of partition - device number of disk plus the partition number
+  *	5) /dev/<disk_name>p<decimal> - same as the above, that form is
+  *	   used when disk name of partitioned disk ends on a digit.
++ *	6) PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF representing the
++ *	   unique id of a partition if the partition table provides it.
+  *
+  *	If name doesn't have fall into the categories above, we return (0,0).
+  *	block_class is used to check if something is a disk name. If the disk
+@@ -82,6 +138,16 @@ dev_t name_to_dev_t(char *name)
+ 	dev_t res = 0;
+ 	int part;
  
- #ifdef CONFIG_BLOCK
- 
-@@ -86,7 +87,15 @@ struct disk_stats {
- 	unsigned long io_ticks;
- 	unsigned long time_in_queue;
- };
--	
-+
-+#define PARTITION_META_INFO_VOLNAMELTH	64
-+#define PARTITION_META_INFO_UUIDLTH	16
-+
-+struct partition_meta_info {
-+	u8 uuid[PARTITION_META_INFO_UUIDLTH];	/* always big endian */
-+	u8 volname[PARTITION_META_INFO_VOLNAMELTH];
-+};
-+
- struct hd_struct {
- 	sector_t start_sect;
- 	sector_t nr_sects;
-@@ -95,6 +104,7 @@ struct hd_struct {
- 	struct device __dev;
- 	struct kobject *holder_dir;
- 	int policy, partno;
-+	struct partition_meta_info *info;
- #ifdef CONFIG_FAIL_MAKE_REQUEST
- 	int make_it_fail;
- #endif
-@@ -181,6 +191,30 @@ static inline struct gendisk *part_to_disk(struct hd_struct *part)
- 	return NULL;
- }
- 
-+static inline void part_pack_uuid(const u8 *uuid_str, u8 *to)
-+{
-+	int i;
-+	for (i = 0; i < 16; ++i) {
-+		*to++ = (hex_to_bin(*uuid_str) << 4) |
-+			(hex_to_bin(*(uuid_str + 1)));
-+		uuid_str += 2;
-+		switch (i) {
-+		case 3:
-+		case 5:
-+		case 7:
-+		case 9:
-+			uuid_str++;
-+			continue;
-+		}
++	if (strncmp(name, "PARTUUID=", 9) == 0) {
++		name += 9;
++		if (strlen(name) != 36)
++			goto fail;
++		res = devt_from_partuuid(name);
++		if (!res)
++			goto fail;
++		goto done;
 +	}
-+}
 +
-+static inline char *part_unpack_uuid(const u8 *uuid, char *out)
-+{
-+	sprintf(out, "%pU", uuid);
-+	return out;
-+}
-+
- static inline int disk_max_parts(struct gendisk *disk)
- {
- 	if (disk->flags & GENHD_FL_EXT_DEVT)
-@@ -342,6 +376,19 @@ static inline int part_in_flight(struct hd_struct *part)
- 	return part->in_flight[0] + part->in_flight[1];
- }
- 
-+static inline struct partition_meta_info *alloc_part_info(struct gendisk *disk)
-+{
-+	if (disk)
-+		return kzalloc_node(sizeof(struct partition_meta_info),
-+				    GFP_KERNEL, disk->node_id);
-+	return kzalloc(sizeof(struct partition_meta_info), GFP_KERNEL);
-+}
-+
-+static inline void free_part_info(struct hd_struct *part)
-+{
-+	kfree(part->info);
-+}
-+
- /* block/blk-core.c */
- extern void part_round_stats(int cpu, struct hd_struct *part);
- 
-@@ -533,7 +580,9 @@ extern int disk_expand_part_tbl(struct gendisk *disk, int target);
- extern int rescan_partitions(struct gendisk *disk, struct block_device *bdev);
- extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
- 						     int partno, sector_t start,
--						     sector_t len, int flags);
-+						     sector_t len, int flags,
-+						     struct partition_meta_info
-+						       *info);
- extern void delete_partition(struct gendisk *, int);
- extern void printk_all_partitions(void);
+ 	if (strncmp(name, "/dev/", 5) != 0) {
+ 		unsigned maj, min;
  
 -- 
 1.7.0.4
