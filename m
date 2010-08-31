@@ -1,150 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab0HaIjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 04:39:06 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:53257 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab0HaIix (ORCPT
+	id S1753938Ab0HaInb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 04:43:31 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:65517 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab0HaIna convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 04:38:53 -0400
-Message-Id: <20100831083844.043619334@linux.vnet.ibm.com>
-References: <20100831082307.064687027@linux.vnet.ibm.com>
-User-Agent: quilt/0.46-1
-Date: Tue, 31 Aug 2010 10:23:09 +0200
-From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-To: mmarek@suse.cz, Sam Ravnborg <sam@ravnborg.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, brueckner@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com
-Subject: [PATCH 2/2] initramfs: Fix initramfs size calculation
-Content-Disposition: inline; filename=irfs2.patch
+	Tue, 31 Aug 2010 04:43:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xqlMpemI0tNaHcbTHXQXGyFnkv4oQo5iK/Y2qWMTXP8iQTrzsbHpwMgW5QEMcWlo7S
+         GfeL8AV51yHDW0Ji2sIBD795MGZdJYgFOLd8/hds6QjNSzVRnytvlXrTtwajzLafZTjs
+         jPdPrOxeCD33v1RCdCqy6uJLIZFrJYQD+HxlY=
+MIME-Version: 1.0
+In-Reply-To: <4C7CBBBC.3070503@gmail.com>
+References: <AANLkTimWnYqFSC=3kqzBVtZHwodCX=MnsViDGmJbUn_8@mail.gmail.com>
+	<4C7CBBBC.3070503@gmail.com>
+Date: Tue, 31 Aug 2010 14:13:29 +0530
+Message-ID: <AANLkTiniKYm7krr1j48VbV7oNDA7YKXzTnuCZ9kOMnUs@mail.gmail.com>
+Subject: Re: increasing memory alloted for 'init' during kernel boot.
+From: Prabhu Chawandi <prabhu.chavandi@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org,
+        listar@nl.linux.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of a built-in initramfs is calculated in init/initramfs.c by 
-"__initramfs_end - __initramfs_start".  Those symbols are defined in the
-linker script include/asm-generic/vmlinux.lds.h:
+Hi ,
 
-#define INIT_RAM_FS                                                     \
-        . = ALIGN(PAGE_SIZE);                                           \
-        VMLINUX_SYMBOL(__initramfs_start) = .;                          \
-        *(.init.ramfs)                                                  \
-        VMLINUX_SYMBOL(__initramfs_end) = .;
+Thanks for the info...
 
-If the initramfs file has an odd number of bytes, the "__initramfs_end"
-symbol points to an odd address, for example, the symbols in the System.map
-might look like:
+Problem I am facing is, I have two bootloaders, when I boot from one
+loader booting happens properly.
 
-    0000000000572000 T __initramfs_start
-    00000000005bcd05 T __initramfs_end	  <-- odd address
+but when I try to load from other loader, kernel does not boot, it
+crashes. When i saw the boot logs, I saw that I memory allocated to
+'init' section in case of crash is short by almost 5MB to the normal
+boot log.
 
-At least on s390 this causes a problem:
+I am using mips processor.
 
-Certain s390 instructions, especially instructions for loading addresses
-(larl) or branch addresses must be on even addresses. 
-The compiler loads the symbol addresses with the "larl" instruction. This
-instruction sets the last bit to 0 and, therefore, for odd size files, the
-calculated size is one byte less than it should be:
+Any idea, why this might be happening ?
 
-    0000000000540a9c <populate_rootfs>:
-      540a9c:     eb cf f0 78 00 24       stmg    %r12,%r15,120(%r15),
-      540aa2:     c0 10 00 01 8a af       larl    %r1,572000 <__initramfs_start>
-      540aa8:     c0 c0 00 03 e1 2e       larl    %r12,5bcd04 <initramfs_end>
-                                                  (Instead of  5bcd05)
-      ...
-      540abe:     1b c1                   sr      %r12,%r1
+thanks,
+Prabhu
 
-To fix the problem, this patch introduces the global variable
-__initramfs_size, which is calculated in the "usr/initramfs_data.S" file.
-The populate_rootfs() function can then use the start marker of the
-.init.ramfs section and the value of __initramfs_size for loading the
-initramfs.  Because the start marker and size is sufficient, the
-__initramfs_end symbol is no longer needed and is removed.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
----
- include/asm-generic/vmlinux.lds.h |    3 ++-
- init/initramfs.c                  |    9 ++++-----
- usr/initramfs_data.S              |   16 +++++++++++-----
- 3 files changed, 17 insertions(+), 11 deletions(-)
-
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -629,7 +629,8 @@
- 	. = ALIGN(PAGE_SIZE);						\
- 	VMLINUX_SYMBOL(__initramfs_start) = .;				\
- 	*(.init.ramfs)							\
--	VMLINUX_SYMBOL(__initramfs_end) = .;
-+	. = ALIGN(8);							\
-+	*(.init.ramfs.info)
- #else
- #define INIT_RAM_FS
- #endif
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -483,7 +483,8 @@ static int __init retain_initrd_param(ch
- }
- __setup("retain_initrd", retain_initrd_param);
- 
--extern char __initramfs_start[], __initramfs_end[];
-+extern char __initramfs_start[];
-+extern unsigned long __initramfs_size;
- #include <linux/initrd.h>
- #include <linux/kexec.h>
- 
-@@ -570,8 +571,7 @@ static void __init clean_rootfs(void)
- 
- static int __init populate_rootfs(void)
- {
--	char *err = unpack_to_rootfs(__initramfs_start,
--			 __initramfs_end - __initramfs_start);
-+	char *err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
- 	if (err)
- 		panic(err);	/* Failed to decompress INTERNAL initramfs */
- 	if (initrd_start) {
-@@ -585,8 +585,7 @@ static int __init populate_rootfs(void)
- 			return 0;
- 		} else {
- 			clean_rootfs();
--			unpack_to_rootfs(__initramfs_start,
--				 __initramfs_end - __initramfs_start);
-+			unpack_to_rootfs(__initramfs_start, __initramfs_size);
- 		}
- 		printk(KERN_INFO "rootfs image is not initramfs (%s)"
- 				"; looks like an initrd\n", err);
---- a/usr/initramfs_data.S
-+++ b/usr/initramfs_data.S
-@@ -11,11 +11,7 @@
-   -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
-    ld -m elf_i386  -r -o built-in.o initramfs_data.o
- 
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
-+  For including the .init.ramfs sections, see include/asm-generic/vmlinux.lds.
- 
-   The above example is for i386 - the parameters vary from architectures.
-   Eventually look up LDFLAGS_BLOB in an older version of the
-@@ -28,4 +24,14 @@ SECTIONS
- #include <linux/stringify.h>
- 
- .section .init.ramfs,"a"
-+__irf_start:
- .incbin __stringify(INITRAMFS_IMAGE)
-+__irf_end:
-+.section .init.ramfs.info,"a"
-+.globl __initramfs_size
-+__initramfs_size:
-+#ifdef CONFIG_32BIT
-+	.long __irf_end - __irf_start
-+#else
-+	.quad __irf_end - __irf_start
-+#endif
-
--- 
+On Tue, Aug 31, 2010 at 1:52 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 08/31/2010 08:49 AM, Prabhu Chawandi wrote:
+>> Hi all,
+>>
+>>    Whenever the kernel starts booting, I am getting the bellow log :
+>>
+>> Memory: 110080k/262144k available (2566k kernel code, 151952k
+>> reserved, 561k data, 15328k init, 0k highmem).
+>>
+>> For 'init' on what bases this amount of memory is decided ?
+>>
+>> Anyways I can alter it?
+>
+> Nope. It's code and data inside .init, .exit and similar sections. Those
+> are marked by __init, __exit etc. in the code. This memory is freed
+> after the kernel is up and running, since this memory (code and data) is
+> not needed anymore.
+>
+> regards,
+> --
+> js
+>
