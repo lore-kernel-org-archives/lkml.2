@@ -1,134 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab0HaJas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 05:30:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39346 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756928Ab0HaJar (ORCPT
+	id S1757068Ab0HaJbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 05:31:43 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59381 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756922Ab0HaJbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 05:30:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [BUGFIX for 2.6.36][RESEND][PATCH 2/2] Revert "oom: deprecate oom_adj tunable"
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <20100831181911.87E7.A69D9226@jp.fujitsu.com>
-References: <20100831181911.87E7.A69D9226@jp.fujitsu.com>
-Message-Id: <20100831182956.87EA.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 31 Aug 2010 05:31:42 -0400
+Subject: Re: [PATCH 3/3] x86: oprofile: fix oprofile_arch_init behaviour on
+ failure
+From: Will Deacon <will.deacon@arm.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Matt Fleming <matt@console-pimps.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20100831090518.GZ22783@erda.amd.com>
+References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
+	 <1283107921-21464-2-git-send-email-will.deacon@arm.com>
+	 <1283107921-21464-3-git-send-email-will.deacon@arm.com>
+	 <1283107921-21464-4-git-send-email-will.deacon@arm.com>
+	 <20100830090929.GU22783@erda.amd.com>
+	 <1283244880.645.17.camel@e102144-lin.cambridge.arm.com>
+	 <20100831090518.GZ22783@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 10:31:29 +0100
+Message-ID: <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 31 Aug 2010 18:30:40 +0900 (JST)
+X-OriginalArrivalTime: 31 Aug 2010 09:31:33.0240 (UTC) FILETIME=[4CC2A780:01CB48EF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-oom_adj is not only used for kernel knob, but also used for
-application interface.
-Then, adding new knob is no good reason to deprecate it.
+On Tue, 2010-08-31 at 10:05 +0100, Robert Richter wrote:
+> On 31.08.10 04:54:40, Will Deacon wrote:
+> > Do you think it would be better to rework this patch so that the static
+> > using_nmi variable is set explicitly by init.c, or shall I just drop
+> > this patch altogether (and resubmit the first two)?
+> 
+> For x86 wont change the code (actually I found a bug in the init_sysfs
+> error handler for which I will send a fix). Just wanted to get your
+> confirmation in case I was missing something that x86 is not affected.
+> I will apply the first 2 patches, no need to resubmit.
+> 
+Ok, great. The commit comment might need tweaking for the first
+patch now that the x86 code remains unchanged.
 
-Also, after former patch, oom_score_adj can't be used for setting
-OOM_DISABLE. We need "echo -17 > /proc/<pid>/oom_adj" thing.
+Cheers,
 
-This reverts commit 51b1bd2ace1595b72956224deda349efa880b693.
----
- Documentation/feature-removal-schedule.txt |   25 -------------------------
- Documentation/filesystems/proc.txt         |    3 ---
- fs/proc/base.c                             |    8 --------
- include/linux/oom.h                        |    3 ---
- 4 files changed, 0 insertions(+), 39 deletions(-)
-
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 842aa9d..aff4d11 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -151,31 +151,6 @@ Who:	Eric Biederman <ebiederm@xmission.com>
- 
- ---------------------------
- 
--What:	/proc/<pid>/oom_adj
--When:	August 2012
--Why:	/proc/<pid>/oom_adj allows userspace to influence the oom killer's
--	badness heuristic used to determine which task to kill when the kernel
--	is out of memory.
--
--	The badness heuristic has since been rewritten since the introduction of
--	this tunable such that its meaning is deprecated.  The value was
--	implemented as a bitshift on a score generated by the badness()
--	function that did not have any precise units of measure.  With the
--	rewrite, the score is given as a proportion of available memory to the
--	task allocating pages, so using a bitshift which grows the score
--	exponentially is, thus, impossible to tune with fine granularity.
--
--	A much more powerful interface, /proc/<pid>/oom_score_adj, was
--	introduced with the oom killer rewrite that allows users to increase or
--	decrease the badness() score linearly.  This interface will replace
--	/proc/<pid>/oom_adj.
--
--	A warning will be emitted to the kernel log if an application uses this
--	deprecated interface.  After it is printed once, future warnings will be
--	suppressed until the kernel is rebooted.
--
-----------------------------
--
- What:	remove EXPORT_SYMBOL(kernel_thread)
- When:	August 2006
- Files:	arch/*/kernel/*_ksyms.c
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index a6aca87..cf1295c 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1285,9 +1285,6 @@ scaled linearly with /proc/<pid>/oom_score_adj.
- Writing to /proc/<pid>/oom_score_adj or /proc/<pid>/oom_adj will change the
- other with its scaled value.
- 
--NOTICE: /proc/<pid>/oom_adj is deprecated and will be removed, please see
--Documentation/feature-removal-schedule.txt.
--
- Caveat: when a parent task is selected, the oom killer will sacrifice any first
- generation children with seperate address spaces instead, if possible.  This
- avoids servers and important system daemons from being killed and loses the
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 90ba487..55a16f2 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1046,14 +1046,6 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
- 		return -EACCES;
- 	}
- 
--	/*
--	 * Warn that /proc/pid/oom_adj is deprecated, see
--	 * Documentation/feature-removal-schedule.txt.
--	 */
--	printk_once(KERN_WARNING "%s (%d): /proc/%d/oom_adj is deprecated, "
--			"please use /proc/%d/oom_score_adj instead.\n",
--			current->comm, task_pid_nr(current),
--			task_pid_nr(task), task_pid_nr(task));
- 	task->signal->oom_adj = oom_adjust;
- 
- 	unlock_task_sighand(task, &flags);
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 21006dc..394f2e6 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -2,9 +2,6 @@
- #define __INCLUDE_LINUX_OOM_H
- 
- /*
-- * /proc/<pid>/oom_adj is deprecated, see
-- * Documentation/feature-removal-schedule.txt.
-- *
-  * /proc/<pid>/oom_adj set to -17 protects from the oom-killer
-  */
- #define OOM_DISABLE (-17)
--- 
-1.6.5.2
-
-
+Will
 
