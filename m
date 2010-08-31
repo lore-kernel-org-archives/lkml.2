@@ -1,275 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab0HaHOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 03:14:25 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35708 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932172Ab0HaHOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 03:14:24 -0400
-Date: Tue, 31 Aug 2010 12:44:14 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "menage@google.com" <menage@google.com>,
-        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH 2/5] memcg: quick memcg lookup array
-Message-ID: <20100831071414.GN32680@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
- <20100825170741.f1f0a220.kamezawa.hiroyu@jp.fujitsu.com>
+	id S932244Ab0HaHQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 03:16:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52198 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932172Ab0HaHQG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 03:16:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=FjnVnTSKqH9I1deqZzgpebvkdt6dfwmdvyhhj9iytci1NQkf3k6AoTUY3pjn7UQUPz
+         0GHvSgXjcSf3BbIr622wV8naWI2gowciKmiLu4TFVIcSoMrDY9zuaBiA9aBRKzlsy4hk
+         NjS4qXlMdsm4gMicwkJZ5Fc5kWOLNRbc9mcjI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100825170741.f1f0a220.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTi=RgZcykxPnUcneGfZnETo9nK_72Qoa=8rKh2rD@mail.gmail.com>
+References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
+ <1282814339-10934-5-git-send-email-mark.brown314@gmail.com>
+ <AANLkTimvudYv4fwyGWjL5c10QrM9GtC2SXjPZzcV20_s@mail.gmail.com>
+ <AANLkTinEtFhC6kB3asuBXLxCgYf9yOTLTTwRQJXKcu2n@mail.gmail.com>
+ <AANLkTi=0ECTN8ro3H6=CUZy5qzJjhC0C02yPKzS-+0r5@mail.gmail.com> <AANLkTi=RgZcykxPnUcneGfZnETo9nK_72Qoa=8rKh2rD@mail.gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 31 Aug 2010 15:15:44 +0800
+Message-ID: <AANLkTi==d-YW4mVT7Pvr_NqfiHeXZ=DZjv69Z_Dhg6Gb@mail.gmail.com>
+Subject: Re: [PATCH 4/5] ARM: pxa168: added special case handler for keypad interrupts
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-25 17:07:41]:
+On Tue, Aug 31, 2010 at 3:13 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> On Tue, Aug 31, 2010 at 3:05 AM, Eric Miao <eric.y.miao@gmail.com> wrote:
+>> On Tue, Aug 31, 2010 at 2:28 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>>> On Tue, Aug 31, 2010 at 12:53 AM, Haojian Zhuang
+>>> <haojian.zhuang@gmail.com> wrote:
+>>>> On Thu, Aug 26, 2010 at 5:18 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>>>>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>>>>> ---
+>>>>>  arch/arm/mach-mmp/irq-pxa168.c |   23 ++++++++++++++++++++++-
+>>>>>  1 files changed, 22 insertions(+), 1 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/arm/mach-mmp/irq-pxa168.c b/arch/arm/mach-mmp/irq-pxa168.c
+>>>>> index 52ff2f0..bfb0984 100644
+>>>>> --- a/arch/arm/mach-mmp/irq-pxa168.c
+>>>>> +++ b/arch/arm/mach-mmp/irq-pxa168.c
+>>>>> @@ -17,6 +17,8 @@
+>>>>>  #include <linux/io.h>
+>>>>>
+>>>>>  #include <mach/regs-icu.h>
+>>>>> +#include <mach/regs-apmu.h>
+>>>>> +#include <mach/cputype.h>
+>>>>>
+>>>>>  #include "common.h"
+>>>>>
+>>>>> @@ -42,6 +44,19 @@ static struct irq_chip icu_irq_chip = {
+>>>>>        .unmask = icu_unmask_irq,
+>>>>>  };
+>>>>>
+>>>>> +void handle_pxa168_keypad_irq(unsigned int irq, struct irq_desc *desc)
+>>>>> +{
+>>>>> +       uint32_t val;
+>>>>> +       uint32_t mask = APMU_PXA168_KP_WAKE_CLR;
+>>>>> +
+>>>>> +       /* clear keypad wake event */
+>>>>> +       val = __raw_readl(APMU_WAKE_CLR);
+>>>>> +       __raw_writel(val |  mask, APMU_WAKE_CLR);
+>>>>> +
+>>>>> +       /* handle irq */
+>>>>> +       handle_level_irq(irq, desc);
+>>>>> +}
+>>>>> +
+>>>>
+>>>> Why should you clear wakeup event status in IRQ handler? If system is
+>>>> resumed by keypad event, you should clear this wakeup source in resume
+>>>> code. I think that IRQ code should not be binded with wakeup event at
+>>>> here.
+>>>>
+>>>>>  void __init icu_init_irq(void)
+>>>>>  {
+>>>>>        int irq;
+>>>>> @@ -49,7 +64,13 @@ void __init icu_init_irq(void)
+>>>>>        for (irq = 0; irq < 64; irq++) {
+>>>>>                icu_mask_irq(irq);
+>>>>>                set_irq_chip(irq, &icu_irq_chip);
+>>>>> -               set_irq_handler(irq, handle_level_irq);
+>>>>> +
+>>>>> +               /* special handler for keypad */
+>>>>> +               if (cpu_is_pxa168() && irq == IRQ_PXA168_KEYPAD)
+>>>>> +                       set_irq_handler(irq, handle_pxa168_keypad_irq);
+>>>>> +               else
+>>>>> +                       set_irq_handler(irq, handle_level_irq);
+>>>>> +
+>>>>>                set_irq_flags(irq, IRQF_VALID);
+>>>>>        }
+>>>>>  }
+>>>>> --
+>>>>> 1.7.0.4
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>>
+>>>>
+>>>
+>>> Haojian, this is an usual case, but without that clear wake event you
+>>> will not be able to clear the keypad interrupt. For my push to open
+>>> source I re-wrote the workaround code and added it as a special case
+>>> IRQ handler. In the Marvell pxa168 code base it is actually located in
+>>> the keypad interrupt handler as the function clear_wakeup(). I felt it
+>>> was better to isolate this code in the mmp common code base instead.
+>>
+>> I'd rather the irq handler not being changed and use platform_data instead.
+>> How about something below:
+>>
+>> diff --git a/arch/arm/mach-mmp/include/mach/pxa168.h
+>> b/arch/arm/mach-mmp/include/mach/pxa168.h
+>> index 27e1bc7..d2b7946 100644
+>> --- a/arch/arm/mach-mmp/include/mach/pxa168.h
+>> +++ b/arch/arm/mach-mmp/include/mach/pxa168.h
+>> @@ -5,6 +5,7 @@ struct sys_timer;
+>>
+>>  extern struct sys_timer pxa168_timer;
+>>  extern void __init pxa168_init_irq(void);
+>> +extern void pxa168_clear_keypad_wakeup(void);
+>>
+>>  #include <linux/i2c.h>
+>>  #include <mach/devices.h>
+>> @@ -97,4 +98,10 @@ static inline int pxa168_add_nand(struct
+>> pxa3xx_nand_platform_data *info)
+>>  {
+>>        return pxa_register_device(&pxa168_device_nand, info, sizeof(*info));
+>>  }
+>> +
+>> +static inline int pxa168_add_keypad(struct pxa27x_keypad_platform_data *info)
+>> +{
+>> +       info->clear_wakeup = pxa168_clear_keypad_wakeup;
+>> +       return pxa_register_device(&pxa168_device_keypad, info, sizeof(*info));
+>> +}
+>>  #endif /* __ASM_MACH_PXA168_H */
+>> diff --git a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+>> b/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+>> index 7b4eadc..3a6bfe7 100644
+>> --- a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+>> +++ b/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+>> @@ -52,6 +52,7 @@ struct pxa27x_keypad_platform_data {
+>>
+>>        /* key debounce interval */
+>>        unsigned int    debounce_interval;
+>> +       void            (*clear_wakeup);
+>>  };
+>>
+>>  extern void pxa_set_keypad_info(struct pxa27x_keypad_platform_data *info);
+>> diff --git a/drivers/input/keyboard/pxa27x_keypad.c
+>> b/drivers/input/keyboard/pxa27x_keypad.c
+>> index f32404f..3fb94fe 100644
+>> --- a/drivers/input/keyboard/pxa27x_keypad.c
+>> +++ b/drivers/input/keyboard/pxa27x_keypad.c
+>> @@ -330,10 +330,20 @@ static void pxa27x_keypad_scan_direct(struct
+>> pxa27x_keypad *keypad)
+>>        keypad->direct_key_state = new_state;
+>>  }
+>>
+>> +static void clear_wakeup(struct pxa27x_keypad *keypad)
+>> +{
+>> +       struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+>> +
+>> +       if (pdata->clear_wakeup)
+>> +               (pdata->clear_wakeup)();
+>> +}
+>> +
+>>  static irqreturn_t pxa27x_keypad_irq_handler(int irq, void *dev_id)
+>>  {
+>>        struct pxa27x_keypad *keypad = dev_id;
+>> -       unsigned long kpc = keypad_readl(KPC);
+>> +       unsigned long kpc;
+>> +
+>> +       kpc = keypad_readl(KPC);
+>>
+>>        if (kpc & KPC_DI)
+>>                pxa27x_keypad_scan_direct(keypad);
+>>
+>
+> Ok if you are fine with that I will make that change and resubmit!
+>
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Now, memory cgroup has an ID per cgroup and make use of it at
->  - hierarchy walk,
->  - swap recording.
-> 
-> This patch is for making more use of it. The final purpose is
-> to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
-> 
-> This patch caches a pointer of memcg in an array. By this, we
-> don't have to call css_lookup() which requires radix-hash walk.
-> This saves some amount of memory footprint at lookup memcg via id.
-> 
-> Changelog: 20100825
->  - applied comments.
-> 
-> Changelog: 20100811
->  - adjusted onto mmotm-2010-08-11
->  - fixed RCU related parts.
->  - use attach_id() callback.
-> 
-> Changelog: 20100804
->  - fixed description in init/Kconfig
-> 
-> Changelog: 20100730
->  - fixed rcu_read_unlock() placement.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  init/Kconfig    |   10 +++++++
->  mm/memcontrol.c |   75 +++++++++++++++++++++++++++++++++++++++++---------------
->  2 files changed, 65 insertions(+), 20 deletions(-)
-> 
-> Index: mmotm-0811/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0811.orig/mm/memcontrol.c
-> +++ mmotm-0811/mm/memcontrol.c
-> @@ -195,6 +195,7 @@ static void mem_cgroup_oom_notify(struct
->   */
->  struct mem_cgroup {
->  	struct cgroup_subsys_state css;
-> +	int	valid; /* for checking validness under RCU access.*/
->  	/*
->  	 * the counter to account for memory usage
->  	 */
-> @@ -294,6 +295,29 @@ static bool move_file(void)
->  					&mc.to->move_charge_at_immigrate);
->  }
-> 
-> +/* 0 is unused */
-> +static atomic_t mem_cgroup_num;
-> +#define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
-> +static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
-> +
-> +/* Must be called under rcu_read_lock */
-> +static struct mem_cgroup *id_to_memcg(unsigned short id)
-> +{
-> +	struct mem_cgroup *mem;
-> +	/* see mem_cgroup_free() */
-> +	mem = rcu_dereference_check(mem_cgroups[id], rcu_read_lock_held());
-> +	if (likely(mem && mem->valid))
-> +		return mem;
-> +	return NULL;
-> +}
-> +
-> +static void register_memcg_id(struct mem_cgroup *mem)
-> +{
-> +	int id = css_id(&mem->css);
-> +	rcu_assign_pointer(mem_cgroups[id], mem);
-> +	VM_BUG_ON(!mem->valid);
-> +}
-> +
->  /*
->   * Maximum loops in mem_cgroup_hierarchical_reclaim(), used for soft
->   * limit reclaim to prevent infinite loops, if they ever occur.
-> @@ -1847,18 +1871,7 @@ static void mem_cgroup_cancel_charge(str
->   * it's concern. (dropping refcnt from swap can be called against removed
->   * memcg.)
->   */
-> -static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
-> -{
-> -	struct cgroup_subsys_state *css;
-> 
-> -	/* ID 0 is unused ID */
-> -	if (!id)
-> -		return NULL;
-> -	css = css_lookup(&mem_cgroup_subsys, id);
-> -	if (!css)
-> -		return NULL;
-> -	return container_of(css, struct mem_cgroup, css);
-> -}
-> 
->  struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->  {
-> @@ -1879,7 +1892,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
->  		ent.val = page_private(page);
->  		id = lookup_swap_cgroup(ent);
->  		rcu_read_lock();
-> -		mem = mem_cgroup_lookup(id);
-> +		mem = id_to_memcg(id);
->  		if (mem && !css_tryget(&mem->css))
->  			mem = NULL;
->  		rcu_read_unlock();
-> @@ -2231,7 +2244,7 @@ __mem_cgroup_commit_charge_swapin(struct
-> 
->  		id = swap_cgroup_record(ent, 0);
->  		rcu_read_lock();
-> -		memcg = mem_cgroup_lookup(id);
-> +		memcg = id_to_memcg(id);
->  		if (memcg) {
->  			/*
->  			 * This recorded memcg can be obsolete one. So, avoid
-> @@ -2240,9 +2253,10 @@ __mem_cgroup_commit_charge_swapin(struct
->  			if (!mem_cgroup_is_root(memcg))
->  				res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
->  			mem_cgroup_swap_statistics(memcg, false);
-> +			rcu_read_unlock();
->  			mem_cgroup_put(memcg);
-> -		}
-> -		rcu_read_unlock();
-> +		} else
-> +			rcu_read_unlock();
->  	}
->  	/*
->  	 * At swapin, we may charge account against cgroup which has no tasks.
-> @@ -2495,7 +2509,7 @@ void mem_cgroup_uncharge_swap(swp_entry_
-> 
->  	id = swap_cgroup_record(ent, 0);
->  	rcu_read_lock();
-> -	memcg = mem_cgroup_lookup(id);
-> +	memcg = id_to_memcg(id);
->  	if (memcg) {
->  		/*
->  		 * We uncharge this because swap is freed.
-> @@ -2504,9 +2518,10 @@ void mem_cgroup_uncharge_swap(swp_entry_
->  		if (!mem_cgroup_is_root(memcg))
->  			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
->  		mem_cgroup_swap_statistics(memcg, false);
-> +		rcu_read_unlock();
->  		mem_cgroup_put(memcg);
-> -	}
-> -	rcu_read_unlock();
-> +	} else
-> +		rcu_read_unlock();
->  }
-> 
->  /**
-> @@ -4010,6 +4025,9 @@ static struct mem_cgroup *mem_cgroup_all
->  	struct mem_cgroup *mem;
->  	int size = sizeof(struct mem_cgroup);
-> 
-> +	if (atomic_read(&mem_cgroup_num) == NR_MEMCG_GROUPS)
-> +		return NULL;
-> +
->  	/* Can be very big if MAX_NUMNODES is very big */
->  	if (size < PAGE_SIZE)
->  		mem = kmalloc(size, GFP_KERNEL);
-> @@ -4020,6 +4038,7 @@ static struct mem_cgroup *mem_cgroup_all
->  		return NULL;
-> 
->  	memset(mem, 0, size);
-> +	mem->valid = 1;
->  	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
->  	if (!mem->stat) {
->  		if (size < PAGE_SIZE)
-> @@ -4049,6 +4068,7 @@ static void __mem_cgroup_free(struct mem
->  	mem_cgroup_remove_from_trees(mem);
->  	free_css_id(&mem_cgroup_subsys, &mem->css);
-> 
-> +	atomic_dec(&mem_cgroup_num);
->  	for_each_node_state(node, N_POSSIBLE)
->  		free_mem_cgroup_per_zone_info(mem, node);
-> 
-> @@ -4059,6 +4079,19 @@ static void __mem_cgroup_free(struct mem
->  		vfree(mem);
->  }
-> 
-> +static void mem_cgroup_free(struct mem_cgroup *mem)
-> +{
-> +	/* No more lookup */
-> +	mem->valid = 0;
-> +	rcu_assign_pointer(mem_cgroups[css_id(&mem->css)], NULL);
-> +	/*
-> +	 * Because we call vfree() etc...use synchronize_rcu() rather than
-> + 	 * call_rcu();
-> + 	 */
-> +	synchronize_rcu();
-> +	__mem_cgroup_free(mem);
-> +}
-> +
->  static void mem_cgroup_get(struct mem_cgroup *mem)
->  {
->  	atomic_inc(&mem->refcnt);
-> @@ -4068,7 +4101,7 @@ static void __mem_cgroup_put(struct mem_
->  {
->  	if (atomic_sub_and_test(count, &mem->refcnt)) {
->  		struct mem_cgroup *parent = parent_mem_cgroup(mem);
-> -		__mem_cgroup_free(mem);
-> +		mem_cgroup_free(mem);
->  		if (parent)
->  			mem_cgroup_put(parent);
->  	}
-> @@ -4189,9 +4222,11 @@ mem_cgroup_create(struct cgroup_subsys *
->  	atomic_set(&mem->refcnt, 1);
->  	mem->move_charge_at_immigrate = 0;
->  	mutex_init(&mem->thresholds_lock);
-> +	atomic_inc(&mem_cgroup_num);
-> +	register_memcg_id(mem);
->  	return &mem->css;
->  free_out:
-> -	__mem_cgroup_free(mem);
-> +	mem_cgroup_free(mem);
->  	root_mem_cgroup = NULL;
->  	return ERR_PTR(error);
->  }
-> Index: mmotm-0811/init/Kconfig
-> ===================================================================
-> --- mmotm-0811.orig/init/Kconfig
-> +++ mmotm-0811/init/Kconfig
-> @@ -594,6 +594,16 @@ config CGROUP_MEM_RES_CTLR_SWAP
->  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
->  	  size is 4096bytes, 512k per 1Gbytes of swap.
-> 
-> +config MEM_CGROUP_MAX_GROUPS
-> +	int "Maximum number of memory cgroups on a system"
-> +	range 1 65535
-> +	default 8192 if 64BIT
-> +	default 2048 if 32BIT
-> +	help
-> +	  Memory cgroup has limitation of the number of groups created.
-> +	  Please select your favorite value. The more you allow, the more
-> +	  memory(a pointer per group) will be consumed.
-> +
-
-Looks good, quick thought - should we expost memcg->id to user space
-through a config file? I don't see any reason at this point, unless we
-do it for all controllers.
-
--- 
-	Three Cheers,
-	Balbir
+Thanks.
