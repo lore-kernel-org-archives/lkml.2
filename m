@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab0HaCgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 22:36:24 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:54763 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756822Ab0HaCgU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 22:36:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C634TXnnjOE4psrJ3XY6oiTl4kSAuNhPK9jOPzlHjvpZ5G+U1olAoFkrnu4spww8kl
-         9DaU4PnZDnkGz9fmt0jPOpS6e+0N8cgAWSfJ4mI4qO5Wjk3UCzK2X8Mw333tFykjd62q
-         mUiW0fgm0Pl65tXiv9BymVFyFPBwuYlyj/6BI=
-From: "Mark F. Brown" <mark.brown314@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        "Mark F. Brown" <mark.brown314@gmail.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Cc: "Mark F. Brown" <mark.brown314@gmail.com>
-Subject: [PATCH 4/5] ARM: pxa168: added special case handler for keypad interrupts
-Date: Thu, 26 Aug 2010 05:18:58 -0400
-Message-Id: <1282814339-10934-5-git-send-email-mark.brown314@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
-References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
+	id S1756731Ab0HaC5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 22:57:48 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41844 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756678Ab0HaC5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 22:57:47 -0400
+Date: Tue, 31 Aug 2010 12:57:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: Re: linux-next: build warning after merge of the net tree
+Message-Id: <20100831125738.7f18610b.sfr@canb.auug.org.au>
+In-Reply-To: <20100706142542.d723903f.sfr@canb.auug.org.au>
+References: <20100706142542.d723903f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__31_Aug_2010_12_57_38_+1000_VFySImY6pPgQK0F3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
----
- arch/arm/mach-mmp/irq-pxa168.c |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
+--Signature=_Tue__31_Aug_2010_12_57_38_+1000_VFySImY6pPgQK0F3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-mmp/irq-pxa168.c b/arch/arm/mach-mmp/irq-pxa168.c
-index 52ff2f0..bfb0984 100644
---- a/arch/arm/mach-mmp/irq-pxa168.c
-+++ b/arch/arm/mach-mmp/irq-pxa168.c
-@@ -17,6 +17,8 @@
- #include <linux/io.h>
- 
- #include <mach/regs-icu.h>
-+#include <mach/regs-apmu.h>
-+#include <mach/cputype.h>
- 
- #include "common.h"
- 
-@@ -42,6 +44,19 @@ static struct irq_chip icu_irq_chip = {
- 	.unmask	= icu_unmask_irq,
- };
- 
-+void handle_pxa168_keypad_irq(unsigned int irq, struct irq_desc *desc)
-+{
-+	uint32_t val;
-+	uint32_t mask = APMU_PXA168_KP_WAKE_CLR;
-+
-+	/* clear keypad wake event */
-+	val = __raw_readl(APMU_WAKE_CLR);
-+	__raw_writel(val |  mask, APMU_WAKE_CLR);
-+
-+	/* handle irq */
-+	handle_level_irq(irq, desc);
-+}
-+
- void __init icu_init_irq(void)
- {
- 	int irq;
-@@ -49,7 +64,13 @@ void __init icu_init_irq(void)
- 	for (irq = 0; irq < 64; irq++) {
- 		icu_mask_irq(irq);
- 		set_irq_chip(irq, &icu_irq_chip);
--		set_irq_handler(irq, handle_level_irq);
-+
-+		/* special handler for keypad */
-+		if (cpu_is_pxa168() && irq == IRQ_PXA168_KEYPAD)
-+			set_irq_handler(irq, handle_pxa168_keypad_irq);
-+		else
-+			set_irq_handler(irq, handle_level_irq);
-+
- 		set_irq_flags(irq, IRQF_VALID);
- 	}
- }
--- 
-1.7.0.4
+Hi all,
 
+On Tue, 6 Jul 2010 14:25:42 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> After merging the net tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced these warnings:
+>=20
+> drivers/scsi/sym53c8xx_2/sym_hipd.c: In function 'sym_print_msg':
+> drivers/scsi/sym53c8xx_2/sym_hipd.c:78: warning: zero-length gnu_printf f=
+ormat string
+> drivers/scsi/constants.c: In function 'scsi_print_sense':
+> drivers/scsi/constants.c:1407: warning: zero-length gnu_printf format str=
+ing
+> drivers/scsi/constants.c:1413: warning: zero-length gnu_printf format str=
+ing
+> drivers/scsi/constants.c: In function 'scsi_print_result':
+> drivers/scsi/constants.c:1456: warning: zero-length gnu_printf format str=
+ing
+> drivers/scsi/sd.c: In function 'sd_print_sense_hdr':
+> drivers/scsi/sd.c:2599: warning: zero-length gnu_printf format string
+> drivers/scsi/sd.c:2601: warning: zero-length gnu_printf format string
+> drivers/scsi/sd.c: In function 'sd_print_result':
+> drivers/scsi/sd.c:2607: warning: zero-length gnu_printf format string
+>=20
+> (There may be more ...)
+>=20
+> Introduced by commit 99bcf217183e02ebae46373896fba7f12d588001 ("device.h
+> drivers/base/core.c Convert dev_<level> logging macros to functions").
+
+Can we have a fix for these please?  They make too much noise in the builds.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__31_Aug_2010_12_57_38_+1000_VFySImY6pPgQK0F3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMfG+iAAoJEDMEi1NhKgbsztMH/2AQV1CSd2cAYQypxMqZgZ9D
+JAmIw387jJwnn45mWnVhkLUQPlrm0tmGPkefjMpx9yOCegFl3KEmh4CnJkrUlhS3
+BDvep+VM8ufLs4sSdcCLP/Bd+JE8XbiHEvRBV8tyHaEJ1Wj6CfQ3BHjavWZbG/pU
+JGuTbZTjkP1JTYWQolIdzZWoC8Hc+xAHzM6QOl06dpdjTDJwTeWy1oIp75WwLL4t
+g9NCz6gN3X2fCqpfZlT2v40PG3dOCx66sOYCjktpOrPCgH8rQYPXqrUgkQ2C6RH/
+rek6UabL2H7eUJI8cqid3onKFweVTITH+6AQyW1ojZ4/hZPVpk3po0UCB5ZofW4=
+=TydS
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__31_Aug_2010_12_57_38_+1000_VFySImY6pPgQK0F3--
