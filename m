@@ -1,129 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab0HaFP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 01:15:26 -0400
-Received: from ns1.siteground211.com ([209.62.36.12]:60982 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756630Ab0HaFPY (ORCPT
+	id S1754303Ab0HaFU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 01:20:56 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53861 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab0HaFUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 01:15:24 -0400
-MIME-Version: 1.0
-Date: Tue, 31 Aug 2010 00:15:11 -0500
-From: Felipe Balbi <me@felipebalbi.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Hemanth V <hemanthv@ti.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <igor.stoppa@nokia.com>,
-        <kai.svahn@nokia.com>, <matthias.nyman@nokia.com>
-Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2] input:
- CMA3000 Accelerometer driver)
-In-Reply-To: <20100830224352.GF28865@core.coreip.homeip.net>
-References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com> <20100829184904.GC26209@core.coreip.homeip.net> <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com> <20100830214025.2f9677a1@lxorguk.ukuu.org.uk> <20100830204412.GA28711@core.coreip.homeip.net> <AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com> <20100830214355.GB28865@core.coreip.homeip.net> <AANLkTinPConD62Ky7mvMn2ZgS=V9+Q5YUdaF5Vma8mn+@mail.gmail.com> <20100830224352.GF28865@core.coreip.homeip.net>
-Message-ID: <43fd040585e2eca4416f7619eba86515@secure211.sgcpanel.com>
-User-Agent: RoundCube Webmail/0.3.1
+	Tue, 31 Aug 2010 01:20:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=owXserQDV6lU0KnM2Agkt81PtBpL7cLGNGYh4Xg4GEJSeo71J3iYrUwyItfVX1dYsG
+         fQzV8EFIAtdumZGr54XoE4NwPUfRjy7C4KPwSXD924524UcKoJUekvfrVMkw6ms0JoJJ
+         cLRFYWXjISrow3V8/uHeeyxkRnixFu7q2IcAk=
+Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
+ ip_fragment
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Bandan Das <bandan.das@stratus.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: David Miller <davem@davemloft.net>, NetDev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Patrick McHardy <kaber@trash.net>
+In-Reply-To: <20100830232147.GB10754@stratus.com>
+References: <20100830200917.GA10754@stratus.com>
+	 <1283204118.2405.32.camel@edumazet-laptop>
+	 <20100830232147.GB10754@stratus.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 07:20:31 +0200
+Message-ID: <1283232031.2405.38.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 30 Aug 2010 15:43:52 -0700, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Mon, Aug 30, 2010 at 03:05:32PM -0700, Linus Torvalds wrote:
->> On Monday, August 30, 2010, Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> wrote:
->> >
->> > That is why I started taking accelerometers in. But I am concerned
-that
->> > taking accelerometers (which indeed are most often input devices)
-will
->> > lead people to try and use the same for temperature, ALS and other
->> > sensors that are more often used in industrial process controls.
->> 
->> You're just being silly.
->> 
->> Nobody writes a driver for a "temperature sensor" or "ambient light
->> sensor". They write a driver for a specific *chip* that is used in
->> cellphones etc, and that happens to have an ambient light and
->> temperature sensor on it.
+Le lundi 30 août 2010 à 19:21 -0400, Bandan Das a écrit :
+> > 
+> > I wonder if we want this.
+> > 
+> > Maybe setting skb->local_df = 1 in bridge should be enough ?
+> > 
+> > 
+> Thanks Eric for looking at this. Indeed, setting local_df to 1 seems to be enough! I will
+> respin and post a different patch.
 > 
-> And? Yes, they have a ALS and temperature sensors. They also have
-> voltage regulators, pwm, ADC and a bunch of other stuff wired on. You
-> are not arguing that all of those should be input devices just because
-> they happen to reside on the same chip?
-> 
->> 
->> And in that context, it really does make sense to see it as an input
->> driver. And the fact that there are industrial uses for ALS sensors
->> that aren't necessarily at all interested on the input layer should
->> not matter at all.
-> 
-> I think it does matter; we should have standard interface for certain
-> functionality that makes sense for everyone. So far cellphone guys
-> wanted to plumb such devices through input not necessarily because these
-> are HID events but because:
-> 
-> 1. Input transport via evdev is very convenient
-> 2. There is no other standard alternative
-> 
-> Once there is standard interface for such sensors they will happily use
-> it and will not look back.
 
-I disagree. If the device is used as input and currently
-app developers have to find other ways to use such input
-data, having a standard interface other than input layer
-will just make the mess standardized, but it will still
-be a mess.
+Reading this stuff again, I wonder if we should not revert commit
+17762060c25590bfddd  and use a different trick
 
->> So don't bring up "ALS isn't always input" because within the context
->> of a driver for some highly integrated cellphone model, it really IS
->> input, and there is no ambiguity at all.
->> 
->> So your "sometimes it is, and sometimes it isn't" argument is bogus.
->> The ambiguity simply doesn't exist when seen in context.
-> 
-> Sure, for a particular cell phone there is no ambiguity, the sensor has
-> certain functionality assigned that is well known. But does this mean
-> that we should not expect parts being reused at all anymore?
+Author: Herbert Xu <herbert@gondor.apana.org.au>
+Date:   Mon Jul 5 21:29:28 2010 +0000
 
-Why are we trying to overengineer on such simple devices ? Wasn't
-it so that we will design and implement solutions when the problem
-arrives ? Why are we trying to think of all cases such a simple
-device might be used just for the sake of not being input device ?
+    bridge: Clear IPCB before possible entry into IP stack
+    
+    The bridge protocol lives dangerously by having incestuous relations
+    with the IP stack.  In this instance an abomination has been created
+    where a bogus IPCB area from a bridged packet leads to a crash in
+    the IP stack because it's interpreted as IP options.
+    
+    This patch papers over the problem by clearing the IPCB area in that
+    particular spot.  To fix this properly we'd also need to parse any
+    IP options if present but I'm way too lazy for that.
+    
+    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
->> >> (or GPS device, for that matter) really be?
->> >
->> > But why GPS should be input device? It has nothing to do with user
->> > input.
->> 
->> What? OF COURSE it is an input driver. It's the user moving the device
->> around. It's EXACTLY the same thing as an accelerometer in that
->> respect. Sure, it's a bit less precise and measures movement wrt some
->> external frame, but technically they are almost exactly the same.
->> 
->> If you se doing a navigation app, the accelerometer, the compass and
->> the GPS are all equally (but differently) important.
->> 
->> Again - it's not a user touching buttons. But it IS a user moving
-around.
-> 
-> Right, but do you expect that movement to cause an immediate action?
-> When you press a key - something happens; when you swing a Wii
-> controller - the device reacts. And really you can swap joysticks,
-> motion controllers, Sony's 6-axis and so forth and the application would
-> be hard pressed to tell the difference. I am unsure how you would play a
-> game with GPS as an input device.
 
-it might not be used on a game, but on a map application, that IS input.
-You're failing to see input devices are used in cases other than gaming.
+We could have a padding in front of struct br_input_skb_cb to make sure
+we dont overwrite IP (4|6) CB in bridge ?
 
--- 
-balbi
+Something like this untested patch :
+
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index 2c911c0..9fdf1b1 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -598,9 +598,6 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+ 
+ 	pskb_trim_rcsum(skb, len);
+ 
+-	/* BUG: Should really parse the IP options here. */
+-	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
+-
+ 	nf_bridge_put(skb->nf_bridge);
+ 	if (!nf_bridge_alloc(skb))
+ 		return NF_DROP;
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 75c90ed..b27163a 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -18,6 +18,7 @@
+ #include <linux/netpoll.h>
+ #include <linux/u64_stats_sync.h>
+ #include <net/route.h>
++#include <linux/ipv6.h>
+ 
+ #define BR_HASH_BITS 8
+ #define BR_HASH_SIZE (1 << BR_HASH_BITS)
+@@ -244,6 +245,8 @@ struct net_bridge
+ };
+ 
+ struct br_input_skb_cb {
++	struct inet6_skb_parm pad;
++
+ 	struct net_device *brdev;
+ #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
+ 	int igmp;
+
+
