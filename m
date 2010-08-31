@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab0HaIix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 04:38:53 -0400
-Received: from mtagate2.de.ibm.com ([195.212.17.162]:50154 "EHLO
-	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab0HaIiv (ORCPT
+	id S1754266Ab0HaIjG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 04:39:06 -0400
+Received: from mtagate1.de.ibm.com ([195.212.17.161]:53257 "EHLO
+	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab0HaIix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 04:38:51 -0400
-Message-Id: <20100831083843.853005604@linux.vnet.ibm.com>
+	Tue, 31 Aug 2010 04:38:53 -0400
+Message-Id: <20100831083844.043619334@linux.vnet.ibm.com>
 References: <20100831082307.064687027@linux.vnet.ibm.com>
 User-Agent: quilt/0.46-1
-Date: Tue, 31 Aug 2010 10:23:08 +0200
+Date: Tue, 31 Aug 2010 10:23:09 +0200
 From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
 To: mmarek@suse.cz, Sam Ravnborg <sam@ravnborg.org>
 Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
@@ -18,188 +18,133 @@ Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
         akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         heiko.carstens@de.ibm.com, brueckner@linux.vnet.ibm.com,
         schwidefsky@de.ibm.com
-Subject: [PATCH 1/2] initramfs: Generalize initramfs_data.xxx.S variants
-Content-Disposition: inline; filename=irfs1.patch
+Subject: [PATCH 2/2] initramfs: Fix initramfs size calculation
+Content-Disposition: inline; filename=irfs2.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove initramfs_data.{lzo,lzma,gz,bz2}.S variants and use a common
-implementation in initramfs_data.S.  The common implementation expects
-the file name of the initramfs to be defined in INITRAMFS_IMAGE.
+The size of a built-in initramfs is calculated in init/initramfs.c by 
+"__initramfs_end - __initramfs_start".  Those symbols are defined in the
+linker script include/asm-generic/vmlinux.lds.h:
 
-Change the Makefile to set the INITRAMFS_IMAGE define symbol according
-to the selected compression method.
+#define INIT_RAM_FS                                                     \
+        . = ALIGN(PAGE_SIZE);                                           \
+        VMLINUX_SYMBOL(__initramfs_start) = .;                          \
+        *(.init.ramfs)                                                  \
+        VMLINUX_SYMBOL(__initramfs_end) = .;
 
+If the initramfs file has an odd number of bytes, the "__initramfs_end"
+symbol points to an odd address, for example, the symbols in the System.map
+might look like:
+
+    0000000000572000 T __initramfs_start
+    00000000005bcd05 T __initramfs_end	  <-- odd address
+
+At least on s390 this causes a problem:
+
+Certain s390 instructions, especially instructions for loading addresses
+(larl) or branch addresses must be on even addresses. 
+The compiler loads the symbol addresses with the "larl" instruction. This
+instruction sets the last bit to 0 and, therefore, for odd size files, the
+calculated size is one byte less than it should be:
+
+    0000000000540a9c <populate_rootfs>:
+      540a9c:     eb cf f0 78 00 24       stmg    %r12,%r15,120(%r15),
+      540aa2:     c0 10 00 01 8a af       larl    %r1,572000 <__initramfs_start>
+      540aa8:     c0 c0 00 03 e1 2e       larl    %r12,5bcd04 <initramfs_end>
+                                                  (Instead of  5bcd05)
+      ...
+      540abe:     1b c1                   sr      %r12,%r1
+
+To fix the problem, this patch introduces the global variable
+__initramfs_size, which is calculated in the "usr/initramfs_data.S" file.
+The populate_rootfs() function can then use the start marker of the
+.init.ramfs section and the value of __initramfs_size for loading the
+initramfs.  Because the start marker and size is sufficient, the
+__initramfs_end symbol is no longer needed and is removed.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
 ---
- usr/Makefile              |    6 ++++--
- usr/initramfs_data.S      |    5 +++--
- usr/initramfs_data.bz2.S  |   29 -----------------------------
- usr/initramfs_data.gz.S   |   29 -----------------------------
- usr/initramfs_data.lzma.S |   29 -----------------------------
- usr/initramfs_data.lzo.S  |   29 -----------------------------
- 6 files changed, 7 insertions(+), 120 deletions(-)
+ include/asm-generic/vmlinux.lds.h |    3 ++-
+ init/initramfs.c                  |    9 ++++-----
+ usr/initramfs_data.S              |   16 +++++++++++-----
+ 3 files changed, 17 insertions(+), 11 deletions(-)
 
---- a/usr/Makefile
-+++ b/usr/Makefile
-@@ -18,13 +18,15 @@ suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZ
- # Lzo
- suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZO)   = .lzo
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -629,7 +629,8 @@
+ 	. = ALIGN(PAGE_SIZE);						\
+ 	VMLINUX_SYMBOL(__initramfs_start) = .;				\
+ 	*(.init.ramfs)							\
+-	VMLINUX_SYMBOL(__initramfs_end) = .;
++	. = ALIGN(8);							\
++	*(.init.ramfs.info)
+ #else
+ #define INIT_RAM_FS
+ #endif
+--- a/init/initramfs.c
++++ b/init/initramfs.c
+@@ -483,7 +483,8 @@ static int __init retain_initrd_param(ch
+ }
+ __setup("retain_initrd", retain_initrd_param);
  
-+AFLAGS_initramfs_data.o += -DINITRAMFS_IMAGE="usr/initramfs_data.cpio$(suffix_y)"
-+
- # Generate builtin.o based on initramfs_data.o
--obj-$(CONFIG_BLK_DEV_INITRD) := initramfs_data$(suffix_y).o
-+obj-$(CONFIG_BLK_DEV_INITRD) := initramfs_data.o
+-extern char __initramfs_start[], __initramfs_end[];
++extern char __initramfs_start[];
++extern unsigned long __initramfs_size;
+ #include <linux/initrd.h>
+ #include <linux/kexec.h>
  
- # initramfs_data.o contains the compressed initramfs_data.cpio image.
- # The image is included using .incbin, a dependency which is not
- # tracked automatically.
--$(obj)/initramfs_data$(suffix_y).o: $(obj)/initramfs_data.cpio$(suffix_y) FORCE
-+$(obj)/initramfs_data.o: $(obj)/initramfs_data.cpio$(suffix_y) FORCE
+@@ -570,8 +571,7 @@ static void __init clean_rootfs(void)
  
- #####
- # Generate the initramfs cpio archive
+ static int __init populate_rootfs(void)
+ {
+-	char *err = unpack_to_rootfs(__initramfs_start,
+-			 __initramfs_end - __initramfs_start);
++	char *err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
+ 	if (err)
+ 		panic(err);	/* Failed to decompress INTERNAL initramfs */
+ 	if (initrd_start) {
+@@ -585,8 +585,7 @@ static int __init populate_rootfs(void)
+ 			return 0;
+ 		} else {
+ 			clean_rootfs();
+-			unpack_to_rootfs(__initramfs_start,
+-				 __initramfs_end - __initramfs_start);
++			unpack_to_rootfs(__initramfs_start, __initramfs_size);
+ 		}
+ 		printk(KERN_INFO "rootfs image is not initramfs (%s)"
+ 				"; looks like an initrd\n", err);
 --- a/usr/initramfs_data.S
 +++ b/usr/initramfs_data.S
-@@ -25,6 +25,7 @@ SECTIONS
-   in the ELF header, as required by certain architectures.
- */
+@@ -11,11 +11,7 @@
+   -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
+    ld -m elf_i386  -r -o built-in.o initramfs_data.o
  
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio"
-+#include <linux/stringify.h>
+-  initramfs_data.scr looks like this:
+-SECTIONS
+-{
+-       .init.ramfs : { *(.data) }
+-}
++  For including the .init.ramfs sections, see include/asm-generic/vmlinux.lds.
  
-+.section .init.ramfs,"a"
-+.incbin __stringify(INITRAMFS_IMAGE)
---- a/usr/initramfs_data.bz2.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.bz2"
---- a/usr/initramfs_data.gz.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.gz"
---- a/usr/initramfs_data.lzma.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.lzma"
---- a/usr/initramfs_data.lzo.S
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
--  initramfs_data includes the compressed binary that is the
--  filesystem used for early user space.
--  Note: Older versions of "as" (prior to binutils 2.11.90.0.23
--  released on 2001-07-14) dit not support .incbin.
--  If you are forced to use older binutils than that then the
--  following trick can be applied to create the resulting binary:
--
--
--  ld -m elf_i386  --format binary --oformat elf32-i386 -r \
--  -T initramfs_data.scr initramfs_data.cpio.gz -o initramfs_data.o
--   ld -m elf_i386  -r -o built-in.o initramfs_data.o
--
--  initramfs_data.scr looks like this:
--SECTIONS
--{
--       .init.ramfs : { *(.data) }
--}
--
--  The above example is for i386 - the parameters vary from architectures.
--  Eventually look up LDFLAGS_BLOB in an older version of the
--  arch/$(ARCH)/Makefile to see the flags used before .incbin was introduced.
--
--  Using .incbin has the advantage over ld that the correct flags are set
--  in the ELF header, as required by certain architectures.
--*/
--
--.section .init.ramfs,"a"
--.incbin "usr/initramfs_data.cpio.lzo"
+   The above example is for i386 - the parameters vary from architectures.
+   Eventually look up LDFLAGS_BLOB in an older version of the
+@@ -28,4 +24,14 @@ SECTIONS
+ #include <linux/stringify.h>
+ 
+ .section .init.ramfs,"a"
++__irf_start:
+ .incbin __stringify(INITRAMFS_IMAGE)
++__irf_end:
++.section .init.ramfs.info,"a"
++.globl __initramfs_size
++__initramfs_size:
++#ifdef CONFIG_32BIT
++	.long __irf_end - __irf_start
++#else
++	.quad __irf_end - __irf_start
++#endif
 
 -- 
