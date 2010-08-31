@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0HaLyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 07:54:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61839 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab0HaLyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 07:54:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rogier Wolff <R.E.Wolff@bitwizard.nl>
-Subject: Re: [RFC 0/5] tty: move stuff around
-Date: Tue, 31 Aug 2010 13:54:47 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        "Michael H. Warfield" <mhw@wittsend.com>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <201008311126.45190.arnd@arndb.de> <20100831104205.GA2301@bitwizard.nl>
-In-Reply-To: <20100831104205.GA2301@bitwizard.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008311354.47275.arnd@arndb.de>
-X-Provags-ID: V02:K0:/8IWChmJFPtkalotC55MGwAJoGp2ea6pRNfQFkt13XH
- 3zCNlDB5JO73vgYMd6bwrvLgl0YMC7UcvMeU7lDmSWqsDiD1Ao
- nLD6eGRvd2wlCvHrUG1aR7tWp29Z0FSjcE4LweyNzBwO8tMepA
- YdLV+rxz65yM7Xj7Xq+RtGVQ77LHKV4nN2B231U8HHWh3pdu9c
- 1UWmvkvMWinUJ0z8bLGHg==
+	id S1753796Ab0HaL46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 07:56:58 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:63382 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275Ab0HaL44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 07:56:56 -0400
+To: spender@grsecurity.net, solar@openwall.com
+Cc: roland@redhat.com, kees.cook@canonical.com, linux-kernel@vger.kernel.org,
+        oss-security@lists.openwall.com, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, oleg@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu
+Subject: Re: [PATCH] exec argument expansion can inappropriately triggerOOM-killer
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20100827220258.GF4703@outflux.net>
+	<20100830005648.431B7400D9@magilla.sf.frob.com>
+	<20100830032331.GA22773@openwall.com>
+	<20100830174920.GA25091@openwall.com>
+	<20100830220847.GA24980@grsecurity.net>
+In-Reply-To: <20100830220847.GA24980@grsecurity.net>
+Message-Id: <201008312056.FAB26586.OOVFLJQOFFStMH@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 31 Aug 2010 20:56:52 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 August 2010, Rogier Wolff wrote:
-> The question is whether I want the drivers I wrote to stay or to
-> go away?
-
-More or less, yes.
- 
-> I was paid years ago to make Linux support the Specialix cards. It
-> started with one card from their line of "solutions", but the others
-> followed.
-
-The most important question is whether you think that there are people
-somewhere in the world that are using the device drivers on machines
-with recent kernels.
-
-If you still get bug reports for the drivers, that would be a clear
-indication to make them stay, while if you haven't heard from a user
-during the last five years, it's probably obsolete enough that it
-can be removed (after a few kernels of grace period in drivers/staging).
-
-	Arnd
+Brad Spengler wrote:
+> The bug seems to have been introduced in 2.6.23, see:
+> http://thread.gmane.org/gmane.linux.ports.hppa/752
+> http://www.spinics.net/lists/linux-arch/msg01584.html
+> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg170491.html
+> though I'm guessing the functionality was also backported to major 
+> distros
+As far as I know, RHEL >= 5.3 and Asianux >= 3.2 backported this functionality.
