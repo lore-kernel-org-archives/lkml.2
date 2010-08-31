@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab0HaGEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:04:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40569 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab0HaGEe convert rfc822-to-8bit (ORCPT
+	id S1754475Ab0HaGHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 02:07:13 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53003 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab0HaGHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:04:34 -0400
+	Tue, 31 Aug 2010 02:07:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=fvi6vq+ylnAEWHE1lJ249jXhM95HFBTzHo+DS41I5lFbBNR5QcDj6ZGkILe3DzlXUW
-         s//+pr+UVpCM2eIubd0PThMgZ7EBiJ8ZVQt9Rn6gGpkusx4IIaPzlmEHrOPgsuZg268n
-         yw6B7pKIw/tLiXNLOZngD7NJdnTiz5fQffIGk=
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AEBqX6gjEk5lBzKzYrorF3eCAzv/dkvYt94IZ8pwYyOgsznVwlP1k3jy86NchVlNi3
+         zTArMNk99UOAZwodqAf1drbyAnzXDHnTZFP/h10FabLf4cvu/jCq4TNUl38mGZafdqVN
+         n0Q72DjAdTl4VGgYV2An8ABc0m+Tow4HYWfRE=
+Date: Tue, 31 Aug 2010 08:38:06 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 0/3] x86: misc K8_NB updates
+Message-ID: <20100831063806.GA4655@loge.amd.com>
+References: <20100827075945.GA5348@loge.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimwU17YS5Yk7y+13Dj9Ww4oPG0g4v5ZbvOVuQV6@mail.gmail.com>
-References: <1282813649-8332-1-git-send-email-mark.brown314@gmail.com>
- <1282813649-8332-2-git-send-email-mark.brown314@gmail.com>
- <AANLkTi=GZ1p3MzibOEzhyD=Mv6d2x2nRh93D4bmtgcYE@mail.gmail.com> <AANLkTimwU17YS5Yk7y+13Dj9Ww4oPG0g4v5ZbvOVuQV6@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 31 Aug 2010 14:04:13 +0800
-Message-ID: <AANLkTikxOQnj=vKD8b0aZqZHNe4m-Y+o+620TBzMJCAW@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ARM: pxa168: fix corrected reset vector
-To: "Mark F. Brown" <mark.brown314@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100827075945.GA5348@loge.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 2:02 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
-> On Tue, Aug 31, 2010 at 1:48 AM, Eric Miao <eric.y.miao@gmail.com> wrote:
->> On Thu, Aug 26, 2010 at 5:07 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
->>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
->>> ---
->>>  arch/arm/mach-mmp/include/mach/system.h |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-mmp/include/mach/system.h b/arch/arm/mach-mmp/include/mach/system.h
->>> index 4f5b0e0..926e9c0 100644
->>> --- a/arch/arm/mach-mmp/include/mach/system.h
->>> +++ b/arch/arm/mach-mmp/include/mach/system.h
->>> @@ -16,6 +16,6 @@ static inline void arch_idle(void)
->>>
->>>  static inline void arch_reset(char mode, const char *cmd)
->>>  {
->>> -       cpu_reset(0);
->>> +       cpu_reset(0xffff0000);
->>
->> Not sure if this correct. But normally reset jump happens after we turn
->> off the MMU and so on. Ain't the BootROM starts from 0 ?
->>
->>>  }
->>>  #endif /* __ASM_MACH_SYSTEM_H */
->>> --
->>> 1.7.0.4
->>>
->>>
->>
->
-> Eric, the boot-rom for pxa168 starts at 0xffff_0000. I am pretty sure
-> about that! If you set the reset vector to 0x0 it will crash during
-> reboot. I will send you xdb snapshots if you need me to.
->
+Following patches are against tip/master as of
+v2.6.36-rc3-1233-gf3d0a67
 
-OK, you are expert on this :-)
+Patch 1 sets the correct dependency to K8_NB for L3 cache index disable code
+Patch 2 allows separate handling of gart and AMD northbridges
+Patch 3 renames k8.[ch] and CONFIG_K8_NB to the more appropriate amd_nb.[ch] and CONFIG_AMD_NB
 
-Applied to 'fix'.
+Please apply.
+
+
+Thanks,
+Andreas
