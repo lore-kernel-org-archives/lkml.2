@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab0HaInb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 04:43:31 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65517 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab0HaIna convert rfc822-to-8bit (ORCPT
+	id S1754698Ab0HaInm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 04:43:42 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52879 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab0HaInj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 04:43:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xqlMpemI0tNaHcbTHXQXGyFnkv4oQo5iK/Y2qWMTXP8iQTrzsbHpwMgW5QEMcWlo7S
-         GfeL8AV51yHDW0Ji2sIBD795MGZdJYgFOLd8/hds6QjNSzVRnytvlXrTtwajzLafZTjs
-         jPdPrOxeCD33v1RCdCqy6uJLIZFrJYQD+HxlY=
+	Tue, 31 Aug 2010 04:43:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4C7CC08A.9010302@jp.fujitsu.com>
+Date: Tue, 31 Aug 2010 17:42:50 +0900
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <4C7CBBBC.3070503@gmail.com>
-References: <AANLkTimWnYqFSC=3kqzBVtZHwodCX=MnsViDGmJbUn_8@mail.gmail.com>
-	<4C7CBBBC.3070503@gmail.com>
-Date: Tue, 31 Aug 2010 14:13:29 +0530
-Message-ID: <AANLkTiniKYm7krr1j48VbV7oNDA7YKXzTnuCZ9kOMnUs@mail.gmail.com>
-Subject: Re: increasing memory alloted for 'init' during kernel boot.
-From: Prabhu Chawandi <prabhu.chavandi@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org,
-        listar@nl.linux.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andreas Dilger <adilger@sun.com>, Chris Mason <chris.mason@oracle.com>,
+        Jiri Olsa <jolsa@redhat.com>, John Stultz <johnstul@us.ibm.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [RFC][PATCH] make file's timestamp more accurate
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ,
+Hi,
 
-Thanks for the info...
+linux has supported nanosecond order file's timestamp since 2.5.48.
+However current file timestamp is got by current_fs_time() and
+is only updated once a tick. It can't say true nanosecond accuracy.
+In addition, gettimeofday() before a file operation updating
+{a,c,m}time would outstrip file's timestamp because of the difference
+about time source between gettimeofday() and file's timestamp.
+A certain kind of application would corrupted by this problem.
 
-Problem I am facing is, I have two bootloaders, when I boot from one
-loader booting happens properly.
+I attached a most simple patch fixing this problem here. However
+it has several problems and I don't say it can be applied as is.
+The most big two problems is the following:
 
-but when I try to load from other loader, kernel does not boot, it
-crashes. When i saw the boot logs, I saw that I memory allocated to
-'init' section in case of crash is short by almost 5MB to the normal
-boot log.
+ - It would cause performance regression, especially in
+   not TSC capable system.
+ - Is gettimeofday()'s monotonicity reliable on all systems?
 
-I am using mips processor.
+The relative discussion:
+http://lkml.org/lkml/2010/7/13/443
 
-Any idea, why this might be happening ?
+Does anybody have good idea? Should it be tunable, for example?
 
-thanks,
-Prabhu
+Thanks,
+Satoru
 
-On Tue, Aug 31, 2010 at 1:52 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> On 08/31/2010 08:49 AM, Prabhu Chawandi wrote:
->> Hi all,
->>
->>    Whenever the kernel starts booting, I am getting the bellow log :
->>
->> Memory: 110080k/262144k available (2566k kernel code, 151952k
->> reserved, 561k data, 15328k init, 0k highmem).
->>
->> For 'init' on what bases this amount of memory is decided ?
->>
->> Anyways I can alter it?
->
-> Nope. It's code and data inside .init, .exit and similar sections. Those
-> are marked by __init, __exit etc. in the code. This memory is freed
-> after the kernel is up and running, since this memory (code and data) is
-> not needed anymore.
->
-> regards,
-> --
-> js
->
+Index: linux-2.6.36-rc3/kernel/time.c
+===================================================================
+--- linux-2.6.36-rc3.orig/kernel/time.c 2010-08-31 16:07:43.000000000 +0900
++++ linux-2.6.36-rc3/kernel/time.c      2010-08-31 16:08:11.000000000 +0900
+@@ -227,7 +227,8 @@ SYSCALL_DEFINE1(adjtimex, struct timex _
+  */
+ struct timespec current_fs_time(struct super_block *sb)
+ {
+-       struct timespec now = current_kernel_time();
++       struct timespec now;
++       getnstimeofday(&now);
+        return timespec_trunc(now, sb->s_time_gran);
+ }
+ EXPORT_SYMBOL(current_fs_time);
+
