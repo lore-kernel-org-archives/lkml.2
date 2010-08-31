@@ -1,45 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab0HaVzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 17:55:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147Ab0HaVzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 17:55:44 -0400
-Message-ID: <4C7D7A62.8000207@redhat.com>
-Date: Tue, 31 Aug 2010 23:55:46 +0200
-From: Harald Hoyer <harald@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
-MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Eric Paris <eparis@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
-        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, greg@kroah.com,
-        sds@tycho.nsa.gov
-Subject: Re: selinux vs devtmpfs (vs udev)
-References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com> <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com> <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com> <4C7CC107.1050304@redhat.com> <4C7D0DAD.9030505@redhat.com> <4C7D141A.9060102@redhat.com> <4C7D1868.3090701@redhat.com> <1283267765.3284.150.camel@dhcp231-106.rdu.redhat.com> <4C7D1E1B.4020700@redhat.com> <1283268367.3284.154.camel@dhcp231-106.rdu.redhat.com> <4C7D248A.2080507@redhat.com> <AANLkTikhc1Nu5PsQqzKL0PXY3juOxwuPOsu0ZKvzfCJ3@mail.gmail.com>
-In-Reply-To: <AANLkTikhc1Nu5PsQqzKL0PXY3juOxwuPOsu0ZKvzfCJ3@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755972Ab0HaV5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 17:57:08 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:53782 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab0HaV5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 17:57:06 -0400
+Subject: Re: [PATCH 4/6 v2] HID: magicmouse: remove axis data filtering
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1283291469.2255.129.camel@mini>
+References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+	 <1283280068-12285-4-git-send-email-chase.douglas@canonical.com>
+	 <4C7D6739.5000601@euromail.se> <1283288319.2255.103.camel@mini>
+	 <4C7D6ECB.2000308@euromail.se> <1283289360.2255.113.camel@mini>
+	 <4C7D71B8.4020408@euromail.se> <1283290078.2255.119.camel@mini>
+	 <4C7D767C.8040607@euromail.se>  <1283291469.2255.129.camel@mini>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 17:56:59 -0400
+Message-ID: <1283291819.2255.134.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2010 09:32 PM, Kay Sievers wrote:
-> On Tue, Aug 31, 2010 at 17:49, Harald Hoyer<harald@redhat.com>  wrote:
->> https://bugzilla.redhat.com/show_bug.cgi?id=575128#c14
->> https://bugzilla.redhat.com/attachment.cgi?id=442223&format=raw
->>
->> udev/udev-node.c
->>
->> +                       /* set selinux file context on add events */
->> +                       if (strcmp(udev_device_get_action(dev), "add") == 0)
->> +                               udev_selinux_lsetfilecon(udev, file, mode);
->
-> I can't access these bugs.
->
-> Does that makes sense/work for you?
->    http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=326c5fc3ea684825629eccaf33a548759162a539
->
-> Kay
+On Tue, 2010-08-31 at 17:51 -0400, Chase Douglas wrote:
+> On Tue, 2010-08-31 at 23:39 +0200, Henrik Rydberg wrote:
+> > On 08/31/2010 11:27 PM, Chase Douglas wrote:
+> > 
+> > > On Tue, 2010-08-31 at 23:18 +0200, Henrik Rydberg wrote:
+> > >> On 08/31/2010 11:16 PM, Chase Douglas wrote:
+> > >>
+> > >>> On Tue, 2010-08-31 at 23:06 +0200, Henrik Rydberg wrote:
+> > >>>> On 08/31/2010 10:58 PM, Chase Douglas wrote:
+> > >>>>
+> > >>>>> On Tue, 2010-08-31 at 22:34 +0200, Henrik Rydberg wrote:
+> > >>>>>> On 08/31/2010 08:41 PM, Chase Douglas wrote:
+> > >>>>>>
+> > >>>>>>> The Magic Mouse device is very precise. No driver filtering of input
+> > >>>>>>> data needs to be performed.
+> > >>>>>>>
+> > >>>>>>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> > >>>>>>> Acked-by: Michael Poole <mdpoole@troilus.org>
+> > >>>>>>> ---
+> > >>>>>>
+> > >>>>>>
+> > >>>>>> I am still not sure this is a good idea. Bandwidth from MT devices is a big
+> > >>>>>> deal. A statement roughly how much data comes out of mtdev (which does the
+> > >>>>>> filtering for type A devices) before and after this change would be reassuring.
+> > >>>>>
+> > >>>>> As it is right now, hid-magicmouse doesn't support MT slots. I think all
+> > >>>>> the fuzz code ends up comparing in the MT case is between one touch and
+> > >>>>> another touch, not between one touch's current location and its previous
+> > >>>>> location. If I'm correct, then it means a fuzz > 0 is incorrect for
+> > >>>>> non-slotted MT devices.
+> > >>>>>
+> > >>>>> In fact, the code in drivers/input/input.c around line 194 looks like it
+> > >>>>> discards defuzzing in this case, so one could say this patch is making
+> > >>>>> things more correct :).
+> > >>>>
+> > >>>>
+> > >>>> For type A devices, the filtering is performed in userspace, in mtdev, in the
+> > >>>> same manner as it would have been performed in the kernel in the MT slot case.
+> > >>>> Therefore, knowing the amount of messages coming out of mtdev is a direct
+> > >>>> measurement of the effect of filtering.
+> > >>>
+> > >>> Yes, but we're only interested in the kernel driver when reviewing this
+> > >>> patch. Leaving the fuzz in as it is has no effect right now on ABS_MT_*
+> > >>> axes. On the other axes, such as the touch orientation, it's probably
+> > >>> more harmful than good.
+> > >>
+> > >>
+> > >> "We" are interested in knowing if this patch makes any sense, given that
+> > >> filtering is in actuality performed in userspace, and thus modifying this code
+> > >> changes the stream rate into userspace applications, thank you.
+> > > 
+> > > Because in-kernel defuzzing is turned off for ABS_MT_* axes on
+> > > non-slotted MT devices, there will be no change in the number of events
+> > > sent to the userspace due to this patch.
+> > > 
+> > > Maybe I'm missing something more fundamental. In which case, I'll need
+> > > more details to get it through my dense skull :).
+> > 
+> > 
+> > All events passes through to mtdev, yes, but mtdev filters a considerable amount
+> > of events from passing through to X drivers like evdev. Thus, the fuzz values
+> > reported in the kernel driver impacts the performance in userspace, even if
+> > filtering is not done in the kernel.
+> 
+> My disconnect was that I didn't understand that the fuzz value in the
+> kernel is exported to userspace. I thought the defuzzing in mtdev was
+> independent of the defuzzing in the kernel.
+> 
+> Basically, I don't feel I have the time to do the analysis you want
+> right now. If you really want, I can just remove this change.
 
-Exactly my patch :)
+On second thought, if there's no jitter from the device, the only reason
+to filter is to save bandwidth. The magicmouse devices are very verbose
+strictly because they have a higher resolution than most devices. If
+that's an issue for userspace, then the filtering should be based on the
+resolution. In fact, I see that's what you do in mtdev when the
+in-kernel fuzz is 0.
+
+This separates the kernel fuzz into a removal of jitter, and the mtdev
+fuzz into a dampening of the number of events passed to clients. Since
+magicmouse devices have no discernable jitter, shouldn't we set the
+in-kernel fuzz to 0 and let mtdev do its thing as appropriate?
+
+-- Chase
+
