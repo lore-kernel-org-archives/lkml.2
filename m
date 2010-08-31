@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab0HaEq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 00:46:28 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40994
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754471Ab0HaEq0 (ORCPT
+	id S932134Ab0HaEw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 00:52:56 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:53756 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754479Ab0HaEwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 00:46:26 -0400
-Date: Mon, 30 Aug 2010 21:46:43 -0700 (PDT)
-Message-Id: <20100830.214643.214234410.davem@davemloft.net>
-To: joe@perches.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@suse.de, James.Bottomley@suse.de
-Subject: Re: linux-next: build warning after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1283227383.1759.33.camel@Joe-Laptop>
-References: <1283224474.1759.30.camel@Joe-Laptop>
-	<20100831135831.b0f124c4.sfr@canb.auug.org.au>
-	<1283227383.1759.33.camel@Joe-Laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Aug 2010 00:52:55 -0400
+From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+To: <sameo@linux.intel.com>, <w.sang@pengutronix.de>,
+        <linux-kernel@vger.kernel.org>
+Cc: <STEricsson_nomadik_linux@list.st.com>,
+        <virupax.sadashivpetimath@stericsson.com>,
+        <rabin.vincent@stericsson.com>, <linus.walleij@stericsson.com>
+Subject: [PATCH] stmpe-gpio: Handle platform data with no gpio base
+Date: Tue, 31 Aug 2010 10:04:56 +0530
+Message-ID: <1283229296-16733-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon, 30 Aug 2010 21:03:03 -0700
+This patch removes the requirement that gpio base be supplied in
+platform data.
 
-> On Tue, 2010-08-31 at 13:58 +1000, Stephen Rothwell wrote:
->> On Mon, 30 Aug 2010 20:14:34 -0700 Joe Perches <joe@perches.com> wrote:
->> > On Tue, 2010-08-31 at 12:57 +1000, Stephen Rothwell wrote:
->> > > On Tue, 6 Jul 2010 14:25:42 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> > > > After merging the net tree, today's linux-next build (powerpc
->> > > > ppc64_defconfig) produced these warnings:
->> > > > drivers/scsi/sym53c8xx_2/sym_hipd.c: In function 'sym_print_msg':
->> > []
->> > > > Introduced by commit 99bcf217183e02ebae46373896fba7f12d588001 ("device.h
->> > > > drivers/base/core.c Convert dev_<level> logging macros to functions").
->> > > Can we have a fix for these please?  They make too much noise in the builds.
->> > Submitted July 7
->> > https://patchwork.kernel.org/patch/111271/
->> Yes, but there were comments on that and nothing since.  I think that
->> James would like a minimal patch that just fixes the newly introduced
->> warnings.
-> 
-> Hi Stephen.
-> 
-> What I submitted I think reasonable.
+Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/gpio/stmpe-gpio.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Me too.
+diff --git a/drivers/gpio/stmpe-gpio.c b/drivers/gpio/stmpe-gpio.c
+index 65b9960..932759d 100644
+--- a/drivers/gpio/stmpe-gpio.c
++++ b/drivers/gpio/stmpe-gpio.c
+@@ -291,8 +291,6 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
+ 	int irq;
+ 
+ 	pdata = stmpe->pdata->gpio;
+-	if (!pdata)
+-		return -ENODEV;
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0)
+-- 
+1.7.1
 
-> He can extract what he wants if he prefers it done that way.
-
-Exactly, he's the maintainter so if he wants something fixed a
-specific way he can do it as he likes.
