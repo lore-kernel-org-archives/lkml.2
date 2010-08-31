@@ -1,151 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab0HaKuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 06:50:10 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37366 "EHLO
+	id S1757165Ab0HaKxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 06:53:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61068 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988Ab0HaKuG (ORCPT
+	with ESMTP id S1757083Ab0HaKxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 06:50:06 -0400
+	Tue, 31 Aug 2010 06:53:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ayVLGPgORJ7zlyYpnkBemYtz2oRpCpoCcGFkvAvZqzmCx4Upn8HtVcpoUCLt9PXCuN
-         tzAE7t3U4ktQyG2VuqOAQcPFXH5t80fGfnD4as89xKkf9stX3HJOW54DXR9El0qUN/Iv
-         5s8sMZ/Nw7fAsfUEYdDD4xK8kvN0UjYVCremY=
-Subject: Re: vhost_dev_cleanup() crash: BUG: unable to handle kernel NULL
- pointer dereference
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>
-In-Reply-To: <20100831075705.GA4710@elte.hu>
-References: <20100831075705.GA4710@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 12:50:01 +0200
-Message-ID: <1283251801.2550.53.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
+         :organization:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=s4pmQLHWdRImf4SDVqCWnbqofpoDdi0I26g6x0NZhbCQ2CDojsQwNyZX5HCYt70PEK
+         J8yuE2uOaKt6oxD4nQ5jTmChdvN4FoxaNdR7mXPakci1VTte6dDAb6bi/5yn08oj8aYJ
+         eV9vAAMo7+r1TsG2UEEunke9iMGEu42VziTwA=
+From: Florian Fainelli <florian@openwrt.org>
+To: David Brownell <david-b@pacbell.net>
+Subject: [PATCH v3] GPIO: add support for 74x164 serial-in/parallel-out 8-bit shift register
+Date: Tue, 31 Aug 2010 12:44:07 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-server; KDE/4.4.2; x86_64; ; )
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>,
+        dbrownell@users.sourceforge.net
+References: <887649.75421.qm@web180316.mail.gq1.yahoo.com> <201008311017.30445.florian@openwrt.org>
+In-Reply-To: <201008311017.30445.florian@openwrt.org>
+Organization: OpenWrt
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008311244.07567.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 31 août 2010 à 09:57 +0200, Ingo Molnar a écrit :
-> FYI, there's a new crash in the vnet driver that occasionally triggers 
-> on ordinary host bootups as well, when (non-virtualized) networking 
-> initializes:
-> 
->  [   86.563889]  [<ffffffff81b05655>] page_fault+0x25/0x30
->  [   86.569065]  [<ffffffff8186d899>] ? vhost_poll_flush+0x11a/0x156
->  [   86.575119]  [<ffffffff8105f511>] ? kthread_stop+0xa/0x57
->  [   86.580544]  [<ffffffff8186e535>] vhost_dev_cleanup+0x269/0x271
->  [   86.586528]  [<ffffffff8186e974>] vhost_net_release+0x48/0x7f
->  [   86.592359]  [<ffffffff810c5419>] fput+0x120/0x1d4
->  [   86.597185]  [<ffffffff810c2a1d>] filp_close+0x63/0x6d
->  [   86.602353]  [<ffffffff810c2acf>] sys_close+0xa8/0xe2
->  [   86.607429]  [<ffffffff81008602>] system_call_fastpath+0x16/0x1b
-> 
-> See the full crashlog below. Config attached.
-> 
-> AFAICT this bug probably went upstream during the merge window.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> [   86.262123] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-> [   86.265200] IP:ntry for device- [<ffffffff8105f511>] kthread_stop+0xa/0x57
-> [   86.265200] PGD 3ad75067 PUD 3b352067 PMD 0 
-> [   86.265200] Oops: 0002 [#1] SMP 
-> [   86.265200] last sysfs file: /sys/devices/pnp0/00:0d/id
-> [   86.265200] CPU 0 mapper found
-> Is
-> [   86.265200] Pid: 1254, comm: multipath.stati Not tainted 2.6.36-rc3-tip+ #31158 A8N-E/System Product Name
->  device-mapper d[   86.265200] RIP: 0010:[<ffffffff8105f511>]  [<ffffffff8105f511>] kthread_stop+0xa/0x57
-> river missing fr[   86.265200] RSP: 0018:ffff88003ae83e58  EFLAGS: 00010246
-> [   86.265200] RAX: ffff88003d1dc170 RBX: 0000000000000000 RCX: 0000000000000000
-> [   86.265200] RDX: ffff88003aa82030 RSI: 0000000000000001 RDI: 0000000000000000
-> om kernel?
-> devi[   86.265200] RBP: ffff88003ae83e68 R08: ffff88003ae83e68 R09: 0000000000000001
-> [   86.265200] R10: ffffffff8186d899 R11: 0000000000000246 R12: ffff88003d1dc8f0
-> [   86.265200] R13: 0000000000000002 R14: ffff88003b2a1000 R15: ffff88003aa82030
-> [   86.265200] FS:  0000000001fc5880(0063) GS:ffff88003fc00000(0000) knlGS:0000000000000000
-> ce-mapper: versi[   86.265200] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   86.265200] CR2: 0000000000000010 CR3: 000000003b377000 CR4: 00000000000006f0
-> on ioctl failed:[   86.265200] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   86.265200] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   86.265200] Process multipath.stati (pid: 1254, threadinfo ffff88003ae82000, task ffff88003b3e8000)
-> [   86.265200] Stack:
-> [   86.265200]  ffff88003d1dc090 ffff88003d1dc8f0 ffff88003ae83e98 ffffffff8186e535
-> [   86.265200] <0> ffff88003ae83e98 ffff88003d1dc090 0000000000000000 0000000000000000
-> [   86.265200] <0> ffff88003ae83ec8 ffffffff8186e974 0000000000000008 ffff88003b3a6180
-> [   86.265200] Call Trace:
-> [   86.265200]  [<ffffffff8186e535>] vhost_dev_cleanup+0x269/0x271
->  Operation not p[   86.265200]  [<ffffffff8186e974>] vhost_net_release+0x48/0x7f
-> [   86.265200]  [<ffffffff810c5419>] fput+0x120/0x1d4
-> ermitted
-> [   86.265200]  [<ffffffff810c2a1d>] filp_close+0x63/0x6d
-> [   86.265200]  [<ffffffff810c2acf>] sys_close+0xa8/0xe2
-> [   86.265200]  [<ffffffff81008602>] system_call_fastpath+0x16/0x1b
-> [   86.265200] Code: 4c 8b 25 83 b4 16 01 49 81 fc 70 a9 1c 82 75 94 48 c7 c7 80 a9 1c 82 e8 99 5b aa 00 e9 50 ff ff ff 55 48 89 e5 41 54 53 48 89 fb <f0> ff 47 10 4c 8b a7 00 05 00 00 48 83 bf 00 05 00 00 00 74 16 
-> [   86.265200] RIP  [<ffffffff8105f511>] kthread_stop+0xa/0x57
-> [   86.265200]  RSP <ffff88003ae83e58>
-> [   86.265200] CR2: 0000000000000010
-> [   86.499743] ---[ end trace 433623c38ffeb225 ]---
-> [   86.504397] Kernel panic - not syncing: Fatal exception
-> [   86.509633] Pid: 1254, comm: multipath.stati Tainted: G      D     2.6.36-rc3-tip+ #31158
-> [   86.517858] Call Trace:
-> [   86.520343]  [<ffffffff81b01c87>] panic+0x8c/0x196
-> [   86.525181]  [<ffffffff81048405>] ? kmsg_dump+0x126/0x140
-> [   86.530606]  [<ffffffff8100c43d>] oops_end+0x8f/0x9c
-> [   86.535611]  [<ffffffff8102d93d>] no_context+0x1f7/0x206
-> [   86.540948]  [<ffffffff8102dacb>] __bad_area_nosemaphore+0x17f/0x1a2
-> [   86.547334]  [<ffffffff8102db40>] bad_area+0x42/0x49
-> [   86.552329]  [<ffffffff8102de84>] do_page_fault+0x1fe/0x363
-> [   86.557925]  [<ffffffff81352dff>] ? do_raw_spin_lock+0x6b/0x122
-> [   86.563889]  [<ffffffff81b05655>] page_fault+0x25/0x30
-> [   86.569065]  [<ffffffff8186d899>] ? vhost_poll_flush+0x11a/0x156
-> [   86.575119]  [<ffffffff8105f511>] ? kthread_stop+0xa/0x57
-> [   86.580544]  [<ffffffff8186e535>] vhost_dev_cleanup+0x269/0x271
-> [   86.586528]  [<ffffffff8186e974>] vhost_net_release+0x48/0x7f
-> [   86.592359]  [<ffffffff810c5419>] fput+0x120/0x1d4
-> [   86.597185]  [<ffffffff810c2a1d>] filp_close+0x63/0x6d
-> [   86.602353]  [<ffffffff810c2acf>] sys_close+0xa8/0xe2
-> [   86.607429]  [<ffffffff81008602>] system_call_fastpath+0x16/0x1b
-> [   86.613516] Rebooting in 1 seconds..Press any key to enter the menu
+From: Miguel Gaio <miguel.gaio@efixo.com>
 
-Hi Ingo
+This patch adds support for generic 74x164 serial-in/parallel-out 8-bits
+shift register. This driver can be used as a GPIO output expander.
 
-Seems to be commit c23f3445e68e1
-(vhost: replace vhost_workqueue with per-vhost kthread)
-
-following patch should cure it ?
-
-Thanks
-
-[PATCH] vhost: stop worker only if created
-
-Its illegal to call kthread_stop(NULL)
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Miguel Gaio <miguel.gaio@efixo.com>
+Signed-off-by: Juhos Gabor <juhosg@openwrt.org>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index e05557d..0a00121 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -323,7 +323,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
- 	dev->mm = NULL;
- 
- 	WARN_ON(!list_empty(&dev->work_list));
--	kthread_stop(dev->worker);
-+	if (dev->worker)
-+		kthread_stop(dev->worker);
- }
- 
- static int log_access_ok(void __user *log_base, u64 addr, unsigned long sz)
+Changes since v1:
+- renamed nxp_ to gen_ since this driver is generic to all 74HC164 chips
+- added comment on this driver not handling the 74HC164 daisy-chaining
+- renamed misused GPIO expanders to Shift registers
 
+Changes since v2:
+- rename 74hc164 to 74x164
 
+diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
+new file mode 100644
+index 0000000..9adeed4
+--- /dev/null
++++ b/drivers/gpio/74x164.c
+@@ -0,0 +1,228 @@
++/*
++ *  74Hx164 - Generic serial-in/parallel-out 8-bits shift register GPIO driver
++ *
++ *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
++ *  Copyright (C) 2010 Miguel Gaio <miguel.gaio@efixo.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  Note: this driver does not support the way 74x164 chips can be
++ *  daisy-chained.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/gpio.h>
++#include <linux/bitops.h>
++#include <linux/platform_device.h>
++#include <linux/74x164.h>
++
++#define GEN_74X164_NUM_GPIOS	8
++
++struct gen_74x164_chip {
++	struct device		*parent;
++	struct gpio_chip	gpio_chip;
++	struct mutex		lock;
++	long			mask;
++};
++
++static void gen_74x164_set_value(struct gpio_chip *, unsigned, int);
++
++static struct gen_74x164_chip *gpio_to_chip(struct gpio_chip *gc)
++{
++	return container_of(gc, struct gen_74x164_chip, gpio_chip);
++}
++
++static int gen_74x164_direction_input(struct gpio_chip *gc, unsigned offset)
++{
++	WARN_ON(1);
++	return -EINVAL;
++}
++
++static int gen_74x164_direction_output(struct gpio_chip *gc,
++					unsigned offset, int val)
++{
++	gen_74x164_set_value(gc, offset, val);
++	return 0;
++}
++
++static int gen_74x164_get_value(struct gpio_chip *gc, unsigned offset)
++{
++	struct gen_74x164_chip *chip = gpio_to_chip(gc);
++	int ret;
++
++	mutex_lock(&chip->lock);
++	ret = test_bit(offset, &chip->mask);
++	mutex_unlock(&chip->lock);
++
++	return ret;
++}
++
++static void gen_74x164_set_value(struct gpio_chip *gc,
++				  unsigned offset, int val)
++{
++	struct gen_74x164_chip *chip;
++	struct gen_74x164_platform_data *pdata;
++	long mask;
++	int refresh;
++	int i;
++
++	chip = gpio_to_chip(gc);
++	pdata = chip->parent->platform_data;
++
++	mutex_lock(&chip->lock);
++	if (val)
++		refresh = (test_and_set_bit(offset, &chip->mask) != val);
++	else
++		refresh = (test_and_clear_bit(offset, &chip->mask) != val);
++
++	if (refresh) {
++		mask = chip->mask;
++		for (i = 8; i > 0; --i, mask <<= 1) {
++			gpio_set_value(pdata->gpio_pin_data, mask & 0x80);
++			gpio_set_value(pdata->gpio_pin_clk, 1);
++			gpio_set_value(pdata->gpio_pin_clk, 0);
++		}
++	}
++	mutex_unlock(&chip->lock);
++}
++
++static int __devinit gen_74x164_probe(struct platform_device *pdev)
++{
++	struct gen_74x164_platform_data *pdata;
++	struct gen_74x164_chip *chip;
++	struct gpio_chip *gc;
++	int err;
++
++	pdata = pdev->dev.platform_data;
++	if (pdata == NULL) {
++		dev_dbg(&pdev->dev, "no platform data specified\n");
++		return -EINVAL;
++	}
++
++	chip = kzalloc(sizeof(struct gen_74x164_chip), GFP_KERNEL);
++	if (chip == NULL) {
++		dev_err(&pdev->dev, "no memory for private data\n");
++		return -ENOMEM;
++	}
++
++	err = gpio_request(pdata->gpio_pin_clk, dev_name(&pdev->dev));
++	if (err) {
++		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
++			pdata->gpio_pin_clk, err);
++		goto err_free_chip;
++	}
++
++	err = gpio_request(pdata->gpio_pin_data, dev_name(&pdev->dev));
++	if (err) {
++		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
++			pdata->gpio_pin_data, err);
++		goto err_free_clk;
++	}
++
++	err = gpio_direction_output(pdata->gpio_pin_clk, 0);
++	if (err) {
++		dev_err(&pdev->dev,
++			"unable to set direction of gpio %u, err=%d\n",
++			pdata->gpio_pin_clk, err);
++		goto err_free_data;
++	}
++
++	err = gpio_direction_output(pdata->gpio_pin_data, 0);
++	if (err) {
++		dev_err(&pdev->dev,
++			"unable to set direction of gpio %u, err=%d\n",
++			pdata->gpio_pin_data, err);
++		goto err_free_data;
++	}
++
++	chip->parent = &pdev->dev;
++	mutex_init(&chip->lock);
++
++	gc = &chip->gpio_chip;
++
++	gc->direction_input  = gen_74x164_direction_input;
++	gc->direction_output = gen_74x164_direction_output;
++	gc->get = gen_74x164_get_value;
++	gc->set = gen_74x164_set_value;
++	gc->can_sleep = 1;
++
++	gc->base = pdata->gpio_base;
++	gc->ngpio = GEN_74X164_NUM_GPIOS;
++	gc->label = dev_name(chip->parent);
++	gc->dev = chip->parent;
++	gc->owner = THIS_MODULE;
++
++	err = gpiochip_add(&chip->gpio_chip);
++	if (err) {
++		dev_err(&pdev->dev, "unable to add gpio chip, err=%d\n", err);
++		goto err_free_data;
++	}
++
++	platform_set_drvdata(pdev, chip);
++	return 0;
++
++err_free_data:
++	gpio_free(pdata->gpio_pin_data);
++err_free_clk:
++	gpio_free(pdata->gpio_pin_clk);
++err_free_chip:
++	kfree(chip);
++	return err;
++}
++
++static int gen_74x164_remove(struct platform_device *pdev)
++{
++	struct gen_74x164_chip *chip = platform_get_drvdata(pdev);
++	struct gen_74x164_platform_data *pdata = pdev->dev.platform_data;
++
++	if (chip) {
++		int err;
++
++		err = gpiochip_remove(&chip->gpio_chip);
++		if (err) {
++			dev_err(&pdev->dev,
++				"unable to remove gpio chip, err=%d\n",
++				err);
++			return err;
++		}
++
++		gpio_free(pdata->gpio_pin_clk);
++		gpio_free(pdata->gpio_pin_data);
++
++		kfree(chip);
++		platform_set_drvdata(pdev, NULL);
++	}
++
++	return 0;
++}
++
++static struct platform_driver gen_74x164_driver = {
++	.probe		= gen_74x164_probe,
++	.remove		= __devexit_p(gen_74x164_remove),
++	.driver = {
++		.name	= GEN_74X164_DRIVER_NAME,
++		.owner	= THIS_MODULE,
++	},
++};
++
++static int __init gen_74x164_init(void)
++{
++	return platform_driver_register(&gen_74x164_driver);
++}
++subsys_initcall(gen_74x164_init);
++
++static void __exit gen_74x164_exit(void)
++{
++	platform_driver_unregister(&gen_74x164_driver);
++}
++module_exit(gen_74x164_exit);
++
++MODULE_AUTHOR("Gabor Juhos <juhosg@openwrt.org>");
++MODULE_AUTHOR("Miguel Gaio <miguel.gaio@efixo.com>");
++MODULE_DESCRIPTION("GPIO expander driver for 74X164 8-bits shift register");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:" GEN_74X164_DRIVER_NAME);
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 510aa20..fc82c23 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -361,4 +361,13 @@ config GPIO_JANZ_TTL
+ 	  This driver provides support for driving the pins in output
+ 	  mode only. Input mode is not supported.
+ 
++comment "Shift registers:"
++
++config GPIO_74X164
++       tristate "74x164 serial-in/parallel-out 8-bits shift register"
++       help
++         Platform driver for 74x164 compatible serial-in/parallel-out
++	 8-outputs shift registers. This driver can be used to provide access
++	 to more gpio outputs.
++
+ endif
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index fc6019d..60456a4 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -17,6 +17,7 @@ obj-$(CONFIG_GPIO_MAX7301)	+= max7301.o
+ obj-$(CONFIG_GPIO_MAX732X)	+= max732x.o
+ obj-$(CONFIG_GPIO_MC33880)	+= mc33880.o
+ obj-$(CONFIG_GPIO_MCP23S08)	+= mcp23s08.o
++obj-$(CONFIG_GPIO_74X164)	+= 74x164.o
+ obj-$(CONFIG_GPIO_PCA953X)	+= pca953x.o
+ obj-$(CONFIG_GPIO_PCF857X)	+= pcf857x.o
+ obj-$(CONFIG_GPIO_PL061)	+= pl061.o
+diff --git a/include/linux/74x164.h b/include/linux/74x164.h
+new file mode 100644
+index 0000000..1705732
+--- /dev/null
++++ b/include/linux/74x164.h
+@@ -0,0 +1,22 @@
++/*
++ *  74x164 - Serial-in/parallel-out 8-bits shift register
++ *
++ *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++
++#ifndef __74X164_H
++#define __74X164_H
++
++#define GEN_74X164_DRIVER_NAME "74x164"
++
++struct gen_74x164_platform_data {
++	unsigned	gpio_base;
++	unsigned	gpio_pin_data;
++	unsigned	gpio_pin_clk;
++};
++
++#endif /* __74x164_H */
