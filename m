@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab0HaMRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 08:17:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51292 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab0HaMRc convert rfc822-to-8bit (ORCPT
+	id S1756898Ab0HaMS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 08:18:58 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39341 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754317Ab0HaMS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 08:17:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=K1Sa0+l38vAQFNeFTz8kQKLg4spo/rlAN4ek7Lf5Wgq/10NuHyJ+yOHLakQdXnuEHy
-         J6ryGLJrtsV3+iKBwLE+6UpmpBNzCjl03opQ2MjqyK905Falf+Cq39AhAADJYag83swA
-         hrRXIpMPeUjvO/ZA8IR12kuNyLxrIfzLKhF1I=
-MIME-Version: 1.0
-In-Reply-To: <20100817054000.GB5095@cr0.nay.redhat.com>
-References: <1282019131-30813-1-git-send-email-avar@v.nix.is>
-	<20100817054000.GB5095@cr0.nay.redhat.com>
-Date: Tue, 31 Aug 2010 12:17:31 +0000
-X-Google-Sender-Auth: Fg1QPKlPA0qx3V6rINJaaTfV0k8
-Message-ID: <AANLkTinwaFzcHauAXqDdAVEWWxHsMmfVt8mBYgBV72mg@mail.gmail.com>
-Subject: Re: [PATCH] .gitignore: Ignore generated files in lib/raid6
-From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avar@v.nix.is>
-To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: torvalds@linux-foundation.org,
-        David Woodhouse <dwmw2@tylersburg.infradead.org>,
-        Linux is full of bugs <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 Aug 2010 08:18:56 -0400
+Subject: Re: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+In-Reply-To: <1282938790.5075.25.camel@m0nster>
+References: <1282926826.5075.21.camel@m0nster>
+	 <1282927746.26355.74.camel@e102109-lin.cambridge.arm.com>
+	 <1282938790.5075.25.camel@m0nster>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Tue, 31 Aug 2010 13:18:36 +0100
+Message-ID: <1283257116.28248.20.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 31 Aug 2010 12:18:37.0337 (UTC) FILETIME=[A3967890:01CB4906]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 05:40, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Tue, Aug 17, 2010 at 04:25:31AM +0000, Ævar Arnfjörð Bjarmason wrote:
->>The Makefile in lib/raid6 will generate these files, and the clean
->>target will remove them, but they weren't being ignored by git.
->>
->>Signed-off-by: Ævar Arnfjörð Bjarmason <avar@v.nix.is>
->
-> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
->
-> Thanks!
+On Fri, 2010-08-27 at 20:53 +0100, Daniel Walker wrote:
+> On Fri, 2010-08-27 at 17:49 +0100, Catalin Marinas wrote:
+> 
+> > > So your saying it makes more sense to change the msm entry into the
+> > > default entry, and make the current default into the
+> > > ARM11MPCore/Cortex-A9 entry?
+> >
+> > So my opinion is to not add any specific msm code but make the
+> > __v7_setup skip the ACTLR bit setting. Then add an entry for Cortex-A9
+> > to set those bits.
+> >
+> 
+> how about this? Naming is of course flexible ..
 
-In case this fell through: Could you pick this up Linus. It's still
-causing a dirty tree under "git status". Thanks.
+I cc'ed Santosh as well. I'm not sure whether TI are using a Cortex-A9
+but with different manufacturer field (I suspect it's still 0x41).
 
->>---
->> lib/raid6/.gitignore |   16 ++++++++++++++++
->> 1 files changed, 16 insertions(+), 0 deletions(-)
->> create mode 100644 lib/raid6/.gitignore
->>
->>diff --git a/lib/raid6/.gitignore b/lib/raid6/.gitignore
->>new file mode 100644
->>index 0000000..ce56377
->>--- /dev/null
->>+++ b/lib/raid6/.gitignore
->>@@ -0,0 +1,16 @@
->>+#
->>+# Generated files
->>+#
->>+
->>+altivec1.c
->>+altivec2.c
->>+altivec4.c
->>+altivec8.c
->>+int1.c
->>+int16.c
->>+int2.c
->>+int32.c
->>+int4.c
->>+int8.c
->>+mktables
->>+tables.c
->>--
->>1.7.2.1.389.gc3d0b
->>
->>--
->>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>the body of a message to majordomo@vger.kernel.org
->>More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>Please read the FAQ at  http://www.tux.org/lkml/
->
+> ScorpionMP does not have the SMP/nAMP and TLB ops broadcasting bits in
+> ACTLR. These bits are only used on ARM11MPCore and Cortex-A9 from arm.
+> This patch just makes it so no other arm core ends up getting these
+> bits set.
+> 
+> Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
+> 
+> ---
+>  arch/arm/mm/proc-v7.S |   26 +++++++++++++++++++++++++-
+>  1 files changed, 25 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> index 7aaf88a..e1b5492 100644
+> --- a/arch/arm/mm/proc-v7.S
+> +++ b/arch/arm/mm/proc-v7.S
+> @@ -189,13 +189,14 @@ cpu_v7_name:
+>   *     It is assumed that:
+>   *     - cache type register is implemented
+>   */
+> -__v7_setup:
+> +__v7_armmp_setup:
+
+Maybe __v7_ca9mp_setup. Future MP processors from ARM may not need this
+bit set.
+
+> +__v7_armmp_proc_info:
+> +       .long   0x410f0000              @ Required ID value
+> +       .long   0xff0f0000              @ Mask for ID
+
+We could restrict it to:
+
+	.long	0x410fc090
+	.long	0xff0ffff0
+
+Otherwise the patch looks fine. Thanks.
+
+-- 
+Catalin
+
