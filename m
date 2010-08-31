@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab0HaNXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 09:23:21 -0400
-Received: from mail.schmid-telecom.ch ([213.173.183.22]:36364 "EHLO
-	mail.schmid-telecom.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab0HaNXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 09:23:20 -0400
-X-Greylist: delayed 1818 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Aug 2010 09:23:19 EDT
-From: Daniel Hobi <daniel.hobi@schmid-telecom.ch>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Michael Roth <mroth@nessie.de>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Hobi <daniel.hobi@schmid-telecom.ch>
-Subject: [PATCH] [ARM] .gitignore: Ignore piggy.gzip, lib1funcs.S and vmlinux
-Date: Tue, 31 Aug 2010 14:52:17 +0200
-Message-Id: <1283259137-28480-1-git-send-email-daniel.hobi@schmid-telecom.ch>
-X-Mailer: git-send-email 1.7.2.1
-References: <1272015498-10749-1-git-send-email-mroth@nessie.de>
-X-OriginalArrivalTime: 31 Aug 2010 12:53:17.0656 (UTC) FILETIME=[7B8DF580:01CB490B]
+	id S1757381Ab0HaNcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 09:32:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35512 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042Ab0HaNci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 09:32:38 -0400
+Date: Tue, 31 Aug 2010 06:32:01 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Rogier Wolff <R.E.Wolff@bitwizard.nl>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>
+Subject: Re: [RFC 0/5] tty: move stuff around
+Message-ID: <20100831133201.GB2429@suse.de>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+ <201008311126.45190.arnd@arndb.de>
+ <20100831104205.GA2301@bitwizard.nl>
+ <201008311354.47275.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008311354.47275.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e7db7b42 (arm: add support for LZO-compressed kernels) added
-intermediate files piggy.gzip and lib1funcs.S without adding them to
-.gitignore.
+On Tue, Aug 31, 2010 at 01:54:47PM +0200, Arnd Bergmann wrote:
+> On Tuesday 31 August 2010, Rogier Wolff wrote:
+> > The question is whether I want the drivers I wrote to stay or to
+> > go away?
+> 
+> More or less, yes.
+>  
+> > I was paid years ago to make Linux support the Specialix cards. It
+> > started with one card from their line of "solutions", but the others
+> > followed.
+> 
+> The most important question is whether you think that there are people
+> somewhere in the world that are using the device drivers on machines
+> with recent kernels.
+> 
+> If you still get bug reports for the drivers, that would be a clear
+> indication to make them stay, while if you haven't heard from a user
+> during the last five years, it's probably obsolete enough that it
+> can be removed (after a few kernels of grace period in drivers/staging).
 
-Commit 6db823c (Fix up .gitignore for top-level file patterns) changed
-vmlinux to /vmlinux in the top-level .gitignore, thus making
-arch/arm/boot/compressed/vmlinux visible.
+And it is always possible to revert a removal at a later time and fix up
+a driver if someone does show up in a few years asking where the driver
+went.
 
-Signed-off-by: Daniel Hobi <daniel.hobi@schmid-telecom.ch>
----
-This patch revives https://patchwork.kernel.org/patch/94654/
-([ARM] .gitignore: Ignore piggy.lzo, lib1funcs.S and vmlinux)
-by Michael Roth with the following changes:
- - do not add piggy.lzo because it is now covered by *.lzo rule
-   from top-level .gitignore
- - Ignore piggy.gzip (instead of piggy.gz)
+thanks,
 
-Please keep me on CC since I am not a subscriber.
-
- arch/arm/boot/compressed/.gitignore |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/boot/compressed/.gitignore b/arch/arm/boot/compressed/.gitignore
-index ab204db..e02c52e 100644
---- a/arch/arm/boot/compressed/.gitignore
-+++ b/arch/arm/boot/compressed/.gitignore
-@@ -1,3 +1,5 @@
- font.c
--piggy.gz
-+lib1funcs.S
-+piggy.gzip
-+vmlinux
- vmlinux.lds
--- 
-1.7.2.1
-
+greg k-h
