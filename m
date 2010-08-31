@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab0HaIMO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 04:12:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37911 "EHLO hera.kernel.org"
+	id S1757013Ab0HaING (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 04:13:06 -0400
+Received: from postin.uv.es ([147.156.1.90]:33886 "EHLO postin.uv.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756953Ab0HaIML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 04:12:11 -0400
-Message-ID: <4C7CB936.8010509@kernel.org>
-Date: Tue, 31 Aug 2010 10:11:34 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1756972Ab0HaIND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 04:13:03 -0400
+X-Greylist: delayed 2012 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Aug 2010 04:13:03 EDT
+Message-ID: <4C7CB18D.4020601@postal.uv.es>
+Date: Tue, 31 Aug 2010 09:38:53 +0200
+From: Enrico Bandiello <enban@postal.uv.es>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.22) Gecko/20091109 Thunderbird/2.0.0.22 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, rwheeler@redhat.com, hare@suse.de,
-        neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com, jeremy@goop.org,
-        snitzer@redhat.com, k-ueda@ct.jp.nec.com,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 26/30] ext4: do not send discards as barriers
-References: <1282751267-3530-1-git-send-email-tj@kernel.org> <1282751267-3530-27-git-send-email-tj@kernel.org> <20100825155842.GA3229@lst.de> <20100825160032.GC3229@lst.de> <4C753D75.2010305@kernel.org> <20100825200223.GE2738@quack.suse.cz> <4C76250B.6060800@kernel.org> <20100827173147.GA12374@quack.suse.cz> <x4939tv98n8.fsf@segfault.boston.devel.redhat.com> <20100830202034.GB12226@quack.quadriga.com>
-In-Reply-To: <20100830202034.GB12226@quack.quadriga.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kan-Ru Chen <ckanru@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Enrico Bandiello <enban@alumni.uv.es>
+Subject: Re: [Bug #16307] i915 in kernel 2.6.35-rc3, high number of wakeups
+References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.kdD.pgueMB@chimera> <AANLkTi=bLAr=9E6-nfn8r_qGNfxYCXADoA0M9PzWHLmy@mail.gmail.com>
+In-Reply-To: <AANLkTi=bLAr=9E6-nfn8r_qGNfxYCXADoA0M9PzWHLmy@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 31 Aug 2010 08:11:38 +0000 (UTC)
+X-Userflux: Whitelisted rcpt enban@alumni.uv.es. User email not accounted
+X-RelayDelay-Mem: Whitelisted relay grajo.ci.uv.es [147.156.0.253]. Not delayed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2010 10:20 PM, Jan Kara wrote:
->   My setup is that I have a dedicated partition / drive for a filesystem
-> which is written to from a guest kernel running under KVM. I have set it up
-> using virtio driver with cache=writeback so that the host caches the writes
-> in a similar way disk caches them. At some point I just kill the qemu-kvm
-> process and at that point I'd like to also throw away data cached by the
-> host...
+On 08/31/2010 04:19 AM, Kan-Ru Chen wrote:
 
-$ echo 1 > /sys/block/sdX/device/delete
-$ echo - - - > /sys/class/scsi_host/hostX/scan
+> Same with v2.6.36-rc3
+>
+> $ sudo powertop -d -t 20
+> ...
+> Wakeups-from-idle per second : 196.2    interval: 20.0s
+> no ACPI power usage estimate available
+> Top causes for wakeups:
+>    25.4% ( 59.6)   [i915@pci:0000:00:02.0]<interrupt>
 
-should do the trick.
-
-Thanks.
-
--- 
-tejun
+I can confir this behaviour until 2.6.32-rc2. Couldn't try with -rc3 
+because compilation exited with error on my laptop...
