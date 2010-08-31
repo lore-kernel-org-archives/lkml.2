@@ -1,165 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab0HaBXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 21:23:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58970 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755872Ab0HaBXM convert rfc822-to-8bit (ORCPT
+	id S1756533Ab0HaBbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 21:31:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34429 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756465Ab0HaBbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 21:23:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eAqf86NlfyQH5eBClDJmn7CLiJOQBI99P6Ekx5ykVwTVLS3a6e8zPibn2ZpVOIcM4F
-         1HamSYJPH5TNFEiAZiWw4+E6wVLUBYSr95ipwuRC5EDDc7LKhU+uhfh8+9uI7IyFFLpT
-         CIQVdLpZqCJEFfRZPfI4sJk9KR+iZXNth65ZE=
-MIME-Version: 1.0
-In-Reply-To: <20100831095140.87C7.A69D9226@jp.fujitsu.com>
-References: <AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>
-	<AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>
-	<20100831095140.87C7.A69D9226@jp.fujitsu.com>
-Date: Tue, 31 Aug 2010 10:23:10 +0900
-Message-ID: <AANLkTin4-NomOoNFYCKgi7oE+MCUiC0o0ftAkOwLKez_@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Ying Han <yinghan@google.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Aug 2010 21:31:52 -0400
+X-Authority-Analysis: v=1.1 cv=h9FjAN2ougM9pVhvDq3M6+cWFo1DP5/t8S/Ny2XAPyw= c=1 sm=0 a=fCqi14YzsQAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=hGzw-44bAAAA:8 a=nqPaPJlex8g0bLkBDgwA:9 a=Bc5qiVryrp0BNtxIo-oA:7 a=W3WLFa-381Wor87zxRuJ8_RhpRMA:4 a=PUjeQqilurYA:10 a=dowx1zmaLagA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] tracing/trace_stack: Fix stack trace on ppc64
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20100825013238.GE28360@kryten>
+References: <20100825013238.GE28360@kryten>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 30 Aug 2010 21:31:50 -0400
+Message-ID: <1283218310.1377.50.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 9:56 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> On Sun, Aug 29, 2010 at 5:18 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> > Hi Ying,
->> >
->> > On Mon, Aug 30, 2010 at 6:23 AM, Ying Han <yinghan@google.com> wrote:
->> >> On Sun, Aug 29, 2010 at 1:03 PM, Rik van Riel <riel@redhat.com> wrote:
->> >>> On 08/29/2010 01:45 PM, Ying Han wrote:
->> >>>
->> >>>> There are few other places in vmscan where we check nr_swap_pages and
->> >>>> inactive_anon_is_low. Are we planning to change them to use
->> >>>> total_swap_pages
->> >>>> to be consistent ?
->> >>>
->> >>> If that makes sense, maybe the check can just be moved into
->> >>> inactive_anon_is_low itself?
->> >>
->> >> That was the initial patch posted, instead we changed to use
->> >> total_swap_pages instead. How this patch looks:
->> >>
->> >> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
->> >> *zone, struct scan_control *sc)
->> >>  {
->> >>        int low;
->> >>
->> >> +       if (total_swap_pages <= 0)
->> >> +               return 0;
->> >> +
->> >>        if (scanning_global_lru(sc))
->> >>                low = inactive_anon_is_low_global(zone);
->> >>        else
->> >> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
->> >>         * Even if we did not try to evict anon pages at all, we want to
->> >>         * rebalance the anon lru active/inactive ratio.
->> >>         */
->> >> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
->> >> +       if (inactive_anon_is_low(zone, sc))
->> >>                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
->> >>
->> >>        throttle_vm_writeout(sc->gfp_mask);
->> >>
->> >> --Ying
->> >>
->> >>>
->> >
->> > I did it intentionally since inactive_anon_is_low have been used both
->> > direct reclaim and background path. In this point, your patch could
->> > make side effect in swap enabled system when swap is full.
->> >
->> > I think we need aging in only background if system is swap full.
->> > That's because if the swap space is full, we don't reclaim anon pages
->> > in direct reclaim path with (nr_swap_pages < 0)  and even have been
->> > not rebalance it until now.
->> > I think direct reclaim path is important about latency as well as
->> > reclaim's effectiveness.
->> > So if you don't mind, I hope direct reclaim patch would be left just as it is.
->>
->> Minchan, I would prefer to make kswapd as well as direct reclaim to be
->> consistent if possible.
->> They both try to reclaim pages when system is under memory pressure,
->> and also do not make
->> much sense to look at anon lru if no swap space available. Either
->> because of no swapon or run
->> out of swap space.
->>
->> I think letting kswapd to age anon lru without free swap space is not
->> necessary neither. That leads
->> to my initial patch:
->>
->> @@ -1605,6 +1605,9 @@ static int inactive_anon_is_low(struct zone
->> *zone, struct scan_control *sc)
->>  {
->>        int low;
->>
->> +       if (nr_swap_pages <= 0)
->> +               return 0;
->> +
->>        if (scanning_global_lru(sc))
->>                low = inactive_anon_is_low_global(zone);
->>        else
->> @@ -1856,7 +1859,7 @@ static void shrink_zone(int priority, struct zone *zone,
->>         * Even if we did not try to evict anon pages at all, we want to
->>         * rebalance the anon lru active/inactive ratio.
->>         */
->> -       if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
->> +       if (inactive_anon_is_low(zone, sc))
->>                shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
->>
->> What do you think ?
->
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->
->
-> I think both Ying's and Minchan's opnion are right and makes sense.  however I _personally_
-> like Ying version because 1) this version is simpler 2) swap full is very rarely event 3)
-> no swap mounting is very common on HPC. so this version could have a chance to
-> improvement hpc workload too.
+On Wed, 2010-08-25 at 11:32 +1000, Anton Blanchard wrote:
+> save_stack_trace() stores the instruction pointer, not the function
+> descriptor. On ppc64 the trace stack code currently dereferences the
+> instruction pointer and shows 8 bytes of instructions in our backtraces:
+> 
+> # cat /sys/kernel/debug/tracing/stack_trace
+>         Depth    Size   Location    (26 entries)
+>         -----    ----   --------
+>   0)     5424     112   0x6000000048000004
+>   1)     5312     160   0x60000000ebad01b0
+>   2)     5152     160   0x2c23000041c20030
+>   3)     4992     240   0x600000007c781b79
+>   4)     4752     160   0xe84100284800000c
+>   5)     4592     192   0x600000002fa30000
+>   6)     4400     256   0x7f1800347b7407e0
+>   7)     4144     208   0xe89f0108f87f0070
+>   8)     3936     272   0xe84100282fa30000
+> 
+> Since we aren't dealing with function descriptors, use %pS instead of %pF
+> to fix it:
+> 
+> # cat /sys/kernel/debug/tracing/stack_trace
+>         Depth    Size   Location    (26 entries)
+>         -----    ----   --------
+>   0)     5424     112   ftrace_call+0x4/0x8
+>   1)     5312     160   .current_io_context+0x28/0x74
+>   2)     5152     160   .get_io_context+0x48/0xa0
+>   3)     4992     240   .cfq_set_request+0x94/0x4c4
+>   4)     4752     160   .elv_set_request+0x60/0x84
+>   5)     4592     192   .get_request+0x2d4/0x468
+>   6)     4400     256   .get_request_wait+0x7c/0x258
+>   7)     4144     208   .__make_request+0x49c/0x610
+>   8)     3936     272   .generic_make_request+0x390/0x434
+> 
+> Signed-off-by: Anton Blanchard <anton@samba.org>
 
-I agree.
+Thanks, I'll test this to make sure it doesn't break x86, and then push
+it into a stable/-rc patch queue.
 
->
-> In the other word, both avoiding unnecessary TLB flush and keeping proper page aging are
-> performance matter. so when we are talking performance, we always need to think frequency
-> of the event.
+-- Steve
 
-Ying's one and mine both has a same effect.
-Only difference happens swap is full. My version maintains old
-behavior but Ying's one changes the behavior. I admit swap full is
-rare event but I hoped not changed old behavior if we doesn't find any
-problem.
-If kswapd does aging when swap full happens, is it a problem?
-We have been used to it from 2.6.28.
-
-If we regard a code consistency is more important than _unexpected_
-result, Okay. I don't mind it. :)
-But at least we should do more thing to make the patch to compile out
-for non-swap configurable system.
+> ---
+> 
+> Index: powerpc.git/kernel/trace/trace_stack.c
+> ===================================================================
+> --- powerpc.git.orig/kernel/trace/trace_stack.c	2010-08-25 11:03:52.337982567 +1000
+> +++ powerpc.git/kernel/trace/trace_stack.c	2010-08-25 11:03:55.018371055 +1000
+> @@ -249,7 +249,7 @@ static int trace_lookup_stack(struct seq
+>  {
+>  	unsigned long addr = stack_dump_trace[i];
+>  
+> -	return seq_printf(m, "%pF\n", (void *)addr);
+> +	return seq_printf(m, "%pS\n", (void *)addr);
+>  }
+>  
+>  static void print_disabled(struct seq_file *m)
 
 
->
-> Anyway I'm very glad minchan who embedded developer pay attention server workload
-> carefully. Very thanks.
->
-
-Thanks for the good comment. KOSAKI. :)
--- 
-Kind regards,
-Minchan Kim
