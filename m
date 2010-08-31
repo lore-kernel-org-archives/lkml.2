@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab0HaJze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 05:55:34 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:53449 "EHLO
+	id S1756840Ab0HaKIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 06:08:05 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:11257 "EHLO
 	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751183Ab0HaJzc (ORCPT
+	with ESMTP id S1751566Ab0HaKIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 05:55:32 -0400
-Message-ID: <4C7CD18B.2060608@panasas.com>
-Date: Tue, 31 Aug 2010 12:55:23 +0300
+	Tue, 31 Aug 2010 06:08:02 -0400
+Message-ID: <4C7CD47B.1050409@panasas.com>
+Date: Tue, 31 Aug 2010 13:07:55 +0300
 From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Vladislav Bolkhovitin <vst@vlnb.net>, Jeff Moyer <jmoyer@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+To: Tejun Heo <tj@kernel.org>
+CC: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
         rusty@rustcorp.com.au, mst@redhat.com, jeremy@goop.org,
         snitzer@redhat.com, k-ueda@ct.jp.nec.com,
         Christoph Hellwig <hch@infradead.org>
 Subject: Re: [PATCH 26/30] ext4: do not send discards as barriers
-References: <1282751267-3530-27-git-send-email-tj@kernel.org> <20100825155842.GA3229@lst.de> <20100825160032.GC3229@lst.de> <4C753D75.2010305@kernel.org> <20100825200223.GE2738@quack.suse.cz> <4C76250B.6060800@kernel.org> <20100827173147.GA12374@quack.suse.cz> <x4939tv98n8.fsf@segfault.boston.devel.redhat.com> <20100830202034.GB12226@quack.quadriga.com> <4C7C170D.9090409@vlnb.net> <20100830210205.GD12226@quack.quadriga.com>
-In-Reply-To: <20100830210205.GD12226@quack.quadriga.com>
+References: <1282751267-3530-1-git-send-email-tj@kernel.org> <1282751267-3530-27-git-send-email-tj@kernel.org> <20100825155842.GA3229@lst.de> <20100825160032.GC3229@lst.de> <4C753D75.2010305@kernel.org> <20100825200223.GE2738@quack.suse.cz> <4C76250B.6060800@kernel.org> <20100827173147.GA12374@quack.suse.cz> <x4939tv98n8.fsf@segfault.boston.devel.redhat.com> <20100830202034.GB12226@quack.quadriga.com> <4C7CB936.8010509@kernel.org>
+In-Reply-To: <4C7CB936.8010509@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 Aug 2010 09:55:31.0417 (UTC) FILETIME=[A5FB0C90:01CB48F2]
+X-OriginalArrivalTime: 31 Aug 2010 10:08:01.0546 (UTC) FILETIME=[6517A6A0:01CB48F4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2010 12:02 AM, Jan Kara wrote:
-> On Tue 31-08-10 00:39:41, Vladislav Bolkhovitin wrote:
->> Jan Kara, on 08/31/2010 12:20 AM wrote:
->>> On Mon 30-08-10 15:56:43, Jeff Moyer wrote:
->>>> Jan Kara<jack@suse.cz>  writes:
->>>>
->>>>>   An update: I've set up an ext4 barrier testing in KVM - run fsstress,
->>>>> kill KVM at some random moment and check that the filesystem is consistent
->>>>> (kvm is run in cache=writeback mode to simulate disk cache). About 70 runs
->>>>
->>>> But doesn't your "disk cache" survive the "power cycle" of your guest?
->>>   Yes, you're right. Thinking about it now the test setup was wrong because
->>> it didn't refuse writes to the VM's data partition after the moment I
->>> killed KVM. Thanks for catching this. I will probably have to use the fault
->>> injection on the host to disallow writing the device at a certain moment.
->>> Or does somebody have a better option?
->>
->> Have you considered to setup a second box as an iSCSI target (e.g.
->> with iSCSI-SCST)? With it killing the connectivity is just a matter
->> of a single iptables command + a lot more options.
-
-Still same problem no? the data is still cached on the backing store device
-how do you trash the cached data?
-
->   Hmm, this might be an interesting option. Will try that. Thanks for
-> suggestion. 
+On 08/31/2010 11:11 AM, Tejun Heo wrote:
+> On 08/30/2010 10:20 PM, Jan Kara wrote:
+>>   My setup is that I have a dedicated partition / drive for a filesystem
+>> which is written to from a guest kernel running under KVM. I have set it up
+>> using virtio driver with cache=writeback so that the host caches the writes
+>> in a similar way disk caches them. At some point I just kill the qemu-kvm
+>> process and at that point I'd like to also throw away data cached by the
+>> host...
 > 
-> 								Honza
+> $ echo 1 > /sys/block/sdX/device/delete
+> $ echo - - - > /sys/class/scsi_host/hostX/scan
+> 
 
-with stgt it's very simple as well. It's a user mode application.
-All on the same machine:
-- run stgt application
-- login + mount a filesystem
-- run test
-- kill -9 stgt mid flight
+I don't know all the specifics of the virtio driver and the KVM backend but
+don't the KVM target io is eventually directed to a local file or device?
+If so the scsi device has disappeard but the bulk of the data is in host cache
+at the backstore (file or bdev). Once all files are closed the data is synced
+to disk.
 
-But how to throw away the data on the backing store cache?
+Is it not the same as Ric's problem of disconnecting the sata cable but
+not dropping power to the drive. The main of the cache is still intact.
 
+> should do the trick.
+> 
+> Thanks.
+> 
+
+Thanks
 Boaz
