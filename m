@@ -1,150 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab0HaMXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 08:23:46 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40485 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755828Ab0HaMXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 08:23:44 -0400
-Date: Tue, 31 Aug 2010 13:23:43 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH V2 4/4] sh: Use the perf-events backend for oprofile
-Message-ID: <20100831122343.GB27532@console-pimps.org>
-References: <cover.1282848651.git.matt@console-pimps.org> <c741813aa911f0048cfab1a1a30534e8d7bb6765.1282848651.git.matt@console-pimps.org> <20100827145901.GO22783@erda.amd.com> <20100827201946.GB18829@console-pimps.org> <20100831112841.GF22783@erda.amd.com>
+	id S1757242Ab0HaMag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 08:30:36 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51171 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753598Ab0HaMaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 08:30:35 -0400
+Date: Tue, 31 Aug 2010 14:30:32 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Make is_mem_section_removable more conformable with
+ offlining code
+Message-ID: <20100831123032.GA30475@tiehlicka.suse.cz>
+References: <20100820141400.GD4636@tiehlicka.suse.cz>
+ <20100822004232.GA11007@localhost>
+ <20100823092246.GA25772@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100831112841.GF22783@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100823092246.GA25772@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 01:28:41PM +0200, Robert Richter wrote:
-> On 27.08.10 16:19:46, Matt Fleming wrote:
-> > On Fri, Aug 27, 2010 at 04:59:01PM +0200, Robert Richter wrote:
-> > > On 26.08.10 15:09:19, Matt Fleming wrote:
-> > > > Use the perf-events based wrapper for oprofile available in
-> > > > drivers/oprofile. This allows us to centralise the code to control
-> > > > performance counters.
-> > > > 
-> > > > Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> > > > ---
-> > > > 
-> > > > Paul,
-> > > > 
-> > > > I dropped the CONFIG_PERF_EVENTS dependency from the Makefile in this
-> > > > version because to do anything useful we need perf events anyway.
-> > > 
-> > > Initialization should simply fail with a printk message for this case,
-> > > implement function stubs for the !CONFIG_PERF_EVENTS case instead in
-> > > the oprofile.h header file.
+Hi,
+
+On Mon 23-08-10 11:22:46, Michal Hocko wrote:
+> On Sun 22-08-10 08:42:32, Wu Fengguang wrote:
+> > Hi Michal,
+> 
+> Hi,
+> 
 > > 
-> > I didn't do this because I was hoping that eventually we'd make
-> > CONFIG_OPROFILE select PERF_EVENTS. Would you be OK making that change
-> > instead? Runtime failure is best avoided where possible, especially when
-> > we can sort this out at compile time.
-> 
-> Ok, we don't need it if we add architectural dependencies to Kconfig
-> for those architectures requiring perf.
-
-OK cool.
-
-> > > > -static int op_sh_start(void)
-> > > > +static char *op_name_from_perf_name(const char *name)
-> > > >  {
-> > > > -	/* Enable performance monitoring for all counters.  */
-> > > > -	on_each_cpu(model->cpu_start, NULL, 1);
-> > > > +	if (!strcmp(name, "SH-4A"))
-> > > > +		return "sh/sh4a";
-> > > > +	if (!strcmp(name, "SH7750"))
-> > > > +		return "sh/sh7750";
-> > > 
-> > > With that implementation we always have to touch the code for new
-> > > cpus. Maybe we derive it from the perf name, e.g. making all lowercase
-> > > and removing dashes?
+> > It helps to explain in changelog/code
 > > 
-> > Is this code really that bad that we need to start playing string
-> > manipulation games?
+> > - in what situation a ZONE_MOVABLE will contain !MIGRATE_MOVABLE
+> >   pages? 
 > 
-> No, but with that implementation we always have to update the cpu
-> string with each new cpu though nothing else changes. We may keep this
-> code. But, shouldn't we return a default string "sh/<name>" for all
-> other cases? We will then need to update only the oprofile userland
-> with new cpus.
-
-These names are actually the names of types of performance counters,
-not a specific cpu. All SH-4 cpus that have performance counters have
-7750-style performance counters and all SH-4A cpus have SH-4A-style
-counters.
-
-It's unlikely we'd have to update this code in the near future. Paul,
-correct me if I'm wrong here.
-
-> > > > +	ops->setup		= oprofile_perf_setup;
-> > > > +	ops->create_files	= oprofile_perf_create_files;
-> > > > +	ops->start		= oprofile_perf_start;
-> > > > +	ops->stop		= oprofile_perf_stop;
-> > > > +	ops->cpu_type		= op_name_from_perf_name(sh_pmu_name());
-> > > >  
-> > > > -	model = lmodel;
-> > > > +	oprofile_perf_set_num_counters(sh_pmu_num_events());
-> > > >  
-> > > > -	ops->setup		= op_sh_setup;
-> > > > -	ops->create_files	= op_sh_create_files;
-> > > > -	ops->start		= op_sh_start;
-> > > > -	ops->stop		= op_sh_stop;
-> > > > -	ops->cpu_type		= lmodel->cpu_type;
-> > > > +	ret = oprofile_perf_init();
-> > > 
-> > > Instead of exporting all the functions above implement something like:
-> > > 
-> > > 	name = op_name_from_perf_name(sh_pmu_name());
-> > > 	num_events = sh_pmu_num_events();
-> > > 	ret = oprofile_perf_init(ops, name, num_events);
-> > > 
-> > > We will then have only oprofile_perf_init() and oprofile_perf_exit()
-> > > as interface which is much cleaner.
+> page can be MIGRATE_RESERVE IIUC.
+> 
+> >   And why the MIGRATE_MOVABLE test is still necessary given the
+> >   ZONE_MOVABLE check?
+> 
+> I would assume that the MIGRATE_MOVABLE test is not necessary (given that
+> the whole zone is set as movable) but this test is used also in the
+> offlining path (in set_migratetype_isolate) and the primary reason for
+> this patch is to sync those two checks. 
+> 
+> I am not familiar with all the possible cases for migrate flags so the
+> test reduction should be better done by someone more familiar with the
+> code (the zone flag test is much more easier than the whole
+> get_pageblock_migratetype so this could be a win in the end).
+> 
 > > 
-> > Well, the reason that I left it this way is so that architectures can
-> > choose to implement wrappers around the oprofile_perf_* functions. I
-> > don't think ARM or SH actually need wrappers (the only extra thing that
-> > ARM does is locking which SH should probably do too) but I assumed there
-> > was a reason that these functions pointers were exposed originally. I
-> > haven't look at what other architectures would do. I'll take a look at
-> > that.
+> > - why do you think free pages are not removeable? Simply to cater for
+> >   the set_migratetype_isolate() logic, or there are more fundamental
+> >   reasons?
 > 
-> I am not sure if we need such wrappers, and if so we could implement
-> it anyway, e.g.:
-> 
->  oprofile_perf_init(perf_ops, name, num_events);
-> 
->  op_sh_setup():
-> 
-> 	/* setup something */
-> 	...
-> 
-> 	perf_ops->setup();
-> 
-> 	/* setup more */
-> 	...
-> 
-> But I don't think we need this. And the above makes the interface much
-> cleaner.
+> Free pages can be from non movable zone, right? I know that having a
+> zone with the free page blocks in non-movable zone is extremely 
+> improbable but what is the point of this check anyway? So yes, this is
+> more to be in sync than anything more fundamental.
 
-OK, seeing as the two architectures that will use this initially don't
-require wrappers I've no problem doing it your way. It can always be
-extended later if necessary. And more importantly, with a proper
-usecase we'll be able to see exactly _how_ it needs to be extended.
+Are there any other comments on this? Is the patch reasonable at all?
+
+> 
+> > 
+> > Thanks,
+> > Fengguang
+> > 
+> > On Fri, Aug 20, 2010 at 04:14:00PM +0200, Michal Hocko wrote:
+> > > Hi,
+> > > what do you think about the patch below?
+> > > 
+> > > >From b983695b92b5be58f31c719fada1d3245f7b6768 Mon Sep 17 00:00:00 2001
+> > > From: Michal Hocko <mhocko@suse.cz>
+> > > Date: Fri, 20 Aug 2010 15:39:16 +0200
+> > > Subject: [PATCH] Make is_mem_section_removable more conformable with offlining code
+> > > 
+> > > Currently is_mem_section_removable checks whether each pageblock from
+> > > the given pfn range is of MIGRATE_MOVABLE type or if it is free. If both
+> > > are false then the range is considered non removable.
+> > > 
+> > > On the other hand, offlining code (more specifically
+> > > set_migratetype_isolate) doesn't care whether a page is free and instead
+> > > it just checks the migrate type of the page and whether the page's zone
+> > > is movable.
+> > > 
+> > > This can lead into a situation when a node is marked as removable even
+> > > though all pages are neither MIGRATE_MOVABLE nor the zone is
+> > > ZONE_MOVABLE.
+> > > 
+> > > Also we can mark a node as not removable just because a pageblock is
+> > > MIGRATE_RESERVE and not free (and this situation is much more probable).
+> > > ---
+> > >  mm/memory_hotplug.c |    6 +++---
+> > >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> > > index a4cfcdc..da20568 100644
+> > > --- a/mm/memory_hotplug.c
+> > > +++ b/mm/memory_hotplug.c
+> > > @@ -611,10 +611,10 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
+> > >  		type = get_pageblock_migratetype(page);
+> > >  
+> > >  		/*
+> > > -		 * A pageblock containing MOVABLE or free pages is considered
+> > > -		 * removable
+> > > +		 * A pageblock containing MOVABLE or page from movable
+> > > +		 * zone are considered removable
+> > >  		 */
+> > > -		if (type != MIGRATE_MOVABLE && !pageblock_free(page))
+> > > +		if (type != MIGRATE_MOVABLE && zone_idx(page) != ZONE_MOVABLE)
+> > >  			return 0;
+> > >  
+> > >  		/*
+
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
