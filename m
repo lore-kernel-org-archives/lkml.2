@@ -1,74 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab0HaHC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 03:02:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49701 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932218Ab0HaHCZ (ORCPT
+	id S1756837Ab0HaHGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 03:06:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44232 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab0HaHGP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 03:02:25 -0400
+	Tue, 31 Aug 2010 03:06:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=AqP8P8TaNYMpAenLl0xZKeGxBfI7FawpSWTL8whazZX/kF6vWCu6uNWkMn7K3YezTT
-         H0wHRDTgxO3ULUzjI7ZNcZEwvL8ADUBkF/dZI4L7phMwD4k0FloUGO//QRDDNqJq2tPq
-         7PAPqlOlS31GZi0nT/c50HrswdnCHzoXuBbSI=
-Date: Tue, 31 Aug 2010 09:33:12 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, amd: Remove superfluous CPU family/model check
-Message-ID: <20100831073312.GF4655@loge.amd.com>
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cTzehbIsXqtYMrQFD4jE+iR/wdmuipezSDMS4J3afsROYVIZiPZN59LY7gtZfS4FCm
+         ajUyjidhmMvgtM0RonGwdKBYHALBy9SlY8zQ2NRLroWoX/yfHZXOWgAVuPEKu/htcqv7
+         NkB+cwnxkBjAvenuweceCqVO/lXsEL3g022oI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinEtFhC6kB3asuBXLxCgYf9yOTLTTwRQJXKcu2n@mail.gmail.com>
+References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
+ <1282814339-10934-5-git-send-email-mark.brown314@gmail.com>
+ <AANLkTimvudYv4fwyGWjL5c10QrM9GtC2SXjPZzcV20_s@mail.gmail.com> <AANLkTinEtFhC6kB3asuBXLxCgYf9yOTLTTwRQJXKcu2n@mail.gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 31 Aug 2010 15:05:53 +0800
+Message-ID: <AANLkTi=0ECTN8ro3H6=CUZy5qzJjhC0C02yPKzS-+0r5@mail.gmail.com>
+Subject: Re: [PATCH 4/5] ARM: pxa168: added special case handler for keypad interrupts
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+On Tue, Aug 31, 2010 at 2:28 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> On Tue, Aug 31, 2010 at 12:53 AM, Haojian Zhuang
+> <haojian.zhuang@gmail.com> wrote:
+>> On Thu, Aug 26, 2010 at 5:18 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>>> ---
+>>>  arch/arm/mach-mmp/irq-pxa168.c |   23 ++++++++++++++++++++++-
+>>>  1 files changed, 22 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-mmp/irq-pxa168.c b/arch/arm/mach-mmp/irq-pxa168.c
+>>> index 52ff2f0..bfb0984 100644
+>>> --- a/arch/arm/mach-mmp/irq-pxa168.c
+>>> +++ b/arch/arm/mach-mmp/irq-pxa168.c
+>>> @@ -17,6 +17,8 @@
+>>>  #include <linux/io.h>
+>>>
+>>>  #include <mach/regs-icu.h>
+>>> +#include <mach/regs-apmu.h>
+>>> +#include <mach/cputype.h>
+>>>
+>>>  #include "common.h"
+>>>
+>>> @@ -42,6 +44,19 @@ static struct irq_chip icu_irq_chip = {
+>>>        .unmask = icu_unmask_irq,
+>>>  };
+>>>
+>>> +void handle_pxa168_keypad_irq(unsigned int irq, struct irq_desc *desc)
+>>> +{
+>>> +       uint32_t val;
+>>> +       uint32_t mask = APMU_PXA168_KP_WAKE_CLR;
+>>> +
+>>> +       /* clear keypad wake event */
+>>> +       val = __raw_readl(APMU_WAKE_CLR);
+>>> +       __raw_writel(val |  mask, APMU_WAKE_CLR);
+>>> +
+>>> +       /* handle irq */
+>>> +       handle_level_irq(irq, desc);
+>>> +}
+>>> +
+>>
+>> Why should you clear wakeup event status in IRQ handler? If system is
+>> resumed by keypad event, you should clear this wakeup source in resume
+>> code. I think that IRQ code should not be binded with wakeup event at
+>> here.
+>>
+>>>  void __init icu_init_irq(void)
+>>>  {
+>>>        int irq;
+>>> @@ -49,7 +64,13 @@ void __init icu_init_irq(void)
+>>>        for (irq = 0; irq < 64; irq++) {
+>>>                icu_mask_irq(irq);
+>>>                set_irq_chip(irq, &icu_irq_chip);
+>>> -               set_irq_handler(irq, handle_level_irq);
+>>> +
+>>> +               /* special handler for keypad */
+>>> +               if (cpu_is_pxa168() && irq == IRQ_PXA168_KEYPAD)
+>>> +                       set_irq_handler(irq, handle_pxa168_keypad_irq);
+>>> +               else
+>>> +                       set_irq_handler(irq, handle_level_irq);
+>>> +
+>>>                set_irq_flags(irq, IRQF_VALID);
+>>>        }
+>>>  }
+>>> --
+>>> 1.7.0.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>
+> Haojian, this is an usual case, but without that clear wake event you
+> will not be able to clear the keypad interrupt. For my push to open
+> source I re-wrote the workaround code and added it as a special case
+> IRQ handler. In the Marvell pxa168 code base it is actually located in
+> the keypad interrupt handler as the function clear_wakeup(). I felt it
+> was better to isolate this code in the mmp common code base instead.
 
-amd_fixup_dcm() already checks for existence of a CPUID flag, so there
-is no point in further restricting this function to run only on
-specific CPUs.
+I'd rather the irq handler not being changed and use platform_data instead.
+How about something below:
 
-In particular this prevents amd_fixup_dcm() to be executed on future
-AMD CPU families which might also be available as multi-node
-processors. (IMHO this is good reason to tag this patch for stable
-trees.)
+diff --git a/arch/arm/mach-mmp/include/mach/pxa168.h
+b/arch/arm/mach-mmp/include/mach/pxa168.h
+index 27e1bc7..d2b7946 100644
+--- a/arch/arm/mach-mmp/include/mach/pxa168.h
++++ b/arch/arm/mach-mmp/include/mach/pxa168.h
+@@ -5,6 +5,7 @@ struct sys_timer;
 
-Cc: stable@kernel.org [.32.x .34.x, .35.x]
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/cpu/amd.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ extern struct sys_timer pxa168_timer;
+ extern void __init pxa168_init_irq(void);
++extern void pxa168_clear_keypad_wakeup(void);
 
-Patch is against tip/master as of today
-(v2.6.36-rc3-1233-gf3d0a67)
-
-Please apply.
-
-
-Thanks,
-Andreas
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 9fb3ab3..fcf9895 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -305,8 +305,7 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- 	/* use socket ID also for last level cache */
- 	per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
- 	/* fixup topology information on multi-node processors */
--	if ((c->x86 == 0x10) && (c->x86_model == 9))
--		amd_fixup_dcm(c);
-+	amd_fixup_dcm(c);
- #endif
+ #include <linux/i2c.h>
+ #include <mach/devices.h>
+@@ -97,4 +98,10 @@ static inline int pxa168_add_nand(struct
+pxa3xx_nand_platform_data *info)
+ {
+ 	return pxa_register_device(&pxa168_device_nand, info, sizeof(*info));
  }
- 
--- 
-1.6.4.4
++
++static inline int pxa168_add_keypad(struct pxa27x_keypad_platform_data *info)
++{
++	info->clear_wakeup = pxa168_clear_keypad_wakeup;
++	return pxa_register_device(&pxa168_device_keypad, info, sizeof(*info));
++}
+ #endif /* __ASM_MACH_PXA168_H */
+diff --git a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+b/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+index 7b4eadc..3a6bfe7 100644
+--- a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
++++ b/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+@@ -52,6 +52,7 @@ struct pxa27x_keypad_platform_data {
 
+ 	/* key debounce interval */
+ 	unsigned int	debounce_interval;
++	void		(*clear_wakeup);
+ };
+
+ extern void pxa_set_keypad_info(struct pxa27x_keypad_platform_data *info);
+diff --git a/drivers/input/keyboard/pxa27x_keypad.c
+b/drivers/input/keyboard/pxa27x_keypad.c
+index f32404f..3fb94fe 100644
+--- a/drivers/input/keyboard/pxa27x_keypad.c
++++ b/drivers/input/keyboard/pxa27x_keypad.c
+@@ -330,10 +330,20 @@ static void pxa27x_keypad_scan_direct(struct
+pxa27x_keypad *keypad)
+ 	keypad->direct_key_state = new_state;
+ }
+
++static void clear_wakeup(struct pxa27x_keypad *keypad)
++{
++	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
++
++	if (pdata->clear_wakeup)
++		(pdata->clear_wakeup)();
++}
++
+ static irqreturn_t pxa27x_keypad_irq_handler(int irq, void *dev_id)
+ {
+ 	struct pxa27x_keypad *keypad = dev_id;
+-	unsigned long kpc = keypad_readl(KPC);
++	unsigned long kpc;
++
++	kpc = keypad_readl(KPC);
+
+ 	if (kpc & KPC_DI)
+ 		pxa27x_keypad_scan_direct(keypad);
