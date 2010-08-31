@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab0HaAoT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 20:44:19 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55800 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab0HaAoR convert rfc822-to-8bit (ORCPT
+	id S1756161Ab0HaArh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 20:47:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34039 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab0HaArg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 20:44:17 -0400
-MIME-Version: 1.0
-Message-ID: <dbb9f012-c09a-438f-99d0-4fbc40428f58@default>
-Date: Mon, 30 Aug 2010 17:40:42 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, adilger@sun.com, tytso@mit.edu,
-        mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@kernel.dk, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>,
-        mel@csn.ul.ie, yinghan@google.com, gthelen@google.com
-Subject: RE: [PATCH V4 3/8] Cleancache: core ops functions and configuration
-References: <20100830223133.GA1272@ca-server1.us.oracle.com
- 4C7C3521.7090403@goop.org>
-In-Reply-To: <4C7C3521.7090403@goop.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6535.5005]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Aug 2010 20:47:36 -0400
+X-Authority-Analysis: v=1.1 cv=PwepQEbt00S2KBGxbslVOIF+r0Mv8f+EI4NDy2BEsUE= c=1 sm=0 a=EXZQGE_TUQcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Ece4jVXCwC5LhMSh3LUA:9 a=PHcLFvZWeHdUTKFOmgoA:7 a=xBLTx4bYj0v3SEYHu6kof59YNygA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: TRACE: config warning for IRQSOFF_TRACER
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <1282402332.1978.32.camel@castor.rsk>
+References: <1282402332.1978.32.camel@castor.rsk>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 30 Aug 2010 20:47:33 -0400
+Message-ID: <1283215653.1377.41.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +#ifdef CONFIG_CLEANCACHE
-> > +#define cleancache_enabled (cleancache_ops.init_fs)
+On Sat, 2010-08-21 at 15:52 +0100, Richard Kennedy wrote: 
+> In my config with PROVE_LOCKING=n and FTRACE=y (which defaults
+> IRQSOFF_TRACER to y), I get the following warning from make oldconfig.
 > 
-> Pointers can be used in a boolean context, but it would probably be
-> cleaner to have this evaluate to a proper boolean type.  Also I'd
-> probably go with an all-caps macro name rather than making it look like
-> a variable.
+> scripts/kconfig/conf --oldconfig arch/x86/Kconfig
+> warning: (IRQSOFF_TRACER && TRACING_SUPPORT && FTRACE &&
+> TRACE_IRQFLAGS_SUPPORT && !ARCH_USES_GETTIMEOFFSET) selects
+> TRACE_IRQFLAGS which has unmet direct dependencies (DEBUG_KERNEL &&
+> TRACE_IRQFLAGS_SUPPORT && PROVE_LOCKING)
+> 
+> The problem is that TRACE_IRQFLAGS depends on PROVE_LOCKING.
+> Should it select PROVE_LOCKING instead? or is there a better way to fix
+> this?
 
-OK, thanks, will fix.
- 
-> > +/* useful stats available in /sys/kernel/mm/cleancache */
-> > +static unsigned long succ_gets;
-> > +static unsigned long failed_gets;
-> > +static unsigned long puts;
-> > +static unsigned long flushes;
-> 
-> I'd probably give these very generic-sounding names some slightly
-> unique
-> prefix just to help out people looking at "nm" output or using ctags.
-> 
-> > +static int get_key(struct inode *inode, struct cleancache_filekey
-> *key)
-> 
-> Ditto.
+The TRACE_IRQFLAGS was originally written for lockdep, but it is now
+used by Ftrace's irqsoff tracer.
 
-OK, will do.
+I just compiled and booted with TRACE_IRQFLAGS=y and PROVE_LOCKING not
+set, and it worked fine.
 
-Thanks for the feedback!
-Dan
+I think the correct patch is to remove the dependency of TRACE_IRQFLAGS
+on PROVE_LOCKING.
+
+-- Steve
+
+
