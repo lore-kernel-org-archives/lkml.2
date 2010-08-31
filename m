@@ -1,187 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab0HaHGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 03:06:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44232 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab0HaHGP convert rfc822-to-8bit (ORCPT
+	id S1756842Ab0HaHHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 03:07:39 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:13205 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab0HaHHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 03:06:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cTzehbIsXqtYMrQFD4jE+iR/wdmuipezSDMS4J3afsROYVIZiPZN59LY7gtZfS4FCm
-         ajUyjidhmMvgtM0RonGwdKBYHALBy9SlY8zQ2NRLroWoX/yfHZXOWgAVuPEKu/htcqv7
-         NkB+cwnxkBjAvenuweceCqVO/lXsEL3g022oI=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinEtFhC6kB3asuBXLxCgYf9yOTLTTwRQJXKcu2n@mail.gmail.com>
-References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
- <1282814339-10934-5-git-send-email-mark.brown314@gmail.com>
- <AANLkTimvudYv4fwyGWjL5c10QrM9GtC2SXjPZzcV20_s@mail.gmail.com> <AANLkTinEtFhC6kB3asuBXLxCgYf9yOTLTTwRQJXKcu2n@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 31 Aug 2010 15:05:53 +0800
-Message-ID: <AANLkTi=0ECTN8ro3H6=CUZy5qzJjhC0C02yPKzS-+0r5@mail.gmail.com>
-Subject: Re: [PATCH 4/5] ARM: pxa168: added special case handler for keypad interrupts
-To: "Mark F. Brown" <mark.brown314@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 Aug 2010 03:07:37 -0400
+Date: Tue, 31 Aug 2010 09:07:25 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@linux.jf.intel.com>,
+        LKLM <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        mingo Redhat <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Patch-next] Trival fixes in thermal_throttle_add_dev().
+Message-ID: <20100831090725.5d83eedb@hyperion.delvare>
+In-Reply-To: <20100831010251.GA28885@fenghua-desk.sc.intel.com>
+References: <4C75D3C4.6040802@np.css.fujitsu.com>
+	<20100826060822.GA15021@fenghua-desk.sc.intel.com>
+	<4C7625D1.4060201@np.css.fujitsu.com>
+	<20100827152007.27636fa5@hyperion.delvare>
+	<4C7B64A8.2030208@np.css.fujitsu.com>
+	<493994B35A117E4F832F97C4719C4C04A111EEDF@orsmsx505.amr.corp.intel.com>
+	<4C7C5314.7090404@np.css.fujitsu.com>
+	<20100831010251.GA28885@fenghua-desk.sc.intel.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 2:28 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
-> On Tue, Aug 31, 2010 at 12:53 AM, Haojian Zhuang
-> <haojian.zhuang@gmail.com> wrote:
->> On Thu, Aug 26, 2010 at 5:18 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
->>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
->>> ---
->>>  arch/arm/mach-mmp/irq-pxa168.c |   23 ++++++++++++++++++++++-
->>>  1 files changed, 22 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-mmp/irq-pxa168.c b/arch/arm/mach-mmp/irq-pxa168.c
->>> index 52ff2f0..bfb0984 100644
->>> --- a/arch/arm/mach-mmp/irq-pxa168.c
->>> +++ b/arch/arm/mach-mmp/irq-pxa168.c
->>> @@ -17,6 +17,8 @@
->>>  #include <linux/io.h>
->>>
->>>  #include <mach/regs-icu.h>
->>> +#include <mach/regs-apmu.h>
->>> +#include <mach/cputype.h>
->>>
->>>  #include "common.h"
->>>
->>> @@ -42,6 +44,19 @@ static struct irq_chip icu_irq_chip = {
->>>        .unmask = icu_unmask_irq,
->>>  };
->>>
->>> +void handle_pxa168_keypad_irq(unsigned int irq, struct irq_desc *desc)
->>> +{
->>> +       uint32_t val;
->>> +       uint32_t mask = APMU_PXA168_KP_WAKE_CLR;
->>> +
->>> +       /* clear keypad wake event */
->>> +       val = __raw_readl(APMU_WAKE_CLR);
->>> +       __raw_writel(val |  mask, APMU_WAKE_CLR);
->>> +
->>> +       /* handle irq */
->>> +       handle_level_irq(irq, desc);
->>> +}
->>> +
->>
->> Why should you clear wakeup event status in IRQ handler? If system is
->> resumed by keypad event, you should clear this wakeup source in resume
->> code. I think that IRQ code should not be binded with wakeup event at
->> here.
->>
->>>  void __init icu_init_irq(void)
->>>  {
->>>        int irq;
->>> @@ -49,7 +64,13 @@ void __init icu_init_irq(void)
->>>        for (irq = 0; irq < 64; irq++) {
->>>                icu_mask_irq(irq);
->>>                set_irq_chip(irq, &icu_irq_chip);
->>> -               set_irq_handler(irq, handle_level_irq);
->>> +
->>> +               /* special handler for keypad */
->>> +               if (cpu_is_pxa168() && irq == IRQ_PXA168_KEYPAD)
->>> +                       set_irq_handler(irq, handle_pxa168_keypad_irq);
->>> +               else
->>> +                       set_irq_handler(irq, handle_level_irq);
->>> +
->>>                set_irq_flags(irq, IRQF_VALID);
->>>        }
->>>  }
->>> --
->>> 1.7.0.4
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->
-> Haojian, this is an usual case, but without that clear wake event you
-> will not be able to clear the keypad interrupt. For my push to open
-> source I re-wrote the workaround code and added it as a special case
-> IRQ handler. In the Marvell pxa168 code base it is actually located in
-> the keypad interrupt handler as the function clear_wakeup(). I felt it
-> was better to isolate this code in the mmp common code base instead.
+Hi Fenghua,
 
-I'd rather the irq handler not being changed and use platform_data instead.
-How about something below:
+On Mon, 30 Aug 2010 18:02:52 -0700, Fenghua Yu wrote:
+> On Mon, Aug 30, 2010 at 05:55:48PM -0700, Jin Dongming wrote:
+> > This patch fixed the following two problems.
+> >   1. When the feature PTS is not supported by CPU, the sysfile
+> >      package_power_limit_count for package should not be generated.
+> >   2. No matter whether a sysfile is failed to be created or not,
+> >      the next one will be created.
+> > 
+> > As the resolving methods:
+> >   1. Add missing { and } after checking PTS feature.
+> >   2. Fix the error handling.
+> > 
+> > Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+> > Reviewed-by: Fenghua Yu <fenghua.yu@initel.com>
+> > ---
+> >  arch/x86/kernel/cpu/mcheck/therm_throt.c |   15 ++++++++++++++-
+> >  1 files changed, 14 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> > index d9368ee..79d563a 100644
+> > --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> > +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> > @@ -216,14 +216,27 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
+> >  		err = sysfs_add_file_to_group(&sys_dev->kobj,
+> >  					      &attr_core_power_limit_count.attr,
+> >  					      thermal_attr_group.name);
+> > -	if (cpu_has(c, X86_FEATURE_PTS))
+> > +	if (err)
+> > +		goto error;
+> > +
+> > +	if (cpu_has(c, X86_FEATURE_PTS)) {
+> >  		err = sysfs_add_file_to_group(&sys_dev->kobj,
+> >  					      &attr_package_throttle_count.attr,
+> >  					      thermal_attr_group.name);
+> > +		if (err)
+> > +			goto error;
+> > +
+> >  		if (cpu_has(c, X86_FEATURE_PLN))
+> >  			err = sysfs_add_file_to_group(&sys_dev->kobj,
+> >  					&attr_package_power_limit_count.attr,
+> >  					thermal_attr_group.name);
+> > +		if (err)
+> > +			goto error;
+> > +	}
+> > +
+> > +	return 0;
+> > +error:
+> > +	sysfs_remove_group(&sys_dev->kobj, &thermal_attr_group);
+> >  
+> >  	return err;
+> >  }
+> 
+> This fix is incorrect. In this patch, a previous error prevents from adding any
+> further devices. There shouldn't be such dependency among the devices.
 
-diff --git a/arch/arm/mach-mmp/include/mach/pxa168.h
-b/arch/arm/mach-mmp/include/mach/pxa168.h
-index 27e1bc7..d2b7946 100644
---- a/arch/arm/mach-mmp/include/mach/pxa168.h
-+++ b/arch/arm/mach-mmp/include/mach/pxa168.h
-@@ -5,6 +5,7 @@ struct sys_timer;
+I don't quite follow you. Did you mean to write that a previous error
+prevents from creating further _attributes_ for the same device? This
+would be true.
 
- extern struct sys_timer pxa168_timer;
- extern void __init pxa168_init_irq(void);
-+extern void pxa168_clear_keypad_wakeup(void);
+Now I don't think this is a problem because 1* such errors should never
+happen anyway and 2* if they do happen then further attempts to create
+the other attributes are unlikely to succeed either.
 
- #include <linux/i2c.h>
- #include <mach/devices.h>
-@@ -97,4 +98,10 @@ static inline int pxa168_add_nand(struct
-pxa3xx_nand_platform_data *info)
- {
- 	return pxa_register_device(&pxa168_device_nand, info, sizeof(*info));
- }
-+
-+static inline int pxa168_add_keypad(struct pxa27x_keypad_platform_data *info)
-+{
-+	info->clear_wakeup = pxa168_clear_keypad_wakeup;
-+	return pxa_register_device(&pxa168_device_keypad, info, sizeof(*info));
-+}
- #endif /* __ASM_MACH_PXA168_H */
-diff --git a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
-b/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
-index 7b4eadc..3a6bfe7 100644
---- a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
-+++ b/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
-@@ -52,6 +52,7 @@ struct pxa27x_keypad_platform_data {
-
- 	/* key debounce interval */
- 	unsigned int	debounce_interval;
-+	void		(*clear_wakeup);
- };
-
- extern void pxa_set_keypad_info(struct pxa27x_keypad_platform_data *info);
-diff --git a/drivers/input/keyboard/pxa27x_keypad.c
-b/drivers/input/keyboard/pxa27x_keypad.c
-index f32404f..3fb94fe 100644
---- a/drivers/input/keyboard/pxa27x_keypad.c
-+++ b/drivers/input/keyboard/pxa27x_keypad.c
-@@ -330,10 +330,20 @@ static void pxa27x_keypad_scan_direct(struct
-pxa27x_keypad *keypad)
- 	keypad->direct_key_state = new_state;
- }
-
-+static void clear_wakeup(struct pxa27x_keypad *keypad)
-+{
-+	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
-+
-+	if (pdata->clear_wakeup)
-+		(pdata->clear_wakeup)();
-+}
-+
- static irqreturn_t pxa27x_keypad_irq_handler(int irq, void *dev_id)
- {
- 	struct pxa27x_keypad *keypad = dev_id;
--	unsigned long kpc = keypad_readl(KPC);
-+	unsigned long kpc;
-+
-+	kpc = keypad_readl(KPC);
-
- 	if (kpc & KPC_DI)
- 		pxa27x_keypad_scan_direct(keypad);
+-- 
+Jean Delvare
