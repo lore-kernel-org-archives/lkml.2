@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab0HaKWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 06:22:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45076 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753466Ab0HaKWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 06:22:42 -0400
-Date: Tue, 31 Aug 2010 12:22:39 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Nicolas Palix <npalix@diku.dk>
-Cc: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        cocci@diku.dk, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 00/18] Add new semantic patches and reorganize existing
- ones
-Message-ID: <20100831102239.GA18142@sepie.suse.cz>
-References: <1282664352-15882-1-git-send-email-npalix@diku.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282664352-15882-1-git-send-email-npalix@diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756871Ab0HaKY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 06:24:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60565 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab0HaKY1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 06:24:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:to:cc:subject:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=IL2tbyCxOfdeGNU9DjYArUbUz92UhozGzLbTDxYZkWEbcr0L+99dXHsmkSGqTOZvsR
+         LeOdXYR6qG9SGAmfoRfX9TOnPK5htLStM+1W7aeMl3u2TMOgHoTfV69wRQwdtKCoAy99
+         6kikw0hnHO89GEGKPBd4cauqTTc6N8o3yPGTg=
+Message-ID: <4c7cd856.cb71df0a.1986.ffffad0f@mx.google.com>
+Date: Tue, 31 Aug 2010 13:24:19 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: ralf@linux-mips.org, wuzhangjin@gmail.com, linux-mips@linux-mips.org
+Cc: alex@digriz.org.uk, manuel.lauss@googlemail.com, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] MIPS: Calculate VMLINUZ_LOAD_ADDRESS based on the length of
+ vmlinux.bin
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.18.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 05:38:54PM +0200, Nicolas Palix wrote:
-> The following series adds new semantic patches (SPs) in scripts/coccinelle.
-> Existing SPs are reorganized accordingly.
-> 
-> Nicolas Palix (18):
->   Coccinelle: Add null/eno.cocci
->   Coccinelle: Add null/kmerr.cocci
->   Coccinelle: Move deref_null.cocci to a more appropriate directory
->   Coccinelle: Add locks/call_kern.cocci
->   Coccinelle: Add locks/double_lock.cocci
->   Coccinelle: Add locks/mini_lock.cocci
->   Coccinelle: Add iterators/fen.cocci
->   Coccinelle: Add iterators/itnull.cocci
->   Coccinelle: Add iterators/list_entry_update.cocci
->   Coccinelle: Add free/kfree.cocci
->   Coccinelle: Add api/kstrdup.cocci
->   Coccinelle: Add api/memdup.cocci
->   Coccinelle: Add api/memdup_user
->   Coccinelle: Move err_cast.cocci to the api directory
->   Coccinelle: Move resource_size.cocci to the api directory
->   Coccinelle: Move alloc directory into api directory
->   Coccinelle: Add misc/doubleinit.cocci
->   Coccinelle: Add misc/ifcol.cocci
+Fix VMLINUZ_LOAD_ADDRESS calculation to be based on the length of vmlinux.bin,
+the actual uncompressed kernel binary.
 
-Applied, thanks.
+Previously it was based on the length of KBUILD_IMAGE (the unstripped ELF
+vmlinux), which is bigger than vmlinux.bin.
+As a result, vmlinuz was loaded into a memory address higher then actually
+needed - a problem for small memory platforms.
 
-Michal
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+---
+diff --git a/arch/mips/boot/compressed/Makefile b/arch/mips/boot/compressed/Makefile
+index ed9bb70..5fd7f7a 100644
+--- a/arch/mips/boot/compressed/Makefile
++++ b/arch/mips/boot/compressed/Makefile
+@@ -59,7 +59,7 @@ $(obj)/piggy.o: $(obj)/dummy.o $(obj)/vmlinux.bin.z FORCE
+ hostprogs-y := calc_vmlinuz_load_addr
+ 
+ VMLINUZ_LOAD_ADDRESS = $(shell $(obj)/calc_vmlinuz_load_addr \
+-		$(objtree)/$(KBUILD_IMAGE) $(VMLINUX_LOAD_ADDRESS))
++		$(obj)/vmlinux.bin $(VMLINUX_LOAD_ADDRESS))
+ 
+ vmlinuzobjs-y += $(obj)/piggy.o
+ 
+-- 
+Shmulik Ladkani
