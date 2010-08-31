@@ -1,112 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab0HaFAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 01:00:37 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:39210 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab0HaFAf convert rfc822-to-8bit (ORCPT
+	id S932150Ab0HaFP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 01:15:26 -0400
+Received: from ns1.siteground211.com ([209.62.36.12]:60982 "EHLO
+	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630Ab0HaFPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 01:00:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MUuz0HzhXPh2D1X2ox8RbGCKJkWNCbMefxJeqAIVlcu2YswPdhgrWLsSfeB0OYUsG+
-         ejjrwyMiGGAIBblty0yxocAgLEuT6DBwDLJ3fDao3c+5efUGezw5lwAFsxLbR1/pu0BS
-         TnjpD0wQ6t06ICzISj9oXaYILQYDa8Csf2/BU=
+	Tue, 31 Aug 2010 01:15:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1282814339-10934-6-git-send-email-mark.brown314@gmail.com>
-References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
-	<1282814339-10934-6-git-send-email-mark.brown314@gmail.com>
-Date: Tue, 31 Aug 2010 13:00:33 +0800
-Message-ID: <AANLkTi=OkRUmBgx_ezWtGHywGJkFAJsdGLR07v8dgzD7@mail.gmail.com>
-Subject: Re: [PATCH 5/5] ARM: pxa168: aspenite: add board support for keypad
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: "Mark F. Brown" <mark.brown314@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Tue, 31 Aug 2010 00:15:11 -0500
+From: Felipe Balbi <me@felipebalbi.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Hemanth V <hemanthv@ti.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <igor.stoppa@nokia.com>,
+        <kai.svahn@nokia.com>, <matthias.nyman@nokia.com>
+Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2] input:
+ CMA3000 Accelerometer driver)
+In-Reply-To: <20100830224352.GF28865@core.coreip.homeip.net>
+References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com> <20100829184904.GC26209@core.coreip.homeip.net> <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com> <20100830214025.2f9677a1@lxorguk.ukuu.org.uk> <20100830204412.GA28711@core.coreip.homeip.net> <AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com> <20100830214355.GB28865@core.coreip.homeip.net> <AANLkTinPConD62Ky7mvMn2ZgS=V9+Q5YUdaF5Vma8mn+@mail.gmail.com> <20100830224352.GF28865@core.coreip.homeip.net>
+Message-ID: <43fd040585e2eca4416f7619eba86515@secure211.sgcpanel.com>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - serv01.siteground211.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - felipebalbi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 5:18 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
-> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
-> ---
->  arch/arm/mach-mmp/aspenite.c |   27 +++++++++++++++++++++++++++
->  1 files changed, 27 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-mmp/aspenite.c b/arch/arm/mach-mmp/aspenite.c
-> index 9e1bd6b..1b788c5 100644
-> --- a/arch/arm/mach-mmp/aspenite.c
-> +++ b/arch/arm/mach-mmp/aspenite.c
-> @@ -24,6 +24,8 @@
->  #include <mach/pxa168.h>
->  #include <mach/gpio.h>
->  #include <video/pxa168fb.h>
-> +#include <linux/input.h>
-> +#include <plat/pxa27x_keypad.h>
->
->  #include "common.h"
->
-> @@ -97,6 +99,13 @@ static unsigned long common_pin_config[] __initdata = {
->        GPIO81_LCD_DD21,
->        GPIO82_LCD_DD22,
->        GPIO83_LCD_DD23,
-> +
-> +       /* Keypad */
-> +       GPIO109_KP_MKIN1,
-> +       GPIO110_KP_MKIN0,
-> +       GPIO111_KP_MKOUT7,
-> +       GPIO112_KP_MKOUT6,
-> +       GPIO121_KP_MKIN4,
->  };
->
->  static struct smc91x_platdata smc91x_info = {
-> @@ -193,6 +202,23 @@ struct pxa168fb_mach_info aspenite_lcd_info = {
->        .invert_pixclock        = 0,
->  };
->
-> +static unsigned int aspenite_matrix_key_map[] = {
-> +       KEY(0, 6, KEY_UP),      /* SW 4 */
-> +       KEY(0, 7, KEY_DOWN),    /* SW 5 */
-> +       KEY(1, 6, KEY_LEFT),    /* SW 6 */
-> +       KEY(1, 7, KEY_RIGHT),   /* SW 7 */
-> +       KEY(4, 6, KEY_ENTER),   /* SW 8 */
-> +       KEY(4, 7, KEY_ESC),     /* SW 9 */
-> +};
-> +
-> +static struct pxa27x_keypad_platform_data aspenite_keypad_info __initdata = {
-> +       .matrix_key_rows        = 8,
-> +       .matrix_key_cols        = 8,
-It seems that maxium columns is 5, not 8.
+Hi,
 
-> +       .matrix_key_map         = aspenite_matrix_key_map,
-> +       .matrix_key_map_size    = ARRAY_SIZE(aspenite_matrix_key_map),
-> +       .debounce_interval      = 30,
-> +};
-> +
->  static void __init common_init(void)
->  {
->        mfp_config(ARRAY_AND_SIZE(common_pin_config));
-> @@ -203,6 +229,7 @@ static void __init common_init(void)
->        pxa168_add_ssp(1);
->        pxa168_add_nand(&aspenite_nand_info);
->        pxa168_add_fb(&aspenite_lcd_info);
-> +       pxa168_add_keypad(&aspenite_keypad_info);
->
->        /* off-chip devices */
->        platform_device_register(&smc91x_device);
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On Mon, 30 Aug 2010 15:43:52 -0700, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Mon, Aug 30, 2010 at 03:05:32PM -0700, Linus Torvalds wrote:
+>> On Monday, August 30, 2010, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> wrote:
+>> >
+>> > That is why I started taking accelerometers in. But I am concerned
+that
+>> > taking accelerometers (which indeed are most often input devices)
+will
+>> > lead people to try and use the same for temperature, ALS and other
+>> > sensors that are more often used in industrial process controls.
+>> 
+>> You're just being silly.
+>> 
+>> Nobody writes a driver for a "temperature sensor" or "ambient light
+>> sensor". They write a driver for a specific *chip* that is used in
+>> cellphones etc, and that happens to have an ambient light and
+>> temperature sensor on it.
+> 
+> And? Yes, they have a ALS and temperature sensors. They also have
+> voltage regulators, pwm, ADC and a bunch of other stuff wired on. You
+> are not arguing that all of those should be input devices just because
+> they happen to reside on the same chip?
+> 
+>> 
+>> And in that context, it really does make sense to see it as an input
+>> driver. And the fact that there are industrial uses for ALS sensors
+>> that aren't necessarily at all interested on the input layer should
+>> not matter at all.
+> 
+> I think it does matter; we should have standard interface for certain
+> functionality that makes sense for everyone. So far cellphone guys
+> wanted to plumb such devices through input not necessarily because these
+> are HID events but because:
+> 
+> 1. Input transport via evdev is very convenient
+> 2. There is no other standard alternative
+> 
+> Once there is standard interface for such sensors they will happily use
+> it and will not look back.
+
+I disagree. If the device is used as input and currently
+app developers have to find other ways to use such input
+data, having a standard interface other than input layer
+will just make the mess standardized, but it will still
+be a mess.
+
+>> So don't bring up "ALS isn't always input" because within the context
+>> of a driver for some highly integrated cellphone model, it really IS
+>> input, and there is no ambiguity at all.
+>> 
+>> So your "sometimes it is, and sometimes it isn't" argument is bogus.
+>> The ambiguity simply doesn't exist when seen in context.
+> 
+> Sure, for a particular cell phone there is no ambiguity, the sensor has
+> certain functionality assigned that is well known. But does this mean
+> that we should not expect parts being reused at all anymore?
+
+Why are we trying to overengineer on such simple devices ? Wasn't
+it so that we will design and implement solutions when the problem
+arrives ? Why are we trying to think of all cases such a simple
+device might be used just for the sake of not being input device ?
+
+>> >> (or GPS device, for that matter) really be?
+>> >
+>> > But why GPS should be input device? It has nothing to do with user
+>> > input.
+>> 
+>> What? OF COURSE it is an input driver. It's the user moving the device
+>> around. It's EXACTLY the same thing as an accelerometer in that
+>> respect. Sure, it's a bit less precise and measures movement wrt some
+>> external frame, but technically they are almost exactly the same.
+>> 
+>> If you se doing a navigation app, the accelerometer, the compass and
+>> the GPS are all equally (but differently) important.
+>> 
+>> Again - it's not a user touching buttons. But it IS a user moving
+around.
+> 
+> Right, but do you expect that movement to cause an immediate action?
+> When you press a key - something happens; when you swing a Wii
+> controller - the device reacts. And really you can swap joysticks,
+> motion controllers, Sony's 6-axis and so forth and the application would
+> be hard pressed to tell the difference. I am unsure how you would play a
+> game with GPS as an input device.
+
+it might not be used on a game, but on a map application, that IS input.
+You're failing to see input devices are used in cases other than gaming.
+
+-- 
+balbi
