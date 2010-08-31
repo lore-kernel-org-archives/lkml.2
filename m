@@ -1,37 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab0HaVoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 17:44:00 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11215 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab0HaVn6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 17:43:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Dw8DQCXr5Dg/UlPKqx/tQ0/tdLteCPDt9y5kU12Shi1aESGmed2GEgZ1/ZhWgw8nPG
-         j2NpZMm4OMURJ1IEG1Sg==
+	id S1755894Ab0HaVq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 17:46:56 -0400
+Received: from mail04.svc.cra.dublin.eircom.net ([159.134.118.20]:47431 "HELO
+	mail04.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750909Ab0HaVqy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 17:46:54 -0400
+Date: Tue, 31 Aug 2010 22:46:49 +0100 (IST)
+From: Mark Davidson <boshea@eircom.net>
+Reply-To: Mark Davidson <mar101@w.cn>
+Message-ID: <1584022.133021283291209361.JavaMail.root@webmailbox403.eircom.net>
+Subject: Re Reply Urgent Message
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinq1Unms=RsJuxGj5iMuU+kt4eHt2fd4niP4Pfg@mail.gmail.com>
-References: <AANLkTinq1Unms=RsJuxGj5iMuU+kt4eHt2fd4niP4Pfg@mail.gmail.com>
-Date: Tue, 31 Aug 2010 14:43:52 -0700
-Message-ID: <AANLkTineOu03ct06CLO-ec2ut-prnWBMbLUN9ZAX1b4W@mail.gmail.com>
-Subject: Re: hello, Is there any documentation about CFS and cgroup??
-From: Paul Menage <menage@google.com>
-To: =?UTF-8?B?7KGw7KCV7Jqx?= <jmanbal@unist.ac.kr>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-Originating-IP: [41.184.112.49]
+X-Mailer: Zimbra 5.0.21_GA_3151.RHEL4 (zclient/5.0.21_GA_3151.RHEL4)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 2:59 AM, 조정욱 <jmanbal@unist.ac.kr> wrote:
-> hello, Is there any documentation about CFS and cgroup??
-
-Try Documentation/cgroups/cgroups.txt and Documentation/scheduler/*
-
-Paul
+I have a confidential business for you;I need you to execute this proposal involving GBP£60,000,000.00(Sixty Million Pounds Sterling's)Provide me,
+Full Name
+Tel: Number
+Contact Address
+M Davidson
