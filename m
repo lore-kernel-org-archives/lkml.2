@@ -1,103 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab0HaUsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 16:48:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47847 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755510Ab0HaUsH (ORCPT
+	id S1755575Ab0HaUtP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 16:49:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:64412 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab0HaUtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 16:48:07 -0400
-From: Will Drewry <wad@chromium.org>
-To: "Andrew Morton" <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: "Kay Sievers" <kay.sievers@vrfy.org>, "Jens Axboe" <axboe@kernel.dk>,
-        "Karel Zak" <kzak@redhat.com>, "Tejun Heo" <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Joe Perches" <joe@perches.com>, "Jan Blunck" <jblunck@suse.de>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, Will Drewry <wad@chromium.org>
-Subject: [PATCH v4 2/3] genhd, efi: add efi partition metadata to hd_structs
-Date: Tue, 31 Aug 2010 15:47:06 -0500
-Message-Id: <1283287627-13842-2-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1280946126-19587-3-git-send-email-wad@chromium.org>
-References: <1280946126-19587-3-git-send-email-wad@chromium.org>
+	Tue, 31 Aug 2010 16:49:14 -0400
+X-Authority-Analysis: v=1.1 cv=h9FjAN2ougM9pVhvDq3M6+cWFo1DP5/t8S/Ny2XAPyw= c=1 sm=0 a=9F6GpCbbJf0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=Pf1VxDEs3eoOzUUc9RkA:9 a=Ofrsbg_AeIgfwf8D9dwA:7 a=AJstL0UEecz3LWDJCYkFoCdv1kAA:4 a=PUjeQqilurYA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH v2][GIT PULL][v2.6.36] tracing: Fix a race in function
+ profile
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Li Zefan <lizf@cn.fujitsu.com>,
+        stable <stable@kernel.org>
+In-Reply-To: <1283282727.1377.356.camel@gandalf.stny.rr.com>
+References: <1283282727.1377.356.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 Aug 2010 16:49:12 -0400
+Message-ID: <1283287752.1377.451.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change extends the partition_meta_info structure to
-support EFI GPT-specific metadata and ensures that data
-is copied in on partition scanning.
+Ingo,
 
-Signed-off-by: Will Drewry <wad@chromium.org>
+Please pull this version instead. The only difference is that I Cc'd the
+stable list.
 
----
-v2: move info assignment after memcpy()s
-    adds _MAX to the enum after EFI
-v3: exports a generic uuid/volname format
-v4: no changes
+Thanks,
 
- fs/partitions/efi.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+-- Steve
 
-diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
-index dbb44d4..ac0ccb5 100644
---- a/fs/partitions/efi.c
-+++ b/fs/partitions/efi.c
-@@ -94,6 +94,7 @@
-  *
-  ************************************************************/
- #include <linux/crc32.h>
-+#include <linux/ctype.h>
- #include <linux/math64.h>
- #include <linux/slab.h>
- #include "check.h"
-@@ -604,6 +605,7 @@ int efi_partition(struct parsed_partitions *state)
- 	gpt_entry *ptes = NULL;
- 	u32 i;
- 	unsigned ssz = bdev_logical_block_size(state->bdev) / 512;
-+	u8 unparsed_guid[37];
- 
- 	if (!find_valid_gpt(state, &gpt, &ptes) || !gpt || !ptes) {
- 		kfree(gpt);
-@@ -614,6 +616,9 @@ int efi_partition(struct parsed_partitions *state)
- 	pr_debug("GUID Partition Table is valid!  Yea!\n");
- 
- 	for (i = 0; i < le32_to_cpu(gpt->num_partition_entries) && i < state->limit-1; i++) {
-+		struct partition_meta_info *info;
-+		unsigned label_count = 0;
-+		unsigned label_max;
- 		u64 start = le64_to_cpu(ptes[i].starting_lba);
- 		u64 size = le64_to_cpu(ptes[i].ending_lba) -
- 			   le64_to_cpu(ptes[i].starting_lba) + 1ULL;
-@@ -627,6 +632,26 @@ int efi_partition(struct parsed_partitions *state)
- 		if (!efi_guidcmp(ptes[i].partition_type_guid,
- 				 PARTITION_LINUX_RAID_GUID))
- 			state->parts[i + 1].flags = ADDPART_FLAG_RAID;
+Please pull the latest tip/perf/urgent-2 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent-2
+
+
+Li Zefan (1):
+      tracing: Fix a race in function profile
+
+----
+ kernel/trace/ftrace.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+---------------------------
+commit 3aaba20f26f58843e8f20611e5c0b1c06954310f
+Author: Li Zefan <lizf@cn.fujitsu.com>
+Date:   Mon Aug 23 16:50:12 2010 +0800
+
+    tracing: Fix a race in function profile
+    
+    While we are reading trace_stat/functionX and someone just
+    disabled function_profile at that time, we can trigger this:
+    
+    	divide error: 0000 [#1] PREEMPT SMP
+    	...
+    	EIP is at function_stat_show+0x90/0x230
+    	...
+    
+    This fix just takes the ftrace_profile_lock and checks if
+    rec->counter is 0. If it's 0, we know the profile buffer
+    has been reset.
+    
+    Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+    Cc: stable@kernel.org
+    LKML-Reference: <4C723644.4040708@cn.fujitsu.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0d88ce9..7cb1f45 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -381,12 +381,19 @@ static int function_stat_show(struct seq_file *m, void *v)
+ {
+ 	struct ftrace_profile *rec = v;
+ 	char str[KSYM_SYMBOL_LEN];
++	int ret = 0;
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+-	static DEFINE_MUTEX(mutex);
+ 	static struct trace_seq s;
+ 	unsigned long long avg;
+ 	unsigned long long stddev;
+ #endif
++	mutex_lock(&ftrace_profile_lock);
 +
-+		info = &state->parts[i + 1].info;
-+		/* Instead of doing a manual swap to big endian, reuse the
-+		 * common ASCII hex format as the interim.
-+		 */
-+		efi_guid_unparse(&ptes[i].unique_partition_guid, unparsed_guid);
-+		part_pack_uuid(unparsed_guid, info->uuid);
-+
-+		/* Naively convert UTF16-LE to 7 bits. */
-+		label_max = min(sizeof(info->volname) - 1,
-+				sizeof(ptes[i].partition_name));
-+		info->volname[label_max] = 0;
-+		while (label_count < label_max) {
-+			u8 c = ptes[i].partition_name[label_count] & 0xff;
-+			if (c && !isprint(c))
-+				c = '!';
-+			info->volname[label_count] = c;
-+			label_count++;
-+		}
-+		state->parts[i + 1].has_info = true;
++	/* we raced with function_profile_reset() */
++	if (unlikely(rec->counter == 0)) {
++		ret = -EBUSY;
++		goto out;
++	}
+ 
+ 	kallsyms_lookup(rec->ip, NULL, NULL, NULL, str);
+ 	seq_printf(m, "  %-30.30s  %10lu", str, rec->counter);
+@@ -408,7 +415,6 @@ static int function_stat_show(struct seq_file *m, void *v)
+ 		do_div(stddev, (rec->counter - 1) * 1000);
  	}
- 	kfree(ptes);
- 	kfree(gpt);
--- 
-1.7.0.4
+ 
+-	mutex_lock(&mutex);
+ 	trace_seq_init(&s);
+ 	trace_print_graph_duration(rec->time, &s);
+ 	trace_seq_puts(&s, "    ");
+@@ -416,11 +422,12 @@ static int function_stat_show(struct seq_file *m, void *v)
+ 	trace_seq_puts(&s, "    ");
+ 	trace_print_graph_duration(stddev, &s);
+ 	trace_print_seq(m, &s);
+-	mutex_unlock(&mutex);
+ #endif
+ 	seq_putc(m, '\n');
++out:
++	mutex_unlock(&ftrace_profile_lock);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static void ftrace_profile_reset(struct ftrace_profile_stat *stat)
+
 
