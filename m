@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab0HaSlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 14:41:19 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:51760 "EHLO
+	id S1755049Ab0HaSl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 14:41:26 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:51985 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab0HaSlR (ORCPT
+	with ESMTP id S1755021Ab0HaSlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 14:41:17 -0400
+	Tue, 31 Aug 2010 14:41:25 -0400
 From: Chase Douglas <chase.douglas@canonical.com>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: Michael Poole <mdpoole@troilus.org>, Henrik Rydberg <rydberg@euromail.se>,
         Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6 v2] HID: magicmouse: don't allow hidinput to initialize the device
-Date: Tue, 31 Aug 2010 14:41:03 -0400
-Message-Id: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+Subject: [PATCH 4/6 v2] HID: magicmouse: remove axis data filtering
+Date: Tue, 31 Aug 2010 14:41:06 -0400
+Message-Id: <1283280068-12285-4-git-send-email-chase.douglas@canonical.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chase Douglas <chase.douglas@ubuntu.com>
-
-The driver listens only for raw events from the device. If we allow
-the hidinput layer to initialize, we can hit NULL pointer dereferences
-in the hidinput layer because disconnecting only removes the hidinput
-devices from the hid device while leaving the hid fields configured.
+The Magic Mouse device is very precise. No driver filtering of input
+data needs to be performed.
 
 Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+Acked-by: Michael Poole <mdpoole@troilus.org>
 ---
-Note that this mimics what the hid-picolcd module does.
-
- drivers/hid/hid-magicmouse.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+ drivers/hid/hid-magicmouse.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index 319b0e5..d38b529 100644
+index 98bbc53..0fe2464 100644
 --- a/drivers/hid/hid-magicmouse.c
 +++ b/drivers/hid/hid-magicmouse.c
-@@ -404,15 +404,20 @@ static int magicmouse_probe(struct hid_device *hdev,
- 		goto err_free;
+@@ -357,11 +357,11 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
+ 		__set_bit(EV_ABS, input->evbit);
+ 
+ 		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
+-		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 4, 0);
+-		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 4, 0);
+-		input_set_abs_params(input, ABS_MT_ORIENTATION, -32, 31, 1, 0);
++		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
++		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 0, 0);
++		input_set_abs_params(input, ABS_MT_ORIENTATION, -32, 31, 0, 0);
+ 		input_set_abs_params(input, ABS_MT_POSITION_X, -1100, 1358,
+-				4, 0);
++				0, 0);
+ 		/* Note: Touch Y position from the device is inverted relative
+ 		 * to how pointer motion is reported (and relative to how USB
+ 		 * HID recommends the coordinates work).  This driver keeps
+@@ -369,7 +369,7 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
+ 		 * inverse of the reported Y.
+ 		 */
+ 		input_set_abs_params(input, ABS_MT_POSITION_Y, -1589, 2047,
+-				4, 0);
++				0, 0);
  	}
  
--	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-+	/* When registering a hid device, one of hidinput, hidraw, or hiddev
-+	 * subsystems must claim the device. We are bypassing hidinput due to
-+	 * our raw event processing, and hidraw and hiddev may not claim the
-+	 * device. We get around this by telling hid_hw_start that input has
-+	 * claimed the device already, and then flipping the bit back.
-+	 */
-+	hdev->claimed = HID_CLAIMED_INPUT;
-+	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT & ~HID_CONNECT_HIDINPUT);
-+	hdev->claimed &= ~HID_CLAIMED_INPUT;
- 	if (ret) {
- 		dev_err(&hdev->dev, "magicmouse hw start failed\n");
- 		goto err_free;
- 	}
- 
--	/* we are handling the input ourselves */
--	hidinput_disconnect(hdev);
--
- 	report = hid_register_report(hdev, HID_INPUT_REPORT, TOUCH_REPORT_ID);
- 	if (!report) {
- 		dev_err(&hdev->dev, "unable to register touch report\n");
+ 	if (report_undeciphered) {
 -- 
 1.7.1
 
