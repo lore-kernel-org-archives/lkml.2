@@ -1,62 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab0HaRn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 13:43:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62458 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab0HaRn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 13:43:28 -0400
-X-Authority-Analysis: v=1.1 cv=tmcEYLAoDqwcE/92ninAvjUMbWeHvL1caymGjnMU8Ns= c=1 sm=0 a=kqxJoFsqNMcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=da-vh-ESf4kec7Yx9T8A:9 a=mwKU9AM7fvunhmKafx6SNMIdNcgA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [Patch] ext4: avoid null dereference
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Li Zefan <lizf@cn.fujitsu.com>
-In-Reply-To: <4C777C04.7080906@cn.fujitsu.com>
-References: <4C777C04.7080906@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 31 Aug 2010 13:43:26 -0400
-Message-ID: <1283276606.1377.244.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1754185Ab0HaRoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 13:44:05 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39002 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753740Ab0HaRoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 13:44:03 -0400
+Date: Tue, 31 Aug 2010 19:44:00 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Wolfgang Grandegger <wg@grandegger.com>, kernel-janitors@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 3/4] drivers/net/can/mscan/mpc5xxx_can.c: Add of_node_put
+ to avoid memory leak
+In-Reply-To: <20100831165153.GB28015@pengutronix.de>
+Message-ID: <Pine.LNX.4.64.1008311943280.2668@ask.diku.dk>
+References: <1283269738-14612-1-git-send-email-julia@diku.dk>
+ <1283269738-14612-4-git-send-email-julia@diku.dk> <20100831165153.GB28015@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-27 at 16:49 +0800, Wen Congyang wrote:
-> ac->inode is set to null in function ext4_mb_release_group_pa(),
-> and then trace_ext4_mballoc_discard(ac) is called, the kernel
-> will panic.
+Add a call to of_node_put in the error handling code following a call to
+of_find_matching_node.
 
-> diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-> index 01e9e00..6a1fcff 100644
-> --- a/include/trace/events/ext4.h
-> +++ b/include/trace/events/ext4.h
-> @@ -796,8 +796,9 @@ DECLARE_EVENT_CLASS(ext4__mballoc,
->  	),
->  
->  	TP_fast_assign(
-> -		__entry->dev		= ac->ac_inode->i_sb->s_dev;
-> -		__entry->ino		= ac->ac_inode->i_ino;
-> +		__entry->dev		= ac->ac_sb->s_dev;
-> +		__entry->ino		= ac->ac_inode ?
-> +						ac->ac_inode->i_ino : 0;
+This patch also moves the existing call to of_node_put after the call to
+iounmap in the error handling code, to make it possible to jump to
+of_node_put without doing iounmap.  These appear to be disjoint operations,
+so the ordering doesn't matter.
 
-Is i_ino == 0 a valid inode number?
+This patch furthermore changes the -ENODEV result in the error handling
+code for of_find_matching_node to a return of 0, as found in the error
+handling code for of_iomap, because the return type of the function is
+unsigned.
 
-If not, then
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+// <smpl>
+@r exists@
+local idexpression x;
+expression E,E1,E2;
+statement S;
+@@
 
--- Steve
+*x = 
+(of_find_node_by_path
+|of_find_node_by_name
+|of_find_node_by_phandle
+|of_get_parent
+|of_get_next_parent
+|of_get_next_child
+|of_find_compatible_node
+|of_match_node
+|of_find_node_by_type
+|of_find_node_with_property
+|of_find_matching_node
+|of_parse_phandle
+)(...);
+...
+if (x == NULL) S
+<... when != x = E
+*if (...) {
+  ... when != of_node_put(x)
+      when != if (...) { ... of_node_put(x); ... }
+(
+  return <+...x...+>;
+|
+*  return ...;
+)
+}
+...>
+(
+E2 = x;
+|
+of_node_put(x);
+)
+// </smpl>
 
->  		__entry->result_logical	= ac->ac_b_ex.fe_logical;
->  		__entry->result_start	= ac->ac_b_ex.fe_start;
->  		__entry->result_group	= ac->ac_b_ex.fe_group;
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
+---
+ drivers/net/can/mscan/mpc5xxx_can.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/net/can/mscan/mpc5xxx_can.c b/drivers/net/can/mscan/mpc5xxx_can.c
+--- a/drivers/net/can/mscan/mpc5xxx_can.c
++++ b/drivers/net/can/mscan/mpc5xxx_can.c
+@@ -143,12 +143,12 @@ static u32 __devinit mpc512x_can_get_clock(struct platform_device *ofdev,
+ 	np_clock = of_find_matching_node(NULL, mpc512x_clock_ids);
+ 	if (!np_clock) {
+ 		dev_err(&ofdev->dev, "couldn't find clock node\n");
+-		return -ENODEV;
++		return 0;
+ 	}
+ 	clockctl = of_iomap(np_clock, 0);
+ 	if (!clockctl) {
+ 		dev_err(&ofdev->dev, "couldn't map clock registers\n");
+-		return 0;
++		goto exit_put;
+ 	}
+ 
+ 	/* Determine the MSCAN device index from the physical address */
+@@ -233,9 +233,9 @@ static u32 __devinit mpc512x_can_get_clock(struct platform_device *ofdev,
+ 		clocksrc == 1 ? "ref_clk" : "sys_clk", clockdiv);
+ 
+ exit_unmap:
+-	of_node_put(np_clock);
+ 	iounmap(clockctl);
+-
++exit_put:
++	of_node_put(np_clock);
+ 	return freq;
+ }
+ #else /* !CONFIG_PPC_MPC512x */
