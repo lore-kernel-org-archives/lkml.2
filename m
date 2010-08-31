@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab0HaGca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:32:30 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48167 "EHLO gate.crashing.org"
+	id S932147Ab0HaGdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 02:33:41 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:36897 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756825Ab0HaGc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:32:28 -0400
-Subject: Re: [PATCH 08/20] powerpc: Preemptible mmu_gather
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@suse.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <1283236004.2151.33.camel@pasglop>
-References: <20100828141637.421594670@chello.nl>
-	 <20100828142455.960494507@chello.nl>  <1283236004.2151.33.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 16:31:05 +1000
-Message-ID: <1283236265.2151.35.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932102Ab0HaGdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 02:33:40 -0400
+Date: Tue, 31 Aug 2010 12:03:34 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "menage@google.com" <menage@google.com>,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 1/5] cgroup: do ID allocation under css allocator.
+Message-ID: <20100831063334.GM32680@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100825170640.5f365629.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100825141500.GA32680@balbir.in.ibm.com>
+ <20100826091346.88eb3ecc.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100826091346.88eb3ecc.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 16:26 +1000, Benjamin Herrenschmidt wrote:
-> On Sat, 2010-08-28 at 16:16 +0200, Peter Zijlstra wrote:
-> > Fix up powerpc to the new mmu_gather stuffs.
-> 
-> Unfortunately, I think this is broken...
-> 
-> First there's an actual bug here:
-> 
-> >  	last = _switch(old_thread, new_thread);
-> >  
-> > +#ifdef CONFIG_PPC64
-> > +	if (task_thread_info(new)->local_flags & _TLF_LAZY_MMU) {
-> > +		task_thread_info(new)->local_flags &= ~_TLF_LAZY_MMU;
-> > +		batch = &__get_cpu_var(ppc64_tlb_batch);
-> > +		batch->active = 1;
-> > +	}
-> > +#endif
-> > +
-> 
-> Here, you are coming out of _switch() which will have swapped the
-> stack and non-volatile registers to the state they were in when the
-> new task was originally switched-out. Thus "new" which is a local variable
-> (either on stack or in a non-volatile register) will now refer to whatever
-> was the next task back then.
-> 
-> I suppose that's what's causing the similar patch you have in -rt to
-> fail btw. This could be fixed easily by using "current" instead.
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-26 09:13:46]:
 
-And here's a fix. Using current_thread_info() everywhere is better
-anyways, you are not supposed to touch the local_flags within anything
-but "current" so we may as well make it explicit.
+> On Wed, 25 Aug 2010 19:45:00 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-25 17:06:40]:
+> > 
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > Now, css'id is allocated after ->create() is called. But to make use of ID
+> > > in ->create(), it should be available before ->create().
+> > > 
+> > > In another thinking, considering the ID is tightly coupled with "css",
+> > > it should be allocated when "css" is allocated.
+> > > This patch moves alloc_css_id() to css allocation routine. Now, only 2 subsys,
+> > > memory and blkio are useing ID. (To support complicated hierarchy walk.)
+> >                        ^^^^ typo
+> > > 
+> > > ID will be used in mem cgroup's ->create(), later.
+> > > 
+> > > Note:
+> > > If someone changes rules of css allocation, ID allocation should be moved too.
+> > > 
+> > 
+> > What rules? could you please elaborate?
+> > 
+> See Paul Menage's mail. He said "allocating css object under kernel/cgroup.c
+> will make kernel/cgroup.c cleaner." But it seems too big for my purpose.
+> 
+> > Seems cleaner, may be we need to update cgroups.txt?
+> 
+> Hmm. will look into.
+>
 
-Feel free to fold that into your -rt patch and this one if you decide
-not to drop that whole part.
+OK, the patch looks good to me otherwise
 
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 6ee4b09..6e8b6de 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -517,12 +517,12 @@ struct task_struct *__switch_to(struct task_struct *prev,
  
- 	batch = &__get_cpu_var(ppc64_tlb_batch);
- 	if (batch->active) {
--		task_thread_info(prev)->local_flags |= _TLF_LAZY_MMU;
-+		current_thread_info()->local_flags |= _TLF_LAZY_MMU;
- 		if (batch->index)
- 			__flush_tlb_pending(batch);
- 		batch->active = 0;
- 	}
--#endif
-+#endif /* CONFIG_PPC64 */
- 
- 	local_irq_save(flags);
- 
-@@ -539,12 +539,12 @@ struct task_struct *__switch_to(struct task_struct *prev,
- 	last = _switch(old_thread, new_thread);
- 
- #ifdef CONFIG_PPC64
--	if (task_thread_info(new)->local_flags & _TLF_LAZY_MMU) {
--		task_thread_info(new)->local_flags &= ~_TLF_LAZY_MMU;
-+	if (current_thread_info()->local_flags & _TLF_LAZY_MMU) {
-+		current_thread_info()->local_flags &= ~_TLF_LAZY_MMU;
- 		batch = &__get_cpu_var(ppc64_tlb_batch);
- 		batch->active = 1;
- 	}
--#endif
-+#endif /* CONFIG_PPC64 */
- 
- 	local_irq_restore(flags);
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
  
 
-
+-- 
+	Three Cheers,
+	Balbir
