@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab0HaHsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 03:48:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3330 "EHLO mga11.intel.com"
+	id S1756920Ab0HaHtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 03:49:19 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50776 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756832Ab0HaHso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 03:48:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,297,1280732400"; 
-   d="scan'208";a="833421737"
-Date: Tue, 31 Aug 2010 15:48:25 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_cleaned in
- /proc/vmstat
-Message-ID: <20100831074825.GA19358@localhost>
-References: <1282963227-31867-1-git-send-email-mrubin@google.com>
- <1282963227-31867-4-git-send-email-mrubin@google.com>
- <20100828235029.GA7071@localhost>
- <AANLkTi=KjbfqzZsD6MOQG+4i7vHj6ZEh1_nF7DpwqeLV@mail.gmail.com>
+	id S1756832Ab0HaHtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 03:49:17 -0400
+Date: Tue, 31 Aug 2010 09:49:07 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/memblock] memblock: Rename memblock_region to
+ memblock_type and memblock_property to memblock_region
+Message-ID: <20100831074907.GA1737@elte.hu>
+References: <tip-e3239ff92a17976ac5d26fa0fe40ef3a9daf2523@git.kernel.org>
+ <1282958776.1922.58.camel@pasglop>
+ <20100831072947.GA32709@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=KjbfqzZsD6MOQG+4i7vHj6ZEh1_nF7DpwqeLV@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100831072947.GA32709@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.2745]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The output format is quite different from /proc/vmstat.
-> > Do we really need to "Node X", ":" and "times" decorations?
+
+* Ingo Molnar <mingo@elte.hu> wrote:
+
+> > He, I was just about to rebase them :-)
+> > 
+> > Do you still need me to do that ?
 > 
-> Node X is based on the meminfo file but I agree it's redundant information.
+> Btw., because this is an older base, before we can push this to 
+> linux-next i suspect we'll need fixes for those architectures that did 
+> a memblock conversion in this cycle?
 
-Thanks. In the same directory you can find a different style example
-/sys/devices/system/node/node0/numastat :) If ever the file was named
-vmstat! In the other hand, shall we put the numbers there? I'm confused..
+Here's the current state of things, with the x86 conversion in place and 
+freshly merged up to v2.6.36-rc3:
 
-> > And the "_PAGES" in NR_FILE_PAGES_DIRTIED looks redundant to
-> > the "_page" in node_page_state(). It's a bit long to be a pleasant
-> > name. NR_FILE_DIRTIED/NR_CLEANED looks nicer.
-> 
-> Yeah. Will fix.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86/memblock
 
-Thanks. This is kind of nitpick, however here is another name by
-Jan Kara: BDI_WRITTEN. BDI_WRITTEN may not be a lot better than
-BDI_CLEANED, but here is a patch based on Jan's code. I'm cooking
-more patches that make use of this per-bdi counter to estimate the
-bdi's write bandwidth, and to further decide the optimal (large)
-writeback chunk size as well as to do IO-less balance_dirty_pages().
-
-Basically BDI_WRITTEN and NR_CLEANED are accounting for the same
-thing in different dimensions. So it would be good if we can use
-the same naming scheme to avoid confusing users: either to use
-BDI_WRITTEN and NR_WRITTEN, or use BDI_CLEANED and NR_CLEANED.
-What's your opinion?
+Any necessary changes due to new bits in .36-rc3 should be done now, 
+before we progress any further.
 
 Thanks,
-Fengguang
 
----
-writeback: account per-bdi accumulated written pages
-
-This steals code from Jan's balance_dirty_pages() patch.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/backing-dev.h |    1 +
- mm/backing-dev.c            |    6 ++++--
- mm/page-writeback.c         |    1 +
- 3 files changed, 6 insertions(+), 2 deletions(-)
-
---- linux-next.orig/include/linux/backing-dev.h	2010-08-29 23:32:46.000000000 +0800
-+++ linux-next/include/linux/backing-dev.h	2010-08-29 23:52:50.000000000 +0800
-@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
- enum bdi_stat_item {
- 	BDI_RECLAIMABLE,
- 	BDI_WRITEBACK,
-+	BDI_WRITTEN,
- 	NR_BDI_STAT_ITEMS
- };
- 
---- linux-next.orig/mm/backing-dev.c	2010-08-29 23:32:46.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-08-29 23:52:50.000000000 +0800
-@@ -91,6 +91,7 @@ static int bdi_debug_stats_show(struct s
- 		   "BdiDirtyThresh:   %8lu kB\n"
- 		   "DirtyThresh:      %8lu kB\n"
- 		   "BackgroundThresh: %8lu kB\n"
-+		   "BdiWritten:       %8lu kB\n"
- 		   "b_dirty:          %8lu\n"
- 		   "b_io:             %8lu\n"
- 		   "b_more_io:        %8lu\n"
-@@ -98,8 +99,9 @@ static int bdi_debug_stats_show(struct s
- 		   "state:            %8lx\n",
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
--		   K(bdi_thresh), K(dirty_thresh),
--		   K(background_thresh), nr_dirty, nr_io, nr_more_io,
-+		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
-+		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
-+		   nr_dirty, nr_io, nr_more_io,
- 		   !list_empty(&bdi->bdi_list), bdi->state);
- #undef K
- 
---- linux-next.orig/mm/page-writeback.c	2010-08-29 23:52:47.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-08-29 23:52:50.000000000 +0800
-@@ -1305,6 +1305,7 @@ int test_clear_page_writeback(struct pag
- 						PAGECACHE_TAG_WRITEBACK);
- 			if (bdi_cap_account_writeback(bdi)) {
- 				__dec_bdi_stat(bdi, BDI_WRITEBACK);
-+				__inc_bdi_stat(bdi, BDI_WRITTEN);
- 				__bdi_writeout_inc(bdi);
- 			}
- 		}
+	Ingo
