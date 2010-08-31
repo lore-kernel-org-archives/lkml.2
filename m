@@ -1,47 +1,573 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab0HaJ3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 05:29:22 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43318 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753004Ab0HaJ3U (ORCPT
+	id S1757059Ab0HaJ34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 05:29:56 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54785 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab0HaJ3y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 05:29:20 -0400
-Date: Tue, 31 Aug 2010 10:46:59 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Felipe Balbi <me@felipebalbi.com>, Hemanth V <hemanthv@ti.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "igor.stoppa@nokia.com" <igor.stoppa@nokia.com>,
-        "kai.svahn@nokia.com" <kai.svahn@nokia.com>,
-        "matthias.nyman@nokia.com" <matthias.nyman@nokia.com>
-Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2]
- input: CMA3000 Accelerometer driver)
-Message-ID: <20100831104659.11ebc8a0@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100830214355.GB28865@core.coreip.homeip.net>
-References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
-	<20100829184904.GC26209@core.coreip.homeip.net>
-	<36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com>
-	<20100830214025.2f9677a1@lxorguk.ukuu.org.uk>
-	<20100830204412.GA28711@core.coreip.homeip.net>
-	<AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com>
-	<20100830214355.GB28865@core.coreip.homeip.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Aug 2010 05:29:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [BUGFIX for 2.6.36][RESEND][PATCH 1/2] oom: remove totalpage normalization from oom_badness()
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100831181911.87E7.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 31 Aug 2010 18:29:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> IIO which is currently in staging.
+ok, this one got no objection except original patch author.
+then, I'll push it to mainline. I'm glad that I who stabilization
+developer have finished this work.
 
-Except we had ALS before that as a layer and Linus vetoed it. So there is
-zero faith in IIO ever going anywhere.
+If you think this patch is slightly large, please run,
+ % git diff a63d83f42^ mm/oom_kill.c
+you'll understand this is minimal revert of unnecessary change.
 
-Instead we now have about ten different light sensor APIs to the point
-developers are writing a toolkit userspace plugin for *each* sensor.
+Thanks.
+
+===================================================================
+>From 938ce3a7aa79ae4a6cbc275259d586086c41eb87 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 27 Aug 2010 15:24:09 +0900
+Subject: [PATCH 1/2] oom: remove totalpage normalization from oom_badness()
+
+Current oom_score_adj is completely broken because It is strongly bound
+google usecase and ignore other all.
+
+1) Priority inversion
+   As kamezawa-san pointed out, This break cgroup and lxr environment.
+   He said,
+	> Assume 2 proceses A, B which has oom_score_adj of 300 and 0
+	> And A uses 200M, B uses 1G of memory under 4G system
+	>
+	> Under the system.
+	> 	A's socre = (200M *1000)/4G + 300 = 350
+	> 	B's score = (1G * 1000)/4G = 250.
+	>
+	> In the cpuset, it has 2G of memory.
+	> 	A's score = (200M * 1000)/2G + 300 = 400
+	> 	B's socre = (1G * 1000)/2G = 500
+	>
+	> This priority-inversion don't happen in current system.
+
+2) Ratio base point don't works large machine
+   oom_score_adj normalize oom-score to 0-1000 range.
+   but if the machine has 1TB memory, 1 point (i.e. 0.1%) mean
+   1GB. this is no suitable for tuning parameter.
+   As I said, proposional value oriented tuning parameter has
+   scalability risk.
+
+3) No reason to implement ABI breakage.
+   old tuning parameter mean)
+	oom-score = oom-base-score x 2^oom_adj
+   new tuning parameter mean)
+	oom-score = oom-base-score + oom_score_adj / (totalram + totalswap)
+   but "oom_score_adj / (totalram + totalswap)" can be calculated in
+   userland too. beucase both totalram and totalswap has been exporsed by
+   /proc. So no reason to introduce funny new equation.
+
+4) totalram based normalization assume flat memory model.
+   example, the machine is assymmetric numa. fat node memory and thin
+   node memory might have another wight value.
+   In other word, totalram based priority is a one of policy. Fixed and
+   workload depended policy shouldn't be embedded in kernel. probably.
+
+Then, this patch remove *UGLY* total_pages suck completely. Googler
+can calculate it at userland!
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ fs/proc/base.c        |   33 ++---------
+ include/linux/oom.h   |   16 +-----
+ include/linux/sched.h |    2 +-
+ mm/oom_kill.c         |  144 ++++++++++++++++++++-----------------------------
+ 4 files changed, 68 insertions(+), 127 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index a1c43e7..90ba487 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -434,8 +434,7 @@ static int proc_oom_score(struct task_struct *task, char *buffer)
+ 
+ 	read_lock(&tasklist_lock);
+ 	if (pid_alive(task))
+-		points = oom_badness(task, NULL, NULL,
+-					totalram_pages + total_swap_pages);
++		points = oom_badness(task, NULL, NULL);
+ 	read_unlock(&tasklist_lock);
+ 	return sprintf(buffer, "%lu\n", points);
+ }
+@@ -1056,15 +1055,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+ 			current->comm, task_pid_nr(current),
+ 			task_pid_nr(task), task_pid_nr(task));
+ 	task->signal->oom_adj = oom_adjust;
+-	/*
+-	 * Scale /proc/pid/oom_score_adj appropriately ensuring that a maximum
+-	 * value is always attainable.
+-	 */
+-	if (task->signal->oom_adj == OOM_ADJUST_MAX)
+-		task->signal->oom_score_adj = OOM_SCORE_ADJ_MAX;
+-	else
+-		task->signal->oom_score_adj = (oom_adjust * OOM_SCORE_ADJ_MAX) /
+-								-OOM_DISABLE;
++
+ 	unlock_task_sighand(task, &flags);
+ 	put_task_struct(task);
+ 
+@@ -1081,8 +1072,8 @@ static ssize_t oom_score_adj_read(struct file *file, char __user *buf,
+ 					size_t count, loff_t *ppos)
+ {
+ 	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+-	char buffer[PROC_NUMBUF];
+-	int oom_score_adj = OOM_SCORE_ADJ_MIN;
++	char buffer[21];
++	long oom_score_adj = 0;
+ 	unsigned long flags;
+ 	size_t len;
+ 
+@@ -1093,7 +1084,7 @@ static ssize_t oom_score_adj_read(struct file *file, char __user *buf,
+ 		unlock_task_sighand(task, &flags);
+ 	}
+ 	put_task_struct(task);
+-	len = snprintf(buffer, sizeof(buffer), "%d\n", oom_score_adj);
++	len = snprintf(buffer, sizeof(buffer), "%ld\n", oom_score_adj);
+ 	return simple_read_from_buffer(buf, count, ppos, buffer, len);
+ }
+ 
+@@ -1101,7 +1092,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 					size_t count, loff_t *ppos)
+ {
+ 	struct task_struct *task;
+-	char buffer[PROC_NUMBUF];
++	char buffer[21];
+ 	unsigned long flags;
+ 	long oom_score_adj;
+ 	int err;
+@@ -1115,9 +1106,6 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 	err = strict_strtol(strstrip(buffer), 0, &oom_score_adj);
+ 	if (err)
+ 		return -EINVAL;
+-	if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
+-			oom_score_adj > OOM_SCORE_ADJ_MAX)
+-		return -EINVAL;
+ 
+ 	task = get_proc_task(file->f_path.dentry->d_inode);
+ 	if (!task)
+@@ -1134,15 +1122,6 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 	}
+ 
+ 	task->signal->oom_score_adj = oom_score_adj;
+-	/*
+-	 * Scale /proc/pid/oom_adj appropriately ensuring that OOM_DISABLE is
+-	 * always attainable.
+-	 */
+-	if (task->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+-		task->signal->oom_adj = OOM_DISABLE;
+-	else
+-		task->signal->oom_adj = (oom_score_adj * OOM_ADJUST_MAX) /
+-							OOM_SCORE_ADJ_MAX;
+ 	unlock_task_sighand(task, &flags);
+ 	put_task_struct(task);
+ 	return count;
+diff --git a/include/linux/oom.h b/include/linux/oom.h
+index 5e3aa83..21006dc 100644
+--- a/include/linux/oom.h
++++ b/include/linux/oom.h
+@@ -12,13 +12,6 @@
+ #define OOM_ADJUST_MIN (-16)
+ #define OOM_ADJUST_MAX 15
+ 
+-/*
+- * /proc/<pid>/oom_score_adj set to OOM_SCORE_ADJ_MIN disables oom killing for
+- * pid.
+- */
+-#define OOM_SCORE_ADJ_MIN	(-1000)
+-#define OOM_SCORE_ADJ_MAX	1000
+-
+ #ifdef __KERNEL__
+ 
+ #include <linux/sched.h>
+@@ -40,8 +33,9 @@ enum oom_constraint {
+ 	CONSTRAINT_MEMCG,
+ };
+ 
+-extern unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+-			const nodemask_t *nodemask, unsigned long totalpages);
++/* The badness from the OOM killer */
++extern unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *mem,
++				 const nodemask_t *nodemask);
+ extern int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ 
+@@ -62,10 +56,6 @@ static inline void oom_killer_enable(void)
+ 	oom_killer_disabled = false;
+ }
+ 
+-/* The badness from the OOM killer */
+-extern unsigned long badness(struct task_struct *p, struct mem_cgroup *mem,
+-		      const nodemask_t *nodemask, unsigned long uptime);
+-
+ extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+ 
+ /* sysctls */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..5e61d60 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -622,7 +622,7 @@ struct signal_struct {
+ #endif
+ 
+ 	int oom_adj;		/* OOM kill score adjustment (bit shift) */
+-	int oom_score_adj;	/* OOM kill score adjustment */
++	long oom_score_adj;	/* OOM kill score adjustment */
+ };
+ 
+ /* Context switch must be unlocked if interrupts are to be enabled */
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index fc81cb2..c1beda0 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -143,55 +143,41 @@ static bool oom_unkillable_task(struct task_struct *p, struct mem_cgroup *mem,
+ /**
+  * oom_badness - heuristic function to determine which candidate task to kill
+  * @p: task struct of which task we should calculate
+- * @totalpages: total present RAM allowed for page allocation
+  *
+  * The heuristic for determining which task to kill is made to be as simple and
+  * predictable as possible.  The goal is to return the highest value for the
+  * task consuming the most memory to avoid subsequent oom failures.
+  */
+-unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+-		      const nodemask_t *nodemask, unsigned long totalpages)
++unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *mem,
++			  const nodemask_t *nodemask)
+ {
+-	int points;
++	unsigned long points;
++	unsigned long points_orig;
++	int oom_adj = p->signal->oom_adj;
++	long oom_score_adj = p->signal->oom_score_adj;
+ 
+-	if (oom_unkillable_task(p, mem, nodemask))
+-		return 0;
+ 
+-	p = find_lock_task_mm(p);
+-	if (!p)
++	if (oom_unkillable_task(p, mem, nodemask))
+ 		return 0;
+-
+-	/*
+-	 * Shortcut check for OOM_SCORE_ADJ_MIN so the entire heuristic doesn't
+-	 * need to be executed for something that cannot be killed.
+-	 */
+-	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
+-		task_unlock(p);
++	if (oom_adj == OOM_DISABLE)
+ 		return 0;
+-	}
+ 
+ 	/*
+ 	 * When the PF_OOM_ORIGIN bit is set, it indicates the task should have
+ 	 * priority for oom killing.
+ 	 */
+-	if (p->flags & PF_OOM_ORIGIN) {
+-		task_unlock(p);
+-		return 1000;
+-	}
++	if (p->flags & PF_OOM_ORIGIN)
++		return ULONG_MAX;
+ 
+-	/*
+-	 * The memory controller may have a limit of 0 bytes, so avoid a divide
+-	 * by zero, if necessary.
+-	 */
+-	if (!totalpages)
+-		totalpages = 1;
++	p = find_lock_task_mm(p);
++	if (!p)
++		return 0;
+ 
+ 	/*
+ 	 * The baseline for the badness score is the proportion of RAM that each
+ 	 * task's rss and swap space use.
+ 	 */
+-	points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
+-			totalpages;
++	points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS));
+ 	task_unlock(p);
+ 
+ 	/*
+@@ -199,18 +185,28 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		points -= 30;
++		points -= points / 32;
+ 
+ 	/*
+-	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
+-	 * either completely disable oom killing or always prefer a certain
+-	 * task.
++	 * Adjust the score by oom_adj and oom_score_adj.
+ 	 */
+-	points += p->signal->oom_score_adj;
++	points_orig = points;
++	points += oom_score_adj;
++	if ((oom_score_adj > 0) && (points < points_orig))
++		points = ULONG_MAX;	/* may be overflow */
++	if ((oom_score_adj < 0) && (points > points_orig))
++		points = 0;		/* may be underflow */
++
++	if (oom_adj) {
++		if (oom_adj > 0) {
++			if (!points)
++				points = 1;
++			points <<= oom_adj;
++		} else
++			points >>= -(oom_adj);
++	}
+ 
+-	if (points < 0)
+-		return 0;
+-	return (points < 1000) ? points : 1000;
++	return points;
+ }
+ 
+ /*
+@@ -218,17 +214,11 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+  */
+ #ifdef CONFIG_NUMA
+ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+-				gfp_t gfp_mask, nodemask_t *nodemask,
+-				unsigned long *totalpages)
++			gfp_t gfp_mask, nodemask_t *nodemask)
+ {
+ 	struct zone *zone;
+ 	struct zoneref *z;
+ 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+-	bool cpuset_limited = false;
+-	int nid;
+-
+-	/* Default to all available memory */
+-	*totalpages = totalram_pages + total_swap_pages;
+ 
+ 	if (!zonelist)
+ 		return CONSTRAINT_NONE;
+@@ -245,33 +235,21 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+ 	 * the page allocator means a mempolicy is in effect.  Cpuset policy
+ 	 * is enforced in get_page_from_freelist().
+ 	 */
+-	if (nodemask && !nodes_subset(node_states[N_HIGH_MEMORY], *nodemask)) {
+-		*totalpages = total_swap_pages;
+-		for_each_node_mask(nid, *nodemask)
+-			*totalpages += node_spanned_pages(nid);
++	if (nodemask && !nodes_subset(node_states[N_HIGH_MEMORY], *nodemask))
+ 		return CONSTRAINT_MEMORY_POLICY;
+-	}
+ 
+ 	/* Check this allocation failure is caused by cpuset's wall function */
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 			high_zoneidx, nodemask)
+ 		if (!cpuset_zone_allowed_softwall(zone, gfp_mask))
+-			cpuset_limited = true;
++			return CONSTRAINT_CPUSET;
+ 
+-	if (cpuset_limited) {
+-		*totalpages = total_swap_pages;
+-		for_each_node_mask(nid, cpuset_current_mems_allowed)
+-			*totalpages += node_spanned_pages(nid);
+-		return CONSTRAINT_CPUSET;
+-	}
+ 	return CONSTRAINT_NONE;
+ }
+ #else
+ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+-				gfp_t gfp_mask, nodemask_t *nodemask,
+-				unsigned long *totalpages)
++					gfp_t gfp_mask, nodemask_t *nodemask)
+ {
+-	*totalpages = totalram_pages + total_swap_pages;
+ 	return CONSTRAINT_NONE;
+ }
+ #endif
+@@ -282,16 +260,16 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+  *
+  * (not docbooked, we don't want this one cluttering up the manual)
+  */
+-static struct task_struct *select_bad_process(unsigned int *ppoints,
+-		unsigned long totalpages, struct mem_cgroup *mem,
+-		const nodemask_t *nodemask)
++static struct task_struct *select_bad_process(unsigned long *ppoints,
++					      struct mem_cgroup *mem,
++					      const nodemask_t *nodemask)
+ {
+ 	struct task_struct *p;
+ 	struct task_struct *chosen = NULL;
+ 	*ppoints = 0;
+ 
+ 	for_each_process(p) {
+-		unsigned int points;
++		unsigned long points;
+ 
+ 		if (oom_unkillable_task(p, mem, nodemask))
+ 			continue;
+@@ -323,10 +301,10 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 				return ERR_PTR(-1UL);
+ 
+ 			chosen = p;
+-			*ppoints = 1000;
++			*ppoints = ULONG_MAX;
+ 		}
+ 
+-		points = oom_badness(p, mem, nodemask, totalpages);
++		points = oom_badness(p, mem, nodemask);
+ 		if (points > *ppoints) {
+ 			chosen = p;
+ 			*ppoints = points;
+@@ -371,7 +349,7 @@ static void dump_tasks(const struct mem_cgroup *mem)
+ 			continue;
+ 		}
+ 
+-		pr_info("[%5d] %5d %5d %8lu %8lu %3u     %3d         %5d %s\n",
++		pr_info("[%5d] %5d %5d %8lu %8lu %3u     %3d         %5ld %s\n",
+ 			task->pid, task_uid(task), task->tgid,
+ 			task->mm->total_vm, get_mm_rss(task->mm),
+ 			task_cpu(task), task->signal->oom_adj,
+@@ -385,7 +363,7 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+ {
+ 	task_lock(current);
+ 	pr_warning("%s invoked oom-killer: gfp_mask=0x%x, order=%d, "
+-		"oom_adj=%d, oom_score_adj=%d\n",
++		"oom_adj=%d, oom_score_adj=%ld\n",
+ 		current->comm, gfp_mask, order, current->signal->oom_adj,
+ 		current->signal->oom_score_adj);
+ 	cpuset_print_task_mems_allowed(current);
+@@ -426,14 +404,13 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
+ #undef K
+ 
+ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+-			    unsigned int points, unsigned long totalpages,
+-			    struct mem_cgroup *mem, nodemask_t *nodemask,
+-			    const char *message)
++			    unsigned long points, struct mem_cgroup *mem,
++			    nodemask_t *nodemask, const char *message)
+ {
+ 	struct task_struct *victim = p;
+ 	struct task_struct *child;
+ 	struct task_struct *t = p;
+-	unsigned int victim_points = 0;
++	unsigned long victim_points = 0;
+ 
+ 	if (printk_ratelimit())
+ 		dump_header(p, gfp_mask, order, mem);
+@@ -449,7 +426,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	}
+ 
+ 	task_lock(p);
+-	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
++	pr_err("%s: Kill process %d (%s) score %lu or sacrifice child\n",
+ 		message, task_pid_nr(p), p->comm, points);
+ 	task_unlock(p);
+ 
+@@ -461,13 +438,12 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 */
+ 	do {
+ 		list_for_each_entry(child, &t->children, sibling) {
+-			unsigned int child_points;
++			unsigned long child_points;
+ 
+ 			/*
+ 			 * oom_badness() returns 0 if the thread is unkillable
+ 			 */
+-			child_points = oom_badness(child, mem, nodemask,
+-								totalpages);
++			child_points = oom_badness(child, mem, nodemask);
+ 			if (child_points > victim_points) {
+ 				victim = child;
+ 				victim_points = child_points;
+@@ -505,19 +481,17 @@ static void check_panic_on_oom(enum oom_constraint constraint, gfp_t gfp_mask,
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+ {
+-	unsigned long limit;
+-	unsigned int points = 0;
++	unsigned long points = 0;
+ 	struct task_struct *p;
+ 
+ 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0);
+-	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
+ 	read_lock(&tasklist_lock);
+ retry:
+-	p = select_bad_process(&points, limit, mem, NULL);
++	p = select_bad_process(&points, mem, NULL);
+ 	if (!p || PTR_ERR(p) == -1UL)
+ 		goto out;
+ 
+-	if (oom_kill_process(p, gfp_mask, 0, points, limit, mem, NULL,
++	if (oom_kill_process(p, gfp_mask, 0, points, mem, NULL,
+ 				"Memory cgroup out of memory"))
+ 		goto retry;
+ out:
+@@ -642,9 +616,8 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 		int order, nodemask_t *nodemask)
+ {
+ 	struct task_struct *p;
+-	unsigned long totalpages;
+ 	unsigned long freed = 0;
+-	unsigned int points;
++	unsigned long points;
+ 	enum oom_constraint constraint = CONSTRAINT_NONE;
+ 	int killed = 0;
+ 
+@@ -668,8 +641,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 	 * Check if there were limitations on the allocation (only relevant for
+ 	 * NUMA) that may require different handling.
+ 	 */
+-	constraint = constrained_alloc(zonelist, gfp_mask, nodemask,
+-						&totalpages);
++	constraint = constrained_alloc(zonelist, gfp_mask, nodemask);
+ 	check_panic_on_oom(constraint, gfp_mask, order);
+ 
+ 	read_lock(&tasklist_lock);
+@@ -681,14 +653,14 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 		 * non-zero, current could not be killed so we must fallback to
+ 		 * the tasklist scan.
+ 		 */
+-		if (!oom_kill_process(current, gfp_mask, order, 0, totalpages,
++		if (!oom_kill_process(current, gfp_mask, order, 0,
+ 				NULL, nodemask,
+ 				"Out of memory (oom_kill_allocating_task)"))
+ 			goto out;
+ 	}
+ 
+ retry:
+-	p = select_bad_process(&points, totalpages, NULL,
++	p = select_bad_process(&points, NULL,
+ 			constraint == CONSTRAINT_MEMORY_POLICY ? nodemask :
+ 								 NULL);
+ 	if (PTR_ERR(p) == -1UL)
+@@ -701,7 +673,7 @@ retry:
+ 		panic("Out of memory and no killable processes...\n");
+ 	}
+ 
+-	if (oom_kill_process(p, gfp_mask, order, points, totalpages, NULL,
++	if (oom_kill_process(p, gfp_mask, order, points, NULL,
+ 				nodemask, "Out of memory"))
+ 		goto retry;
+ 	killed = 1;
+-- 
+1.6.5.2
+
+
+
