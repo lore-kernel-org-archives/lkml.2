@@ -1,98 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab0HaOfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:35:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60787 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757414Ab0HaOfH convert rfc822-to-8bit (ORCPT
+	id S1757500Ab0HaOff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:35:35 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64586 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757414Ab0HaOfd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:35:07 -0400
+	Tue, 31 Aug 2010 10:35:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=IVytnrPRtMOUclSA4DObHGf0Lyt467BJe6BYP8DIgTJJksTo/jy5MNoY6g/YHt3Ogu
-         BvlbN7ZQ5cHzJxf34jfNCXADenltNEgCD7IEGjghkVgbTzwQNMeMKkvrLS1abZZYNayd
-         mEZuBGyXrXXAYTnY4+isG7oKLnUsp/9dEli6A=
+        b=lpqShn9mDKDDZOtZp6kNH9C88tI/v4LKFawbvYgLrqiVHCvFQNeTNAjeNxKdf1f/6z
+         N3bIjUJHtJq41OvD96w/3kxarMpwC+bNKNk5Krnp8Sx4UFS5pOoYTQrqKG1yHDEIWaKQ
+         0/7VZflV/2hUP/Uv8monePvYCrYYKwZ5rWJa0=
 MIME-Version: 1.0
-In-Reply-To: <20100831143003.GA15001@merkur.ravnborg.org>
-References: <1283189270-7274-1-git-send-email-namhyung@gmail.com>
- <1283189270-7274-2-git-send-email-namhyung@gmail.com> <20100830190330.GB12921@merkur.ravnborg.org>
- <AANLkTimysA_CmWVBOntV9bzUBy9Vbhi1MtUJQJAHbQxq@mail.gmail.com> <20100831143003.GA15001@merkur.ravnborg.org>
-From: Namhyung Kim <namhyung@gmail.com>
-Date: Tue, 31 Aug 2010 23:34:46 +0900
-Message-ID: <AANLkTim1Wkrjx9VWwCuf=6O0hJPkWT5oT_-WxEi78EZD@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] init: add sys-wrapper.h
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+In-Reply-To: <4C7C1A2B.1010400@nokia.com>
+References: <1283102159-25804-1-git-send-email-linus.walleij@stericsson.com>
+	<4C7C1A2B.1010400@nokia.com>
+Date: Tue, 31 Aug 2010 16:35:31 +0200
+Message-ID: <AANLkTikQupSvmvcd92h6-pcuRM8keZRbU9g2bepq9NC-@mail.gmail.com>
+Subject: Re: [PATCH] MMC: move regulator handling closer to core
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
+        Matt Fleming <matt@console-pimps.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        "Lavinen Jarkko (Nokia-MS/Helsinki)" <jarkko.lavinen@nokia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Bengt Jonsson <bengt.jonsson@stericsson.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 23:30, Sam Ravnborg <sam@ravnborg.org> wrote:
->>
->> /*
->>  * wrappers for various syscalls for use in the init code
->>  *
->>  * Copyright (C) 2010  Namhyung Kim <namhyung@gmail.com>
->>  *
->>  * This file is released under the GPLv2.
->>  */
->>
->> #include <linux/syscalls.h>
->> #include <linux/dirent.h>
->> #include <linux/types.h>
->> #include <linux/fs.h>
->>
->> #include <asm/uaccess.h>
->>
->
-> Good.
-> Except that we usually recommend to include files from include/linux
-> if thye exist rather than asm/xxx
->
-> So use: #include <linux/uaccess.h>
->
+2010/8/30 Adrian Hunter <adrian.hunter@nokia.com>:
 
-OK. No problem. :-)
-
-
+> [Me]
+>> diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
+>> index 0a4e43f..47dae9b 100644
+>> --- a/drivers/mmc/host/pxamci.c
+>> +++ b/drivers/mmc/host/pxamci.c
+>> @@ -99,14 +99,26 @@ static inline void pxamci_init_ocr(struct pxamci_host
+>> *host)
+>>        }
+>>  }
+>>  -static inline void pxamci_set_power(struct pxamci_host *host, unsigned
+>> int vdd)
+>> +static inline void pxamci_set_power(struct pxamci_host *host,
+>> +                                   unsigned char power_mode,
+>> +                                   unsigned int vdd)
+>>  {
+>>        int on;
+>>  -#ifdef CONFIG_REGULATOR
+>> -       if (host->vcc)
+>> -               mmc_regulator_set_ocr(host->vcc, vdd);
+>> -#endif
+>> +       if (host->vcc) {
+>> +               int ret;
+>> +
+>> +               if (power_mode == MMC_POWER_UP) {
+>> +                       ret = mmc_regulator_set_ocr(host->mmc, host->vcc,
+>> vdd);
+>> +                       if (ret)
+>> +                               dev_err(mmc_dev(host->mmc),
+>> +                                       "could not set regulator OCR\n");
+>> +               } else if (power_mode == MMC_POWER_OFF)
+>> +                       ret = mmc_regulator_set_ocr(host->mmc, host->vcc,
+>> 0);
+>> +                       if (ret)
+>> +                               dev_err(mmc_dev(host->mmc),
+>> +                                       "could not disable regulator\n");
+>> +       }
 >
->>
->> >> +
->> >> +#define kern_sys_call(call, ...)             \
->> >> +({                                           \
->> >> +     long result;                            \
->> >> +     mm_segment_t old_fs = get_fs();         \
->> >> +     set_fs(KERNEL_DS);                      \
->> >> +     result = call(__VA_ARGS__);             \
->> >> +     set_fs(old_fs);                         \
->> >> +     result;                                 \
->> >> +})
->> >> +
->> >
->> > Personal preference...
->> > Replace kern_ with kernel_ all over.
->> >
->>
->> Is this just your preference or general tendency?
-> I asked git:
-> $ git grep kern_ | wc -l
-> 962
-> $ git grep kernel_ | wc -l
-> 6361
->
-> There seems to be preference for kernel_
->
+> mmc_power_off() does set ios->vdd to 0 so the original code was fine
+> wrt to ignoring power_mode.
 
-I see. Will change it.
-Thanks.
+Yeah I know. This bit was to increase readability, explicitly showing
+the power state like this makes it more clear what is happening I think.
 
+The rest of the comments are fixed, new patch soon.
 
--- 
-Regards,
-Namhyung Kim
+Yours,
+Linus Walleij
