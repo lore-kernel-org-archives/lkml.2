@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0HaXhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 19:37:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39952 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab0HaXho (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 19:37:44 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1283276257-1793-3-git-send-email-mel@csn.ul.ie>
-References: <1283276257-1793-1-git-send-email-mel@csn.ul.ie> <1283276257-1793-3-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100901083425.971F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1754711Ab0HaXqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 19:46:35 -0400
+Received: from mail.perches.com ([173.55.12.10]:1134 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556Ab0HaXqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 19:46:33 -0400
+Subject: RE: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
+ todo list, add RCU todo list
+From: Joe Perches <joe@perches.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D53015D9B2445@orsmsx505.amr.corp.intel.com>
+References: <20100826154537.GA4874@linux.vnet.ibm.com>
+	 <1282837904.1875.64.camel@Joe-Laptop>
+	 <20100826161451.GB2367@linux.vnet.ibm.com>
+	 <1282839933.8133.11.camel@mulgrave.site>
+	 <20100826092923.4bdbea69.rdunlap@xenotime.net>
+	 <20100826093838.74ab9958@infradead.org>
+	 <1283275388.1377.216.camel@gandalf.stny.rr.com>
+	 <20100831230213.GG2421@linux.vnet.ibm.com>
+	 <1283296622.1377.765.camel@gandalf.stny.rr.com>
+	 <987664A83D2D224EAE907B061CE93D53015D9B2445@orsmsx505.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 16:46:31 -0700
+Message-ID: <1283298391.1797.100.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Sep 2010 08:37:41 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +#ifdef CONFIG_SMP
-> +/* Called when a more accurate view of NR_FREE_PAGES is needed */
-> +unsigned long zone_nr_free_pages(struct zone *zone)
-> +{
-> +	unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
-> +
-> +	/*
-> +	 * While kswapd is awake, it is considered the zone is under some
-> +	 * memory pressure. Under pressure, there is a risk that
-> +	 * per-cpu-counter-drift will allow the min watermark to be breached
-> +	 * potentially causing a live-lock. While kswapd is awake and
-> +	 * free pages are low, get a better estimate for free pages
-> +	 */
-> +	if (nr_free_pages < zone->percpu_drift_mark &&
-> +			!waitqueue_active(&zone->zone_pgdat->kswapd_wait)) {
-> +		int cpu;
-> +
-> +		for_each_online_cpu(cpu) {
-> +			struct per_cpu_pageset *pset;
-> +
-> +			pset = per_cpu_ptr(zone->pageset, cpu);
-> +			nr_free_pages += pset->vm_stat_diff[NR_FREE_PAGES];
+On Tue, 2010-08-31 at 16:25 -0700, Luck, Tony wrote:
+> >Then, the list is maintained outside of mainline (in the subsystem git
+> >tree) and will automatically update mainline in the next merge window
+> >when the tree is pulled.
+> 
+> But this would mean that the version of the todo list in Linus' tree
+> is usually a release (3 months) out of date.  It would be a good idea
+> for a list maintained this way to include instructions on how to find
+> the current version, lest some unsuspecting person waste time working
+> on items that are already fixed and waiting for the next merge.
 
-If my understanding is correct, we have no lock when reading pset->vm_stat_diff.
-It mean nr_free_pages can reach negative value at very rarely race. boundary
-check is necessary?
+There are already reasonable mechanisms for this.
 
+It's perfectly fine to have multiple T: entries,
+one for a current tree, another for a -next tree.
 
+SECTION - name
+M:	who <email.address>
+T:	git <url>
+T:	git <url-next>
+F:	dir/file_pattern
+
+Linus rarely seems to object to pulling Documentation updates.
+
+Note the Documentation updates after any -rc2
+
+$ for ((i=25 ; i<36 ; i++)) ; do	\
+	cv=v2.6.$i-rc2..v2.6.$i ;	\
+	echo -n "$cv: " ;		\
+	git log --pretty=oneline --no-merges $cv -- Documentation | wc -l; \
+done
+v2.6.25-rc2..v2.6.25: 87
+v2.6.26-rc2..v2.6.26: 48
+v2.6.27-rc2..v2.6.27: 65
+v2.6.28-rc2..v2.6.28: 67
+v2.6.29-rc2..v2.6.29: 50
+v2.6.30-rc2..v2.6.30: 44
+v2.6.31-rc2..v2.6.31: 35
+v2.6.32-rc2..v2.6.32: 74
+v2.6.33-rc2..v2.6.33: 31
+v2.6.34-rc2..v2.6.34: 32
+v2.6.35-rc2..v2.6.35: 8
 
 
