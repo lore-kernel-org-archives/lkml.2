@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab0HaVfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 17:35:43 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:24614 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750721Ab0HaVfm (ORCPT
+	id S1754043Ab0HaVj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 17:39:28 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:49884 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750721Ab0HaVj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 17:35:42 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 6mq_l4QVM1naimlRuDGrJ9lokEyt.3k.YbgQ0LCaSbNS8k8
- h7JKlr1JhFlXuxEsrAUTSyOf1GL2B_pfj3YWLbzxW8B9ZTymfEtgzMw9BeP3
- DLHuKFUHziAV9NQ5EldUlXbr1SnePxyQC1fGDVm1kbF3A3sQPEughNVHv5JA
- 1nU0euXuzcXJKAP8DD4xXmg3G0UUgVtlm7zL1kCtEuAq96_g2Gihv_0rYqJm
- K
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 31 Aug 2010 16:35:37 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] Use percpu stats
-In-Reply-To: <1283290106.2198.26.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1008311635100.867@router.home>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>  <1281374816-904-4-git-send-email-ngupta@vflare.org>  <alpine.DEB.2.00.1008301114460.10316@router.home>  <AANLkTikdhnr12uU8Wp60BygZwH770RBfxyfLNMzUsQje@mail.gmail.com>
- <1283290106.2198.26.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 31 Aug 2010 17:39:27 -0400
+Message-ID: <4C7D767C.8040607@euromail.se>
+Date: Tue, 31 Aug 2010 23:39:08 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6 v2] HID: magicmouse: remove axis data filtering
+References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>	 <1283280068-12285-4-git-send-email-chase.douglas@canonical.com>	 <4C7D6739.5000601@euromail.se> <1283288319.2255.103.camel@mini>	 <4C7D6ECB.2000308@euromail.se> <1283289360.2255.113.camel@mini>	 <4C7D71B8.4020408@euromail.se> <1283290078.2255.119.camel@mini>
+In-Reply-To: <1283290078.2255.119.camel@mini>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OqYXw-0004ze-BB.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OqYXw-0004ze-BB 4233583287633f8a5f44745518edb382
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Aug 2010, Eric Dumazet wrote:
+On 08/31/2010 11:27 PM, Chase Douglas wrote:
 
-> > Yes, this_cpu_add() seems sufficient. I can't recall why I used u64_stats_*
-> > but if it's not required for atomic access to 64-bit then why was it added to
-> > the mainline in the first place?
->
-> Because we wanted to have fast 64bit counters, even on 32bit arches, and
-> this has litle to do with 'atomic' on one entity, but a group of
-> counters. (check drivers/net/loopback.c, lines 91-94). No lock prefix
-> used in fast path.
->
-> We also wanted readers to read correct values, not a value being changed
-> by a writer, with inconsistent 32bit halves. SNMP applications want
-> monotonically increasing counters.
->
-> this_cpu_add()/this_cpu_read() doesnt fit.
->
-> Even for single counter, this_cpu_read(64bit) is not using an RMW
-> (cmpxchg8) instruction, so you can get very strange results when low
-> order 32bit wraps.
+> On Tue, 2010-08-31 at 23:18 +0200, Henrik Rydberg wrote:
+>> On 08/31/2010 11:16 PM, Chase Douglas wrote:
+>>
+>>> On Tue, 2010-08-31 at 23:06 +0200, Henrik Rydberg wrote:
+>>>> On 08/31/2010 10:58 PM, Chase Douglas wrote:
+>>>>
+>>>>> On Tue, 2010-08-31 at 22:34 +0200, Henrik Rydberg wrote:
+>>>>>> On 08/31/2010 08:41 PM, Chase Douglas wrote:
+>>>>>>
+>>>>>>> The Magic Mouse device is very precise. No driver filtering of input
+>>>>>>> data needs to be performed.
+>>>>>>>
+>>>>>>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+>>>>>>> Acked-by: Michael Poole <mdpoole@troilus.org>
+>>>>>>> ---
+>>>>>>
+>>>>>>
+>>>>>> I am still not sure this is a good idea. Bandwidth from MT devices is a big
+>>>>>> deal. A statement roughly how much data comes out of mtdev (which does the
+>>>>>> filtering for type A devices) before and after this change would be reassuring.
+>>>>>
+>>>>> As it is right now, hid-magicmouse doesn't support MT slots. I think all
+>>>>> the fuzz code ends up comparing in the MT case is between one touch and
+>>>>> another touch, not between one touch's current location and its previous
+>>>>> location. If I'm correct, then it means a fuzz > 0 is incorrect for
+>>>>> non-slotted MT devices.
+>>>>>
+>>>>> In fact, the code in drivers/input/input.c around line 194 looks like it
+>>>>> discards defuzzing in this case, so one could say this patch is making
+>>>>> things more correct :).
+>>>>
+>>>>
+>>>> For type A devices, the filtering is performed in userspace, in mtdev, in the
+>>>> same manner as it would have been performed in the kernel in the MT slot case.
+>>>> Therefore, knowing the amount of messages coming out of mtdev is a direct
+>>>> measurement of the effect of filtering.
+>>>
+>>> Yes, but we're only interested in the kernel driver when reviewing this
+>>> patch. Leaving the fuzz in as it is has no effect right now on ABS_MT_*
+>>> axes. On the other axes, such as the touch orientation, it's probably
+>>> more harmful than good.
+>>
+>>
+>> "We" are interested in knowing if this patch makes any sense, given that
+>> filtering is in actuality performed in userspace, and thus modifying this code
+>> changes the stream rate into userspace applications, thank you.
+> 
+> Because in-kernel defuzzing is turned off for ABS_MT_* axes on
+> non-slotted MT devices, there will be no change in the number of events
+> sent to the userspace due to this patch.
+> 
+> Maybe I'm missing something more fundamental. In which case, I'll need
+> more details to get it through my dense skull :).
 
-How about fixing it so that everyone benefits?
 
+All events passes through to mtdev, yes, but mtdev filters a considerable amount
+of events from passing through to X drivers like evdev. Thus, the fuzz values
+reported in the kernel driver impacts the performance in userspace, even if
+filtering is not done in the kernel.
+
+Henrik
