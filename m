@@ -1,132 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab0HaPDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 11:03:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932350Ab0HaPDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 11:03:52 -0400
-Date: Tue, 31 Aug 2010 17:57:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Ben Blum <bblum@google.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] cgroups: fix API thinko
-Message-ID: <20100831145729.GA19109@redhat.com>
-References: <20100805225914.GA26772@redhat.com>
- <4C5C3985.5060706@us.ibm.com>
- <1281112704.10055.0.camel@x201>
- <20100825143520.9954d3f9.akpm@linux-foundation.org>
+	id S932391Ab0HaPIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 11:08:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58125 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932363Ab0HaPIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 11:08:46 -0400
+Message-ID: <4C7D1AD6.3080005@oracle.com>
+Date: Tue, 31 Aug 2010 08:08:06 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100825143520.9954d3f9.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+CC: Stephen Hemminger <shemminger@vyatta.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+References: <4C763A67.5040107@dsn.okisemi.com> <4C7D0E7A.5060309@dsn.okisemi.com>
+In-Reply-To: <4C7D0E7A.5060309@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 25, 2010 at 02:35:20PM -0700, Andrew Morton wrote:
-> On Fri, 06 Aug 2010 10:38:24 -0600
-> Alex Williamson <alex.williamson@redhat.com> wrote:
+On 08/31/10 07:15, Masayuki Ohtake wrote:
 > 
-> > On Fri, 2010-08-06 at 09:34 -0700, Sridhar Samudrala wrote:
-> > > On 8/5/2010 3:59 PM, Michael S. Tsirkin wrote:
-> > > > cgroup_attach_task_current_cg API that have upstream is backwards: we
-> > > > really need an API to attach to the cgroups from another process A to
-> > > > the current one.
-> > > >
-> > > > In our case (vhost), a priveledged user wants to attach it's task to cgroups
-> > > > from a less priveledged one, the API makes us run it in the other
-> > > > task's context, and this fails.
-> > > >
-> > > > So let's make the API generic and just pass in 'from' and 'to' tasks.
-> > > > Add an inline wrapper for cgroup_attach_task_current_cg to avoid
-> > > > breaking bisect.
-> > > >
-> > > > Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> > > > ---
-> > > >
-> > > > Paul, Li, Sridhar, could you please review the following
-> > > > patch?
-> > > >
-> > > > I only compile-tested it due to travel, but looks
-> > > > straight-forward to me.
-> > > > Alex Williamson volunteered to test and report the results.
-> > > > Sending out now for review as I might be offline for a bit.
-> > > > Will only try to merge when done, obviously.
-> > > >
-> > > > If OK, I would like to merge this through -net tree,
-> > > > together with the patch fixing vhost-net.
-> > > > Let me know if that sounds ok.
-> > > >
-> > > > Thanks!
-> > > >
-> > > > This patch is on top of net-next, it is needed for fix
-> > > > vhost-net regression in net-next, where a non-priveledged
-> > > > process can't enable the device anymore:
-> > > >
-> > > > when qemu uses vhost, inside the ioctl call it
-> > > > creates a thread, and tries to add
-> > > > this thread to the groups of current, and it fails.
-> > > > But we control the thread, so to solve the problem,
-> > > > we really should tell it 'connect to out cgroups'.
+> Hi Sam, Joe and Stephen
 > 
-> So am I correct to assume that this change is now needed in 2.6.36, and
-> unneeded in 2.6.35?
-
-Yes, I think so. Unless there are objections, I intend to merge this
-(with the review fixes) through net-2.6 together with a vhost-net patch
-that depends on this fix.
-
-> Can it affect the userspace<->kernel API in amy manner?  If so, it
-> should be backported into earlier kernels to reduce the number of
-> incompatible kernels out there.
-
-I think it doesn't affect anything except 2.6.36-rcX,
-earlier kernels didn't use this API.
-
-> Paul, did you have any comments?
+> Thank you for your comments.
+> We have modified this driver for your comment.
 > 
-> I didn't see any update in response to the minor review comments, so...
+> ---
+> Gigabit Ethernet driver of Topcliff PCH
+> Patch created against 2.6.35
 > 
+> Topcliff PCH is the platform controller hub that is going to be used in
+> Intel's upcoming general embedded platform. All IO peripherals in
+> Topcliff PCH are actually devices sitting on AMBA bus. 
+> Topcliff PCH has Gigabit Ethernet I/F. Using this I/F, it is able to 
+> access system devices connected to Gigabit Ethernet.
 > 
->  include/linux/cgroup.h |    1 +
->  kernel/cgroup.c        |    6 +++---
->  2 files changed, 4 insertions(+), 3 deletions(-)
+> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> ---
+>  drivers/net/Kconfig                   |   10 +
+>  drivers/net/Makefile                  |    1 +
+>  drivers/net/pch_gbe/Makefile          |    4 +
+>  drivers/net/pch_gbe/pch_gbe.h         |  683 +++++++++
+>  drivers/net/pch_gbe/pch_gbe_api.c     |  246 ++++
+>  drivers/net/pch_gbe/pch_gbe_api.h     |   34 +
+>  drivers/net/pch_gbe/pch_gbe_ethtool.c |  618 ++++++++
+>  drivers/net/pch_gbe/pch_gbe_main.c    | 2591 +++++++++++++++++++++++++++++++++
+>  drivers/net/pch_gbe/pch_gbe_param.c   |  519 +++++++
+>  drivers/net/pch_gbe/pch_gbe_phy.c     |  276 ++++
+>  drivers/net/pch_gbe/pch_gbe_phy.h     |   35 +
+>  11 files changed, 5017 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/net/pch_gbe/Makefile
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe.h
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe_api.c
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe_api.h
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe_ethtool.c
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe_main.c
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe_param.c
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe_phy.c
+>  create mode 100644 drivers/net/pch_gbe/pch_gbe_phy.h
 > 
-> diff -puN include/linux/cgroup.h~cgroups-fix-api-thinko-fix include/linux/cgroup.h
-> --- a/include/linux/cgroup.h~cgroups-fix-api-thinko-fix
-> +++ a/include/linux/cgroup.h
-> @@ -579,6 +579,7 @@ void cgroup_iter_end(struct cgroup *cgrp
->  int cgroup_scan_tasks(struct cgroup_scanner *scan);
->  int cgroup_attach_task(struct cgroup *, struct task_struct *);
->  int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
-> +
->  static inline int cgroup_attach_task_current_cg(struct task_struct *tsk)
->  {
->  	return cgroup_attach_task_all(current, tsk);
-> diff -puN kernel/cgroup.c~cgroups-fix-api-thinko-fix kernel/cgroup.c
-> --- a/kernel/cgroup.c~cgroups-fix-api-thinko-fix
-> +++ a/kernel/cgroup.c
-> @@ -1798,13 +1798,13 @@ out:
->  int cgroup_attach_task_all(struct task_struct *from, struct task_struct *tsk)
->  {
->  	struct cgroupfs_root *root;
-> -	struct cgroup *cur_cg;
->  	int retval = 0;
+> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+> index 2decc59..f8102de 100644
+> --- a/drivers/net/Kconfig
+> +++ b/drivers/net/Kconfig
+> @@ -2004,6 +2004,16 @@ menuconfig NETDEV_1000
+>  	  If you say N, all options in this submenu will be skipped and disabled.
 >  
->  	cgroup_lock();
->  	for_each_active_root(root) {
-> -		cur_cg = task_cgroup_from_root(from, root);
-> -		retval = cgroup_attach_task(cur_cg, tsk);
-> +		struct cgroup *from_cg = task_cgroup_from_root(from, root);
-> +
-> +		retval = cgroup_attach_task(from_cg, tsk);
->  		if (retval)
->  			break;
->  	}
-> _
+>  if NETDEV_1000
+> +config PCH_GBE
+> +	tristate "PCH Gigabit Ethernet"
+> +	depends on PCI
+
+IMO it's not nice to list this driver before others that are already there.
+
+> +	---help---
+> +	  This is an gigabit ethernet driver for Topcliff PCH.
+
+	  This is a gigabit
+
+You aren't going to modify this text after the product is released, are you?
+Might as well make it better now:
+
+> +	  Topcliff PCH is the platform controller hub that is going to be used
+
+	  Topcliff PCH is the platform controller hub that is used in Intel's
+	  general embedded platform.
+> +	  in Intel's upcoming general embedded platform.
+> +	  Topcliff PCH has Gigabit Ethernet I/F. Using this I/F, it is able to
+
+	Change "I/F" to "interface".
+
+> +	  access system devices connected to Gigabit Ethernet.
+> +	  This driver enables Gigabit Ethernet function.
+>  
+>  config ACENIC
+>  	tristate "Alteon AceNIC/3Com 3C985/NetGear GA620 Gigabit support"
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
