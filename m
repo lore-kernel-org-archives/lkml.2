@@ -1,67 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab0HaGY7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:24:59 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37589 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756532Ab0HaGY6 (ORCPT
+	id S1756785Ab0HaG0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 02:26:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61640 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab0HaG0g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:24:58 -0400
-Message-ID: <003c01cb48d5$3b8b4d10$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Grant Likely" <grant.likely@secretlab.ca>
-Cc: "Thomas Gleixner" <tglx@linutronix.de>, <meego-dev@meego.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "David Brownell" <dbrownell@users.sourceforge.net>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
-        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com> <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com> <alpine.LFD.2.00.1008301442290.9874@localhost6.localdomain6> <000801cb48a8$9f907060$66f8800a@maildom.okisemi.com> <AANLkTima_bfgguJv8-KTXadWzeTmRGtrzyppH4h=bDW8@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-Date: Tue, 31 Aug 2010 15:24:51 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 2
+	Tue, 31 Aug 2010 02:26:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dCHqjmx+iF1MwFu3u0aaWPvRNcu6vjOZy5KLgANUTg4SN8QEuqkXipekcUulgOVZ91
+         vDQ5LJ45KdxHO8fSnbxhWNJEQOxq5QMBqN76gpzZTj5YMDuZzJhr/0VHnRXPoNlT0kGn
+         KYGjTDp13TX84/e/0jx3N6P3rV/GLCTaC7//A=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTik3cnE4HQ3hq3wfuxcept4BeTh+zZvNDbZ_b3O7@mail.gmail.com>
+References: <1282813649-8332-1-git-send-email-mark.brown314@gmail.com>
+	<1282813649-8332-2-git-send-email-mark.brown314@gmail.com>
+	<AANLkTi=GZ1p3MzibOEzhyD=Mv6d2x2nRh93D4bmtgcYE@mail.gmail.com>
+	<AANLkTimwU17YS5Yk7y+13Dj9Ww4oPG0g4v5ZbvOVuQV6@mail.gmail.com>
+	<AANLkTikxOQnj=vKD8b0aZqZHNe4m-Y+o+620TBzMJCAW@mail.gmail.com>
+	<AANLkTik3cnE4HQ3hq3wfuxcept4BeTh+zZvNDbZ_b3O7@mail.gmail.com>
+Date: Tue, 31 Aug 2010 14:26:34 +0800
+Message-ID: <AANLkTinjyJvMRt8OovZBJD+-xU6KXH5WAfqz9Epok+=g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: pxa168: fix corrected reset vector
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: "Mark F. Brown" <mark.brown314@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----- 
-From: "Grant Likely" <grant.likely@secretlab.ca>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Thomas Gleixner" <tglx@linutronix.de>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
-Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
-<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
-<morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-Sent: Tuesday, August 31, 2010 2:51 PM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-
-
-> On Mon, Aug 30, 2010 at 7:05 PM, Masayuki Ohtake
-> <masa-korg@dsn.okisemi.com> wrote:
-> > Hi Thomas
-> >
-> >> > Yes, Intel Topcliff is new concept device.
-> >>
-> >> Thats right, but the question was whether the SPI peripheral is a new
-> >> IP design or similar to some already supported AMBA SPI peripheral.
-> >>
-> >> Maybe the Intel folks can shed some light on that.
-> >
-> > My answer was not appropriate.
-> > Though the Topcliff is new concept LSI, SPI in Topcliff is not a new design hardware but a reuse from other
-AMBA-based
-> > products.
+On Tue, Aug 31, 2010 at 2:08 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
+> On Tue, Aug 31, 2010 at 2:04 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
+>> On Tue, Aug 31, 2010 at 2:02 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>>> On Tue, Aug 31, 2010 at 1:48 AM, Eric Miao <eric.y.miao@gmail.com> wrote:
+>>>> On Thu, Aug 26, 2010 at 5:07 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+>>>>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>>>>> ---
+>>>>>  arch/arm/mach-mmp/include/mach/system.h |    2 +-
+>>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/arm/mach-mmp/include/mach/system.h b/arch/arm/mach-mmp/include/mach/system.h
+>>>>> index 4f5b0e0..926e9c0 100644
+>>>>> --- a/arch/arm/mach-mmp/include/mach/system.h
+>>>>> +++ b/arch/arm/mach-mmp/include/mach/system.h
+>>>>> @@ -16,6 +16,6 @@ static inline void arch_idle(void)
+>>>>>
+>>>>>  static inline void arch_reset(char mode, const char *cmd)
+>>>>>  {
+>>>>> -       cpu_reset(0);
+>>>>> +       cpu_reset(0xffff0000);
+>>>>
+>>>> Not sure if this correct. But normally reset jump happens after we turn
+>>>> off the MMU and so on. Ain't the BootROM starts from 0 ?
+>>>>
+>>>>>  }
+>>>>>  #endif /* __ASM_MACH_SYSTEM_H */
+>>>>> --
+>>>>> 1.7.0.4
+>>>>>
+>>>>>
+>>>>
+>>>
+>>> Eric, the boot-rom for pxa168 starts at 0xffff_0000. I am pretty sure
+>>> about that! If you set the reset vector to 0x0 it will crash during
+>>> reboot. I will send you xdb snapshots if you need me to.
+>>>
+>>
+>> OK, you are expert on this :-)
+>>
+>> Applied to 'fix'.
+>>
 >
-> Which product?  Is that product already supported by Linux?
+> One moment. Since this is really global to pxa910 and mmp2, so I
+> suggest this being fixed for pxa168 only first. How about this:
 >
-Reused SPI module is from our ML673520(OKI Semiconductor).
+>    ARM: pxa168: fix corrected reset vector
+>
+>    Reset vector for pxa168 is 0xffff_0000 not 0x0. This fix allows
+>    reboot to work
+>
+>    Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>
+> diff --git a/arch/arm/mach-mmp/include/mach/system.h
+> b/arch/arm/mach-mmp/include/mach/system.h
+> index 4f5b0e0..1a8a25e 100644
+> --- a/arch/arm/mach-mmp/include/mach/system.h
+> +++ b/arch/arm/mach-mmp/include/mach/system.h
+> @@ -9,6 +9,8 @@
+>  #ifndef __ASM_MACH_SYSTEM_H
+>  #define __ASM_MACH_SYSTEM_H
+>
+> +#include <mach/cputype.h>
+> +
+>  static inline void arch_idle(void)
+>  {
+>        cpu_do_idle();
+> @@ -16,6 +18,9 @@ static inline void arch_idle(void)
+>
+>  static inline void arch_reset(char mode, const char *cmd)
+>  {
+> -       cpu_reset(0);
+> +       if (cpu_is_pxa168())
+> +               cpu_reset(0xffff0000);
+> +       else
+> +               cpu_reset(0);
+>  }
+>  #endif /* __ASM_MACH_SYSTEM_H */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+The reset code is in below.
 
-Thanks, Ohtake(OKISemi)
+	.align	5
+ENTRY(cpu_mohawk_reset)
+	mov	ip, #0
+	mcr	p15, 0, ip, c7, c7, 0		@ invalidate I,D caches
+	mcr	p15, 0, ip, c7, c10, 4		@ drain WB
+	mcr	p15, 0, ip, c8, c7, 0		@ invalidate I & D TLBs
+	mrc	p15, 0, ip, c1, c0, 0		@ ctrl register
+	bic	ip, ip, #0x0007			@ .............cam
+	bic	ip, ip, #0x1100			@ ...i...s........
+	mcr	p15, 0, ip, c1, c0, 0		@ ctrl register
+	mov	pc, r0
 
+MMU is disabled at here and replace PC with r0 value. I doubt code
+executed correctly at here. While MMU is disabled, the PC should be
+continue in the range of 0xCxxx_xxxx (kernel space). "mov pc, r0"
+shouldn't be executed. Instruction fetch failure should occurs since
+there's no physical address in 0xCxxx_xxxx.
 
+Correct me if I'm wrong.
+
+Thanks
+Haojian
