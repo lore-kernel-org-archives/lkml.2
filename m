@@ -1,58 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab0HaPyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 11:54:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53941 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932422Ab0HaPyM convert rfc822-to-8bit (ORCPT
+	id S1752015Ab0HaP7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 11:59:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56371 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751103Ab0HaP7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 11:54:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=H6j0PDZTTWWdD3mDiydFJpK+CnuItPE9ADUcpZ+QlyUvXiCUIfhYAvHBu7OgD7UnVN
-         voK+90NhZQd4M3a7xP0u7x7ES0dI4DpD3CaSNBDSZjqD4E8tw3zFIF8z+iXjEcaNtkyZ
-         2797gZetkpVrpTNTXJubFfwVZHJWZy9fuC5OE=
+	Tue, 31 Aug 2010 11:59:50 -0400
+Date: Tue, 31 Aug 2010 16:59:48 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, kernel-janitors@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Timur Tabi <timur@freescale.com>
+Subject: Re: [PATCH 2/4] sound/soc/fsl/p1022_ds.c: Add of_node_put to avoid
+ memory leak
+Message-ID: <20100831155948.GB30599@rakim.wolfsonmicro.main>
+References: <1283269738-14612-1-git-send-email-julia@diku.dk>
+ <1283269738-14612-3-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
-In-Reply-To: <201008311126.45190.arnd@arndb.de>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
- <201008302333.22447.arnd@arndb.de> <20100830232800.3cb768fc@lxorguk.ukuu.org.uk>
- <201008311126.45190.arnd@arndb.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 31 Aug 2010 11:53:50 -0400
-Message-ID: <AANLkTimt43Rjxjat0rfJQDBzwzdH1pccpFa1QqBc62fk@mail.gmail.com>
-Subject: Re: [RFC 0/5] tty: move stuff around
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Roger Wolff <R.E.Wolff@bitwizard.nl>,
-        "Michael H. Warfield" <mhw@wittsend.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283269738-14612-3-git-send-email-julia@diku.dk>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 05:26, Arnd Bergmann wrote:
-> On Tuesday 31 August 2010, Alan Cox wrote:
->> > bfin_jtag_comm          -> drivers/tty/hvc/hvc_bfin_jtag (?)
->>
->> Nothing to do with hvc
->
-> Not yet ;-)
->
-> You didn't reply to my question why it couldn't be. I'll let Mike
-> judge this one when he has looked at the hvc infrastructure.
->
-> I wouldn't move it to that directory unless the code gets changed
-> first, but I wanted to write down where I think it should end up.
+On Tue, Aug 31, 2010 at 05:48:56PM +0200, Julia Lawall wrote:
+> Add a call to of_node_put in the error handling code following a call to
+> of_parse_phandle.
+> 
+> This patch also moves the existing call to of_node_put tothe end of the
+> error handling code, to make it possible to jump to of_node_put without
+> doing the other cleanup operations.  These appear to be disjoint
+> operations, so the ordering doesn't matter.
 
-right ... as long as it isnt hvc, it should be .../tty/hw/.  when/if
-it is converted to hvc, i'll also take care of moving it to the hvc/
-subdir.
+CCing in Timur who wrote and maintains that driver - looks OK to me.
 
-ive opened a tracker item for the issue, but no promise as to when
-i'll look into it :p.
--mike
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r exists@
+> local idexpression x;
+> expression E,E1,E2;
+> statement S;
+> @@
+> 
+> *x = 
+> (of_find_node_by_path
+> |of_find_node_by_name
+> |of_find_node_by_phandle
+> |of_get_parent
+> |of_get_next_parent
+> |of_get_next_child
+> |of_find_compatible_node
+> |of_match_node
+> |of_find_node_by_type
+> |of_find_node_with_property
+> |of_find_matching_node
+> |of_parse_phandle
+> )(...);
+> ...
+> if (x == NULL) S
+> <... when != x = E
+> *if (...) {
+>   ... when != of_node_put(x)
+>       when != if (...) { ... of_node_put(x); ... }
+> (
+>   return <+...x...+>;
+> |
+> *  return ...;
+> )
+> }
+> ...>
+> (
+> E2 = x;
+> |
+> of_node_put(x);
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  sound/soc/fsl/p1022_ds.c |   11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+> 
+> diff --git a/sound/soc/fsl/p1022_ds.c b/sound/soc/fsl/p1022_ds.c
+> index f8176e8..63b9eaa 100644
+> --- a/sound/soc/fsl/p1022_ds.c
+> +++ b/sound/soc/fsl/p1022_ds.c
+> @@ -346,8 +346,10 @@ static int p1022_ds_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	mdata = kzalloc(sizeof(struct machine_data), GFP_KERNEL);
+> -	if (!mdata)
+> -		return -ENOMEM;
+> +	if (!mdata) {
+> +		ret = -ENOMEM;
+> +		goto error_put;
+> +	}
+>  
+>  	mdata->dai[0].cpu_dai_name = dev_name(&ssi_pdev->dev);
+>  	mdata->dai[0].ops = &p1022_ds_ops;
+> @@ -502,13 +504,12 @@ static int p1022_ds_probe(struct platform_device *pdev)
+>  	return 0;
+>  
+>  error:
+> -	of_node_put(codec_np);
+> -
+>  	if (sound_device)
+>  		platform_device_unregister(sound_device);
+>  
+>  	kfree(mdata);
+> -
+> +error_put:
+> +	of_node_put(codec_np);
+>  	return ret;
+>  }
+>  
+> 
