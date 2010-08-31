@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab0HaMNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 08:13:00 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:40725 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756001Ab0HaMM6 (ORCPT
+	id S1757222Ab0HaMPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 08:15:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42082 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753598Ab0HaMPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 08:12:58 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <yuanyabin1978@sina.com>
-Cc: <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 07/12] DMAENGINE: add debugfs file for PL08X
-Date: Tue, 31 Aug 2010 14:12:09 +0200
-Message-ID: <1283256734-3408-8-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1283256734-3408-7-git-send-email-linus.walleij@stericsson.com>
-References: <1283256734-3408-1-git-send-email-linus.walleij@stericsson.com>
- <1283256734-3408-2-git-send-email-linus.walleij@stericsson.com>
- <1283256734-3408-3-git-send-email-linus.walleij@stericsson.com>
- <1283256734-3408-4-git-send-email-linus.walleij@stericsson.com>
- <1283256734-3408-5-git-send-email-linus.walleij@stericsson.com>
- <1283256734-3408-6-git-send-email-linus.walleij@stericsson.com>
- <1283256734-3408-7-git-send-email-linus.walleij@stericsson.com>
+	Tue, 31 Aug 2010 08:15:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=to4CR7sXkabDnvJWj3fNsdOxc1qvc7HQJyJzWjvQZSBJZdPyQb3BUOXyGn8hp143gk
+         M8OBC6cSEpR2l1HQ183z48kHN2bMlkQoYoNyuFLlthHlGODyed+VDhT8HEoD0rLadEl5
+         l/BhrpT0X1jio0pZk8JZ+Ci8OAcLtSUZOzCPo=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20100831110758.GD20849@rakim.wolfsonmicro.main>
+References: <1259844390-10541-1-git-send-email-daniel@caiaq.de>
+	<20100827190306.GB20407@void.printf.net>
+	<AANLkTi=20KrUy334JRmMYwK7rbaVYrYCqW-BHZYGPrwT@mail.gmail.com>
+	<20100829132711.GB10233@opensource.wolfsonmicro.com>
+	<AANLkTim+cOSt=kjXXh_w+b4mzCiZN76HQ3az7SJKmOxR@mail.gmail.com>
+	<20100831110758.GD20849@rakim.wolfsonmicro.main>
+Date: Tue, 31 Aug 2010 14:15:07 +0200
+Message-ID: <AANLkTimN0cSzp8756frWvQQpaUCy+3ydVg+JYD9LxHLc@mail.gmail.com>
+Subject: Re: [PATCH] mmc: move regulator handling to core
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Chris Ball <cjb@laptop.org>, Daniel Mack <daniel@caiaq.de>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Pierre Ossman <pierre@ossman.eu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>,
+        Madhusudhan <madhu.cr@ti.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a debugfs file for the PL08X showing the current allocation
-of physical to virtual channels.
+2010/8/31 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Sun, Aug 29, 2010 at 05:30:48PM +0200, Linus Walleij wrote:
+>> 2010/8/29 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>
+>> > This seems like the wrong approach; if there's a problem it'd seem much
+>> > better to fix the core code that everything is sharing rather than
+>> > factor it out - the location of the code is orthogonal to its
+>> > helpfulness.
+>
+>> I actually did not move the essential regulator bits out just enable/disable,
+>> so that these were in the sites where the regulators were actually
+>> enabled/disabled in respective driver. That makes the internal
+>> regulator reference count do the trick.
+>
+> I'm not sure what "the sites where the regulators were actually
+> enabled/disabled in respective driver" are but my understanding was that
+> there's a bit of an issue here in that the MMC core does not guarantee
+> balanced enable/disable calls.
 
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/dma/amba-pl08x.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 57 insertions(+), 0 deletions(-)
+Yeah I figured out what you wanted and sent an updated patch, check
+it out. I'll just weave in some comments from Adrian and it'll do things
+the way you want it I believe.
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 65892d5..a99ad19 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -68,6 +68,8 @@
- #include <linux/amba/bus.h>
- #include <linux/dmaengine.h>
- #include <linux/amba/pl08x.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
- 
- #include <asm/hardware/pl080.h>
- #include <asm/dma.h>
-@@ -1806,6 +1808,60 @@ static int pl08x_dma_init_virtual_channels(struct pl08x_driver_data *pl08x,
- 	return i;
- }
- 
-+#ifdef CONFIG_DEBUG_FS
-+static int pl08x_debugfs_show(struct seq_file *s, void *data)
-+{
-+	struct pl08x_driver_data *pl08x = s->private;
-+	struct pl08x_phy_chan *ch;
-+	unsigned long flags;
-+	int i;
-+
-+	seq_printf(s, "PL08x physical channels:\n");
-+	seq_printf(s, "CHANNEL:\tUSER:\n");
-+	seq_printf(s, "--------\t-----\n");
-+	for (i = 0; i < pl08x->vd->channels; i++) {
-+		struct pl08x_dma_chan *virt_chan;
-+
-+		ch = &pl08x->phy_chans[i];
-+
-+		spin_lock_irqsave(&ch->lock, flags);
-+		virt_chan = ch->serving;
-+
-+		seq_printf(s, "%d\t\t%s\n",
-+			   ch->id, virt_chan ? virt_chan->name : "(none)");
-+
-+		spin_unlock_irqrestore(&ch->lock, flags);
-+	}
-+	return 0;
-+}
-+
-+static int pl08x_debugfs_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pl08x_debugfs_show, inode->i_private);
-+}
-+
-+static const struct file_operations pl08x_debugfs_operations = {
-+	.open		= pl08x_debugfs_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static void init_pl08x_debugfs(struct pl08x_driver_data *pl08x)
-+{
-+	/* Expose a simple debugfs interface to view all clocks */
-+	(void) debugfs_create_file(dev_name(&pl08x->adev->dev), S_IFREG | S_IRUGO,
-+				   NULL, pl08x,
-+				   &pl08x_debugfs_operations);
-+	return 0;
-+}
-+
-+#else
-+static inline void init_pl08x_debugfs(struct pl08x_driver_data *pl08x)
-+{
-+}
-+#endif
-+
- static int pl08x_probe(struct amba_device *adev, struct amba_id *id)
- {
- 	struct pl08x_driver_data *pl08x;
-@@ -1937,6 +1993,7 @@ static int pl08x_probe(struct amba_device *adev, struct amba_id *id)
- 	}
- 
- 	amba_set_drvdata(adev, pl08x);
-+	init_pl08x_debugfs(pl08x);
- 	dev_info(&pl08x->adev->dev, "ARM(R) %s DMA block initialized @%08x\n",
- 		vd->name, adev->res.start);
- 	return 0;
--- 
-1.6.3.3
-
+Yours,
+Linus Walleij
