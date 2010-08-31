@@ -1,116 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab0HaTZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 15:25:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:54791 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab0HaTZa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 15:25:30 -0400
-X-Authority-Analysis: v=1.1 cv=PwepQEbt00S2KBGxbslVOIF+r0Mv8f+EI4NDy2BEsUE= c=1 sm=0 a=Vqe9azvFISkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=Pf1VxDEs3eoOzUUc9RkA:9 a=ka_LfQYnRXEjhFjwzMQA:7 a=pY0DJb-nNY1f3fXsT6mBGwgd9_kA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH][GIT PULL][v2.6.36] tracing: Fix a race in function profile
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Li Zefan <lizf@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 31 Aug 2010 15:25:27 -0400
-Message-ID: <1283282727.1377.356.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1755246Ab0HaTZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 15:25:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35881 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755220Ab0HaTZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 15:25:35 -0400
+Date: Tue, 31 Aug 2010 15:25:24 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Nauman Rafique <nauman@google.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, Divyesh Shah <dpshah@google.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] cfq-iosched: add cfq group hierarchical scheduling
+ support
+Message-ID: <20100831192524.GD2527@redhat.com>
+References: <4C7B54C0.7080008@cn.fujitsu.com>
+ <20100830203644.GA15903@redhat.com>
+ <4C7C4CE0.5080402@cn.fujitsu.com>
+ <20100831125737.GA2527@redhat.com>
+ <AANLkTi=daFyrx+ts4DoAHwR8EHUfF0nYyv45zJkBFm--@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=daFyrx+ts4DoAHwR8EHUfF0nYyv45zJkBFm--@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 31, 2010 at 08:40:19AM -0700, Nauman Rafique wrote:
+> On Tue, Aug 31, 2010 at 5:57 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Tue, Aug 31, 2010 at 08:29:20AM +0800, Gui Jianfeng wrote:
+> >> Vivek Goyal wrote:
+> >> > On Mon, Aug 30, 2010 at 02:50:40PM +0800, Gui Jianfeng wrote:
+> >> >> Hi All,
+> >> >>
+> >> >> This patch enables cfq group hierarchical scheduling.
+> >> >>
+> >> >> With this patch, you can create a cgroup directory deeper than level 1.
+> >> >> Now, I/O Bandwidth is distributed in a hierarchy way. For example:
+> >> >> We create cgroup directories as following(the number represents weight):
+> >> >>
+> >> >>             Root grp
+> >> >>            /       \
+> >> >>        grp_1(100) grp_2(400)
+> >> >>        /    \
+> >> >>   grp_3(200) grp_4(300)
+> >> >>
+> >> >> If grp_2 grp_3 and grp_4 are contending for I/O Bandwidth,
+> >> >> grp_2 will share 80% of total bandwidth.
+> >> >> For sub_groups, grp_3 shares 8%(20% * 40%), grp_4 shares 12%(20% * 60%)
+> >> >>
+> >> >> Design:
+> >> >>   o Each cfq group has its own group service tree.
+> >> >>   o Each cfq group contains a "group schedule entity" (gse) that
+> >> >>     schedules on parent cfq group's service tree.
+> >> >>   o Each cfq group contains a "queue schedule entity"(qse), it
+> >> >>     represents all cfqqs located on this cfq group. It schedules
+> >> >>     on this group's service tree. For the time being, root group
+> >> >>     qse's weight is 1000, and subgroup qse's weight is 500.
+> >> >>   o All gses and qse which belones to a same cfq group schedules
+> >> >>     on the same group service tree.
+> >> >
+> >> > Hi Gui,
+> >> >
+> >> > Thanks for the patch. I have few questions.
+> >> >
+> >> > - So how does the hierarchy look like, w.r.t root group. Something as
+> >> >   follows?
+> >> >
+> >> >
+> >> >                     root
+> >> >                    / | \
+> >> >                  q1  q2 G1
+> >> >
+> >> > Assume there are two processes doin IO in root group and q1 and q2 are
+> >> > cfqq queues for those processes and G1 is the cgroup created by user.
+> >> >
+> >> > If yes, then what algorithm do you use to do scheduling between q1, q2
+> >> > and G1? IOW, currently we have two algorithms operating in CFQ. One for
+> >> > cfqq and other for groups. Group algorithm does not use the logic of
+> >> > cfq_slice_offset().
+> >>
+> >> Hi Vivek,
+> >>
+> >> This patch doesn't break the original sheduling logic. That is cfqg => st => cfqq.
+> >> If q1 and q2 in root group, I treat q1 and q2 bundle as a queue sched entity, and
+> >> it will schedule on root group service with G1, as following:
+> >>
+> >>                          root group
+> >>                         /         \
+> >>                     qse(q1,q2)    gse(G1)
+> >>
+> >
+> > Ok. That's interesting. That raises another question that how hierarchy
+> > should look like. IOW, how queue and groups should be treated in
+> > hierarchy.
+> >
+> > CFS cpu scheduler treats queues and group at the same level. That is as
+> > follows.
+> >
+> >                        root
+> >                        / | \
+> >                       q1 q2 G1
+> >
+> > In the past I had raised this question and Jens and corrado liked treating
+> > queues and group at same level.
+> >
+> > Logically, q1, q2 and G1 are all children of root, so it makes sense to
+> > treat them at same level and not group q1 and q2 in to a single entity and
+> > group.
+> >
+> > One of the possible way forward could be this.
+> >
+> > - Treat queue and group at same level (like CFS)
+> >
+> > - Get rid of cfq_slice_offset() logic. That means without idling on, there
+> >  will be no ioprio difference between cfq queues. I think anyway as of
+> >  today that logic helps in so little situations that I would not mind
+> >  getting rid of it. Just that Jens should agree to it.
+> >
+> > - With this new scheme, it will break the existing semantics of root group
+> >  being at same level as child groups. To avoid that, we can probably
+> >  implement two modes (flat and hierarchical), something similar to what
+> >  memory cgroup controller has done. May be one tunable in root cgroup of
+> >  blkio "use_hierarchy".  By default everything will be in flat mode and
+> >  if user wants hiearchical control, he needs to set user_hierarchy in
+> >  root group.
+> 
+> Vivek, may be I am reading you wrong here. But you are first
+> suggesting to add more complexity to treat queues and group at the
+> same level. Then you are suggesting add even more complexity to fix
+> the problems caused by that approach.
+> 
+> Why do we need to treat queues and group at the same level? "CFS does
+> it" is not a good argument.
 
-Ingo,
+Sure it is not a very good argument but at the same time one would need
+a very good argument that why we should do things differently.
 
-I was able to reproduce the bug and also confirmed that this fixed it.
+- If a user has mounted cpu and blkio controller together and both the
+  controllers are viewing the same hierarchy differently, then it is
+  odd. We need a good reason that why different arrangement makes sense.
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
+- To me, both group and cfq queue are children of root group and it
+  makes sense to treat them independent childrens instead of putting
+  all the queues in one logical group which inherits the weight of
+  parent.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/urgent
-
-
-Li Zefan (1):
-      tracing: Fix a race in function profile
-
-----
- kernel/trace/ftrace.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
----------------------------
-commit 7294923e53b229603c893cbdaeba0c388276ec36
-Author: Li Zefan <lizf@cn.fujitsu.com>
-Date:   Mon Aug 23 16:50:12 2010 +0800
-
-    tracing: Fix a race in function profile
-    
-    While we are reading trace_stat/functionX and someone just
-    disabled function_profile at that time, we can trigger this:
-    
-    	divide error: 0000 [#1] PREEMPT SMP
-    	...
-    	EIP is at function_stat_show+0x90/0x230
-    	...
-    
-    This fix just takes the ftrace_profile_lock and checks if
-    rec->counter is 0. If it's 0, we know the profile buffer
-    has been reset.
-    
-    Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-    LKML-Reference: <4C723644.4040708@cn.fujitsu.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 0d88ce9..7cb1f45 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -381,12 +381,19 @@ static int function_stat_show(struct seq_file *m, void *v)
- {
- 	struct ftrace_profile *rec = v;
- 	char str[KSYM_SYMBOL_LEN];
-+	int ret = 0;
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
--	static DEFINE_MUTEX(mutex);
- 	static struct trace_seq s;
- 	unsigned long long avg;
- 	unsigned long long stddev;
- #endif
-+	mutex_lock(&ftrace_profile_lock);
-+
-+	/* we raced with function_profile_reset() */
-+	if (unlikely(rec->counter == 0)) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	kallsyms_lookup(rec->ip, NULL, NULL, NULL, str);
- 	seq_printf(m, "  %-30.30s  %10lu", str, rec->counter);
-@@ -408,7 +415,6 @@ static int function_stat_show(struct seq_file *m, void *v)
- 		do_div(stddev, (rec->counter - 1) * 1000);
- 	}
- 
--	mutex_lock(&mutex);
- 	trace_seq_init(&s);
- 	trace_print_graph_duration(rec->time, &s);
- 	trace_seq_puts(&s, "    ");
-@@ -416,11 +422,12 @@ static int function_stat_show(struct seq_file *m, void *v)
- 	trace_seq_puts(&s, "    ");
- 	trace_print_graph_duration(stddev, &s);
- 	trace_print_seq(m, &s);
--	mutex_unlock(&mutex);
- #endif
- 	seq_putc(m, '\n');
-+out:
-+	mutex_unlock(&ftrace_profile_lock);
- 
--	return 0;
-+	return ret;
- }
- 
- static void ftrace_profile_reset(struct ftrace_profile_stat *stat)
+- With this new scheme, I am finding it hard to visualize the hierachy.
+  How do you assign the weights to queue entities of a group. It is more
+  like a invisible group with-in group. We shall have to create new
+  tunable which can speicy the weight for this hidden group.
 
 
+So in summary I am liking the "queue at same level as group" scheme for
+two reasons.
+
+- It is more intutive to visualize and implement. It follows the true
+  hierarchy as seen by cgroup file system.
+
+- CFS has already implemented this scheme. So we need a strong arguemnt
+  to justify why we should not follow the same thing. Especially for
+  the case where user has co-mounted cpu and blkio controller.
+
+- It can achieve the same goal as "hidden group" proposal just by 
+  creating a cgroup explicitly and moving all threads in that group.
+
+Why do you think that "hidden group" proposal is better than "treating
+queue at same level as group" ? 
+
+Thanks
+Vivek
