@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab0HaEDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 00:03:07 -0400
-Received: from s318.xrea.com ([125.53.25.46]:53921 "HELO s318.xrea.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750720Ab0HaEDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 00:03:05 -0400
-From: Naohiro Aota <naota@elisp.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naohiro Aota <naota@elisp.net>
-Subject: Re: [PATCH 2/2] idr: describe how nextidp works in idr_get_next().
-References: <m27hj8cdsw.fsf@elisp.net> <m2pqx0az4h.fsf@elisp.net>
-	<4C7BD45B.3050300@kernel.org>
-Date: Tue, 31 Aug 2010 13:02:57 +0900
-In-Reply-To: <4C7BD45B.3050300@kernel.org> (Tejun Heo's message of "Mon, 30
-	Aug 2010 17:55:07 +0200")
-Message-ID: <m2bp8jbf9q.fsf@elisp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (darwin)
+	id S1752794Ab0HaEFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 00:05:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45003 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751183Ab0HaEFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 00:05:05 -0400
+Date: Mon, 30 Aug 2010 21:05:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: raj uprade <rajuprade@gmail.com>
+Cc: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>,
+        Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Regarding USB-Serial Device driver
+Message-ID: <20100831040516.GA15697@suse.de>
+References: <20100819055329.M29689@admin-gateway.ncra.tifr.res.in> <20100819061525.M24093@admin-gateway.ncra.tifr.res.in> <201008190938.44532.marek.vasut@gmail.com> <20100819141812.GA12375@suse.de> <20100820033259.M54157@admin-gateway.ncra.tifr.res.in> <20100820035632.GA7349@suse.de> <20100820064731.M31524@admin-gateway.ncra.tifr.res.in> <20100820153910.GA11608@suse.de> <AANLkTin8AiOj4CST5Dr_icnY4MugG1mhgP7=c1jgcJcA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin8AiOj4CST5Dr_icnY4MugG1mhgP7=c1jgcJcA@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Thu, Aug 26, 2010 at 03:20:06PM +0530, raj uprade wrote:
+>    Hi Greg,
+> 
+> >
+> >
+> > >  Again, please use a more modern kernel version, and then, please show
+> >     the exact diff (in 'diff -u' format) that you made.
+> >
+> >     Below is the diff -u of changes made in pl2303.c
+> 
+>  --- /home/teleset/Zip_file/linux-2.6.26/drivers/usb/serial/pl2303.c
+> 2010-07-29 15:13:47.000000000 +0530
+> +++ /home/teleset/Desktop/pl2303.c    2010-08-26 15:11:04.000000000 +0530
+> @@ -469,12 +469,25 @@
+>      if (!count)
+>          return count;
+> 
+> +                   spin_lock_irqsave(&priv->lock, flags);
+> +              priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
+> +                 control = priv->line_control;
+> +              spin_unlock_irqrestore(&priv->lock, flags);
+> +              set_control_lines(port->serial->dev, control);
+> +
+>      spin_lock_irqsave(&priv->lock, flags);
+>      count = pl2303_buf_put(priv->buf, buf, count);
+>      spin_unlock_irqrestore(&priv->lock, flags);
+> -
+> +
+>      pl2303_send(port);
+> 
+> +            mdelay(5);
+> +         spin_lock_irqsave(&priv->lock, flags);
+> +           priv->line_control   = 0;
+> +         control = priv->line_control;
+> +     spin_unlock_irqrestore(&priv->lock, flags);
+> +     set_control_lines(port->serial->dev,control);
+> +
+>      return count;
+>  }
 
-> On 08/30/2010 05:39 PM, Naohiro Aota wrote:
->> It was unclear in original kernel-doc how nextidp worked in
->> idr_get_next(). Let's describe it.
->> 
->> Signed-off-by: Naohiro Aota <naota@elisp.net>
->> ---
->>  lib/idr.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->> 
->> diff --git a/lib/idr.c b/lib/idr.c
->> index fb86a67..cf8c46b 100644
->> --- a/lib/idr.c
->> +++ b/lib/idr.c
->> @@ -589,7 +589,8 @@ EXPORT_SYMBOL(idr_for_each);
->>   * @nextidp:  pointer to lookup key
->>   *
->>   * Returns pointer to registered object with id, which is next number to
->> - * given id.
->> + * given id. The id pointed by nextidp will be updated
->> + * appropriately for next iteration.
->>   */
->
-> Maybe "After being looked up, *@nextidp will be updated for the next
-> iteration" would be clearer?
+I don't even recall what you were trying to do here, sorry.  Please
+include more context in your emails, we get a lot of them.
 
-Thanks, the fixed patch below.
+Also, what function was this change made in?
 
-==
->From 6c61c97b5b85a350e3f195309b70a271457208ca Mon Sep 17 00:00:00 2001
-From: Naohiro Aota <naota@elisp.net>
-Date: Fri, 27 Aug 2010 17:43:46 +0900
-Subject: [PATCH 2/2] idr: describe how nextidp works in idr_get_next().
+I don't think such a quick line control change is going to do what you
+think it does as there are delays on the device side for sending the
+data out through the uart that don't sync right up with the usb host
+side here.  So it might be very easy to get out of order things
+happening.
 
-It was unclear in original kernel-doc how nextidp worked in
-idr_get_next(). Let's describe it.
+You need to make sure the data is really out the port before changing
+any control lines.  Can't you do this properly from userspace with no
+kernel changes?
 
-Signed-off-by: Naohiro Aota <naota@elisp.net>
----
- lib/idr.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+thanks,
 
-diff --git a/lib/idr.c b/lib/idr.c
-index fb86a67..5e0966b 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -589,7 +589,8 @@ EXPORT_SYMBOL(idr_for_each);
-  * @nextidp:  pointer to lookup key
-  *
-  * Returns pointer to registered object with id, which is next number to
-- * given id.
-+ * given id. After being looked up, *@nextidp will be updated for the next
-+ * iteration.
-  */
- 
- void *idr_get_next(struct idr *idp, int *nextidp)
--- 
-1.7.2
-
+greg k-h
