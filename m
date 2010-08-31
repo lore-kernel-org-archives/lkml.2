@@ -1,280 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab0HaAyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 20:54:17 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:45114 "EHLO
-	mx02.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755901Ab0HaAyQ (ORCPT
+	id S1756342Ab0HaAzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 20:55:16 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53186 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901Ab0HaAzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 20:54:16 -0400
-Date: Mon, 30 Aug 2010 20:53:35 -0400 (EDT)
-From: caiqian@redhat.com
-To: Tejun Heo <tj@kernel.org>
-Cc: torvalds@linux-foundation.org, linux-next@vger.kernel.org,
-        kexec <kexec@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Message-ID: <2044609874.1606211283216015254.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <71887879.1606161283215975799.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Subject: Re: kdump regression compared to v2.6.35
+	Mon, 30 Aug 2010 20:55:14 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C7C5314.7090404@np.css.fujitsu.com>
+Date: Tue, 31 Aug 2010 09:55:48 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: "Yu, Fenghua" <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
+CC: "Brown, Len" <len.brown@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@linux.jf.intel.com>,
+        LKLM <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        mingo Redhat <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [Patch-next] Trival fixes in thermal_throttle_add_dev().
+References: <4C75D3C4.6040802@np.css.fujitsu.com>	<20100826060822.GA15021@fenghua-desk.sc.intel.com>	<4C7625D1.4060201@np.css.fujitsu.com> <20100827152007.27636fa5@hyperion.delvare> <4C7B64A8.2030208@np.css.fujitsu.com> <493994B35A117E4F832F97C4719C4C04A111EEDF@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <493994B35A117E4F832F97C4719C4C04A111EEDF@orsmsx505.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixed the following two problems.
+  1. When the feature PTS is not supported by CPU, the sysfile
+     package_power_limit_count for package should not be generated.
+  2. No matter whether a sysfile is failed to be created or not,
+     the next one will be created.
 
------ "Tejun Heo" <tj@kernel.org> wrote:
+As the resolving methods:
+  1. Add missing { and } after checking PTS feature.
+  2. Fix the error handling.
 
-> Please try this one instead.  Thanks.
-Unable to reproduce it any more after applied the patch,
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Reviewed-by: Fenghua Yu <fenghua.yu@initel.com>
+---
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   15 ++++++++++++++-
+ 1 files changed, 14 insertions(+), 1 deletions(-)
 
-NET: Registered protocol family 16
-ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
-ACPI: bus type pci registered
-PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0x80000000-0x8fffffff] (base 0x80000000)
-PCI: MMCONFIG at [mem 0x80000000-0x8fffffff] reserved in E820
-PCI: Using configuration type 1 for base access
-bio: create slab <bio-0> at 0
-XXX kintegrityd: rescuer dispatching to cpu0
-XXX kintegrityd: rescuer done binding, bound=1
-XXX kintegrityd: rescuer dispatching to cpu5
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu6
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu10
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu13
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu14
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu18
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu21
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu22
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu30
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu32
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu33
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu34
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu35
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu37
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu42
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu45
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu46
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu48
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu50
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu53
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu54
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu57
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu58
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu60
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu61
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kintegrityd: rescuer dispatching to cpu62
-XXX kintegrityd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu0
-XXX kblockd: rescuer done binding, bound=1
-XXX kblockd: rescuer dispatching to cpu5
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu6
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu10
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu13
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu14
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu18
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu21
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu22
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu30
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu32
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu33
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu34
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu35
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu37
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu40
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu41
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu45
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu46
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu50
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu51
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu53
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu54
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu56
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu61
-XXX kblockd: rescuer done binding, bound=0
-XXX kblockd: rescuer dispatching to cpu62
-XXX kblockd: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu0
-XXX kacpid: rescuer done binding, bound=1
-XXX kacpid: rescuer dispatching to cpu5
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu6
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu10
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu13
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu14
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu18
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu21
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu22
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu30
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu32
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu33
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu34
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu35
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu37
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu40
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu41
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu45
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu46
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu50
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu51
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu53
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu54
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu56
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu61
-XXX kacpid: rescuer done binding, bound=0
-XXX kacpid: rescuer dispatching to cpu62
-XXX kacpid: rescuer done binding, bound=0
-ACPI Error: Field [CPB3] at 96 exceeds Buffer [NULL] size 64 (bits) (20100702/dsopcode-597)
-ACPI Error (psparse-0537): Method parse/execution failed [\_SB_._OSC] (Node ffff880c6e58cf38), AE_AML_BUFFER_LIMIT
-ACPI: Interpreter enabled
-ACPI: (supports S0 S1 S5)
-ACPI: Using IOAPIC for interrupt routing
-ACPI: No dock devices found.
-PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
-ACPI: PCI Root Bridge [IOH0] (domain 0000 [bus 00-7f])
-...
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index d9368ee..79d563a 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -216,14 +216,27 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
+ 		err = sysfs_add_file_to_group(&sys_dev->kobj,
+ 					      &attr_core_power_limit_count.attr,
+ 					      thermal_attr_group.name);
+-	if (cpu_has(c, X86_FEATURE_PTS))
++	if (err)
++		goto error;
++
++	if (cpu_has(c, X86_FEATURE_PTS)) {
+ 		err = sysfs_add_file_to_group(&sys_dev->kobj,
+ 					      &attr_package_throttle_count.attr,
+ 					      thermal_attr_group.name);
++		if (err)
++			goto error;
++
+ 		if (cpu_has(c, X86_FEATURE_PLN))
+ 			err = sysfs_add_file_to_group(&sys_dev->kobj,
+ 					&attr_package_power_limit_count.attr,
+ 					thermal_attr_group.name);
++		if (err)
++			goto error;
++	}
++
++	return 0;
++error:
++	sysfs_remove_group(&sys_dev->kobj, &thermal_attr_group);
+ 
+ 	return err;
+ }
+-- 
+1.7.1.1
 
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index a2dccfc..75cdbc2 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1224,6 +1224,8 @@ __acquires(&gcwq->lock)
->  {
->  	struct global_cwq *gcwq = worker->gcwq;
->  	struct task_struct *task = worker->task;
-> +	static unsigned int cnt;
-> +	int rc;
-> 
->  	while (true) {
->  		/*
-> @@ -1232,8 +1234,11 @@ __acquires(&gcwq->lock)
->  		 * it races with cpu hotunplug operation.  Verify
->  		 * against GCWQ_DISASSOCIATED.
->  		 */
-> -		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
-> -			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
-> +		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
-> +			rc = set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
-> +			if (rc && ++cnt < 10)
-> +				printk("XXX set_cpus_allowed_ptr() failed w/ %d\n", rc);
-> +		}
-> 
->  		spin_lock_irq(&gcwq->lock);
->  		if (gcwq->flags & GCWQ_DISASSOCIATED)
-> @@ -1985,13 +1990,16 @@ repeat:
->  		struct cpu_workqueue_struct *cwq = get_cwq(tcpu, wq);
->  		struct global_cwq *gcwq = cwq->gcwq;
->  		struct work_struct *work, *n;
-> +		bool bound;
-> 
->  		__set_current_state(TASK_RUNNING);
->  		mayday_clear_cpu(cpu, wq->mayday_mask);
-> 
->  		/* migrate to the target cpu if possible */
->  		rescuer->gcwq = gcwq;
-> -		worker_maybe_bind_and_lock(rescuer);
-> +		printk("XXX %s: rescuer dispatching to cpu%u\n", wq->name,
-> gcwq->cpu);
-> +		bound = worker_maybe_bind_and_lock(rescuer);
-> +		printk("XXX %s: rescuer done binding, bound=%d\n", wq->name,
-> bound);
-> 
->  		/*
->  		 * Slurp in all works issued via this workqueue and
-> @@ -3558,8 +3566,7 @@ static int __init init_workqueues(void)
->  		spin_lock_init(&gcwq->lock);
->  		INIT_LIST_HEAD(&gcwq->worklist);
->  		gcwq->cpu = cpu;
-> -		if (cpu == WORK_CPU_UNBOUND)
-> -			gcwq->flags |= GCWQ_DISASSOCIATED;
-> +		gcwq->flags |= GCWQ_DISASSOCIATED;
-> 
->  		INIT_LIST_HEAD(&gcwq->idle_list);
->  		for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)
-> @@ -3583,6 +3590,8 @@ static int __init init_workqueues(void)
->  		struct global_cwq *gcwq = get_gcwq(cpu);
->  		struct worker *worker;
-> 
-> +		if (cpu != WORK_CPU_UNBOUND)
-> +			gcwq->flags &= ~GCWQ_DISASSOCIATED;
->  		worker = create_worker(gcwq, true);
->  		BUG_ON(!worker);
->  		spin_lock_irq(&gcwq->lock);
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
