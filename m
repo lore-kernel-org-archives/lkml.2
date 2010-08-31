@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab0HaLDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 07:03:34 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:5097 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab0HaLDd (ORCPT
+	id S1757185Ab0HaLIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 07:08:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48942 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756649Ab0HaLIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 07:03:33 -0400
-X-SpamScore: 5
-X-BigFish: VPS5(zzbb2cK1432N98dNzz1202hzz8275bh8275dhz32i2a8h5bep5bfs43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L80JZ3-02-5BP-02
-X-M-MSG: 
-Date: Tue, 31 Aug 2010 13:01:52 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Tue, 31 Aug 2010 07:08:00 -0400
+Date: Tue, 31 Aug 2010 12:07:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>, Daniel Mack <daniel@caiaq.de>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Pierre Ossman <pierre@ossman.eu>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Matt Fleming <matt@console-pimps.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 0/3] stop OProfile calling arch_exit when arch_init
- fails
-Message-ID: <20100831110152.GD22783@erda.amd.com>
-References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>,
+        Madhusudhan <madhu.cr@ti.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mmc: move regulator handling to core
+Message-ID: <20100831110758.GD20849@rakim.wolfsonmicro.main>
+References: <1259844390-10541-1-git-send-email-daniel@caiaq.de>
+ <20100827190306.GB20407@void.printf.net>
+ <AANLkTi=20KrUy334JRmMYwK7rbaVYrYCqW-BHZYGPrwT@mail.gmail.com>
+ <20100829132711.GB10233@opensource.wolfsonmicro.com>
+ <AANLkTim+cOSt=kjXXh_w+b4mzCiZN76HQ3az7SJKmOxR@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
+In-Reply-To: <AANLkTim+cOSt=kjXXh_w+b4mzCiZN76HQ3az7SJKmOxR@mail.gmail.com>
+X-Cookie: glibido:
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.08.10 14:51:58, Will Deacon wrote:
-> These patches remove the oprofile_arch_exit call from oprofile_init,
-> allowing architectures that perform memory allocation in their init
-> functions to be simplified. This requires some changes to the ARM and
-> x86 OProfile backends to ensure that their init functions clean up
-> after themselves if they fail.
-> 
-> This is required for Matt's combined OProfile/Perf driver which will
-> be shared between all architectures.
-> 
-> Patches taken against tip/master.
-> 
-> Cc: Robert Richter <robert.richter@amd.com>
-> Cc: Matt Fleming <matt@console-pimps.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> 
-> Will Deacon (3):
->   oprofile: don't call arch exit code from init code on failure
->   ARM: oprofile: fix and simplify init/exit functions
->   x86: oprofile: fix oprofile_arch_init behaviour on failure
-> 
->  arch/arm/oprofile/common.c |   47 +++++++++++++++++++++++--------------------
->  arch/x86/oprofile/init.c   |   26 ++++++++++++++----------
->  drivers/oprofile/oprof.c   |   11 +--------
->  3 files changed, 42 insertions(+), 42 deletions(-)
+On Sun, Aug 29, 2010 at 05:30:48PM +0200, Linus Walleij wrote:
+> 2010/8/29 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-I have applied patch #1 and #2 to
+> > This seems like the wrong approach; if there's a problem it'd seem much
+> > better to fix the core code that everything is sharing rather than
+> > factor it out - the location of the code is orthogonal to its
+> > helpfulness.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+> I actually did not move the essential regulator bits out just enable/disable,
+> so that these were in the sites where the regulators were actually
+> enabled/disabled in respective driver. That makes the internal
+> regulator reference count do the trick.
 
-with some small modifications:
-
-Patch #1: Commit message, x86 removed.
-Patch #2: Order of freeing memory:
-
-+out:
-+       if (ret) {
-+               for_each_possible_cpu(cpu)
-+                       kfree(perf_events[cpu]);
-+               kfree(counter_config);
-+       }
-+
-
-There is also the patch below on top of it.
-
-Thanks Will,
-
--Robert
-
---
-
->From 4cbe75be5c6ae86bdc7daec864eeb2dfd66f48bb Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Mon, 30 Aug 2010 18:21:55 +0200
-Subject: [PATCH] oprofile, arm: initialize perf_event pointers with NULL
-
-The pointers must be NULL'ed to avoid double-freeing the pointers in
-rare cases during reinitialization.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/arm/oprofile/common.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index c3652f7..d660cb8 100644
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -351,6 +351,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- {
- 	int cpu, ret = 0;
- 
-+	memset(&perf_events, 0, sizeof(perf_events));
-+
- 	perf_num_counters = armpmu_get_max_events();
- 
- 	counter_config = kcalloc(perf_num_counters,
--- 
-1.7.1.1
-
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+I'm not sure what "the sites where the regulators were actually
+enabled/disabled in respective driver" are but my understanding was that
+there's a bit of an issue here in that the MMC core does not guarantee
+balanced enable/disable calls.
