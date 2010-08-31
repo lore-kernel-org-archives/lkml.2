@@ -1,161 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab0HaVNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 17:13:49 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51675 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752744Ab0HaVNs (ORCPT
+	id S1755888Ab0HaVQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 17:16:09 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:59001 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab0HaVQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 17:13:48 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: cxacru@fire.lp0.eu
-Subject: cxacru: USB ethernet port of CX82310-based ADSL routers?
-Date: Tue, 31 Aug 2010 23:13:36 +0200
-User-Agent: KMail/1.9.10
-Cc: accessrunner-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	Tue, 31 Aug 2010 17:16:08 -0400
+Subject: Re: [PATCH 4/6 v2] HID: magicmouse: remove axis data filtering
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4C7D6ECB.2000308@euromail.se>
+References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+	 <1283280068-12285-4-git-send-email-chase.douglas@canonical.com>
+	 <4C7D6739.5000601@euromail.se> <1283288319.2255.103.camel@mini>
+	 <4C7D6ECB.2000308@euromail.se>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 17:16:00 -0400
+Message-ID: <1283289360.2255.113.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008312313.39171.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I have an ADSL router based on Conexant CX82310 chip. This chip provides both
-ethernet and USB interfaces. The ethernet interface is often internally
-connected to a 5-port switch (in my case too). The USB interface works as an
-ethernet card in Windows (using proprietary driver). In Linux, the cxacru
-driver binds to the device but does not work (no wonder - it's doing firmware
-things in an attempt to bring an ADSL modem up).
+On Tue, 2010-08-31 at 23:06 +0200, Henrik Rydberg wrote:
+> On 08/31/2010 10:58 PM, Chase Douglas wrote:
+> 
+> > On Tue, 2010-08-31 at 22:34 +0200, Henrik Rydberg wrote:
+> >> On 08/31/2010 08:41 PM, Chase Douglas wrote:
+> >>
+> >>> The Magic Mouse device is very precise. No driver filtering of input
+> >>> data needs to be performed.
+> >>>
+> >>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> >>> Acked-by: Michael Poole <mdpoole@troilus.org>
+> >>> ---
+> >>
+> >>
+> >> I am still not sure this is a good idea. Bandwidth from MT devices is a big
+> >> deal. A statement roughly how much data comes out of mtdev (which does the
+> >> filtering for type A devices) before and after this change would be reassuring.
+> > 
+> > As it is right now, hid-magicmouse doesn't support MT slots. I think all
+> > the fuzz code ends up comparing in the MT case is between one touch and
+> > another touch, not between one touch's current location and its previous
+> > location. If I'm correct, then it means a fuzz > 0 is incorrect for
+> > non-slotted MT devices.
+> > 
+> > In fact, the code in drivers/input/input.c around line 194 looks like it
+> > discards defuzzing in this case, so one could say this patch is making
+> > things more correct :).
+> 
+> 
+> For type A devices, the filtering is performed in userspace, in mtdev, in the
+> same manner as it would have been performed in the kernel in the MT slot case.
+> Therefore, knowing the amount of messages coming out of mtdev is a direct
+> measurement of the effect of filtering.
 
-I captured a log from Windows (device connect, DHCP and disconnect):
-http://www.rainbow-software.org/linux_files/cx82310/cx-run-dhcp.log
+Yes, but we're only interested in the kernel driver when reviewing this
+patch. Leaving the fuzz in as it is has no effect right now on ABS_MT_*
+axes. On the other axes, such as the touch orientation, it's probably
+more harmful than good.
 
-The commands seem to match the enums in cxacru
-driver (and go to endpoint 1):
-0x84, 0x85, 0x90, 0x91, 0x92, 0x99 (unknown)
-Data goes to/from endpoint 2 as ethernet frames (with something at the
-beginning).
+> > Now a fuzz > 0 for the non-MT ABS axes may be useful, but this device
+> > exhibits no jitter, and we're not really worried about bandwidth in the
+> > single touch case.
+> 
+> 
+> The jitter is better measured by the actual amount of events.
 
-I wonder how to implement support for this device in cxacru driver. Or would
-be a separate driver better?
+I would agree, if there was any jitter to measure. However, I can hold
+my fingers on the device and not see any extra events due to jitter.
+Simple inspection via evtest has convinced me.
 
+-- Chase
 
-lsusb output:
-
-Bus 001 Device 003: ID 0572:cb01 Conexant Systems (Rockwell), Inc. GeekADSL Promax Q31 ADSL Modem
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               1.10
-  bDeviceClass          255 Vendor Specific Class
-  bDeviceSubClass         0 
-  bDeviceProtocol         0 
-  bMaxPacketSize0        64
-  idVendor           0x0572 Conexant Systems (Rockwell), Inc.
-  idProduct          0xcb01 GeekADSL Promax Q31 ADSL Modem
-  bcdDevice            1.00
-  iManufacturer           1 -
-  iProduct                2 USB NET CARD
-  iSerial                 3 00000060
-  bNumConfigurations      1
-  Configuration Descriptor:
-    bLength                 9
-    bDescriptorType         2
-    wTotalLength           67
-    bNumInterfaces          1
-    bConfigurationValue     1
-    iConfiguration          0 
-    bmAttributes         0xc0
-      Self Powered
-    MaxPower               80mA
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        0
-      bAlternateSetting       0
-      bNumEndpoints           7
-      bInterfaceClass         0 (Defined at Interface level)
-      bInterfaceSubClass      0 
-      bInterfaceProtocol      0 
-      iInterface              0 
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x81  EP 1 IN
-        bmAttributes            3
-          Transfer Type            Interrupt
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0040  1x 64 bytes
-        bInterval               4
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x01  EP 1 OUT
-        bmAttributes            3
-          Transfer Type            Interrupt
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0040  1x 64 bytes
-        bInterval               4
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x82  EP 2 IN
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0040  1x 64 bytes
-        bInterval               1
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x02  EP 2 OUT
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0040  1x 64 bytes
-        bInterval               1
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x83  EP 3 IN
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0040  1x 64 bytes
-        bInterval               1
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x03  EP 3 OUT
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0040  1x 64 bytes
-        bInterval               1
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x84  EP 4 IN
-        bmAttributes            3
-          Transfer Type            Interrupt
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0008  1x 8 bytes
-        bInterval               4
-Device Status:     0x0001
-  Self Powered
-
-
--- 
-Ondrej Zary
