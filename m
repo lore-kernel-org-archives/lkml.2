@@ -1,141 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab0HaWaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 18:30:06 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:47041 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab0HaWaE (ORCPT
+	id S1756059Ab0HaWiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 18:38:06 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:28013 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab0HaWiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 18:30:04 -0400
-Subject: Re: [PATCH 4/6 v2] HID: magicmouse: remove axis data filtering
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C7D7CB7.90709@euromail.se>
-References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
-	 <1283280068-12285-4-git-send-email-chase.douglas@canonical.com>
-	 <4C7D6739.5000601@euromail.se> <1283288319.2255.103.camel@mini>
-	 <4C7D6ECB.2000308@euromail.se> <1283289360.2255.113.camel@mini>
-	 <4C7D71B8.4020408@euromail.se> <1283290078.2255.119.camel@mini>
-	 <4C7D767C.8040607@euromail.se>  <1283291469.2255.129.camel@mini>
-	 <1283291819.2255.134.camel@mini>  <4C7D7CB7.90709@euromail.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 18:29:56 -0400
-Message-ID: <1283293796.2255.164.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	Tue, 31 Aug 2010 18:38:04 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6091"; a="52930917"
+Message-ID: <4C7D844C.5050403@codeaurora.org>
+Date: Tue, 31 Aug 2010 15:38:04 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: markgross@thegnar.org
+CC: Kevin Hilman <khilman@deeprootsystems.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <james.bottomley@suse.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
+References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org> <1282882403-29824-2-git-send-email-skannan@codeaurora.org> <20100827064153.GB3414@gvim.org> <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org> <20100828020540.GB8341@gvim.org> <4C787AA9.4090906@codeaurora.org> <20100828225255.GA12402@gvim.org> <878w3o3p55.fsf@deeprootsystems.com> <20100831184030.GB9305@gvim.org>
+In-Reply-To: <20100831184030.GB9305@gvim.org>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-01 at 00:05 +0200, Henrik Rydberg wrote:
-> On 08/31/2010 11:56 PM, Chase Douglas wrote:
+mark gross wrote:
+> On Mon, Aug 30, 2010 at 11:56:54AM -0700, Kevin Hilman
+>>>> Any specific reason PM QoS doesn't support a "summation" "comparitor"?
+>>> PM_QoS could do a summation, but keep in mind it pm_qos not qos.  pm_qos
+>>> is a best effort thing to constrain power management throttling, not
+>>> provide a true quality of service or deadline scheduling support.
+>> For me (and I think Saravana too), this is still all about power, but
+>> it's closely tied to QoS.  
+
+Kevin, Thanks for explaining exactly what I had in mind. I was caught up 
+with other work and was glad to see this discussion moved forward.
+
+I pretty much agree with all of Kevin's statements, so here is a 
+preemptive "I agree" to all this paragraphs.
+
+> Now I get it!  For throughput we need to do a sum.  Ok, we need sum
+> comparator/performance aggregaters too!
+
+Yay! Finally one of my pet peeves with PM QoS is being resolved(?).
+
+> Do we also need to figure out the max throughput and warn if the pm_qos
+> requests are going over?  I suppose the network stack could register
+> each device with a max bus bandwidth and pm_qos could warn on exceeding
+> the hardware throughput.
+
+In my opinion, here is where the "best effort" part, if any, comes in. 
+PM QoS could do it's best to meet the QoS while keeping power low, but 
+if the h/w can't support it, we let it run at highest performance and 
+call it "best effort".
+
+>> This decision is both QoS and PM related.  Without summation, the 'max'
+>> request is still 10Mb/s so you would keep the lower power state.  But
+>> you also know that none of the clients will get their requested rate.
+>>
+>> There's some gray area here since there is a choice.  Was the point
+>> of the request to keep the NIC at the *power-state* needed for 10Mb/s (a
+>> PM request) or was the request saying the app wanted at least 10Mb/s (a
+>> QoS request.)  
 > 
-> > On Tue, 2010-08-31 at 17:51 -0400, Chase Douglas wrote:
-> >> On Tue, 2010-08-31 at 23:39 +0200, Henrik Rydberg wrote:
-> >>> On 08/31/2010 11:27 PM, Chase Douglas wrote:
-> >>>
-> >>>> On Tue, 2010-08-31 at 23:18 +0200, Henrik Rydberg wrote:
-> >>>>> On 08/31/2010 11:16 PM, Chase Douglas wrote:
-> >>>>>
-> >>>>>> On Tue, 2010-08-31 at 23:06 +0200, Henrik Rydberg wrote:
-> >>>>>>> On 08/31/2010 10:58 PM, Chase Douglas wrote:
-> >>>>>>>
-> >>>>>>>> On Tue, 2010-08-31 at 22:34 +0200, Henrik Rydberg wrote:
-> >>>>>>>>> On 08/31/2010 08:41 PM, Chase Douglas wrote:
-> >>>>>>>>>
-> >>>>>>>>>> The Magic Mouse device is very precise. No driver filtering of input
-> >>>>>>>>>> data needs to be performed.
-> >>>>>>>>>>
-> >>>>>>>>>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> >>>>>>>>>> Acked-by: Michael Poole <mdpoole@troilus.org>
-> >>>>>>>>>> ---
-> >>>>>>>>>
-> >>>>>>>>>
-> >>>>>>>>> I am still not sure this is a good idea. Bandwidth from MT devices is a big
-> >>>>>>>>> deal. A statement roughly how much data comes out of mtdev (which does the
-> >>>>>>>>> filtering for type A devices) before and after this change would be reassuring.
-> >>>>>>>>
-> >>>>>>>> As it is right now, hid-magicmouse doesn't support MT slots. I think all
-> >>>>>>>> the fuzz code ends up comparing in the MT case is between one touch and
-> >>>>>>>> another touch, not between one touch's current location and its previous
-> >>>>>>>> location. If I'm correct, then it means a fuzz > 0 is incorrect for
-> >>>>>>>> non-slotted MT devices.
-> >>>>>>>>
-> >>>>>>>> In fact, the code in drivers/input/input.c around line 194 looks like it
-> >>>>>>>> discards defuzzing in this case, so one could say this patch is making
-> >>>>>>>> things more correct :).
-> >>>>>>>
-> >>>>>>>
-> >>>>>>> For type A devices, the filtering is performed in userspace, in mtdev, in the
-> >>>>>>> same manner as it would have been performed in the kernel in the MT slot case.
-> >>>>>>> Therefore, knowing the amount of messages coming out of mtdev is a direct
-> >>>>>>> measurement of the effect of filtering.
-> >>>>>>
-> >>>>>> Yes, but we're only interested in the kernel driver when reviewing this
-> >>>>>> patch. Leaving the fuzz in as it is has no effect right now on ABS_MT_*
-> >>>>>> axes. On the other axes, such as the touch orientation, it's probably
-> >>>>>> more harmful than good.
-> >>>>>
-> >>>>>
-> >>>>> "We" are interested in knowing if this patch makes any sense, given that
-> >>>>> filtering is in actuality performed in userspace, and thus modifying this code
-> >>>>> changes the stream rate into userspace applications, thank you.
-> >>>>
-> >>>> Because in-kernel defuzzing is turned off for ABS_MT_* axes on
-> >>>> non-slotted MT devices, there will be no change in the number of events
-> >>>> sent to the userspace due to this patch.
-> >>>>
-> >>>> Maybe I'm missing something more fundamental. In which case, I'll need
-> >>>> more details to get it through my dense skull :).
-> >>>
-> >>>
-> >>> All events passes through to mtdev, yes, but mtdev filters a considerable amount
-> >>> of events from passing through to X drivers like evdev. Thus, the fuzz values
-> >>> reported in the kernel driver impacts the performance in userspace, even if
-> >>> filtering is not done in the kernel.
-> >>
-> >> My disconnect was that I didn't understand that the fuzz value in the
-> >> kernel is exported to userspace. I thought the defuzzing in mtdev was
-> >> independent of the defuzzing in the kernel.
-> >>
-> >> Basically, I don't feel I have the time to do the analysis you want
-> >> right now. If you really want, I can just remove this change.
-> > 
-> > On second thought, if there's no jitter from the device, the only reason
-> > to filter is to save bandwidth. The magicmouse devices are very verbose
-> > strictly because they have a higher resolution than most devices. If
-> > that's an issue for userspace, then the filtering should be based on the
-> > resolution. In fact, I see that's what you do in mtdev when the
-> > in-kernel fuzz is 0.
-> > 
-> > This separates the kernel fuzz into a removal of jitter, and the mtdev
-> > fuzz into a dampening of the number of events passed to clients. Since
-> > magicmouse devices have no discernable jitter, shouldn't we set the
-> > in-kernel fuzz to 0 and let mtdev do its thing as appropriate?
-> 
-> 
-> Per-driver data is more precise than a generic value for all devices. This
-> thread has documented the details of why there is an interest in the fuzz
-> values. Skipping the patch until MT slots are implemented or measurements can be
-> done might be the most sensible thing to do.
+> I need to think on this a bit.  You are correct, and it looks like we
+> could use both types of interfaces.
 
-Yes, there's still per-driver fuzz data. If a device is jittery it makes
-sense to set the in-kernel fuzz factor to a reasonable value. If a
-device is not jittery, I don't see a need to do any defuzzing of the
-values in the driver itself. If we think it's necessary to reduce
-bandwidth, then the kernel should be defuzzing uniformly across devices
-to compensate. mtdev could do this defuzzing for bandwidth uniformly
-too.
+I'm not sure having both interfaces would work. Should a single client 
+be allowed to keep the *power state* to what's needed for 10Mb/s? What 
+happens if another client votes with "I need at least 20Mb/s"?
 
-As it is, this driver just has an arbitrary value that is not used in
-the kernel and likely hasn't ever been used anywhere outside of mtdev. I
-think it makes sense to reset the fuzz to the baseline of 0 and fix it
-later if we find it's necessary. Otherwise we're just codifying an
-arbitrary value.
+I think the "limit max power-state to X" should be a specific to each PM 
+QoS parameter (not its clients) similar to how scaling_max_freq works 
+for CPU freq and is not set by each client (process - it uses the CPU).
 
--- Chase
+So, will be be adding a system bus thruput parameter? Is it going to 
+have min comparator for now?
 
+Btw, Mark, I'm a he. Not a she :-)
+
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
