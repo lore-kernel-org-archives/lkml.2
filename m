@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab0HaSKR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 14:10:17 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:43217 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754710Ab0HaSKP (ORCPT
+	id S1754805Ab0HaSK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 14:10:26 -0400
+Received: from ppsw-30.csi.cam.ac.uk ([131.111.8.130]:55688 "EHLO
+	ppsw-30.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab0HaSKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 14:10:15 -0400
-To: linux-fsdevel@vger.kernel.org
-Subject: [PATCH] [RFC] [resend] isofs: work-around for Rock Ridge+Joliet CDs with empty ISO root directory
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Tue, 31 Aug 2010 20:10:09 +0200
+	Tue, 31 Aug 2010 14:10:22 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C7D46A1.7070101@jic23.retrosnub.co.uk>
+Date: Tue, 31 Aug 2010 19:14:57 +0100
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100830 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Felipe Balbi <me@felipebalbi.com>, Hemanth V <hemanthv@ti.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "igor.stoppa@nokia.com" <igor.stoppa@nokia.com>,
+        "kai.svahn@nokia.com" <kai.svahn@nokia.com>,
+        "matthias.nyman@nokia.com" <matthias.nyman@nokia.com>,
+        =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2] input:
+ CMA3000 Accelerometer driver)
+References: <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com> <20100830214025.2f9677a1@lxorguk.ukuu.org.uk> <20100830204412.GA28711@core.coreip.homeip.net> <AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com> <20100830214355.GB28865@core.coreip.homeip.net> <AANLkTinPConD62Ky7mvMn2ZgS=V9+Q5YUdaF5Vma8mn+@mail.gmail.com> <20100830224352.GF28865@core.coreip.homeip.net> <20100831104446.321fd4f4@lxorguk.ukuu.org.uk> <20100831161730.GA30947@core.coreip.homeip.net> <20100831175937.70a59a91@lxorguk.ukuu.org.uk> <20100831170923.GB30947@core.coreip.homeip.net> <AANLkTi=G0m-kdET6PevFmw4DBkha1yG+FiqmiXUvdSnK@mail.gmail.com>
+In-Reply-To: <AANLkTi=G0m-kdET6PevFmw4DBkha1yG+FiqmiXUvdSnK@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008312010.10667.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a CD has both Rock Ridge and Joliet extensions and the ISO root directory
-is empty, no files are visible. Disable Rock Ridge extensions in this case and
-use Joliet root directory instead.
+On 08/31/10 18:24, Mohamed Ikbel Boulabiar wrote:
+> IMHO I think sensors no more can be considered as non-input-devices.
+> Things changed too much in recent years. Input "sources" have now a
+> very different use as before (smartphones, Tablets and handheld
+> devices...)
+> They all have much inputs that come mostly from sensors.
+> 
+> So the definition of an input device is something that the user can
+> interact on it ?
+Sadly it is no where near as clean a definition as we would like.
+There are too many fuzzy regions.  Lots of the devices are used for
+both consumer devices and for other forms of high end input.  A lot
+of consumer devices use general purpose ADCs at a tiny percentage of
+their maximum data rates because they are cheap and standard.
+> Maybe we should consider input devices to be made from 1 to N sensors
+> with some filtering blocks which only expose the useful data.
+That's what you get via input (to a certain extent).  But a lot of what
+people want in applications is derived data and some of the algorithms
+to do that are very complex and certainly should not be in the kernel.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Again this may be a case for using uinput to push your derived data back
+into kernel space.  (Did I mention that I rather like uinput now I've
+started playing with it :)
+> 
+> If we think like this an input device can be made from sub parts which
+> can be bare sensors. (Many sensors are exposed as
+> Human.Interface.Devices which are mainly input devices)
+HID is just fine if the aggregation is nicely handled by a separate
+processor on the device (which is what is actually happening). It
+is large, messy and an enormous number of devices abuse it for things
+that aren't input.  They have exactly the same issue that Dmitry
+is trying to avoid.  Just because you can use an interface to handle
+your data, doesn't make it the right thing to do!
 
---- linux-2.6.35-rc2/fs/isofs/inode.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc3/fs/isofs/inode.c	2010-08-24 22:43:26.000000000 +0200
-@@ -549,6 +549,34 @@ static unsigned int isofs_get_last_sessi
- }
- 
- /*
-+ * Check if root directory is empty (has less than 3 files).
-+ *
-+ * Used to detect broken CDs where ISO root directory is empty but Joliet root
-+ * directory is OK. If such CD has Rock Ridge extensions, they will be disabled
-+ * (and Joliet used instead) or else no files would be visible.
-+ */
-+static bool rootdir_empty(struct super_block *sb, unsigned long block)
-+{
-+	int offset, files, de_len;
-+	struct iso_directory_record *de;
-+	struct buffer_head *bh;
-+
-+	bh = sb_bread(sb, block);
-+	if (!bh)
-+		return true;
-+	while (files < 3) {
-+		de = (struct iso_directory_record *) (bh->b_data + offset);
-+		de_len = *(unsigned char *) de;
-+		if (de_len == 0)
-+			break;
-+		files++;
-+		offset += de_len;
-+	}
-+	brelse(bh);
-+	return files < 3;
-+}
-+
-+/*
-  * Initialize the superblock and read the root inode.
-  *
-  * Note: a check_disk_change() has been done immediately prior
-@@ -842,6 +870,18 @@ root_found:
- 		goto out_no_root;
- 
- 	/*
-+	 * Fix for broken CDs with Rock Ridge and empty ISO root directory but
-+	 * correct Joliet root directory.
-+	 */
-+	if (sbi->s_rock == 1 && joliet_level &&
-+				rootdir_empty(s, sbi->s_firstdatazone)) {
-+		printk(KERN_NOTICE
-+			"ISOFS: primary root directory is empty. "
-+			"Disabling Rock Ridge and switching to Joliet.");
-+		sbi->s_rock = 0;
-+	}
-+
-+	/*
- 	 * If this disk has both Rock Ridge and Joliet on it, then we
- 	 * want to use Rock Ridge by default.  This can be overridden
- 	 * by using the norock mount option.  There is still one other
+Hence HID is a very nice illustration in lots of ways ;)
 
-
-
--- 
-Ondrej Zary
+Jonathan
