@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab0HaUbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 16:31:11 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52286 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab0HaUbK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 16:31:10 -0400
+	id S1755494Ab0HaUcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 16:32:11 -0400
+Received: from n4.bullet.mail.gq1.yahoo.com ([67.195.9.84]:43457 "HELO
+	n4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753602Ab0HaUcJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 16:32:09 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 30553.22862.bm@omp119.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Orbog6ySMm3xnGpzs0C4riBCxceiz+xWAm6r6U6YtCdfumFgBjWG8hE+EvTR0XGBHqWe+CqShHRCX4LCmpZJJuDiCn2arTqHm7WAyCS9GrGuKIk8MBmba44fS899jg+wnn/I41X7+Ao7CBK/6i4MM6rAF0hI/mQlv4NRWoyDhJU=;
+Message-ID: <755774.85376.qm@web180301.mail.gq1.yahoo.com>
+X-YMail-OSG: tDIW5cwVM1nfdZffD2FMGViUG.l_Sbcf97NkyiBMDX2Q48G
+ FAyUDf0NIdjWnVTlGyPQgbNlX5PaH.i_zMMfok.GAXSXaatbTiz08z.0qQaZ
+ B4UG8_ZIKgXY9LzEDbDU9anCd0LTmCSpDHEIYibcrARGsFE.J5ZoNMAYydr0
+ Gb95qiM_bSLtKABELoFVfUjg.DlPp5pKk8gFnGMe0GZzKEsFqwNb9.oMkhEk
+ mP1NBuMvaVFxsDj3of8jXmovziqgQHy6MzKph6cy9yPOF5JR4qWYgDoEfbkR
+ 8.0CZD6jZKr5r.wImmXv8i38sAwSn8QieS48qJ.zZUGgOrFzDjPVHxM0Tlg-
+ -
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Tue, 31 Aug 2010 13:32:08 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH v5] gpio: Add driver for basic memory-mapped GPIO controllers
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100831175839.GA32468@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008301114460.10316@router.home>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
-	<1281374816-904-4-git-send-email-ngupta@vflare.org>
-	<alpine.DEB.2.00.1008301114460.10316@router.home>
-Date: Tue, 31 Aug 2010 16:31:08 -0400
-Message-ID: <AANLkTikdhnr12uU8Wp60BygZwH770RBfxyfLNMzUsQje@mail.gmail.com>
-Subject: Re: [PATCH 03/10] Use percpu stats
-From: Nitin Gupta <ngupta@vflare.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 12:20 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 9 Aug 2010, Nitin Gupta wrote:
->
->> -static void zram_stat_inc(u32 *v)
->> +static void zram_add_stat(struct zram *zram,
->> +                     enum zram_stats_index idx, s64 val)
->>  {
->> -     *v = *v + 1;
->> +     struct zram_stats_cpu *stats;
->> +
->> +     preempt_disable();
->> +     stats = __this_cpu_ptr(zram->stats);
->> +     u64_stats_update_begin(&stats->syncp);
->> +     stats->count[idx] += val;
->> +     u64_stats_update_end(&stats->syncp);
->> +     preempt_enable();
->
-> Maybe do
->
-> #define zram_add_stat(zram, index, val)
->                this_cpu_add(zram->stats->count[index], val)
->
-> instead? It creates an add in a single "atomic" per cpu instruction and
-> deals with the fallback scenarios for processors that cannot handle 64
-> bit adds.
->
->
 
-Yes, this_cpu_add() seems sufficient. I can't recall why I used u64_stats_*
-but if it's not required for atomic access to 64-bit then why was it added to
-the mainline in the first place?
+> 
+> +static int bgpio_dir_in(struct gpio_chip *gc, unsigned int
+> gpio)
+> +{
+> +    return 0;
 
-Thanks,
-Nitin
+
+Here -EINVAL is more correct there than 0 ...
+
+
