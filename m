@@ -1,113 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab0HaGnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 02:43:00 -0400
-Received: from www84.your-server.de ([213.133.104.84]:60126 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab0HaGm6 (ORCPT
+	id S932168Ab0HaGrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 02:47:42 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34085 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755998Ab0HaGrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 02:42:58 -0400
-Subject: Re: [PATCH] Add quick erase format option
-From: Stefani Seibold <stefani@seibold.net>
-To: dedekind1@gmail.com
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Enzinger, Robert (EXT-Other - DE/Munich)" 
-	<robert.enzinger.ext@nsn.com>
-In-Reply-To: <1283081435.2131.24.camel@brekeke>
-References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
-	 <1281343038.12908.25.camel@localhost>
-	 <1281343974.18398.13.camel@wall-e.seibold.net>
-	 <1281353344.2332.8.camel@brekeke>
-	 <1281362069.20181.16.camel@wall-e.seibold.net>
-	 <1283081435.2131.24.camel@brekeke>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 31 Aug 2010 08:42:58 +0200
-Message-ID: <1283236978.6083.28.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Tue, 31 Aug 2010 02:47:41 -0400
+Message-ID: <004101cb48d8$67e1acd0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Grant Likely" <grant.likely@secretlab.ca>
+Cc: "Thomas Gleixner" <tglx@linutronix.de>, <meego-dev@meego.com>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+References: <4C77BD91.9070302@dsn.okisemi.com> <AANLkTikwZ1CHxup29nEPg9Jobz5B9SC5AftWorwWhUC9@mail.gmail.com> <alpine.LFD.2.00.1008272046410.2768@localhost.localdomain> <AANLkTimsPE2dpVdTNZXR-Yx0fX93Wk_vQDpFJc4xSaTX@mail.gmail.com> <001401cb4814$fb4bdd70$66f8800a@maildom.okisemi.com> <AANLkTikpj6Q6QjFn4S9cYfBiKbMNQB_N2ptHEAvfW0wb@mail.gmail.com> <001501cb48ae$262d8d60$66f8800a@maildom.okisemi.com> <AANLkTi=Q_16S4+AGk=BjiKHZjjeon=-OmPz4QKmRZ+h2@mail.gmail.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+Date: Tue, 31 Aug 2010 15:47:38 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 29.08.2010, 14:30 +0300 schrieb Artem Bityutskiy:
-> On Mon, 2010-08-09 at 15:54 +0200, Stefani Seibold wrote:
+----- Original Message ----- 
+From: "Grant Likely" <grant.likely@secretlab.ca>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Thomas Gleixner" <tglx@linutronix.de>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
+Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
+<morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Sent: Tuesday, August 31, 2010 3:03 PM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
 
-> > As you can see this is 296.818s vs. 7.524 or 40 times faster.
-> > 
-> > Maybe i do something wrong, but i have no idea. Can u explain it to me?
-> 
-> No, it is ok. The only thing I do not really like is the name of the
-> option and the fact that you still read the beginning of PEBs and check
-> for 0xFFs. And if you hit a PEB with non-0xFF, you erase it, for other
-> PEBs you skip the erasure - this is error prone, because if you have one
-> PEB with non-FF data, then you may have PEBs with 0xFFs at the beginning
-> and garbage at the end, and you will not catch these.
-> 
-> I would like to change the option name so that it would reflect the
-> exact use-case we are creating it for: wiped out flash. So I'd be
-> happier with something like --pristine-flash.
 
-"Pristine" is not a word which non native speaker have in its
-vocabulary. Quick-format is the best, because it is exactly what it is
-doing. But if you prefer this, you are okay be me.
+> On Mon, Aug 30, 2010 at 7:45 PM, Masayuki Ohtake
+> <masa-korg@dsn.okisemi.com> wrote:
+> > ----- Original Message -----
+> >> From: "Grant Likely" <grant.likely@secretlab.ca>
+> >> To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+> >> Cc: "Thomas Gleixner" <tglx@linutronix.de>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
+> > Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+> > <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
+> > <morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+> >> Sent: Tuesday, August 31, 2010 3:23 AM
+> >> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+> >>
+> >>
+> >> On Mon, Aug 30, 2010 at 1:28 AM, Masayuki Ohtake
+> >> <masa-korg@dsn.okisemi.com> wrote:
+> >> > ----- Original Message -----
+> >> > From: "Grant Likely" <grant.likely@secretlab.ca>
+> >> > To: "Thomas Gleixner" <tglx@linutronix.de>
+> >> > Cc: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>;
+> > "David
+> >> > Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+> >> > <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
+> >> > <morinaga526@dsn.okisemi.com>; "David Woodhouse" <dwmw2@infradead.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+> >> > Sent: Saturday, August 28, 2010 4:20 AM
+> >> > Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+> >> >
+> >> >
+> >> >> On Fri, Aug 27, 2010 at 12:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >> >> > B1;2401;0cOn Fri, 27 Aug 2010, Grant Likely wrote:
+> >> >> >> [cc'ing Thomas Gleixner and David Woodhouse since this driver needs to
+> >> >> >> get some data about the platform (to know what spi_devices are
+> >> >> >> present) and I don't know how that is handled for x86 SoCs.]
+> >> >> >
+> >> >> > The best way to do all this platform specific configuration is to use
+> >> >> > device tree. I really don't want to have x86/mach-xyz/board[A-Z]
+> >> >> > horror, which is unavoidable when we don't get a sensible way to
+> >> >> > configure the boards.
+> >> >>
+> >> >> I knew you were going to say that! :-)
+> >> >>
+> >> >> Ohtak-san, for this patch I'd like you to drop the separate driver
+> >> >> that only registers the spi_devices and just submit the core driver.
+> >> >
+> >> > Sorry, I can't follow your discussion by lack of SPI knowledge.
+> >> > Which the above mean that "spi_register_board_info" moves to our spi_pch or
+> >> > delete for our driver ?
+> >>
+> >> I mean remove drivers/spi/spi_pch_device.c and the related Kconfig
+> >> bits from this patch.
+> >> The spi_device registration is a separate task
+> >> which should be submitted in a separate patch, and would be better
+> >> handled in either platform support code or with a device tree.
+> >
+> > How should we register spi_device information ?
+> > Could you show reference driver ?
+>
+> Well, to start with, the registration code currently in
+> spi_pch_device.c is probably pretty much unusable for any platform
+> other than the development board that you're working on.  Every
+> machine using the topcliff chip will have a different set of spi
+> devices attached to the bus.  So, you'll need a method for having a
+> different set of registrations depending on the machine.
+>
+> Traditionally with ARM systems, there is a separate .c file for each
+> machine (see arch/arm/mach-*/*.c) which registers the expected
+> devices.  In PowerPC the spi devices are described in a device tree
+> file (arch/powerpc/boot/dts/*) which the kernel will parse and
+> register the devices it finds.  x86 doesn't support either approach
+> because traditionally the kernel is either able to detect the
+> hardware, or it can get information from the BIOS (which doesn't work
+> for embedded x86).
+>
+> The x86 maintainers want to adopt the device tree approach for
+> describing devices.  Using device tree data in an spi bus driver is
+> easy.  All that is required is to supply the of_node pointer to the
+> spi bus before registering it.  Search for 'of_node' in
+> drivers/spi/mpc52xx_spi.c for an example.  However, device tree
+> support is not yet available for x86, so there is still some
+> development that needs to be done.
+>
+> Regardless, the topcliff spi driver can still be merged into mainline
+> without the spi_device registration code, and you can keep your
+> personal copy of spi_pch_device.c for testing while the details about
+> device tree support for x86 get worked out.
+>
+> g.
+>
+Hi Grant,
 
-> 
-> Also, I think you should not read the beginning of the flash and check
-> for 0xFFs. If the user gave us this option, he knows what he is doing
-> and we can trust him, so no need to read and check, assume all PEBs are
-> pristine (contain 0xFFs).
-> 
+Thank you very much.
+I could understand well.
 
-The user never knows what he is doing, believe me that is what live
-teach me. This is a kind of defensive programming.
+Can I post our SPI patch for Topcliff without 'of_node' code and spi_device registration code?
 
-> > No, we only initialize the flash, mount it as UBIFS and copy files.
-> 
-> OK. But did you consider to pre-create the image with ubinize and
-> mkfs.ubifs tools and just flash the raw image in production? This is the
-> fastest possible way.
-> 
-
-This did not work in our NSN transport environment. It would take to
-much time to explain why, because the PCU software managment server is a
-10 year old application which handles a wide range of transport boards
-in the same way, including the old JFFS2 systems and the new UBIFS based
-boards.
- 
-> > > So I think it is better to add an --pristine-flash option, or something
-> > > like this. In this case ubiformat won't erase anything, and will assume
-> > > everything is 0xFFed without reading. This should be faster and I think
-> > > is better to do.
-> > > 
-> > 
-> > This patch assumes nothing, it will skip the erase of the PEB if all
-> > bytes in the EC header are 0xff. I think this is safer than your
-> > suggestion.
-> 
-> It does assume that if the beginning of the flash contains 0xFFs then it
-> is safe to treat it as erased. Instead, I think you should just trust
-> the user and not even check the beginning of the flash. And this will be
-> also faster.
-> 
-
-Never trust the user. And why should we remove this check? The coast is
-very minimal and it will make live much easier.
-
-For example: In our production environment everything is automated by
-scripts, so the software bring up did not know if the flash is already
-erased or not. It is possible that an broken used board is returned into
-the production after it was repaired.
-
-What you assume is that the user or the scripts does know the status of
-the flash, but this is not true in real production environment, where
-thousands of boards are prepared.
-
-Stefani
+Thanks, Ohtake(OKISemi)
 
 
