@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab0HaRh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 13:37:57 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:53302 "EHLO gir.skynet.ie"
+	id S1754518Ab0HaRh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 13:37:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53292 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458Ab0HaRhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753441Ab0HaRhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Aug 2010 13:37:40 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -15,9 +15,9 @@ Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct reclaim allocation fails
-Date: Tue, 31 Aug 2010 18:37:37 +0100
-Message-Id: <1283276257-1793-4-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 2/3] mm: page allocator: Calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
+Date: Tue, 31 Aug 2010 18:37:36 +0100
+Message-Id: <1283276257-1793-3-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283276257-1793-1-git-send-email-mel@csn.ul.ie>
 References: <1283276257-1793-1-git-send-email-mel@csn.ul.ie>
@@ -25,69 +25,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When under significant memory pressure, a process enters direct reclaim
-and immediately afterwards tries to allocate a page. If it fails and no
-further progress is made, it's possible the system will go OOM. However,
-on systems with large amounts of memory, it's possible that a significant
-number of pages are on per-cpu lists and inaccessible to the calling
-process. This leads to a process entering direct reclaim more often than
-it should increasing the pressure on the system and compounding the problem.
+Ordinarily watermark checks are based on the vmstat NR_FREE_PAGES as
+it is cheaper than scanning a number of lists. To avoid synchronization
+overhead, counter deltas are maintained on a per-cpu basis and drained both
+periodically and when the delta is above a threshold. On large CPU systems,
+the difference between the estimated and real value of NR_FREE_PAGES can be
+very high.  If NR_FREE_PAGES is much higher than number of real free page
+in buddy, the VM can allocate pages below min watermark, at worst reducing
+the real number of pages to zero.  Even if the OOM killer kills some victim
+for freeing memory, it may not free memory if the exit path requires a new
+page resulting in livelock.
 
-This patch notes that if direct reclaim is making progress but
-allocations are still failing that the system is already under heavy
-pressure. In this case, it drains the per-cpu lists and tries the
-allocation a second time before continuing.
+This patch introduces zone_nr_free_pages() to take a slightly more accurate
+estimate of NR_FREE_PAGES while kswapd is awake. The estimate is not perfect
+and may result in cache line bounces but is expected to be lighter than the
+IPI calls necessary to continually drain the per-cpu counters while kswapd
+is awake.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/page_alloc.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+ include/linux/mmzone.h |   13 +++++++++++++
+ mm/mmzone.c            |   29 +++++++++++++++++++++++++++++
+ mm/page_alloc.c        |    4 ++--
+ mm/vmstat.c            |   15 ++++++++++++++-
+ 4 files changed, 58 insertions(+), 3 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bbaa959..750e1dc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1847,6 +1847,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	struct page *page = NULL;
- 	struct reclaim_state reclaim_state;
- 	struct task_struct *p = current;
-+	bool drained = false;
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 6e6e626..3984c4e 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -284,6 +284,13 @@ struct zone {
+ 	unsigned long watermark[NR_WMARK];
  
- 	cond_resched();
- 
-@@ -1865,14 +1866,25 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 
- 	cond_resched();
- 
--	if (order != 0)
--		drain_all_pages();
-+	if (unlikely(!(*did_some_progress)))
-+		return NULL;
- 
--	if (likely(*did_some_progress))
--		page = get_page_from_freelist(gfp_mask, nodemask, order,
-+retry:
-+	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
- 					alloc_flags, preferred_zone,
- 					migratetype);
+ 	/*
++	 * When free pages are below this point, additional steps are taken
++	 * when reading the number of free pages to avoid per-cpu counter
++	 * drift allowing watermarks to be breached
++	 */
++	unsigned long percpu_drift_mark;
 +
 +	/*
-+	 * If an allocation failed after direct reclaim, it could be because
-+	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 */
-+	if (!page && !drained) {
-+		drain_all_pages();
-+		drained = true;
-+		goto retry;
-+	}
-+
- 	return page;
+ 	 * We don't know if the memory that we're going to allocate will be freeable
+ 	 * or/and it will be released eventually, so to avoid totally wasting several
+ 	 * GB of ram we must reserve some of the lower zone memory (otherwise we risk
+@@ -441,6 +448,12 @@ static inline int zone_is_oom_locked(const struct zone *zone)
+ 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
  }
  
++#ifdef CONFIG_SMP
++unsigned long zone_nr_free_pages(struct zone *zone);
++#else
++#define zone_nr_free_pages(zone) zone_page_state(zone, NR_FREE_PAGES)
++#endif /* CONFIG_SMP */
++
+ /*
+  * The "priority" of VM scanning is how much of the queues we will scan in one
+  * go. A value of 12 for DEF_PRIORITY implies that we will scan 1/4096th of the
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index f5b7d17..69ecbe9 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -87,3 +87,32 @@ int memmap_valid_within(unsigned long pfn,
+ 	return 1;
+ }
+ #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
++
++#ifdef CONFIG_SMP
++/* Called when a more accurate view of NR_FREE_PAGES is needed */
++unsigned long zone_nr_free_pages(struct zone *zone)
++{
++	unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
++
++	/*
++	 * While kswapd is awake, it is considered the zone is under some
++	 * memory pressure. Under pressure, there is a risk that
++	 * per-cpu-counter-drift will allow the min watermark to be breached
++	 * potentially causing a live-lock. While kswapd is awake and
++	 * free pages are low, get a better estimate for free pages
++	 */
++	if (nr_free_pages < zone->percpu_drift_mark &&
++			!waitqueue_active(&zone->zone_pgdat->kswapd_wait)) {
++		int cpu;
++
++		for_each_online_cpu(cpu) {
++			struct per_cpu_pageset *pset;
++
++			pset = per_cpu_ptr(zone->pageset, cpu);
++			nr_free_pages += pset->vm_stat_diff[NR_FREE_PAGES];
++		}
++	}
++
++	return nr_free_pages;
++}
++#endif /* CONFIG_SMP */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 97d74a0..bbaa959 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1462,7 +1462,7 @@ int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+ {
+ 	/* free_pages my go negative - that's OK */
+ 	long min = mark;
+-	long free_pages = zone_page_state(z, NR_FREE_PAGES) - (1 << order) + 1;
++	long free_pages = zone_nr_free_pages(z) - (1 << order) + 1;
+ 	int o;
+ 
+ 	if (alloc_flags & ALLOC_HIGH)
+@@ -2424,7 +2424,7 @@ void show_free_areas(void)
+ 			" all_unreclaimable? %s"
+ 			"\n",
+ 			zone->name,
+-			K(zone_page_state(zone, NR_FREE_PAGES)),
++			K(zone_nr_free_pages(zone)),
+ 			K(min_wmark_pages(zone)),
+ 			K(low_wmark_pages(zone)),
+ 			K(high_wmark_pages(zone)),
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index f389168..696cab2 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -138,11 +138,24 @@ static void refresh_zone_stat_thresholds(void)
+ 	int threshold;
+ 
+ 	for_each_populated_zone(zone) {
++		unsigned long max_drift, tolerate_drift;
++
+ 		threshold = calculate_threshold(zone);
+ 
+ 		for_each_online_cpu(cpu)
+ 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+ 							= threshold;
++
++		/*
++		 * Only set percpu_drift_mark if there is a danger that
++		 * NR_FREE_PAGES reports the low watermark is ok when in fact
++		 * the min watermark could be breached by an allocation
++		 */
++		tolerate_drift = low_wmark_pages(zone) - min_wmark_pages(zone);
++		max_drift = num_online_cpus() * threshold;
++		if (max_drift > tolerate_drift)
++			zone->percpu_drift_mark = high_wmark_pages(zone) +
++					max_drift;
+ 	}
+ }
+ 
+@@ -813,7 +826,7 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
+ 		   "\n        scanned  %lu"
+ 		   "\n        spanned  %lu"
+ 		   "\n        present  %lu",
+-		   zone_page_state(zone, NR_FREE_PAGES),
++		   zone_nr_free_pages(zone),
+ 		   min_wmark_pages(zone),
+ 		   low_wmark_pages(zone),
+ 		   high_wmark_pages(zone),
 -- 
 1.7.1
 
