@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478Ab0HaBHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 21:07:38 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37720 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755925Ab0HaBHg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 21:07:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Michael Rubin <mrubin@google.com>
-Subject: Re: [PATCH 4/4] writeback: Reporting dirty thresholds in /proc/vmstat
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        fengguang.wu@intel.com, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com, npiggin@kernel.dk,
-        hch@lst.de, axboe@kernel.dk
-In-Reply-To: <AANLkTimLwv04pvuz_AtSK3ASr-epD0PeA-vOCigFH8+0@mail.gmail.com>
-References: <20100830092446.524B.A69D9226@jp.fujitsu.com> <AANLkTimLwv04pvuz_AtSK3ASr-epD0PeA-vOCigFH8+0@mail.gmail.com>
-Message-Id: <20100831095932.87CD.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1756557Ab0HaBHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 21:07:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41187 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756539Ab0HaBHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 21:07:49 -0400
+Subject: Re: [PATCH] powerpc/kvm/e500_tlb: Fix a minor copy-paste tracing bug
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1283182719-4621-1-git-send-email-Kyle.D.Moffett@boeing.com>
+Date: Tue, 31 Aug 2010 03:07:43 +0200
+Cc: linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, Liu Yu <yu.liu@freescale.com>,
+        Kyle Moffett <kyle@moffetthome.net>
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 31 Aug 2010 10:07:32 +0900 (JST)
+Message-Id: <4B040308-883F-4A90-BEA4-034DC6B2C6A6@suse.de>
+References: <1282936005-17078-1-git-send-email-Kyle.D.Moffett@boeing.com> <1283182719-4621-1-git-send-email-Kyle.D.Moffett@boeing.com>
+To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sun, Aug 29, 2010 at 5:28 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> > afaict, you and wu agreed /debug/bdi/default/stats is enough good.
-> > why do you change your mention?
+
+On 30.08.2010, at 17:38, Kyle Moffett wrote:
+
+> The kvmppc_e500_stlbe_invalidate() function was trying to pass too many
+> parameters to trace_kvm_stlb_inval().  This appears to be a bad
+> copy-paste from a call to trace_kvm_stlb_write().
 > 
-> I commented on this in the 0/4 email of the bug. I think these belong
-> in /proc/vmstat but I saw they exist in /debug/bdi/default/stats. I
-> figure they will probably not be accepted but I thought it was worth
-> attaching for consideration of upgrading from debugfs to /proc.
+> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 
-For reviewers view, we are reviewing your patch to merge immediately if all issue are fixed.
-Then, I'm unhappy if you don't drop merge blocker item even though you merely want asking.
-At least, you can make separate thread, no?
+Thanks, applied.
 
-Of cource, wen other user also want to expose via /proc interface, we are resume
-this discusstion gradly.
-
-
+Alex
 
