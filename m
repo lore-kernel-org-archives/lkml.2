@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab0HaO45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:56:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34383 "EHLO mx1.redhat.com"
+	id S932347Ab0HaO5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:57:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2228 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932281Ab0HaO44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:56:56 -0400
-Message-ID: <4C7D1836.8000303@redhat.com>
-Date: Tue, 31 Aug 2010 10:56:54 -0400
+	id S932281Ab0HaO5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 10:57:47 -0400
+Message-ID: <4C7D1868.3090701@redhat.com>
+Date: Tue, 31 Aug 2010 10:57:44 -0400
 From: Daniel J Walsh <dwalsh@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
 MIME-Version: 1.0
@@ -90,15 +90,13 @@ On 08/31/2010 10:39 AM, Harald Hoyer wrote:
 > 
 > Is there an easy test to differentiate?
 > 
-Why is the kernel creating the devices versus telling udev to create the
-devices?
-
-You could write a hack that says don't relabel devices with MLS != s0.
+Another option would be to check the label of the containing directory
+and if they match run the lsetfilecon,  If they don't then leave it be.
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.16 (GNU/Linux)
 Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
 
-iEYEARECAAYFAkx9GDYACgkQrlYvE4MpobMBBACfen8P0i1LJjufe2Gzdi2mn+tM
-OdwAn1nHM1M34MGahwS7tNlLLpfmadcC
-=hBOX
+iEYEARECAAYFAkx9GGgACgkQrlYvE4MpobNwkgCgvzHFWYTZND+xMSukZXc1M+a0
+fC4AoNaVap4UfoOoq1U+8X7JWYqktNHy
+=TljD
 -----END PGP SIGNATURE-----
