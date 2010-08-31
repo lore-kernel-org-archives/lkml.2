@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab0HaOlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:41:00 -0400
-Received: from smtpauth.tellcom.com.tr ([92.45.6.166]:33524 "EHLO
-	smtpout2.superonline.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757491Ab0HaOlA (ORCPT
+	id S932324Ab0HaOyJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:54:09 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63881 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757512Ab0HaOyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:41:00 -0400
-Message-ID: <4C7D146E.8020601@superonline.com>
-Date: Tue, 31 Aug 2010 17:40:46 +0300
-From: "M. Vefa Bicakci" <bicave@superonline.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Icedove/3.1.2
+	Tue, 31 Aug 2010 10:54:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=C9VMPVAWboOArHyGPnU85Fxvmh9V5ILHzm3kabzu1V2sB7k0PRyHJTlJHAEgtY6THX
+         fBLIFmZcxEbfo+NuDvc3q0Xb3jHpimWYYhaSVEQiHnOmLuToTrHBDX85lVK97KYQ551H
+         xxoo5UXmfNlG3j8zN+dQgPsOfo160oCyjbZHA=
+Date: Tue, 31 Aug 2010 16:54:07 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Robert Richter <robert.richter@amd.com>,
+        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [RFC][PATCH 1/5] perf: Check if we should exclude idle thread
+	in perf_exclude_event()
+Message-ID: <20100831145405.GB5259@nowhere>
+References: <cover.1283123521.git.matt@console-pimps.org> <72c0ed93ff0b24365cc4d0a40e24efa3be3fe3df.1283123521.git.matt@console-pimps.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [Bug #16771] [Bisected Regression in 2.6.35] A full tmpfs filesystemcauses hibernationto hang
-References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.oHB.0bueMB@chimera>
-In-Reply-To: <ByD_7B96czP.A.oHB.0bueMB@chimera>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
-X-SurGATE-Result: Clean (Content eval: -2.00 points)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <72c0ed93ff0b24365cc4d0a40e24efa3be3fe3df.1283123521.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/08/10 02:13 AM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
+On Mon, Aug 30, 2010 at 01:13:43PM +0100, Matt Fleming wrote:
+> Don't open code the event check for excluding the idle thread. Instead
+> include the check in perf_exclude_event().
 > 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> ---
+>  kernel/perf_event.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
 > 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16771
-> Subject		: [Bisected Regression in 2.6.35] A full tmpfs filesystem causes hibernationto hang
-> Submitter	: M. Vefa Bicakci <bicave@superonline.com>
-> Date		: 2010-08-15 5:25 (15 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
-> Message-ID	: <4C677A49.4030904@superonline.com>
-> References	: http://marc.info/?l=linux-kernel&m=128184995401968&w=2
-> 
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 0d38f27..16b0476 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -4310,6 +4310,9 @@ static int perf_exclude_event(struct perf_event *event,
+>  
+>  		if (event->attr.exclude_kernel && !user_mode(regs))
+>  			return 1;
+> +
+> +		if (event->attr.exclude_idle && current->pid == 0)
+> +			return 1;
 
-Dear Rafael Wysocki,
 
-This regression still exists in 2.6.35.4. (I haven't tested 2.6.36-rcX
-series.) Kosaki Motohiro has kindly helped me with this issue and found
-a fix for the regression. Today I have successfully tested his patch,
-but I don't know whether the patch needs to be further refined and tested.
 
-Regards,
+Right.
 
-M. Vefa Bicakci
+But one of the problems people have reported is that they can miss
+interrupts samples if they happen in idle. Hence we have decided
+that exclude_idle should exclude events that happen in idle process
+context but not in interrupts interrupting idle.
+
+So adding an in_interrupt() check would perhaps be better.
+
+I plan to do this exclusion using the per context exclusion, which is
+a patchset I have in queue. But until then, having this patch is better.
+
+
+
+>  	}
+>  
+>  	return 0;
+> @@ -4512,9 +4515,8 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
+>  	regs = get_irq_regs();
+>  
+>  	if (regs && !perf_exclude_event(event, regs)) {
+> -		if (!(event->attr.exclude_idle && current->pid == 0))
+> -			if (perf_event_overflow(event, 0, &data, regs))
+> -				ret = HRTIMER_NORESTART;
+> +		if (perf_event_overflow(event, 0, &data, regs))
+> +			ret = HRTIMER_NORESTART;
+
+
+
+But yeah if we add an in_interrupt() check in perf_exclude_event(), it
+won't work here. This one needs to check if irqs are nesting :)
+
+Bah, checking we interrupted softirqs is probably enough. I guess we
+don't care about nesting hardirqs.
+
