@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab0HaMWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 08:22:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48608 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754438Ab0HaMWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 08:22:07 -0400
-Date: Tue, 31 Aug 2010 13:22:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Daniel Mack <daniel@caiaq.de>,
-        Pierre Ossman <pierre@ossman.eu>,
-        Matt Fleming <matt@console-pimps.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Cliff Brake <cbrake@bec-systems.com>,
-        Jarkko Lavinen <jarkko.lavinen@nokia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Sundar Iyer <sundar.iyer@stericsson.com>,
-        Bengt Jonsson <bengt.jonsson@stericsson.com>,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MMC: move regulator handling closer to core
-Message-ID: <20100831122205.GI20849@rakim.wolfsonmicro.main>
-References: <1283102159-25804-1-git-send-email-linus.walleij@stericsson.com>
+	id S1757273Ab0HaMXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 08:23:19 -0400
+Received: from lucidpixels.com ([75.144.35.66]:46084 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756117Ab0HaMXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 08:23:18 -0400
+Date: Tue, 31 Aug 2010 08:23:16 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: adam radford <aradford@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+ timed out, resetting card.
+In-Reply-To: <alpine.DEB.2.00.1008310732120.5156@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1008310820350.19249@p34.internal.lan>
+References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan> <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
+ <alpine.DEB.2.00.1008310717260.4858@p34.internal.lan> <alpine.DEB.2.00.1008310732120.5156@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283102159-25804-1-git-send-email-linus.walleij@stericsson.com>
-X-Cookie: glibido:
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 29, 2010 at 07:15:59PM +0200, Linus Walleij wrote:
-> After discovering a problem in regulator reference counting I
-> took Mark Brown's advice to move the reference count into the
-> MMC core by making the regulator status a member of
-> struct mmc_host.
-> 
-> I took this opportunity to also implement NULL versions of
-> the regulator functions so as to rid the driver code from
-> some ugly #ifdef CONFIG_REGULATOR clauses.
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-A few small comments below.
+On Tue, 31 Aug 2010, Justin Piszcz wrote:
 
-> +		if (host->vcc) {
-> +			ret = mmc_regulator_set_ocr(mmc, host->vcc, ios->vdd);
-> +			if (ret)
-> +				dev_err(mmc_dev(mmc),
-> +					"could not set regulator OCR\n");
-> +		}
+>
+>
+> On Tue, 31 Aug 2010, Justin Piszcz wrote:
+>
+>> 
+>> 
+>> On Sun, 29 Aug 2010, Justin Piszcz wrote:
+>> 
+>>> On Fri, 27 Aug 2010, Justin Piszcz wrote:
+>
+> Per my earlier message, both cards were resetting, scsi0 and scsi1 under
+> kernel 2.6.35(.x), with 2.6.34, the lag problem is gone and my machine is
+> back to normal again.  It is unlikely that both cards would be at fault,
+> in addition I spent several hours trying different things, removing the BBU
+> modules for example, but always staying on the 2.6.35 kernel.
+>
+> I am now able to run rss2email (which ALWAYS caused the machine to lockup
+> and freeze until one of the controllers reset) without any problems using
+> 2.6.34.
+>
+> 2.6.34.1 = good
+> 2.6.35.x = has 3ware bug
+>
+> There appears to be a bug in the commit for the 3w-9xxx updates.
+>
+> On 2.6.34 now and no problems so far, I am continuing to test.
+>
+> http://marc.info/?l=linux-kernel&m=127419418304483&w=2
+>
+> Adam Radford (2):
+>      3ware maintainers update
+>      3w-xxxx, 3w-9xxx: force 60 second timeout
+>
+>
+> Justin.
 
-It'd be nice to display the error code as well.  I do tend to agree with
-Adrian that it might be nice to have the noop functions in the header to
-allow the optimiser to play with them as well but it's unlikely to be a
-big deal.
+
+Latest-- 2.6.34.x seems to fix the issue, no lag whatsoever, the system is
+very responsive when running rss2email, again no lag, have run 10-15 tests
+without a single incident.  I also re-enabled msi and put my optimization
+script back in init.d, everything continues to work perfectly.
+
+Will wait for Adam on what went wrong with the 2.6.35 3w-9xxx update.
+
+Justin.
+
