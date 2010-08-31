@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab0HaXCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 19:02:17 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:40181 "EHLO e1.ny.us.ibm.com"
+	id S1756075Ab0HaXGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 19:06:30 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44797 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753999Ab0HaXCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 19:02:16 -0400
-Date: Tue, 31 Aug 2010 16:02:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arjan van de Ven <arjan@infradead.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Joe Perches <joe@perches.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org,
-        ksummit-2010-discuss@lists.linux-foundation.org
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
- todo list, add RCU todo list
-Message-ID: <20100831230213.GG2421@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100826154537.GA4874@linux.vnet.ibm.com>
- <1282837904.1875.64.camel@Joe-Laptop>
- <20100826161451.GB2367@linux.vnet.ibm.com>
- <1282839933.8133.11.camel@mulgrave.site>
- <20100826092923.4bdbea69.rdunlap@xenotime.net>
- <20100826093838.74ab9958@infradead.org>
- <1283275388.1377.216.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283275388.1377.216.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753970Ab0HaXG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 19:06:29 -0400
+Subject: Re: [PATCH 01/10] Replace ioctls with sysfs interface
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1281374816-904-2-git-send-email-ngupta@vflare.org>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+	 <1281374816-904-2-git-send-email-ngupta@vflare.org>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 31 Aug 2010 16:06:23 -0700
+Message-ID: <1283295983.7023.77.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 01:23:08PM -0400, Steven Rostedt wrote:
-> On Thu, 2010-08-26 at 09:38 -0700, Arjan van de Ven wrote:
+On Mon, 2010-08-09 at 22:56 +0530, Nitin Gupta wrote:
+> Creates per-device sysfs nodes in /sys/block/zram<id>/
+> Currently following stats are exported:
+>  - disksize
+>  - num_reads
+>  - num_writes
+>  - invalid_io
+>  - zero_pages
+>  - orig_data_size
+>  - compr_data_size
+>  - mem_used_total
 > 
-> > I have to say that I'm not yet convinced that keeping a todo list in a
-> > place that's not with the actual source code does not give me warm
-> > fuzzy feelings. Every time we've kept information about the source code
-> > separate from our source code it's been a failure; it gets out of sync
-> > fast and it just adds to the maintenance.
-> > 
-> > A git commit that both fixes an issue and removed the line from the
-> > todo file (or moves it to a "done" section, whatever) is the ultimate
-> > goal obviously... having a U: seems to go in exactly the opposite
-> > direction.
-> > 
-> > otoh having a kernel-doc type (eg structured, parsable) way of
-> > gathering todo items throughout the tree.... that I can see as useful.
+> By default, disksize is set to 0. So, to start using
+> a zram device, fist write a disksize value and then
+> initialize device by writing any positive value to
+> initstate. For example:
 > 
-> We could add a toplevel "todo/" directory, with each project file in it
-> and a list of things todo. When the todo is done, that same commit could
-> remove the todo item.
+>         # initialize /dev/zram0 with 50MB disksize
+>         echo 50*1024*1024 | bc > /sys/block/zram0/disksize
+>         echo 1 > /sys/block/zram0/initstate
 > 
-> Just a worthless thought ;-)
+> When done using a disk, issue reset to free its memory
+> by writing any positive value to reset node:
+> 
+>         echo 1 > /sys/block/zram0/reset
 
-I am with Dmitry on this one.  I really don't want to be prevented from
-updating my todo items outside of the merge window.
+Maybe I'm just a weirdo, but I don't really use modules much.  That
+effectively means that I'm stuck at boot with one zram device.
 
-Different people have different needs, so we need to accommodate todo
-lists both within and outside the kernel source tree.
+Making it a read-only module param also means that someone can't add a
+second at runtime while the first is still in use.
 
-							Thanx, Paul
+It doesn't seem to be used very pervasively, but there is a
+module_param_cb() function so you can register callbacks when the param
+gets updated.  Might come in handy for this.
+
+-- Dave
+
