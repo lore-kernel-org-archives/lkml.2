@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab0HaOj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 10:39:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757474Ab0HaOjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 10:39:25 -0400
-Message-ID: <4C7D141A.9060102@redhat.com>
-Date: Tue, 31 Aug 2010 16:39:22 +0200
-From: Harald Hoyer <harald@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
+	id S1757520Ab0HaOlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 10:41:00 -0400
+Received: from smtpauth.tellcom.com.tr ([92.45.6.166]:33524 "EHLO
+	smtpout2.superonline.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757491Ab0HaOlA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 10:41:00 -0400
+Message-ID: <4C7D146E.8020601@superonline.com>
+Date: Tue, 31 Aug 2010 17:40:46 +0300
+From: "M. Vefa Bicakci" <bicave@superonline.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Icedove/3.1.2
 MIME-Version: 1.0
-To: Daniel J Walsh <dwalsh@redhat.com>
-CC: Eric Paris <eparis@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, greg@kroah.com,
-        sds@tycho.nsa.gov
-Subject: Re: selinux vs devtmpfs (vs udev)
-References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>	 <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com> <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com> <4C7CC107.1050304@redhat.com> <4C7D0DAD.9030505@redhat.com>
-In-Reply-To: <4C7D0DAD.9030505@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [Bug #16771] [Bisected Regression in 2.6.35] A full tmpfs filesystemcauses hibernationto hang
+References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.oHB.0bueMB@chimera>
+In-Reply-To: <ByD_7B96czP.A.oHB.0bueMB@chimera>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
+X-SurGATE-Result: Clean (Content eval: -2.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2010 04:11 PM, Daniel J Walsh wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 08/31/2010 04:44 AM, Harald Hoyer wrote:
->> On 08/31/2010 01:14 AM, Eric Paris wrote:
->>> On Sat, 2010-08-28 at 11:57 +0200, Kay Sievers wrote:
->>>> On Sat, Aug 28, 2010 at 01:00, Eric Paris<eparis@redhat.com>   wrote:
->>>
->>>>> In the new new days of devtmpfs things aren't as nice.  The kernel is
->>>>> magically creating files in /dev.  These are getting created with the
->>>>> 'default' SELinux context.  So herein lies the problem.
->>>>>
->>>>> The first program that tries to access these files get denied by
->>>>> SELinux.  Now udev actually has logic in it to fix the label on any
->>>>> closed device file, so udev will at that point swoop in, fix the label,
->>>>> and the next program that tries to use the file will work just
->>>>> fine.  Oh
->>>>> fun!
->>>
->>>> Udev should still label all device nodes, even when they are created
->>>> by the kernel. Devtmpfs or not should not make a difference here.
->>>>
->>>> I guess it's a udev bug introduced with:
->>>>
->>>> http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=578cc8a8085a47c963b5940459e475ac5f07219c
->>>>
->>>>
->>>> and we just need to fix that.
->>>
->>> Looks like the likely cause.  I see a note in one of the bugzillas that
->>> says:
->>>
->>> Aug 30 14:03:09 pippin udevd-work[347]: preserve file '/dev/dri/card0',
->>> because it has correct dev_t
->>>
->>> Which is certainly the part of code in question.  Do you have a quick
->>> fix in mind that you plan to push upstream or should I ask the RH udev
->>> guy to come up with something?
->>>
->>> -Eric
->>>
->>
->> The RH udev guy says:
->>
->> This patch was introduced, because Red Hat engineers requested, that the
->> selinux context should not be modified, after they set their own custom
->> context (virtual machine management).
->>
->> So, either we differentiate between "add" and "change" events, or we
->> should check against the "kernel default" selinux context, before we
->> call udev_selinux_lsetfilecon().
->>
-> So the problem is happening because the kernel creates the device rather
-> then udev, and then udev does not change the context because it can not
-> differentiate between this and libvirt putting down a label.
+On 30/08/10 02:13 AM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.34 and 2.6.35.
+> 
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16771
+> Subject		: [Bisected Regression in 2.6.35] A full tmpfs filesystem causes hibernationto hang
+> Submitter	: M. Vefa Bicakci <bicave@superonline.com>
+> Date		: 2010-08-15 5:25 (15 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
+> Message-ID	: <4C677A49.4030904@superonline.com>
+> References	: http://marc.info/?l=linux-kernel&m=128184995401968&w=2
+> 
 
-Is there an easy test to differentiate?
+Dear Rafael Wysocki,
 
+This regression still exists in 2.6.35.4. (I haven't tested 2.6.36-rcX
+series.) Kosaki Motohiro has kindly helped me with this issue and found
+a fix for the regression. Today I have successfully tested his patch,
+but I don't know whether the patch needs to be further refined and tested.
+
+Regards,
+
+M. Vefa Bicakci
