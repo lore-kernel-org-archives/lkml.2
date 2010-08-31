@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab0HaUU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 16:20:28 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:8655 "EHLO mx2.netapp.com"
+	id S1755454Ab0HaUVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 16:21:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34728 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab0HaUU1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 16:20:27 -0400
-X-IronPort-AV: E=Sophos;i="4.56,300,1280732400"; 
-   d="scan'208";a="440129510"
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-In-Reply-To: <20100831191846.GA5759@shell>
-References: <20100826183340.027591901@szeredi.hu>
-	 <20100827170551.19616048@notabene> <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
-	 <20100827213502.31af4a4c@notabene> <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu>
-	 <20100829144207.4fbf2713@notabene> <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
-	 <20100830214027.77e197f5@notabene> <E1Oq3Lz-0004D8-MP@pomaz-ex.szeredi.hu>
-	 <20100831191846.GA5759@shell>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Tue, 31 Aug 2010 16:19:47 -0400
-Message-ID: <1283285987.7914.9.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 31 Aug 2010 20:20:11.0788 (UTC) FILETIME=[EA05CCC0:01CB4949]
+	id S1754986Ab0HaUVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 16:21:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "M. Vefa Bicakci" <bicave@superonline.com>
+Subject: Re: [Bug #16771] [Bisected Regression in 2.6.35] A full tmpfs filesystemcauses hibernationto hang
+Date: Tue, 31 Aug 2010 22:19:39 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+References: <c1_O4wHrlB.A.63.mbueMB@chimera> <ByD_7B96czP.A.oHB.0bueMB@chimera> <4C7D146E.8020601@superonline.com>
+In-Reply-To: <4C7D146E.8020601@superonline.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008312219.39694.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 15:18 -0400, Valerie Aurora wrote:
-> On Mon, Aug 30, 2010 at 02:20:47PM +0200, Miklos Szeredi wrote:
-> > On Mon, 30 Aug 2010, Neil Brown wrote:
+On Tuesday, August 31, 2010, M. Vefa Bicakci wrote:
+> On 30/08/10 02:13 AM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.34 and 2.6.35.
 > > 
-> > > Val has been following that approach and asking if it is possible to make an
-> > > NFS filesystem really-truly read-only. i.e. no changes.
-> > > I don't believe it is.
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
 > > 
-> > Perhaps it doesn't matter.  The nasty cases can be prevented by just
-> > disallowing local modification.  For the rest NFS will return ESTALE:
-> > "though luck, why didn't you follow the rules?"
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16771
+> > Subject		: [Bisected Regression in 2.6.35] A full tmpfs filesystem causes hibernationto hang
+> > Submitter	: M. Vefa Bicakci <bicave@superonline.com>
+> > Date		: 2010-08-15 5:25 (15 days old)
+> > First-Bad-Commit: http://git.kernel.org/linus/bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
+> > Message-ID	: <4C677A49.4030904@superonline.com>
+> > References	: http://marc.info/?l=linux-kernel&m=128184995401968&w=2
+> > 
 > 
-> I agree: Ask the server to keep it read-only, but also detect if it
-> lied to prevent kernel bugs on the client.
+> Dear Rafael Wysocki,
 > 
-> Is detecting ESTALE and failing the mount sufficient to detect all
-> cases of a cached directory being altered?
+> This regression still exists in 2.6.35.4. (I haven't tested 2.6.36-rcX
+> series.) Kosaki Motohiro has kindly helped me with this issue and found
+> a fix for the regression. Today I have successfully tested his patch,
+> but I don't know whether the patch needs to be further refined and tested.
 
-No. Files can be altered without being unlinked.
+Thanks for the information.  Do you have a pointer to the patch?
 
->   I keep trying to trap an
-> NFS developer and beat the answer out of him but they usually get hung
-> up on the impossibility of 100% enforcement of the read-only server
-> option. (Agreed, impossible, just give the sysadmin a mount option so
-> that it doesn't happen accidentally.)
-
-Remind me again why mounting the filesystem '-oro' on the server (and
-possibly exporting it 'ro') isn't an option?
-
-Trond
+Rafael
