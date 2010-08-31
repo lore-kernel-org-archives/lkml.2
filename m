@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab0HaKfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 06:35:12 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:47240 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab0HaKfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 06:35:09 -0400
-X-SpamScore: 3
-X-BigFish: VPS3(zzbb2cK1431J1432N98dNzz1202hzz8275bh8275dhz32i2a8h5bep5bfs)
-X-WSS-ID: 0L80II0-02-42S-02
-X-M-MSG: 
-Date: Tue, 31 Aug 2010 12:30:01 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] oprofile, x86: fix init_sysfs error handling
-Message-ID: <20100831103001.GC22783@erda.amd.com>
-References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
- <1283107921-21464-2-git-send-email-will.deacon@arm.com>
- <1283107921-21464-3-git-send-email-will.deacon@arm.com>
- <1283107921-21464-4-git-send-email-will.deacon@arm.com>
- <20100830090929.GU22783@erda.amd.com>
- <1283244880.645.17.camel@e102144-lin.cambridge.arm.com>
- <20100831090518.GZ22783@erda.amd.com>
- <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
+	id S1757119Ab0HaKff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 06:35:35 -0400
+Received: from www.tglx.de ([62.245.132.106]:42924 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754068Ab0HaKfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 06:35:34 -0400
+Date: Tue, 31 Aug 2010 12:35:25 +0200
+From: "Hans J. Koch" <hjk@linutronix.de>
+To: Armin Steinhoff <armin@steinhoff.de>
+Cc: "Hans J. Koch" <hjk@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: UIO and Fedora 13  (kernel 33.6)
+Message-ID: <20100831103523.GA2598@local>
+References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com>
+ <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de>
+ <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com>
+ <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com>
+ <4C7B8CA6.4010504@steinhoff.de>
+ <20100830162435.GB2566@local>
+ <4C7CA7E4.8010005@steinhoff.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
+In-Reply-To: <4C7CA7E4.8010005@steinhoff.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.08.10 05:31:29, Will Deacon wrote:
-> > For x86 wont change the code (actually I found a bug in the init_sysfs
-> > error handler for which I will send a fix). Just wanted to get your
-> > confirmation in case I was missing something that x86 is not affected.
-> > I will apply the first 2 patches, no need to resubmit.
+On Tue, Aug 31, 2010 at 08:57:40AM +0200, Armin Steinhoff wrote:
+>  Hans J. Koch wrote:
+> >On Mon, Aug 30, 2010 at 12:49:10PM +0200, Armin Steinhoff wrote:
+> >>  Hi,
+> >>
+> >>I'm writing an UIO driver for a plain PC/104 board (ISA bus).
+> >>After insmod<my_driver_mod>  I don't see an entry of uio0 in /dev
+> >>and also no entries in /sys/class. There are no error messages at
+> >>module load.
+> >Are you sure your probe() function is called?
+>   That's the case.
 
-This is the patch, applied to:
+OK.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+> 
+> >  After a successfull
+> >uio_register_device() there is both a /dev/uioX and a directory
+> >/sys/class/uio/uioX/.
+>   Seems not be possible after a kernel ooops ...
 
--Robert
+You get an oops? What does it say?
 
---
+> >>The same happens after loading the module uio.ko and uio_pdrv.ko ...
+> >>no entries at all, no error messages.
+> >>uio_pdrv needs platform data set up somewhere, did you do that?
+> >>See docs in Documentation/DocBook/ for more details.
+> 
+>   uio_pdrv.ko was provided unmodified and precompiles by the Fedora
+> distro.
 
->From 10f0412f57f2a76a90eff4376f59cbb0a39e4e18 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Mon, 30 Aug 2010 10:56:18 +0200
-Subject: [PATCH] oprofile, x86: fix init_sysfs error handling
+That doesn't make sense. uio_pdrv/uio_pdrv_genirq both need some help
+from a board support file/driver to work.
 
-On failure init_sysfs() might not properly free resources. The error
-code of the function is not checked. And, when reinitializing the exit
-function might be called twice. This patch fixes all this.
+>   This example seems more or less incomplete ... it seems also the
+> case with the uio_pdrv_genirq example
 
-Cc: stable@kernel.org
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/oprofile/nmi_int.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+Yes, of course. It doesn't make sense for distros to ship these modules.
+Both are useful only for developers who build there own kernels and add
+the data or irq handler needed by these drivers.
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index f6b48f6..73a41d3 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -568,8 +568,13 @@ static int __init init_sysfs(void)
- 	int error;
- 
- 	error = sysdev_class_register(&oprofile_sysclass);
--	if (!error)
--		error = sysdev_register(&device_oprofile);
-+	if (error)
-+		return error;
-+
-+	error = sysdev_register(&device_oprofile);
-+	if (error)
-+		sysdev_class_unregister(&oprofile_sysclass);
-+
- 	return error;
- }
- 
-@@ -695,6 +700,8 @@ int __init op_nmi_init(struct oprofile_operations *ops)
- 	char *cpu_type = NULL;
- 	int ret = 0;
- 
-+	using_nmi = 0;
-+
- 	if (!cpu_has_apic)
- 		return -ENODEV;
- 
-@@ -774,7 +781,10 @@ int __init op_nmi_init(struct oprofile_operations *ops)
- 
- 	mux_init(ops);
- 
--	init_sysfs();
-+	ret = init_sysfs();
-+	if (ret)
-+		return ret;
-+
- 	using_nmi = 1;
- 	printk(KERN_INFO "oprofile: using NMI interrupt.\n");
- 	return 0;
--- 
-1.7.1.1
+> 
+>   However, it seems so I have to go back 2 steps and restart after
+> reading  more details of the concept of platform devices ...
 
+What you did was in general the right thing. Find the reason for that oops
+and fix it.
 
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Thanks,
+Hans
