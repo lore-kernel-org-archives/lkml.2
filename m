@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab0HaVvY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 17:51:24 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:55203 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab0HaVvW (ORCPT
+	id S1756012Ab0HaVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 17:51:56 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51272 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750909Ab0HaVvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 17:51:22 -0400
-Subject: Re: [PATCH 4/6 v2] HID: magicmouse: remove axis data filtering
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C7D767C.8040607@euromail.se>
-References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
-	 <1283280068-12285-4-git-send-email-chase.douglas@canonical.com>
-	 <4C7D6739.5000601@euromail.se> <1283288319.2255.103.camel@mini>
-	 <4C7D6ECB.2000308@euromail.se> <1283289360.2255.113.camel@mini>
-	 <4C7D71B8.4020408@euromail.se> <1283290078.2255.119.camel@mini>
-	 <4C7D767C.8040607@euromail.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 17:51:09 -0400
-Message-ID: <1283291469.2255.129.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	Tue, 31 Aug 2010 17:51:54 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: guenter.roeck@ericsson.com
+Subject: [PATCH v2] [RFC] isofs: work-around for Rock Ridge+Joliet CDs with empty ISO root directory
+Date: Tue, 31 Aug 2010 23:51:47 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201008312010.10667.linux@rainbow-software.org> <1283287495.9850.17.camel@groeck-laptop>
+In-Reply-To: <1283287495.9850.17.camel@groeck-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201008312351.49035.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 23:39 +0200, Henrik Rydberg wrote:
-> On 08/31/2010 11:27 PM, Chase Douglas wrote:
-> 
-> > On Tue, 2010-08-31 at 23:18 +0200, Henrik Rydberg wrote:
-> >> On 08/31/2010 11:16 PM, Chase Douglas wrote:
-> >>
-> >>> On Tue, 2010-08-31 at 23:06 +0200, Henrik Rydberg wrote:
-> >>>> On 08/31/2010 10:58 PM, Chase Douglas wrote:
-> >>>>
-> >>>>> On Tue, 2010-08-31 at 22:34 +0200, Henrik Rydberg wrote:
-> >>>>>> On 08/31/2010 08:41 PM, Chase Douglas wrote:
-> >>>>>>
-> >>>>>>> The Magic Mouse device is very precise. No driver filtering of input
-> >>>>>>> data needs to be performed.
-> >>>>>>>
-> >>>>>>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> >>>>>>> Acked-by: Michael Poole <mdpoole@troilus.org>
-> >>>>>>> ---
-> >>>>>>
-> >>>>>>
-> >>>>>> I am still not sure this is a good idea. Bandwidth from MT devices is a big
-> >>>>>> deal. A statement roughly how much data comes out of mtdev (which does the
-> >>>>>> filtering for type A devices) before and after this change would be reassuring.
-> >>>>>
-> >>>>> As it is right now, hid-magicmouse doesn't support MT slots. I think all
-> >>>>> the fuzz code ends up comparing in the MT case is between one touch and
-> >>>>> another touch, not between one touch's current location and its previous
-> >>>>> location. If I'm correct, then it means a fuzz > 0 is incorrect for
-> >>>>> non-slotted MT devices.
-> >>>>>
-> >>>>> In fact, the code in drivers/input/input.c around line 194 looks like it
-> >>>>> discards defuzzing in this case, so one could say this patch is making
-> >>>>> things more correct :).
-> >>>>
-> >>>>
-> >>>> For type A devices, the filtering is performed in userspace, in mtdev, in the
-> >>>> same manner as it would have been performed in the kernel in the MT slot case.
-> >>>> Therefore, knowing the amount of messages coming out of mtdev is a direct
-> >>>> measurement of the effect of filtering.
-> >>>
-> >>> Yes, but we're only interested in the kernel driver when reviewing this
-> >>> patch. Leaving the fuzz in as it is has no effect right now on ABS_MT_*
-> >>> axes. On the other axes, such as the touch orientation, it's probably
-> >>> more harmful than good.
-> >>
-> >>
-> >> "We" are interested in knowing if this patch makes any sense, given that
-> >> filtering is in actuality performed in userspace, and thus modifying this code
-> >> changes the stream rate into userspace applications, thank you.
-> > 
-> > Because in-kernel defuzzing is turned off for ABS_MT_* axes on
-> > non-slotted MT devices, there will be no change in the number of events
-> > sent to the userspace due to this patch.
-> > 
-> > Maybe I'm missing something more fundamental. In which case, I'll need
-> > more details to get it through my dense skull :).
-> 
-> 
-> All events passes through to mtdev, yes, but mtdev filters a considerable amount
-> of events from passing through to X drivers like evdev. Thus, the fuzz values
-> reported in the kernel driver impacts the performance in userspace, even if
-> filtering is not done in the kernel.
+If a CD has both Rock Ridge and Joliet extensions and the ISO root directory
+is empty, no files are visible. Disable Rock Ridge extensions in this case and
+use Joliet root directory instead.
 
-My disconnect was that I didn't understand that the fuzz value in the
-kernel is exported to userspace. I thought the defuzzing in mtdev was
-independent of the defuzzing in the kernel.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+This is v2 with variable initialization.
 
-Basically, I don't feel I have the time to do the analysis you want
-right now. If you really want, I can just remove this change.
+--- linux-2.6.35-rc2/fs/isofs/inode.c	2010-06-06 05:43:24.000000000 +0200
++++ linux-2.6.35-rc3/fs/isofs/inode.c	2010-08-31 23:43:46.000000000 +0200
+@@ -549,6 +549,34 @@ static unsigned int isofs_get_last_sessi
+ }
+ 
+ /*
++ * Check if root directory is empty (has less than 3 files).
++ *
++ * Used to detect broken CDs where ISO root directory is empty but Joliet root
++ * directory is OK. If such CD has Rock Ridge extensions, they will be disabled
++ * (and Joliet used instead) or else no files would be visible.
++ */
++static bool rootdir_empty(struct super_block *sb, unsigned long block)
++{
++	int offset = 0, files = 0, de_len;
++	struct iso_directory_record *de;
++	struct buffer_head *bh;
++
++	bh = sb_bread(sb, block);
++	if (!bh)
++		return true;
++	while (files < 3) {
++		de = (struct iso_directory_record *) (bh->b_data + offset);
++		de_len = *(unsigned char *) de;
++		if (de_len == 0)
++			break;
++		files++;
++		offset += de_len;
++	}
++	brelse(bh);
++	return files < 3;
++}
++
++/*
+  * Initialize the superblock and read the root inode.
+  *
+  * Note: a check_disk_change() has been done immediately prior
+@@ -842,6 +870,18 @@ root_found:
+ 		goto out_no_root;
+ 
+ 	/*
++	 * Fix for broken CDs with Rock Ridge and empty ISO root directory but
++	 * correct Joliet root directory.
++	 */
++	if (sbi->s_rock == 1 && joliet_level &&
++				rootdir_empty(s, sbi->s_firstdatazone)) {
++		printk(KERN_NOTICE
++			"ISOFS: primary root directory is empty. "
++			"Disabling Rock Ridge and switching to Joliet.");
++		sbi->s_rock = 0;
++	}
++
++	/*
+ 	 * If this disk has both Rock Ridge and Joliet on it, then we
+ 	 * want to use Rock Ridge by default.  This can be overridden
+ 	 * by using the norock mount option.  There is still one other
 
--- Chase
 
+-- 
+Ondrej Zary
