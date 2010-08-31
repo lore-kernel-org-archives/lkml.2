@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab0HaCYo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Aug 2010 22:24:44 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:56519 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756660Ab0HaCYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Aug 2010 22:24:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=o75F/8EUM+L1QvYtSL2HB2XdTABGtwqsi6jnvHmSry2dcxhVfwvDwolYqdrGrNQeP5
-         Dyzb56YkwEW3BJqWAxVJccvUC0kJsPOE8UvgndsiOspIdm1VZBMA8dTHq5p8sJfQ2TQk
-         ptWWMIsTwlwE25n54AWZa0UM8E1Z3aTHTlQ/Q=
-From: "Mark F. Brown" <mark.brown314@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        "Mark F. Brown" <mark.brown314@gmail.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Cc: "Mark F. Brown" <mark.brown314@gmail.com>
-Subject: [PATCH 1/1] ARM: pxa168: fix corrected reset vector
-Date: Thu, 26 Aug 2010 05:07:29 -0400
-Message-Id: <1282813649-8332-2-git-send-email-mark.brown314@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282813649-8332-1-git-send-email-mark.brown314@gmail.com>
-References: <1282813649-8332-1-git-send-email-mark.brown314@gmail.com>
+	id S1756663Ab0HaCbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Aug 2010 22:31:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756585Ab0HaCbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Aug 2010 22:31:09 -0400
+Message-ID: <4C7C6959.3030801@redhat.com>
+Date: Mon, 30 Aug 2010 22:30:49 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap
+ system
+References: <AANLkTi==mQh31PzuNa1efH2WM1s-VPKyZX0f5iwb54PD@mail.gmail.com>	<AANLkTinqm0o=AfmgFy+SpZ1mrdekRnjeXvs_7=OcLii8@mail.gmail.com>	<20100831095140.87C7.A69D9226@jp.fujitsu.com> <AANLkTin4-NomOoNFYCKgi7oE+MCUiC0o0ftAkOwLKez_@mail.gmail.com>
+In-Reply-To: <AANLkTin4-NomOoNFYCKgi7oE+MCUiC0o0ftAkOwLKez_@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
----
- arch/arm/mach-mmp/include/mach/system.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On 08/30/2010 09:23 PM, Minchan Kim wrote:
 
-diff --git a/arch/arm/mach-mmp/include/mach/system.h b/arch/arm/mach-mmp/include/mach/system.h
-index 4f5b0e0..926e9c0 100644
---- a/arch/arm/mach-mmp/include/mach/system.h
-+++ b/arch/arm/mach-mmp/include/mach/system.h
-@@ -16,6 +16,6 @@ static inline void arch_idle(void)
- 
- static inline void arch_reset(char mode, const char *cmd)
- {
--	cpu_reset(0);
-+	cpu_reset(0xffff0000);
- }
- #endif /* __ASM_MACH_SYSTEM_H */
+> Ying's one and mine both has a same effect.
+> Only difference happens swap is full. My version maintains old
+> behavior but Ying's one changes the behavior. I admit swap full is
+> rare event but I hoped not changed old behavior if we doesn't find any
+> problem.
+> If kswapd does aging when swap full happens, is it a problem?
+
+It may be a good thing, since swap will often be freed again
+(when something is swapped in, or exits).
+
+Having some more anonymous pages sit on the inactive list
+gives them a chance to get used again, potentially giving
+us a better chance of preserving the working set when swap
+is full or near full a lot of the time.
+
 -- 
-1.7.0.4
-
+All rights reversed
