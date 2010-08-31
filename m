@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212Ab0HaLWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 07:22:00 -0400
-Received: from lucidpixels.com ([75.144.35.66]:44414 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756973Ab0HaLV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 07:21:58 -0400
-Date: Tue, 31 Aug 2010 07:21:57 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: adam radford <aradford@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
- timed out, resetting card.
-In-Reply-To: <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
-Message-ID: <alpine.DEB.2.00.1008310717260.4858@p34.internal.lan>
-References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan> <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757220Ab0HaLYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 07:24:19 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:32646 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756973Ab0HaLYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 07:24:16 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzbb2cK1432N98dN4015Lzz1202hzz8275dhz32i5bep5bfs61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L80K4R-02-5JS-02
+X-M-MSG: 
+Date: Tue, 31 Aug 2010 13:05:17 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH V2 0/4] Generalise ARM perf-events backend for oprofile
+Message-ID: <20100831110517.GE22783@erda.amd.com>
+References: <cover.1282848651.git.matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <cover.1282848651.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26.08.10 15:09:15, Matt Fleming wrote:
+> The perf-events backend for OProfile that Will Deacon wrote in
+> 8c1fc96f6fd1f361428ba805103af0d0eee65179 ("ARM: 6072/1: oprofile: use
+> perf-events framework as backend") is of use to more architectures
+> than just ARM. Move the code into drivers/oprofile/ so that SH can use
+> it instead of the nearly identical copy of its OProfile code.
+> 
+> The benefit of the backend is that it becomes necessary to only
+> maintain one copy of the PMU accessor functions for each architecture,
+> with bug fixes and new features benefiting both OProfile and perf.
+> 
+> Note that I haven't been able to test these patches on an ARM board to
+> see if I've caused any regressions. If anyone else could do that I'd
+> appreciate it. Though, I have been able to compile this version of the
+> series.
+> 
+> This patch series is based on tip/master.
 
+Matt,
 
-On Sun, 29 Aug 2010, Justin Piszcz wrote:
+please rebase your next version of this patch set to
 
->
->
-> On Fri, 27 Aug 2010, Justin Piszcz wrote:
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
 
+It contains Will's patches.
 
-Problem persists during heavy I/O, different error this time:
+Thanks,
 
-[152904.636062] 3w-9xxx: scsi1: ERROR: (0x06:0x0036): Response queue (large) empty failed during reset sequence.
-[152917.721865] 3w-9xxx: scsi1: AEN: INFO (0x04:0x0001): Controller reset occurred:resets=2.
+-Robert
 
---
+> 
+> Changes from v1:
+>  - Prefix the new functons with "oprofile_" instead of "op_".
+>  - Fix ARM compilation errors
+>  - Move all the oprofile-perf logic into oprofile_perf.c
+>  - Include cleanup patch from Will
+> 
+> Matt Fleming (3):
+>   sh: Accessor functions for the sh_pmu state
+>   oprofile: Abstract the perf-events backend
+>   sh: Use the perf-events backend for oprofile
+> 
+> Will Deacon (1):
+>   oprofile: Handle initialisation failure more gracefully
+> 
+>  arch/arm/oprofile/Makefile       |    4 +
+>  arch/arm/oprofile/common.c       |  228 ++++----------------------------------
+>  arch/sh/include/asm/perf_event.h |    2 +
+>  arch/sh/kernel/perf_event.c      |   13 ++
+>  arch/sh/oprofile/Makefile        |    2 +-
+>  arch/sh/oprofile/common.c        |   96 +++-------------
+>  arch/sh/oprofile/op_impl.h       |   33 ------
+>  drivers/oprofile/oprofile_perf.c |  209 ++++++++++++++++++++++++++++++++++
+>  include/linux/oprofile.h         |   12 ++
+>  9 files changed, 283 insertions(+), 316 deletions(-)
+>  delete mode 100644 arch/sh/oprofile/op_impl.h
+>  create mode 100644 drivers/oprofile/oprofile_perf.c
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-syslog:Aug  6 05:58:19 p34 kernel: [    1.763002] 3w-9xxx: scsi1: AEN: INFO (0x04:0x0001): Controller reset occurred:resets=1.
-syslog:Aug 20 07:30:41 p34 kernel: [1171646.371290] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
-syslog:Aug 24 09:04:11 p34 kernel: [246703.526388] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
-syslog:Aug 24 09:14:04 p34 kernel: [247295.662461] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
-syslog:Aug 26 21:05:22 p34 kernel: [462727.945313] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
-syslog:Aug 27 00:39:43 p34 kernel: [475586.575030] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108) timed out, resetting card.
-syslog:Aug 31 05:53:03 p34 kernel: [152904.636062] 3w-9xxx: scsi1: ERROR: (0x06:0x0036): Response queue (large) empty failed during reset sequence.
-syslog:Aug 31 05:53:03 p34 kernel: [152917.721865] 3w-9xxx: scsi1: AEN: INFO (0x04:0x0001): Controller reset occurred:resets=2.
-
---
-
-It started happening on August 6th, this is around the same time I upgraded
-to the 2.6.35 kernel, the 2.6.35 kernel according to kernelnewbies was
-released on August 1, 2010:
-
-http://kernelnewbies.org/LinuxChanges
-Linux 2.6.35 has been released on 1 Aug, 2010.
-
-http://marc.info/?l=linux-kernel&m=127419418304483&w=2
-
-Adam Radford (2):
-       3ware maintainers update
-       3w-xxxx, 3w-9xxx: force 60 second timeout
-
-I will go back to 2.6.34 and see if the problems persists.
-
-Justin.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
