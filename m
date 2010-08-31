@@ -1,109 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab0HaE40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 00:56:26 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58715
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756800Ab0HaE4Y (ORCPT
+	id S932139Ab0HaFAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 01:00:37 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:39210 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab0HaFAf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 00:56:24 -0400
-Date: Mon, 30 Aug 2010 21:56:41 -0700 (PDT)
-Message-Id: <20100830.215641.71568585.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, peppe.cavallaro@st.com
-Subject: Re: linux-next: build warnings after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100831115508.078eb2fa.sfr@canb.auug.org.au>
-References: <20100831115508.078eb2fa.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Aug 2010 01:00:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MUuz0HzhXPh2D1X2ox8RbGCKJkWNCbMefxJeqAIVlcu2YswPdhgrWLsSfeB0OYUsG+
+         ejjrwyMiGGAIBblty0yxocAgLEuT6DBwDLJ3fDao3c+5efUGezw5lwAFsxLbR1/pu0BS
+         TnjpD0wQ6t06ICzISj9oXaYILQYDa8Csf2/BU=
+MIME-Version: 1.0
+In-Reply-To: <1282814339-10934-6-git-send-email-mark.brown314@gmail.com>
+References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
+	<1282814339-10934-6-git-send-email-mark.brown314@gmail.com>
+Date: Tue, 31 Aug 2010 13:00:33 +0800
+Message-ID: <AANLkTi=OkRUmBgx_ezWtGHywGJkFAJsdGLR07v8dgzD7@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ARM: pxa168: aspenite: add board support for keypad
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 31 Aug 2010 11:55:08 +1000
+On Thu, Aug 26, 2010 at 5:18 PM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> ---
+>  arch/arm/mach-mmp/aspenite.c |   27 +++++++++++++++++++++++++++
+>  1 files changed, 27 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-mmp/aspenite.c b/arch/arm/mach-mmp/aspenite.c
+> index 9e1bd6b..1b788c5 100644
+> --- a/arch/arm/mach-mmp/aspenite.c
+> +++ b/arch/arm/mach-mmp/aspenite.c
+> @@ -24,6 +24,8 @@
+>  #include <mach/pxa168.h>
+>  #include <mach/gpio.h>
+>  #include <video/pxa168fb.h>
+> +#include <linux/input.h>
+> +#include <plat/pxa27x_keypad.h>
+>
+>  #include "common.h"
+>
+> @@ -97,6 +99,13 @@ static unsigned long common_pin_config[] __initdata = {
+>        GPIO81_LCD_DD21,
+>        GPIO82_LCD_DD22,
+>        GPIO83_LCD_DD23,
+> +
+> +       /* Keypad */
+> +       GPIO109_KP_MKIN1,
+> +       GPIO110_KP_MKIN0,
+> +       GPIO111_KP_MKOUT7,
+> +       GPIO112_KP_MKOUT6,
+> +       GPIO121_KP_MKIN4,
+>  };
+>
+>  static struct smc91x_platdata smc91x_info = {
+> @@ -193,6 +202,23 @@ struct pxa168fb_mach_info aspenite_lcd_info = {
+>        .invert_pixclock        = 0,
+>  };
+>
+> +static unsigned int aspenite_matrix_key_map[] = {
+> +       KEY(0, 6, KEY_UP),      /* SW 4 */
+> +       KEY(0, 7, KEY_DOWN),    /* SW 5 */
+> +       KEY(1, 6, KEY_LEFT),    /* SW 6 */
+> +       KEY(1, 7, KEY_RIGHT),   /* SW 7 */
+> +       KEY(4, 6, KEY_ENTER),   /* SW 8 */
+> +       KEY(4, 7, KEY_ESC),     /* SW 9 */
+> +};
+> +
+> +static struct pxa27x_keypad_platform_data aspenite_keypad_info __initdata = {
+> +       .matrix_key_rows        = 8,
+> +       .matrix_key_cols        = 8,
+It seems that maxium columns is 5, not 8.
 
-> Hi all,
-> 
-> After merging the net tree, today's linux-next build (x86_64
-> allmodconfig) produced these warnings:
-> 
-> In file included from drivers/net/stmmac/stmmac_ethtool.c:30:
-> drivers/net/stmmac/stmmac.h:111: warning: 'struct platform_device' declared inside parameter list
-> drivers/net/stmmac/stmmac.h:111: warning: its scope is only this definition or declaration, which is probably not what you want
- ...
-
-I've checked the following into net-next-2.6 to combat-this (see,
-proactively fixing warnings in code I'm more or less responsible for
-instead of letting the issue rot for 2 months :-):
-
---------------------
-stmmac: Fix build warnings.
-
-In file included from drivers/net/stmmac/stmmac_ethtool.c:30:
-drivers/net/stmmac/stmmac.h:111: warning: 'struct platform_device' declared inside parameter list
-drivers/net/stmmac/stmmac.h:111: warning: its scope is only this definition or declaration, which is probably not what you want
-drivers/net/stmmac/stmmac_main.c: In function 'stmmac_dvr_probe':
-drivers/net/stmmac/stmmac_main.c:1744: warning: cast from pointer to integer of different size
-In file included from drivers/net/stmmac/stmmac_mdio.c:31:
-drivers/net/stmmac/stmmac.h:111: warning: 'struct platform_device' declared inside parameter list
-drivers/net/stmmac/stmmac.h:111: warning: its scope is only this definition or declaration, which is probably not what you want
-drivers/net/stmmac/dwmac1000_core.c: In function 'dwmac1000_dump_regs':
-drivers/net/stmmac/dwmac1000_core.c:56: warning: cast from pointer to integer of different size
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/stmmac/dwmac1000_core.c |    2 +-
- drivers/net/stmmac/stmmac.h         |    1 +
- drivers/net/stmmac/stmmac_main.c    |    4 ++--
- 3 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/stmmac/dwmac1000_core.c b/drivers/net/stmmac/dwmac1000_core.c
-index 8bbfc0f..f1f4261 100644
---- a/drivers/net/stmmac/dwmac1000_core.c
-+++ b/drivers/net/stmmac/dwmac1000_core.c
-@@ -53,7 +53,7 @@ static void dwmac1000_core_init(void __iomem *ioaddr)
- static void dwmac1000_dump_regs(void __iomem *ioaddr)
- {
- 	int i;
--	pr_info("\tDWMAC1000 regs (base addr = 0x%8x)\n", (unsigned int)ioaddr);
-+	pr_info("\tDWMAC1000 regs (base addr = 0x%p)\n", ioaddr);
- 
- 	for (i = 0; i < 55; i++) {
- 		int offset = i * 4;
-diff --git a/drivers/net/stmmac/stmmac.h b/drivers/net/stmmac/stmmac.h
-index cca53db..d0ddab0 100644
---- a/drivers/net/stmmac/stmmac.h
-+++ b/drivers/net/stmmac/stmmac.h
-@@ -21,6 +21,7 @@
- *******************************************************************************/
- 
- #define DRV_MODULE_VERSION	"Apr_2010"
-+#include <linux/platform_device.h>
- #include <linux/stmmac.h>
- 
- #include "common.h"
-diff --git a/drivers/net/stmmac/stmmac_main.c b/drivers/net/stmmac/stmmac_main.c
-index c59c106..e3f002e 100644
---- a/drivers/net/stmmac/stmmac_main.c
-+++ b/drivers/net/stmmac/stmmac_main.c
-@@ -1742,8 +1742,8 @@ static int stmmac_dvr_probe(struct platform_device *pdev)
- 	priv->bsp_priv = plat_dat->bsp_priv;
- 
- 	pr_info("\t%s - (dev. name: %s - id: %d, IRQ #%d\n"
--	       "\tIO base addr: 0x%08x)\n", ndev->name, pdev->name,
--	       pdev->id, ndev->irq, (unsigned int)addr);
-+	       "\tIO base addr: 0x%p)\n", ndev->name, pdev->name,
-+	       pdev->id, ndev->irq, addr);
- 
- 	/* MDIO bus Registration */
- 	pr_debug("\tMDIO bus (id: %d)...", priv->bus_id);
--- 
-1.7.2.2
-
-
+> +       .matrix_key_map         = aspenite_matrix_key_map,
+> +       .matrix_key_map_size    = ARRAY_SIZE(aspenite_matrix_key_map),
+> +       .debounce_interval      = 30,
+> +};
+> +
+>  static void __init common_init(void)
+>  {
+>        mfp_config(ARRAY_AND_SIZE(common_pin_config));
+> @@ -203,6 +229,7 @@ static void __init common_init(void)
+>        pxa168_add_ssp(1);
+>        pxa168_add_nand(&aspenite_nand_info);
+>        pxa168_add_fb(&aspenite_lcd_info);
+> +       pxa168_add_keypad(&aspenite_keypad_info);
+>
+>        /* off-chip devices */
+>        platform_device_register(&smc91x_device);
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
