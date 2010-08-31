@@ -1,121 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab0HaPIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 11:08:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58125 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932363Ab0HaPIq (ORCPT
+	id S932410Ab0HaPI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 11:08:58 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:52643 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S932399Ab0HaPI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 11:08:46 -0400
-Message-ID: <4C7D1AD6.3080005@oracle.com>
-Date: Tue, 31 Aug 2010 08:08:06 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-CC: Stephen Hemminger <shemminger@vyatta.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>,
-        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
-        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-References: <4C763A67.5040107@dsn.okisemi.com> <4C7D0E7A.5060309@dsn.okisemi.com>
-In-Reply-To: <4C7D0E7A.5060309@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Aug 2010 11:08:57 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com, joe@perches.com
+Subject: [PATCH 1/1] MAINTAINERS: orphan isicom
+Date: Tue, 31 Aug 2010 17:08:52 +0200
+Message-Id: <1283267332-20879-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1283267024.1797.22.camel@Joe-Laptop>
+References: <1283267024.1797.22.camel@Joe-Laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/10 07:15, Masayuki Ohtake wrote:
-> 
-> Hi Sam, Joe and Stephen
-> 
-> Thank you for your comments.
-> We have modified this driver for your comment.
-> 
-> ---
-> Gigabit Ethernet driver of Topcliff PCH
-> Patch created against 2.6.35
-> 
-> Topcliff PCH is the platform controller hub that is going to be used in
-> Intel's upcoming general embedded platform. All IO peripherals in
-> Topcliff PCH are actually devices sitting on AMBA bus. 
-> Topcliff PCH has Gigabit Ethernet I/F. Using this I/F, it is able to 
-> access system devices connected to Gigabit Ethernet.
-> 
-> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-> ---
->  drivers/net/Kconfig                   |   10 +
->  drivers/net/Makefile                  |    1 +
->  drivers/net/pch_gbe/Makefile          |    4 +
->  drivers/net/pch_gbe/pch_gbe.h         |  683 +++++++++
->  drivers/net/pch_gbe/pch_gbe_api.c     |  246 ++++
->  drivers/net/pch_gbe/pch_gbe_api.h     |   34 +
->  drivers/net/pch_gbe/pch_gbe_ethtool.c |  618 ++++++++
->  drivers/net/pch_gbe/pch_gbe_main.c    | 2591 +++++++++++++++++++++++++++++++++
->  drivers/net/pch_gbe/pch_gbe_param.c   |  519 +++++++
->  drivers/net/pch_gbe/pch_gbe_phy.c     |  276 ++++
->  drivers/net/pch_gbe/pch_gbe_phy.h     |   35 +
->  11 files changed, 5017 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/net/pch_gbe/Makefile
->  create mode 100644 drivers/net/pch_gbe/pch_gbe.h
->  create mode 100644 drivers/net/pch_gbe/pch_gbe_api.c
->  create mode 100644 drivers/net/pch_gbe/pch_gbe_api.h
->  create mode 100644 drivers/net/pch_gbe/pch_gbe_ethtool.c
->  create mode 100644 drivers/net/pch_gbe/pch_gbe_main.c
->  create mode 100644 drivers/net/pch_gbe/pch_gbe_param.c
->  create mode 100644 drivers/net/pch_gbe/pch_gbe_phy.c
->  create mode 100644 drivers/net/pch_gbe/pch_gbe_phy.h
-> 
-> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-> index 2decc59..f8102de 100644
-> --- a/drivers/net/Kconfig
-> +++ b/drivers/net/Kconfig
-> @@ -2004,6 +2004,16 @@ menuconfig NETDEV_1000
->  	  If you say N, all options in this submenu will be skipped and disabled.
->  
->  if NETDEV_1000
-> +config PCH_GBE
-> +	tristate "PCH Gigabit Ethernet"
-> +	depends on PCI
+I do not maintain isicom anymore...
 
-IMO it's not nice to list this driver before others that are already there.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ MAINTAINERS |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> +	---help---
-> +	  This is an gigabit ethernet driver for Topcliff PCH.
-
-	  This is a gigabit
-
-You aren't going to modify this text after the product is released, are you?
-Might as well make it better now:
-
-> +	  Topcliff PCH is the platform controller hub that is going to be used
-
-	  Topcliff PCH is the platform controller hub that is used in Intel's
-	  general embedded platform.
-> +	  in Intel's upcoming general embedded platform.
-> +	  Topcliff PCH has Gigabit Ethernet I/F. Using this I/F, it is able to
-
-	Change "I/F" to "interface".
-
-> +	  access system devices connected to Gigabit Ethernet.
-> +	  This driver enables Gigabit Ethernet function.
->  
->  config ACENIC
->  	tristate "Alteon AceNIC/3Com 3C985/NetGear GA620 Gigabit support"
-
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e24eb2d..8313ce3 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3924,8 +3924,7 @@ F:	Documentation/sound/oss/MultiSound
+ F:	sound/oss/msnd*
+ 
+ MULTITECH MULTIPORT CARD (ISICOM)
+-M:	Jiri Slaby <jirislaby@gmail.com>
+-S:	Maintained
++S:	Orphan
+ F:	drivers/char/isicom.c
+ F:	include/linux/isicom.h
+ 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.2.2
+
+
