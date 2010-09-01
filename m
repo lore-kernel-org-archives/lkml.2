@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab0IAGej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 02:34:39 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51069 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab0IAGeh (ORCPT
+	id S1753215Ab0IAGht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 02:37:49 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:39251 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab0IAGhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 02:34:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=msRMnNR58tK2QhtCc11kBOmh6GlwWB8OvsJvPjrgHuFhjbQAV837LLN5AdOId5qScy
-         IPH3QPuKlXpl6wviUYYLIZ72CuiIvy1TqoJEakvMgZk8OWm7r4pH6OGPNK85FsSdd042
-         sW5TxF4bhatKfqKoVJjFsUYiZEvebltCURGFE=
-Date: Tue, 31 Aug 2010 23:34:30 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Neil Leeder <nleeder@codeaurora.org>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Horace Fu <horace.fu@quantatw.com>, Hsin.Wu@quantatw.com,
-        mcuos.com@gmail.com
-Subject: Re: [PATCH 0/1] input: keyboard: add qci keyboard driver
-Message-ID: <20100901063430.GG23585@core.coreip.homeip.net>
-References: <4C7838DD.1020004@codeaurora.org>
- <201008271533.01542.dmitry.torokhov@gmail.com>
- <4C7BF6D2.5080501@codeaurora.org>
- <20100830215556.GC28865@core.coreip.homeip.net>
- <4C7D6C17.1070604@codeaurora.org>
+	Wed, 1 Sep 2010 02:37:46 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 1 Sep 2010 08:37:43 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: 2.6.36-rc3: inconsistent lock state (iprune_sem,
+ shrink_icache_memory)
+To: linux-fsdevel@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Message-ID: <tkrat.ed8eda6bc8ffe64e@s5r6.in-berlin.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7D6C17.1070604@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 04:54:47PM -0400, Neil Leeder wrote:
-> On 8/30/2010 5:55 PM, Dmitry Torokhov wrote:
-> >And still you are using only one GPIO in your driver? While WPCE775x
-> >does seem to have matrix keypad support I think that you are using one
-> >of the 3 PS/2 ports, like your touchpad does.
-> 
-> Hi Dmitry,
-> 
-> I can assure you that the keyboard is on the 8*18 GPIO matrix on the
-> Nuvoton EC (only 8*16 being used in the current design). There
-> certainly are 3 PS/2 ports on the EC, but in the board designs I
-> have only one of those is used as a PS/2 port, and that is for the
-> touchpad. The other two ports are muxed with GPIOs and the pins are
-> being used as GPIOs for other functions, not PS/2 ports.
-> 
-> The firmware on the EC converts keypresses on the GPIO matrix to
-> scancodes and sends them over I2C. The single GPIO used by the
-> keyboard driver is an interrupt.
-> 
-> >The device is initialized with 0xf4; the device is supposed to respond
-> >with 0xfa; I wonder what scancodes the device reports... It smells
-> >strongly of PS/2.
-> >
-> >Also, it is not controller that supports PS/2 commands but rather the
-> >device itself so I am still hopeful that we could make use of the
-> >standard drivers.
-> 
-> We can speculate on the reasons that the firmware on the EC uses
-> 0xF4 & 0xFA for init and ack - my guess would be for a minimal
-> amount of commonality with the PS/2 protocol - but it doesn't
-> emulate the rest of the PS/2 protocol for the GPIO matrix device. I
-> tried with atkbd. It issues reset, getid, setleds - all of which
-> fail with no response from the EC. It only responds to F4.
+I switched from 2.6.35 to 2.6.36-rc3 a few days ago and while doing so
+enabled lockdep.  Just got the following report during normal desktop
+usage:
 
-OK, I give up on pursuit of serio solution. Again ;)
+=================================
+[ INFO: inconsistent lock state ]
+2.6.36-rc3 #3
+---------------------------------
+inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
+kswapd0/436 [HC0[0]:SC0[0]:HE1:SE1] takes:
+ (iprune_sem){+++++-}, at: [<ffffffff810bde0b>] shrink_icache_memory+0x48/0x217
+{RECLAIM_FS-ON-W} state was registered at:
+  [<ffffffff810598b3>] mark_held_locks+0x4d/0x6b
+  [<ffffffff8105995f>] lockdep_trace_alloc+0x8e/0xa7
+  [<ffffffff810a5a7f>] kmem_cache_alloc+0x2a/0xc8
+  [<ffffffff810d4f8a>] fsnotify_create_event+0x39/0x160
+  [<ffffffff810d49e8>] send_to_group+0x108/0x13f
+  [<ffffffff810d4b86>] fsnotify+0x167/0x266
+  [<ffffffff810d57d0>] fsnotify_unmount_inodes+0xb8/0xf9
+  [<ffffffff810bda9b>] invalidate_inodes+0x4b/0x13a
+  [<ffffffff810ad3e5>] generic_shutdown_super+0x42/0xd2
+  [<ffffffff810ad497>] kill_block_super+0x22/0x3a
+  [<ffffffff810aca61>] deactivate_locked_super+0x21/0x41
+  [<ffffffff810acc39>] deactivate_super+0x40/0x44
+  [<ffffffff810c1c29>] mntput_no_expire+0xdc/0x10a
+  [<ffffffff810c2e5d>] sys_umount+0x2a4/0x2d1
+  [<ffffffff81001feb>] system_call_fastpath+0x16/0x1b
+irq event stamp: 281663
+hardirqs last  enabled at (281663): [<ffffffff81072d32>] __call_rcu+0x119/0x125
+hardirqs last disabled at (281662): [<ffffffff81072c41>] __call_rcu+0x28/0x125
+softirqs last  enabled at (278242): [<ffffffff81038cff>] __do_softirq+0x14a/0x15b
+softirqs last disabled at (278217): [<ffffffff81002e8c>] call_softirq+0x1c/0x28
 
-> 
-> The scancodes reported are whatever the firmware provides. A
-> previous version of firmware had some non-standard values and the
-> driver had to use a look-up table to convert them to something
-> useful. With the change to the current keyboard layout Quanta
-> changed the scancodes reported to match the KEY_* values in input.h,
-> which is why there is no table in the current driver.
+other info that might help us debug this:
+1 lock held by kswapd0/436:
+ #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810891d7>] shrink_slab+0x38/0x164
 
-I believe we still should support changing keymap via EVIOCSKEYCODE so
-we need to have the keymap even though the initial seed is 1:1 with
-scancodes.
+stack backtrace:
+Pid: 436, comm: kswapd0 Not tainted 2.6.36-rc3 #3
+Call Trace:
+ [<ffffffff8105933b>] print_usage_bug+0x1af/0x1c0
+ [<ffffffff81059e81>] ? check_usage_forwards+0x0/0xcd
+ [<ffffffff81059637>] mark_lock+0x2eb/0x51a
+ [<ffffffff8105af8c>] __lock_acquire+0x862/0x182c
+ [<ffffffff810ba6ea>] ? shrink_dcache_memory+0x114/0x1a9
+ [<ffffffff810ba6f3>] ? shrink_dcache_memory+0x11d/0x1a9
+ [<ffffffff810ba6ea>] ? shrink_dcache_memory+0x114/0x1a9
+ [<ffffffff8105bfb0>] lock_acquire+0x5a/0x71
+ [<ffffffff810bde0b>] ? shrink_icache_memory+0x48/0x217
+ [<ffffffff8133cb68>] down_read+0x42/0x55
+ [<ffffffff810bde0b>] ? shrink_icache_memory+0x48/0x217
+ [<ffffffff810bde0b>] shrink_icache_memory+0x48/0x217
+ [<ffffffff81089280>] shrink_slab+0xe1/0x164
+ [<ffffffff81089893>] kswapd+0x590/0x7e2
+ [<ffffffff8104b1d6>] ? autoremove_wake_function+0x0/0x38
+ [<ffffffff8133deff>] ? _raw_spin_unlock_irqrestore+0x4c/0x68
+ [<ffffffff81089303>] ? kswapd+0x0/0x7e2
+ [<ffffffff8104ade2>] kthread+0x81/0x89
+ [<ffffffff81002d94>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8102d5ba>] ? finish_task_switch+0x69/0xa9
+ [<ffffffff8133e3c0>] ? restore_args+0x0/0x30
+ [<ffffffff8104ad61>] ? kthread+0x0/0x89
+ [<ffffffff81002d90>] ? kernel_thread_helper+0x0/0x10
 
+
+A web search finds reports of this kind from months ago.  I haven't read
+up on them yet whether there were any conclusions from them.
 -- 
-Dmitry
+Stefan Richter
+-=====-==-=- =--= ----=
+http://arcgraph.de/sr/
+
