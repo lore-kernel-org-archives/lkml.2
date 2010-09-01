@@ -1,555 +1,576 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab0IAPZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 11:25:26 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:36671 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755694Ab0IAPZY (ORCPT
+	id S1755976Ab0IAP0M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 11:26:12 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:60373 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755841Ab0IAP0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 11:25:24 -0400
+	Wed, 1 Sep 2010 11:26:10 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>,
         <linux-arm-kernel@lists.infradead.org>, <yuanyabin1978@sina.com>
 Cc: <linux-kernel@vger.kernel.org>,
         Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 5/6] ARM: config Ux500 PL011 PL022 PL180 for DMA v10
-Date: Wed, 1 Sep 2010 17:24:23 +0200
-Message-ID: <1283354665-8673-6-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 3/6] ARM: add PrimeCell generic DMA to MMCI/PL180 v10
+Date: Wed, 1 Sep 2010 17:24:21 +0200
+Message-ID: <1283354665-8673-4-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1283354665-8673-5-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1283354665-8673-3-git-send-email-linus.walleij@stericsson.com>
 References: <1283354665-8673-1-git-send-email-linus.walleij@stericsson.com>
  <1283354665-8673-2-git-send-email-linus.walleij@stericsson.com>
  <1283354665-8673-3-git-send-email-linus.walleij@stericsson.com>
- <1283354665-8673-4-git-send-email-linus.walleij@stericsson.com>
- <1283354665-8673-5-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will configure the platform data for the PL011 and PL022
-PrimeCells found in the Ux500 to use DMA with the generic
-PrimeCell DMA engine.
+This extends the MMCI/PL180 driver with generic DMA engine support
+using the PrimeCell DMA engine interface.
 
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- arch/arm/mach-ux500/board-mop500-sdi.c |  127 ++++++++++++++++++++++++++++++
- arch/arm/mach-ux500/board-mop500.c     |   12 ---
- arch/arm/mach-ux500/devices-db8500.c   |   92 +++++++++++++++++++++-
- arch/arm/mach-ux500/devices.c          |  133 +++++++++++++++++++++++++++++++-
- 4 files changed, 346 insertions(+), 18 deletions(-)
+ drivers/mmc/host/mmci.c   |  329 ++++++++++++++++++++++++++++++++++++++++-----
+ drivers/mmc/host/mmci.h   |   16 +++
+ include/linux/amba/mmci.h |   16 +++
+ 3 files changed, 330 insertions(+), 31 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-sdi.c b/arch/arm/mach-ux500/board-mop500-sdi.c
-index f0095ff..61b0fdd 100644
---- a/arch/arm/mach-ux500/board-mop500-sdi.c
-+++ b/arch/arm/mach-ux500/board-mop500-sdi.c
-@@ -13,11 +13,13 @@
- #include <linux/platform_device.h>
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index f0c7313..876a293 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -2,7 +2,7 @@
+  *  linux/drivers/mmc/host/mmci.c - ARM PrimeCell MMCI PL180/1 driver
+  *
+  *  Copyright (C) 2003 Deep Blue Solutions, Ltd, All Rights Reserved.
+- *  Copyright (C) 2010 ST-Ericsson AB.
++ *  Copyright (C) 2010 ST-Ericsson SA
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -23,8 +23,10 @@
+ #include <linux/clk.h>
+ #include <linux/scatterlist.h>
+ #include <linux/gpio.h>
+-#include <linux/amba/mmci.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/dmaengine.h>
++#include <linux/dma-mapping.h>
++#include <linux/amba/mmci.h>
  
- #include <plat/pincfg.h>
-+#include <plat/ste_dma40.h>
- #include <mach/devices.h>
- #include <mach/hardware.h>
- 
- #include "pins-db8500.h"
- #include "board-mop500.h"
-+#include "ste-dma40-db8500.h"
- 
- static pin_cfg_t mop500_sdi_pins[] = {
- 	/* SDI0 (MicroSD slot) */
-@@ -62,6 +64,20 @@ static pin_cfg_t mop500_sdi2_pins[] = {
- 	GPIO138_MC2_DAT7,
+ #include <asm/div64.h>
+ #include <asm/io.h>
+@@ -40,6 +42,7 @@ static unsigned int fmax = 515633;
+  * struct variant_data - MMCI variant-specific quirks
+  * @clkreg: default value for MCICLOCK register
+  * @clkreg_enable: enable value for MMCICLOCK register
++ * @dmareg_enable: enable value for MMCIDATACTRL register
+  * @datalength_bits: number of bits in the MMCIDATALENGTH register
+  * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
+  *	      is asserted (likewise for RX)
+@@ -50,6 +53,7 @@ static unsigned int fmax = 515633;
+ struct variant_data {
+ 	unsigned int		clkreg;
+ 	unsigned int		clkreg_enable;
++	unsigned int		dmareg_enable;
+ 	unsigned int		datalength_bits;
+ 	unsigned int		fifosize;
+ 	unsigned int		fifohalfsize;
+@@ -74,6 +78,7 @@ static struct variant_data variant_ux500 = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg			= MCI_CLK_ENABLE,
+ 	.clkreg_enable		= 1 << 14, /* HWFCEN */
++	.dmareg_enable		= 1 << 12, /* DMAREQCTRL */
+ 	.datalength_bits	= 24,
+ 	.singleirq		= true,
  };
- 
-+/* Some custom DMA40 callbacks for MMC */
-+static int dma40_mmc_pre_transfer(struct dma_chan *chan, void *data, int size)
-+{
-+	if (size <= 16)
-+		stedma40_set_psize(chan,
-+				   STEDMA40_PSIZE_LOG_1,
-+				   STEDMA40_PSIZE_LOG_1);
-+	else
-+		stedma40_set_psize(chan,
-+				   STEDMA40_PSIZE_LOG_4,
-+				   STEDMA40_PSIZE_LOG_4);
-+	return 0;
-+}
-+
- /*
-  * SDI 0 (MicroSD slot)
-  */
-@@ -85,6 +101,38 @@ static u32 mop500_sdi0_vdd_handler(struct device *dev, unsigned int vdd,
- 	       MCI_DATA2DIREN | MCI_DATA31DIREN;
+@@ -169,6 +174,203 @@ static void mmci_init_sg(struct mmci_host *host, struct mmc_data *data)
+ 	sg_miter_start(&host->sg_miter, data->sg, data->sg_len, flags);
  }
  
-+#ifdef CONFIG_STE_DMA40
-+struct stedma40_chan_cfg sdi0_dma_cfg_rx = {
-+	.pre_transfer = dma40_mmc_pre_transfer,
-+	.channel_type = STEDMA40_CHANNEL_IN_LOG_MODE
-+			| STEDMA40_LCHAN_SRC_LOG_DST_LOG
-+			| STEDMA40_NO_TIM_FOR_LINK
-+			| STEDMA40_LOW_PRIORITY_CHANNEL,
-+	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.src_dev_type = STEDMA40_DEV_SD_MM0_RX,
-+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_WORD_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_WORD_WIDTH,
-+};
++/*
++ * All the DMA operation mode stuff goes inside this ifdef.
++ * This assumes that you have a generic DMA device interface,
++ * no custom DMA interfaces are supported.
++ */
++#ifdef CONFIG_DMADEVICES
++static void __devinit mmci_setup_dma(struct mmci_host *host)
++{
++	struct mmci_platform_data *plat = host->plat;
++	dma_cap_mask_t mask;
 +
-+static struct stedma40_chan_cfg sdi0_dma_cfg_tx = {
-+	.pre_transfer = dma40_mmc_pre_transfer,
-+	.channel_type = STEDMA40_CHANNEL_IN_LOG_MODE
-+			| STEDMA40_LCHAN_SRC_LOG_DST_LOG
-+			| STEDMA40_NO_TIM_FOR_LINK
-+			| STEDMA40_LOW_PRIORITY_CHANNEL,
-+	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-+	.dst_dev_type = STEDMA40_DEV_SD_MM0_TX,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_WORD_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_WORD_WIDTH,
-+};
-+#endif
++	if (!plat || !plat->dma_filter) {
++		dev_err(mmc_dev(host->mmc), "no DMA platform data!\n");
++		return;
++	}
 +
- static struct mmci_platform_data mop500_sdi0_data = {
- 	.vdd_handler	= mop500_sdi0_vdd_handler,
- 	.ocr_mask	= MMC_VDD_29_30,
-@@ -92,6 +140,11 @@ static struct mmci_platform_data mop500_sdi0_data = {
- 	.capabilities	= MMC_CAP_4_BIT_DATA,
- 	.gpio_cd	= GPIO_SDMMC_CD,
- 	.gpio_wp	= -1,
-+#ifdef CONFIG_STE_DMA40
-+	.dma_filter	= stedma40_filter,
-+	.dma_rx_param	= &sdi0_dma_cfg_rx,
-+	.dma_tx_param	= &sdi0_dma_cfg_tx,
-+#endif
- };
- 
- void mop500_sdi_tc35892_init(void)
-@@ -115,18 +168,87 @@ void mop500_sdi_tc35892_init(void)
-  * SDI 2 (POP eMMC, not on DB8500ed)
-  */
- 
-+#ifdef CONFIG_STE_DMA40
-+struct stedma40_chan_cfg sdi2_dma_cfg_rx = {
-+	.pre_transfer = dma40_mmc_pre_transfer,
-+	.channel_type = STEDMA40_CHANNEL_IN_LOG_MODE
-+			| STEDMA40_LCHAN_SRC_LOG_DST_LOG
-+			| STEDMA40_NO_TIM_FOR_LINK
-+			| STEDMA40_LOW_PRIORITY_CHANNEL,
-+	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.src_dev_type =  STEDMA40_DEV_SD_MM2_RX,
-+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_WORD_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_WORD_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg sdi2_dma_cfg_tx = {
-+	.pre_transfer = dma40_mmc_pre_transfer,
-+	.channel_type = STEDMA40_CHANNEL_IN_LOG_MODE
-+			| STEDMA40_LCHAN_SRC_LOG_DST_LOG
-+			| STEDMA40_NO_TIM_FOR_LINK
-+			| STEDMA40_LOW_PRIORITY_CHANNEL,
-+	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-+	.dst_dev_type = STEDMA40_DEV_SD_MM2_TX,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_WORD_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_WORD_WIDTH,
-+};
-+#endif
-+
- static struct mmci_platform_data mop500_sdi2_data = {
- 	.ocr_mask	= MMC_VDD_165_195,
- 	.f_max		= 100000000,
- 	.capabilities	= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA,
- 	.gpio_cd	= -1,
- 	.gpio_wp	= -1,
-+#ifdef CONFIG_STE_DMA40
-+	.dma_filter	= stedma40_filter,
-+	.dma_rx_param	= &sdi2_dma_cfg_rx,
-+	.dma_tx_param	= &sdi2_dma_cfg_tx,
-+#endif
- };
- 
- /*
-  * SDI 4 (on-board eMMC)
-  */
- 
-+#ifdef CONFIG_STE_DMA40
-+struct stedma40_chan_cfg sdi4_dma_cfg_rx = {
-+	.pre_transfer = dma40_mmc_pre_transfer,
-+	.channel_type = STEDMA40_CHANNEL_IN_LOG_MODE
-+			| STEDMA40_LCHAN_SRC_LOG_DST_LOG
-+			| STEDMA40_NO_TIM_FOR_LINK
-+			| STEDMA40_LOW_PRIORITY_CHANNEL,
-+	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.src_dev_type =  STEDMA40_DEV_SD_MM4_RX,
-+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_WORD_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_WORD_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg sdi4_dma_cfg_tx = {
-+	.pre_transfer = dma40_mmc_pre_transfer,
-+	.channel_type = STEDMA40_CHANNEL_IN_LOG_MODE
-+			| STEDMA40_LCHAN_SRC_LOG_DST_LOG
-+			| STEDMA40_NO_TIM_FOR_LINK
-+			| STEDMA40_LOW_PRIORITY_CHANNEL,
-+	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-+	.dst_dev_type = STEDMA40_DEV_SD_MM4_TX,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_WORD_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_WORD_WIDTH,
-+};
-+#endif
-+
- static struct mmci_platform_data mop500_sdi4_data = {
- 	.ocr_mask	= MMC_VDD_29_30,
- 	.f_max		= 100000000,
-@@ -134,6 +256,11 @@ static struct mmci_platform_data mop500_sdi4_data = {
- 			  MMC_CAP_MMC_HIGHSPEED,
- 	.gpio_cd	= -1,
- 	.gpio_wp	= -1,
-+#ifdef CONFIG_STE_DMA40
-+	.dma_filter	= stedma40_filter,
-+	.dma_rx_param	= &sdi4_dma_cfg_rx,
-+	.dma_tx_param	= &sdi4_dma_cfg_tx,
-+#endif
- };
- 
- void mop500_sdi_init(void)
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 879747c..5312576 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -112,16 +112,6 @@ static struct spi_board_info u8500_spi_devices[] = {
- 	},
- };
- 
--static struct pl022_ssp_controller ssp0_platform_data = {
--	.bus_id = 0,
--	/* pl022 not yet supports dma */
--	.enable_dma = 0,
--	/* on this platform, gpio 31,142,144,214 &
--	 * 224 are connected as chip selects
--	 */
--	.num_chipselect = 5,
--};
--
- /*
-  * TC35892
-  */
-@@ -206,8 +196,6 @@ static void __init u8500_init_machine(void)
- 	ux500_i2c2_device.dev.platform_data = &u8500_i2c2_data;
- 	ux500_i2c3_device.dev.platform_data = &u8500_i2c3_data;
- 
--	u8500_ssp0_device.dev.platform_data = &ssp0_platform_data;
--
- 	/* Register the active AMBA devices on this board */
- 	for (i = 0; i < ARRAY_SIZE(amba_devs); i++)
- 		amba_device_register(amba_devs[i], &iomem_resource);
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index 28866b4..bcba256 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -11,6 +11,7 @@
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/amba/bus.h>
-+#include <linux/amba/pl022.h>
- 
- #include <plat/ste_dma40.h>
- 
-@@ -55,10 +56,55 @@ struct platform_device u8500_gpio_devs[] = {
- 	GPIO_DEVICE(8),
- };
- 
-+#ifdef CONFIG_STE_DMA40
-+static struct stedma40_chan_cfg ssp0_dma_cfg_rx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.src_dev_type =  STEDMA40_DEV_SSP0_RX,
-+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-+	.dst_dev_type = STEDMA40_DEV_SSP0_TX,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+#endif
-+
-+static struct pl022_ssp_controller ssp0_platform_data = {
-+	.bus_id = 0,
-+#ifdef CONFIG_STE_DMA40
-+	.enable_dma = 1,
-+	.dma_filter = stedma40_filter,
-+	.dma_rx_param = &ssp0_dma_cfg_rx,
-+	.dma_tx_param = &ssp0_dma_cfg_tx,
-+#else
-+	.enable_dma = 0,
-+#endif
-+	/* on this platform, gpio 31,142,144,214 &
-+	 * 224 are connected as chip selects
++	/* Try to acquire a generic DMA engine slave channel */
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++	/*
++	 * If only an RX channel is specified, the driver will
++	 * attempt to use it bidirectionally, however if it is
++	 * is specified but cannot be located, DMA will be disabled.
 +	 */
-+	.num_chipselect = 5,
-+};
++	host->dma_rx_channel = dma_request_channel(mask,
++						plat->dma_filter,
++						plat->dma_rx_param);
++	/* E.g if no DMA hardware is present */
++	if (!host->dma_rx_channel) {
++		dev_err(mmc_dev(host->mmc), "no RX DMA channel!\n");
++		return;
++	}
++	if (plat->dma_tx_param) {
++		host->dma_tx_channel = dma_request_channel(mask,
++							   plat->dma_filter,
++							   plat->dma_tx_param);
++		if (!host->dma_tx_channel) {
++			dma_release_channel(host->dma_rx_channel);
++			host->dma_rx_channel = NULL;
++			return;
++		}
++	} else {
++		host->dma_tx_channel = host->dma_rx_channel;
++	}
++	host->dma_enable = true;
++	dev_info(mmc_dev(host->mmc), "use DMA channels DMA RX %s, DMA TX %s\n",
++		 dma_chan_name(host->dma_rx_channel),
++		 dma_chan_name(host->dma_tx_channel));
++}
 +
- struct amba_device u8500_ssp0_device = {
- 	.dev = {
- 		.coherent_dma_mask = ~0,
- 		.init_name = "ssp0",
-+		.platform_data = &ssp0_platform_data,
- 	},
- 	.res = {
- 		.start = U8500_SSP0_BASE,
-@@ -244,12 +290,52 @@ struct stedma40_chan_cfg dma40_memcpy_conf_log = {
++/*
++ * This is used in __devinit or __devexit so inline it
++ * so it can be discarded.
++ */
++static inline void mmci_disable_dma(struct mmci_host *host)
++{
++	if (host->dma_rx_channel)
++		dma_release_channel(host->dma_rx_channel);
++	if (host->dma_tx_channel)
++		dma_release_channel(host->dma_tx_channel);
++	host->dma_enable = false;
++}
++
++static void mmci_dma_data_end(struct mmci_host *host)
++{
++	struct mmc_data *data = host->data;
++
++	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++		     (data->flags & MMC_DATA_WRITE)
++		     ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
++}
++
++static void mmci_dma_data_error(struct mmci_host *host)
++{
++	struct mmc_data *data = host->data;
++	struct dma_chan *chan;
++
++	dev_err(mmc_dev(host->mmc), "error during DMA transfer!\n");
++	if (data->flags & MMC_DATA_READ)
++		chan = host->dma_rx_channel;
++	else
++		chan = host->dma_tx_channel;
++	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++		     (data->flags & MMC_DATA_WRITE)
++		     ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
++	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
++}
++
++static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
++{
++	struct variant_data *variant = host->variant;
++	struct dma_slave_config rx_conf = {
++		.src_addr = host->phybase + MMCIFIFO,
++		.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
++		.direction = DMA_FROM_DEVICE,
++		.src_maxburst = variant->fifohalfsize >> 2, /* # of words */
++	};
++	struct dma_slave_config tx_conf = {
++		.dst_addr = host->phybase + MMCIFIFO,
++		.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
++		.direction = DMA_TO_DEVICE,
++		.dst_maxburst = variant->fifohalfsize >> 2, /* # of words */
++	};
++	struct mmc_data *data = host->data;
++	enum dma_data_direction direction;
++	struct dma_chan *chan;
++	struct dma_async_tx_descriptor *desc;
++	struct scatterlist *sg;
++	dma_cookie_t cookie;
++	int i;
++
++	datactrl |= MCI_DPSM_DMAENABLE;
++	datactrl |= variant->dmareg_enable;
++
++	if (data->flags & MMC_DATA_READ) {
++		direction = DMA_FROM_DEVICE;
++		chan = host->dma_rx_channel;
++		chan->device->device_control(chan, DMA_SLAVE_CONFIG,
++					     (unsigned long) &rx_conf);
++	} else {
++		direction = DMA_TO_DEVICE;
++		chan = host->dma_tx_channel;
++		chan->device->device_control(chan, DMA_SLAVE_CONFIG,
++					     (unsigned long) &tx_conf);
++	}
++
++	/* Check for weird stuff in the sg list */
++	for_each_sg(data->sg, sg, data->sg_len, i) {
++		dev_vdbg(mmc_dev(host->mmc), "MMCI SGlist %d dir %d: length: %08x\n",
++			 i, direction, sg->length);
++		if (sg->offset & 3 || sg->length & 3)
++			return -EINVAL;
++	}
++
++	dma_map_sg(mmc_dev(host->mmc), data->sg,
++		   data->sg_len, direction);
++
++	desc = chan->device->device_prep_slave_sg(chan,
++					data->sg, data->sg_len, direction,
++					DMA_CTRL_ACK);
++	if (!desc)
++		goto unmap_exit;
++
++	host->dma_desc = desc;
++	dev_vdbg(mmc_dev(host->mmc), "Submit MMCI DMA job, sglen %d "
++		 "blksz %04x blks %04x flags %08x\n",
++		 data->sg_len, data->blksz, data->blocks, data->flags);
++	cookie = desc->tx_submit(desc);
++
++	/* Here overloaded DMA controllers may fail */
++	if (dma_submit_error(cookie))
++		goto unmap_exit;
++
++	host->dma_on_current_xfer = true;
++	chan->device->device_issue_pending(chan);
++
++	/* Trigger the DMA transfer */
++	writel(datactrl, host->base + MMCIDATACTRL);
++	/*
++	 * Let the MMCI say when the data is ended and it's time
++	 * to fire next DMA request. When that happens, MMCI will
++	 * call mmci_data_end()
++	 */
++	writel(readl(host->base + MMCIMASK0) | MCI_DATAENDMASK,
++	       host->base + MMCIMASK0);
++	return 0;
++
++unmap_exit:
++	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
++	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len, direction);
++	host->dma_on_current_xfer = false;
++	return -ENOMEM;
++}
++#else
++/* Blank functions if the DMA engine is not available */
++static inline void mmci_setup_dma(struct mmci_host *host)
++{
++}
++
++static inline void mmci_disable_dma(struct mmci_host *host)
++{
++}
++
++static inline void mmci_dma_data_end(struct mmci_host *host)
++{
++}
++
++static inline void mmci_dma_data_error(struct mmci_host *host)
++{
++}
++
++static inline int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
++{
++	return -ENOSYS;
++}
++#endif
++
+ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+ {
+ 	struct variant_data *variant = host->variant;
+@@ -183,8 +385,8 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+ 	host->data = data;
+ 	host->size = data->blksz * data->blocks;
+ 	host->data_xfered = 0;
+-
+-	mmci_init_sg(host, data);
++	host->blockend = false;
++	host->dataend = false;
  
- /*
-  * Mapping between destination event lines and physical device address.
-- * The event line is tied to a device and therefor the address is constant.
-+ * The event line is tied to a device and therefore the address is constant.
-+ * When the address comes from a primecell it will be configured in runtime
-+ * and we set the address to -1 as a placeholder.
+ 	clks = (unsigned long long)data->timeout_ns * host->cclk;
+ 	do_div(clks, 1000000000UL);
+@@ -199,13 +401,32 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+ 	BUG_ON(1 << blksz_bits != data->blksz);
+ 
+ 	datactrl = MCI_DPSM_ENABLE | blksz_bits << 4;
+-	if (data->flags & MMC_DATA_READ) {
++
++	if (data->flags & MMC_DATA_READ)
+ 		datactrl |= MCI_DPSM_DIRECTION;
++
++	if (host->dma_enable) {
++		int ret;
++
++		/*
++		 * Attempt to use DMA operation mode, if this
++		 * should fail, fall back to PIO mode
++		 */
++		ret = mmci_dma_start_data(host, datactrl);
++		if (!ret)
++			return;
++	}
++
++	/* IRQ mode, map the SG list for CPU reading/writing */
++	mmci_init_sg(host, data);
++
++	if (data->flags & MMC_DATA_READ) {
+ 		irqmask = MCI_RXFIFOHALFFULLMASK;
+ 
+ 		/*
+-		 * If we have less than a FIFOSIZE of bytes to transfer,
+-		 * trigger a PIO interrupt as soon as any data is available.
++		 * If we have less than a FIFOSIZE of bytes to
++		 * transfer, trigger a PIO interrupt as soon as any
++		 * data is available.
+ 		 */
+ 		if (host->size < variant->fifosize)
+ 			irqmask |= MCI_RXDATAAVLBLMASK;
+@@ -254,20 +475,7 @@ static void
+ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
+ 	      unsigned int status)
+ {
+-	if (status & MCI_DATABLOCKEND) {
+-		host->data_xfered += data->blksz;
+-#ifdef CONFIG_ARCH_U300
+-		/*
+-		 * On the U300 some signal or other is
+-		 * badly routed so that a data write does
+-		 * not properly terminate with a MCI_DATAEND
+-		 * status flag. This quirk will make writes
+-		 * work again.
+-		 */
+-		if (data->flags & MMC_DATA_WRITE)
+-			status |= MCI_DATAEND;
+-#endif
+-	}
++	/* First check for errors */
+ 	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
+ 		dev_dbg(mmc_dev(host->mmc), "MCI ERROR IRQ (status %08x)\n", status);
+ 		if (status & MCI_DATACRCFAIL)
+@@ -276,13 +484,19 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
+ 			data->error = -ETIMEDOUT;
+ 		else if (status & (MCI_TXUNDERRUN|MCI_RXOVERRUN))
+ 			data->error = -EIO;
+-		status |= MCI_DATAEND;
++
++		/* Force-complete the transaction */
++		host->blockend = true;
++		host->dataend = true;
+ 
+ 		/*
+ 		 * We hit an error condition.  Ensure that any data
+-		 * partially written to a page is properly coherent.
++		 * partially written to a page is properly coherent,
++		 * unless we're using DMA.
+ 		 */
+-		if (data->flags & MMC_DATA_READ) {
++		if (host->dma_on_current_xfer)
++			mmci_dma_data_error(host);
++		else if (data->flags & MMC_DATA_READ) {
+ 			struct sg_mapping_iter *sg_miter = &host->sg_miter;
+ 			unsigned long flags;
+ 
+@@ -294,12 +508,59 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
+ 			local_irq_restore(flags);
+ 		}
+ 	}
+-	if (status & MCI_DATAEND) {
++
++	/*
++	 * On ARM variants in PIO mode, MCI_DATABLOCKEND
++	 * is always sent first, and we increase the
++	 * transfered number of bytes for that IRQ. Then
++	 * MCI_DATEND follows and we conclude the transaction.
++	 * This is also the case in the U300 PIO mode.
++	 *
++	 * The Ux500 single-IRQ variant only fires the
++	 * MCI_DATAEND IRQ at the end of the entire transfer.
++	 *
++	 * In DMA mode, the IRQs can arrive out-of-order,
++	 * e.g. MCI_DATABLOCKEND sometimes arrives after MCI_DATAEND,
++	 * so in this case we use the flags "blockend" and
++	 * "dataend" to make sure both IRQs have arrived before
++	 * concluding the transaction. (This does not apply
++	 * to the Ux500 which doesn't fire MCI_DATABLOCKEND
++	 * at all.)
++	 */
++	if (status & MCI_DATABLOCKEND) {
++		/*
++		 * Just being a little over-cautious, we do not
++		 * use this progressive update in DMA or single-IRQ
++		 * mode.
++		 */
++		if (!host->variant->singleirq && !host->dma_on_current_xfer)
++			host->data_xfered += data->blksz;
++		host->blockend = true;
++	}
++
++	if (status & MCI_DATAEND)
++		host->dataend = true;
++
++	/*
++	 * On Ux500 we shall only wait for dataend, on others we must sync
++	 * with the blockend signal since they can appear out-of-order
++	 * when using DMA.
++	 */
++	if (host->dataend && (host->blockend || host->variant->singleirq)) {
++		mmci_dma_data_end(host);
+ 		mmci_stop_data(host);
+ 
+-		/* MCI_DATABLOCKEND not used with single irq */
+-		if (host->variant->singleirq && !data->error)
+-			host->data_xfered = data->blksz * data->blocks;
++		/* Reset these flags */
++		host->blockend = false;
++		host->dataend = false;
++
++		/*
++		 * Single IRQ variants do not transmit MCI_DATABLOCKEND
++		 * and in DMA mode this signal need to be synchronized
++		 * with MCI_DATEND
++		 */
++		if ((host->variant->singleirq || host->dma_on_current_xfer) && !data->error)
++			host->data_xfered += data->blksz * data->blocks;
+ 
+ 		if (!data->stop) {
+ 			mmci_request_end(host, data->mrq);
+@@ -718,6 +979,7 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+ 		dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
+ 			host->mclk);
+ 	}
++	host->phybase = dev->res.start;
+ 	host->base = ioremap(dev->res.start, resource_size(&dev->res));
+ 	if (!host->base) {
+ 		ret = -ENOMEM;
+@@ -829,6 +1091,8 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+ 	    && host->gpio_cd_irq < 0)
+ 		mmc->caps |= MMC_CAP_NEEDS_POLL;
+ 
++	mmci_setup_dma(host);
++
+ 	ret = request_irq(dev->irq[0], mmci_irq, IRQF_SHARED, DRIVER_NAME " (cmd)", host);
+ 	if (ret)
+ 		goto unmap;
+@@ -855,15 +1119,17 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+ 
+ 	mmc_add_host(mmc);
+ 
+-	dev_info(&dev->dev, "%s: MMCI rev %x cfg %02x at 0x%016llx irq %d,%d\n",
+-		mmc_hostname(mmc), amba_rev(dev), amba_config(dev),
+-		(unsigned long long)dev->res.start, dev->irq[0], dev->irq[1]);
++	dev_info(&dev->dev, "%s: MMCI/PL180 manf %x rev %x cfg %02x at 0x%016llx\n",
++		 mmc_hostname(mmc), amba_manf(dev), amba_rev(dev), amba_config(dev),
++		 (unsigned long long)dev->res.start);
++	dev_info(&dev->dev, "IRQ %d, %d (pio)\n", dev->irq[0], dev->irq[1]);
+ 
+ 	return 0;
+ 
+  irq0_free:
+ 	free_irq(dev->irq[0], host);
+  unmap:
++	mmci_disable_dma(host);
+ 	if (host->gpio_wp != -ENOSYS)
+ 		gpio_free(host->gpio_wp);
+  err_gpio_wp:
+@@ -903,6 +1169,7 @@ static int __devexit mmci_remove(struct amba_device *dev)
+ 		writel(0, host->base + MMCICOMMAND);
+ 		writel(0, host->base + MMCIDATACTRL);
+ 
++		mmci_disable_dma(host);
+ 		free_irq(dev->irq[0], host);
+ 		if (!variant->singleirq)
+ 			free_irq(dev->irq[1], host);
+diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
+index ba203b8..3736d93 100644
+--- a/drivers/mmc/host/mmci.h
++++ b/drivers/mmc/host/mmci.h
+@@ -142,8 +142,11 @@
+ 
+ struct clk;
+ struct variant_data;
++struct dma_chan;
++struct dma_async_tx_descriptor;
+ 
+ struct mmci_host {
++	phys_addr_t		phybase;
+ 	void __iomem		*base;
+ 	struct mmc_request	*mrq;
+ 	struct mmc_command	*cmd;
+@@ -170,9 +173,22 @@ struct mmci_host {
+ 	struct timer_list	timer;
+ 	unsigned int		oldstat;
+ 
++	bool			blockend;
++	bool			dataend;
++
+ 	/* pio stuff */
+ 	struct sg_mapping_iter	sg_miter;
+ 	unsigned int		size;
++
+ 	struct regulator	*vcc;
++
++	/* DMA stuff */
++	bool			dma_enable;
++	bool			dma_on_current_xfer;
++#ifdef CONFIG_DMADEVICES
++	struct dma_chan		*dma_rx_channel;
++	struct dma_chan		*dma_tx_channel;
++	struct dma_async_tx_descriptor *dma_desc;
++#endif
+ };
+ 
+diff --git a/include/linux/amba/mmci.h b/include/linux/amba/mmci.h
+index f4ee9ac..dbeba68 100644
+--- a/include/linux/amba/mmci.h
++++ b/include/linux/amba/mmci.h
+@@ -6,6 +6,8 @@
+ 
+ #include <linux/mmc/host.h>
+ 
++/* Just some dummy forwarding */
++struct dma_chan;
+ /**
+  * struct mmci_platform_data - platform configuration for the MMCI
+  * (also known as PL180) block.
+@@ -27,6 +29,17 @@
+  * @cd_invert: true if the gpio_cd pin value is active low
+  * @capabilities: the capabilities of the block as implemented in
+  * this platform, signify anything MMC_CAP_* from mmc/host.h
++ * @dma_filter: function used to select an apropriate RX and TX
++ * DMA channel to be used for DMA, if and only if you're deploying the
++ * generic DMA engine
++ * @dma_rx_param: parameter passed to the DMA allocation
++ * filter in order to select an apropriate RX channel. If
++ * there is a bidirectional RX+TX channel, then just specify
++ * this and leave dma_tx_param set to NULL
++ * @dma_tx_param: parameter passed to the DMA allocation
++ * filter in order to select an apropriate TX channel. If this
++ * is NULL the driver will attempt to use the RX channel as a
++ * bidirectional channel
   */
--static const dma_addr_t dma40_tx_map[STEDMA40_NR_DEV];
-+static const dma_addr_t dma40_tx_map[STEDMA40_NR_DEV] = {
-+	[STEDMA40_DEV_SPI0_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MMC0_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MMC1_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MMC2_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SSP0_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SSP1_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_UART2_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_UART1_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_UART0_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM2_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM0_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM1_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SPI2_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SPI1_TX] = -1,  /* PrimeCell DMA */
-+	[STEDMA40_DEV_SPI3_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM3_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM4_TX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM5_TX] = -1, /* PrimeCell DMA */
-+};
- 
- /* Mapping between source event lines and physical device address */
--static const dma_addr_t dma40_rx_map[STEDMA40_NR_DEV];
-+static const dma_addr_t dma40_rx_map[STEDMA40_NR_DEV] = {
-+	[STEDMA40_DEV_SPI0_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MMC0_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MMC1_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MMC2_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SSP0_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SSP1_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_UART2_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_UART1_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_UART0_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM2_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM0_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM1_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SPI2_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SPI1_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SPI3_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM3_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM4_RX] = -1, /* PrimeCell DMA */
-+	[STEDMA40_DEV_SD_MM5_RX] = -1, /* PrimeCell DMA */
-+};
- 
- /* Reserved event lines for memcpy only */
- static int dma40_memcpy_event[] = {
-diff --git a/arch/arm/mach-ux500/devices.c b/arch/arm/mach-ux500/devices.c
-index 8a26889..f04d8d9 100644
---- a/arch/arm/mach-ux500/devices.c
-+++ b/arch/arm/mach-ux500/devices.c
-@@ -10,10 +10,21 @@
- #include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/amba/bus.h>
-+#include <linux/amba/serial.h>
-+
-+#include <plat/ste_dma40.h>
- 
- #include <mach/hardware.h>
- #include <mach/setup.h>
- 
-+/* Channel assignments are per-SoC */
-+#ifdef CONFIG_UX500_SOC_DB8500
-+#include "ste-dma40-db8500.h"
-+#endif
-+#if defined(CONFIG_UX500_SOC_DB5500) && defined(CONFIG_STE_DMA40)
-+#error "You need to define the DMA channels for DB5500!"
-+#endif
-+
- #define __MEM_4K_RESOURCE(x) \
- 	.res = {.start = (x), .end = (x) + SZ_4K - 1, .flags = IORESOURCE_MEM}
- 
-@@ -29,20 +40,136 @@ struct amba_device ux500_pl031_device = {
- 	.irq = {IRQ_RTC_RTT, NO_IRQ},
+ struct mmci_platform_data {
+ 	unsigned int f_max;
+@@ -38,6 +51,9 @@ struct mmci_platform_data {
+ 	int	gpio_cd;
+ 	bool	cd_invert;
+ 	unsigned long capabilities;
++	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
++	void *dma_rx_param;
++	void *dma_tx_param;
  };
  
-+#ifdef CONFIG_STE_DMA40
-+static struct stedma40_chan_cfg uart0_dma_cfg_rx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.src_dev_type =  STEDMA40_DEV_UART0_RX,
-+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg uart0_dma_cfg_tx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-+	.dst_dev_type = STEDMA40_DEV_UART0_TX,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg uart1_dma_cfg_rx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.src_dev_type =  STEDMA40_DEV_UART1_RX,
-+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg uart1_dma_cfg_tx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-+	.dst_dev_type = STEDMA40_DEV_UART1_TX,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg uart2_dma_cfg_rx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.src_dev_type =  STEDMA40_DEV_UART2_RX,
-+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+
-+static struct stedma40_chan_cfg uart2_dma_cfg_tx = {
-+	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
-+			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
-+			 STEDMA40_LOW_PRIORITY_CHANNEL),
-+	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-+	.dst_dev_type = STEDMA40_DEV_UART2_TX,
-+	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+};
-+#endif
-+
-+static struct amba_pl011_data uart0_plat = {
-+#ifdef CONFIG_STE_DMA40
-+	.dma_filter = stedma40_filter,
-+	.dma_rx_param = &uart0_dma_cfg_rx,
-+	.dma_tx_param = &uart0_dma_cfg_tx,
-+#endif
-+};
-+
-+static struct amba_pl011_data uart1_plat = {
-+#ifdef CONFIG_STE_DMA40
-+	.dma_filter = stedma40_filter,
-+	.dma_rx_param = &uart1_dma_cfg_rx,
-+	.dma_tx_param = &uart1_dma_cfg_tx,
-+#endif
-+};
-+
-+static struct amba_pl011_data uart2_plat = {
-+#ifdef CONFIG_STE_DMA40
-+	.dma_filter = stedma40_filter,
-+	.dma_rx_param = &uart2_dma_cfg_rx,
-+	.dma_tx_param = &uart2_dma_cfg_tx,
-+#endif
-+};
-+
- struct amba_device ux500_uart0_device = {
--	.dev = { .init_name = "uart0" },
-+	.dev =  {
-+		.coherent_dma_mask = ~0,
-+		.init_name = "uart0",
-+		.platform_data = &uart0_plat,
-+	},
- 	__MEM_4K_RESOURCE(UX500_UART0_BASE),
- 	.irq = {IRQ_UART0, NO_IRQ},
- };
- 
- struct amba_device ux500_uart1_device = {
--	.dev = { .init_name = "uart1" },
-+	.dev =  {
-+		.coherent_dma_mask = ~0,
-+		.init_name = "uart1",
-+		.platform_data = &uart1_plat,
-+	},
- 	__MEM_4K_RESOURCE(UX500_UART1_BASE),
- 	.irq = {IRQ_UART1, NO_IRQ},
- };
- 
- struct amba_device ux500_uart2_device = {
--	.dev = { .init_name = "uart2" },
-+	.dev =  {
-+		.coherent_dma_mask = ~0,
-+		.init_name = "uart2",
-+		.platform_data = &uart2_plat,
-+	},
- 	__MEM_4K_RESOURCE(UX500_UART2_BASE),
- 	.irq = {IRQ_UART2, NO_IRQ},
- };
+ #endif
 -- 
 1.6.3.3
 
