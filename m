@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab0IAPa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 11:30:59 -0400
-Received: from verein.lst.de ([213.95.11.210]:55225 "EHLO verein.lst.de"
+	id S1755826Ab0IAPqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 11:46:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54097 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754617Ab0IAPa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 11:30:57 -0400
-Date: Wed, 1 Sep 2010 17:30:27 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, snitzer@redhat.com,
-        j-nomura@ce.jp.nec.com, jamie@shareable.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-raid@vger.kernel.org, hch@lst.de
-Subject: Re: [PATCH 1/5] block: make __blk_rq_prep_clone() copy most command flags
-Message-ID: <20100901153027.GA2744@lst.de>
-References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-2-git-send-email-tj@kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283162296-13650-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1753194Ab0IAPqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 11:46:46 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
+Subject: [PATCH] xconfig: Change the titlebar if using Qt3
+Date: Wed,  1 Sep 2010 17:46:37 +0200
+Message-Id: <1283355997-6900-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 11:58:12AM +0200, Tejun Heo wrote:
-> Currently __blk_rq_prep_clone() copies only REQ_WRITE and REQ_DISCARD.
-> There's no reason to omit other command flags and REQ_FUA needs to be
-> copied to implement FUA support in request-based dm.
-> 
-> REQ_COMMON_MASK which specifies flags to be copied from bio to request
-> already identifies all the command flags.  Define REQ_CLONE_MASK to be
-> the same as REQ_COMMON_MASK for clarity and make __blk_rq_prep_clone()
-> copy all flags in the mask.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+Qt4 is now used by default and will get more testing. In case someone
+still uses Qt3 and reports a bug, make it easy to recognize that this is
+Qt3.
 
-Looks good,
+Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ scripts/kconfig/qconf.cc |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
+index 88d3874..a04e451 100644
+--- a/scripts/kconfig/qconf.cc
++++ b/scripts/kconfig/qconf.cc
+@@ -1274,8 +1274,14 @@ ConfigMainWindow::ConfigMainWindow(void)
+ 	char title[256];
+ 
+ 	QDesktopWidget *d = configApp->desktop();
+-	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration"),
+-		getenv("KERNELVERSION"));
++	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration%s"),
++		getenv("KERNELVERSION"),
++#if QT_VERSION < 0x040000
++		" (Qt3)"
++#else
++		""
++#endif
++		);
+ 	setCaption(title);
+ 
+ 	width = configSettings->readNumEntry("/window width", d->width() - 64);
+-- 
+1.7.1
 
