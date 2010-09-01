@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab0IAN5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:57:51 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33817 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab0IAN5s (ORCPT
+	id S1755336Ab0IAN7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:59:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35046 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650Ab0IAN7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:57:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=gkgfaKQCuZbTEYdE1w2rvcBBZ/Aah2NvuGz+XGjYiW44Wd22O3IHx8cqWbBN9awhPD
-         cs4R3wkTjsXoLVDZTX9cI5XkXU48az/ecLK1gVgOkAM6iMKHAkBiOlVeFn85lR+PnU7T
-         oxZZ+cdlHEGUY+gdANh1JDB44zfNRPVwUQX2I=
-Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-In-Reply-To: <20100901112026.GA9468@ff.dom.local>
-References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
-	 <4AUWBNzTkbD.A.ey.cGueMB@chimera> <courier.4C7C99F2.00001F74@fs.ru.acad.bg>
-	 <20100831192659.GA3093@del.dom.local>
-	 <1283338251.2556.124.camel@edumazet-laptop>
-	 <20100901112026.GA9468@ff.dom.local>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Sep 2010 15:57:41 +0200
-Message-ID: <1283349461.2556.333.camel@edumazet-laptop>
+	Wed, 1 Sep 2010 09:59:48 -0400
+X-Authority-Analysis: v=1.1 cv=F68j8apdn+AYvba2s2WjKYIAmW276Pjvg9wPu/ZwFig= c=1 sm=0 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Dhx35ztt3x_e9n0ohKEA:9 a=ReiOnyhL_wKtAhkcwWnGE-_v7Y8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: ftrace/perf_event leak
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        kvm-devel <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100901121518.GA5378@nowhere>
+References: <4C7E11E5.1040402@redhat.com> <1283331868.2059.808.camel@laptop>
+	 <4C7E1C36.6070400@redhat.com> <4C7E1F12.8030304@cn.fujitsu.com>
+	 <4C7E2D1D.3080603@redhat.com> <1283338977.2059.938.camel@laptop>
+	 <20100901121518.GA5378@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 01 Sep 2010 09:59:45 -0400
+Message-ID: <1283349585.2356.1.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 01 septembre 2010 à 11:20 +0000, Jarek Poplawski a écrit :
-> On Wed, Sep 01, 2010 at 12:50:51PM +0200, Eric Dumazet wrote:
-> > Plamen, could you test following patch ?
-> > 
-> > I reproduced problem on a dev machine and following patch cured it.
-> > 
-> > Thanks
-> > 
-> > [PATCH] gro: fix different skb headrooms
-> > 
-> > packets entering GRO might have different headrooms, even for a given
-> > flow (because of implementation details in drivers, like copybreak).
-> > We cant force drivers to deliver packets with a fixed headroom.
-> > 
-> > 1) fix skb_segment()
-> > 
-> > skb_segment() makes the false assumption headrooms of fragments are same
-> > than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
-> > errors, and crash later in skb_copy_and_csum_dev()
+On Wed, 2010-09-01 at 14:15 +0200, Frederic Weisbecker wrote:
+
+> Thanks for fixing this.
 > 
-> Eric, probably I missed something, but since the same test as in
-> skb_copy_and_csum_dev() gave different result a bit earlier on exactly
-> the same skb, I've suspected some sharing (or use after free)
-> problems, so I'm not sure your current diagnose can explain this.
-> (Unless this old test was dismissed later.)
+> However, can we split this in two patches to ease the backport?
+> 
+> The lack of a module_put() after perf_trace_init() failure is there for a while
+> (the backport needs to start in 2.6.32).
+> 
+> But the lack of a module_put in the destroy path needs a .35 backport only.
 
-Oh, this is because your patch had an error for the gso part that read :
+I don't think it really needs two patches. Just notify stable (and 
+Greg KH in particular) about the backport requirements. Greg can handle
+it ;)
 
--               rc = ops->ndo_start_xmit(nskb, dev);
-+               if (skb_csum_start_bug(skb, 50)) {
-+                       kfree_skb(skb);
-+                       rc = NETDEV_TX_OK;
-+               } else
-+                       rc = ops->ndo_start_xmit(nskb, dev);
-+
-                if (unlikely(rc != NETDEV_TX_OK)) {
-                        if (rc & ~NETDEV_TX_MASK)
-                                goto out_kfree_gso_skb;
-
-You called skb_csum_start_bug(skb, 50) instead of
-skb_csum_start_bug(nskb, 50)
-
-Hope this clarify a bit ;)
-
-Thanks
+-- Steve
 
 
