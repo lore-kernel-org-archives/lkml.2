@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab0IAR7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 13:59:38 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:36917 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab0IAR7h (ORCPT
+	id S1755988Ab0IAR7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 13:59:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42270 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab0IAR7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 13:59:37 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzbb2cK154dM1432N98dNzz1202hzz8275dhz32i2a8h5bep5bfs43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L82XW2-02-77G-02
-X-M-MSG: 
-Date: Wed, 1 Sep 2010 16:57:28 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second
- event on intel perf counter
-Message-ID: <20100901145728.GM22783@erda.amd.com>
-References: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
+	Wed, 1 Sep 2010 13:59:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <AANLkTiktz6bc6Ue9OKZ0ejSqf7GH4z50JeUvidxHbrSw@mail.gmail.com>
+References: <1282950052.3284.110.camel@dhcp231-106.rdu.redhat.com>
+ <AANLkTi=aEdKM_hunJmPzXxPqkrbok+_C6QUKf8v=Q+18@mail.gmail.com>
+ <1283210070.3284.139.camel@dhcp231-106.rdu.redhat.com> <4C7CC107.1050304@redhat.com>
+ <4C7D0DAD.9030505@redhat.com> <4C7D141A.9060102@redhat.com>
+ <4C7D1868.3090701@redhat.com> <1283267765.3284.150.camel@dhcp231-106.rdu.redhat.com>
+ <4C7D1E1B.4020700@redhat.com> <1283268367.3284.154.camel@dhcp231-106.rdu.redhat.com>
+ <4C7D248A.2080507@redhat.com> <AANLkTikhc1Nu5PsQqzKL0PXY3juOxwuPOsu0ZKvzfCJ3@mail.gmail.com>
+ <1283287898.3284.183.camel@dhcp231-106.rdu.redhat.com> <AANLkTiktz6bc6Ue9OKZ0ejSqf7GH4z50JeUvidxHbrSw@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 1 Sep 2010 19:59:23 +0200
+Message-ID: <AANLkTinbfYMN4gejCEB7UJooa5m68gbX_o6amrdo07Oo@mail.gmail.com>
+Subject: Re: selinux vs devtmpfs (vs udev)
+To: Stephen Smalley <stephen.smalley@gmail.com>
+Cc: Eric Paris <eparis@redhat.com>, Harald Hoyer <harald@redhat.com>,
+        Daniel J Walsh <dwalsh@redhat.com>, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, greg@kroah.com, sds@tycho.nsa.gov
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.09.10 09:04:45, Stephane Eranian wrote:
-> Don,
-> 
-> Found your patch on LKML (I am not on it).
-> 
-> In your changelog you said:
-> 
-> > During testing of a patch to stop having the perf subsytem swallow nmis,
-> > it was uncovered that Nehalem boxes were randomly getting unknown nmis
-> > when using the perf tool.
-> >
-> > Moving the ack'ing of the PMI closer to when we get the status allows
-> > the hardware to properly re-set the PMU bit signaling another PMI was
-> > triggered during the processing of the first PMI.  This allows the new
-> > logic for dealing with the shortcomings of multiple PMIs to handle the
-> > extra NMI by 'eat'ing it later.
-> 
-> > Now one can wonder why are we getting a second PMI when we disable all
-> > the PMUs in the beginning of the NMI handler to prevent such a case, for
-> > that I do not know.  But I know the fix below helps deal with this quirk.
-> >
-> 
-> I am assuming you're talking about back-to-back NMIs here, not nested NMIs.
-> I don't quite understand the scenario here. Is it the case that you handled 1
-> overflow, and then right as you return from the interrupt, you get a second
-> PMI with a ovfl_status=0 ?
-> 
-> What events did you measure? Which counters did you use?
-> Did you have HT turned on?
+On Wed, Sep 1, 2010 at 18:08, Stephen Smalley <stephen.smalley@gmail.com> wrote:
+> Maybe we should back up and ask the udev folks how they think libvirt
+> labeling should be done so as to not conflict with udev labeling, e.g.
+> should libvirt be going through udev to assign the labels.
 
-It is related to this thread:
+The current idea is that udev only labels the device on bootup once,
+or when a new device is discovered, and never changes it again (unless
+someone will synthesize 'add' events, which should not happen).
 
- http://lkml.org/lkml/2010/8/25/124
+The behavior described in the initial bug is just a plain udev bug.
+With the fix Harald put in, it should behave as described above. That
+can all be changed though, if needed, and if something else makes
+sense.
 
-Not acking the status immediately triggered an nmi, but the status was
-0. Acking after reading and before processing the counters results in
-a non-zero status and thus, no empty nmi.
-
--Robert
-
-> 
-> > Tested on multiple Nehalems where the problem was occuring.  With the
-> > patch, the code now loops a second time to handle the second PMI (whereas
-> > before it was not).
-> 
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Kay
