@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab0IALDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 07:03:09 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57100 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab0IALDF (ORCPT
+	id S1754851Ab0IALDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 07:03:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51875 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab0IALDd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 07:03:05 -0400
-Date: Wed, 1 Sep 2010 14:02:37 +0300
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
-Subject: Re: [PATCH 2/7] wire up sys_time_change_notify() on ARM
-Message-ID: <20100901110237.GK3003@shisha.kicks-ass.net>
-Mail-Followup-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>, Christoph Hellwig <hch@lst.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1283255151-6364-1-git-send-email-virtuoso@slind.org>
- <1283255151-6364-2-git-send-email-virtuoso@slind.org>
- <20100901091455.GL8142@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100901091455.GL8142@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 1 Sep 2010 07:03:33 -0400
+Subject: Re: ftrace/perf_event leak
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, kvm-devel <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C7E2D1D.3080603@redhat.com>
+References: <4C7E11E5.1040402@redhat.com> <1283331868.2059.808.camel@laptop>
+	 <4C7E1C36.6070400@redhat.com> <4C7E1F12.8030304@cn.fujitsu.com>
+	 <4C7E2D1D.3080603@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Sep 2010 13:02:57 +0200
+Message-ID: <1283338977.2059.938.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 10:14:55 +0100, Russell King - ARM Linux wrote:
-> On Tue, Aug 31, 2010 at 02:45:46PM +0300, Alexander Shishkin wrote:
-> > sys_time_change_notify() is a new syscall with number and types of
-> > parameters such that no ARM-specific processing is needed.
+On Wed, 2010-09-01 at 13:38 +0300, Avi Kivity wrote:
+> On 09/01/2010 12:38 PM, Li Zefan wrote:
+> >
+> > Then try this:
 > 
-> This patch needs to be redone.  Please wait until I've finished catching
-> up with the last 10 or so days of email and merged my tree into mainline.
-> Alternatively, update your patch to apply on top of my master branch.
+> Tested-by: Avi Kivity <avi@redhat.com>
+> 
 
-Ok, I'll wait, no problem.
+Thanks, queued as:
 
-Regards,
---
-Alex
+---
+Subject: perf, trace: Fix module leak
+From: Li Zefan <lizf@cn.fujitsu.com>
+Date: Wed Sep 01 12:58:43 CEST 2010
+
+Commit 1c024eca (perf, trace: Optimize tracepoints by using
+per-tracepoint-per-cpu hlist to track events) caused a module refcount
+leak.
+
+Tested-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <4C7E1F12.8030304@cn.fujitsu.com>
+---
+ kernel/trace/trace_event_perf.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-2.6/kernel/trace/trace_event_perf.c
+===================================================================
+--- linux-2.6.orig/kernel/trace/trace_event_perf.c
++++ linux-2.6/kernel/trace/trace_event_perf.c
+@@ -91,6 +91,8 @@ int perf_trace_init(struct perf_event *p
+ 		    tp_event->class && tp_event->class->reg &&
+ 		    try_module_get(tp_event->mod)) {
+ 			ret = perf_trace_event_init(tp_event, p_event);
++			if (ret)
++				module_put(tp_event->mod);
+ 			break;
+ 		}
+ 	}
+@@ -147,6 +149,7 @@ void perf_trace_destroy(struct perf_even
+ 		}
+ 	}
+ out:
++	module_put(tp_event->mod);
+ 	mutex_unlock(&event_mutex);
+ }
+ 
+
