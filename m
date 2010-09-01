@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab0IARhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 13:37:16 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:57481 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab0IARhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 13:37:14 -0400
-Message-ID: <4C7E8F48.3020501@simon.arlott.org.uk>
-Date: Wed, 01 Sep 2010 18:37:12 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
+	id S1754359Ab0IARtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 13:49:22 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59662 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753217Ab0IARtV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 13:49:21 -0400
+Date: Wed, 1 Sep 2010 13:49:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Simon Arlott <simon@fire.lp0.eu>
+cc: Greg KH <greg@kroah.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] USB: output an error message when the pipe type doesn't
+ match the endpoint type
+In-Reply-To: <4C7E87DD.3080508@simon.arlott.org.uk>
+Message-ID: <Pine.LNX.4.44L0.1009011334160.1617-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH (v2)] cxacru: Use a bulk/int URB to access the command endpoint
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The command endpoint is either a bulk or interrupt endpoint, but using
-the wrong type of transfer causes an error if CONFIG_USB_DEBUG is
-enabled after commit f661c6f8c67bd55e93348f160d590ff9edf08904, which
-checks for this mismatch.
+On Wed, 1 Sep 2010, Simon Arlott wrote:
 
-Detect which type of endpoint it is and use a bulk/int URB as
-appropriate. There are other function calls specifying a bulk pipe,
-but usb_clear_halt doesn't use the pipe type (only the endpoint) and
-usb_bulk_msg auto-detects interrupt transfers.
+> > This is okay with me.  If you're serious about not changing the
+> > behavior merely because debugging is enabled, you could move this test
+> > out of the debug-only region and possibly change the dev_err to
+> > dev_dbg.  However doing so might break some devices that are currently
+> > working.
+> 
+> I'd expect that to break potentially many devices, although only cxacru
+> stopped working for me. The USB API isn't really suitable for adding
+> this type of check because it allows the drivers to get away with too
+> much already.
 
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
----
- drivers/usb/atm/cxacru.c |   24 ++++++++++++++++++++++--
- 1 files changed, 22 insertions(+), 2 deletions(-)
+Unlike device hardware, drivers can always be changed.  If adding a 
+check will help spot errors, it's probably worthwhile.
 
-diff --git a/drivers/usb/atm/cxacru.c b/drivers/usb/atm/cxacru.c
-index 593fc5e..5af23cc 100644
---- a/drivers/usb/atm/cxacru.c
-+++ b/drivers/usb/atm/cxacru.c
-@@ -1127,6 +1127,7 @@ static int cxacru_bind(struct usbatm_data *usbatm_instance,
- {
- 	struct cxacru_data *instance;
- 	struct usb_device *usb_dev = interface_to_usbdev(intf);
-+	struct usb_host_endpoint *cmd_ep = usb_dev->ep_in[CXACRU_EP_CMD];
- 	int ret;
- 
- 	/* instance init */
-@@ -1171,15 +1172,34 @@ static int cxacru_bind(struct usbatm_data *usbatm_instance,
- 		goto fail;
- 	}
- 
--	usb_fill_int_urb(instance->rcv_urb,
-+	if (!cmd_ep) {
-+		dbg("cxacru_bind: no command endpoint");
-+		ret = -ENODEV;
-+		goto fail;
-+	}
-+
-+	if ((cmd_ep->desc.bmAttributes & USB_ENDPOINT_XFERTYPE_MASK)
-+			== USB_ENDPOINT_XFER_INT) {
-+		usb_fill_int_urb(instance->rcv_urb,
- 			usb_dev, usb_rcvintpipe(usb_dev, CXACRU_EP_CMD),
- 			instance->rcv_buf, PAGE_SIZE,
- 			cxacru_blocking_completion, &instance->rcv_done, 1);
- 
--	usb_fill_int_urb(instance->snd_urb,
-+		usb_fill_int_urb(instance->snd_urb,
- 			usb_dev, usb_sndintpipe(usb_dev, CXACRU_EP_CMD),
- 			instance->snd_buf, PAGE_SIZE,
- 			cxacru_blocking_completion, &instance->snd_done, 4);
-+	} else {
-+		usb_fill_bulk_urb(instance->rcv_urb,
-+			usb_dev, usb_rcvbulkpipe(usb_dev, CXACRU_EP_CMD),
-+			instance->rcv_buf, PAGE_SIZE,
-+			cxacru_blocking_completion, &instance->rcv_done);
-+
-+		usb_fill_bulk_urb(instance->snd_urb,
-+			usb_dev, usb_sndbulkpipe(usb_dev, CXACRU_EP_CMD),
-+			instance->snd_buf, PAGE_SIZE,
-+			cxacru_blocking_completion, &instance->snd_done);
-+	}
- 
- 	mutex_init(&instance->cm_serialize);
- 
--- 
-1.7.0.4
+> usb_clear_halt() takes a pipe when it really wants the endpoint, the
+> pipe type is ignored.
 
--- 
-Simon Arlott
+What's wrong with that?  Besides, in the end we shouldn't be using
+pipes at all; we should always use pointers to struct
+usb_host_endpoint.
+
+> usb_bulk_msg() auto-detects the type between interrupt and bulk, as
+> does usb_interrupt_msg() because the latter just calls the former.
+> 
+> (I think -EINVAL might be a better return code. The pipe isn't broken,
+> it doesn't exist.)
+
+Within the kernel, the meanings of the -Exxx error codes are fairly
+arbitrary.  But since this code can be passed to userspace you are
+right.
+
+Alan Stern
+
