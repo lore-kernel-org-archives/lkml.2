@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab0IAQ6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 12:58:47 -0400
-Received: from mailhub.stratus.com ([134.111.1.17]:55237 "EHLO
-	mailhub4.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab0IAQ6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 12:58:45 -0400
-Date: Wed, 1 Sep 2010 12:57:43 -0400
-From: Bandan Das <bandan.das@stratus.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: bunk@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Bandan Das <bandan.das@stratus.com>,
-        David Miller <davem@davemloft.net>, NetDev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
- ip_fragment
-Message-ID: <20100901165743.GB17843@stratus.com>
-References: <20100830200917.GA10754@stratus.com>
- <1283204118.2405.32.camel@edumazet-laptop>
- <20100830232147.GB10754@stratus.com>
- <1283232031.2405.38.camel@edumazet-laptop>
- <20100831082444.GB29281@gondor.apana.org.au>
- <1283246271.2550.35.camel@edumazet-laptop>
- <20100831123641.GA31017@gondor.apana.org.au>
+	id S1754251Ab0IARDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 13:03:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2974 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753142Ab0IARC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 13:02:59 -0400
+Date: Wed, 1 Sep 2010 13:27:43 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] KVM: MMU: lower the aduit frequency
+Message-ID: <20100901162743.GA12870@amt.cnet>
+References: <4C78FA00.8090606@cn.fujitsu.com>
+ <4C7B867D.9080500@cn.fujitsu.com>
+ <4C7B8759.60900@cn.fujitsu.com>
+ <20100830154719.GB12707@amt.cnet>
+ <4C7C687D.2000401@cn.fujitsu.com>
+ <4C7E179D.6000405@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100831123641.GA31017@gondor.apana.org.au>
-Company: Stratus Technologies
-X-Disclaimer: This email will auto delete in 5 days, nah.. I am kidding!
+In-Reply-To: <4C7E179D.6000405@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-OriginalArrivalTime: 01 Sep 2010 16:57:43.0266 (UTC) FILETIME=[CB5A3420:01CB49F6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On  0, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
-> On Tue, Aug 31, 2010 at 11:17:51AM +0200, Eric Dumazet wrote:
+On Wed, Sep 01, 2010 at 12:06:37PM +0300, Avi Kivity wrote:
+>  On 08/31/2010 05:27 AM, Xiao Guangrong wrote:
 > >
-> > Once again, the IP stack -> bridge -> IP stack flow bites us,
-> > because bridge likes to dirty IPCB.
+> >>I've always seen progress from the guest while running with audit
+> >>enabled (its slow, but its not supposed to be fast anyway).
+> >>
+> >>Did you experience a freeze?
+> >>
+> >There is a simply test in the guest if it's not rate limit:
+> >
+> ># time ls
+> >anaconda-ks.cfg  Documents  install.log         Music     Public     Videos
+> >Desktop          Downloads  install.log.syslog  Pictures  Templates
+> >
+> >real    1m26.053s
+> >user    0m0.311s
+> >sys     0m1.813s
+> >
+> >'ls' command cost about 1.5 minute, if we run the memory test program, i think
+> >the time/delay is unacceptable...... :-(
 > 
-> OK, so we're talking about a locally transmitted packet, with
-> IP options leaving the IP stack, entering bridging, and then
-> reentering the IP stack?
-> 
-> In that case the packet should no longer be treated as an IP
-> packet when it enters the bridge.  So if it did have options
-> and we want to support that in bridging then we need to parse
-> IP options there as my comment suggested.
+> Marcelo, would making the ratelimit optional help?  personally I
+> think without ratelimit audit is useless, and with ratelimit it is a
+> lot less useful but can still point out problems.  But I haven't
+> used it in a while.
 
-Ok. So, I am not sure if re-exporting ip_compile_options is a 
-good idea nor am I sure if replicating its behavior in a different 
-function is.  It was removed from the list of exported symbols way
-back in 2005. 
+Was just wondering whether there was a freeze. Patchset looks good
+(ratelimit can be disabled manually).
 
-commit 0742fd53a3774781255bd1e471e7aa2e4a82d5f7
-Author: Adrian Bunk <bunk@stusta.de>
-Date:   Tue Aug 9 19:35:47 2005 -0700
-
-    [IPV4]: possible cleanups
-    
-    This patch contains the following possible cleanups:
-    - make needlessly global code static
-    - #if 0 the following unused global function:
-      - xfrm4_state.c: xfrm4_state_fini
-    - remove the following unneeded EXPORT_SYMBOL's:
-      - ip_output.c: ip_finish_output
-      - ip_output.c: sysctl_ip_default_ttl
-      - fib_frontend.c: ip_dev_find
-      - inetpeer.c: inet_peer_idlock
-      - ip_options.c: ip_options_compile
-      - ip_options.c: ip_options_undo
-      - net/core/request_sock.c: sysctl_max_syn_backlog
-
-But, nevertheless, I moved the call to ip_options_compile to 
-br_nf_dev_queue_xmit(). Does something like this look ok ?
-(Previously sent patch : http://www.spinics.net/lists/kernel/msg1077537.html)
-
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 2c911c0..de44271 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -759,9 +759,21 @@ static unsigned int br_nf_forward_arp(unsigned int hook, struct sk_buff *skb,
- #if defined(CONFIG_NF_CONNTRACK_IPV4) || defined(CONFIG_NF_CONNTRACK_IPV4_MODULE)
- static int br_nf_dev_queue_xmit(struct sk_buff *skb)
- {
-+       struct ip_options *opt;
-+       struct iphdr *iph;
-+       struct net_device *dev = skb->dev;
-+
-        if (skb->nfct != NULL && skb->protocol == htons(ETH_P_IP) &&
-            skb->len + nf_bridge_mtu_reduction(skb) > skb->dev->mtu &&
--           !skb_is_gso(skb))
-+           !skb_is_gso(skb)) {
-+               iph = ip_hdr(skb);
-+               opt = &(IPCB(skb)->opt);
-+               opt->optlen = iph->ihl*4 - sizeof(struct iphdr);
-+               if (ip_options_compile(dev_net(dev), opt, skb)){
-+                       IP_INC_STATS(dev_net(dev), IPSTATS_MIB_INHDRERRORS);
-+                       memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
-+               }
-+       }
-                return ip_fragment(skb, br_dev_queue_push_xmit);
-        else
-                return br_dev_queue_push_xmit(skb);
-diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
-index ba9836c..72fe82c 100644
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -466,7 +466,7 @@ error:
-        }
-        return -EINVAL;
- }
--
-+EXPORT_SYMBOL(ip_options_compile);
- 
- /*
-  *     Undo all the changes done by ip_options_compile().
