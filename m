@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab0IAJlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:41:00 -0400
-Received: from lucidpixels.com ([75.144.35.66]:32789 "EHLO lucidpixels.com"
+	id S1754555Ab0IAJln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:41:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48058 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab0IAJk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:40:56 -0400
-Date: Wed, 1 Sep 2010 05:40:52 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: adam radford <aradford@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
- timed out, resetting card.
-In-Reply-To: <alpine.DEB.2.00.1008310820350.19249@p34.internal.lan>
-Message-ID: <alpine.DEB.2.00.1009010536070.14332@p34.internal.lan>
-References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan> <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
- <alpine.DEB.2.00.1008310717260.4858@p34.internal.lan> <alpine.DEB.2.00.1008310732120.5156@p34.internal.lan> <alpine.DEB.2.00.1008310820350.19249@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751870Ab0IAJlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 05:41:40 -0400
+Date: Wed, 1 Sep 2010 11:41:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL] oprofile fixes
+Message-ID: <20100901094121.GA3606@elte.hu>
+References: <20100901084632.GI22783@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100901084632.GI22783@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0185]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Robert Richter <robert.richter@amd.com> wrote:
 
-On Tue, 31 Aug 2010, Justin Piszcz wrote:
+> Ingo,
+> 
+> please pull oprofile fixes from:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+> 
+> Thanks,
+> 
+> -Robert
+> 
+> The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
+> 
+>   Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+> 
+> Robert Richter (2):
+>       oprofile: fix crash when accessing freed task structs
+>       oprofile, x86: fix init_sysfs error handling
+> 
+>  arch/x86/oprofile/nmi_int.c    |   16 +++++++++++++---
+>  drivers/oprofile/buffer_sync.c |   27 ++++++++++++++-------------
+>  drivers/oprofile/cpu_buffer.c  |    2 --
+>  3 files changed, 27 insertions(+), 18 deletions(-)
 
->>
+Pulled, thanks a lot Robert!
 
-Hi Adam and LSI,
-
-LSI got back to me, they said to try their latest firwmare and that the high
-I/O wait was solved in that release.
-
-# tw_cli  /c0 show all | grep -i firmware
-/c0 Firmware Version = FE9X 4.10.00.016
-# tw_cli  /c1 show all | grep -i firmware
-/c1 Firmware Version = FE9X 4.10.00.016
-
-I upgraded to the newest firmware, 2.6.34 remains solid.
-However, when I moved to 2.6.35, the high I/O weight and system freezes recur.
-Has anyone not noticed this?  I have two different controllers, a 4 and 16
-port 9650SE, both with BBUs, one with a RAID-1 the other with a RAID-6 and
-I've never had any problems like this before (this high I/O wait/ctrl reset)
-until I moved to 2.6.35.
-
-There is something wrong/happening here in 2.6.35 that causes the system
-to become unresponsive and reset the controllers under high load.  Prior to
-2.6.35, the problem does not exist, I have confirmed this on both firmwares
-now.
-
-
-Could the lock/unlock be causing the issue?
-Again, in 2.6.34, there are no latency problems or controller resets.
-
-3ware diff:
-
---- linux-2.6.34.6/drivers/scsi/3w-9xxx.c       2010-08-26 19:44:38.000000000 -0400
-+++ linux-2.6.35.4/drivers/scsi/3w-9xxx.c       2010-08-26 19:47:12.000000000 -0400
--   Written By: Adam Radford <linuxraid@amcc.com>
--   Modifications By: Tom Couch <linuxraid@amcc.com>
-+   Written By: Adam Radford <linuxraid@lsi.com>
-+   Modifications By: Tom Couch <linuxraid@lsi.com>
-+   Copyright (C) 2010 LSI Corporation.
--   linuxraid@amcc.com
-+   linuxraid@lsi.com
--   http://www.amcc.com
-+   http://www.lsi.com
-+   2.26.02.014 - Force 60 second timeout default.
--#define TW_DRIVER_VERSION "2.26.02.013"
-+#define TW_DRIVER_VERSION "2.26.02.014"
--MODULE_AUTHOR ("AMCC");
-+MODULE_AUTHOR ("LSI");
--static int twa_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
-+static long twa_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
--       .ioctl          = twa_chrdev_ioctl,
-+       .unlocked_ioctl = twa_chrdev_ioctl,
--static int twa_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
-+static long twa_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+       struct inode *inode = file->f_path.dentry->d_inode;
-+       lock_kernel();
-+
-+       unlock_kernel();
-+/* This function gets called when a disk is coming on-line */
-+static int twa_slave_configure(struct scsi_device *sdev)
-+{
-+       /* Force 60 second timeout */
-+       blk_queue_rq_timeout(sdev->request_queue, 60 * HZ);
-+
-+       return 0;
-+} /* End twa_slave_configure() */
-+
-+       .slave_configure        = twa_slave_configure,
-
-
+	Ingo
