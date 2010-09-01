@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab0IAVdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 17:33:44 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:36742 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab0IAVdm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 17:33:42 -0400
-Date: Wed, 1 Sep 2010 23:33:37 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
-Message-ID: <20100901213337.GA8844@basil.fritz.box>
-References: <20100901213318.19353.54619.stgit@localhost.localdomain>
-MIME-Version: 1.0
+	id S1755917Ab0IAVdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 17:33:52 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:55757 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754421Ab0IAVdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 17:33:51 -0400
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, spender@grsecurity.net,
+        eric.dumazet@gmail.com
+Subject: How can OOM killer detect process consuming much kernel memory?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201008212101.IJG87048.QMOHFtSOVOLFFJ@I-love.SAKURA.ne.jp>
+	<AANLkTi=oWoHUmm_3xkRY7UzoXTuptKvUHzn0gK2WDiSa@mail.gmail.com>
+	<201008302227.DJH30258.OQFMFtFJOOVSHL@I-love.SAKURA.ne.jp>
+In-Reply-To: <201008302227.DJH30258.OQFMFtFJOOVSHL@I-love.SAKURA.ne.jp>
+Message-Id: <201009020633.DHJ01355.OQFMLtHSVOOJFF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 2 Sep 2010 06:33:46 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100901213318.19353.54619.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 02:33:18PM -0700, Peter P Waskiewicz Jr wrote:
-> On certain BIOSes, SRAT enumeration isn't exported correctly.
-> This leads to NUMA node enumeration failure, and causes the kernel
-> to fall back onto a single node treated as flat memory.  This
-> can happen on large, multi-socket systems (4 or more sockets), and
-> becomes problematic for performance.
+I contacted Brad Spengler regarding below topic
+
+  http://kerneltrap.org/mailarchive/linux-netdev/2010/8/21/6283491
+
+and received some comments.
+
+Brad Spengler wrote:
+> Tetsuo Handa wrote:
+> > Brad Spengler wrote:
+> > > Nice find, seems like the problem isn't just the exhaustion of the space 
+> > > itself, but that a single non-root user can completely exhaust it with 
+> > > no limitation (given enough RAM).  There should be some per-user 
+> > > resource limit for this (similar to RLIMIT_NPROC) or the space should be 
+> > > made less rigid.
+> > > 
+> > I posted a patch in the third message of that thread, but no response so far.
+> > I don't know whether we should allow 4294967296 names or not
+> > because more RAM will be consumed by attacker if more names are allowed.
 > 
-> This patch adds a boot parameter to allow a kernel to be booted
-> with the option to skip the SRAT check.  There are BIOSes in
-> production that have these failures, so this will allow people
-> in the field to work around these BIOS issues.
+> The max size for sun_path is considerably large; why couldn't we encode 
+> the uid/namespace into it somehow and reduce the amount each user can 
+> allocate?  (conceptually it'd be something like, <namespace 
+> uuid><uid><hex to operate on as previously>)  The OOM killer needs to 
+> make sure creators of large numbers of these get killed, but 
+> implementing a per-user limit on this keeps it from turning into a DoS.
 
-Looks good.
+Is it possible to make OOM killer to kill processes consuming kernel memory
+rather than userspace memory?
 
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-
--Andi
-
+I'm happy if OOM killer can select victim process based on both kernel memory
+usage and userspace memory usage. For example, opening a file requires kernel
+memory allocation (e.g. /sys/kernel/security/tomoyo/self_domain allocates 8KB
+of kernel memory). Therefore, I refuse allowing everybody to open that file
+even if the content is public (because an attacker would open
+/sys/kernel/security/tomoyo/self_domain as many as possible using
+fork() and open() in order to exhaust kernel memory).
