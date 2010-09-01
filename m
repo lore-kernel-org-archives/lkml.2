@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab0IASBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 14:01:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54528 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab0IASBc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 14:01:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=ICaP804lg9hCAKe4+UrfZAndpwThha0w7tx2+HORpssGvAbRkIeCvGkynQTi8hxAE0
-         CdOu25JLvjFIi+qhI5V2G0Lsh2IE7+Go4ScyjqZGTWHMtt2xkcmwd2eJXmTVJHAfs1nh
-         gOqrN9o9PSbAD6k64ZoNQMa5pHIj6dqATHPkM=
-Message-ID: <4C7E94F6.9050806@gmail.com>
-Date: Wed, 01 Sep 2010 20:01:26 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+	id S1755118Ab0IASOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 14:14:07 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:6788 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752714Ab0IASOG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 14:14:06 -0400
+Date: Wed, 1 Sep 2010 19:13:41 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: help with git bisecting a bug 16376: random - possibly Radeon DRM KMS related - freezes
+Message-ID: <20100901181341.GA11861@deepthought>
+References: <201008312153.45792.Martin@lichtvoll.de> <20100831223921.GA23476@deepthought> <201009011810.31642.Martin@lichtvoll.de>
 MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
-        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7 v3] HID: magicmouse: don't allow hidinput to initialize
- the device
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com> <1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
-In-Reply-To: <1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <201009011810.31642.Martin@lichtvoll.de>
+User-Agent: Mutt/1.5.12-2006-07-14
+Content-Transfer-Encoding: 8BIT
+X-Cloudmark-Analysis: v=1.1 cv=3ENABmdyEd/Fm7fR7+mZIuMDn6+IErAeEhlfWBImZFk= c=1 sm=0 a=zzU6Ef89lnMA:10 a=8nJEP1OIZ-IA:10 a=JFx7__YRT1V1ggT0OZ0A:9 a=2EPQNfS7Pjj9lnByI4y0Y5W1A2MA:4 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2010 03:56 AM, Chase Douglas wrote:
-> From: Chase Douglas <chase.douglas@ubuntu.com>
+On Wed, Sep 01, 2010 at 06:10:24PM +0200, Martin Steigerwald wrote:
+> Am Mittwoch 01 September 2010 schrieb Ken Moffat:
+> > 
+> >  While you are bisecting, don't believe the version in Makefile.  I
+> > got similarly freaked out a couple of years ago - if I understood
+> > correctly, it's something to do with when a change was created.
+> > 
+> >  The key point is that during bisection the apparent version *can*
+> > go back to a version that appears to be before the initial "good"
+> > kernel.
 > 
-> The driver listens only for raw events from the device. If we allow
-> the hidinput layer to initialize, we can hit NULL pointer dereferences
-> in the hidinput layer because disconnecting only removes the hidinput
-> devices from the hid device while leaving the hid fields configured.
+> I verified the version by running git log after doing the skip. And it was 
+> just 300 lines after Linus commited 2.6.33-rc2. Can git log be showing 
+> incorrect results during a bisect?
 > 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> Acked-by: Michael Poole <mdpoole@troilus.org>
-> ---
->  drivers/hid/hid-magicmouse.c |   13 +++++++++----
->  1 files changed, 9 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-> index 319b0e5..d38b529 100644
-> --- a/drivers/hid/hid-magicmouse.c
-> +++ b/drivers/hid/hid-magicmouse.c
-> @@ -404,15 +404,20 @@ static int magicmouse_probe(struct hid_device *hdev,
->  		goto err_free;
->  	}
->  
-> -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-> +	/* When registering a hid device, one of hidinput, hidraw, or hiddev
-> +	 * subsystems must claim the device. We are bypassing hidinput due to
-> +	 * our raw event processing, and hidraw and hiddev may not claim the
-> +	 * device. We get around this by telling hid_hw_start that input has
-> +	 * claimed the device already, and then flipping the bit back.
-> +	 */
-> +	hdev->claimed = HID_CLAIMED_INPUT;
-> +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT & ~HID_CONNECT_HIDINPUT);
-> +	hdev->claimed &= ~HID_CLAIMED_INPUT;
+> Thanks,
+ I suggest you go with the versions that git bisect selects.
 
-This looks weird. Is there any past discussion about why you cannot use
-hidinput and you have to do all the input bits yourself while cheating
-this very weird way?
+ I appreciate that it takes you a long time to build and test each
+kernel, but hopefully you can reach a stage where the bad commit is
+identified.
 
-thanks,
+ I think I've seen people report that an old commit was identified
+as causing a problem, and I also think that in those cases the
+problem was exposed by a later commit.
+
+ken
 -- 
-js
+das eine Mal als Tragödie, das andere Mal als Farce
