@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab0IANt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:49:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34118 "EHLO
+	id S1755316Ab0IANt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:49:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34117 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab0IANtD (ORCPT
+	with ESMTP id S1755017Ab0IANtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Sep 2010 09:49:03 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/15] trivial: fix typos concerning "access"
-Date: Wed,  1 Sep 2010 15:48:24 +0200
-Message-Id: <1283348918-7204-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 05/15] trivial: fix typos concerning "command"
+Date: Wed,  1 Sep 2010 15:48:28 +0200
+Message-Id: <1283348918-7204-5-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283348918-7204-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1283348918-7204-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,498 +28,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had to skip a French sentence in drivers/char/applicom.c for this
-patch.
-
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- Documentation/DocBook/mtdnand.tmpl            |    2 +-
- Documentation/cgroups/cgroup_event_listener.c |    2 +-
- Documentation/kvm/api.txt                     |    2 +-
- arch/arm/mach-at91/board-ecbat91.c            |    6 +++---
- arch/arm/mach-msm/io.c                        |    2 +-
- arch/cris/include/asm/etraxgpio.h             |    2 +-
- arch/ia64/kvm/mmio.c                          |    2 +-
- arch/mips/alchemy/common/power.c              |    2 +-
- arch/powerpc/platforms/83xx/suspend-asm.S     |    6 +++---
- arch/powerpc/platforms/ps3/device-init.c      |    4 ++--
- arch/x86/include/asm/processor.h              |    2 +-
- drivers/ata/libata-core.c                     |    4 ++--
- drivers/infiniband/hw/cxgb3/cxio_wr.h         |    2 +-
- drivers/infiniband/hw/qib/qib_iba7322.c       |    2 +-
- drivers/isdn/hardware/mISDN/ipac.h            |    4 ++--
- drivers/isdn/hardware/mISDN/isar.h            |    2 +-
- drivers/media/video/cx25840/cx25840-ir.c      |    2 +-
- drivers/media/video/saa7164/saa7164-core.c    |    4 ++--
- drivers/message/i2o/i2o_block.c               |    2 +-
- drivers/net/e1000e/82571.c                    |    2 +-
- drivers/net/e1000e/ich8lan.c                  |    2 +-
- drivers/net/wireless/prism54/islpci_dev.c     |    6 +++---
- drivers/net/wireless/prism54/islpci_eth.c     |    2 +-
- drivers/spi/spidev.c                          |    2 +-
- drivers/video/sstfb.c                         |    2 +-
- fs/ocfs2/inode.c                              |    2 +-
- lib/nlattr.c                                  |    2 +-
- sound/isa/opl3sa2.c                           |    2 +-
- sound/pci/rme9652/hdspm.c                     |    4 ++--
- 29 files changed, 40 insertions(+), 40 deletions(-)
+ arch/h8300/Kconfig.debug                 |    2 +-
+ arch/x86/kernel/head_32.S                |    2 +-
+ drivers/atm/idt77252.h                   |    2 +-
+ drivers/message/fusion/lsi/mpi_log_sas.h |    2 +-
+ drivers/message/fusion/mptbase.c         |    2 +-
+ drivers/mmc/card/block.c                 |    2 +-
+ drivers/mmc/host/au1xmmc.c               |    2 +-
+ drivers/s390/net/lcs.c                   |    2 +-
+ drivers/scsi/libfc/fc_fcp.c              |    2 +-
+ drivers/scsi/megaraid.h                  |    2 +-
+ include/scsi/fc/fc_fcp.h                 |    4 ++--
+ 11 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/Documentation/DocBook/mtdnand.tmpl b/Documentation/DocBook/mtdnand.tmpl
-index 020ac80..620eb3f 100644
---- a/Documentation/DocBook/mtdnand.tmpl
-+++ b/Documentation/DocBook/mtdnand.tmpl
-@@ -250,7 +250,7 @@ static void board_hwcontrol(struct mtd_info *mtd, int cmd)
- 		<title>Device ready function</title>
- 		<para>
- 			If the hardware interface has the ready busy pin of the NAND chip connected to a
--			GPIO or other accesible I/O pin, this function is used to read back the state of the
-+			GPIO or other accessible I/O pin, this function is used to read back the state of the
- 			pin. The function has no arguments and should return 0, if the device is busy (R/B pin 
- 			is low) and 1, if the device is ready (R/B pin is high).
- 			If the hardware interface does not give access to the ready busy pin, then
-diff --git a/Documentation/cgroups/cgroup_event_listener.c b/Documentation/cgroups/cgroup_event_listener.c
-index 8c2bfc4..3e082f9 100644
---- a/Documentation/cgroups/cgroup_event_listener.c
-+++ b/Documentation/cgroups/cgroup_event_listener.c
-@@ -91,7 +91,7 @@ int main(int argc, char **argv)
+diff --git a/arch/h8300/Kconfig.debug b/arch/h8300/Kconfig.debug
+index ee671c3..e8d1b23 100644
+--- a/arch/h8300/Kconfig.debug
++++ b/arch/h8300/Kconfig.debug
+@@ -48,7 +48,7 @@ config DEFAULT_CMDLINE
+ 	  builtin kernel commandline enabled.
  
- 		if (ret == -1) {
- 			perror("cgroup.event_control "
--					"is not accessable any more");
-+					"is not accessible any more");
- 			break;
- 		}
+ config KERNEL_COMMAND
+-	string "Buildin commmand string"
++	string "Buildin command string"
+ 	depends on DEFAULT_CMDLINE
+ 	help
+ 	  builtin kernel commandline strings.
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index fa8c1b8..ea535d9 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -124,7 +124,7 @@ ENTRY(startup_32)
+ 	movsl
+ 	movl pa(boot_params) + NEW_CL_POINTER,%esi
+ 	andl %esi,%esi
+-	jz 1f			# No comand line
++	jz 1f			# No command line
+ 	movl $pa(boot_command_line),%edi
+ 	movl $(COMMAND_LINE_SIZE/4),%ecx
+ 	rep
+diff --git a/drivers/atm/idt77252.h b/drivers/atm/idt77252.h
+index 5042bb2..f53a43a 100644
+--- a/drivers/atm/idt77252.h
++++ b/drivers/atm/idt77252.h
+@@ -572,7 +572,7 @@ struct idt77252_dev
+ #define SAR_STAT_TSQF       0x00001000 /* Transmit Status Queue full      */
+ #define SAR_STAT_TMROF      0x00000800 /* Timer overflow                  */
+ #define SAR_STAT_PHYI       0x00000400 /* PHY device Interrupt flag       */
+-#define SAR_STAT_CMDBZ      0x00000200 /* ABR SAR Comand Busy Flag        */
++#define SAR_STAT_CMDBZ      0x00000200 /* ABR SAR Command Busy Flag       */
+ #define SAR_STAT_FBQ3A      0x00000100 /* Free Buffer Queue 3 Attention   */
+ #define SAR_STAT_FBQ2A      0x00000080 /* Free Buffer Queue 2 Attention   */
+ #define SAR_STAT_RSQF       0x00000040 /* Receive Status Queue full       */
+diff --git a/drivers/message/fusion/lsi/mpi_log_sas.h b/drivers/message/fusion/lsi/mpi_log_sas.h
+index 691620d..8b04810 100644
+--- a/drivers/message/fusion/lsi/mpi_log_sas.h
++++ b/drivers/message/fusion/lsi/mpi_log_sas.h
+@@ -268,7 +268,7 @@
  
-diff --git a/Documentation/kvm/api.txt b/Documentation/kvm/api.txt
-index 5f5b649..5486f02 100644
---- a/Documentation/kvm/api.txt
-+++ b/Documentation/kvm/api.txt
-@@ -845,7 +845,7 @@ Possible values are:
-  - KVM_MP_STATE_HALTED:          the vcpu has executed a HLT instruction and
-                                  is waiting for an interrupt
-  - KVM_MP_STATE_SIPI_RECEIVED:   the vcpu has just received a SIPI (vector
--                                 accesible via KVM_GET_VCPU_EVENTS)
-+                                 accessible via KVM_GET_VCPU_EVENTS)
- 
- This ioctl is only useful after KVM_CREATE_IRQCHIP.  Without an in-kernel
- irqchip, the multiprocessing state must be maintained by userspace.
-diff --git a/arch/arm/mach-at91/board-ecbat91.c b/arch/arm/mach-at91/board-ecbat91.c
-index 1d69908..d7e5714 100644
---- a/arch/arm/mach-at91/board-ecbat91.c
-+++ b/arch/arm/mach-at91/board-ecbat91.c
-@@ -128,17 +128,17 @@ static struct spi_board_info __initdata ecb_at91spi_devices[] = {
- 		.platform_data	= &my_flash0_platform,
- #endif
- 	},
--	{	/* User accessable spi - cs1 (250KHz) */
-+	{	/* User accessible spi - cs1 (250KHz) */
- 		.modalias	= "spi-cs1",
- 		.chip_select	= 1,
- 		.max_speed_hz	= 250 * 1000,
- 	},
--	{	/* User accessable spi - cs2 (1MHz) */
-+	{	/* User accessible spi - cs2 (1MHz) */
- 		.modalias	= "spi-cs2",
- 		.chip_select	= 2,
- 		.max_speed_hz	= 1 * 1000 * 1000,
- 	},
--	{	/* User accessable spi - cs3 (10MHz) */
-+	{	/* User accessible spi - cs3 (10MHz) */
- 		.modalias	= "spi-cs3",
- 		.chip_select	= 3,
- 		.max_speed_hz	= 10 * 1000 * 1000,
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index 1c05060..e7a2fe9 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -138,7 +138,7 @@ __msm_ioremap(unsigned long phys_addr, size_t size, unsigned int mtype)
- {
- 	if (mtype == MT_DEVICE) {
- 		/* The peripherals in the 88000000 - D0000000 range
--		 * are only accessable by type MT_DEVICE_NONSHARED.
-+		 * are only accessible by type MT_DEVICE_NONSHARED.
- 		 * Adjust mtype as necessary to make this "just work."
- 		 */
- 		if ((phys_addr >= 0x88000000) && (phys_addr < 0xD0000000))
-diff --git a/arch/cris/include/asm/etraxgpio.h b/arch/cris/include/asm/etraxgpio.h
-index d474818..461c089 100644
---- a/arch/cris/include/asm/etraxgpio.h
-+++ b/arch/cris/include/asm/etraxgpio.h
-@@ -1,5 +1,5 @@
- /*
-- * The following devices are accessable using this driver using
-+ * The following devices are accessible using this driver using
-  * GPIO_MAJOR (120) and a couple of minor numbers.
-  *
-  * For ETRAX 100LX (CONFIG_ETRAX_ARCH_V10):
-diff --git a/arch/ia64/kvm/mmio.c b/arch/ia64/kvm/mmio.c
-index fb8f9f5..f1e17d3 100644
---- a/arch/ia64/kvm/mmio.c
-+++ b/arch/ia64/kvm/mmio.c
-@@ -130,7 +130,7 @@ static void mmio_access(struct kvm_vcpu *vcpu, u64 src_pa, u64 *dest,
- 
- 	local_irq_save(psr);
- 
--	/*Intercept the acces for PIB range*/
-+	/*Intercept the access for PIB range*/
- 	if (iot == GPFN_PIB) {
- 		if (!dir)
- 			lsapic_write(vcpu, src_pa, s, *dest);
-diff --git a/arch/mips/alchemy/common/power.c b/arch/mips/alchemy/common/power.c
-index 5ef06a1..667a174 100644
---- a/arch/mips/alchemy/common/power.c
-+++ b/arch/mips/alchemy/common/power.c
-@@ -151,7 +151,7 @@ static void restore_core_regs(void)
- 	au_writel(sleep_usb[1], USBD_ENABLE);
- 	au_sync();
- #else
--	/* enable accces to OTG memory */
-+	/* enable access to OTG memory */
- 	au_writel(au_readl(USB_MSR_BASE + 4) | (1 << 6), USB_MSR_BASE + 4);
+ /* Compatibility Error : IR Disabled */
+ #define IR_LOGINFO_COMPAT_ERROR_RAID_DISABLED                  (0x00010030)
+-/* Compatibility Error : Inquiry Comand failed */
++/* Compatibility Error : Inquiry Command failed */
+ #define IR_LOGINFO_COMPAT_ERROR_INQUIRY_FAILED                 (0x00010031)
+ /* Compatibility Error : Device not direct access device */
+ #define IR_LOGINFO_COMPAT_ERROR_NOT_DIRECT_ACCESS              (0x00010032)
+diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
+index 6837a8e..2df0974 100644
+--- a/drivers/message/fusion/mptbase.c
++++ b/drivers/message/fusion/mptbase.c
+@@ -7975,7 +7975,7 @@ mpt_spi_log_info(MPT_ADAPTER *ioc, u32 log_info)
+ 		NULL,						/* 2Eh */
+ 		NULL,						/* 2Fh */
+ 		"Compatibility Error: IR Disabled",		/* 30h */
+-		"Compatibility Error: Inquiry Comand Failed",	/* 31h */
++		"Compatibility Error: Inquiry Command Failed",	/* 31h */
+ 		"Compatibility Error: Device not Direct Access "
+ 		    "Device ",					/* 32h */
+ 		"Compatibility Error: Removable Device Found",	/* 33h */
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index d545f79..3b81771 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -242,7 +242,7 @@ static u32 get_card_status(struct mmc_card *card, struct request *req)
+ 	cmd.flags = MMC_RSP_SPI_R2 | MMC_RSP_R1 | MMC_CMD_AC;
+ 	err = mmc_wait_for_cmd(card->host, &cmd, 0);
+ 	if (err)
+-		printk(KERN_ERR "%s: error %d sending status comand",
++		printk(KERN_ERR "%s: error %d sending status command",
+ 		       req->rq_disk->disk_name, err);
+ 	return cmd.resp[0];
+ }
+diff --git a/drivers/mmc/host/au1xmmc.c b/drivers/mmc/host/au1xmmc.c
+index c8da5d3..4673155 100644
+--- a/drivers/mmc/host/au1xmmc.c
++++ b/drivers/mmc/host/au1xmmc.c
+@@ -192,7 +192,7 @@ static inline void SEND_STOP(struct au1xmmc_host *host)
+ 	au_writel(config2 | SD_CONFIG2_DF, HOST_CONFIG2(host));
  	au_sync();
  
-diff --git a/arch/powerpc/platforms/83xx/suspend-asm.S b/arch/powerpc/platforms/83xx/suspend-asm.S
-index 1930543..3d1ecd2 100644
---- a/arch/powerpc/platforms/83xx/suspend-asm.S
-+++ b/arch/powerpc/platforms/83xx/suspend-asm.S
-@@ -231,7 +231,7 @@ _GLOBAL(mpc83xx_enter_deep_sleep)
- 	ori	r4, r4, 0x002a
- 	mtspr	SPRN_DBAT0L, r4
- 	lis	r8, TMP_VIRT_IMMR@h
--	ori	r4, r8, 0x001e	/* 1 MByte accessable from Kernel Space only */
-+	ori	r4, r8, 0x001e	/* 1 MByte accessible from Kernel Space only */
- 	mtspr	SPRN_DBAT0U, r4
- 	isync
+-	/* Send the stop commmand */
++	/* Send the stop command */
+ 	au_writel(STOP_CMD, HOST_CMD(host));
+ }
  
-@@ -241,7 +241,7 @@ _GLOBAL(mpc83xx_enter_deep_sleep)
- 	ori	r4, r4, 0x002a
- 	mtspr	SPRN_DBAT1L, r4
- 	lis	r9, (TMP_VIRT_IMMR + 0x01000000)@h
--	ori	r4, r9, 0x001e	/* 1 MByte accessable from Kernel Space only */
-+	ori	r4, r9, 0x001e	/* 1 MByte accessible from Kernel Space only */
- 	mtspr	SPRN_DBAT1U, r4
- 	isync
+diff --git a/drivers/s390/net/lcs.c b/drivers/s390/net/lcs.c
+index 0f19d54..122382d 100644
+--- a/drivers/s390/net/lcs.c
++++ b/drivers/s390/net/lcs.c
+@@ -840,7 +840,7 @@ lcs_notify_lancmd_waiters(struct lcs_card *card, struct lcs_cmd *cmd)
+ }
  
-@@ -253,7 +253,7 @@ _GLOBAL(mpc83xx_enter_deep_sleep)
- 	li	r4, 0x0002
- 	mtspr	SPRN_DBAT2L, r4
- 	lis	r4, KERNELBASE@h
--	ori	r4, r4, 0x001e	/* 1 MByte accessable from Kernel Space only */
-+	ori	r4, r4, 0x001e	/* 1 MByte accessible from Kernel Space only */
- 	mtspr	SPRN_DBAT2U, r4
- 	isync
- 
-diff --git a/arch/powerpc/platforms/ps3/device-init.c b/arch/powerpc/platforms/ps3/device-init.c
-index b341018..6c4b583 100644
---- a/arch/powerpc/platforms/ps3/device-init.c
-+++ b/arch/powerpc/platforms/ps3/device-init.c
-@@ -566,10 +566,10 @@ static int ps3_setup_dynamic_device(const struct ps3_repository_device *repo)
- 	case PS3_DEV_TYPE_STOR_DISK:
- 		result = ps3_setup_storage_dev(repo, PS3_MATCH_ID_STOR_DISK);
- 
--		/* Some devices are not accessable from the Other OS lpar. */
-+		/* Some devices are not accessible from the Other OS lpar. */
- 		if (result == -ENODEV) {
- 			result = 0;
--			pr_debug("%s:%u: not accessable\n", __func__,
-+			pr_debug("%s:%u: not accessible\n", __func__,
- 				 __LINE__);
- 		}
- 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 325b7bd..82da659 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -923,7 +923,7 @@ extern unsigned long thread_saved_pc(struct task_struct *tsk);
- /*
-  * The below -8 is to reserve 8 bytes on top of the ring0 stack.
-  * This is necessary to guarantee that the entire "struct pt_regs"
-- * is accessable even if the CPU haven't stored the SS/ESP registers
-+ * is accessible even if the CPU haven't stored the SS/ESP registers
-  * on the stack (interrupt gate does not save these registers
-  * when switching to the same priv ring).
-  * Therefore beware: accessing the ss/esp fields of the
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index c035b3d..8143d4b 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2412,7 +2412,7 @@ int ata_dev_configure(struct ata_device *dev)
- 			if (id[ATA_ID_CFA_KEY_MGMT] & 1)
- 				ata_dev_printk(dev, KERN_WARNING,
- 					       "supports DRM functions and may "
--					       "not be fully accessable.\n");
-+					       "not be fully accessible.\n");
- 			snprintf(revbuf, 7, "CFA");
- 		} else {
- 			snprintf(revbuf, 7, "ATA-%d", ata_id_major_version(id));
-@@ -2420,7 +2420,7 @@ int ata_dev_configure(struct ata_device *dev)
- 			if (ata_id_has_tpm(id))
- 				ata_dev_printk(dev, KERN_WARNING,
- 					       "supports DRM functions and may "
--					       "not be fully accessable.\n");
-+					       "not be fully accessible.\n");
- 		}
- 
- 		dev->n_sectors = ata_id_n_sectors(id);
-diff --git a/drivers/infiniband/hw/cxgb3/cxio_wr.h b/drivers/infiniband/hw/cxgb3/cxio_wr.h
-index e5ddb63..c752131 100644
---- a/drivers/infiniband/hw/cxgb3/cxio_wr.h
-+++ b/drivers/infiniband/hw/cxgb3/cxio_wr.h
-@@ -689,7 +689,7 @@ struct t3_swrq {
-  * A T3 WQ implements both the SQ and RQ.
+ /**
+- * Emit buffer of a lan comand.
++ * Emit buffer of a lan command.
   */
- struct t3_wq {
--	union t3_wr *queue;		/* DMA accessable memory */
-+	union t3_wr *queue;		/* DMA accessible memory */
- 	dma_addr_t dma_addr;		/* DMA address for HW */
- 	DEFINE_DMA_UNMAP_ADDR(mapping); /* unmap kruft */
- 	u32 error;			/* 1 once we go to ERROR */
-diff --git a/drivers/infiniband/hw/qib/qib_iba7322.c b/drivers/infiniband/hw/qib/qib_iba7322.c
-index 584d443..ead2627 100644
---- a/drivers/infiniband/hw/qib/qib_iba7322.c
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -314,7 +314,7 @@ MODULE_PARM_DESC(txselect, \
- #define krp_serdesctrl KREG_IBPORT_IDX(IBSerdesCtrl)
+ static void
+ lcs_lancmd_timeout(unsigned long data)
+diff --git a/drivers/scsi/libfc/fc_fcp.c b/drivers/scsi/libfc/fc_fcp.c
+index c797f6b..54a6ec8 100644
+--- a/drivers/scsi/libfc/fc_fcp.c
++++ b/drivers/scsi/libfc/fc_fcp.c
+@@ -1212,7 +1212,7 @@ static void fc_lun_reset_send(unsigned long data)
+ /**
+  * fc_lun_reset() - Send a LUN RESET command to a device
+  *		    and wait for the reply
+- * @lport: The local port to sent the comand on
++ * @lport: The local port to sent the command on
+  * @fsp:   The FCP packet that identifies the LUN to be reset
+  * @id:	   The SCSI command ID
+  * @lun:   The LUN ID to be reset
+diff --git a/drivers/scsi/megaraid.h b/drivers/scsi/megaraid.h
+index 2b4a048..deb24ad 100644
+--- a/drivers/scsi/megaraid.h
++++ b/drivers/scsi/megaraid.h
+@@ -13,7 +13,7 @@
+  */
  
  /*
-- * Per-context kernel registers.  Acess only with qib_read_kreg_ctxt()
-+ * Per-context kernel registers.  Access only with qib_read_kreg_ctxt()
-  * or qib_write_kreg_ctxt()
+- * Comand coalescing - This feature allows the driver to be able to combine
++ * Command coalescing - This feature allows the driver to be able to combine
+  * two or more commands and issue as one command in order to boost I/O
+  * performance. Useful if the nature of the I/O is sequential. It is not very
+  * useful for random natured I/Os.
+diff --git a/include/scsi/fc/fc_fcp.h b/include/scsi/fc/fc_fcp.h
+index 8e9b222..8a143ca 100644
+--- a/include/scsi/fc/fc_fcp.h
++++ b/include/scsi/fc/fc_fcp.h
+@@ -46,7 +46,7 @@
   */
- #define krc_rcvhdraddr KREG_IDX(RcvHdrAddr0)
-diff --git a/drivers/isdn/hardware/mISDN/ipac.h b/drivers/isdn/hardware/mISDN/ipac.h
-index 74a6ccf..8121e04 100644
---- a/drivers/isdn/hardware/mISDN/ipac.h
-+++ b/drivers/isdn/hardware/mISDN/ipac.h
-@@ -29,7 +29,7 @@ struct isac_hw {
- 	u32			type;
- 	u32			off;		/* offset to isac regs */
- 	char			*name;
--	spinlock_t		*hwlock;	/* lock HW acccess */
-+	spinlock_t		*hwlock;	/* lock HW access */
- 	read_reg_func		*read_reg;
- 	write_reg_func		*write_reg;
- 	fifo_func		*read_fifo;
-@@ -70,7 +70,7 @@ struct ipac_hw {
- 	struct hscx_hw		hscx[2];
- 	char			*name;
- 	void			*hw;
--	spinlock_t		*hwlock;	/* lock HW acccess */
-+	spinlock_t		*hwlock;	/* lock HW access */
- 	struct module		*owner;
- 	u32			type;
- 	read_reg_func		*read_reg;
-diff --git a/drivers/isdn/hardware/mISDN/isar.h b/drivers/isdn/hardware/mISDN/isar.h
-index 4a134ac..9962bdf 100644
---- a/drivers/isdn/hardware/mISDN/isar.h
-+++ b/drivers/isdn/hardware/mISDN/isar.h
-@@ -44,7 +44,7 @@ struct isar_ch {
- struct isar_hw {
- 	struct	isar_ch	ch[2];
- 	void		*hw;
--	spinlock_t	*hwlock;	/* lock HW acccess */
-+	spinlock_t	*hwlock;	/* lock HW access */
- 	char		*name;
- 	struct module	*owner;
- 	read_reg_func	*read_reg;
-diff --git a/drivers/media/video/cx25840/cx25840-ir.c b/drivers/media/video/cx25840/cx25840-ir.c
-index c2b4c14..610f91e 100644
---- a/drivers/media/video/cx25840/cx25840-ir.c
-+++ b/drivers/media/video/cx25840/cx25840-ir.c
-@@ -261,7 +261,7 @@ static u16 ns_to_pulse_width_count(u32 ns, u16 divider)
- 	u32 rem;
+ struct fcp_cmnd {
+ 	__u8		fc_lun[8];	/* logical unit number */
+-	__u8		fc_cmdref;	/* commmand reference number */
++	__u8		fc_cmdref;	/* command reference number */
+ 	__u8		fc_pri_ta;	/* priority and task attribute */
+ 	__u8		fc_tm_flags;	/* task management flags */
+ 	__u8		fc_flags;	/* additional len & flags */
+@@ -58,7 +58,7 @@ struct fcp_cmnd {
  
- 	/*
--	 * The 2 lsb's of the pulse width timer count are not accessable, hence
-+	 * The 2 lsb's of the pulse width timer count are not accessible, hence
- 	 * the (1 << 2)
- 	 */
- 	n = ((u64) ns) * CX25840_IR_REFCLK_FREQ / 1000000; /* millicycles */
-diff --git a/drivers/media/video/saa7164/saa7164-core.c b/drivers/media/video/saa7164/saa7164-core.c
-index e6aa0fb..03bd3cd 100644
---- a/drivers/media/video/saa7164/saa7164-core.c
-+++ b/drivers/media/video/saa7164/saa7164-core.c
-@@ -132,8 +132,8 @@ static irqreturn_t saa7164_irq(int irq, void *dev_id)
- 		goto out;
- 	}
- 
--	/* Check that the hardware is accessable. If the status bytes are
--	 * 0xFF then the device is not accessable, the the IRQ belongs
-+	/* Check that the hardware is accessible. If the status bytes are
-+	 * 0xFF then the device is not accessible, the the IRQ belongs
- 	 * to another driver.
- 	 * 4 x u32 interrupt registers.
- 	 */
-diff --git a/drivers/message/i2o/i2o_block.c b/drivers/message/i2o/i2o_block.c
-index f0f1e66..a96ad81 100644
---- a/drivers/message/i2o/i2o_block.c
-+++ b/drivers/message/i2o/i2o_block.c
-@@ -308,7 +308,7 @@ static inline void i2o_block_request_free(struct i2o_block_request *ireq)
-  *	@ireq: I2O block request
-  *	@mptr: message body pointer
-  *
-- *	Builds the SG list and map it to be accessable by the controller.
-+ *	Builds the SG list and map it to be accessible by the controller.
-  *
-  *	Returns 0 on failure or 1 on success.
-  */
-diff --git a/drivers/net/e1000e/82571.c b/drivers/net/e1000e/82571.c
-index d3d4a57..1c825ed 100644
---- a/drivers/net/e1000e/82571.c
-+++ b/drivers/net/e1000e/82571.c
-@@ -296,7 +296,7 @@ static s32 e1000_init_mac_params_82571(struct e1000_adapter *adapter)
- 
- 	/*
- 	 * Ensure that the inter-port SWSM.SMBI lock bit is clear before
--	 * first NVM or PHY acess. This should be done for single-port
-+	 * first NVM or PHY access. This should be done for single-port
- 	 * devices, and for one port only on dual-port devices so that
- 	 * for those devices we can still use the SMBI lock to synchronize
- 	 * inter-port accesses to the PHY & NVM.
-diff --git a/drivers/net/e1000e/ich8lan.c b/drivers/net/e1000e/ich8lan.c
-index 63930d1..779e2ad 100644
---- a/drivers/net/e1000e/ich8lan.c
-+++ b/drivers/net/e1000e/ich8lan.c
-@@ -306,7 +306,7 @@ static s32 e1000_init_phy_params_pchlan(struct e1000_hw *hw)
- 	}
- 
- 	/*
--	 * Reset the PHY before any acccess to it.  Doing so, ensures that
-+	 * Reset the PHY before any access to it.  Doing so, ensures that
- 	 * the PHY is in a known good state before we read/write PHY registers.
- 	 * The generic reset is sufficient here, because we haven't determined
- 	 * the PHY type yet.
-diff --git a/drivers/net/wireless/prism54/islpci_dev.c b/drivers/net/wireless/prism54/islpci_dev.c
-index 2c8cc95..ec2c75d 100644
---- a/drivers/net/wireless/prism54/islpci_dev.c
-+++ b/drivers/net/wireless/prism54/islpci_dev.c
-@@ -630,7 +630,7 @@ islpci_alloc_memory(islpci_private *priv)
- 	printk(KERN_DEBUG "islpci_alloc_memory\n");
- #endif
- 
--	/* remap the PCI device base address to accessable */
-+	/* remap the PCI device base address to accessible */
- 	if (!(priv->device_base =
- 	      ioremap(pci_resource_start(priv->pdev, 0),
- 		      ISL38XX_PCI_MEM_SIZE))) {
-@@ -709,7 +709,7 @@ islpci_alloc_memory(islpci_private *priv)
- 				   PCI_DMA_FROMDEVICE);
- 		if (!priv->pci_map_rx_address[counter]) {
- 			/* error mapping the buffer to device
--			   accessable memory address */
-+			   accessible memory address */
- 			printk(KERN_ERR "failed to map skb DMA'able\n");
- 			goto out_free;
- 		}
-@@ -773,7 +773,7 @@ islpci_free_memory(islpci_private *priv)
- 		priv->data_low_rx[counter] = NULL;
- 	}
- 
--	/* Free the acces control list and the WPA list */
-+	/* Free the access control list and the WPA list */
- 	prism54_acl_clean(&priv->acl);
- 	prism54_wpa_bss_ie_clean(priv);
- 	mgt_clean(priv);
-diff --git a/drivers/net/wireless/prism54/islpci_eth.c b/drivers/net/wireless/prism54/islpci_eth.c
-index 2fc52bc..d44f8e2 100644
---- a/drivers/net/wireless/prism54/islpci_eth.c
-+++ b/drivers/net/wireless/prism54/islpci_eth.c
-@@ -450,7 +450,7 @@ islpci_eth_receive(islpci_private *priv)
- 				   MAX_FRAGMENT_SIZE_RX + 2,
- 				   PCI_DMA_FROMDEVICE);
- 		if (unlikely(!priv->pci_map_rx_address[index])) {
--			/* error mapping the buffer to device accessable memory address */
-+			/* error mapping the buffer to device accessible memory address */
- 			DEBUG(SHOW_ERROR_MESSAGES,
- 			      "Error mapping DMA address\n");
- 
-diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index ea1bec3..8f7b8fe 100644
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -38,7 +38,7 @@
- 
- 
- /*
-- * This supports acccess to SPI devices using normal userspace I/O calls.
-+ * This supports access to SPI devices using normal userspace I/O calls.
-  * Note that while traditional UNIX/POSIX I/O semantics are half duplex,
-  * and often mask message boundaries, full SPI support requires full duplex
-  * transfers.  There are several kinds of internal message boundaries to
-diff --git a/drivers/video/sstfb.c b/drivers/video/sstfb.c
-index dee64c3..2ab7041 100644
---- a/drivers/video/sstfb.c
-+++ b/drivers/video/sstfb.c
-@@ -536,7 +536,7 @@ static int sstfb_set_par(struct fb_info *info)
- 	fbiinit2 = sst_read(FBIINIT2);
- 	fbiinit3 = sst_read(FBIINIT3);
- 
--	/* everything is reset. we enable fbiinit2/3 remap : dac acces ok */
-+	/* everything is reset. we enable fbiinit2/3 remap : dac access ok */
- 	pci_write_config_dword(sst_dev, PCI_INIT_ENABLE,
- 	                       PCI_EN_INIT_WR | PCI_REMAP_DAC );
- 
-diff --git a/fs/ocfs2/inode.c b/fs/ocfs2/inode.c
-index 0492464..4709829 100644
---- a/fs/ocfs2/inode.c
-+++ b/fs/ocfs2/inode.c
-@@ -433,7 +433,7 @@ static int ocfs2_read_locked_inode(struct inode *inode,
- 	 * #1 and #2 can be simply solved by never taking the lock
- 	 * here for system files (which are the only type we read
- 	 * during mount). It's a heavier approach, but our main
--	 * concern is user-accesible files anyway.
-+	 * concern is user-accessible files anyway.
- 	 *
- 	 * #3 works itself out because we'll eventually take the
- 	 * cluster lock before trusting anything anyway.
-diff --git a/lib/nlattr.c b/lib/nlattr.c
-index c4706eb..18d158d 100644
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -167,7 +167,7 @@ nla_policy_len(const struct nla_policy *p, int n)
-  * @policy: validation policy
-  *
-  * Parses a stream of attributes and stores a pointer to each attribute in
-- * the tb array accessable via the attribute type. Attributes with a type
-+ * the tb array accessible via the attribute type. Attributes with a type
-  * exceeding maxtype will be silently ignored for backwards compatibility
-  * reasons. policy may be set to NULL if no validation is required.
-  *
-diff --git a/sound/isa/opl3sa2.c b/sound/isa/opl3sa2.c
-index 265abcc..9b915e2 100644
---- a/sound/isa/opl3sa2.c
-+++ b/sound/isa/opl3sa2.c
-@@ -264,7 +264,7 @@ static int __devinit snd_opl3sa2_detect(struct snd_card *card)
- 		snd_printd("OPL3-SA [0x%lx] detect (1) = 0x%x (0x%x)\n", port, tmp, tmp1);
- 		return -ENODEV;
- 	}
--	/* try if the MIC register is accesible */
-+	/* try if the MIC register is accessible */
- 	tmp = snd_opl3sa2_read(chip, OPL3SA2_MIC);
- 	snd_opl3sa2_write(chip, OPL3SA2_MIC, 0x8a);
- 	if (((tmp1 = snd_opl3sa2_read(chip, OPL3SA2_MIC)) & 0x9f) != 0x8a) {
-diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
-index 547b713..a369f2a 100644
---- a/sound/pci/rme9652/hdspm.c
-+++ b/sound/pci/rme9652/hdspm.c
-@@ -487,7 +487,7 @@ struct hdspm {
- 	struct snd_kcontrol *playback_mixer_ctls[HDSPM_MAX_CHANNELS];
- 	/* but input to much, so not used */
- 	struct snd_kcontrol *input_mixer_ctls[HDSPM_MAX_CHANNELS];
--	/* full mixer accessable over mixer ioctl or hwdep-device */
-+	/* full mixer accessible over mixer ioctl or hwdep-device */
- 	struct hdspm_mixer *mixer;
- 
- };
-@@ -2908,7 +2908,7 @@ static int snd_hdspm_create_controls(struct snd_card *card, struct hdspm * hdspm
- 
- 	/* Channel playback mixer as default control 
- 	   Note: the whole matrix would be 128*HDSPM_MIXER_CHANNELS Faders,
--	   thats too * big for any alsamixer they are accesible via special
-+	   thats too * big for any alsamixer they are accessible via special
- 	   IOCTL on hwdep and the mixer 2dimensional mixer control
- 	*/
- 
+ struct fcp_cmnd32 {
+ 	__u8		fc_lun[8];	/* logical unit number */
+-	__u8		fc_cmdref;	/* commmand reference number */
++	__u8		fc_cmdref;	/* command reference number */
+ 	__u8		fc_pri_ta;	/* priority and task attribute */
+ 	__u8		fc_tm_flags;	/* task management flags */
+ 	__u8		fc_flags;	/* additional len & flags */
 -- 
 1.7.1
 
